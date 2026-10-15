@@ -198,8 +198,8 @@ export default function ServicesTab({
               <div className="space-y-1.5 pt-1 border-t border-border/50">
                 <div className="flex flex-wrap gap-1">
                   {visibleBranches.map(b => (
-                    <span key={b.id} className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded">
-                      {b.branch.name}
+                    <span key={b.id || b.branchId} className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded">
+                      {b.branch?.name || b.branchId}
                     </span>
                   ))}
                   {extraCount > 0 && <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono tabular-nums">+{extraCount}</span>}
@@ -219,10 +219,10 @@ export default function ServicesTab({
               </div>
 
               {bs.map(b => (b.packages || []).length > 0 && (
-                <div key={b.id} className="pt-1">
+                <div key={b.id || b.branchId} className="pt-1">
                   {b.packages!.map((pkg, i) => (
                     <div key={i} className="text-[11px] bg-primary/5 text-primary border border-primary/20 inline-block px-2 py-0.5 rounded ml-1 mb-1 font-mono tabular-nums">
-                      {pkg.count} جلسات — {pkg.price} ج.م ({b.branch.name})
+                      {pkg.count} جلسات — {pkg.price} ج.م ({b.branch?.name || b.branchId})
                     </div>
                   ))}
                 </div>

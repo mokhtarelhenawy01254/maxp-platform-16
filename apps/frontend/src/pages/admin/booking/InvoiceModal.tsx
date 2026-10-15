@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { BookingInvoice, BookingPatient, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
+import { X, Receipt, DollarSign, Wallet, ShieldCheck, Calendar, AlertCircle } from "lucide-react";
+import { BookingInvoice, BookingPatient, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
 import { toast } from "sonner";
 
-import { X } from 'lucide-react'
 interface Props {
   invoice?: Partial<BookingInvoice> | null;
   patients: BookingPatient[];
@@ -78,68 +78,149 @@ export default function InvoiceModal({ invoice, patients, onClose, onSave }: Pro
     }
   };
 
+  const inputCls = "w-full bg-background border border-border/70 rounded-xl px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">{invoice?.id ? "تعديل فاتورة" : "فاتورة جديدة"}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
+      <div className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden text-card-foreground animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground tracking-tight">{invoice?.id ? "تعديل الفاتورة" : "إنشاء فاتورة جديدة"}</h3>
+              <p className="text-xs text-muted-foreground">تفاصيل الرسوم، الخصومات، والتحصيل المالي</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المريض *</label>
-            <select className={MODAL_INPUT_CLS} value={form.patientId} onChange={e => setForm({ ...form, patientId: e.target.value })}>
-              <option value="">اختر المريض</option>
-              {patients.filter(p => p.isActive).map(p => <option key={p.id} value={p.id}>{p.firstName} {p.lastName || ""} {p.phone ? `(${p.phone})` : ""}</option>)}
+
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 text-sm">
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">المريض *</label>
+            <select className={inputCls} value={form.patientId} onChange={e => setForm({ ...form, patientId: e.target.value })}>
+              <option value="">اختر المريض المسجل</option>
+              {patients.filter(p => p.isActive).map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.firstName} {p.lastName || ""} {p.phone ? `(${p.phone})` : ""}
+                </option>
+              ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المبلغ الإجمالي *</label><input type="number" className={MODAL_INPUT_CLS} value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الخصم</label><input type="number" className={MODAL_INPUT_CLS} value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} /></div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">المبلغ الإجمالي *</label>
+              <input type="number" className={`${inputCls} font-mono tabular-nums`} value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} placeholder="0.00" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">قيمة الخصم</label>
+              <input type="number" className={`${inputCls} font-mono tabular-nums`} value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} placeholder="0.00" />
+            </div>
           </div>
+
           {discount > 0 && (
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">سبب الخصم *</label><input className={MODAL_INPUT_CLS} value={form.discountReason} onChange={e => setForm({ ...form, discountReason: e.target.value })} placeholder="سبب الخصم مطلوب" /></div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">سبب الخصم *</label>
+              <input className={inputCls} value={form.discountReason} onChange={e => setForm({ ...form, discountReason: e.target.value })} placeholder="مثال: خصم نقابة، عرض خاص..." />
+            </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">إضافة</label><input type="number" className={MODAL_INPUT_CLS} value={form.additionAmount} onChange={e => setForm({ ...form, additionAmount: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم التذكرة</label><input className={MODAL_INPUT_CLS} value={form.ticketNumber} onChange={e => setForm({ ...form, ticketNumber: e.target.value })} /></div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">مبلغ إضافي</label>
+              <input type="number" className={`${inputCls} font-mono tabular-nums`} value={form.additionAmount} onChange={e => setForm({ ...form, additionAmount: e.target.value })} placeholder="0.00" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">رقم التذكرة / الإيصال</label>
+              <input className={`${inputCls} font-mono`} value={form.ticketNumber} onChange={e => setForm({ ...form, ticketNumber: e.target.value })} placeholder="TICK-001" />
+            </div>
           </div>
+
           {addition > 0 && (
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">سبب الإضافة *</label><input className={MODAL_INPUT_CLS} value={form.additionReason} onChange={e => setForm({ ...form, additionReason: e.target.value })} placeholder="سبب الإضافة مطلوب" /></div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">سبب الإضافة *</label>
+              <input className={inputCls} value={form.additionReason} onChange={e => setForm({ ...form, additionReason: e.target.value })} placeholder="مثال: رسوم خدمة إضافية..." />
+            </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مبلغ التأمين</label><input type="number" className={MODAL_INPUT_CLS} value={form.insuranceAmount} onChange={e => setForm({ ...form, insuranceAmount: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تقسيم المصاريف</label>
-              <select className={MODAL_INPUT_CLS} value={form.expenseSplit} onChange={e => setForm({ ...form, expenseSplit: e.target.value })}>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">مبلغ التأمين المغطى</label>
+              <input type="number" className={`${inputCls} font-mono tabular-nums`} value={form.insuranceAmount} onChange={e => setForm({ ...form, insuranceAmount: e.target.value })} placeholder="0.00" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">تقسيم المصاريف</label>
+              <select className={inputCls} value={form.expenseSplit} onChange={e => setForm({ ...form, expenseSplit: e.target.value })}>
                 {EXPENSE_SPLITS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">شركة التأمين</label><input className={MODAL_INPUT_CLS} value={form.insuranceCompanyId} onChange={e => setForm({ ...form, insuranceCompanyId: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تاريخ الاستحقاق</label><input type="date" className={MODAL_INPUT_CLS} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">شركة التأمين</label>
+              <input className={inputCls} placeholder="اسم الشركة أو الكود" value={form.insuranceCompanyId} onChange={e => setForm({ ...form, insuranceCompanyId: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">تاريخ الاستحقاق</label>
+              <input type="date" className={`${inputCls} font-mono`} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+            </div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">ملاحظات الفاتورة</label>
+            <textarea className={inputCls} rows={2} placeholder="تفاصيل إضافية عن الفاتورة..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+          </div>
+
           {!invoice?.id && (
-            <div className="border-t dark:border-gray-700 pt-4">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">دفعة أولى (اختياري)</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المبلغ</label><input type="number" className={MODAL_INPUT_CLS} value={form.initialPayment} onChange={e => setForm({ ...form, initialPayment: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">طريقة الدفع</label>
-                  <select className={MODAL_INPUT_CLS} value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
+            <div className="p-3.5 bg-muted/20 border border-border/60 rounded-xl space-y-3">
+              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Wallet className="w-4 h-4 text-primary" /> دفعة أولى مقدمة (اختياري)
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-muted-foreground mb-1">المبلغ المدفوع مقدماً</label>
+                  <input type="number" className={`${inputCls} font-mono tabular-nums`} value={form.initialPayment} onChange={e => setForm({ ...form, initialPayment: e.target.value })} placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-muted-foreground mb-1">طريقة الدفع</label>
+                  <select className={inputCls} value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
                     {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
                   </select>
                 </div>
               </div>
             </div>
           )}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm">
-            <div className="flex justify-between"><span>الصافي (بعد الخصم والإضافة)</span><span className="font-bold">{net}</span></div>
-            {form.initialPayment && <div className="flex justify-between mt-1"><span>المتبقي</span><span className="font-bold">{Math.max(0, net - initialPayment)}</span></div>}
+
+          <div className="bg-muted/30 border border-border/70 rounded-xl p-3.5 space-y-1.5 font-mono text-xs">
+            <div className="flex justify-between items-center">
+              <span className="font-sans text-muted-foreground">الصافي بعد الخصم والإضافة:</span>
+              <span className="text-sm font-bold tabular-nums text-foreground">{net.toLocaleString()} ج.م</span>
+            </div>
+            {form.initialPayment && (
+              <div className="flex justify-between items-center text-destructive pt-1 border-t border-border/40">
+                <span className="font-sans text-xs">المتبقي المطلوب تحصيله:</span>
+                <span className="text-sm font-bold tabular-nums">{Math.max(0, net - initialPayment).toLocaleString()} ج.م</span>
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={handleSave} disabled={!valid || saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+
+        <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-border/60 bg-muted/20 shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-foreground border border-border/70 rounded-xl hover:bg-muted/50 transition-colors">
+            إلغاء
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!valid || saving}
+            className="px-5 py-2 text-xs font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-xs transition-colors disabled:opacity-50"
+          >
+            {saving ? "جارٍ الحفظ..." : "حفظ الفاتورة"}
+          </button>
         </div>
       </div>
     </div>

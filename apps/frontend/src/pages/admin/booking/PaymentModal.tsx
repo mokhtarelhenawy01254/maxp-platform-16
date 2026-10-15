@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { BookingInvoice, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
+import { X, CreditCard, RotateCcw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { BookingInvoice, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
 import { toast } from "sonner";
 
-import { X } from 'lucide-react'
 interface Props {
   invoice: BookingInvoice;
   onClose: () => void;
@@ -39,58 +39,152 @@ export default function PaymentModal({ invoice, onClose, onSave, onPayback }: Pr
       await onPayback({ amount: paybackAmount, method: paybackForm.method, reason: paybackForm.reason.trim() });
       onClose();
     } catch {
-      // error toast is shown by the parent (InvoicesTab); keep the modal open so the user can retry
+      // error toast is shown by parent
     } finally { setBusy(false); }
   };
 
+  const inputCls = "w-full bg-background border border-border/70 rounded-xl px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">تسجيل دفعة — {invoice.invoiceNumber}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
+      <div className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden text-card-foreground animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl border ${mode === "pay" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20"}`}>
+              {mode === "pay" ? <CreditCard className="w-5 h-5" /> : <RotateCcw className="w-5 h-5" />}
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground tracking-tight">
+                {mode === "pay" ? "تسجيل دفعة جديدة" : "تسجيل عملية استرداد"}
+              </h3>
+              <p className="text-xs text-muted-foreground font-mono tabular-nums">{invoice.invoiceNumber}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        {(invoice.amountPaid || 0) > 0 && (
-          <div className="flex gap-2 mb-4">
-            <button onClick={() => setMode("pay")} className={`px-4 py-2 rounded-lg text-sm ${mode === "pay" ? "bg-blue-600 text-white" : "border dark:border-gray-600 text-gray-700 dark:text-gray-300"}`}>دفع</button>
-            <button onClick={() => setMode("payback")} className={`px-4 py-2 rounded-lg text-sm ${mode === "payback" ? "bg-red-600 text-white" : "border dark:border-gray-600 text-gray-700 dark:text-gray-300"}`}>استرداد</button>
-          </div>
-        )}
-        {mode === "pay" ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المبلغ *</label><input type="number" className={MODAL_INPUT_CLS} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">طريقة الدفع</label>
-                <select className={MODAL_INPUT_CLS} value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
-                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
-                </select>
+
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 text-sm">
+          {(invoice.amountPaid || 0) > 0 && (
+            <div className="grid grid-cols-2 gap-1 p-1 bg-muted/30 border border-border/60 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setMode("pay")}
+                className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  mode === "pay"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                تسجيل دفعة
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("payback")}
+                className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  mode === "payback"
+                    ? "bg-destructive text-destructive-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                استرداد مالي
+              </button>
+            </div>
+          )}
+
+          {mode === "pay" ? (
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1">المبلغ المطلوب سداده *</label>
+                  <input
+                    type="number"
+                    className={`${inputCls} font-mono tabular-nums`}
+                    value={form.amount}
+                    onChange={e => setForm({ ...form, amount: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1">طريقة الدفع</label>
+                  <select className={inputCls} value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
+                    {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">ملاحظات التحصيل (اختياري)</label>
+                <input className={inputCls} placeholder="مثال: تحويل فودافون كاش، رقم إيصال..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+              </div>
+
+              <div className="p-3 bg-muted/30 border border-border/70 rounded-xl flex items-center justify-between text-xs font-mono">
+                <span className="font-sans text-muted-foreground">المتبقي على الفاتورة:</span>
+                <span className="font-bold text-destructive tabular-nums text-sm">{invoice.remaining?.toLocaleString()} ج.م</span>
               </div>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><input className={MODAL_INPUT_CLS} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm flex justify-between"><span>المتبقي</span><span className="font-bold">{invoice.remaining}</span></div>
-            <div className="flex justify-end gap-3 mt-2">
-              <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={handleSave} disabled={!valid || busy} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">تسجيل الدفع</button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مبلغ الاسترداد *</label><input type="number" className={MODAL_INPUT_CLS} value={paybackForm.amount} onChange={e => setPaybackForm({ ...paybackForm, amount: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">طريقة الدفع</label>
-                <select className={MODAL_INPUT_CLS} value={paybackForm.method} onChange={e => setPaybackForm({ ...paybackForm, method: e.target.value })}>
-                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
-                </select>
+          ) : (
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1">مبلغ الاسترداد *</label>
+                  <input
+                    type="number"
+                    className={`${inputCls} font-mono tabular-nums`}
+                    value={paybackForm.amount}
+                    onChange={e => setPaybackForm({ ...paybackForm, amount: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1">طريقة الاسترداد</label>
+                  <select className={inputCls} value={paybackForm.method} onChange={e => setPaybackForm({ ...paybackForm, method: e.target.value })}>
+                    {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">سبب الاسترداد *</label>
+                <input
+                  className={inputCls}
+                  value={paybackForm.reason}
+                  onChange={e => setPaybackForm({ ...paybackForm, reason: e.target.value })}
+                  placeholder="سبب الاسترداد مطلوب للرقابة المالية"
+                />
+              </div>
+
+              <div className="p-3 bg-muted/30 border border-border/70 rounded-xl flex items-center justify-between text-xs font-mono">
+                <span className="font-sans text-muted-foreground">المبلغ المسدد القابل للاسترداد:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-sm">{(invoice.amountPaid || 0).toLocaleString()} ج.م</span>
               </div>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">سبب الاسترداد *</label><input className={MODAL_INPUT_CLS} value={paybackForm.reason} onChange={e => setPaybackForm({ ...paybackForm, reason: e.target.value })} placeholder="سبب الاسترداد مطلوب" /></div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm flex justify-between"><span>المبلغ المسدد القابل للاسترداد</span><span className="font-bold">{invoice.amountPaid || 0}</span></div>
-            <div className="flex justify-end gap-3 mt-2">
-              <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={handlePayback} disabled={!paybackValid || busy} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">تأكيد الاسترداد</button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-border/60 bg-muted/20 shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-foreground border border-border/70 rounded-xl hover:bg-muted/50 transition-colors">
+            إلغاء
+          </button>
+          {mode === "pay" ? (
+            <button
+              onClick={handleSave}
+              disabled={!valid || busy}
+              className="px-5 py-2 text-xs font-medium bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
+            >
+              {busy ? "جارٍ الحفظ..." : "تسجيل الدفع"}
+            </button>
+          ) : (
+            <button
+              onClick={handlePayback}
+              disabled={!paybackValid || busy}
+              className="px-5 py-2 text-xs font-medium bg-destructive text-destructive-foreground rounded-xl hover:bg-destructive/90 shadow-xs transition-colors disabled:opacity-50"
+            >
+              {busy ? "جارٍ الحفظ..." : "تأكيد الاسترداد"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

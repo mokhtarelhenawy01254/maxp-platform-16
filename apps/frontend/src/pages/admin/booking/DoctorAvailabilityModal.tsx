@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import { BookingDoctor, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DoctorAvailability, api, getAuthHeaders } from "./shared";
+import { X, Clock, CalendarDays, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { BookingDoctor, DoctorAvailability, api, getAuthHeaders } from "./shared";
 
 interface Props {
   doctor: BookingDoctor;
@@ -49,7 +49,7 @@ export default function DoctorAvailabilityModal({ doctor, onClose, onSaved }: Pr
           return next;
         });
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "خطأ");
+        setError(e instanceof Error ? e.message : "خطأ أثناء جلب المواعيد");
       } finally {
         setLoading(false);
       }
@@ -87,59 +87,130 @@ export default function DoctorAvailabilityModal({ doctor, onClose, onSaved }: Pr
       onSaved();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      setError(e instanceof Error ? e.message : "خطأ أثناء حفظ التعديلات");
     } finally {
       setSaving(false);
     }
   };
 
+  const timeInputCls = "w-28 bg-background border border-border/70 rounded-xl px-2.5 py-1.5 text-xs text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className={`${MODAL_CONTENT_CLS} max-w-2xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-bold">مواعيد عمل {doctor.title} {doctor.name}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">حدد الأيام والساعات التي يعمل فيها الطبيب — ستظهر في الحجز</p>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
+      <div className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden text-card-foreground animate-in fade-in-0 zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground tracking-tight">
+                مواعيد عمل {doctor.title} {doctor.name}
+              </h3>
+              <p className="text-xs text-muted-foreground">جدول الحضور الأسبوعي وساعات استقبال المرضى</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
-
-        {loading ? (
-          <p className="text-center py-10 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <button onClick={() => toggleAll(true)} className="px-3 py-1.5 text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100">تفعيل كل الأيام</button>
-              <button onClick={() => toggleAll(false)} className="px-3 py-1.5 text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100">تعطيل كل الأيام</button>
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 text-sm">
+          {error && (
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
+          )}
 
-            <div className="space-y-2">
-              {DAYS.map(d => {
-                const s = slots[d.value] || { isAvailable: false, startTime: "09:00", endTime: "17:00" };
-                return (
-                  <div key={d.value} className="flex items-center gap-3 border dark:border-gray-600 rounded-lg px-3 py-2">
-                    <label className="flex items-center gap-2 w-24 shrink-0 cursor-pointer">
-                      <input type="checkbox" checked={s.isAvailable} onChange={e => updateDay(d.value, { isAvailable: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                      <span className="text-sm font-medium">{d.label}</span>
-                    </label>
-                    <div className={`flex items-center gap-2 flex-1 transition-opacity ${s.isAvailable ? "" : "opacity-40 pointer-events-none"}`}>
-                      <input type="time" className={`${MODAL_INPUT_CLS} w-32`} dir="ltr" value={s.startTime} onChange={e => updateDay(d.value, { startTime: e.target.value })} />
-                      <span className="text-gray-400">—</span>
-                      <input type="time" className={`${MODAL_INPUT_CLS} w-32`} dir="ltr" value={s.endTime} onChange={e => updateDay(d.value, { endTime: e.target.value })} />
+          {loading ? (
+            <div className="text-center py-12 text-xs text-muted-foreground flex flex-col items-center gap-2">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span>جارٍ تحميل جدول المواعيد...</span>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">التحكم السريع في أيام الأسبوع</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleAll(true)}
+                    className="px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+                  >
+                    تفعيل كل الأيام
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleAll(false)}
+                    className="px-3 py-1 text-xs font-medium text-muted-foreground bg-muted border border-border/70 rounded-lg hover:bg-muted/80 transition-colors"
+                  >
+                    تعطيل كل الأيام
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 divide-y divide-border/40">
+                {DAYS.map(d => {
+                  const s = slots[d.value] || { isAvailable: false, startTime: "09:00", endTime: "17:00" };
+                  return (
+                    <div key={d.value} className="flex items-center justify-between gap-3 pt-2.5 first:pt-0">
+                      <label className="flex items-center gap-2.5 w-28 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={s.isAvailable}
+                          onChange={e => updateDay(d.value, { isAvailable: e.target.checked })}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                        />
+                        <span className="text-xs font-semibold text-foreground">{d.label}</span>
+                      </label>
+
+                      <div className={`flex items-center gap-2 flex-1 justify-center transition-opacity ${s.isAvailable ? "" : "opacity-30 pointer-events-none"}`}>
+                        <input
+                          type="time"
+                          className={timeInputCls}
+                          dir="ltr"
+                          value={s.startTime}
+                          onChange={e => updateDay(d.value, { startTime: e.target.value })}
+                        />
+                        <span className="text-muted-foreground text-xs">—</span>
+                        <input
+                          type="time"
+                          className={timeInputCls}
+                          dir="ltr"
+                          value={s.endTime}
+                          onChange={e => updateDay(d.value, { endTime: e.target.value })}
+                        />
+                      </div>
+
+                      <span
+                        className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full shrink-0 ${
+                          s.isAvailable
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-muted text-muted-foreground border border-border/60"
+                        }`}
+                      >
+                        {s.isAvailable ? "متاح للعمل" : "إجازة"}
+                      </span>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${s.isAvailable ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-700"}`}>{s.isAvailable ? "يعمل" : "راحة"}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={handleSave} disabled={loading || saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{saving ? "جاري الحفظ..." : "حفظ مواعيد العمل"}</button>
+        <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-border/60 bg-muted/20 shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-foreground border border-border/70 rounded-xl hover:bg-muted/50 transition-colors">
+            إلغاء
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="px-5 py-2 text-xs font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-xs transition-colors disabled:opacity-50"
+          >
+            {saving ? "جارٍ الحفظ..." : "حفظ مواعيد العمل"}
+          </button>
         </div>
       </div>
     </div>
