@@ -26,10 +26,15 @@ interface ProjectWorkspaceViewProps {
   onBack: () => void;
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onOpenTaskDetails: (task: Task) => void;
-  onOpenCreateTask: (projectId: string) => void;
+  onOpenCreateTask?: (projectId: string) => void;
+  onCreateTaskInProject?: () => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onRefreshTasks?: () => void;
   onEditProject?: (project: Project) => void;
-  formatDate: (date: string) => string;
-  formatPrice: (price: number) => string;
+  formatDate?: (date: string) => string;
+  formatPrice?: (price: number) => string;
+  userRole?: string;
 }
 
 type ProjectTab = "list" | "kanban" | "calendar" | "next-up";
@@ -48,12 +53,39 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
   onTaskStatusChange,
   onOpenTaskDetails,
   onOpenCreateTask,
+  onCreateTaskInProject,
   onEditProject,
   formatDate,
   formatPrice,
 }) => {
   const [activeTab, setActiveTab] = useState<ProjectTab>("list");
   const todayStr = new Date().toISOString().slice(0, 10);
+
+  const safeFormatDate = (dateVal: string | null | undefined): string => {
+    if (!dateVal) return "";
+    if (typeof formatDate === "function") {
+      try {
+        return formatDate(dateVal);
+      } catch {
+        // fallback
+      }
+    }
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return String(dateVal).slice(0, 10);
+      return d.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return String(dateVal).slice(0, 10);
+    }
+  };
+
+  const handleCreateTask = () => {
+    if (typeof onOpenCreateTask === "function") {
+      onOpenCreateTask(project.id);
+    } else if (typeof onCreateTaskInProject === "function") {
+      onCreateTaskInProject();
+    }
+  };
 
   // Filter tasks belonging strictly to this project
   const projectTasks = useMemo(() => {
@@ -122,7 +154,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
             <Button
               type="button"
               size="sm"
-              onClick={() => onOpenCreateTask(project.id)}
+              onClick={handleCreateTask}
               className="rounded-xl h-8 gap-1.5 text-xs font-semibold"
             >
               <Plus className="size-3.5" />
@@ -244,7 +276,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
               <Button
                 type="button"
                 size="sm"
-                onClick={() => onOpenCreateTask(project.id)}
+                onClick={handleCreateTask}
                 className="mt-2 rounded-xl text-xs"
               >
                 <Plus className="size-3.5 ml-1" />
@@ -315,7 +347,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
                           isOverdue ? "text-rose-600 font-bold" : "text-muted-foreground"
                         }`}
                       >
-                        {formatDate(task.dueDate)}
+                        {safeFormatDate(task.dueDate)}
                       </span>
                     ) : null}
 
@@ -377,7 +409,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
 
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
                           <span>{t.assignedToName || "غير محدد"}</span>
-                          {t.dueDate ? <span>{formatDate(t.dueDate)}</span> : null}
+                          {t.dueDate ? <span>{safeFormatDate(t.dueDate)}</span> : null}
                         </div>
                       </div>
                     ))
@@ -449,7 +481,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
                               : "text-muted-foreground"
                           }`}
                         >
-                          {formatDate(task.dueDate)}
+                          {safeFormatDate(task.dueDate)}
                         </span>
                       ) : null}
 
@@ -495,7 +527,7 @@ export const ProjectWorkspaceView: React.FC<ProjectWorkspaceViewProps> = ({
                   className="rounded-xl border border-border/60 bg-background/80 p-3 hover:border-primary/40 cursor-pointer transition-all space-y-1.5"
                 >
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-primary">{formatDate(t.dueDate!)}</span>
+                    <span className="font-semibold text-primary">{safeFormatDate(t.dueDate!)}</span>
                     <span className="text-muted-foreground text-[10px]">
                       {t.status === "completed" ? "مكتمل" : "قيد التنفيذ"}
                     </span>

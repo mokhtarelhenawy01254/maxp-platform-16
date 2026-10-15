@@ -1577,6 +1577,15 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             });
             setShowCreateTaskModal(true);
           }}
+          onOpenCreateTask={(projId) => {
+            setNewTask({
+              ...createInitialTaskDraft(activeUserId || "", user?.name || ""),
+              projectId: projId || activeProjectWorkspace.id,
+            });
+            setShowCreateTaskModal(true);
+          }}
+          formatDate={formatDate}
+          formatPrice={formatPrice}
           userRole={user?.role}
         />
       );
@@ -1767,11 +1776,20 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
                 });
                 setShowCreateTaskModal(true);
               }}
+              onOpenCreateTask={(projId) => {
+                setNewTask({
+                  ...createInitialTaskDraft(activeUserId || "", user?.name || ""),
+                  projectId: projId || "",
+                });
+                setShowCreateTaskModal(true);
+              }}
               onCreateTaskStandalone={() => setShowCreateTaskModal(true)}
               onCreateProject={() => setShowCreateProjectModal(true)}
               viewMode={viewMode}
               onToggleViewMode={handleToggleViewMode}
               isApprover={isApprover}
+              formatDate={formatDate}
+              formatPrice={formatPrice}
             />
           ) : (
             <div className="space-y-2">

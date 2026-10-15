@@ -34,11 +34,17 @@ interface TaskProjectGroupViewProps {
   onOpenProject: (project: Project) => void;
   onOpenTaskDetails: (task: Task) => void;
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
-  onOpenCreateTask: (projectId?: string) => void;
-  formatDate: (date: string) => string;
+  onOpenCreateTask?: (projectId?: string) => void;
+  onCreateTaskInProject?: (projectId: string) => void;
+  onCreateTaskStandalone?: () => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onCreateProject?: () => void;
+  formatDate?: (date: string) => string;
   formatPrice?: (price: number) => string;
   viewMode: TaskViewMode;
   onToggleViewMode: (mode: TaskViewMode) => void;
+  isApprover?: boolean;
 }
 
 const statusBadges: Record<string, { label: string; className: string }> = {
@@ -65,23 +71,55 @@ const statusBadges: Record<string, { label: string; className: string }> = {
 };
 
 export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
-  projects,
-  tasks,
-  allTasks,
-  quickFilter,
+  projects = [],
+  tasks = [],
+  allTasks = [],
+  quickFilter = "all",
   onQuickFilterChange,
   onOpenProject,
   onOpenTaskDetails,
   onTaskStatusChange,
   onOpenCreateTask,
+  onCreateTaskInProject,
+  onCreateTaskStandalone,
   formatDate,
-  viewMode,
+  formatPrice,
+  viewMode = "grouped",
   onToggleViewMode,
+  isApprover,
 }) => {
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
 
   const toggleCollapse = (id: string) => {
     setCollapsedProjects((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const safeFormatDate = (dateVal: string | null | undefined): string => {
+    if (!dateVal) return "";
+    if (typeof formatDate === "function") {
+      try {
+        return formatDate(dateVal);
+      } catch {
+        // fallback
+      }
+    }
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return String(dateVal).slice(0, 10);
+      return d.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return String(dateVal).slice(0, 10);
+    }
+  };
+
+  const handleCreateTask = (projId?: string) => {
+    if (projId && typeof onCreateTaskInProject === "function") {
+      onCreateTaskInProject(projId);
+    } else if (!projId && typeof onCreateTaskStandalone === "function") {
+      onCreateTaskStandalone();
+    } else if (typeof onOpenCreateTask === "function") {
+      onOpenCreateTask(projId);
+    }
   };
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -354,7 +392,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
                                     : "text-muted-foreground"
                                 }`}
                               >
-                                {formatDate(task.dueDate)}
+                                {safeFormatDate(task.dueDate)}
                               </span>
                             ) : null}
 
@@ -375,7 +413,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => onOpenCreateTask(project.id)}
+                      onClick={() => handleCreateTask(project.id)}
                       className="h-7 gap-1 text-xs text-primary hover:text-primary/90 hover:bg-primary/5"
                     >
                       <Plus className="size-3.5" />
@@ -404,7 +442,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => onOpenCreateTask()}
+                onClick={() => handleCreateTask()}
                 className="h-7 text-xs text-primary"
               >
                 <Plus className="size-3.5 ml-1" />
@@ -462,7 +500,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       {task.dueDate ? (
                         <span className="text-[11px] text-muted-foreground">
-                          {formatDate(task.dueDate)}
+                          {safeFormatDate(task.dueDate)}
                         </span>
                       ) : null}
                       <span
