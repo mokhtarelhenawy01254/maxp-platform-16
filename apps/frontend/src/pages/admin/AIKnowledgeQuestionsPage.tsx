@@ -21,38 +21,9 @@ const CHANNEL_CONFIG: Record<string, { label: string; icon: React.ElementType }>
   chat: { label: "المحادثة الفورية", icon: MessageSquare },
 };
 
-const DEFAULT_QUESTIONS: KnowledgeQuestion[] = [
-  {
-    id: "kq-1",
-    channel: "whatsapp",
-    customer_question: "هل يتوفر مقاس 44 من حذاء الجري الرياضي باللون الأسود في فرع المهندسين للتجربة قبل الشراء؟",
-    status: "pending",
-    created_at: "2026-10-13T19:20:00",
-    context: { productId: "p-882", branch: "المهندسين", customerName: "طارق يوسف" },
-  },
-  {
-    id: "kq-2",
-    channel: "facebook",
-    customer_question: "هل يمكن شحن الطلب في نفس اليوم داخل مدينة نصر والتجمع في حال الدفع بإنستاباي؟",
-    status: "pending",
-    created_at: "2026-10-13T18:45:00",
-    context: { area: "مدينة نصر", paymentMethod: "InstaPay", customerName: "مي خالد" },
-  },
-  {
-    id: "kq-3",
-    channel: "chat",
-    customer_question: "ما هي شروط الاستبدال والاسترجاع خلال فترة عروض الجمعة البيضاء؟",
-    status: "answered",
-    created_at: "2026-10-12T15:10:00",
-    merchant_answer: "الاستبدال متاح خلال 14 يوماً مع الحفاظ على الفاتورة وتغليف المنتج الأصلي، والشحن مجاني في حال وجود عيب مصنعي.",
-    answered_by: "أحمد المسؤول",
-    answered_at: "2026-10-12T15:25:00",
-  },
-];
-
 export default function AIKnowledgeQuestionsPage() {
   const [tab, setTab] = useState<Tab>("pending");
-  const [questions, setQuestions] = useState<KnowledgeQuestion[]>(DEFAULT_QUESTIONS);
+  const [questions, setQuestions] = useState<KnowledgeQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [answering, setAnswering] = useState<Record<string, boolean>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -61,11 +32,13 @@ export default function AIKnowledgeQuestionsPage() {
     setLoading(true);
     try {
       const data = await aiKnowledgeQuestionService.list({ status: tab }).catch(() => null);
-      if (data?.success && Array.isArray(data.questions) && data.questions.length > 0) {
+      if (data?.success && Array.isArray(data.questions)) {
         setQuestions(data.questions);
+      } else {
+        setQuestions([]);
       }
     } catch {
-      // Fallback active
+      setQuestions([]);
     } finally {
       setLoading(false);
     }
@@ -313,7 +286,7 @@ export default function AIKnowledgeQuestionsPage() {
 
         {filteredQuestions.length === 0 && (
           <div className="py-10 text-center text-xs font-mono text-muted-foreground rounded-xl border border-border/80 bg-card/40">
-            لا توجد أسئلة في هذا التبويب حالياً
+            {loading ? "جاري تحميل الأسئلة..." : "لا توجد أسئلة في هذا التبويب حالياً"}
           </div>
         )}
       </div>

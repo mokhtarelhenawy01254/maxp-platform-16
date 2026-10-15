@@ -28,44 +28,30 @@ interface FormDefinition {
   _count?: { submissions: number };
 }
 
-const DEFAULT_FORMS: FormDefinition[] = [
-  {
-    id: "f-1",
-    title: "استمارة حجز دبلومة الذكاء الاصطناعي والأتمتة",
-    slug: "ai-automation-diploma",
-    description: "نموذج التسجيل المبكر والحصول على منحة الخصم لرواد الأعمال والمهندسين.",
-    pixelId: "9876543210123",
-    isActive: true,
-    viewCount: 1240,
-    _count: { submissions: 184 },
-  },
-  {
-    id: "f-2",
-    title: "طلب استشارة تسويقية ونمو مبيعات مجانية",
-    slug: "free-marketing-audit",
-    description: "تحليل حسابات الإعلانات ومعدل التحويل للمتاجر والشركات الناشئة.",
-    isActive: true,
-    viewCount: 860,
-    _count: { submissions: 92 },
-  },
-];
-
 export default function FormsBuilderPage() {
   const { user } = useAuth();
-  const [forms, setForms] = useState<FormDefinition[]>(DEFAULT_FORMS);
+  const [forms, setForms] = useState<FormDefinition[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormDefinition | null>(null);
   const [search, setSearch] = useState("");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   const loadForms = useCallback(async () => {
+    setLoading(true);
     try {
       const headers = tokenManager.createAuthHeaders();
       const res = await fetch(buildApiUrl("/forms"), { headers });
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length) setForms(json.data);
+      if (json.success && Array.isArray(json.data)) {
+        setForms(json.data);
+      } else {
+        setForms([]);
+      }
     } catch {
-      // Fallbacks active
+      setForms([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -235,7 +221,13 @@ export default function FormsBuilderPage() {
                   </tr>
                 );
               })}
-              {!filtered.length && <tr><td colSpan={7} className="text-center py-10 text-xs font-mono text-muted-foreground">لا توجد نماذج مطابقة للبحث</td></tr>}
+              {!filtered.length && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-xs font-mono text-muted-foreground">
+                    {loading ? "جاري تحميل النماذج..." : forms.length === 0 ? "لا توجد أي نماذج مسجلة حتى الآن" : "لا توجد نماذج مطابقة للبحث"}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

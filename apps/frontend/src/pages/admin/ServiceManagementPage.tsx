@@ -34,46 +34,9 @@ const CATEGORIES = [
   { value: "other", label: "خدمات أخرى", icon: FileText, accept: "*/*" },
 ];
 
-const DEFAULT_SERVICES: ServiceItem[] = [
-  {
-    id: "srv-1",
-    name: "هندسة صوتية ومكساج وماسترينج احترافي",
-    description: "معالجة الترددات، إزالة الضوضاء، وضبط مستويات الصوت حسب المعايير العالمية للبث والمنصات.",
-    category: "audio",
-    price: 1500,
-    isActive: true,
-    samples: [{ url: "#", originalName: "sample_mastering.wav", type: "audio/wav" }],
-  },
-  {
-    id: "srv-2",
-    name: "تصميم هوية بصرية كاملة ودليل العلامة التجارية",
-    description: "تصميم الشعار، لوحة الألوان، الخطوط، وتطبيقات المطبوعات مع ملفات المصدر الكاملة.",
-    category: "image",
-    price: 3500,
-    isActive: true,
-    samples: [{ url: "#", originalName: "brand_guidelines.pdf", type: "image/png" }],
-  },
-  {
-    id: "srv-3",
-    name: "مونتاج فيديو إعلاني ريلز وتيك توك عالي الجاذبية",
-    description: "قص إيقاعي سريع، نصوص متحركة مشوقة، مؤثرات صوتية وبصرية محسنة لزيادة المشاهدات والتحويل.",
-    category: "video",
-    price: 1200,
-    isActive: true,
-    samples: [{ url: "#", originalName: "reel_preview.mp4", type: "video/mp4" }],
-  },
-  {
-    id: "srv-4",
-    name: "صياغة سيناريو وإسكريبت إعلاني تحويلي",
-    description: "كتابة نصوص هوك جذابة واستراتيجيات محتوى مبنية على سيكولوجية الشراء المباشر.",
-    category: "other",
-    price: 800,
-    isActive: true,
-  },
-];
-
 export default function ServiceManagementPage() {
-  const [services, setServices] = useState<ServiceItem[]>(DEFAULT_SERVICES);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<any>(null);
   const [selectedCat, setSelectedCat] = useState<string>("all");
   const [sampleFiles, setSampleFiles] = useState<File[]>([]);
@@ -82,15 +45,22 @@ export default function ServiceManagementPage() {
   useEffect(() => {
     let active = true;
     const fetchServices = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
         const res = await fetch("/api/v1/services", { headers: { Authorization: `Bearer ${token}` } });
         const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length && active) {
-          setServices(json.data);
+        if (active) {
+          if (json.success && Array.isArray(json.data)) {
+            setServices(json.data);
+          } else {
+            setServices([]);
+          }
         }
       } catch {
-        // Fallbacks active
+        if (active) setServices([]);
+      } finally {
+        if (active) setLoading(false);
       }
     };
     fetchServices();
@@ -296,7 +266,7 @@ export default function ServiceManagementPage() {
         })}
         {!filtered.length && (
           <div className="col-span-full py-10 text-center text-xs font-mono text-muted-foreground rounded-xl border border-border/80 bg-card/40">
-            لا توجد خدمات في هذا التصنيف حالياً
+            {loading ? "جاري تحميل الخدمات..." : services.length === 0 ? "لا توجد أي خدمات مسجلة حتى الآن" : "لا توجد خدمات في هذا التصنيف حالياً"}
           </div>
         )}
       </div>

@@ -25,59 +25,11 @@ const CATEGORY_NAMES: Record<string, string> = {
   billing: "فواتير ومدفوعات",
   whatsapp: "تكامل الواتساب",
   woocommerce: "ربط ووكومرس",
+  suggestion: "اقتراح تطويري",
+  complaint: "شكوى",
+  inquiry: "استفسار عن ميزة",
   general: "استفسار عام",
 };
-
-const DEFAULT_TICKETS: any[] = [
-  {
-    _id: "t-1",
-    ticketId: "TCK-8821",
-    subject: "مشكلة في مزامنة كتالوج المنتجات وتحديث المخزون التلقائي",
-    status: "in_progress",
-    category: "technical",
-    createdAt: "2026-10-13T18:30:00",
-    userId: { name: "أحمد المنسي", email: "ahmed@elegance-store.com" },
-  },
-  {
-    _id: "t-2",
-    ticketId: "TCK-8820",
-    subject: "استفسار بخصوص تفعيل بوابة دفع فودافون كاش وإنستاباي للطلبات",
-    status: "open",
-    category: "billing",
-    createdAt: "2026-10-13T17:15:00",
-    userId: { name: "سارة محمود", email: "sara@lamsa-boutique.com" },
-  },
-  {
-    _id: "t-3",
-    ticketId: "TCK-8815",
-    subject: "طلب ربط جلسة واتساب ثانوية لفريق المبيعات الليلي",
-    status: "closed",
-    category: "whatsapp",
-    createdAt: "2026-10-12T14:00:00",
-    userId: { name: "محمود حسن", email: "m.hassan@alnoor-co.eg" },
-  },
-];
-
-const DEFAULT_FAQS: any[] = [
-  {
-    _id: "faq-1",
-    question: "كيف يتم ربط متجر ووكومرس بمحرك المزامنة اللحظية؟",
-    answer: "من قائمة التطبيقات، افتح تطبيق WooCommerce وأدخل مفاتيح Consumer Key و Consumer Secret مع تفعيل صلاحيات القراءة والكتابة.",
-    category: "woocommerce",
-    helpful: 42,
-    notHelpful: 1,
-    isActive: true,
-  },
-  {
-    _id: "faq-2",
-    question: "كيف أقوم بتعيين جلسة واتساب محددة لأحد أعضاء الفريق؟",
-    answer: "من إعدادات طلبات الخدمات، انتقل لتبويب جلسات الواتساب وحدد الموظف الافتراضي لكل مرحلة مع اختيار الجلسة المرتبطة به.",
-    category: "whatsapp",
-    helpful: 28,
-    notHelpful: 0,
-    isActive: true,
-  },
-];
 
 export default function SupportAdmin() {
   const { user } = useAuth();
@@ -86,8 +38,9 @@ export default function SupportAdmin() {
   }
 
   const [activeTab, setActiveTab] = useState<"tickets" | "faq">("tickets");
-  const [tickets, setTickets] = useState<any[]>(DEFAULT_TICKETS);
-  const [faqs, setFaqs] = useState<any[]>(DEFAULT_FAQS);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -95,19 +48,33 @@ export default function SupportAdmin() {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      setLoading(true);
       try {
         const [tRes, fRes] = await Promise.all([
-          supportService.getAllTickets(new URLSearchParams({ limit: "20" })).catch(() => null),
+          supportService.getAllTickets(new URLSearchParams({ limit: "50" })).catch(() => null),
           supportService.getAdminFAQs().catch(() => null),
         ]);
-        if (tRes?.success && Array.isArray(tRes.tickets) && tRes.tickets.length && active) {
-          setTickets(tRes.tickets);
-        }
-        if (fRes?.success && Array.isArray(fRes.faqs) && fRes.faqs.length && active) {
-          setFaqs(fRes.faqs);
+        if (active) {
+          if (tRes?.success && Array.isArray(tRes.tickets)) {
+            setTickets(tRes.tickets);
+          } else {
+            setTickets([]);
+          }
+          if (fRes?.success && Array.isArray(fRes.faqs)) {
+            setFaqs(fRes.faqs);
+          } else {
+            setFaqs([]);
+          }
         }
       } catch {
-        // Fallbacks active
+        if (active) {
+          setTickets([]);
+          setFaqs([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     };
     load();
@@ -267,9 +234,11 @@ export default function SupportAdmin() {
               className="bg-background/50 border border-border/70 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
             >
               <option value="">جميع التصنيفات</option>
-              <option value="technical">دعم فني وتقني</option>
-              <option value="billing">فواتير ومدفوعات</option>
-              <option value="whatsapp">تكامل الواتساب</option>
+              {Object.entries(CATEGORY_NAMES).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
             </select>
 
             <span className="text-[11px] text-muted-foreground font-mono tabular-nums mr-auto">
@@ -329,7 +298,11 @@ export default function SupportAdmin() {
                 {!filteredTickets.length && (
                   <tr>
                     <td colSpan={6} className="text-center py-10 text-xs font-mono text-muted-foreground">
-                      لا توجد تذاكر مطابقة لمعايير البحث
+                      {loading
+                        ? "جاري تحميل تذاكر الدعم..."
+                        : tickets.length === 0
+                        ? "لا توجد أي تذاكر دعم مسجلة حتى الآن"
+                        : "لا توجد تذاكر مطابقة لمعايير البحث"}
                     </td>
                   </tr>
                 )}
@@ -361,6 +334,11 @@ export default function SupportAdmin() {
               </div>
             </div>
           ))}
+          {faqs.length === 0 && (
+            <div className="rounded-xl border border-border/80 bg-card/40 p-10 text-center text-xs font-mono text-muted-foreground shadow-xs">
+              {loading ? "جاري تحميل الأسئلة الشائعة..." : "لا توجد أسئلة شائعة مضافة حتى الآن"}
+            </div>
+          )}
         </div>
       )}
     </div>

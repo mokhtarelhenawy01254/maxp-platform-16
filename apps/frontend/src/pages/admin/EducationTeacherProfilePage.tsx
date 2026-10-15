@@ -50,39 +50,22 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   CANCELLED: { label: "ملغية", badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" },
 };
 
-const DEFAULT_TEACHER = {
-  id: "t-1",
-  name: "أ. طارق عبد الرحمن الفقي",
-  email: "tarek.feki@academy.edu.eg",
-  phone: "01098765432",
+const EMPTY_TEACHER = {
+  id: "",
+  name: "المدرس",
+  email: "",
+  phone: "",
   isActive: true,
-  bio: "خبرة أكثر من 14 عاماً في تدريس الرياضيات التطبيقية والتفاضل والتكامل للمرحلة الثانوية العامة واللغات.",
-  qualifications: "بكالوريوس علوم ورياضيات جامعة القاهرة، دبلوم تربوي متقدم وتدريب أولمبياد الرياضيات.",
-  subjectRates: [
-    { id: "sr-1", hourlyRate: 350, subject: { name: "تفاضل وتكامل 3ث" } },
-    { id: "sr-2", hourlyRate: 300, subject: { name: "جبر وهندسة فراغية" } },
-    { id: "sr-3", hourlyRate: 400, subject: { name: "إحصاء وبحوث عمليات" } },
-  ],
+  bio: "",
+  qualifications: "",
+  subjectRates: [],
 };
-
-const DEFAULT_SESSIONS: TeacherSession[] = [
-  { id: "s-1", status: "CONFIRMED", scheduledAt: "2026-10-14T10:00:00", plannedDuration: 60, actualDuration: 65, student: { firstName: "عمر", lastName: "هشام الغزالي", phone: "01122334455" }, subject: { name: "تفاضل وتكامل 3ث" } },
-  { id: "s-2", status: "SCHEDULED", scheduledAt: "2026-10-15T12:30:00", plannedDuration: 90, student: { firstName: "سارة", lastName: "محمود الشربيني", phone: "01233445566" }, subject: { name: "جبر وهندسة فراغية" } },
-  { id: "s-3", status: "CONFIRMED", scheduledAt: "2026-10-13T16:00:00", plannedDuration: 60, actualDuration: 60, student: { firstName: "كريم", lastName: "أحمد المنسي", phone: "01044556677" }, subject: { name: "تفاضل وتكامل 3ث" } },
-  { id: "s-4", status: "CANCELLED", scheduledAt: "2026-10-12T14:00:00", plannedDuration: 60, student: { firstName: "نور", lastName: "خالد البدري", phone: "01555667788" }, subject: { name: "إحصاء وبحوث عمليات" } },
-];
-
-const DEFAULT_PAYMENTS: TeacherPayment[] = [
-  { id: "p-1", periodFrom: "2026-10-01", periodTo: "2026-10-15", totalSessions: 18, totalHours: 24, grossAmount: 8400, deductions: 200, netAmount: 8200, status: "PAID" },
-  { id: "p-2", periodFrom: "2026-09-16", periodTo: "2026-09-30", totalSessions: 22, totalHours: 30, grossAmount: 10500, deductions: 0, netAmount: 10500, status: "PAID" },
-  { id: "p-3", periodFrom: "2026-09-01", periodTo: "2026-09-15", totalSessions: 16, totalHours: 21, grossAmount: 7350, deductions: 150, netAmount: 7200, status: "PENDING" },
-];
 
 export default function EducationTeacherProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const [teacher, setTeacher] = useState<any>(DEFAULT_TEACHER);
-  const [sessions, setSessions] = useState<TeacherSession[]>(DEFAULT_SESSIONS);
-  const [payments, setPayments] = useState<TeacherPayment[]>(DEFAULT_PAYMENTS);
+  const [teacher, setTeacher] = useState<any>(EMPTY_TEACHER);
+  const [sessions, setSessions] = useState<TeacherSession[]>([]);
+  const [payments, setPayments] = useState<TeacherPayment[]>([]);
   const [activeTab, setActiveTab] = useState<"sessions" | "payments">("sessions");
 
   useEffect(() => {
@@ -102,14 +85,23 @@ export default function EducationTeacherProfilePage() {
         }
         if (sRes?.ok) {
           const sJson = await sRes.json();
-          if (sJson.success && Array.isArray(sJson.data) && sJson.data.length && active) setSessions(sJson.data);
+          if (sJson.success && Array.isArray(sJson.data) && active) setSessions(sJson.data);
+          else if (active) setSessions([]);
+        } else if (active) {
+          setSessions([]);
         }
         if (pRes?.ok) {
           const pJson = await pRes.json();
-          if (pJson.success && Array.isArray(pJson.data) && pJson.data.length && active) setPayments(pJson.data);
+          if (pJson.success && Array.isArray(pJson.data) && active) setPayments(pJson.data);
+          else if (active) setPayments([]);
+        } else if (active) {
+          setPayments([]);
         }
       } catch {
-        // Fallbacks active
+        if (active) {
+          setSessions([]);
+          setPayments([]);
+        }
       }
     };
     if (id) fetchData();

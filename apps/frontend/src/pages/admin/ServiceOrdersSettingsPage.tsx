@@ -30,25 +30,14 @@ interface WhatsAppSessionItem {
   provider: string;
 }
 
-const DEFAULT_TEAM: TeamMember[] = [
-  { id: "tm-1", name: "م. إسلام حمدي", email: "eslam@maxp.online", role: "مدير العمليات والاستقبال" },
-  { id: "tm-2", name: "سارة يوسف", email: "sara@maxp.online", role: "كبير مصممي الجرافيك" },
-  { id: "tm-3", name: "كريم فؤاد", email: "karim@maxp.online", role: "مهندس صوت ومكساج" },
-];
-
-const DEFAULT_SESSIONS: WhatsAppSessionItem[] = [
-  { id: "ws-1", name: "واتساب خدمات العملاء الرئيسي", phoneNumber: "+201012345678", provider: "Baileys" },
-  { id: "ws-2", name: "واتساب الدعم الفني والمتابعة", phoneNumber: "+201098765432", provider: "Baileys" },
-];
-
 const DEFAULT_SETTINGS = {
-  workflowAssignments: { NEW: "م. إسلام حمدي", IN_PROGRESS: "كريم فؤاد", COMPLETED: "م. إسلام حمدي" },
-  defaultWhatsAppSessionId: "ws-1",
+  workflowAssignments: { NEW: "", IN_PROGRESS: "", COMPLETED: "" },
+  defaultWhatsAppSessionId: "",
   invoicePrefix: "SRV-INV-",
   paymentTerms: "الدفع عند الاتفاق والعربون شرط بدء التنفيذ الفعلي وتسليم المسودات.",
-  vodafoneCashNumber: "01012345678",
-  instapayAddress: "studio@instapay",
-  bankAccountDetails: "البنك الأهلي المصري - IBAN: EG380003000000001234567890123",
+  vodafoneCashNumber: "",
+  instapayAddress: "",
+  bankAccountDetails: "",
   autoNotifyOnStatusChange: true,
   showPricesOnPublicForm: true,
 };
@@ -56,8 +45,8 @@ const DEFAULT_SETTINGS = {
 export default function ServiceOrdersSettingsPage() {
   const [activeTab, setActiveTab] = useState<"team" | "whatsapp" | "invoicing" | "form">("team");
   const [saving, setSaving] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(DEFAULT_TEAM);
-  const [sessions, setSessions] = useState<WhatsAppSessionItem[]>(DEFAULT_SESSIONS);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [sessions, setSessions] = useState<WhatsAppSessionItem[]>([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
@@ -77,14 +66,23 @@ export default function ServiceOrdersSettingsPage() {
         }
         if (tRes?.ok) {
           const tJson = await tRes.json();
-          if (tJson.success && Array.isArray(tJson.data) && tJson.data.length && active) setTeamMembers(tJson.data);
+          if (tJson.success && Array.isArray(tJson.data) && active) setTeamMembers(tJson.data);
+          else if (active) setTeamMembers([]);
+        } else if (active) {
+          setTeamMembers([]);
         }
         if (wRes?.ok) {
           const wJson = await wRes.json();
-          if (wJson.success && Array.isArray(wJson.data) && wJson.data.length && active) setSessions(wJson.data);
+          if (wJson.success && Array.isArray(wJson.data) && active) setSessions(wJson.data);
+          else if (active) setSessions([]);
+        } else if (active) {
+          setSessions([]);
         }
       } catch {
-        // Fallbacks active
+        if (active) {
+          setTeamMembers([]);
+          setSessions([]);
+        }
       }
     };
     fetchInitialData();
