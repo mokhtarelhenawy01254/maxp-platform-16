@@ -518,6 +518,21 @@ export const generateExecutiveBriefing = (
   };
 };
 
+const shortDateFormatter = new Intl.DateTimeFormat("ar-EG", {
+  month: "short",
+  day: "numeric",
+});
+
+export const formatDateLabel = (value: string | number | Date | null | undefined): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return shortDateFormatter.format(date);
+};
+
 export const PERIOD_OPTIONS = [
   { value: "1", label: "اليوم" },
   { value: "yesterday", label: "أمس" },
