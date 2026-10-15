@@ -2,14 +2,18 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  PlusIcon,
-  EyeIcon,
-  ShoppingBagIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
-import { toast } from "sonner";
+  Plus,
+  Eye,
+  ShoppingBag,
+  Filter,
+  Loader2,
+  Calendar,
+  DollarSign,
+  User,
+  ArrowUpRight,
+  TrendingUp,
+} from "lucide-react";
 import { tToast } from "../../utils/i18n-toast";
 
 interface Order {
@@ -24,7 +28,7 @@ interface Order {
     lastName: string;
     phone: string;
   };
-  commissions: Array<{
+  commissions?: Array<{
     id: string;
     amount: number;
     status: string;
@@ -33,8 +37,6 @@ interface Order {
 
 const AffiliateOrders: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ const AffiliateOrders: React.FC = () => {
       if (filters.orderSource) params.orderSource = filters.orderSource;
 
       const response = await apiClient.get("/affiliates/orders", { params });
-      if (response.data.success) {
+      if (response?.data?.success && response.data.data) {
         setOrders(response.data.data);
       }
     } catch {
@@ -66,331 +68,235 @@ const AffiliateOrders: React.FC = () => {
   }, [loadOrders]);
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<
-      string,
-      { label: string; lightClass: string; darkClass: string }
-    > = {
+    const statusMap: Record<string, { label: string; badgeClass: string }> = {
       PENDING: {
         label: "معلق",
-        lightClass: "bg-yellow-100 text-yellow-800",
-        darkClass: "bg-yellow-900/50 text-yellow-300",
+        badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
       },
       CONFIRMED: {
         label: "مؤكد",
-        lightClass: "bg-blue-100 text-blue-800",
-        darkClass: "bg-blue-900/50 text-blue-300",
+        badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
       },
       DELIVERED: {
         label: "تم التسليم",
-        lightClass: "bg-green-100 text-green-800",
-        darkClass: "bg-green-900/50 text-green-300",
+        badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
       },
       CANCELLED: {
         label: "ملغي",
-        lightClass: "bg-red-100 text-red-800",
-        darkClass: "bg-red-900/50 text-red-300",
+        badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
       },
     };
-    const statusInfo = statusMap[status] || {
+    const info = statusMap[status] || {
       label: status,
-      lightClass: "bg-gray-100 text-gray-800",
-      darkClass: "bg-gray-700 text-gray-300",
+      badgeClass: "bg-muted text-muted-foreground border-border/60",
     };
     return (
       <span
-        className={`px-2 py-1 text-xs rounded-full ${isDark ? statusInfo.darkClass : statusInfo.lightClass}`}
+        className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded border ${info.badgeClass}`}
       >
-        {statusInfo.label}
+        {info.label}
       </span>
     );
   };
 
   const getSourceBadge = (source: string) => {
-    const sourceMap: Record<
-      string,
-      { label: string; lightClass: string; darkClass: string }
-    > = {
+    const sourceMap: Record<string, { label: string; badgeClass: string }> = {
       AFFILIATE_REFERRAL: {
-        label: "إحالة",
-        lightClass: "bg-purple-100 text-purple-800",
-        darkClass: "bg-purple-900/50 text-purple-300",
+        label: "رابط إحالة",
+        badgeClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
       },
       AFFILIATE_DIRECT: {
-        label: "مباشر",
-        lightClass: "bg-indigo-100 text-indigo-800",
-        darkClass: "bg-indigo-900/50 text-indigo-300",
+        label: "طلب مسوق مباشر",
+        badgeClass: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
       },
       REGULAR: {
-        label: "عادي",
-        lightClass: "bg-gray-100 text-gray-800",
-        darkClass: "bg-gray-700 text-gray-300",
+        label: "طلب عادي",
+        badgeClass: "bg-muted text-muted-foreground border-border/60",
       },
     };
-    const sourceInfo = sourceMap[source] || {
+    const info = sourceMap[source] || {
       label: source,
-      lightClass: "bg-gray-100 text-gray-800",
-      darkClass: "bg-gray-700 text-gray-300",
+      badgeClass: "bg-muted text-muted-foreground border-border/60",
     };
     return (
       <span
-        className={`px-2 py-1 text-xs rounded-full ${isDark ? sourceInfo.darkClass : sourceInfo.lightClass}`}
+        className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded border ${info.badgeClass}`}
       >
-        {sourceInfo.label}
+        {info.label}
       </span>
     );
   };
 
   if (loading) {
     return (
-      <div
-        className={`flex items-center justify-center min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground font-sans">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-xs">جاري استرجاع سجل طلبات المسوقين...</span>
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} px-3 pb-24 pt-4 sm:p-6`}
-    >
-      <div className="w-full space-y-4 sm:space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1
-              className={`text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              طلباتي
-            </h1>
-            <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mt-1 text-sm sm:mt-2 sm:text-base`}>
-              جميع الطلبات المرتبطة بك
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/affiliates/orders/create")}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
-          >
-            <PlusIcon className="h-5 w-5" />
-            إنشاء طلب جديد
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div
-          className={`${isDark ? "border-gray-700 bg-gray-800" : "border-gray-100 bg-white"} rounded-2xl border p-3 shadow-sm sm:p-4`}
-        >
-          <div className="grid gap-3 sm:flex sm:items-center sm:gap-4">
-            <FunnelIcon
-              className={`hidden h-5 w-5 sm:block ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            />
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-              className={`min-h-11 w-full rounded-xl border px-4 py-2 text-sm sm:w-auto ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-            >
-              <option value="">جميع الحالات</option>
-              <option value="PENDING">معلق</option>
-              <option value="CONFIRMED">مؤكد</option>
-              <option value="DELIVERED">تم التسليم</option>
-              <option value="CANCELLED">ملغي</option>
-            </select>
-
-            <select
-              value={filters.orderSource}
-              onChange={(e) =>
-                setFilters({ ...filters, orderSource: e.target.value })
-              }
-              className={`min-h-11 w-full rounded-xl border px-4 py-2 text-sm sm:w-auto ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-            >
-              <option value="">جميع المصادر</option>
-              <option value="AFFILIATE_REFERRAL">إحالة</option>
-              <option value="AFFILIATE_DIRECT">مباشر</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Orders Table */}
-        <div
-          className={`${isDark ? "border-gray-700 bg-gray-800" : "border-gray-100 bg-white"} overflow-hidden rounded-2xl border shadow-sm`}
-        >
-          {orders.length > 0 ? (
-            <div className="p-3 md:p-0">
-              <table className="block min-w-full md:table md:divide-y md:divide-gray-200">
-                <thead
-                  className={`hidden md:table-header-group ${isDark ? "bg-gray-700" : "bg-gray-50"}`}
-                >
-                  <tr>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      رقم الطلب
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      العميل
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      المبلغ
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      الحالة
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      المصدر
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      العمولة
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      التاريخ
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${
-                        isDark ? "text-gray-300" : "text-gray-500"
-                      }`}
-                    >
-                      إجراءات
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  className={`block space-y-3 md:table-row-group md:space-y-0 ${isDark ? "md:bg-gray-800 md:divide-gray-700" : "md:bg-white md:divide-gray-200"} md:divide-y`}
-                >
-                  {orders.map((order) => (
-                    <tr
-                      key={order.id}
-                      className={`block rounded-2xl border p-4 transition md:table-row md:rounded-none md:border-0 md:p-0 ${
-                        isDark
-                          ? "border-gray-700 bg-gray-900/35 hover:bg-gray-700"
-                          : "border-gray-100 bg-white hover:bg-gray-50"
-                      }`}
-                    >
-                      <td
-                        className={`flex items-start justify-between gap-4 pb-3 text-sm font-semibold md:table-cell md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "text-gray-100" : "text-gray-900"}`}
-                      >
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          رقم الطلب
-                        </span>
-                        <span>{order.orderNumber}</span>
-                      </td>
-                      <td
-                        className={`flex items-start justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-300" : "border-gray-100 text-gray-900"}`}
-                      >
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          العميل
-                        </span>
-                        <span className="text-left md:text-right">
-                          {order.customer
-                            ? `${order.customer.firstName} ${order.customer.lastName}`.trim()
-                            : "مخفي"}
-                          <br />
-                          <span className={isDark ? "text-gray-500" : "text-gray-500"}>
-                            {order.customer?.phone || "-"}
-                          </span>
-                        </span>
-                      </td>
-                      <td
-                        className={`flex items-center justify-between gap-4 border-t py-3 text-sm font-medium md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-300" : "border-gray-100 text-gray-900"}`}
-                      >
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          المبلغ
-                        </span>
-                        <span>{formatPrice(order.total)}</span>
-                      </td>
-                      <td className="flex items-center justify-between gap-4 border-t py-3 md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap">
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          الحالة
-                        </span>
-                        <span>{getStatusBadge(order.status)}</span>
-                      </td>
-                      <td className="flex items-center justify-between gap-4 border-t py-3 md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap">
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          المصدر
-                        </span>
-                        <span>{getSourceBadge(order.orderSource)}</span>
-                      </td>
-                      <td className="flex items-center justify-between gap-4 border-t py-3 text-sm font-medium text-green-600 md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap">
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          العمولة
-                        </span>
-                        <span>
-                          {order.commissions && order.commissions.length > 0
-                            ? formatPrice(order.commissions[0].amount)
-                            : "-"}
-                        </span>
-                      </td>
-                      <td
-                        className={`flex items-center justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-400" : "border-gray-100 text-gray-500"}`}
-                      >
-                        <span className="text-xs font-medium text-gray-500 md:hidden">
-                          التاريخ
-                        </span>
-                        <span>{new Date(order.createdAt).toLocaleDateString("ar-EG")}</span>
-                      </td>
-                      <td className="border-t pt-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap">
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/affiliates/orders/${encodeURIComponent(String(order.id))}`,
-                            )
-                          }
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-blue-700 transition hover:bg-blue-100 md:min-h-9 md:w-auto md:bg-transparent md:px-3 md:py-1.5 md:text-blue-600 md:hover:bg-blue-50 md:hover:text-blue-800"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          عرض
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    <div className="w-full space-y-4 sm:space-y-5 p-4 sm:p-6 font-sans text-foreground">
+      {/* Top Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <ShoppingBag className="h-4 w-4" />
             </div>
-          ) : (
-            <div className="py-12 text-center">
-              <ShoppingBagIcon
-                className={`h-12 w-12 mx-auto mb-4 ${isDark ? "text-gray-600" : "text-gray-400"}`}
-              />
-              <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-                لا توجد طلبات بعد
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
+              طلبات المسوقين والعمولات
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            سجل كامل بجميع الطلبات الواردة عبر روابط الإحالة وحساب العمولات التابعة
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate("/affiliates/orders/create")}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+        >
+          <Plus className="h-4 w-4" />
+          <span>إنشاء طلب جديد</span>
+        </button>
+      </header>
+
+      {/* Filter Ribbon */}
+      <div className="rounded-lg border border-border/70 bg-card p-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Filter className="h-3.5 w-3.5" />
+          <span className="font-medium">تصفية النتائج:</span>
+        </div>
+
+        <select
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          className="rounded-md border border-border/70 bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">جميع الحالات</option>
+          <option value="PENDING">معلق</option>
+          <option value="CONFIRMED">مؤكد</option>
+          <option value="DELIVERED">تم التسليم</option>
+          <option value="CANCELLED">ملغي</option>
+        </select>
+
+        <select
+          value={filters.orderSource}
+          onChange={(e) => setFilters({ ...filters, orderSource: e.target.value })}
+          className="rounded-md border border-border/70 bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">جميع المصادر</option>
+          <option value="AFFILIATE_REFERRAL">رابط إحالة</option>
+          <option value="AFFILIATE_DIRECT">طلب مسوق مباشر</option>
+        </select>
+
+        <div className="mr-auto text-xs font-mono tabular-nums text-muted-foreground">
+          إجمالي النتائج: <span className="font-semibold text-foreground">{orders.length}</span>
+        </div>
+      </div>
+
+      {/* Single-Surface Table Chassis */}
+      <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-xs">
+        {orders.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border/60 text-right text-xs">
+              <thead className="bg-muted/30">
+                <tr>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    رقم الطلب
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    العميل
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    إجمالي المبلغ
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    الحالة
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    المصدر
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    العمولة
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">
+                    التاريخ
+                  </th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground text-center">
+                    الإجراء
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60 bg-card">
+                {orders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-mono font-medium text-foreground whitespace-nowrap">
+                      {order.orderNumber}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-medium text-foreground">
+                        {order.customer
+                          ? `${order.customer.firstName} ${order.customer.lastName}`.trim()
+                          : "عميل غير محدد"}
+                      </div>
+                      <div className="text-[11px] font-mono text-muted-foreground">
+                        {order.customer?.phone || "-"}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums font-semibold text-foreground whitespace-nowrap">
+                      {formatPrice(order.total)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {getStatusBadge(order.status)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {getSourceBadge(order.orderSource)}
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      {order.commissions && order.commissions.length > 0
+                        ? formatPrice(order.commissions[0].amount)
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-muted-foreground whitespace-nowrap">
+                      {new Date(order.createdAt).toLocaleDateString("ar-EG")}
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/affiliates/orders/${encodeURIComponent(String(order.id))}`,
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted hover:text-primary transition-colors"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>تفاصيل</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="py-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground">
+              <ShoppingBag className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">لا توجد طلبات مسوقين</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                لم يتم تسجيل أي طلبات متوافقة مع شروط الفرز الحالية
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

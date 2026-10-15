@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
-  ArrowRightIcon,
-  UserIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  CheckIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Lock,
+  FileText,
+  Calendar,
+} from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
@@ -23,12 +30,11 @@ interface CustomerFormData {
   status: string;
   notes: string;
   birthday: string;
-  password: string;
+  password?: string;
 }
 
 const CustomerEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -52,60 +58,49 @@ const CustomerEdit: React.FC = () => {
   });
 
   useEffect(() => {
+    const loadCustomer = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+        const res = await apiClient.get(`/customers/${id}`);
+        const c = res.data?.data?.customer || res.data?.data || res.data;
+        let birthdayVal = "", addressVal = "", cityVal = "", countryVal = "";
+        try {
+          if (c?.metadata) {
+            const m = typeof c.metadata === "string" ? JSON.parse(c.metadata) : c.metadata;
+            if (m) {
+              birthdayVal = m.birthday || "";
+              addressVal = m.address || "";
+              cityVal = m.city || "";
+              countryVal = m.country || "";
+            }
+          }
+        } catch {}
+
+        setFormData({
+          firstName: c?.firstName || "",
+          lastName: c?.lastName || "",
+          email: c?.email || "",
+          phone: c?.phone || "",
+          address: c?.address || addressVal || "",
+          city: c?.city || cityVal || "",
+          country: c?.country || countryVal || "",
+          status: c?.status || "LEAD",
+          notes: c?.notes || "",
+          birthday: birthdayVal,
+          password: "",
+        });
+      } catch (err: any) {
+        setError(err.response?.data?.message || "فشل في تحميل بيانات العميل");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     loadCustomer();
   }, [id]);
 
-  const loadCustomer = async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-      const response = await apiClient.get(`/customers/${id}`);
-      const customerData =
-        response.data?.data?.customer || response.data?.data || response.data;
-
-      let birthdayVal = "";
-      let addressVal = "";
-      let cityVal = "";
-      let countryVal = "";
-
-      try {
-        if (customerData.metadata) {
-          const parsedMeta = typeof customerData.metadata === 'string' ? JSON.parse(customerData.metadata) : customerData.metadata;
-          if (parsedMeta) {
-            if (parsedMeta.birthday) birthdayVal = parsedMeta.birthday;
-            if (parsedMeta.address) addressVal = parsedMeta.address;
-            if (parsedMeta.city) cityVal = parsedMeta.city;
-            if (parsedMeta.country) countryVal = parsedMeta.country;
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      setFormData({
-        firstName: customerData.firstName || "",
-        lastName: customerData.lastName || "",
-        email: customerData.email || "",
-        phone: customerData.phone || "",
-        address: customerData.address || addressVal || "",
-        city: customerData.city || cityVal || "",
-        country: customerData.country || countryVal || "",
-        status: customerData.status || "LEAD",
-        notes: customerData.notes || "",
-        birthday: birthdayVal,
-      });
-    } catch (err: any) {
-      console.error("Error loading customer:", err);
-      setError(err.response?.data?.message || "فشل في تحميل بيانات العميل");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -116,17 +111,13 @@ const CustomerEdit: React.FC = () => {
     setIsSaving(true);
     setError("");
     setSuccessMessage("");
-
     try {
       const payload: any = { ...formData };
       if (!payload.password) delete payload.password;
       await apiClient.put(`/customers/${id}`, payload);
-      setSuccessMessage("تم حفظ التغييرات بنجاح");
-      setTimeout(() => {
-        navigate(`/customers/${id}`);
-      }, 1500);
+      setSuccessMessage("تم حفظ التعديلات بنجاح");
+      setTimeout(() => navigate(`/customers/${id}`), 1200);
     } catch (err: any) {
-      console.error("Error saving customer:", err);
       setError(err.response?.data?.message || "فشل في حفظ التغييرات");
     } finally {
       setIsSaving(false);
@@ -142,248 +133,149 @@ const CustomerEdit: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 font-sans p-4 sm:p-6 text-foreground text-xs" dir="rtl">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <header className="flex items-center gap-3 border-b border-border/70 pb-3">
         <Link
           to={`/customers/${id}`}
-          className="text-gray-500 hover:text-gray-700"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="رجوع"
         >
-          <ArrowRightIcon className="h-5 w-5" />
+          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            تعديل بيانات العميل
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {formData.firstName} {formData.lastName}
+          <h1 className="text-base font-bold tracking-tight text-foreground">تعديل ملف العميل</h1>
+          <p className="text-[11px] text-muted-foreground">
+            {formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}`.trim() : "تحديث البيانات الشخصية وتفاصيل الاتصال"}
           </p>
         </div>
-      </div>
+      </header>
 
-      {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Success Message */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
-          <CheckIcon className="h-5 w-5" />
-          {successMessage}
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>{successMessage}</span>
         </div>
       )}
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-6"
-      >
-        {/* Basic Info */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-indigo-500" />
-            المعلومات الأساسية
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="rounded-xl border border-border/70 bg-card p-5 space-y-5 shadow-xs">
+        {/* Personal info */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-1.5 border-b border-border/60 pb-1.5 text-muted-foreground font-semibold uppercase tracking-wider text-[11px]">
+            <User className="h-3.5 w-3.5 text-primary" />
+            <span>البيانات الشخصية</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                الاسم الأول *
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <label className="block mb-1 font-medium text-foreground">الاسم الأول *</label>
+              <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                اسم العائلة *
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <label className="block mb-1 font-medium text-foreground">اسم العائلة *</label>
+              <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                تاريخ الميلاد (لإشعارات أعياد الميلاد)
+              <label className="block mb-1 font-medium text-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3 text-muted-foreground" />
+                تاريخ الميلاد
               </label>
-              <input
-                type="date"
-                name="birthday"
-                value={formData.birthday}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <input type="date" name="birthday" value={formData.birthday} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono" />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Contact Info */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <PhoneIcon className="h-5 w-5 text-green-500" />
-            معلومات الاتصال
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Contact info */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-1.5 border-b border-border/60 pb-1.5 text-muted-foreground font-semibold uppercase tracking-wider text-[11px]">
+            <Phone className="h-3.5 w-3.5 text-primary" />
+            <span>الاتصال والحساب</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                رقم الهاتف
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="01xxxxxxxxx"
-              />
+              <label className="block mb-1 font-medium text-foreground">رقم الهاتف</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} dir="ltr" className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono text-right" placeholder="01xxxxxxxxx" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                البريد الإلكتروني
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="example@email.com"
-              />
+              <label className="block mb-1 font-medium text-foreground">البريد الإلكتروني</label>
+              <input type="email" name="email" value={formData.email} onChange={handleChange} dir="ltr" className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono text-right" placeholder="customer@mail.com" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                كلمة المرور الجديدة (اتركها فارغة إن لم ترد التغيير)
+            <div className="md:col-span-2">
+              <label className="block mb-1 font-medium text-foreground flex items-center gap-1">
+                <Lock className="h-3 w-3 text-muted-foreground" />
+                كلمة المرور الجديدة (اختياري)
               </label>
               <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  minLength={6}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="أدخل كلمة المرور الجديدة"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-2 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  {showPassword ? "👁" : "👁‍🗨"}
+                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} minLength={6} dir="ltr" className="w-full pl-9 pr-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono" placeholder="اتركها فارغة للإبقاء على الحالية" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Address Info */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <MapPinIcon className="h-5 w-5 text-red-500" />
-            العنوان
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Address and status */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-1.5 border-b border-border/60 pb-1.5 text-muted-foreground font-semibold uppercase tracking-wider text-[11px]">
+            <MapPin className="h-3.5 w-3.5 text-primary" />
+            <span>العنوان والحالة</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                العنوان
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="الشارع، المنطقة"
-              />
+              <label className="block mb-1 font-medium text-foreground">العنوان</label>
+              <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" placeholder="الشارع، المنطقة..." />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                المدينة
-              </label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <label className="block mb-1 font-medium text-foreground">المدينة</label>
+              <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                الدولة
-              </label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <label className="block mb-1 font-medium text-foreground">الدولة</label>
+              <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                الحالة
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="LEAD">عميل محتمل</option>
-                <option value="ACTIVE">نشط</option>
-                <option value="INACTIVE">غير نشط</option>
-                <option value="BLOCKED">محظور</option>
+              <label className="block mb-1 font-medium text-foreground">حالة العميل</label>
+              <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="LEAD">عميل محتمل (Lead)</option>
+                <option value="ACTIVE">نشط (Active)</option>
+                <option value="INACTIVE">غير نشط (Inactive)</option>
+                <option value="BLOCKED">محظور (Blocked)</option>
               </select>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            ملاحظات
+        <section className="space-y-1.5">
+          <label className="block font-medium text-foreground flex items-center gap-1">
+            <FileText className="h-3 w-3 text-muted-foreground" />
+            ملاحظات داخلية
           </label>
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="ملاحظات إضافية عن العميل..."
-          />
-        </div>
+          <textarea name="notes" value={formData.notes} onChange={handleChange} rows={2} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" placeholder="ملاحظات وتفضيلات إضافية..." />
+        </section>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Link
-            to={`/customers/${id}`}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+          <Link to={`/customers/${id}`} className="rounded-md border border-border/70 bg-background px-3 py-1.5 font-medium text-foreground hover:bg-muted transition-colors">
             إلغاء
           </Link>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 inline-flex items-center gap-2"
-          >
+          <button type="submit" disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs disabled:opacity-50">
             {isSaving ? (
               <>
-                <span className="animate-spin">⏳</span>
-                جاري الحفظ...
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>جاري الحفظ...</span>
               </>
             ) : (
               <>
-                <CheckIcon className="h-4 w-4" />
-                حفظ التغييرات
+                <Check className="h-3.5 w-3.5" />
+                <span>حفظ التعديلات</span>
               </>
             )}
           </button>

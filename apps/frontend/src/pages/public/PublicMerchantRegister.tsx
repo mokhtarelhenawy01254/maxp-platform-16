@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { apiClient } from "../../services/apiClient";
-import { useTheme } from "../../hooks/useTheme";
 import {
   getBaseDomain,
   getCurrentSubdomain,
@@ -9,6 +8,18 @@ import {
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
+import {
+  Store,
+  Mail,
+  Lock,
+  Phone,
+  MapPin,
+  Building2,
+  CheckCircle2,
+  RotateCw,
+  Info,
+  ArrowRight
+} from "lucide-react";
 
 interface ApiSuccess<T> {
   success: boolean;
@@ -32,8 +43,6 @@ const getSubmitErrorMessage = (error: unknown) => {
 };
 
 const PublicMerchantRegister: React.FC = () => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const subdomain = getCurrentSubdomain();
   const requiresCompanyIdentifier = !subdomain;
   const [loading, setLoading] = useState(false);
@@ -46,7 +55,6 @@ const PublicMerchantRegister: React.FC = () => {
     address: "",
   });
 
-  // بناء رابط الدخول بعد التسجيل
   const getLoginUrl = () => {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
@@ -107,43 +115,39 @@ const PublicMerchantRegister: React.FC = () => {
   };
 
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} p-6`}
-    >
-      <div
-        className={`max-w-2xl mx-auto ${isDark ? "bg-gray-800" : "bg-white"} rounded-lg shadow-lg p-8`}
-      >
-        <h1
-          className={`text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-2`}
-        >
-          تسجيل تاجر جديد
-        </h1>
-        <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mb-6`}>
-          انضم كتاجر للدروب شيبنج وابدأ في بيع منتجاتك
-        </p>
+    <div className="min-h-screen bg-background py-10 px-4 text-foreground" dir="rtl">
+      <div className="mx-auto max-w-xl space-y-6">
+        {/* Header Chassis */}
+        <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+          <div className="space-y-2 text-right">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <Store className="h-3.5 w-3.5" />
+              <span>تسجيل شركاء النجاح والتجار</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              تسجيل تاجر جديد
+            </h1>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              انضم كتاجر مورد أو دروب شيبنج لربط منتجاتك ومزامنة الطلبيات تلقائياً.
+            </p>
+          </div>
+        </div>
 
         {requiresCompanyIdentifier && (
-          <div
-            className={`mb-6 rounded-lg border p-4 text-sm ${
-              isDark
-                ? "border-blue-800 bg-blue-900/30 text-blue-200"
-                : "border-blue-200 bg-blue-50 text-blue-800"
-            }`}
-          >
-            أنت تفتح الصفحة من الدومين الرئيسي، لذلك نحتاج رابط الشركة أو
-            الـ <span className="font-semibold">slug</span> الخاص بها لربط
-            طلبك بالمتجر الصحيح.
+          <div className="flex items-start gap-2.5 rounded-lg border border-primary/30 bg-primary/10 p-4 text-xs leading-relaxed text-primary">
+            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              أنت تسجل من خلال النطاق الرئيسي؛ يرجى إدخال اسم أو رابط المتجر (Slug) لربط حسابك بالمتجر المطلوب.
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Registration Form Chassis */}
+        <form onSubmit={handleSubmit} className="rounded-xl border border-border/70 bg-card p-6 shadow-sm space-y-4">
           {requiresCompanyIdentifier && (
             <div>
-              <label
-                htmlFor="companyIdentifier"
-                className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-              >
-                رابط الشركة أو الـ slug
+              <label htmlFor="companyIdentifier" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                معرف أو رابط المتجر (Store Slug) *
               </label>
               <input
                 id="companyIdentifier"
@@ -151,24 +155,16 @@ const PublicMerchantRegister: React.FC = () => {
                 name="companyIdentifier"
                 value={companyIdentifier}
                 onChange={(e) => setCompanyIdentifier(e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDark
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                    : "bg-white border-gray-300 text-gray-900"
-                }`}
-                placeholder="مثال: demo-store"
+                placeholder="مثال: main-store"
+                className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
           )}
 
-          {/* Name */}
           <div>
-            <label
-              htmlFor="merchantName"
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              اسم التاجر
+            <label htmlFor="merchantName" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              اسم التاجر أو الشركة *
             </label>
             <input
               id="merchantName"
@@ -176,26 +172,16 @@ const PublicMerchantRegister: React.FC = () => {
               name="name"
               autoComplete="organization"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-              placeholder="اسم التاجر أو الشركة"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="اسم النشاط التجاري"
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               required
             />
           </div>
 
-          {/* Email */}
           <div>
-            <label
-              htmlFor="merchantEmail"
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              البريد الإلكتروني
+            <label htmlFor="merchantEmail" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              البريد الإلكتروني للتاجر *
             </label>
             <input
               id="merchantEmail"
@@ -203,26 +189,17 @@ const PublicMerchantRegister: React.FC = () => {
               name="email"
               autoComplete="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-              placeholder="email@example.com"
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="merchant@example.com"
+              dir="ltr"
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-right"
               required
             />
           </div>
 
-          {/* Password */}
           <div>
-            <label
-              htmlFor="merchantPassword"
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              كلمة مرور حساب التاجر
+            <label htmlFor="merchantPassword" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              كلمة مرور حساب التاجر (8 أحرف على الأقل) *
             </label>
             <input
               id="merchantPassword"
@@ -231,31 +208,19 @@ const PublicMerchantRegister: React.FC = () => {
               autoComplete="new-password"
               minLength={8}
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-              placeholder="8 أحرف على الأقل"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="••••••••"
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               required
             />
-            <p
-              className={`text-xs mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              سيتم استخدام هذه البيانات للدخول إلى بورتال التاجر بعد الموافقة.
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              تُستخدم لتسجيل الدخول إلى بورتال التاجر ومتابعة المنتجات والطلبيات.
             </p>
           </div>
 
-          {/* Phone */}
           <div>
-            <label
-              htmlFor="merchantPhone"
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              الهاتف
+            <label htmlFor="merchantPhone" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              رقم الهاتف / واتساب للتواصل
             </label>
             <input
               id="merchantPhone"
@@ -263,84 +228,64 @@ const PublicMerchantRegister: React.FC = () => {
               name="phone"
               autoComplete="tel"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="01xxxxxxxxx"
+              dir="ltr"
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-right"
             />
           </div>
 
-          {/* Address */}
           <div>
-            <label
-              htmlFor="merchantAddress"
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              العنوان
+            <label htmlFor="merchantAddress" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              عنوان المستودع أو مقر النشاط
             </label>
             <textarea
               id="merchantAddress"
               name="address"
               autoComplete="street-address"
               value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-              rows={3}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-              placeholder="عنوان التاجر"
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              rows={2}
+              placeholder="المدينة، الحي، تفاصيل الاستلام..."
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
-          {/* Terms */}
-          <div
-            className={`${isDark ? "bg-blue-900/30 border-blue-700" : "bg-blue-50 border-blue-200"} border rounded-lg p-4`}
-          >
-            <h3
-              className={`font-semibold ${isDark ? "text-blue-300" : "text-blue-900"} mb-2`}
-            >
-              شروط وأحكام البرنامج
-            </h3>
-            <ul
-              className={`text-sm space-y-1 list-disc list-inside ${isDark ? "text-blue-200" : "text-blue-800"}`}
-            >
-              <li>التاجر مسؤول عن توفير المنتجات وتوصيلها</li>
-              <li>الشركة تحدد العمولة وإعدادات الربط الآلي بعد مراجعة التاجر</li>
-              <li>يمكن ربط منتجات التاجر بمنتجات المنصة</li>
-              <li>الطلبات تُرسل تلقائياً للتاجر عند التأكيد</li>
+          {/* Guidelines Box */}
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5">
+            <h3 className="text-xs font-semibold text-foreground mb-1.5">شروط شراكة التوريد</h3>
+            <ul className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+              <li>• التاجر مسؤول عن دقة المخزون وتجهيز الطلبيات في المواعيد المحددة.</li>
+              <li>• يتم اعتماد نسب العمولة وربط المنتجات بعد مراجعة الحساب.</li>
+              <li>• تحويل مستحقات المبيعات دورياً وفق اتفاقية التوريد.</li>
             </ul>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex gap-4">
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <button
               type="submit"
-              disabled={
-                loading || (requiresCompanyIdentifier && !companyIdentifier.trim())
-              }
-              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              disabled={loading || (requiresCompanyIdentifier && !companyIdentifier.trim())}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? "جاري التسجيل..." : "تسجيل كتاجر"}
+              {loading ? (
+                <>
+                  <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                  <span>جاري التسجيل...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>تقديم طلب التسجيل كتاجر</span>
+                </>
+              )}
             </button>
             <button
               type="button"
               onClick={() => (window.location.href = getLoginUrl())}
-              className={`px-6 py-3 border rounded-lg transition ${
-                isDark
-                  ? "border-gray-600 text-gray-300 hover:bg-gray-700"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+              className="inline-flex items-center justify-center rounded-lg border border-border/70 bg-background px-4 py-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/40 active:scale-[0.98]"
             >
-              لدي حساب بالفعل
+              تسجيل الدخول
             </button>
           </div>
         </form>
