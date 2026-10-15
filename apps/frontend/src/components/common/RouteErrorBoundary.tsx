@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, ArrowRight, RotateCw } from "lucide-react";
 import errorTracking from "../../services/errorTracking";
 import { recoverFromChunkLoadError } from "../../utils/chunkLoadRecovery";
+import { envConfig } from "../../config/environment";
 
 interface Props {
   children: ReactNode;
@@ -113,7 +114,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
-            {import.meta.env.DEV && this.state.error && (
+            {envConfig.isDevelopment && this.state.error && (
               <details className="mt-4 text-start rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
                 <summary className="cursor-pointer font-mono font-semibold">
                   تفاصيل الخطأ للمطورين (Dev Mode)

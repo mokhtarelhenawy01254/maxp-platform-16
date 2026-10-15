@@ -334,7 +334,7 @@ describe("Layout mobile account visibility", () => {
     expect(screen.getByText("Acme Store")).toBeInTheDocument();
   });
 
-  it("falls back to /logo.png when company has no custom logo", async () => {
+  it("renders company monogram letter fallback when company has no custom logo", async () => {
     mockUseAuth.mockReturnValue({
       user: {
         id: "user-1",
@@ -373,9 +373,8 @@ describe("Layout mobile account visibility", () => {
       </MemoryRouter>,
     );
 
-    const logoImg = screen.getByRole("img", { name: "NoLogo Store" });
-    expect(logoImg).toBeInTheDocument();
-    expect(logoImg).toHaveAttribute("src", "/logo.png");
+    expect(screen.queryByRole("img", { name: "NoLogo Store" })).not.toBeInTheDocument();
+    expect(screen.getByText("N")).toBeInTheDocument();
     expect(screen.getByText("NoLogo Store")).toBeInTheDocument();
   });
 });

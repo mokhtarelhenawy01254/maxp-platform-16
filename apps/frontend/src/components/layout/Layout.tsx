@@ -45,6 +45,7 @@ import { hasStoreApp } from "../../utils/storeShortcut";
 import HeaderWalletShortcut from "../wallet/HeaderWalletShortcut";
 import AppUpdateIndicator from "../common/AppUpdateIndicator";
 import RouteErrorBoundary from "../common/RouteErrorBoundary";
+import { CompanyLogo } from "../ui/CompanyLogo";
 import { envConfig } from "../../config/environment";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
@@ -136,15 +137,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     () => (user?.companies ?? []).find((c) => c.isCurrent) || user?.company,
     [user],
   );
-
-  const resolveLogoUrl = useCallback((src: string | null | undefined): string => {
-    if (!src) return "/logo.png";
-    if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
-      return src;
-    }
-    const cleanPath = src.startsWith("/") ? src : `/${src}`;
-    return `${envConfig.backendUrl}${cleanPath}`;
-  }, []);
 
   const { currentTheme } = useVisualTheme();
   const navigate = useNavigate();
@@ -692,17 +684,19 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             </button>
             {(isMobile || location.pathname === '/apps') && (
               <Link to="/apps" className="flex items-center gap-2 select-none min-w-0" aria-label="Apps">
-                <img
-                  src={resolveLogoUrl(currentCompany?.logo)}
-                  alt={currentCompany?.name || "MaxP"}
+                <CompanyLogo
+                  src={currentCompany?.logo}
+                  alt={currentCompany?.name || "Logo"}
                   className="h-8 xs:h-9 sm:h-10 w-auto max-w-[110px] xs:max-w-[140px] sm:max-w-[160px] object-contain rounded-md shrink-0 drop-shadow-sm transition-transform active:scale-95"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.src.endsWith("/logo.png")) {
-                      target.src = "/logo.png";
-                    }
-                  }}
-                />
+                  companyName={currentCompany?.name}
+                >
+                  <div
+                    className="h-8 w-8 xs:h-9 xs:w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-extrabold flex items-center justify-center text-xs xs:text-sm shadow-sm shrink-0 uppercase select-none"
+                    aria-hidden="true"
+                  >
+                    {currentCompany?.name?.charAt(0) || "M"}
+                  </div>
+                </CompanyLogo>
                 <span className="font-extrabold text-xs xs:text-sm tracking-tight text-gray-900 dark:text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[180px]">
                   {currentCompany?.name || "MaxP"}
                 </span>

@@ -124,28 +124,30 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
       <div className="elite-auth-form-side">
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
           <Link to="/" className="elite-brand-logo">
-            <img
-              src={
-                companyLogo
-                  ? companyLogo.startsWith("http://") || companyLogo.startsWith("https://") || companyLogo.startsWith("data:")
+            {companyLogo ? (
+              <img
+                src={
+                  companyLogo.startsWith("http://") || companyLogo.startsWith("https://") || companyLogo.startsWith("data:")
                     ? companyLogo
                     : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
-                  : "/logo.png"
-              }
-              alt={companyName || t("auth.brandName")}
-              className="logo-img"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (!target.src.endsWith("/logo.png")) {
-                  target.src = "/logo.png";
-                } else {
+                }
+                alt={companyName || t("auth.brandName")}
+                className="logo-img"
+                onError={(e) => {
+                  const target = e.currentTarget;
                   target.style.display = "none";
                   const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
                   if (fallback) fallback.style.display = "flex";
-                }
-              }}
-            />
-            <div className="logo-icon" style={{ display: "none" }}>
+                }}
+              />
+            ) : companyName ? null : (
+              <img
+                src="/logo.png"
+                alt={t("auth.brandName")}
+                className="logo-img"
+              />
+            )}
+            <div className="logo-icon" style={{ display: companyLogo || !companyName ? "none" : "flex" }}>
               {(companyName || t("auth.brandName")).charAt(0)}
             </div>
             <span className="logo-text">
