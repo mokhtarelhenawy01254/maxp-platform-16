@@ -788,27 +788,46 @@ class AccountingAutoPostingService {
    * Automatically void and create reversing entry for an operational document
    */
   static async reverseDocument(companyId, sourceType, sourceId, options = {}) {
+    let entry = null;
     try {
       const { userId = null, reason = 'إلغاء أو تراجع المستند التشغيلي الأصلي' } = options;
       const prisma = getSharedPrismaClient();
 
-      const entry = await prisma.journalEntry.findFirst({
+      entry = await prisma.journalEntry.findFirst({
         where: {
           companyId,
           sourceType,
           sourceId: String(sourceId),
           status: 'POSTED',
         },
+        include: { lines: true },
       });
 
       if (!entry) {
         return { success: true, skipped: true, reason: 'NO_POSTED_ENTRY_FOUND' };
       }
 
-      const result = await AccountingService.voidEntry(companyId, entry.id, { id: userId }, reason);
+      const scalarUserId = typeof userId === 'object' && userId !== null ? userId.id : userId;
+      const result = await AccountingService.voidEntry(companyId, entry.id, scalarUserId, reason);
       return { success: true, reversed: true, result };
     } catch (err) {
       console.error('[AccountingAutoPosting] reverseDocument error:', err);
+      try {
+        const { userId = null, reason = 'إلغاء أو تراجع المستند التشغيلي الأصلي' } = options;
+        const totalAmount = entry?.lines?.reduce((sum, l) => sum + (Number(l.debit) || 0), 0) || 0;
+        await this.enqueueUnposted(companyId, {
+          sourceType,
+          sourceId: String(sourceId),
+          documentNo: entry?.entryNumber || null,
+          amount: totalAmount,
+          date: new Date(),
+          reason: 'REVERSAL_FAILED',
+          errorDetails: err.message,
+          payload: { entryId: entry?.id, options: { userId, reason }, error: err.message },
+        });
+      } catch (queueErr) {
+        console.warn('[AccountingAutoPosting] Failed to enqueue failed reversal:', queueErr.message);
+      }
       return { success: false, error: err.message };
     }
   }
@@ -874,6 +893,38 @@ class AccountingAutoPostingService {
     }
 
     let postResult = null;
+    if (unposted.reason === 'REVERSAL_FAILED') {
+      let payloadOpts = {};
+      if (unposted.payload) {
+        try {
+          const parsed = typeof unposted.payload === 'string' ? JSON.parse(unposted.payload) : unposted.payload;
+          payloadOpts = parsed.options || {};
+        } catch {
+          payloadOpts = {};
+        }
+      }
+      postResult = await this.reverseDocument(companyId, unposted.sourceType, unposted.sourceId, {
+        ...payloadOpts,
+        userId: payloadOpts.userId || userId,
+      });
+      if (postResult?.success && (postResult?.reversed || postResult?.skipped)) {
+        if (prisma.unpostedEntry?.update) {
+          await prisma.unpostedEntry.update({
+            where: { id: unpostedId },
+            data: { status: 'PROCESSED', retriedAt: new Date(), retriedById: userId },
+          });
+        } else if (prisma.$executeRawUnsafe) {
+          await prisma.$executeRawUnsafe(
+            `UPDATE "unposted_entries" SET "status" = 'PROCESSED', "retriedAt" = NOW(), "retriedById" = $1 WHERE "id" = $2`,
+            userId,
+            unpostedId
+          );
+        }
+        return { success: true, processed: true, postResult };
+      }
+      return { success: false, postResult };
+    }
+
     switch (unposted.sourceType) {
       case 'SALES_INVOICE':
         postResult = await this.postSalesInvoice(companyId, unposted.sourceId, { userId });

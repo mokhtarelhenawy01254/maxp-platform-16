@@ -639,34 +639,178 @@ describe('Accounting Auto-Posting Engine Test Suite (Wave 2)', () => {
   });
 
   // --------------------------------------------------------------------------
-  // Test 8: Document Voiding & Automatic Reversal
+  // Test 8: Document Voiding & Automatic Reversal (with scalar userId spy guard)
   // --------------------------------------------------------------------------
-  test('8. Automated Reversal: Voiding an operational expense produces an exact reversing entry', async () => {
-    const expenseId = 'exp_void_test';
-    const expenseData = {
-      expenseNumber: 'EXP-VOID-001',
-      title: 'شراء حبر طابعات',
-      amount: 1500,
-      type: 'OPEX',
-    };
+  test('8. Automated Reversal: Voiding an operational expense produces an exact reversing entry with scalar userId', async () => {
+    const voidSpy = jest.spyOn(AccountingService, 'voidEntry');
+    try {
+      const expenseId = 'exp_void_test';
+      const expenseData = {
+        expenseNumber: 'EXP-VOID-001',
+        title: 'شراء حبر طابعات',
+        amount: 1500,
+        type: 'OPEX',
+      };
 
-    // 1. Post expense
+      // 1. Post expense
+      const postRes = await AccountingAutoPostingService.postExpense(companyA, expenseId, {
+        userId: userAdmin.id,
+        expenseData,
+      });
+      expect(postRes.success).toBe(true);
+
+      // 2. Void document
+      const revRes = await AccountingAutoPostingService.reverseDocument(companyA, 'EXPENSE', expenseId, {
+        userId: userAdmin.id,
+        reason: 'إلغاء فاتورة الشراء واسترداد المبلغ',
+      });
+
+      expect(revRes.success).toBe(true);
+      expect(revRes.reversed).toBe(true);
+      expect(revRes.result.voidedEntry.status).toBe('VOID');
+      expect(revRes.result.reversingEntry.status).toBe('POSTED');
+      expect(revRes.result.reversingEntry.sourceType).toBe('REVERSAL');
+
+      // 3. Spy assertions: 3rd argument MUST be scalar userId (never an object)
+      expect(voidSpy.mock.calls.length).toBe(1);
+      const [calledCompanyId, calledEntryId, calledUserId, calledReason] = voidSpy.mock.calls[0];
+      expect(calledCompanyId).toBe(companyA);
+      expect(calledEntryId).toBe(postRes.entry.id);
+      expect(typeof calledUserId).toBe('string');
+      expect(calledUserId).toBe(userAdmin.id);
+      expect(calledReason).toBe('إلغاء فاتورة الشراء واسترداد المبلغ');
+
+      // 4. Verify DB state: original entry is VOID, reversing entry is POSTED & REVERSAL
+      const originalEntryInDb = await currentPrisma.journalEntry.findFirst({
+        where: { id: postRes.entry.id },
+      });
+      expect(originalEntryInDb.status).toBe('VOID');
+
+      const reversingEntryInDb = await currentPrisma.journalEntry.findFirst({
+        where: { id: revRes.result.reversingEntry.id },
+      });
+      expect(reversingEntryInDb.status).toBe('POSTED');
+      expect(reversingEntryInDb.sourceType).toBe('REVERSAL');
+      expect(reversingEntryInDb.reversalOfId).toBe(postRes.entry.id);
+      expect(reversingEntryInDb.postedById).toBe(userAdmin.id);
+      expect(reversingEntryInDb.createdById).toBe(userAdmin.id);
+    } finally {
+      if (typeof voidSpy.mockRestore === 'function') {
+        voidSpy.mockRestore();
+      }
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // Test 8b: Live Acceptance Scenario - Capital Deposit Reversal
+  // --------------------------------------------------------------------------
+  test('8b. Live Scenario: Capital deposit auto-post and reversal produces balanced reversal with scalar userId', async () => {
+    const voidSpy = jest.spyOn(AccountingService, 'voidEntry');
+    try {
+      const capitalTxId = 'cap_tx_live_test_001';
+      const capitalData = {
+        referenceNumber: 'CAP-2026-00007',
+        amount: 1234.5,
+        type: 'DEPOSIT',
+        notes: 'إيداع رأس مال تأسيسي',
+      };
+
+      // 1. Post Capital Deposit (1,234.50)
+      const postRes = await AccountingAutoPostingService.postCapitalDeposit(companyA, capitalTxId, {
+        userId: userAdmin.id,
+        capitalData,
+      });
+      expect(postRes.success).toBe(true);
+      expect(postRes.posted).toBe(true);
+
+      const originalEntry = await currentPrisma.journalEntry.findFirst({
+        where: { id: postRes.entry.id },
+      });
+      expect(originalEntry.status).toBe('POSTED');
+      expect(originalEntry.sourceType).toBe('CAPITAL');
+
+      // 2. Reverse Capital Deposit (simulating POST /treasury/capital/:id/reverse)
+      const revRes = await AccountingAutoPostingService.reverseDocument(companyA, 'CAPITAL', capitalTxId, {
+        userId: userAdmin.id,
+        reason: 'عكس إيداع رأس مال: CAP-2026-00007',
+      });
+
+      expect(revRes.success).toBe(true);
+      expect(revRes.reversed).toBe(true);
+
+      // 3. Spy validation: 3rd argument MUST be scalar userId
+      expect(voidSpy.mock.calls.length).toBe(1);
+      const [calledCompanyId, calledEntryId, calledUserId] = voidSpy.mock.calls[0];
+      expect(calledCompanyId).toBe(companyA);
+      expect(calledEntryId).toBe(originalEntry.id);
+      expect(typeof calledUserId).toBe('string');
+      expect(calledUserId).toBe(userAdmin.id);
+
+      // 4. Verify DB state: original entry is VOID, reversing entry is POSTED & REVERSAL
+      const voidedEntry = await currentPrisma.journalEntry.findFirst({
+        where: { id: originalEntry.id },
+      });
+      expect(voidedEntry.status).toBe('VOID');
+
+      const reversingEntry = await currentPrisma.journalEntry.findFirst({
+        where: { id: revRes.result.reversingEntry.id },
+      });
+      expect(reversingEntry.status).toBe('POSTED');
+      expect(reversingEntry.sourceType).toBe('REVERSAL');
+      expect(reversingEntry.reversalOfId).toBe(originalEntry.id);
+      expect(reversingEntry.postedById).toBe(userAdmin.id);
+    } finally {
+      if (typeof voidSpy.mockRestore === 'function') {
+        voidSpy.mockRestore();
+      }
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // Test 8c: Reversal Failure Queueing & Deferred Retry
+  // --------------------------------------------------------------------------
+  test('8c. Reversal Failure: Enqueues to unposted queue as REVERSAL_FAILED and successfully retries', async () => {
+    const expenseId = 'exp_fail_rev_002';
     await AccountingAutoPostingService.postExpense(companyA, expenseId, {
       userId: userAdmin.id,
-      expenseData,
+      expenseData: { expenseNumber: 'EXP-FAIL-02', amount: 800, type: 'OPEX' },
     });
 
-    // 2. Void document
-    const revRes = await AccountingAutoPostingService.reverseDocument(companyA, 'EXPENSE', expenseId, {
-      userId: userAdmin.id,
-      reason: 'إلغاء فاتورة الشراء واسترداد المبلغ',
-    });
+    const originalVoid = AccountingService.voidEntry;
+    AccountingService.voidEntry = async () => {
+      throw new Error('محاكاة عطل مؤقت أثناء إلغاء القيد');
+    };
 
-    expect(revRes.success).toBe(true);
-    expect(revRes.reversed).toBe(true);
-    expect(revRes.result.voidedEntry.status).toBe('VOID');
-    expect(revRes.result.reversingEntry.status).toBe('POSTED');
-    expect(revRes.result.reversingEntry.sourceType).toBe('REVERSAL');
+    try {
+      const failRev = await AccountingAutoPostingService.reverseDocument(companyA, 'EXPENSE', expenseId, {
+        userId: userAdmin.id,
+        reason: 'إلغاء لغرض اختبار الفشل في الطابور',
+      });
+
+      expect(failRev.success).toBe(false);
+      expect(failRev.error).toBe('محاكاة عطل مؤقت أثناء إلغاء القيد');
+
+      // Verify it was enqueued in unposted queue with reason REVERSAL_FAILED
+      const queue = await AccountingAutoPostingService.listUnpostedQueue(companyA, { status: 'PENDING' });
+      const failedItem = queue.find((q) => q.reason === 'REVERSAL_FAILED' && q.sourceId === expenseId);
+      expect(failedItem).toBeDefined();
+      expect(failedItem.status).toBe('PENDING');
+      expect(failedItem.sourceType).toBe('EXPENSE');
+
+      // Restore voidEntry and retry the unposted entry
+      AccountingService.voidEntry = originalVoid;
+
+      const retryRes = await AccountingAutoPostingService.retryUnpostedEntry(companyA, failedItem.id, {
+        userId: userAdmin.id,
+      });
+      expect(retryRes.success).toBe(true);
+      expect(retryRes.processed).toBe(true);
+
+      const retriedItem = await currentPrisma.unpostedEntry.findFirst({ where: { id: failedItem.id } });
+      expect(retriedItem.status).toBe('PROCESSED');
+    } finally {
+      AccountingService.voidEntry = originalVoid;
+    }
   });
 
   // --------------------------------------------------------------------------
