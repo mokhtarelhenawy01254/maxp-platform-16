@@ -1,6 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { 
+  ArrowRight, 
+  Save, 
+  Eye, 
+  FileText, 
+  Sparkles, 
+  Globe, 
+  Tag, 
+  ShoppingBag, 
+  HelpCircle, 
+  CheckCircle2, 
+  Clock,
+  Code2
+} from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 
@@ -8,7 +21,7 @@ const defaultContent = JSON.stringify([
   { type: "p", text: "اكتب مقدمة المقال هنا..." },
   { type: "h2", text: "العنوان الفرعي الأول", id: "section-1" },
   { type: "p", text: "محتوى الفقرة..." },
-  { type: "proTip", text: "💡 نصيحة: اكتب Pro Tip هنا" }
+  { type: "proTip", text: "نصيحة احترافية: اكتب تفاصيل النصيحة هنا لتحسين القيمة الإرشادية" }
 ], null, 2);
 
 const ArticleEditor: React.FC = () => {
@@ -62,117 +75,316 @@ const ArticleEditor: React.FC = () => {
           isPublished: Boolean(a.isPublished),
         });
       }
-    }).catch(() => toast.error("فشل تحميل المقال")).finally(()=>setLoading(false));
+    }).catch(() => toast.error("فشل تحميل المقال")).finally(() => setLoading(false));
   }, [id, isEdit]);
 
   const handleChange = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSave = async (publish?: boolean) => {
     const payload = { ...form, isPublished: publish ?? form.isPublished };
-    // validate JSON fields
     for (const k of ['content','amazonProducts','faqItems','tocItems','sources'] as const) {
-      try { if (payload[k]) JSON.parse(payload[k] as string); } catch { toast.error(`حقل ${k} ليس JSON صالح`); return; }
+      try { 
+        if (payload[k]) JSON.parse(payload[k] as string); 
+      } catch { 
+        toast.error(`حقل ${k} ليس بتنسيق JSON صالح`); 
+        return; 
+      }
     }
-    if (!payload.title.trim()) { toast.error("العنوان مطلوب"); return; }
+    if (!payload.title.trim()) { 
+      toast.error("عنوان المقال مطلوب"); 
+      return; 
+    }
     setSaving(true);
     try {
       if (isEdit && id) {
         await apiClient.put(`/articles/${id}`, payload);
-        toast.success("تم التحديث");
+        toast.success("تم تحديث بيانات المقال بنجاح");
       } else {
         const res = await apiClient.post("/articles", payload);
-        toast.success("تم إنشاء المقال");
+        toast.success("تم إنشاء المقال الجديد بنجاح");
         navigate(`/articles/${res.data.data.id}`);
         return;
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || "فشل الحفظ");
-    } finally { setSaving(false); }
+      toast.error(e.response?.data?.message || "فشل حفظ المقال");
+    } finally { 
+      setSaving(false); 
+    }
   };
 
-  if (loading) return <div className="p-10 text-center">جاري التحميل...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm">جاري تحميل بيانات المقال...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <Link to="/articles" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="w-4 h-4 rtl:rotate-180" /> العودة للمقالات</Link>
-        <div className="flex gap-2">
-          <button onClick={() => handleSave(false)} disabled={saving} className="px-5 py-2 rounded-full border font-bold hover:bg-muted disabled:opacity-50">حفظ مسودة</button>
-          <button onClick={() => handleSave(true)} disabled={saving} className="px-6 py-2 rounded-full bg-primary text-primary-foreground font-black inline-flex items-center gap-2 disabled:opacity-50"><Save className="w-4 h-4" /> {form.isPublished ? 'تحديث ونشر' : 'نشر المقال'}</button>
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="flex items-center gap-3">
+          <Link 
+            to="/articles" 
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowRight className="w-3.5 h-3.5" /> 
+            <span>المقالات</span>
+          </Link>
+          <div className="h-4 w-px bg-border/70" />
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-black text-foreground">
+              {isEdit ? 'تعديل المقال' : 'مقال جديد'}
+            </span>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              form.isPublished 
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+            }`}>
+              {form.isPublished ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+              <span>{form.isPublished ? 'منشور مباشرة' : 'مسودة قيد الإعداد'}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => handleSave(false)} 
+            disabled={saving} 
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/70 bg-card hover:bg-muted/30 text-xs font-semibold text-foreground transition-colors disabled:opacity-50"
+          >
+            <Save className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>حفظ كمسودة</span>
+          </button>
+          <button 
+            type="button"
+            onClick={() => handleSave(true)} 
+            disabled={saving} 
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{form.isPublished ? 'تحديث وتثبيت النشر' : 'نشر المقال الآن'}</span>
+          </button>
         </div>
       </div>
 
-      <h1 className="text-2xl font-black">{isEdit ? 'تعديل المقال' : 'مقال جديد - MensGroomingPro Style'}</h1>
-
       <div className="grid gap-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-sm font-bold">العنوان *</span>
-            <input value={form.title} onChange={e=>handleChange('title', e.target.value)} placeholder="How To Choose..." className="w-full border rounded-xl px-3 py-2.5" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-sm font-bold">Slug (الرابط)</span>
-            <input value={form.slug} onChange={e=>handleChange('slug', e.target.value)} placeholder="how-to-choose..." className="w-full border rounded-xl px-3 py-2.5 font-mono text-sm" dir="ltr" />
-            <span className="text-xs text-muted-foreground">يولد تلقائيا من العنوان إذا ترك فارغا</span>
-          </label>
+        {/* Core Info Surface */}
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-3">
+            <FileText className="w-4 h-4 text-primary" />
+            <span>البيانات الأساسية للمقال</span>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>عنوان المقال الرئيسي</span>
+                <span className="text-[10px] text-destructive font-medium">* مطلوب</span>
+              </label>
+              <input 
+                value={form.title} 
+                onChange={e => handleChange('title', e.target.value)} 
+                placeholder="مثال: الدليل الشامل لاختيار ماكينات الحلاقة الاحترافية" 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>الرابط الدائم (Slug)</span>
+                <span className="text-[10px] text-muted-foreground font-mono">LTR</span>
+              </label>
+              <input 
+                value={form.slug} 
+                onChange={e => handleChange('slug', e.target.value)} 
+                placeholder="complete-guide-to-professional-shavers" 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm font-mono text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+                dir="ltr" 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground">الموجز والوصف المختصر (Excerpt)</label>
+            <textarea 
+              value={form.excerpt} 
+              onChange={e => handleChange('excerpt', e.target.value)} 
+              rows={2} 
+              className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none" 
+              placeholder="ملخص محكم في حدود 150-160 حرف لتصدر نتائج محركات البحث ووسائل المشاركة..." 
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">رابط صورة الغلاف Hero</label>
+              <input 
+                value={form.heroImage} 
+                onChange={e => handleChange('heroImage', e.target.value)} 
+                placeholder="https://..." 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm font-mono text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+                dir="ltr" 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">التصنيف الرئيسي</label>
+              <select 
+                value={form.category} 
+                onChange={e => handleChange('category', e.target.value)} 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="Guides">Guides (أدلة شاملة)</option>
+                <option value="Reviews">Reviews (مراجعات منتجات)</option>
+                <option value="Beard Care">Beard Care (عناية باللحية)</option>
+                <option value="Skin Care">Skin Care (عناية بالبشرة)</option>
+                <option value="Hair Styling">Hair Styling (تصفيف الشعر)</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">اسم الكاتب أو المراجع</label>
+              <input 
+                value={form.authorName} 
+                onChange={e => handleChange('authorName', e.target.value)} 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" 
+              />
+            </div>
+          </div>
         </div>
 
-        <label className="space-y-1">
-          <span className="text-sm font-bold">الوصف المختصر (Excerpt)</span>
-          <textarea value={form.excerpt} onChange={e=>handleChange('excerpt', e.target.value)} rows={2} className="w-full border rounded-xl px-3 py-2" placeholder="ملخص 160 حرف للسيو..." />
-        </label>
+        {/* SEO Meta Surface */}
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-3">
+            <Globe className="w-4 h-4 text-primary" />
+            <span>تهيئة محركات البحث (SEO Meta)</span>
+          </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-sm font-bold">صورة الغلاف Hero</span>
-            <input value={form.heroImage} onChange={e=>handleChange('heroImage', e.target.value)} placeholder="https://..." className="w-full border rounded-xl px-3 py-2.5" dir="ltr" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-sm font-bold">التصنيف</span>
-            <select value={form.category} onChange={e=>handleChange('category', e.target.value)} className="w-full border rounded-xl px-3 py-2.5">
-              <option>Guides</option><option>Reviews</option><option>Beard Care</option><option>Skin Care</option>
-            </select>
-          </label>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">عنوان الصفحة في السيو (Meta Title)</label>
+              <input 
+                value={form.seoTitle} 
+                onChange={e => handleChange('seoTitle', e.target.value)} 
+                placeholder="اتركه فارغاً للاستعانة بالعنوان الرئيسي تلقائياً" 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">وصف السيو الترويجي (Meta Description)</label>
+              <input 
+                value={form.seoDescription} 
+                onChange={e => handleChange('seoDescription', e.target.value)} 
+                placeholder="اتركه فارغاً للاستعانة بالموجز تلقائياً" 
+                className="w-full border border-border/70 bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" 
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-sm font-bold">الكاتب</span>
-            <input value={form.authorName} onChange={e=>handleChange('authorName', e.target.value)} className="w-full border rounded-xl px-3 py-2.5" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-sm font-bold">SEO Title</span>
-            <input value={form.seoTitle} onChange={e=>handleChange('seoTitle', e.target.value)} placeholder="يترك فارغ = العنوان" className="w-full border rounded-xl px-3 py-2.5" />
-          </label>
+        {/* Structured Blocks & Content */}
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <Code2 className="w-4 h-4 text-primary" />
+              <span>محتوى المقال التفاعلي (Blocks JSON)</span>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              يدعم بلوكات: h2, p, proTip, image
+            </span>
+          </div>
+
+          <textarea 
+            value={form.content} 
+            onChange={e => handleChange('content', e.target.value)} 
+            rows={9} 
+            className="w-full border border-border/70 bg-background rounded-lg p-3 font-mono text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+            dir="ltr" 
+          />
         </div>
 
-        <label className="space-y-1">
-          <span className="text-sm font-bold">محتوى المقال (Blocks JSON)</span>
-          <textarea value={form.content} onChange={e=>handleChange('content', e.target.value)} rows={10} className="w-full border rounded-xl px-3 py-2 font-mono text-xs" dir="ltr" />
-          <span className="text-xs text-muted-foreground">يدعم blocks: {`{type:"h2"|"p"|"proTip"|"image", text, id}` } - TOC يولد تلقائيا من الـ h2</span>
-        </label>
+        {/* Amazon & Affiliate Products */}
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+              <span>منتجات أمازون والعمولة (Amazon Product Cards JSON)</span>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Array of {`{badge, title, price, image, href}`}
+            </span>
+          </div>
 
-        <label className="space-y-1">
-          <span className="text-sm font-bold">منتجات أمازون (Amazon Cards JSON)</span>
-          <textarea value={form.amazonProducts} onChange={e=>handleChange('amazonProducts', e.target.value)} rows={5} className="w-full border rounded-xl px-3 py-2 font-mono text-xs" dir="ltr" />
-        </label>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-sm font-bold">FAQ (JSON)</span>
-            <textarea value={form.faqItems} onChange={e=>handleChange('faqItems', e.target.value)} rows={6} className="w-full border rounded-xl px-3 py-2 font-mono text-xs" dir="ltr" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-sm font-bold">TOC / Sources (JSON)</span>
-            <textarea value={form.tocItems} onChange={e=>handleChange('tocItems', e.target.value)} rows={3} className="w-full border rounded-xl px-3 py-2 font-mono text-xs" dir="ltr" />
-            <textarea value={form.sources} onChange={e=>handleChange('sources', e.target.value)} rows={3} className="w-full border rounded-xl px-3 py-2 font-mono text-xs mt-2" dir="ltr" placeholder="sources" />
-          </label>
+          <textarea 
+            value={form.amazonProducts} 
+            onChange={e => handleChange('amazonProducts', e.target.value)} 
+            rows={5} 
+            className="w-full border border-border/70 bg-background rounded-lg p-3 font-mono text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+            dir="ltr" 
+          />
         </div>
 
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={form.isPublished} onChange={e=>handleChange('isPublished', e.target.checked)} />
-          <span className="font-bold">نشر فورا (isPublished)</span>
-        </label>
+        {/* FAQ & TOC Grid */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
+              <HelpCircle className="w-4 h-4 text-primary" />
+              <span>الأسئلة الشائعة (FAQ JSON)</span>
+            </div>
+            <textarea 
+              value={form.faqItems} 
+              onChange={e => handleChange('faqItems', e.target.value)} 
+              rows={6} 
+              className="w-full border border-border/70 bg-background rounded-lg p-3 font-mono text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+              dir="ltr" 
+            />
+          </div>
+
+          <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
+              <Tag className="w-4 h-4 text-primary" />
+              <span>جدول المحتويات والمصادر (TOC / Sources JSON)</span>
+            </div>
+            <div className="space-y-2">
+              <textarea 
+                value={form.tocItems} 
+                onChange={e => handleChange('tocItems', e.target.value)} 
+                rows={3} 
+                placeholder="TOC items array"
+                className="w-full border border-border/70 bg-background rounded-lg p-2.5 font-mono text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+                dir="ltr" 
+              />
+              <textarea 
+                value={form.sources} 
+                onChange={e => handleChange('sources', e.target.value)} 
+                rows={3} 
+                placeholder="Sources array"
+                className="w-full border border-border/70 bg-background rounded-lg p-2.5 font-mono text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary" 
+                dir="ltr" 
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Publication Control Ribbon */}
+        <div className="bg-muted/20 border border-border/70 rounded-xl p-4 flex items-center justify-between">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={form.isPublished} 
+              onChange={e => handleChange('isPublished', e.target.checked)} 
+              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+            />
+            <div>
+              <span className="text-xs font-bold text-foreground block">تفعيل النشر المباشر (Publish Status)</span>
+              <span className="text-[11px] text-muted-foreground">عند التفعيل، سيتاح المقال للقراء في المتجر فور إجراء الحفظ</span>
+            </div>
+          </label>
+          <div className="text-xs font-semibold text-muted-foreground font-mono">
+            {form.isPublished ? 'Status: LIVE' : 'Status: DRAFT'}
+          </div>
+        </div>
       </div>
     </div>
   );

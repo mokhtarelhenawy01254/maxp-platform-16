@@ -1,9 +1,13 @@
 import React from "react";
 import {
-  ChartBarIcon,
-  RocketLaunchIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+  Tag,
+  Layers,
+  ShieldCheck,
+  CheckCircle2,
+  Info,
+  ExternalLink,
+  HelpCircle,
+} from "lucide-react";
 import { SettingsPageLayout } from "../../components/settings/SettingsPageLayout";
 import { SettingsSection } from "../../components/settings/SettingsSection";
 import { InputSetting, ToggleSetting } from "../../components/settings/SettingControls";
@@ -17,61 +21,86 @@ const GoogleTagManagerSettings: React.FC = () => {
     return null;
   }
 
+  const gtmEnabled = settings.gtmEnabled ?? false;
+
   return (
     <SettingsPageLayout
-      title="Google Tag Manager"
-      description="ربط GTM لإدارة كل أدوات التتبع من مكان واحد"
+      title="Google Tag Manager (GTM)"
+      description="إدارة حاويات التتبع، الـ Data Layer، وتوجيه أكواد التحليلات مركزياً"
       loading={loading}
       saving={saving}
       onSave={() => handleSave()}
       onReset={handleReset}
     >
+      {/* 1. Container Configuration */}
       <SettingsSection
-        title="إعدادات الحاوية"
-        icon={ChartBarIcon}
-        enabled={settings.gtmEnabled ?? false}
+        title="إعدادات الحاوية (GTM Container)"
+        icon={Tag}
+        enabled={gtmEnabled}
         onToggle={(value) => updateSetting("gtmEnabled", value)}
-        helperText="فعّل GTM وأدخل Container ID الخاص بك"
+        helperText="أدخل معرّف الحاوية الخاص بك لتضمين أكواد GTM تلقائياً في المتجر"
       >
-        <InputSetting
-          label="GTM Container ID"
-          value={settings.gtmContainerId || ""}
-          onChange={(value) => updateSetting("gtmContainerId", value)}
-          placeholder="مثال: GTM-XXXXXXX"
-        />
+        <div className="space-y-4">
+          <InputSetting
+            label="معرّف الحاوية (Container ID)"
+            value={settings.gtmContainerId || ""}
+            onChange={(value) => updateSetting("gtmContainerId", value)}
+            placeholder="مثال: GTM-XXXXXXX"
+          />
+
+          <div className="p-3.5 rounded-xl border border-border/60 bg-muted/20 text-xs text-muted-foreground space-y-1.5">
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <Info className="h-3.5 w-3.5 text-primary" />
+              <span>كيفية الحصول على المعرّف</span>
+            </div>
+            <p className="leading-relaxed">
+              يمكنك العثور على معرّف الحاوية في الزاوية العلوية اليمنى داخل لوحة تحكم Google Tag Manager ويبدأ بالرمز{" "}
+              <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground">GTM-</code>.
+            </p>
+          </div>
+        </div>
       </SettingsSection>
 
+      {/* 2. Data Layer & SPA Events */}
       <SettingsSection
-        title="الأحداث و Data Layer"
-        icon={RocketLaunchIcon}
-        enabled={settings.gtmEnabled ?? false}
+        title="أحداث وتدفقات Data Layer"
+        icon={Layers}
+        enabled={gtmEnabled}
         onToggle={(value) => updateSetting("gtmEnabled", value)}
-        helperText="تحكم في إرسال الأحداث إلى GTM"
+        helperText="بث الأحداث التفاعلية كـ e-commerce dataLayer متوافقة مع معايير GA4"
       >
-        <ToggleSetting
-          label="تفعيل Data Layer للأحداث"
-          value={settings.gtmDataLayerEnabled ?? true}
-          onChange={(value) => updateSetting("gtmDataLayerEnabled", value)}
-        />
-        <ToggleSetting
-          label="تتبع PageView في SPA"
-          value={settings.gtmTrackPageView ?? true}
-          onChange={(value) => updateSetting("gtmTrackPageView", value)}
-        />
+        <div className="space-y-2">
+          <ToggleSetting
+            label="تفعيل طبقة البيانات (window.dataLayer)"
+            value={settings.gtmDataLayerEnabled ?? true}
+            onChange={(value) => updateSetting("gtmDataLayerEnabled", value)}
+          />
+          <ToggleSetting
+            label="تتبع تبديل الصفحات في تطبيقات SPA (PageView Tracking)"
+            value={settings.gtmTrackPageView ?? true}
+            onChange={(value) => updateSetting("gtmTrackPageView", value)}
+          />
+        </div>
       </SettingsSection>
 
+      {/* 3. Deduplication Guard */}
       <SettingsSection
-        title="منع التكرار"
-        icon={ShieldCheckIcon}
-        enabled={settings.gtmEnabled ?? false}
+        title="منع تكرار الإشارات والأحداث (Deduplication Guard)"
+        icon={ShieldCheck}
+        enabled={gtmEnabled}
         onToggle={(value) => updateSetting("gtmEnabled", value)}
-        helperText="فعّل هذا الخيار إذا كنت تطلق أحداث البكسل من GTM"
+        helperText="إيقاف إطلاق البكسلات المدمجة تلقائياً لتفادي تسجيل التحويلات المزدوجة"
       >
-        <ToggleSetting
-          label="إيقاف البكسلات المدمجة عند تشغيل GTM"
-          value={settings.gtmSuppressPixels ?? false}
-          onChange={(value) => updateSetting("gtmSuppressPixels", value)}
-        />
+        <div className="space-y-3">
+          <ToggleSetting
+            label="إيقاف البكسلات المدمجة عند تفعيل GTM"
+            value={settings.gtmSuppressPixels ?? false}
+            onChange={(value) => updateSetting("gtmSuppressPixels", value)}
+          />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            عند تفعيل هذا الخيار، سيتم كتم أكواد التتبع المباشرة (مثل Facebook Pixel و TikTok Pixel) والاعتماد حصراً على إشارات GTM لتفادي أي تضارب أو احتساب مكرر في منصات الإعلانات.
+          </p>
+        </div>
       </SettingsSection>
     </SettingsPageLayout>
   );
