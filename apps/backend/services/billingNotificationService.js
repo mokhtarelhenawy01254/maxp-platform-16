@@ -197,23 +197,19 @@ class BillingNotificationService {
    * Send renewal reminder notifications
    */
   async sendRenewalReminders(subscriptions, daysUntilRenewal) {
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) return;
+
     for (const subscription of subscriptions) {
       try {
-        console.log(`📧 [BILLING] Sending ${daysUntilRenewal}-day renewal reminder to ${subscription.company.email}`);
+        const companyEmail = subscription.company?.email || subscription.companyId;
+        console.log(`📧 [BILLING] Sending ${daysUntilRenewal}-day renewal reminder to ${companyEmail}`);
 
-        // Log the notification
-        await getSharedPrismaClient().billingHistory.create({
-          data: {
-            companyId: subscription.companyId,
-            type: 'PLATFORM_FEE', // Best fit type
-            amount: subscription.monthlyFee,
-            status: 'SUCCESS',
-            description: `Renewal reminder: ${daysUntilRenewal} days remaining`
-          }
-        });
-
+        // NOTE (2026-10-15 audit): Do NOT write to billingHistory here.
+        // Previously, a false SUCCESS record with amount = subscription.monthlyFee was created,
+        // which seeded 13,363 phantom records (~3.2M EGP false revenue) in billingHistory.
+        // billingHistory is strictly for actual financial transactions, never notification logs.
       } catch (error) {
-        console.error(`❌ [BILLING] Error sending renewal reminder to ${subscription.company.email}:`, error.message);
+        console.error(`❌ [BILLING] Error sending renewal reminder to ${subscription.company?.email || subscription.companyId}:`, error.message);
       }
     }
   }
@@ -230,4 +226,6 @@ class BillingNotificationService {
   }
 }
 
-module.exports = new BillingNotificationService();
+const billingNotificationService = new BillingNotificationService();
+billingNotificationService.BillingNotificationService = BillingNotificationService;
+module.exports = billingNotificationService;
