@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  BuildingOffice2Icon,
-  CheckCircleIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  LockClosedIcon,
-  UserIcon,
-} from "@heroicons/react/24/outline";
+  Building2,
+  CheckCircle2,
+  Mail,
+  AlertTriangle,
+  Lock,
+  User,
+} from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { tokenManager } from "../../utils/tokenManager";
@@ -54,10 +54,10 @@ const AcceptInvitation: React.FC = () => {
     const verifyInvitation = async () => {
       try {
         const response = await apiClient.get(`/invitations/verify/${token}`);
-        if (response.data.success) {
-          setInvitation(response.data.data.invitation);
+        if (response.data?.success) {
+          setInvitation(response.data.data?.invitation);
         } else {
-          setError(response.data.message || "فشل في التحقق من الدعوة");
+          setError(response.data?.message || "فشل في التحقق من الدعوة");
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "فشل في التحقق من الدعوة");
@@ -94,7 +94,7 @@ const AcceptInvitation: React.FC = () => {
         password,
       });
 
-      if (response.data.success) {
+      if (response.data?.success) {
         setSuccess(true);
         tokenManager.setAccessToken(response.data.data.token);
         if (response.data.data.refreshToken) {
@@ -103,7 +103,7 @@ const AcceptInvitation: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(response.data.data.user));
         setTimeout(() => navigate("/conversations"), 1500);
       } else {
-        setError(response.data.message || "فشل في قبول الدعوة");
+        setError(response.data?.message || "فشل في قبول الدعوة");
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "فشل في قبول الدعوة");
@@ -133,7 +133,7 @@ const AcceptInvitation: React.FC = () => {
         title="تعذر فتح الدعوة"
         description="الرابط غير صالح أو انتهت صلاحيته. يمكنك العودة لصفحة تسجيل الدخول وطلب دعوة جديدة."
         eyebrow="Invitation Error"
-        icon={<ExclamationTriangleIcon className="h-7 w-7" />}
+        icon={<AlertTriangle className="h-6 w-6 text-destructive" />}
       >
         <AuthNotice variant="error" title="خطأ في الدعوة">
           {error}
@@ -158,7 +158,7 @@ const AcceptInvitation: React.FC = () => {
         title="تم إنشاء الحساب بنجاح"
         description="تم تفعيل حسابك داخل الفريق، وسيتم تحويلك إلى لوحة التحكم خلال لحظات."
         eyebrow="Team Access Ready"
-        icon={<CheckCircleIcon className="h-7 w-7" />}
+        icon={<CheckCircle2 className="h-6 w-6 text-emerald-500" />}
       >
         <div className="business-auth-loader-block">
           <div className="business-auth-loader" />
@@ -173,7 +173,7 @@ const AcceptInvitation: React.FC = () => {
       title="قبول الدعوة والانضمام للفريق"
       description="أكمل إنشاء كلمة المرور لتفعيل حسابك داخل الشركة والانطلاق بنفس الثيم المؤسسي الجديد."
       eyebrow="Join The Team"
-      icon={<LockClosedIcon className="h-7 w-7" />}
+      icon={<Lock className="h-6 w-6 text-primary" />}
       footer={
         <div className="business-auth-link-row">
           <button
@@ -189,7 +189,7 @@ const AcceptInvitation: React.FC = () => {
       {invitation ? (
         <div className="business-auth-summary">
           <div className="business-auth-summary-item">
-            <UserIcon className="h-5 w-5" />
+            <User className="h-4 w-4 text-primary" />
             <div>
               <span>الاسم</span>
               <strong>
@@ -198,21 +198,21 @@ const AcceptInvitation: React.FC = () => {
             </div>
           </div>
           <div className="business-auth-summary-item">
-            <EnvelopeIcon className="h-5 w-5" />
+            <Mail className="h-4 w-4 text-primary" />
             <div>
               <span>البريد الإلكتروني</span>
               <strong>{invitation.email}</strong>
             </div>
           </div>
           <div className="business-auth-summary-item">
-            <BuildingOffice2Icon className="h-5 w-5" />
+            <Building2 className="h-4 w-4 text-primary" />
             <div>
               <span>الشركة</span>
               <strong>{invitation.companyName}</strong>
             </div>
           </div>
           <div className="business-auth-summary-item">
-            <CheckCircleIcon className="h-5 w-5" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             <div>
               <span>الدور</span>
               <strong>{roleLabels[invitation.role] || invitation.role}</strong>

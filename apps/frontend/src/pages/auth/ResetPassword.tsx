@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import {
-  CheckIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockClosedIcon,
-} from "@heroicons/react/24/outline";
+  Check,
+  Eye,
+  EyeOff,
+  Lock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
@@ -109,7 +109,7 @@ const ResetPassword: React.FC = () => {
         title="تم تحديث كلمة المرور"
         description="أصبح بإمكانك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة."
         eyebrow="Password Updated"
-        icon={<CheckIcon className="h-7 w-7" />}
+        icon={<Check className="h-6 w-6 text-emerald-500" />}
         visualTitle={
           <>
             تم بنجاح <br />
@@ -120,7 +120,7 @@ const ResetPassword: React.FC = () => {
         visualBadge="اكتمل التحديث"
       >
         <div style={{ marginTop: '2rem' }}>
-          <Link to="/auth/login" className="elite-submit-button">
+          <Link to="/auth/login" className="business-primary-button inline-flex items-center justify-center text-center">
             الذهاب إلى تسجيل الدخول
           </Link>
         </div>
@@ -133,10 +133,12 @@ const ResetPassword: React.FC = () => {
       title="إعادة تعيين كلمة المرور"
       description="اختر كلمة مرور قوية لتأمين الوصول إلى مساحة العمل الجديدة."
       eyebrow="Set New Password"
-      icon={<LockClosedIcon className="h-7 w-7" />}
+      icon={<Lock className="h-6 w-6 text-primary" />}
       footer={
-        <div className="elite-form-link-row">
-          <Link to="/auth/login" className="elite-form-link">العودة إلى تسجيل الدخول</Link>
+        <div className="business-auth-link-row">
+          <Link to="/auth/login" className="business-auth-inline-link">
+            العودة إلى تسجيل الدخول
+          </Link>
         </div>
       }
       visualTitle={
@@ -154,12 +156,12 @@ const ResetPassword: React.FC = () => {
         </AuthNotice>
       ) : null}
 
-      <form className="elite-form-content" onSubmit={handleSubmit(onSubmit)}>
-        <div className="elite-input-group">
-          <label htmlFor="password" className="elite-label">
+      <form className="business-auth-form" onSubmit={handleSubmit(onSubmit)}>
+        <div className="business-auth-field">
+          <label htmlFor="password" className="business-auth-label">
             كلمة المرور الجديدة
           </label>
-          <div className="elite-input-wrapper">
+          <div className="relative">
             <input
               {...register("password", {
                 required: "كلمة المرور مطلوبة",
@@ -177,31 +179,31 @@ const ResetPassword: React.FC = () => {
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              className="elite-input"
+              className="business-auth-input"
               placeholder="أدخل كلمة مرور قوية"
             />
             <button
               type="button"
-              className="elite-input-password-toggle"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
               onClick={() => setShowPassword((prev) => !prev)}
             >
               {showPassword ? (
-                <EyeSlashIcon className="h-5 w-5" />
+                <EyeOff className="h-4 w-4" />
               ) : (
-                <EyeIcon className="h-5 w-5" />
+                <Eye className="h-4 w-4" />
               )}
             </button>
           </div>
           {errors.password ? (
-            <p className="text-xs text-rose-600 mt-1 text-right">{errors.password.message}</p>
+            <p className="text-xs text-destructive mt-1 text-right">{errors.password.message}</p>
           ) : null}
         </div>
 
-        <div className="elite-input-group">
-          <label htmlFor="confirmPassword" className="elite-label">
+        <div className="business-auth-field">
+          <label htmlFor="confirmPassword" className="business-auth-label">
             تأكيد كلمة المرور
           </label>
-          <div className="elite-input-wrapper">
+          <div className="relative">
             <input
               {...register("confirmPassword", {
                 required: "تأكيد كلمة المرور مطلوب",
@@ -211,31 +213,33 @@ const ResetPassword: React.FC = () => {
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               autoComplete="new-password"
-              className="elite-input"
+              className="business-auth-input"
               placeholder="أعد إدخال كلمة المرور"
             />
             <button
               type="button"
-              className="elite-input-password-toggle"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
               onClick={() => setShowConfirmPassword((prev) => !prev)}
             >
               {showConfirmPassword ? (
-                <EyeSlashIcon className="h-5 w-5" />
+                <EyeOff className="h-4 w-4" />
               ) : (
-                <EyeIcon className="h-5 w-5" />
+                <Eye className="h-4 w-4" />
               )}
             </button>
           </div>
           {errors.confirmPassword ? (
-            <p className="text-xs text-rose-600 mt-1 text-right">
+            <p className="text-xs text-destructive mt-1 text-right">
               {errors.confirmPassword.message}
             </p>
           ) : null}
         </div>
 
-        <div className="business-auth-requirements" style={{ margin: '1.5rem 0', textAlign: 'right' }}>
-          <h4 style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', color: '#1e293b' }}>متطلبات كلمة المرور</h4>
-          <div className="business-auth-requirement-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
+        <div className="business-auth-requirements" style={{ margin: '1.25rem 0', textAlign: 'right' }}>
+          <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--foreground)' }}>
+            متطلبات كلمة المرور
+          </h4>
+          <div className="business-auth-requirement-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.375rem' }}>
             {passwordRules.map((rule) => (
               <div
                 key={rule.id}
@@ -264,13 +268,13 @@ const ResetPassword: React.FC = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="elite-submit-button"
+          className="business-primary-button"
         >
           {isLoading ? (
-            <>
+            <span className="flex items-center justify-center gap-2">
               <LoadingSpinner size="sm" color="white" />
               <span>جاري إعادة التعيين...</span>
-            </>
+            </span>
           ) : (
             "إعادة تعيين كلمة المرور"
           )}
