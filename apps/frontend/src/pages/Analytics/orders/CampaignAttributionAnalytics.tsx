@@ -1,107 +1,12 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import React, { useDeferredValue, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { ChevronDownIcon, LockClosedIcon, XCircleIcon } from "@heroicons/react/24/outline";
-import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
+import { Lock, XCircle, Search } from "lucide-react";
 import analyticsService from "../../../services/analyticsService";
-import { useCurrency } from "../../../hooks/useCurrency";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
-
-interface CampaignAttributionSummary {
-  totalOrders: number;
-  storefrontOrders?: number;
-  inboxOrders?: number;
-  storefrontRevenue?: number;
-  inboxRevenue?: number;
-  trackedOrders: number;
-  campaignTaggedOrders: number;
-  directOrders: number;
-  unattributedOrders: number;
-  deliveredOrders: number;
-  cancelledOrders: number;
-  returnedOrders: number;
-  totalRevenue: number;
-  deliveredRevenue: number;
-  averageOrderValue: number;
-  trackingCoverage: number;
-  deliveryRate: number;
-}
-
-interface CampaignAttributionRow {
-  key: string;
-  channel?: string;
-  trackingType: string;
-  platform: string;
-  source: string;
-  medium: string;
-  campaignId: string | null;
-  campaignName: string;
-  adSetId: string | null;
-  adId: string | null;
-  adRef?: string | null;
-  postId?: string | null;
-  pageId?: string | null;
-  content: string | null;
-  term: string | null;
-  totalOrders: number;
-  deliveredOrders: number;
-  cancelledOrders: number;
-  returnedOrders: number;
-  totalRevenue: number;
-  deliveredRevenue: number;
-  averageOrderValue: number;
-  deliveredRate: number;
-}
-
-interface BreakdownRow {
-  source?: string;
-  platform?: string;
-  orders: number;
-  revenue: number;
-  share: number;
-}
-
-interface TrendRow {
-  date: string;
-  totalOrders: number;
-  trackedOrders: number;
-  campaignOrders: number;
-  revenue: number;
-  deliveredRevenue: number;
-}
-
-interface CampaignAttributionAnalyticsData {
-  summary: CampaignAttributionSummary;
-  rows: CampaignAttributionRow[];
-  sourceBreakdown: BreakdownRow[];
-  platformBreakdown: BreakdownRow[];
-  trend: TrendRow[];
-  availableFilters: {
-    channels?: string[];
-    sources: string[];
-    platforms: string[];
-    trackingTypes: string[];
-  };
-  appliedFilters: {
-    channel?: string;
-    source: string;
-    platform: string;
-    trackingType: string;
-    search: string;
-  };
-}
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
+import { CampaignAttributionAnalyticsData } from "./campaignAttributionTypes";
+import CampaignAttributionStats from "./CampaignAttributionStats";
+import CampaignAttributionCharts, { SectionCard } from "./CampaignAttributionCharts";
+import CampaignAttributionTable from "./CampaignAttributionTable";
 
 const trackingTypeLabels: Record<string, string> = {
   campaign: "حملة",
@@ -110,205 +15,7 @@ const trackingTypeLabels: Record<string, string> = {
   unattributed: "غير منسوب",
 };
 
-const trackingTypeBadgeClasses: Record<string, string> = {
-  campaign:
-    "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800",
-  direct:
-    "bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-200 dark:border-sky-800",
-  tracked:
-    "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800",
-  unattributed:
-    "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
-};
-
-const getTrackingBadgeClass = (type: string) =>
-  trackingTypeBadgeClasses[type] || trackingTypeBadgeClasses["unattributed"];
-
-const channelLabels: Record<string, string> = {
-  storefront: "متجر إلكتروني",
-  inbox: "رسائل الإنبوكس",
-};
-
-const channelBadgeClasses: Record<string, string> = {
-  storefront:
-    "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800",
-  inbox:
-    "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800",
-};
-
-const getChannelBadgeClass = (channel?: string) =>
-  channelBadgeClasses[channel || "storefront"] || channelBadgeClasses.storefront;
-
-const formatAttributionValue = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return value;
-};
-
-const ChartTooltip: React.FC<any> = ({ active, payload, label, formatter }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-  return (
-    <div
-      dir="rtl"
-      className="rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur dark:border-gray-600 dark:bg-gray-900/95"
-    >
-      {label ? (
-        <p className="mb-1 font-semibold text-gray-700 dark:text-gray-200">
-          {label}
-        </p>
-      ) : null}
-      {payload.map((entry: any, index: number) => (
-        <div
-          key={index}
-          className="flex items-center gap-2 text-gray-600 dark:text-gray-300"
-        >
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: entry.color || entry.payload?.fill }}
-          />
-          <span>{entry.name}:</span>
-          <span className="font-bold text-gray-900 dark:text-white">
-            {formatter ? formatter(entry.value, entry) : entry.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const SectionCard: React.FC<{
-  title: string;
-  subtitle?: string;
-  action?: React.ReactNode;
-  className?: string;
-  collapsible?: boolean;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}> = ({
-  title,
-  subtitle,
-  action,
-  className = "",
-  collapsible = false,
-  defaultOpen = true,
-  children,
-}) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div
-      className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 ${className}`}
-    >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white">
-            {title}
-          </h2>
-          {subtitle ? (
-            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {action}
-          {collapsible ? (
-            <button
-              type="button"
-              onClick={() => setOpen((value) => !value)}
-              className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-              aria-expanded={open}
-              aria-label={open ? `إخفاء ${title}` : `إظهار ${title}`}
-            >
-              <ChevronDownIcon
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  open ? "" : "-rotate-90"
-                }`}
-              />
-            </button>
-          ) : null}
-        </div>
-      </div>
-      {open ? <div>{children}</div> : null}
-    </div>
-  );
-};
-
-const StatsBar: React.FC<{ data: CampaignAttributionAnalyticsData }> = ({
-  data,
-}) => {
-  const { formatPrice } = useCurrency();
-  const s = data.summary;
-
-  const cells = [
-    {
-      label: "إجمالي الطلبات",
-      value: s.totalOrders.toLocaleString(),
-      detail:
-        s.storefrontOrders !== undefined && s.inboxOrders !== undefined
-          ? `${s.storefrontOrders.toLocaleString()} متجر · ${s.inboxOrders.toLocaleString()} إنبوكس`
-          : `${s.deliveryRate.toFixed(1)}% نسبة التسليم`,
-      accent: "text-blue-600 dark:text-blue-400",
-    },
-    {
-      label: "طلبات متتبعة",
-      value: s.trackedOrders.toLocaleString(),
-      detail: `${s.trackingCoverage.toFixed(1)}% تغطية التتبع`,
-      accent: "text-emerald-600 dark:text-emerald-400",
-    },
-    {
-      label: "طلبات بحملة",
-      value: s.campaignTaggedOrders.toLocaleString(),
-      detail: `${s.directOrders.toLocaleString()} طلب مباشر`,
-      accent: "text-violet-600 dark:text-violet-400",
-    },
-    {
-      label: "غير منسوبة",
-      value: s.unattributedOrders.toLocaleString(),
-      detail: `${s.cancelledOrders.toLocaleString()} ملغي · ${s.returnedOrders.toLocaleString()} مرتجع`,
-      accent: "text-slate-600 dark:text-slate-300",
-    },
-    {
-      label: "إجمالي الإيراد",
-      value: formatPrice(s.totalRevenue),
-      detail:
-        s.inboxRevenue !== undefined && s.inboxRevenue > 0
-          ? `${formatPrice(s.storefrontRevenue || 0)} متجر · ${formatPrice(s.inboxRevenue)} إنبوكس`
-          : `${formatPrice(s.deliveredRevenue)} إيراد المسلّم`,
-      accent: "text-amber-600 dark:text-amber-400",
-    },
-    {
-      label: "متوسط قيمة الطلب",
-      value: formatPrice(s.averageOrderValue),
-      detail: `${s.deliveredOrders.toLocaleString()} طلب مسلّم`,
-      accent: "text-cyan-600 dark:text-cyan-400",
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm dark:border-gray-700 dark:bg-gray-700 md:grid-cols-3 xl:grid-cols-6">
-      {cells.map((cell) => (
-        <div key={cell.label} className="bg-white p-3.5 dark:bg-gray-800">
-          <p className="text-[11px] text-gray-400 dark:text-gray-500">
-            {cell.label}
-          </p>
-          <p
-            className={`mt-0.5 truncate text-lg font-extrabold ${cell.accent}`}
-          >
-            {cell.value}
-          </p>
-          <p className="truncate text-[11px] text-gray-400">{cell.detail}</p>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const CampaignAttributionAnalytics: React.FC = () => {
-  const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appAccessState, setAppAccessState] = useState<{
@@ -324,17 +31,10 @@ const CampaignAttributionAnalytics: React.FC = () => {
   const [trackingType, setTrackingType] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput.trim());
-  const [data, setData] = useState<CampaignAttributionAnalyticsData | null>(
-    null,
-  );
-  const [chartTab, setChartTab] = useState<"trend" | "sources">("trend");
-  const [sideTab, setSideTab] = useState<"platforms" | "guide">("platforms");
+  const [data, setData] = useState<CampaignAttributionAnalyticsData | null>(null);
 
   useEffect(() => {
-    if (!range) {
-      return;
-    }
-
+    if (!range) return;
     const controller = new AbortController();
 
     const fetchAnalytics = async () => {
@@ -356,24 +56,16 @@ const CampaignAttributionAnalytics: React.FC = () => {
         });
 
         const result = response as
-          | {
-              success?: boolean;
-              data?: CampaignAttributionAnalyticsData;
-              message?: string;
-            }
+          | { success?: boolean; data?: CampaignAttributionAnalyticsData; message?: string }
           | null
           | undefined;
 
         if (!result?.success || !result.data) {
           throw new Error(result?.message || "تعذر تحميل تحليل الحملات");
         }
-
         setData(result.data);
       } catch (err: any) {
-        if (err?.name === "AbortError" || err?.name === "CanceledError") {
-          return;
-        }
-
+        if (err?.name === "AbortError" || err?.name === "CanceledError") return;
         if (err?.response?.status === 403 || err?.response?.data?.needsActivation) {
           setAppAccessState({
             needsActivation: true,
@@ -385,46 +77,26 @@ const CampaignAttributionAnalytics: React.FC = () => {
           });
           return;
         }
-
-        setError(
-          err?.response?.data?.message ||
-            err?.message ||
-            "حدث خطأ أثناء تحميل تحليل الحملات",
-        );
+        setError(err?.response?.data?.message || err?.message || "حدث خطأ أثناء تحميل تحليل الحملات");
       } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchAnalytics();
-
     return () => controller.abort();
   }, [deferredSearch, range, platform, source, trackingType, channel]);
-
-  const sourceChartData = useMemo(
-    () => (data?.sourceBreakdown || []).slice(0, 8),
-    [data],
-  );
-
-  const platformCards = useMemo(
-    () => (data?.platformBreakdown || []).slice(0, 6),
-    [data],
-  );
 
   const rows = data?.rows || [];
 
   const header = (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div>
-        <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">
           تحليل الحملات ومصدر الطلبات
         </h1>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-          ربط الطلبات بالمصدر والمنصة ورقم الحملة من{" "}
-          <code className="text-[10px]">metadata.attribution</code> داخل
-          الأوردر
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          ربط الطلبات بالمصدر والمنصة ورقم الحملة من بيانات التتبع المنسوبة للطلب
         </p>
       </div>
       <PeriodSelector onRangeChange={setRange} />
@@ -435,12 +107,10 @@ const CampaignAttributionAnalytics: React.FC = () => {
     return (
       <div className="space-y-4" dir="rtl">
         {header}
-        <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex min-h-[50vh] items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 dark:border-blue-900 dark:border-t-blue-400" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              جارٍ تحليل الحملات ومصادر الطلبات…
-            </p>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+            <p className="text-xs text-muted-foreground">جارٍ تحليل الحملات ومصادر الطلبات…</p>
           </div>
         </div>
       </div>
@@ -452,30 +122,30 @@ const CampaignAttributionAnalytics: React.FC = () => {
       <div className="space-y-4" dir="rtl">
         {header}
         <div className="flex min-h-[50vh] items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4">
-              <LockClosedIcon className="h-7 w-7" />
+          <div className="w-full max-w-md rounded-lg border border-border/70 bg-card p-6 text-center shadow-none">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3">
+              <Lock className="h-6 w-6" />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-2">
               تطبيق إضافي مطلوب
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            <h2 className="text-base font-semibold text-foreground">
               {appAccessState.appName || "Campaign Attribution"}
             </h2>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
               {appAccessState.message ||
                 "هذه الميزة تتطلب تفعيل تطبيق Campaign Attribution لربط وتحليل نتائج الحملات ومصادر الطلبات."}
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2">
               <Link
                 to={`/marketplace/apps/${appAccessState.appSlug || "campaign-attribution"}`}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 تفعيل التطبيق من المتجر
               </Link>
               <Link
                 to="/company-dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-border/70 bg-muted/30 px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
               >
                 العودة للوحة التحكم
               </Link>
@@ -490,46 +160,37 @@ const CampaignAttributionAnalytics: React.FC = () => {
     return (
       <div className="space-y-4" dir="rtl">
         {header}
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50/60 p-8 text-center dark:border-red-900 dark:bg-red-900/10">
-            <XCircleIcon className="mx-auto h-12 w-12 text-red-500" />
-            <p className="mt-4 font-semibold text-red-700 dark:text-red-300">
-              {error}
-            </p>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="w-full max-w-md rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+            <XCircle className="mx-auto h-8 w-8 text-destructive" />
+            <p className="mt-3 text-xs font-semibold text-destructive">{error}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const tabButtonClass = (active: boolean) =>
-    `rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-      active
-        ? "bg-blue-600 text-white shadow-sm"
-        : "text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-    }`;
-
   return (
     <div className="space-y-4" dir="rtl">
       {header}
 
-      {/* Compact filters */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-card p-2 shadow-none">
         <select
           value={channel}
           onChange={(event) => setChannel(event.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          className="rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label="القناة"
         >
           <option value="all">كل القنوات (متجر + إنبوكس)</option>
-          <option value="storefront">🛒 المتجر الإلكتروني فقط</option>
-          <option value="inbox">💬 رسائل الإنبوكس فقط</option>
+          <option value="storefront">المتجر الإلكتروني فقط</option>
+          <option value="inbox">رسائل الإنبوكس فقط</option>
         </select>
 
         <select
           value={source}
           onChange={(event) => setSource(event.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          className="rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label="المصدر"
         >
           <option value="all">كل المصادر</option>
@@ -543,7 +204,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
         <select
           value={platform}
           onChange={(event) => setPlatform(event.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          className="rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label="المنصة"
         >
           <option value="all">كل المنصات</option>
@@ -557,7 +218,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
         <select
           value={trackingType}
           onChange={(event) => setTrackingType(event.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          className="rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label="نوع التتبع"
         >
           <option value="all">كل أنواع التتبع</option>
@@ -568,192 +229,37 @@ const CampaignAttributionAnalytics: React.FC = () => {
           ))}
         </select>
 
-        <input
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="بحث بالحملة أو Campaign / Ad Set / Ad ID…"
-          className="min-w-[200px] flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-        />
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="بحث بالحملة أو المعرفات..."
+            className="w-full rounded-md border border-border/70 bg-background pr-8 pl-2.5 py-1.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
 
-        <span className="mr-auto text-[11px] text-gray-400 dark:text-gray-500">
+        <span className="mr-auto font-mono text-[11px] text-muted-foreground tabular-nums">
           {rows.length.toLocaleString()} صف
         </span>
       </div>
 
       {/* Merged stats bar */}
-      {data ? <StatsBar data={data} /> : null}
+      {data && <CampaignAttributionStats data={data} />}
 
-      {/* Footnote instead of tall banner */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+      {/* Footnote */}
+      <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
         يجمع هذا التقرير طلبات المتجر الإلكتروني (روابط UTM) وطلبات رسائل وإنبوكس فيسبوك الناتجة عن إعلانات الرسائل (Click-to-Messenger)، مع إمكانية الفلترة السريعة بالقناة والمصدر بالأعلى.
       </div>
 
-      {/* Charts + platforms side panel */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-      <SectionCard
-        title="تطور الطلبات والحملات"
-        subtitle="مقارنة إجمالي الطلبات بالمرتبطة بحملات خلال الفترة"
-        className="xl:col-span-2"
-        action={
-          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
-            <button
-              type="button"
-              className={tabButtonClass(chartTab === "trend")}
-              onClick={() => setChartTab("trend")}
-            >
-              الاتجاه
-            </button>
-            <button
-              type="button"
-              className={tabButtonClass(chartTab === "sources")}
-              onClick={() => setChartTab("sources")}
-            >
-              المصادر
-            </button>
-          </div>
-        }
-        collapsible
-      >
-        {chartTab === "trend" ? (
-          <div className="h-[260px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <AreaChart data={data?.trend || []}>
-                <defs>
-                  <linearGradient
-                    id="campaignTrendFill"
-                    x1="0"
-                    x2="0"
-                    y1="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.24} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.08} />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={11} />
-                <YAxis stroke="#9CA3AF" fontSize={11} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Area
-                  type="monotone"
-                  dataKey="totalOrders"
-                  name="إجمالي الطلبات"
-                  stroke="#2563EB"
-                  fill="url(#campaignTrendFill)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="campaignOrders"
-                  name="طلبات مرتبطة بحملة"
-                  stroke="#10B981"
-                  fillOpacity={0}
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="h-[260px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={sourceChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.08} />
-                <XAxis dataKey="source" stroke="#9CA3AF" fontSize={11} />
-                <YAxis stroke="#9CA3AF" fontSize={11} />
-                <Tooltip
-                  content={
-                    <ChartTooltip
-                      formatter={(value: number) =>
-                        `${Number(value).toLocaleString()} طلب`
-                      }
-                    />
-                  }
-                />
-                <Bar
-                  dataKey="orders"
-                  name="الطلبات"
-                  fill="#7C3AED"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="المنصات والأدلة"
-        action={
-          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700">
-            <button
-              type="button"
-              className={tabButtonClass(sideTab === "platforms")}
-              onClick={() => setSideTab("platforms")}
-            >
-              المنصات
-            </button>
-            <button
-              type="button"
-              className={tabButtonClass(sideTab === "guide")}
-              onClick={() => setSideTab("guide")}
-            >
-              كيف تقرأ؟
-            </button>
-          </div>
-        }
-        collapsible
-      >
-        {sideTab === "platforms" ? (
-          <div className="space-y-2">
-            {platformCards.map((row, index) => (
-              <div
-                key={row.platform || `platform-${index}`}
-                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1 ring-gray-100 dark:ring-gray-700"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-xs font-semibold text-gray-900 dark:text-white">
-                    {formatAttributionValue(row.platform)}
-                  </div>
-                  <div className="text-[10px] text-gray-400">
-                    {row.orders.toLocaleString()} طلب
-                  </div>
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-bold text-gray-900 dark:text-white">
-                    {row.share.toFixed(1)}%
-                  </div>
-                  <div className="text-[10px] text-gray-400">
-                    {formatPrice(row.revenue)}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {platformCards.length === 0 && (
-              <p className="py-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                لا توجد بيانات منصات في الفترة الحالية.
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-            <p>
-              إذا كان <span className="font-semibold">Campaign ID</span> فارغًا
-              لكن المصدر موجود، فالطلب متتبع لكن الرابط لم يحمل رقم الحملة.
-            </p>
-            <p>
-              ارتفاع <span className="font-semibold">غير منسوبة</span> يعني
-              غالبًا طلبات قديمة أو روابط بدون UTM / campaign params.
-            </p>
-            <p>
-              قارن <span className="font-semibold">الإيراد</span> بـ{" "}
-              <span className="font-semibold">نسبة التسليم</span> لتعرف الحملة
-              التي تجلب مبيعات فعلية لا مجرد طلبات.
-            </p>
-          </div>
-        )}
-      </SectionCard>
-      </div>
+      {/* Charts + side panel */}
+      {data && (
+        <CampaignAttributionCharts
+          trend={data.trend || []}
+          sourceBreakdown={data.sourceBreakdown || []}
+          platformBreakdown={data.platformBreakdown || []}
+        />
+      )}
 
       {/* Table full width */}
       <SectionCard
@@ -761,125 +267,11 @@ const CampaignAttributionAnalytics: React.FC = () => {
         subtitle="كل صف تجميع حسب المصدر والمنصة والحملة ومعرفات الإعلان"
         collapsible
       >
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-xs">
-              <thead>
-                <tr className="text-right text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                  <th className="pb-2">المصدر والمنصة</th>
-                  <th className="pb-2">الحملة</th>
-                  <th className="pb-2">المعرفات</th>
-                  <th className="pb-2">الطلبات</th>
-                  <th className="pb-2">تم التسليم</th>
-                  <th className="pb-2">ملغي</th>
-                  <th className="pb-2">مرتجع</th>
-                  <th className="pb-2">الإيراد</th>
-                  <th className="pb-2">متوسط الطلب</th>
-                  <th className="pb-2">نسبة التسليم</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/70">
-                {rows.map((row) => (
-                  <tr
-                    key={row.key}
-                    className="align-top transition-colors hover:bg-blue-50/40 dark:hover:bg-blue-900/10"
-                  >
-                    <td className="py-2 pr-0 pl-2">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-1">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getTrackingBadgeClass(row.trackingType)}`}
-                          >
-                            {trackingTypeLabels[row.trackingType] || row.trackingType}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getChannelBadgeClass(row.channel)}`}
-                          >
-                            {row.channel === "inbox" ? "💬 إنبوكس" : "🛒 متجر"}
-                          </span>
-                        </div>
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {formatAttributionValue(row.source)}
-                        </div>
-                        <div className="text-[10px] text-gray-400">
-                          منصة: {formatAttributionValue(row.platform)}
-                        </div>
-                        <div className="text-[10px] text-gray-400">
-                          Medium: {formatAttributionValue(row.medium)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="space-y-1">
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {row.campaignName}
-                        </div>
-                        <div className="text-[10px] text-gray-400">
-                          Content: {formatAttributionValue(row.content)}
-                        </div>
-                        <div className="text-[10px] text-gray-400">
-                          Term: {formatAttributionValue(row.term)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="space-y-1 text-[10px] text-gray-600 dark:text-gray-300">
-                        {row.campaignId && (
-                          <div>Campaign: {row.campaignId}</div>
-                        )}
-                        {row.adSetId && (
-                          <div>Ad Set: {row.adSetId}</div>
-                        )}
-                        {row.adId && (
-                          <div className="font-medium text-purple-700 dark:text-purple-300">
-                            Ad ID: {row.adId}
-                          </div>
-                        )}
-                        {row.postId && (
-                          <div className="text-gray-500 dark:text-gray-400">
-                            Post: {row.postId.length > 18 ? `${row.postId.slice(0, 18)}...` : row.postId}
-                          </div>
-                        )}
-                        {!row.campaignId && !row.adSetId && !row.adId && !row.postId && (
-                          <div>-</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 font-bold text-gray-900 dark:text-white">
-                      {row.totalOrders.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-2 font-semibold text-emerald-600 dark:text-emerald-400">
-                      {row.deliveredOrders.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-2 font-semibold text-rose-600 dark:text-rose-400">
-                      {row.cancelledOrders.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-2 font-semibold text-amber-600 dark:text-amber-400">
-                      {row.returnedOrders.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-2 font-medium text-gray-900 dark:text-white">
-                      {formatPrice(row.totalRevenue)}
-                    </td>
-                    <td className="px-2 py-2 text-gray-700 dark:text-gray-200">
-                      {formatPrice(row.averageOrderValue)}
-                    </td>
-                    <td className="px-2 py-2 text-gray-700 dark:text-gray-200">
-                      {row.deliveredRate.toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {rows.length === 0 && (
-            <div className="py-8 text-center text-xs text-gray-500 dark:text-gray-400">
-              لا توجد نتائج مطابقة للفلاتر الحالية.
-            </div>
-          )}
-        </SectionCard>
+        <CampaignAttributionTable rows={rows} />
+      </SectionCard>
 
       {error && data && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-600 dark:text-amber-400">
           آخر محاولة تحديث أعادت خطأ: {error}
         </div>
       )}
