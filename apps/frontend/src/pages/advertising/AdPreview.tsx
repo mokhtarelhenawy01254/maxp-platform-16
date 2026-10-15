@@ -1,9 +1,3 @@
-/**
- * 👁️ Ad Preview
- *
- * معاينة الإعلانات قبل النشر
- */
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -14,12 +8,14 @@ import {
   Monitor,
   RefreshCw,
   Loader2,
-  ArrowLeft,
+  ArrowRight,
   Facebook,
   Instagram,
   MessageCircle,
   Layout,
   Image,
+  Info,
+  CheckCircle2
 } from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
@@ -47,37 +43,37 @@ const AdPreview: React.FC = () => {
   const previewFormats = [
     {
       id: "MOBILE_FEED_STANDARD" as const,
-      label: "موبايل - Feed",
+      label: "موبايل - آخر الأخبار (Feed)",
       icon: Smartphone,
       platform: "facebook",
     },
     {
       id: "DESKTOP_FEED_STANDARD" as const,
-      label: "سطح المكتب - Feed",
+      label: "سطح المكتب - آخر الأخبار",
       icon: Monitor,
       platform: "facebook",
     },
     {
       id: "INSTAGRAM_STANDARD" as const,
-      label: "Instagram Feed",
+      label: "انستجرام - المنشورات (Feed)",
       icon: Instagram,
       platform: "instagram",
     },
     {
       id: "INSTAGRAM_STORY" as const,
-      label: "Instagram Story",
+      label: "انستجرام - القصص (Story)",
       icon: Smartphone,
       platform: "instagram",
     },
     {
       id: "MESSENGER_MOBILE_INBOX_MEDIA" as const,
-      label: "Messenger",
+      label: "ماسنجر - الوسائط والوارد",
       icon: MessageCircle,
       platform: "messenger",
     },
     {
       id: "RIGHT_COLUMN_STANDARD" as const,
-      label: "العمود الأيمن",
+      label: "العمود الجانبي الأيمن",
       icon: Layout,
       platform: "facebook",
     },
@@ -99,214 +95,201 @@ const AdPreview: React.FC = () => {
       tToast.success("AdPreview.success_load_bb63");
     } catch (error: any) {
       console.error("Error loading preview:", error);
-      toast.error(error?.response?.data?.error || "فشل في تحميل المعاينة");
+      toast.error(error?.response?.data?.error || "فشل في تحميل المعاينة الإعلانية");
     } finally {
       setLoading(false);
     }
   };
 
-  const getPlatformColor = (platform: string) => {
-    switch (platform) {
-      case "facebook":
-        return "blue";
-      case "instagram":
-        return "pink";
-      case "messenger":
-        return "purple";
-      default:
-        return "gray";
-    }
-  };
-
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       <FacebookAdsModuleNav />
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate("/advertising/facebook-ads")}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Eye className="w-7 h-7 text-indigo-600" />
-            معاينة الإعلان
-          </h1>
-          <p className="text-gray-600 mt-1">
-            شاهد كيف سيظهر إعلانك على مختلف المنصات
-          </p>
+
+      {/* Header Chassis */}
+      <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/advertising/facebook-ads")}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <div className="space-y-0.5 text-right">
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+              معاينة الإعلانات الحية
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              فحص مظهر وتنسيق إعلاناتك عبر منصات وتطبيقات Meta المختلفة قبل الاعتماد
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Settings Panel */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Creative ID Input */}
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              إعدادات المعاينة
+        <div className="space-y-5 lg:col-span-5">
+          {/* Creative ID Input Card */}
+          <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">
+              معرف التصميم الإبداعي (Creative ID)
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  معرف الإعلان الإبداعي (Creative ID) *
+                <label className="mb-1.5 block text-xs text-muted-foreground">
+                  معرف الإعلان أو التصميم *
                 </label>
                 <input
                   type="text"
                   value={formData.creativeId}
                   onChange={(e) => setFormData({ creativeId: e.target.value })}
-                  placeholder="أدخل معرف Creative"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="مثال: act_12345_cr_987654"
+                  className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <button
                 onClick={handlePreview}
                 disabled={loading || !formData.creativeId.trim()}
-                className="w-full py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    جاري التحميل...
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>جاري جلب المعاينة...</span>
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4" />
-                    عرض المعاينة
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>عرض المعاينة الحية</span>
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Format Selection */}
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              تنسيق العرض
+          {/* Format Selection Card */}
+          <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">
+              موضع ومنصة العرض
             </h2>
 
             <div className="space-y-2">
               {previewFormats.map((format) => {
                 const Icon = format.icon;
                 const isSelected = selectedFormat === format.id;
-                const color = getPlatformColor(format.platform);
 
                 return (
                   <button
                     key={format.id}
                     onClick={() => {
                       setSelectedFormat(format.id);
-                      if (previewData) handlePreview();
+                      if (previewData) void handlePreview();
                     }}
-                    className={`w-full p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                    className={`flex w-full items-center justify-between rounded-lg border p-3 text-right transition-colors ${
                       isSelected
-                        ? `border-${color}-500 bg-${color}-50`
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary/30 bg-primary/10 text-primary shadow-xs"
+                        : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     }`}
                   >
-                    <Icon
-                      className={`w-5 h-5 ${isSelected ? `text-${color}-600` : "text-gray-400"}`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${isSelected ? `text-${color}-700` : "text-gray-700"}`}
-                    >
-                      {format.label}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <Icon className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-xs font-medium">{format.label}</span>
+                    </div>
                     {format.platform === "instagram" && (
-                      <Instagram className="w-4 h-4 text-pink-500 mr-auto" />
+                      <Instagram className="h-4 w-4 text-pink-500" />
                     )}
                     {format.platform === "facebook" && (
-                      <Facebook className="w-4 h-4 text-blue-500 mr-auto" />
+                      <Facebook className="h-4 w-4 text-blue-500" />
+                    )}
+                    {format.platform === "messenger" && (
+                      <MessageCircle className="h-4 w-4 text-violet-500" />
                     )}
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* Tips Card without emoji */}
+          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Info className="h-4 w-4 text-primary" />
+              <span>إرشادات الجودة للمعاينة</span>
+            </div>
+            <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              <li>• تأكد من ظهور النصوص والوسائط بوضوح بدون اقتصاص.</li>
+              <li>• راجع روابط الهبوط وزر الحث على اتخاذ الإجراء (CTA).</li>
+              <li>• اختبر التناسق في كل من موجز الموبايل وسطح المكتب.</li>
+            </ul>
+          </div>
         </div>
 
-        {/* Preview Panel */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">المعاينة</h2>
+        {/* Preview Screen Panel */}
+        <div className="lg:col-span-7">
+          <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                <h2 className="text-xs font-semibold text-foreground">شاشة العرض الافتراضية</h2>
+              </div>
               {previewData && (
                 <button
                   onClick={handlePreview}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                  title="تحديث المعاينة"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="p-6 min-h-[500px] flex items-center justify-center bg-gray-100">
+            <div className="flex min-h-[480px] items-center justify-center bg-muted/10 p-6">
               {loading ? (
-                <div className="text-center">
-                  <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-600">جاري تحميل المعاينة...</p>
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="font-mono text-xs">جاري تجهيز وعرض المعاينة من Meta...</p>
                 </div>
               ) : previewData ? (
                 <div className="w-full max-w-md">
-                  {/* Device Frame */}
                   <div
                     className={`mx-auto ${
-                      selectedFormat.includes("MOBILE") ||
-                      selectedFormat.includes("STORY")
-                        ? "max-w-[375px]"
+                      selectedFormat.includes("MOBILE") || selectedFormat.includes("STORY")
+                        ? "max-w-[360px]"
                         : "max-w-full"
                     }`}
                   >
                     {selectedFormat.includes("STORY") ? (
-                      // Story Format
-                      <div className="bg-black rounded-3xl p-2 shadow-2xl">
-                        <div className="bg-gray-900 rounded-2xl overflow-hidden aspect-[9/16]">
+                      <div className="rounded-3xl border border-border/80 bg-background p-2.5 shadow-xl">
+                        <div className="aspect-[9/16] overflow-hidden rounded-2xl bg-muted/40">
                           {previewData.body ? (
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: previewData.body,
-                              }}
-                            />
+                            <div dangerouslySetInnerHTML={{ __html: previewData.body }} />
                           ) : (
-                            <div className="h-full flex items-center justify-center text-white">
-                              <Image className="w-16 h-16 opacity-50" />
+                            <div className="flex h-full items-center justify-center text-muted-foreground">
+                              <Image className="h-12 w-12 opacity-40" />
                             </div>
                           )}
                         </div>
                       </div>
                     ) : selectedFormat.includes("MOBILE") ? (
-                      // Mobile Format
-                      <div className="bg-gray-800 rounded-3xl p-3 shadow-2xl">
-                        <div className="bg-white rounded-2xl overflow-hidden">
+                      <div className="rounded-3xl border border-border/80 bg-background p-3 shadow-xl">
+                        <div className="overflow-hidden rounded-2xl bg-muted/40">
                           {previewData.body ? (
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: previewData.body,
-                              }}
-                            />
+                            <div dangerouslySetInnerHTML={{ __html: previewData.body }} />
                           ) : (
-                            <div className="aspect-square flex items-center justify-center bg-gray-100">
-                              <Image className="w-16 h-16 text-gray-300" />
+                            <div className="flex aspect-square items-center justify-center text-muted-foreground">
+                              <Image className="h-12 w-12 opacity-40" />
                             </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      // Desktop Format
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                      <div className="overflow-hidden rounded-xl border border-border/80 bg-background shadow-md">
                         {previewData.body ? (
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: previewData.body,
-                            }}
-                          />
+                          <div dangerouslySetInnerHTML={{ __html: previewData.body }} />
                         ) : (
-                          <div className="aspect-video flex items-center justify-center bg-gray-100">
-                            <Image className="w-16 h-16 text-gray-300" />
+                          <div className="flex aspect-video items-center justify-center text-muted-foreground">
+                            <Image className="h-12 w-12 opacity-40" />
                           </div>
                         )}
                       </div>
@@ -314,30 +297,17 @@ const AdPreview: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center">
-                  <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-2">
-                    أدخل معرف الإعلان الإبداعي لعرض المعاينة
+                <div className="space-y-2 text-center text-muted-foreground">
+                  <Eye className="mx-auto h-12 w-12 opacity-30" />
+                  <p className="text-xs font-medium text-foreground">
+                    أدخل معرف الإعلان لاختبار المعاينة الحية
                   </p>
-                  <p className="text-sm text-gray-400">
-                    يمكنك الحصول على المعرف من صفحة إدارة الإعلانات
+                  <p className="text-[11px]">
+                    يمكنك نسخ المعرف من مدير الحملات الإعلانية في المنصة
                   </p>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Tips */}
-          <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-            <h3 className="font-medium text-indigo-900 mb-2">
-              💡 نصائح للمعاينة
-            </h3>
-            <ul className="text-sm text-indigo-700 space-y-1">
-              <li>• تأكد من أن الإعلان يظهر بشكل جيد على جميع الأجهزة</li>
-              <li>• راجع النصوص والصور قبل النشر</li>
-              <li>• اختبر الروابط للتأكد من عملها بشكل صحيح</li>
-              <li>• تحقق من ظهور زر الإجراء بوضوح</li>
-            </ul>
           </div>
         </div>
       </div>

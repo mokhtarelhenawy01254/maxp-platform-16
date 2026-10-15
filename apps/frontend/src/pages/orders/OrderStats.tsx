@@ -2,21 +2,22 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
-import { config } from "../../config";
 import { apiClient } from "../../services/apiClient";
 import PeriodSelector, {
   PeriodRange,
 } from "../../components/common/PeriodSelector";
 import {
-  ChartBarIcon,
-  ShoppingBagIcon,
-  CurrencyDollarIcon,
-  TruckIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ArrowLeftIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
+  BarChart3,
+  ShoppingBag,
+  DollarSign,
+  Truck,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Calendar,
+  RotateCw,
+  AlertCircle
+} from "lucide-react";
 
 interface OrderStats {
   totalOrders: number;
@@ -43,17 +44,12 @@ const OrderStats: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
-  useEffect(() => {
-    fetchStats();
-  }, [range, allTime]);
-
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError(null);
 
       const params: any = {};
-
       if (!allTime && range) {
         params.dateFrom = range.startDate;
         params.dateTo = range.endDate;
@@ -82,20 +78,24 @@ const OrderStats: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    void fetchStats();
+  }, [range, allTime]);
+
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "pending":
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-amber-500" />;
       case "confirmed":
-        return <CheckCircleIcon className="h-5 w-5 text-blue-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
       case "processing":
-        return <ClockIcon className="h-5 w-5 text-indigo-500" />;
+        return <Clock className="h-4 w-4 text-primary" />;
       case "shipped":
-        return <TruckIcon className="h-5 w-5 text-purple-500" />;
+        return <Truck className="h-4 w-4 text-violet-500" />;
       case "delivered":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
       default:
-        return <ClockIcon className="h-5 w-5 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -106,31 +106,32 @@ const OrderStats: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <RotateCw className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">جاري تحميل إحصائيات الطلبيات...</p>
+        </div>
       </div>
     );
   }
 
-  // ✅ عرض حالة الخطأ
   if (error && !loading) {
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-                {t("orderStats.errorLoading")}
-              </h3>
-              <p className="text-red-600 dark:text-red-300">{error}</p>
-            </div>
-            <button
-              onClick={fetchStats}
-              className="ml-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {t("orderStats.retry")}
-            </button>
+      <div className="space-y-4" dir="rtl">
+        <div className="flex items-center justify-between rounded-xl border border-destructive/30 bg-destructive/10 p-6 shadow-sm">
+          <div className="space-y-1 text-right">
+            <h3 className="text-sm font-bold text-destructive">
+              {t("orderStats.errorLoading")}
+            </h3>
+            <p className="text-xs text-destructive/90">{error}</p>
           </div>
+          <button
+            onClick={fetchStats}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-xs font-medium text-destructive-foreground transition-all hover:bg-destructive/90 active:scale-[0.98]"
+          >
+            <RotateCw className="h-3.5 w-3.5" />
+            <span>{t("orderStats.retry")}</span>
+          </button>
         </div>
       </div>
     );
@@ -138,182 +139,167 @@ const OrderStats: React.FC = () => {
 
   if (!stats && !loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">
-          {t("orderStats.noData")}
-        </p>
+      <div className="rounded-xl border border-border/70 bg-card p-12 text-center shadow-sm" dir="rtl">
+        <p className="text-xs text-muted-foreground">{t("orderStats.noData")}</p>
         <button
           onClick={fetchStats}
-          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
         >
-          {t("orderStats.retry")}
+          <RotateCw className="h-3.5 w-3.5" />
+          <span>{t("orderStats.retry")}</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-              <ChartBarIcon className="h-8 w-8 text-indigo-600 mr-3" />
-              {t("orderStats.title")}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-300">
-              {t("orderStats.subtitle")}
-            </p>
+    <div className="space-y-6" dir="rtl">
+      {/* 1. Header Control Bar Chassis */}
+      <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1 text-right">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span>لوحة المؤشرات التراكمية</span>
           </div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            {t("orderStats.title")}
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            {t("orderStats.subtitle")}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
           <Link
             to="/orders"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted/40 active:scale-[0.98]"
           >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            {t("orderStats.backToOrders")}
+            <ArrowRight className="h-3.5 w-3.5" />
+            <span>{t("orderStats.backToOrders")}</span>
           </Link>
         </div>
       </div>
 
-      {/* Date Filter Section */}
-      <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t("orderStats.filterByDate")}
-            </span>
+      {/* 2. Date Filter Bar Chassis */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <Calendar className="h-4 w-4" />
+          <span>{t("orderStats.filterByDate")}</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              setAllTime(true);
+              setRange(null);
+            }}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              allTime
+                ? "border border-primary/20 bg-primary text-primary-foreground shadow-xs"
+                : "border border-border/70 bg-background text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+            }`}
+          >
+            {t("orderStats.all")}
+          </button>
+
+          <PeriodSelector
+            onRangeChange={(next) => {
+              setRange(next);
+              setAllTime(false);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 3. KPI Telemetry Strip */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("orderStats.totalOrders")}</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <ShoppingBag className="h-3.5 w-3.5" />
+            </div>
           </div>
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
+            {stats.totalOrders.toLocaleString("en-US")}
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* All-time toggle */}
-            <button
-              onClick={() => {
-                setAllTime(true);
-                setRange(null);
-              }}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                allTime
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              {t("orderStats.all")}
-            </button>
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("orderStats.totalRevenue")}</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+              <DollarSign className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
+            {formatPrice(stats.totalRevenue)}
+          </div>
+        </div>
 
-            <PeriodSelector
-              onRangeChange={(next) => {
-                setRange(next);
-                setAllTime(false);
-              }}
-            />
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("orderStats.averageOrderValue")}</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-500">
+              <BarChart3 className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
+            {formatPrice(stats.averageOrderValue)}
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ShoppingBagIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    {t("orderStats.totalOrders")}
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.totalOrders}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    {t("orderStats.totalRevenue")}
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {formatPrice(stats.totalRevenue)}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ChartBarIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    {t("orderStats.averageOrderValue")}
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {formatPrice(stats.averageOrderValue)}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* 4. Bento Section: Status Distribution & Recent Orders */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Status Distribution */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm lg:col-span-5">
+          <h3 className="mb-4 text-xs font-bold text-foreground">
             {t("orderStats.statusDistribution")}
           </h3>
           <div className="space-y-3">
-            {Object.entries(stats.statusCounts).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {getStatusIcon(status)}
-                  <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
-                    {getStatusText(status)}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-500 mr-2">{count}</span>
-                  <div className="w-16 bg-gray-200 rounded-full h-2">
+            {Object.entries(stats.statusCounts).map(([status, count]) => {
+              const pct = stats.totalOrders > 0 ? (count / stats.totalOrders) * 100 : 0;
+
+              return (
+                <div key={status} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(status)}
+                      <span className="font-medium text-foreground">
+                        {getStatusText(status)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono text-[11px] tabular-nums text-muted-foreground">
+                      <span>{count}</span>
+                      <span>({pct.toFixed(1)}%)</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/40">
                     <div
-                      className="bg-indigo-600 h-2 rounded-full"
-                      style={{
-                        width: `${stats.totalOrders > 0 ? (count / stats.totalOrders) * 100 : 0}%`,
-                      }}
-                    ></div>
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Recent Orders */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {t("orderStats.recentOrders")}
-          </h3>
-          <div className="space-y-3">
+        {/* Recent Orders Ledger */}
+        <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm lg:col-span-7">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-bold text-foreground">
+              {t("orderStats.recentOrders")}
+            </h3>
+            <span className="font-mono text-xs text-muted-foreground">
+              {stats.recentOrders.length} طلبات
+            </span>
+          </div>
+
+          <div className="divide-y divide-border/50">
             {stats.recentOrders.map((order) => {
-              // ✅ تنسيق التاريخ
               const formatDate = (dateString: string) => {
                 try {
                   const date = new Date(dateString);
@@ -333,52 +319,39 @@ const OrderStats: React.FC = () => {
                 <Link
                   key={order.orderNumber}
                   to={`/orders/${encodeURIComponent(order.orderNumber)}`}
-                  className="block"
+                  className="flex items-center justify-between py-3 transition-colors hover:bg-muted/10 rounded-lg px-2"
                 >
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 transition-colors cursor-pointer">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {order.orderNumber}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {order.customerName}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        {formatDate(order.createdAt)}
-                      </p>
+                  <div className="space-y-0.5 text-right">
+                    <div className="font-mono text-xs font-bold text-foreground">
+                      {order.orderNumber}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatPrice(order.total)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {getStatusText(order.status)}
-                      </p>
+                    <div className="text-xs text-muted-foreground">
+                      {order.customerName}
+                    </div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {formatDate(order.createdAt)}
+                    </div>
+                  </div>
+
+                  <div className="text-left">
+                    <div className="font-mono text-xs font-bold tabular-nums text-foreground">
+                      {formatPrice(order.total)}
+                    </div>
+                    <div className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground">
+                      {getStatusText(order.status)}
                     </div>
                   </div>
                 </Link>
               );
             })}
-          </div>
 
-          {stats.recentOrders.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+            {stats.recentOrders.length === 0 && (
+              <div className="py-8 text-center text-xs text-muted-foreground">
                 {t("orderStats.noRecentOrders")}
-              </p>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Refresh Button */}
-      <div className="mt-8 text-center">
-        <button
-          onClick={fetchStats}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          {t("orderStats.refreshStats")}
-        </button>
       </div>
     </div>
   );
