@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  ChevronDownIcon,
-  UserCircleIcon,
-  CheckIcon,
-} from "@heroicons/react/24/outline";
+import { ChevronDown, User, Check, UserX } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 
 interface TeamMember {
@@ -34,7 +30,9 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const response = await apiClient.get<{ success: boolean; data: any[] }>("/tasks/company-users");
+        const response = await apiClient.get<{ success: boolean; data: any[] }>(
+          "/tasks/company-users",
+        );
         if (response.data?.success && response.data?.data) {
           const users = response.data.data.map((user: any) => ({
             id: user.id,
@@ -61,121 +59,93 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
     setIsOpen(false);
   };
 
-  const triggerStyle: React.CSSProperties = currentAssignee
-    ? {
-        background: "color-mix(in srgb, var(--color-secondary) 10%, var(--color-card, #ffffff))",
-        borderColor:
-          "color-mix(in srgb, var(--color-secondary) 18%, transparent)",
-        color: "var(--color-secondary)",
-      }
-    : {
-        background: "var(--shell-control-bg)",
-        borderColor: "var(--shell-control-border)",
-        color: "var(--color-foreground)",
-      };
-
-  const mutedAvatarStyle: React.CSSProperties = {
-    background: "color-mix(in srgb, var(--color-border) 24%, var(--color-card, #ffffff))",
-    color: "var(--color-muted-foreground)",
-  };
-
-  const memberAvatarStyle: React.CSSProperties = {
-    background:
-      "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
-    color: "white",
-  };
-
   return (
-    <div className="relative">
+    <div className="relative inline-block" dir="rtl">
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-sm font-medium shadow-sm transition-all ${
-          disabled ? "cursor-not-allowed opacity-50" : ""
-        }`}
-        style={triggerStyle}
+        className={`inline-flex items-center gap-1.5 rounded-xl border border-border/70 px-2.5 py-1 text-xs font-medium transition-colors shadow-2xs ${
+          currentAssignee
+            ? "bg-primary/10 text-primary border-primary/20"
+            : "bg-card text-foreground hover:bg-muted/40"
+        } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
       >
-        <UserCircleIcon className="w-4 h-4" />
-        <span>{currentAssigneeName || "غير معين"}</span>
-        <ChevronDownIcon className="w-4 h-4" />
+        <User className="w-3.5 h-3.5" />
+        <span className="truncate max-w-[120px]">
+          {currentAssigneeName || "غير معين"}
+        </span>
+        <ChevronDown className="w-3 h-3 text-muted-foreground" />
       </button>
 
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-20"
             onClick={() => setIsOpen(false)}
           />
-          <div className="business-dropdown-surface absolute left-0 z-20 mt-2 max-h-80 w-64 overflow-y-auto p-2">
-            <div className="space-y-1">
-              {/* Unassign option */}
+          <div className="absolute right-0 top-full mt-1.5 z-30 max-h-72 w-60 overflow-y-auto rounded-xl border border-border/70 bg-card p-1.5 shadow-xl text-card-foreground animate-in fade-in duration-100">
+            <div className="space-y-0.5">
+              {/* Unassign option (Zero Emojis) */}
               <button
                 type="button"
                 onClick={() => handleSelect(null)}
-                className="business-dropdown-option"
-                data-active={!currentAssignee}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-right ${
+                  !currentAssignee
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
               >
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-sm"
-                  style={mutedAvatarStyle}
-                >
-                  ❌
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <UserX className="w-3 h-3" />
                 </div>
-                <span className="flex-1 text-right font-medium">
-                  إلغاء التعيين
-                </span>
+                <span className="flex-1 truncate">إلغاء التعيين</span>
                 {!currentAssignee && (
-                  <CheckIcon
-                    className="h-4 w-4"
-                    style={{ color: "var(--color-primary)" }}
-                  />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                 )}
               </button>
 
-              <div
-                className="my-1 border-t"
-                style={{ borderColor: "var(--business-muted-line)" }}
-              />
+              <div className="my-1 border-t border-border/50" />
 
               {/* Team members */}
-              {teamMembers.map((member) => (
-                <button
-                  type="button"
-                  key={member.id}
-                  onClick={() => handleSelect(member.id, `${member.firstName} ${member.lastName}`)}
-                  className="business-dropdown-option"
-                  data-active={currentAssignee === member.id}
-                >
-                  <div
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
-                    style={memberAvatarStyle}
+              {teamMembers.map((member) => {
+                const isSelected = currentAssignee === member.id;
+                const initials = `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.trim() || "U";
+                return (
+                  <button
+                    type="button"
+                    key={member.id}
+                    onClick={() =>
+                      handleSelect(
+                        member.id,
+                        `${member.firstName} ${member.lastName}`.trim(),
+                      )
+                    }
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-right ${
+                      isSelected
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "text-foreground hover:bg-muted/40"
+                    }`}
                   >
-                    {member.firstName.charAt(0)}
-                    {member.lastName.charAt(0)}
-                  </div>
-                  <div className="flex-1 text-right">
-                    <p
-                      className="font-medium"
-                      style={{ color: "var(--color-foreground)" }}
-                    >
-                      {member.firstName} {member.lastName}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--color-muted-foreground)" }}
-                    >
-                      {member.email}
-                    </p>
-                  </div>
-                  {currentAssignee === member.id && (
-                    <CheckIcon
-                      className="h-4 w-4"
-                      style={{ color: "var(--color-primary)" }}
-                    />
-                  )}
-                </button>
-              ))}
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate font-semibold text-foreground">
+                        {member.firstName} {member.lastName}
+                      </p>
+                      {member.email && (
+                        <p className="truncate text-[10px] text-muted-foreground font-mono" dir="ltr">
+                          {member.email}
+                        </p>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>

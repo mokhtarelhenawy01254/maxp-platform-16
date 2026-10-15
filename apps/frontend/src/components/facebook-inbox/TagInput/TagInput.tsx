@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { X, Plus, Tag as TagIcon, Check } from "lucide-react";
 
 interface Tag {
   id: string;
@@ -18,42 +18,50 @@ const TAG_COLORS = [
   {
     name: "أزرق",
     value: "blue",
-    tone: "primary",
+    badgeClass: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    dotClass: "bg-sky-500",
   },
   {
     name: "أخضر",
     value: "green",
-    tone: "success",
+    badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    dotClass: "bg-emerald-500",
   },
   {
     name: "أحمر",
     value: "red",
-    tone: "danger",
+    badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    dotClass: "bg-rose-500",
   },
   {
     name: "أصفر",
     value: "yellow",
-    tone: "warning",
+    badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    dotClass: "bg-amber-500",
   },
   {
     name: "بنفسجي",
     value: "purple",
-    tone: "secondary",
+    badgeClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    dotClass: "bg-purple-500",
   },
   {
     name: "وردي",
     value: "pink",
-    tone: "secondary",
+    badgeClass: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
+    dotClass: "bg-pink-500",
   },
   {
     name: "برتقالي",
     value: "orange",
-    tone: "warning",
+    badgeClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    dotClass: "bg-orange-500",
   },
   {
     name: "رمادي",
     value: "gray",
-    tone: "neutral",
+    badgeClass: "bg-muted text-muted-foreground border-border/60",
+    dotClass: "bg-zinc-400",
   },
 ] as const;
 
@@ -70,7 +78,7 @@ const PREDEFINED_TAGS: Tag[] = [
 ];
 
 const TagInput: React.FC<TagInputProps> = ({
-  currentTags,
+  currentTags = [],
   onTagsChange,
   disabled = false,
 }) => {
@@ -82,60 +90,6 @@ const TagInput: React.FC<TagInputProps> = ({
   const getColorTheme = (color: string) => {
     const colorObj = TAG_COLORS.find((c) => c.value === color);
     return colorObj || TAG_COLORS[0]!;
-  };
-
-  const getToneStyle = (
-    tone: (typeof TAG_COLORS)[number]["tone"],
-  ): React.CSSProperties => {
-    if (tone === "success") {
-      return {
-        background: "color-mix(in srgb, var(--business-success) 14%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--business-success) 28%, transparent)",
-        color: "var(--business-success)",
-      };
-    }
-
-    if (tone === "danger") {
-      return {
-        background: "color-mix(in srgb, var(--business-danger) 14%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--business-danger) 28%, transparent)",
-        color: "var(--business-danger)",
-      };
-    }
-
-    if (tone === "warning") {
-      return {
-        background: "color-mix(in srgb, var(--business-warning) 14%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--business-warning) 28%, transparent)",
-        color: "var(--business-warning)",
-      };
-    }
-
-    if (tone === "secondary") {
-      return {
-        background: "color-mix(in srgb, var(--color-secondary) 14%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--color-secondary) 28%, transparent)",
-        color: "var(--color-secondary)",
-      };
-    }
-
-    if (tone === "neutral") {
-      return {
-        background: "var(--shell-control-bg)",
-        borderColor: "var(--shell-control-border)",
-        color: "var(--color-foreground)",
-      };
-    }
-
-    return {
-      background: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
-      borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
-      color: "var(--color-primary)",
-    };
   };
 
   const handleAddPredefinedTag = (tagId: string) => {
@@ -201,25 +155,25 @@ const TagInput: React.FC<TagInputProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5" dir="rtl">
       {/* Current Tags */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         {currentTags.map((tagId) => {
           const colorTheme = getColorTheme(getTagColor(tagId));
           return (
             <span
               key={tagId}
-              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium"
-              style={getToneStyle(colorTheme.tone)}
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${colorTheme.badgeClass}`}
             >
-              {getTagLabel(tagId)}
+              <span>{getTagLabel(tagId)}</span>
               {!disabled && (
                 <button
                   type="button"
                   onClick={() => handleRemoveTag(tagId)}
-                  className="transition-opacity hover:opacity-70"
+                  className="hover:opacity-75 transition-opacity p-0.5"
+                  aria-label={`حذف ${getTagLabel(tagId)}`}
                 >
-                  <XMarkIcon className="w-3 h-3" />
+                  <X className="w-3 h-3" />
                 </button>
               )}
             </span>
@@ -231,10 +185,10 @@ const TagInput: React.FC<TagInputProps> = ({
           <button
             type="button"
             onClick={() => setShowDropdown(!showDropdown)}
-            className="business-chip-button px-2.5 py-1 text-xs font-medium"
+            className="inline-flex items-center gap-1 rounded-md border border-dashed border-border/80 px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
-            <PlusIcon className="w-3 h-3" />
-            إضافة
+            <Plus className="w-3 h-3" />
+            <span>إضافة وسم</span>
           </button>
         )}
       </div>
@@ -243,22 +197,19 @@ const TagInput: React.FC<TagInputProps> = ({
       {showDropdown && (
         <div className="relative">
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-20"
             onClick={() => {
               setShowDropdown(false);
               setShowCustomForm(false);
             }}
           />
-          <div className="business-dropdown-surface absolute left-0 z-20 mt-1 max-h-80 w-64 overflow-y-auto p-2">
+          <div className="absolute right-0 top-full mt-1.5 z-30 max-h-72 w-60 overflow-y-auto rounded-xl border border-border/70 bg-card p-2 shadow-xl text-card-foreground animate-in fade-in duration-100">
             {!showCustomForm ? (
-              <div>
-                <p
-                  className="px-2 py-1 text-xs"
-                  style={{ color: "var(--color-muted-foreground)" }}
-                >
-                  اختر من القائمة:
+              <div className="space-y-2">
+                <p className="px-1 text-[11px] font-medium text-muted-foreground">
+                  اختر من الوسوم المتاحة:
                 </p>
-                <div className="space-y-1">
+                <div className="grid grid-cols-2 gap-1">
                   {PREDEFINED_TAGS.map((tag) => {
                     const colorTheme = getColorTheme(tag.color);
                     const isActive = currentTags.includes(tag.id);
@@ -268,76 +219,68 @@ const TagInput: React.FC<TagInputProps> = ({
                         key={tag.id}
                         onClick={() => handleAddPredefinedTag(tag.id)}
                         disabled={isActive}
-                        className="business-dropdown-option justify-between"
-                        data-disabled={isActive}
+                        className={`flex items-center justify-between px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                          isActive
+                            ? "opacity-40 cursor-not-allowed border-border/40 bg-muted/20"
+                            : "hover:bg-muted/50 cursor-pointer border-border/60"
+                        } ${colorTheme.badgeClass}`}
                       >
-                        <span
-                          className="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium"
-                          style={getToneStyle(colorTheme.tone)}
-                        >
-                          {tag.name}
-                        </span>
+                        <span className="truncate">{tag.name}</span>
+                        {isActive && <Check className="w-3 h-3 shrink-0" />}
                       </button>
                     );
                   })}
                 </div>
 
-                <div
-                  className="mt-2 border-t pt-2"
-                  style={{ borderColor: "var(--business-muted-line)" }}
-                >
+                <div className="pt-2 border-t border-border/50">
                   <button
                     type="button"
                     onClick={() => setShowCustomForm(true)}
-                    className="business-dropdown-option justify-center text-sm font-semibold"
-                    style={{ color: "var(--color-primary)" }}
+                    className="w-full py-1 text-xs font-medium text-primary hover:underline text-center"
                   >
-                    + إنشاء تصنيف جديد
+                    + إنشاء وسم مخصص
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-1">
-                <p
-                  className="mb-2 text-xs"
-                  style={{ color: "var(--color-muted-foreground)" }}
-                >
-                  تصنيف مخصص:
+              <div className="p-1 space-y-2.5">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  وسم مخصص جديد:
                 </p>
                 <input
                   type="text"
                   value={customTagName}
                   onChange={(e) => setCustomTagName(e.target.value)}
-                  placeholder="اسم التصنيف"
-                  className="business-control-input mb-2 w-full px-3 py-2 text-sm"
+                  placeholder="اسم الوسم"
+                  className="w-full px-2.5 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                   autoFocus
                 />
 
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {TAG_COLORS.map((color) => (
                     <button
                       type="button"
                       key={color.value}
                       onClick={() => setSelectedColor(color.value)}
-                      className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-105"
-                      style={{
-                        ...getToneStyle(color.tone),
-                        borderColor:
-                          selectedColor === color.value
-                            ? "var(--color-foreground)"
-                            : "transparent",
-                      }}
+                      className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${
+                        color.dotClass
+                      } ${
+                        selectedColor === color.value
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                          : ""
+                      }`}
                       title={color.name}
+                      aria-label={color.name}
                     />
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 pt-1">
                   <button
                     type="button"
                     onClick={handleAddCustomTag}
-                    className="business-chip-button flex-1 px-3 py-1.5 text-sm"
-                    data-active="true"
+                    disabled={!customTagName.trim()}
+                    className="flex-1 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-colors"
                   >
                     إضافة
                   </button>
@@ -347,7 +290,7 @@ const TagInput: React.FC<TagInputProps> = ({
                       setShowCustomForm(false);
                       setCustomTagName("");
                     }}
-                    className="business-chip-button px-3 py-1.5 text-sm"
+                    className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg hover:bg-muted/40 transition-colors"
                   >
                     إلغاء
                   </button>

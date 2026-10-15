@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import {
-  CheckCircleIcon,
-  ArchiveBoxIcon,
-  BellSlashIcon,
-  ClockIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import {
-  StarIcon as StarIconSolid,
-  CheckCircleIcon as CheckCircleSolid,
-} from "@heroicons/react/24/solid";
+  CheckCircle2,
+  Archive,
+  BellOff,
+  Clock,
+  Trash2,
+  Star,
+} from "lucide-react";
 
 interface ConversationActionsBarProps {
   isPriority: boolean;
@@ -38,111 +35,108 @@ const ConversationActionsBar: React.FC<ConversationActionsBarProps> = ({
   const handleMarkDone = () => {
     setDoneFlash(true);
     onMarkDone();
-    setTimeout(() => setDoneFlash(false), 1000);
+    setTimeout(() => setDoneFlash(false), 800);
   };
 
   const handleTogglePriority = () => {
     setPriorityFlash(true);
     onTogglePriority();
-    setTimeout(() => setPriorityFlash(false), 1000);
+    setTimeout(() => setPriorityFlash(false), 800);
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5" dir="rtl">
       {/* Mark as Done */}
       <button
+        type="button"
         onClick={handleMarkDone}
         disabled={disabled}
-        className={`business-chip-button p-2 rounded-lg transition-all duration-300 disabled:opacity-50 ${doneFlash ? "scale-110 shadow-lg" : ""}`}
-        style={
+        className={`p-1.5 rounded-lg border transition-all duration-200 disabled:opacity-50 ${
           doneFlash
-            ? { background: "var(--business-success)", color: "white" }
-            : undefined
-        }
+            ? "bg-emerald-500 text-white border-emerald-600 scale-105 shadow-sm"
+            : "border-border/70 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20 bg-card"
+        }`}
         title="تحديد كمنتهي"
+        aria-label="تحديد كمنتهي"
       >
-        {doneFlash ? (
-          <CheckCircleSolid className="w-5 h-5 animate-pulse" />
-        ) : (
-          <CheckCircleIcon className="w-5 h-5" />
-        )}
+        <CheckCircle2 className={`w-4 h-4 ${doneFlash ? "animate-pulse" : ""}`} />
       </button>
 
       {/* Toggle Priority/Star */}
       <button
+        type="button"
         onClick={handleTogglePriority}
         disabled={disabled}
-        className={`business-chip-button p-2 rounded-lg transition-all duration-300 disabled:opacity-50 ${priorityFlash ? "scale-110 shadow-lg" : ""}`}
-        style={
+        className={`p-1.5 rounded-lg border transition-all duration-200 disabled:opacity-50 ${
           priorityFlash
-            ? { background: "var(--business-warning)", color: "white" }
+            ? "bg-amber-500 text-white border-amber-600 scale-105 shadow-sm"
             : isPriority
-              ? {
-                  background:
-                    "color-mix(in srgb, var(--business-warning) 10%, var(--color-card, #ffffff))",
-                  color: "var(--business-warning)",
-                }
-              : undefined
-        }
+              ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+              : "border-border/70 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/20 bg-card"
+        }`}
         title={isPriority ? "إلغاء الأولوية" : "تحديد كأولوية"}
+        aria-label={isPriority ? "إلغاء الأولوية" : "تحديد كأولوية"}
       >
-        <StarIconSolid
-          className={`w-5 h-5 ${priorityFlash ? "animate-pulse" : ""}`}
+        <Star
+          className={`w-4 h-4 ${isPriority ? "fill-amber-500" : ""} ${
+            priorityFlash ? "animate-pulse" : ""
+          }`}
         />
       </button>
 
       {/* Snooze */}
       {onSnooze && (
         <button
+          type="button"
           onClick={onSnooze}
           disabled={disabled}
-          className="business-chip-button p-2 rounded-lg transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 bg-card transition-colors disabled:opacity-50"
           title="غفوة المحادثة"
+          aria-label="غفوة المحادثة"
         >
-          <ClockIcon className="w-5 h-5" />
+          <Clock className="w-4 h-4" />
         </button>
       )}
 
       {/* Delete */}
       {onDelete && (
         <button
+          type="button"
           onClick={onDelete}
           disabled={disabled}
-          className="business-chip-button p-2 rounded-lg transition-colors disabled:opacity-50"
-          style={{
-            color: "var(--business-danger)",
-            background: "color-mix(in srgb, var(--business-danger) 8%, var(--color-card, #ffffff))",
-            borderColor:
-              "color-mix(in srgb, var(--business-danger) 18%, transparent)",
-          }}
+          className="p-1.5 rounded-lg border border-rose-500/20 text-rose-500 hover:bg-rose-500/10 bg-card transition-colors disabled:opacity-50"
           title="حذف المحادثة"
           aria-label="حذف المحادثة"
         >
-          <TrashIcon className="w-5 h-5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       )}
 
-      {/* Archive (future) */}
+      {/* Archive */}
       {onArchive && (
         <button
+          type="button"
           onClick={onArchive}
           disabled={disabled}
-          className="business-chip-button p-2 rounded-lg transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 bg-card transition-colors disabled:opacity-50"
           title="أرشفة"
+          aria-label="أرشفة"
         >
-          <ArchiveBoxIcon className="w-5 h-5" />
+          <Archive className="w-4 h-4" />
         </button>
       )}
 
-      {/* Mute (future) */}
+      {/* Mute */}
       {onMute && (
         <button
+          type="button"
           onClick={onMute}
           disabled={disabled}
-          className="business-chip-button p-2 rounded-lg transition-colors disabled:opacity-50"
-          title="كتم"
+          className="p-1.5 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 bg-card transition-colors disabled:opacity-50"
+          title="كتم التنبيهات"
+          aria-label="كتم التنبيهات"
         >
-          <BellSlashIcon className="w-5 h-5" />
+          <BellOff className="w-4 h-4" />
         </button>
       )}
     </div>
