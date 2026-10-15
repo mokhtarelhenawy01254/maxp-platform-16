@@ -1,8 +1,10 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import {
-  ExclamationTriangleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+  AlertTriangle,
+  RotateCcw,
+  RefreshCw,
+  Home,
+} from "lucide-react";
 import errorTracking from "../../services/errorTracking";
 import {
   recoverFromChunkLoadError,
@@ -99,31 +101,33 @@ class ErrorBoundary extends Component<Props, State> {
 
       if (isChunk) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center space-y-6">
-              <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-2xl bg-blue-50 text-blue-600">
-                <ArrowPathIcon className="w-7 h-7" />
+          <div className="min-h-screen flex items-center justify-center bg-background px-4" dir="rtl">
+            <div className="max-w-md w-full bg-card p-6 sm:p-8 rounded-2xl border border-border/80 shadow-xl text-center space-y-4">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                <RefreshCw className="w-6 h-6 animate-spin" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">تم تحديث النظام</h2>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                <h2 className="text-base sm:text-lg font-bold text-foreground">تم تحديث النظام</h2>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                   تم نشر نسخة محدثة من المنصة. يرجى تحديث الصفحة لتشغيل أحدث إصدار وتفادي أي أخطاء.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2 justify-center">
                 <button
                   type="button"
                   onClick={() => { void emergencyPurgeAndHardReload(); }}
-                  className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-2xs cursor-pointer"
                 >
-                  تحديث الصفحة الآن
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>تحديث الصفحة الآن</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { window.location.href = "/"; }}
-                  className="w-full flex justify-center py-2.5 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-card px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-all shadow-2xs cursor-pointer"
                 >
-                  الرئيسية
+                  <Home className="w-3.5 h-3.5" />
+                  <span>الصفحة الرئيسية</span>
                 </button>
               </div>
             </div>
@@ -132,44 +136,50 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full space-y-8">
-            <div className="text-center">
-              <ExclamationTriangleIcon className="mx-auto h-16 w-16 text-red-500" />
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                حدث خطأ غير متوقع
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                نعتذر، حدث خطأ أثناء تحميل هذه الصفحة. يرجى المحاولة مرة أخرى.
-              </p>
-
-              {import.meta.env.DEV && this.state.error && (
-                <details className="mt-4 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                    تفاصيل الخطأ (للمطورين)
-                  </summary>
-                  <pre className="mt-2 text-xs bg-gray-100 p-4 rounded-lg overflow-auto max-h-40">
-                    {this.state.error.toString()}
-                    {this.state.errorInfo?.componentStack}
-                  </pre>
-                </details>
-              )}
+        <div className="min-h-screen flex items-center justify-center bg-background px-4" dir="rtl">
+          <div className="max-w-md w-full bg-card p-6 sm:p-8 rounded-2xl border border-border/80 shadow-xl text-center space-y-4">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <AlertTriangle className="h-6 w-6" />
             </div>
 
-            <div className="flex flex-col space-y-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-foreground">
+                حدث خطأ غير متوقع
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                نعتذر، حدث خطأ أثناء تحميل هذه الصفحة. يمكنك المحاولة مرة أخرى أو تحديث الصفحة.
+              </p>
+            </div>
+
+            {import.meta.env.DEV && this.state.error && (
+              <details className="mt-3 text-left p-3 rounded-xl bg-muted/60 border border-border/70">
+                <summary className="cursor-pointer text-xs font-semibold text-muted-foreground hover:text-foreground">
+                  تفاصيل الخطأ التقنية (بيئة التطوير)
+                </summary>
+                <pre className="mt-2 text-[10px] font-mono text-rose-600 dark:text-rose-400 overflow-auto max-h-36 whitespace-pre-wrap">
+                  {this.state.error.toString()}
+                  {this.state.errorInfo?.componentStack}
+                </pre>
+              </details>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2 justify-center">
               <button
+                type="button"
                 onClick={this.handleRetry}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-2xs cursor-pointer"
               >
-                <ArrowPathIcon className="w-5 h-5 ml-2" />
-                إعادة المحاولة
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>المحاولة مرة أخرى</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => window.location.reload()}
-                className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-card px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-all shadow-2xs cursor-pointer"
               >
-                إعادة تحميل الصفحة
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>إعادة تحميل الصفحة</span>
               </button>
             </div>
           </div>
