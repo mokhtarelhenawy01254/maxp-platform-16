@@ -6,13 +6,14 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
-  UsersIcon,
-  XCircleIcon,
-  TrophyIcon,
-  CalendarDaysIcon,
-} from "@heroicons/react/24/outline";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
+  Users,
+  Trophy,
+  Calendar,
+  AlertCircle,
+  RefreshCw,
+  ShoppingBag,
+  DollarSign,
+} from "lucide-react";
 import analyticsService from "../../../services/analyticsService";
 import PeriodSelector, {
   PeriodKey,
@@ -20,6 +21,10 @@ import PeriodSelector, {
   computePeriodRange,
   getPeriodLabel,
 } from "../../../components/common/PeriodSelector";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { TeamPerformanceCharts } from "./TeamPerformanceCharts";
+import { TeamPerformanceTable } from "./TeamPerformanceTable";
 
 export interface TeamMemberStat {
   userId: string;
@@ -44,7 +49,6 @@ interface TeamStats {
   totalOrdersProcessed: number;
   totalTeamRevenue: number;
 }
-
 
 const STORAGE_KEY = "maxp_analytics_team_performance_period";
 const VALID_PERIODS: PeriodKey[] = [
@@ -109,7 +113,6 @@ const getInitialPeriodState = (searchParams: URLSearchParams): PeriodRange => {
     // Ignore storage parse error
   }
 
-  // Default is "today" for Team Performance Analytics
   const defaultDates = computePeriodRange("today");
   return {
     period: "today",
@@ -156,7 +159,6 @@ const TeamPerformanceAnalytics: React.FC = () => {
     });
   }, [stats?.teamMembers, sortField, sortOrder]);
 
-  // Sync to URL & localStorage on initial mount if not yet present in URL
   useEffect(() => {
     const urlPeriod = searchParams.get("period");
     if (!urlPeriod) {
@@ -237,324 +239,121 @@ const TeamPerformanceAnalytics: React.FC = () => {
 
   const appliedPeriodLabel = getPeriodLabel(range.period, t);
 
-  const appliedPeriodBadge = (
-    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 text-xs font-medium">
-      <CalendarDaysIcon className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" />
-      <span className="text-gray-600 dark:text-gray-400">
-        {t("periodSelector.appliedPeriod", "الفترة المطبقة")}:
-      </span>
-      <span className="font-semibold text-blue-700 dark:text-blue-300">
-        {appliedPeriodLabel}
-      </span>
-      {range.startDate && range.endDate && (
-        <span className="text-gray-500 dark:text-gray-400 font-mono text-[11px] ltr:ml-1 rtl:mr-1">
-          {range.startDate === range.endDate
-            ? `(${range.startDate})`
-            : `(${range.startDate} إلى ${range.endDate})`}
-        </span>
-      )}
-    </div>
-  );
-
-  const header = (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-      <div className="space-y-1.5">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("teamPerformance.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          {t("teamPerformance.subtitle")}
-        </p>
-        <div className="pt-0.5">{appliedPeriodBadge}</div>
-      </div>
-      <PeriodSelector
-        initialPeriod={initialConfig.period}
-        initialStartDate={initialConfig.startDate}
-        initialEndDate={initialConfig.endDate}
-        onRangeChange={handleRangeChange}
-      />
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={() => fetchData(range)}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("teamPerformance.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <UsersIcon className="h-6 w-6 text-white" />
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                {t("teamPerformance.title", "تحليلات كفاءة فريق العمل ومسؤولي التأكيد")}
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                <Calendar className="h-3 w-3" />
+                {appliedPeriodLabel}
+              </span>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("teamPerformance.totalMembers")}
-              </p>
-              <p className="text-2xl font-bold text-blue-600">
-                {stats?.totalTeamMembers || 0}
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("teamPerformance.subtitle", "تتبع إنجاز الطلبات المنشأة والمؤكدة والمسندة بدقة توقيت القاهرة")}
+            </p>
           </div>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <TrophyIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("teamPerformance.totalOrders")}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats?.totalOrdersProcessed?.toLocaleString() || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <TrophyIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("teamPerformance.totalRevenue")}
-              </p>
-              <p className="text-2xl font-bold text-purple-600">
-                {stats?.totalTeamRevenue?.toLocaleString()}{" "}
-                {t("teamPerformance.currency")}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <PeriodSelector
+            initialPeriod={initialConfig.period}
+            initialStartDate={initialConfig.startDate}
+            initialEndDate={initialConfig.endDate}
+            onRangeChange={handleRangeChange}
+          />
+          <Button variant="outline" size="sm" onClick={() => fetchData(range)} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
         </div>
       </div>
 
-      {(!stats?.teamMembers || stats.teamMembers.length === 0) && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-10 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
-          <div className="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-4">
-            <UsersIcon className="h-8 w-8" />
+      {error && (
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
           </div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+          <Button variant="outline" size="sm" onClick={() => fetchData(range)} className="h-7 text-xs border-destructive/30">إعادة المحاولة</Button>
+        </div>
+      )}
+
+      {/* Telemetry Metrics Ribbon */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span>{t("teamPerformance.totalMembers", "إجمالي أعضاء الفريق")}</span>
+              <Users className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+              {loading ? "..." : (stats?.totalTeamMembers || 0)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">موظفون نشطون بالمنظومة</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span>{t("teamPerformance.totalOrders", "الطلبات المعالجة")}</span>
+              <ShoppingBag className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {loading ? "..." : (stats?.totalOrdersProcessed?.toLocaleString() || 0)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">طلبات منشأة ومؤكدة ومسندة</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span>{t("teamPerformance.totalRevenue", "إجمالي مبيعات الفريق")}</span>
+              <DollarSign className="h-4 w-4 text-purple-500" />
+            </div>
+            <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+              {loading ? "..." : (stats?.totalTeamRevenue?.toLocaleString() || 0)} {t("teamPerformance.currency", "ج.م")}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">مبيعات محققة عبر الفريق</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {(!stats?.teamMembers || stats.teamMembers.length === 0) && !loading && (
+        <Card className="border-border/70 bg-card p-10 text-center shadow-sm">
+          <div className="inline-flex p-3 rounded-full bg-primary/10 text-primary mb-3">
+            <Users className="h-6 w-6" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">
             {t("teamPerformance.noDataTitle", "لا توجد بيانات أداء للفريق")}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
             {t(
               "teamPerformance.noDataDescription",
               "لم يتم تسجيل أي طلبات منشأة أو مؤكدة بواسطة أعضاء الفريق خلال الفترة المحددة."
             )}
           </p>
-        </div>
+        </Card>
       )}
 
-      {stats?.teamMembers && stats.teamMembers.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("teamPerformance.ordersProcessed")}
-          </h3>
-          <div style={{ width: "100%", height: 350 }}>
-            <ResponsiveContainer width="100%" height={350} minHeight={350}>
-              <BarChart data={sortedMembers} layout="vertical">
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis
-                  dataKey="userName"
-                  type="category"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  width={140}
-                />
-                <Tooltip />
-                <Legend verticalAlign="top" height={36} />
-                <Bar
-                  dataKey="ordersConfirmed"
-                  fill="#10B981"
-                  name={t("teamPerformance.ordersConfirmed", "طلبات مؤكدة")}
-                  radius={[0, 4, 4, 0]}
-                />
-                <Bar
-                  dataKey="ordersCreated"
-                  fill="#3B82F6"
-                  name={t("teamPerformance.ordersCreated", "طلبات منشأة")}
-                  radius={[0, 4, 4, 0]}
-                />
-                <Bar
-                  dataKey="ordersAssigned"
-                  fill="#F59E0B"
-                  name={t("teamPerformance.ordersAssigned", "طلبات مسندة")}
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      {/* Recharts Bar Chart */}
+      <TeamPerformanceCharts sortedMembers={sortedMembers} />
 
-      {stats?.teamMembers && stats.teamMembers.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <TrophyIcon className="h-5 w-5 text-yellow-500" />
-              {t("teamPerformance.performanceDetails")}
-            </h3>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {t("teamPerformance.sortHint", "انقر على أي عمود للفرز التفاعلي")}
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-semibold select-none">
-                  <th
-                    onClick={() => handleSort("userName")}
-                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
-                  >
-                    {t("teamPerformance.employee")}{" "}
-                    {sortField === "userName" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("role")}
-                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
-                  >
-                    {t("teamPerformance.role")}{" "}
-                    {sortField === "role" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("ordersCreated")}
-                    className="text-right py-3 px-4 text-blue-600 cursor-pointer hover:underline"
-                  >
-                    {t("teamPerformance.ordersCreated")}{" "}
-                    {sortField === "ordersCreated" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("ordersConfirmed")}
-                    className="text-right py-3 px-4 text-green-600 cursor-pointer hover:underline"
-                  >
-                    {t("teamPerformance.ordersConfirmed")}{" "}
-                    {sortField === "ordersConfirmed" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("ordersAssigned")}
-                    className="text-right py-3 px-4 text-amber-600 cursor-pointer hover:underline"
-                  >
-                    {t("teamPerformance.ordersAssigned", "طلبات مسندة")}{" "}
-                    {sortField === "ordersAssigned" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("totalRevenue")}
-                    className="text-right py-3 px-4 text-purple-600 cursor-pointer hover:underline"
-                  >
-                    {t("teamPerformance.totalRevenue")}{" "}
-                    {sortField === "totalRevenue" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("successRate")}
-                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
-                  >
-                    {t("teamPerformance.successRate")}{" "}
-                    {sortField === "successRate" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                  <th
-                    onClick={() => handleSort("avgOrderValue")}
-                    className="text-right py-3 px-4 text-orange-600 cursor-pointer hover:underline"
-                  >
-                    {t("teamPerformance.avgOrderValue")}{" "}
-                    {sortField === "avgOrderValue" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedMembers.map((member, index) => (
-                  <tr
-                    key={member.userId || index}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  >
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
-                      <div>
-                        <p className="font-medium">{member.userName}</p>
-                        <p className="text-xs text-gray-500">{member.email}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-300">
-                      {member.role}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-blue-600 font-semibold">
-                      {member.ordersCreated?.toLocaleString() || 0}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-green-600 font-semibold">
-                      {member.ordersConfirmed?.toLocaleString() || 0}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-amber-600 font-semibold">
-                      {(member.ordersAssigned || 0).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-purple-600 font-semibold">
-                      {member.totalRevenue?.toLocaleString()}{" "}
-                      {t("teamPerformance.currency")}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500"
-                            style={{
-                              width: `${Math.min(member.successRate, 100)}%`,
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-medium text-green-600">
-                          {typeof member.successRate === "number"
-                            ? member.successRate.toFixed(1)
-                            : "0.0"}
-                          %
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-orange-600 font-semibold">
-                      {member.avgOrderValue?.toLocaleString()}{" "}
-                      {t("teamPerformance.currency")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
+      {/* Leaderboard Table */}
+      <TeamPerformanceTable
+        sortedMembers={sortedMembers}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSort={handleSort}
+      />
     </div>
   );
 };

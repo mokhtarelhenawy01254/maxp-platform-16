@@ -110,17 +110,21 @@ const DeliveryReturnsAnalytics: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-4" dir="rtl">
       {/* Control Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-card p-4 rounded-xl border border-border/70">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Truck className="h-5 w-5 text-indigo-500" />
-            {t("deliveryReturnsReport.title", "إحصائيات الشحن والمرتجعات اللوجستية")}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("deliveryReturnsReport.subtitle", "أداء شركات الشحن، نسب الإرجاع والتسليم، وتغطية المحافظات")}
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+            <Truck className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
+              {t("deliveryReturnsReport.title", "إحصائيات الشحن والمرتجعات اللوجستية")}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {t("deliveryReturnsReport.subtitle", "أداء شركات الشحن، نسب الإرجاع والتسليم، وتغطية المحافظات")}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <PeriodSelector
@@ -129,21 +133,24 @@ const DeliveryReturnsAnalytics: React.FC = () => {
             initialEndDate={searchParams.get("endDate") || ""}
             onRangeChange={setRange}
           />
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={branches.length === 0} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={branches.length === 0} className="h-8 px-2.5 gap-1.5 text-xs font-mono border-border/70">
             <Download className="h-3.5 w-3.5" />
-            {t("deliveryReturnsReport.csvExport", "تصدير CSV")}
+            CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => query.refetch()} disabled={query.isFetching} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">
-            <RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`} />
+          <Button variant="outline" size="sm" onClick={() => query.refetch()} disabled={query.isFetching} className="h-8 gap-1.5 text-xs font-mono border-border/70">
+            <RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin text-primary" : ""}`} />
             تحديث
           </Button>
         </div>
       </div>
 
       {query.isError && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm"><AlertCircle className="h-4 w-4 shrink-0" /><span>{t("deliveryReturnsReport.fetchError", "تعذر جلب بيانات الشحن")}</span></div>
-          <Button variant="outline" size="sm" onClick={() => query.refetch()} className="h-7 text-xs">إعادة المحاولة</Button>
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{t("deliveryReturnsReport.fetchError", "تعذر جلب بيانات الشحن")}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => query.refetch()} className="h-7 text-xs border-destructive/30">إعادة المحاولة</Button>
         </div>
       )}
 
@@ -151,26 +158,26 @@ const DeliveryReturnsAnalytics: React.FC = () => {
       <DeliveryReturnsKpis summary={summary} />
 
       {/* Surface Chassis with Tabs */}
-      <Card className="border-border/70 bg-card overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <Card className="border-border/70 bg-card overflow-hidden shadow-sm">
+        <div className="p-3 border-b border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
           <div className="inline-flex items-center rounded-lg bg-muted/50 p-1 border border-border/70 text-xs overflow-x-auto">
-            <button onClick={() => setActiveTab("overview")} className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "overview" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("overview")} className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "overview" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <PieChartIcon className="h-3.5 w-3.5 text-indigo-500" />
               نظرة عامة
             </button>
-            <button onClick={() => setActiveTab("branches")} className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "branches" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("branches")} className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "branches" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Building2 className="h-3.5 w-3.5 text-blue-500" />
               شركات الشحن ({branches.length})
             </button>
-            <button onClick={() => setActiveTab("governorates")} className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "governorates" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("governorates")} className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "governorates" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <MapPin className="h-3.5 w-3.5 text-amber-500" />
               المحافظات ({governorates.length})
             </button>
-            <button onClick={() => setActiveTab("reasons")} className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "reasons" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("reasons")} className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "reasons" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
               أسباب الارتجاع ({returnReasons.length})
             </button>
-            <button onClick={() => setActiveTab("products")} className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "products" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("products")} className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === "products" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Package className="h-3.5 w-3.5 text-emerald-500" />
               المنتجات ({topReturnedProducts.length})
             </button>
@@ -179,20 +186,20 @@ const DeliveryReturnsAnalytics: React.FC = () => {
           {activeTab !== "overview" && (
             <div className="relative max-w-xs w-full">
               <Search className="h-3.5 w-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث في النتائج…" className="w-full pr-8 pl-3 py-1.5 text-xs bg-background border border-border/70 rounded-md outline-none focus:ring-1 focus:ring-indigo-500 text-foreground" />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث في النتائج…" className="w-full pr-8 pl-3 py-1.5 text-xs bg-card border border-border/70 rounded-md outline-none focus:ring-1 focus:ring-primary text-foreground font-mono" />
             </div>
           )}
         </div>
 
         <div className="p-4">
           {activeTab === "overview" && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="bg-muted/20 rounded-xl p-4 border border-border/70 flex flex-col justify-between">
+                <div className="bg-muted/15 rounded-xl p-3.5 border border-border/70 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-0.5">
                       <h4 className="text-xs font-semibold text-foreground">توزيع الشحنات</h4>
-                      <span className="text-[10px] font-mono font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">{summary?.totalShipped ?? 0} مشحون</span>
+                      <span className="text-[10px] font-mono font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 tabular-nums">{summary?.totalShipped ?? 0} مشحون</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground mb-2">نسب التسليم والارتجاع الإجمالية</p>
                   </div>
@@ -230,7 +237,7 @@ const DeliveryReturnsAnalytics: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-semibold text-foreground">أداء الفروع وشركات الشحن (أبرز النتائج)</h4>
-                  <button onClick={() => setActiveTab("branches")} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                  <button onClick={() => setActiveTab("branches")} className="text-xs text-primary hover:underline font-mono">
                     عرض كل الفروع ({branches.length})
                   </button>
                 </div>

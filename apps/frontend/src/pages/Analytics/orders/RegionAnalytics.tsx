@@ -7,7 +7,6 @@ import {
   PieChart as PieIcon,
   BarChart3,
   CheckCircle2,
-  Banknote,
 } from "lucide-react";
 import {
   BarChart,
@@ -84,21 +83,21 @@ const RegionAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <MapPin className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الأداء الجغرافي والمحافظات</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">توزيع حجم المبيعات، نسب التسليم، ومعدل قبول الدفع عند الاستلام جغرافياً</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات الأداء الجغرافي والمحافظات</h1>
+            <p className="text-xs text-muted-foreground">توزيع حجم المبيعات، نسب التسليم، ومعدل قبول الدفع عند الاستلام جغرافياً</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
           </Button>
         </div>
@@ -112,7 +111,7 @@ const RegionAnalytics: React.FC = () => {
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
               </div>
-              <div className="text-lg font-bold font-mono tabular-nums text-foreground truncate">{loading ? "..." : c.val}</div>
+              <div className="text-xl font-bold font-mono tabular-nums text-foreground truncate">{loading ? "..." : c.val}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
             </CardContent>
           </Card>
@@ -126,13 +125,13 @@ const RegionAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-emerald-500" /> إجمالي الإيرادات حسب المحافظة
           </h3>
-          <div className="h-[280px]">
+          <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={regions} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={11} />
-                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={90} />
-                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                <YAxis dataKey="name" type="category" stroke="currentColor" className="text-muted-foreground" fontSize={11} width={90} />
+                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
                 <Bar dataKey="revenue" fill="#10B981" name="الإيراد" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -144,15 +143,15 @@ const RegionAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <PieIcon className="h-4 w-4 text-primary" /> حصة الطلبيات لكل محافظة
           </h3>
-          <div className="h-[280px]">
+          <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
-                <Pie data={regions} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="orders" nameKey="name">
+                <Pie data={regions} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="orders" nameKey="name">
                   {regions.map((_, idx) => (
                     <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -163,7 +162,7 @@ const RegionAnalytics: React.FC = () => {
       <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
         <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
           <span className="font-semibold text-foreground">سجل مؤشرات المحافظات</span>
-          <span className="text-muted-foreground">عدد المناطق: <strong className="text-foreground font-mono">{regions.length}</strong></span>
+          <span className="text-muted-foreground">عدد المناطق: <strong className="text-foreground font-mono tabular-nums">{regions.length}</strong></span>
         </div>
 
         <div className="overflow-x-auto">
@@ -196,19 +195,19 @@ const RegionAnalytics: React.FC = () => {
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
                       {region.name}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground tabular-nums">
                       {region.orders.toLocaleString("en-US")}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                       {formatPrice(region.revenue)}
                     </td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold tabular-nums">
                         {region.deliveryRate ? region.deliveryRate.toFixed(1) : "0.0"}%
                       </span>
                     </td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 font-bold">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 font-bold tabular-nums">
                         {region.codAcceptanceRate ? region.codAcceptanceRate.toFixed(1) : "0.0"}%
                       </span>
                     </td>
@@ -220,7 +219,7 @@ const RegionAnalytics: React.FC = () => {
         </div>
 
         <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
-          <span>إجمالي مبيعات المناطق: <strong className="text-foreground font-mono">{formatPrice(totalRevenue)}</strong></span>
+          <span>إجمالي مبيعات المناطق: <strong className="text-foreground font-mono tabular-nums">{formatPrice(totalRevenue)}</strong></span>
           <span className="text-[11px]">مقارنة مؤشرات المحافظات تساعد في اختيار مناطق الإعلانات الأكثر ربحية وأقل ارتداداً</span>
         </div>
       </div>
