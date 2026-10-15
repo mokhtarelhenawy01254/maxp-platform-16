@@ -79,21 +79,21 @@ const RevenueAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <DollarSign className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الإيرادات والتدفق النقدي</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">تتبع المبيعات الإجمالية، المرتجعات، وتطور الإيرادات عبر الفترات</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات الإيرادات والتدفق النقدي</h1>
+            <p className="text-xs text-muted-foreground">تتبع المبيعات الإجمالية، المرتجعات، وتطور الإيرادات عبر الفترات</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
           </Button>
         </div>
@@ -107,7 +107,9 @@ const RevenueAnalytics: React.FC = () => {
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
               </div>
-              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
+              <div className={`text-xl font-bold font-mono tabular-nums ${c.alert ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
+                {loading ? "..." : c.val}
+              </div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
             </CardContent>
           </Card>
@@ -120,14 +122,14 @@ const RevenueAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-emerald-500" /> منحنى تطور الإيرادات اليومية
           </h3>
-          <div className="h-[260px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={stats.dailyRevenue}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
-                <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.25} name="الإيرادات" />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis dataKey="date" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.2} name="الإيرادات" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -138,7 +140,7 @@ const RevenueAnalytics: React.FC = () => {
       <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
         <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
           <span className="font-semibold text-foreground">سجل الإيرادات اليومية</span>
-          <span className="text-muted-foreground">الأيام المسجلة: <strong className="text-foreground font-mono">{stats?.dailyRevenue?.length || 0}</strong></span>
+          <span className="text-muted-foreground">الأيام المسجلة: <strong className="text-foreground font-mono tabular-nums">{stats?.dailyRevenue?.length || 0}</strong></span>
         </div>
 
         <div className="overflow-x-auto">
@@ -170,13 +172,13 @@ const RevenueAnalytics: React.FC = () => {
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
                       {d.date}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground tabular-nums">
                       {d.orders.toLocaleString("en-US")}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                       {formatPrice(d.revenue)}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono text-muted-foreground">
+                    <td className="py-2.5 px-3.5 text-center font-mono text-muted-foreground tabular-nums">
                       {formatPrice(d.orders > 0 ? d.revenue / d.orders : 0)}
                     </td>
                   </tr>
@@ -187,7 +189,7 @@ const RevenueAnalytics: React.FC = () => {
         </div>
 
         <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
-          <span>إجمالي الإيرادات: <strong className="text-foreground font-mono">{formatPrice(stats?.grossRevenue || 0)}</strong></span>
+          <span>إجمالي الإيرادات: <strong className="text-foreground font-mono tabular-nums">{formatPrice(stats?.grossRevenue || 0)}</strong></span>
           <span className="text-[11px]">يتم احتساب النمو بمقارنة الفترة الحالية بالفترة السابقة المكافئة</span>
         </div>
       </div>

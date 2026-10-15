@@ -100,103 +100,108 @@ const PaymentMethodAnalytics: React.FC = () => {
     : [];
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-4" dir="rtl">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-indigo-500" />
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
               {t("paymentAnalytics.title", "تحليل وسائل وبوابات الدفع")}
             </h1>
+            <p className="text-xs text-muted-foreground">
+              {t("paymentAnalytics.subtitle", "مقارنة الدفع عند الاستلام (COD) بالدفع الإلكتروني، وتوزيع الإيرادات")}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("paymentAnalytics.subtitle", "مقارنة الدفع عند الاستلام (COD) بالدفع الإلكتروني، وتوزيع الإيرادات")}
-          </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
             تحديث
           </Button>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm"><AlertCircle className="h-4 w-4 shrink-0" /><span>{error}</span></div>
-          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs">إعادة المحاولة</Button>
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs border-destructive/30">إعادة المحاولة</Button>
         </div>
       )}
 
       {/* Telemetry Metrics Ribbon */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span>إجمالي الطلبات المحصلة</span>
               <CreditCard className="h-4 w-4 text-indigo-500" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{(stats?.totalOrders || 0).toLocaleString()}</div>
-            <div className="text-[11px] text-muted-foreground mt-1">عبر جميع وسائل الدفع</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-foreground">{(stats?.totalOrders || 0).toLocaleString()}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">عبر جميع وسائل الدفع</div>
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span>عند الاستلام (COD)</span>
               <Truck className="h-4 w-4 text-amber-500" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+            <div className="text-xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
               {stats?.codVsOnline?.cod?.percentage?.toFixed(1) || 0}%
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+            <div className="text-[11px] text-muted-foreground mt-0.5 font-mono tabular-nums truncate">
               {(stats?.codVsOnline?.cod?.count || 0).toLocaleString()} طلب ({formatPrice(stats?.codVsOnline?.cod?.revenue || 0)})
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span>الدفع الإلكتروني (Online)</span>
               <Banknote className="h-4 w-4 text-emerald-500" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+            <div className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
               {stats?.codVsOnline?.online?.percentage?.toFixed(1) || 0}%
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+            <div className="text-[11px] text-muted-foreground mt-0.5 font-mono tabular-nums truncate">
               {(stats?.codVsOnline?.online?.count || 0).toLocaleString()} طلب ({formatPrice(stats?.codVsOnline?.online?.revenue || 0)})
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-3.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span>نسبة نجاح السداد</span>
               <CheckCircle2 className="h-4 w-4 text-blue-500" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">{stats?.successRate || 95}%</div>
-            <div className="text-[11px] text-muted-foreground mt-1">معدل العمليات المكتملة</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">{stats?.successRate || 95}%</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">معدل العمليات المكتملة</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <PieIcon className="h-4 w-4 text-amber-500" />
                 <h3 className="text-sm font-semibold text-foreground">توزيع الطلبات: COD مقابل أونلاين</h3>
               </div>
               <span className="text-xs text-muted-foreground font-mono">نسبة التحصيل</span>
             </div>
-            <div className="h-[240px] w-full">
+            <div className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={codVsOnlineChartData} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={4} dataKey="value" nameKey="name">
+                  <Pie data={codVsOnlineChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={4} dataKey="value" nameKey="name">
                     {codVsOnlineChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -205,31 +210,31 @@ const PaymentMethodAnalytics: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center justify-center gap-6 mt-2 pt-3 border-t border-border/50 text-xs">
+            <div className="flex items-center justify-center gap-6 mt-2 pt-2.5 border-t border-border/50 text-xs">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
                 <span className="text-muted-foreground">عند الاستلام:</span>
-                <span className="font-mono font-semibold text-foreground">{(stats?.codVsOnline?.cod?.count || 0).toLocaleString()}</span>
+                <span className="font-mono font-semibold text-foreground tabular-nums">{(stats?.codVsOnline?.cod?.count || 0).toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                <span className="h-2 w-2 rounded-full bg-[#10B981]" />
                 <span className="text-muted-foreground">أونلاين:</span>
-                <span className="font-mono font-semibold text-foreground">{(stats?.codVsOnline?.online?.count || 0).toLocaleString()}</span>
+                <span className="font-mono font-semibold text-foreground tabular-nums">{(stats?.codVsOnline?.online?.count || 0).toLocaleString()}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 bg-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-indigo-500" />
                 <h3 className="text-sm font-semibold text-foreground">حجم الطلبات حسب وسيلة الدفع</h3>
               </div>
-              <span className="text-xs text-muted-foreground font-mono">{stats?.methods?.length || 0} وسائل</span>
+              <span className="text-xs text-muted-foreground font-mono tabular-nums">{stats?.methods?.length || 0} وسائل</span>
             </div>
-            <div className="h-[270px] w-full">
+            <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats?.methods || []} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
@@ -246,33 +251,33 @@ const PaymentMethodAnalytics: React.FC = () => {
 
       {/* Detailed Methods Table */}
       {stats?.methods && stats.methods.length > 0 && (
-        <Card className="border-border/70 bg-card overflow-hidden">
-          <div className="p-4 border-b border-border/70 flex items-center justify-between">
+        <Card className="border-border/70 bg-card overflow-hidden shadow-sm">
+          <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">تفاصيل أداء وإيرادات وسائل الدفع</h3>
+              <h3 className="font-semibold text-foreground">تفاصيل أداء وإيرادات وسائل الدفع</h3>
             </div>
-            <span className="text-xs text-muted-foreground font-mono">تقرير تفصيلي</span>
+            <span className="text-muted-foreground font-mono">تقرير تفصيلي</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+            <table className="w-full text-xs text-right">
+              <thead className="bg-muted/30 text-muted-foreground border-b border-border/70 text-[11px] font-medium">
                 <tr>
-                  <th className="py-2.5 px-4 text-right font-medium">وسيلة الدفع</th>
-                  <th className="py-2.5 px-4 text-center font-medium">عدد الطلبات</th>
-                  <th className="py-2.5 px-4 text-center font-medium">حصة الطلبات %</th>
-                  <th className="py-2.5 px-4 text-center font-medium">إجمالي الإيرادات</th>
-                  <th className="py-2.5 px-4 text-left font-medium">متوسط السلة</th>
+                  <th className="py-2.5 px-3.5">وسيلة الدفع</th>
+                  <th className="py-2.5 px-3.5 text-center">عدد الطلبات</th>
+                  <th className="py-2.5 px-3.5 text-center">حصة الطلبات %</th>
+                  <th className="py-2.5 px-3.5 text-center">إجمالي الإيرادات</th>
+                  <th className="py-2.5 px-3.5 text-left">متوسط السلة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {stats.methods.map((method, idx) => (
                   <tr key={idx} className="hover:bg-muted/20 transition-colors">
-                    <td className="py-2.5 px-4 font-medium text-foreground">{method.name}</td>
-                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-foreground font-semibold">{method.count.toLocaleString()}</td>
-                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-muted-foreground">{method.percentage?.toFixed(1) || 0}%</td>
-                    <td className="py-2.5 px-4 text-center font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{formatPrice(method.revenue || 0)}</td>
-                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-muted-foreground">{formatPrice(method.averageOrderValue || 0)}</td>
+                    <td className="py-2.5 px-3.5 font-medium text-foreground">{method.name}</td>
+                    <td className="py-2.5 px-3.5 text-center font-mono tabular-nums text-foreground font-semibold">{method.count.toLocaleString()}</td>
+                    <td className="py-2.5 px-3.5 text-center font-mono tabular-nums text-muted-foreground">{method.percentage?.toFixed(1) || 0}%</td>
+                    <td className="py-2.5 px-3.5 text-center font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{formatPrice(method.revenue || 0)}</td>
+                    <td className="py-2.5 px-3.5 text-left font-mono tabular-nums text-muted-foreground">{formatPrice(method.averageOrderValue || 0)}</td>
                   </tr>
                 ))}
               </tbody>

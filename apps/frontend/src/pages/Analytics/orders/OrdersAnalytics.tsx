@@ -1,34 +1,23 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  ShoppingCartIcon,
-  XCircleIcon,
-  BanknotesIcon,
-  CreditCardIcon,
-} from "@heroicons/react/24/outline";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  LineChart,
-  Line,
-  Legend,
-} from "recharts";
-import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
+  ShoppingCart,
+  XCircle,
+  Banknote,
+  CreditCard,
+  RefreshCw,
+  AlertCircle,
+  Calendar,
+} from "lucide-react";
 import analyticsService from "../../../services/analyticsService";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { OrdersAnalyticsCharts, TrendEntry } from "./OrdersAnalyticsCharts";
 
 interface PrevPeriod {
   totalOrders: number;
   codOrders: number;
   prepaidOrders: number;
   cancelledOrders: number;
-}
-
-interface TrendEntry {
-  date: string;
-  orders: number;
 }
 
 const aggregateByWeek = (data: TrendEntry[]): TrendEntry[] => {
@@ -83,6 +72,24 @@ const daysAgo = (n: number) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return d.toISOString().slice(0, 10);
+};
+
+const statusLabels: Record<string, string> = {
+  completed: "مكتمل",
+  processing: "قيد المعالجة",
+  pending: "قيد الانتظار",
+  cancelled: "ملغي",
+  refunded: "مسترد",
+  "on-hold": "معلق",
+  failed: "فاشل",
+  confirmed: "مؤكد",
+  delivered: "تم التوصيل",
+  trash: "محذوف",
+  exchanged: "مستبدل",
+  returned: "مرتجع",
+  scheduled: "مجدول",
+  shipped: "تم الشحن",
+  ready_to_ship: "جاهز للشحن",
 };
 
 const OrdersAnalytics: React.FC = () => {
@@ -152,119 +159,59 @@ const OrdersAnalytics: React.FC = () => {
     return dailyData;
   }, [dailyData, trendView]);
 
-  const statusColors: Record<string, string> = {
-    completed: "bg-green-500",
-    processing: "bg-blue-500",
-    pending: "bg-yellow-500",
-    cancelled: "bg-red-500",
-    refunded: "bg-purple-500",
-    "on-hold": "bg-orange-500",
-    failed: "bg-gray-500",
-    confirmed: "bg-blue-400",
-    delivered: "bg-green-500",
-    trash: "bg-gray-400",
-    exchanged: "bg-purple-400",
-    returned: "bg-indigo-500",
-    scheduled: "bg-cyan-500",
-    shipped: "bg-teal-500",
-    ready_to_ship: "bg-sky-500",
-  };
-
-  const statusLabels: Record<string, string> = {
-    completed: "مكتمل",
-    processing: "قيد المعالجة",
-    pending: "قيد الانتظار",
-    cancelled: "ملغي",
-    refunded: "مسترد",
-    "on-hold": "معلق",
-    failed: "فاشل",
-    confirmed: "مؤكد",
-    delivered: "تم التوصيل",
-    trash: "محذوف",
-    exchanged: "مستبدل",
-    returned: "مرتجع",
-    scheduled: "مجدول",
-    shipped: "تم الشحن",
-    ready_to_ship: "جاهز للشحن",
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-        <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
-          إعادة المحاولة
-        </button>
-      </div>
-    );
-  }
-
   const cards = [
     {
       label: "إجمالي الطلبات",
       value: totalOrders,
       prev: prevPeriod?.totalOrders,
-      icon: <ShoppingCartIcon className="h-6 w-6 text-white" />,
-      bg: "bg-blue-500",
-      valueClass: "text-gray-900 dark:text-white",
+      icon: ShoppingCart,
+      color: "text-blue-500",
+      valueClass: "text-foreground",
     },
     {
       label: "الدفع عند الاستلام (COD)",
       value: codOrders,
       prev: prevPeriod?.codOrders,
-      icon: <BanknotesIcon className="h-6 w-6 text-white" />,
-      bg: "bg-orange-500",
-      valueClass: "text-gray-900 dark:text-white",
+      icon: Banknote,
+      color: "text-amber-500",
+      valueClass: "text-foreground",
     },
     {
       label: "الدفع المسبق",
       value: prepaidOrders,
       prev: prevPeriod?.prepaidOrders,
-      icon: <CreditCardIcon className="h-6 w-6 text-white" />,
-      bg: "bg-green-500",
-      valueClass: "text-gray-900 dark:text-white",
+      icon: CreditCard,
+      color: "text-emerald-500",
+      valueClass: "text-foreground",
     },
     {
       label: "الطلبات الملغاة",
       value: cancelledOrders,
       prev: prevPeriod?.cancelledOrders,
-      icon: <XCircleIcon className="h-6 w-6 text-white" />,
-      bg: "bg-red-500",
-      valueClass: "text-red-600",
+      icon: XCircle,
+      color: "text-rose-500",
+      valueClass: "text-rose-600 dark:text-rose-400",
     },
   ];
 
-  const hasOrders = totalOrders > 0 || Object.keys(byStatus).length > 0;
-
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            تحليلات الطلبات
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            تتبع وتحليل حالات الطلبات
-          </p>
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <ShoppingCart className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات حجم وحالات الطلبات</h1>
+            <p className="text-xs text-muted-foreground">تتبع تدفق المبيعات، الطلبات بحسب طريقة الدفع، ومؤشرات الإلغاء</p>
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+            className="h-8 px-2.5 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"
           >
             {PERIODS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -273,26 +220,26 @@ const OrdersAnalytics: React.FC = () => {
             ))}
           </select>
           {period === "custom" && (
-            <>
+            <div className="flex items-center gap-1">
               <input
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                className="h-8 px-2 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"
               />
-              <span className="text-gray-500">إلى</span>
+              <span className="text-muted-foreground text-xs">إلى</span>
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                className="h-8 px-2 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"
               />
-            </>
+            </div>
           )}
           <select
             value={comparisonType}
             onChange={(e) => setComparisonType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+            className="h-8 px-2.5 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"
           >
             {COMPARISONS.map((c) => (
               <option key={c.value} value={c.value}>
@@ -300,182 +247,90 @@ const OrdersAnalytics: React.FC = () => {
               </option>
             ))}
           </select>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
         </div>
       </div>
 
+      {error && (
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs border-destructive/30">إعادة المحاولة</Button>
+        </div>
+      )}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map((card) => {
           const change = formatChange(card.value, card.prev);
+          const Icon = card.icon;
           return (
-            <div
-              key={card.label}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{card.label}</p>
-                  <p className={`text-2xl font-bold ${card.valueClass}`}>
-                    {card.value.toLocaleString()}
-                  </p>
-                  {change && (
-                    <p
-                      className={`text-xs mt-1 ${
-                        change.startsWith("+")
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {change}{" "}
-                      {comparisonType === "yoy"
-                        ? "عن العام الماضي"
-                        : "عن الفترة السابقة"}
-                    </p>
-                  )}
+            <Card key={card.label} className="border-border/70 bg-card shadow-sm">
+              <CardContent className="p-3.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span>{card.label}</span>
+                  <Icon className={`h-4 w-4 ${card.color}`} />
                 </div>
-                <div className={`p-3 rounded-full ${card.bg}`}>{card.icon}</div>
-              </div>
-            </div>
+                <div className={`text-xl font-bold font-mono tabular-nums ${card.valueClass}`}>
+                  {loading ? "..." : card.value.toLocaleString()}
+                </div>
+                {change && (
+                  <div
+                    className={`text-[11px] font-mono tabular-nums mt-0.5 ${
+                      change.startsWith("+") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                    }`}
+                  >
+                    {change} {comparisonType === "yoy" ? "عن العام الماضي" : "عن الفترة السابقة"}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
-      {/* Orders by Status */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          الطلبات حسب الحالة
-        </h3>
-        {Object.keys(byStatus).length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            {Object.entries(byStatus).map(([status, count]) => (
-              <div
-                key={status}
-                className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-              >
-                <div
-                  className={`w-4 h-4 rounded-full ${statusColors[status] || "bg-gray-400"} mx-auto mb-2`}
-                />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {statusLabels[status] || status}
-                </p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {count}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-400 text-center py-8">لا توجد طلبات في هذه الفترة</p>
-        )}
-      </div>
-
-      {/* Trend Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            اتجاه الطلبات
-          </h3>
-          <div className="flex gap-2">
-            {(["daily", "weekly", "monthly"] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => setTrendView(view)}
-                className={`px-3 py-1 rounded-lg text-sm ${
-                  trendView === view
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                }`}
-              >
-                {view === "daily" ? "يومي" : view === "weekly" ? "أسبوعي" : "شهري"}
-              </button>
-            ))}
-          </div>
+      {/* Orders by Status Grid */}
+      <Card className="border-border/70 bg-card shadow-sm">
+        <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">الطلبات موزعة حسب الحالة التشغيلية</span>
+          <span className="text-muted-foreground font-mono tabular-nums">{Object.keys(byStatus).length} حالات نشطة</span>
         </div>
-        {trendData.length > 0 ? (
-          <div className="min-w-0 h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="stroke-gray-300 dark:stroke-gray-600"
-                />
-                <XAxis
-                  dataKey="date"
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                  fontSize={12}
-                />
-                <YAxis
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                  fontSize={12}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px" }}
-                  wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800 [&_.recharts-tooltip-wrapper]:!border-gray-200 dark:[&_.recharts-tooltip-wrapper]:!border-gray-700 [&_.recharts-tooltip-wrapper]:!text-gray-900 dark:[&_.recharts-tooltip-wrapper]:!text-gray-100"
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="orders"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  name="الطلبات"
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-gray-400 text-center py-8">لا توجد بيانات للاتجاهات في هذه الفترة</p>
-        )}
-      </div>
+        <CardContent className="p-4">
+          {Object.keys(byStatus).length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {Object.entries(byStatus).map(([status, count]) => (
+                <div
+                  key={status}
+                  className="p-3 bg-muted/15 border border-border/50 rounded-lg text-center"
+                >
+                  <p className="text-[11px] text-muted-foreground mb-1 truncate">
+                    {statusLabels[status] || status}
+                  </p>
+                  <p className="text-base font-bold font-mono tabular-nums text-foreground">
+                    {count.toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-6 text-xs">لا توجد طلبات مسجلة في هذه الفترة</p>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* COD vs Prepaid Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          الدفع عند الاستلام مقابل الدفع المسبق
-        </h3>
-        {totalOrders > 0 ? (
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={[
-                  { name: "الدفع عند الاستلام", value: codOrders },
-                  { name: "الدفع المسبق", value: prepaidOrders },
-                ]}
-                layout="vertical"
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="stroke-gray-300 dark:stroke-gray-600"
-                />
-                <XAxis
-                  type="number"
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                  width={120}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px" }}
-                  wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800 [&_.recharts-tooltip-wrapper]:!border-gray-200 dark:[&_.recharts-tooltip-wrapper]:!border-gray-700 [&_.recharts-tooltip-wrapper]:!text-gray-900 dark:[&_.recharts-tooltip-wrapper]:!text-gray-100"
-                />
-                <Bar dataKey="value" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-gray-400 text-center py-8">لا توجد بيانات للعرض</p>
-        )}
-      </div>
+      {/* Visual Analytics Charts */}
+      <OrdersAnalyticsCharts
+        trendData={trendData}
+        trendView={trendView}
+        onTrendViewChange={setTrendView}
+        totalOrders={totalOrders}
+        codOrders={codOrders}
+        prepaidOrders={prepaidOrders}
+      />
     </div>
   );
 };
