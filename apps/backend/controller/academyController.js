@@ -1243,7 +1243,7 @@ exports.verifyCoursePayment = async (req, res) => {
     const cleanOrderNumber = String(orderNumber).trim();
     const db = academyService.getDb();
 
-    const order = await db.order.findUnique({
+    const order = await db.order.findFirst({
       where: { orderNumber: cleanOrderNumber },
       include: { customer: true },
     });
