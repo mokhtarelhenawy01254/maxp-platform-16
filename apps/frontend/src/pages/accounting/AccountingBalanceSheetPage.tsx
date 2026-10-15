@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  BuildingLibraryIcon,
-  CheckBadgeIcon,
-  ExclamationCircleIcon,
-  ArrowDownTrayIcon,
-} from '@heroicons/react/24/outline';
+  Building2,
+  CheckCircle2,
+  AlertCircle,
+  Printer,
+  RotateCw,
+  Calendar,
+} from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, BalanceSheetReport } from './accountingApi';
 
@@ -39,16 +41,22 @@ export const AccountingBalanceSheetPage: React.FC = () => {
     });
   };
 
+  // Helper to extract items safely whether nested or flat
+  const currentAssetItems = report?.assets?.current?.items || (Array.isArray(report?.assets) ? report.assets : []);
+  const fixedAssetItems = report?.assets?.fixed?.items || [];
+  const currentLiabilityItems = report?.liabilities?.current?.items || (Array.isArray(report?.liabilities) ? report.liabilities : []);
+  const equityItems = report?.equity?.items || (Array.isArray(report?.equity) ? report.equity : []);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground font-sans" dir="rtl">
       <AccountingHeader
         title="قائمة المركز المالي والميزانية العمومية (Balance Sheet)"
         actions={
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-card border border-border/70 text-foreground hover:bg-muted/50 shadow-sm transition-all"
           >
-            <ArrowDownTrayIcon className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5" />
             <span>طباعة الميزانية</span>
           </button>
         }
@@ -56,50 +64,60 @@ export const AccountingBalanceSheetPage: React.FC = () => {
 
       <div className="p-4 sm:p-6 space-y-6 max-w-6xl mx-auto">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
-              إعادة المحاولة
+            <button
+              onClick={loadReport}
+              className="px-2.5 py-1 rounded bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 text-[11px] flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>إعادة المحاولة</span>
             </button>
           </div>
         )}
 
         {/* Date Filter Bar */}
-        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+        <div className="p-3 rounded-xl bg-card border border-border/70 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-600 dark:text-slate-400">حتى تاريخ (As of date):</span>
+            <span className="font-semibold text-muted-foreground flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>حتى تاريخ (As of date):</span>
+            </span>
             <input
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+              className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               onClick={loadReport}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition shadow-sm"
             >
-              عرض الميزانية
+              {loading ? 'جارٍ التحميل...' : 'عرض الميزانية'}
             </button>
           </div>
 
           {/* Equality Check Badge */}
           {report?.summary && (
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs border ${
                 report.summary.isBalanced
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
               }`}
             >
               {report.summary.isBalanced ? (
                 <>
-                  <CheckBadgeIcon className="w-4 h-4 text-emerald-500" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span>الميزانية متطابقة ومقفلة بنجاح: (الأصول = الخصوم + حقوق الملكية)</span>
                 </>
               ) : (
                 <>
-                  <ExclamationCircleIcon className="w-4 h-4 text-rose-500" />
-                  <span>تنبيه: يوجد فارق قدره {formatEGP(report.summary.difference || 0)} ج.م</span>
+                  <AlertCircle className="w-4 h-4 text-rose-500" />
+                  <span className="font-mono tabular-nums">
+                    تنبيه: يوجد فارق قدره {formatEGP(report.summary.difference || 0)} ج.م
+                  </span>
                 </>
               )}
             </div>
@@ -109,49 +127,57 @@ export const AccountingBalanceSheetPage: React.FC = () => {
         {/* 2-Column Balance Sheet Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Right Column: Assets (الأصول) */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-5">
-            <div className="pb-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold text-sm text-slate-900 dark:text-white">
+          <div className="rounded-xl bg-card border border-border/70 shadow-xs p-5 space-y-5">
+            <div className="pb-3 border-b border-border/60 flex justify-between items-center font-bold text-sm text-foreground">
               <span>الأصول (Assets)</span>
-              <span className="font-mono tabular-nums text-emerald-600 text-base">
+              <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400 text-base">
                 {formatEGP(report?.summary?.totalAssets || 0)} ج.م
               </span>
             </div>
 
             {/* Current Assets */}
             <div>
-              <span className="text-xs font-bold text-slate-500 block mb-2">الأصول المتداولة (Current Assets)</span>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.assets?.current?.items || []).map((item) => (
-                  <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                    <span>
-                      <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                      {item.name}
-                    </span>
-                    <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                  </div>
-                ))}
+              <span className="text-xs font-bold text-muted-foreground block mb-2">الأصول المتداولة (Current Assets)</span>
+              <div className="divide-y divide-border/40 text-xs">
+                {currentAssetItems.length === 0 ? (
+                  <div className="py-2 text-muted-foreground text-xs">لا توجد بنود مسجلة</div>
+                ) : (
+                  currentAssetItems.map((item: any) => (
+                    <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                      <span>
+                        <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                        {item.name}
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold">{formatEGP(item.amount ?? item.balance ?? 0)} ج.م</span>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <div className="pt-2 flex justify-between text-xs font-semibold text-foreground border-t border-border/40 mt-1">
                 <span>إجمالي الأصول المتداولة</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.assets?.current?.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums text-primary">{formatEGP(report?.assets?.current?.total || report?.summary?.totalAssets || 0)} ج.م</span>
               </div>
             </div>
 
             {/* Fixed Assets */}
             <div>
-              <span className="text-xs font-bold text-slate-500 block mb-2">الأصول الثابتة وغير المتداولة (Fixed Assets)</span>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.assets?.fixed?.items || []).map((item) => (
-                  <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                    <span>
-                      <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                      {item.name}
-                    </span>
-                    <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                  </div>
-                ))}
+              <span className="text-xs font-bold text-muted-foreground block mb-2">الأصول الثابتة وغير المتداولة (Fixed Assets)</span>
+              <div className="divide-y divide-border/40 text-xs">
+                {fixedAssetItems.length === 0 ? (
+                  <div className="py-2 text-muted-foreground text-xs">لا توجد أصول ثابتة مسجلة</div>
+                ) : (
+                  fixedAssetItems.map((item: any) => (
+                    <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                      <span>
+                        <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                        {item.name}
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold">{formatEGP(item.amount ?? item.balance ?? 0)} ج.م</span>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <div className="pt-2 flex justify-between text-xs font-semibold text-foreground border-t border-border/40 mt-1">
                 <span>إجمالي الأصول الثابتة</span>
                 <span className="font-mono tabular-nums">{formatEGP(report?.assets?.fixed?.total || 0)} ج.م</span>
               </div>
@@ -159,51 +185,59 @@ export const AccountingBalanceSheetPage: React.FC = () => {
           </div>
 
           {/* Left Column: Liabilities & Equity (الخصوم وحقوق الملكية) */}
-          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-5">
-            <div className="pb-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold text-sm text-slate-900 dark:text-white">
+          <div className="rounded-xl bg-card border border-border/70 shadow-xs p-5 space-y-5">
+            <div className="pb-3 border-b border-border/60 flex justify-between items-center font-bold text-sm text-foreground">
               <span>الخصوم وحقوق الملكية (Liabilities & Equity)</span>
-              <span className="font-mono tabular-nums text-slate-900 dark:text-white text-base">
+              <span className="font-mono tabular-nums text-foreground text-base">
                 {formatEGP(report?.summary?.totalLiabilitiesAndEquity || 0)} ج.م
               </span>
             </div>
 
             {/* Current Liabilities */}
             <div>
-              <span className="text-xs font-bold text-slate-500 block mb-2">الالتزامات المتداولة (Current Liabilities)</span>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.liabilities?.current?.items || []).map((item) => (
-                  <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                    <span>
-                      <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                      {item.name}
-                    </span>
-                    <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                  </div>
-                ))}
+              <span className="text-xs font-bold text-muted-foreground block mb-2">الالتزامات المتداولة (Current Liabilities)</span>
+              <div className="divide-y divide-border/40 text-xs">
+                {currentLiabilityItems.length === 0 ? (
+                  <div className="py-2 text-muted-foreground text-xs">لا توجد التزامات مسجلة</div>
+                ) : (
+                  currentLiabilityItems.map((item: any) => (
+                    <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                      <span>
+                        <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                        {item.name}
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold text-rose-600 dark:text-rose-400">{formatEGP(item.amount ?? item.balance ?? 0)} ج.م</span>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <div className="pt-2 flex justify-between text-xs font-semibold text-foreground border-t border-border/40 mt-1">
                 <span>إجمالي الالتزامات المتداولة</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.liabilities?.current?.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums">{formatEGP(report?.liabilities?.current?.total || report?.summary?.totalLiabilities || 0)} ج.م</span>
               </div>
             </div>
 
             {/* Equity */}
             <div>
-              <span className="text-xs font-bold text-slate-500 block mb-2">حقوق الملكية (Equity)</span>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.equity?.items || []).map((item) => (
-                  <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                    <span>
-                      <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                      {item.name}
-                    </span>
-                    <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                  </div>
-                ))}
+              <span className="text-xs font-bold text-muted-foreground block mb-2">حقوق الملكية (Equity)</span>
+              <div className="divide-y divide-border/40 text-xs">
+                {equityItems.length === 0 ? (
+                  <div className="py-2 text-muted-foreground text-xs">لا توجد حسابات حقوق ملكية مسجلة</div>
+                ) : (
+                  equityItems.map((item: any) => (
+                    <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                      <span>
+                        <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                        {item.name}
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold">{formatEGP(item.amount ?? item.balance ?? 0)} ج.م</span>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <div className="pt-2 flex justify-between text-xs font-semibold text-foreground border-t border-border/40 mt-1">
                 <span>إجمالي حقوق الملكية</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.equity?.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatEGP(report?.equity?.total || report?.summary?.totalEquity || 0)} ج.م</span>
               </div>
             </div>
           </div>

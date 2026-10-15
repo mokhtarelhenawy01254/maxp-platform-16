@@ -1,29 +1,29 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  BanknotesIcon,
-  TableCellsIcon,
-  DocumentDuplicateIcon,
-  BookOpenIcon,
-  ScaleIcon,
-  PresentationChartLineIcon,
-  BuildingLibraryIcon,
-  CalendarDaysIcon,
-  ReceiptPercentIcon,
-  Cog6ToothIcon,
-} from '@heroicons/react/24/outline';
+  Landmark,
+  ListTree,
+  FileSpreadsheet,
+  BookOpen,
+  Scale,
+  LineChart,
+  Building2,
+  Calendar,
+  Receipt,
+  Settings,
+} from 'lucide-react';
 
 const NAV_ITEMS = [
-  { to: '/accounting', label: 'نظرة عامة', icon: BanknotesIcon, end: true },
-  { to: '/accounting/coa', label: 'دليل الحسابات', icon: TableCellsIcon },
-  { to: '/accounting/entries', label: 'قيود اليومية', icon: DocumentDuplicateIcon },
-  { to: '/accounting/ledger', label: 'الأستاذ العام', icon: BookOpenIcon },
-  { to: '/accounting/trial-balance', label: 'ميزان المراجعة', icon: ScaleIcon },
-  { to: '/accounting/income-statement', label: 'قائمة الدخل', icon: PresentationChartLineIcon },
-  { to: '/accounting/balance-sheet', label: 'الميزانية العمومية', icon: BuildingLibraryIcon },
-  { to: '/accounting/periods', label: 'الفترات المالية', icon: CalendarDaysIcon },
-  { to: '/accounting/vat-report', label: 'إقرار ض.ق.م', icon: ReceiptPercentIcon },
-  { to: '/accounting/settings', label: 'الإعدادات والترحيل', icon: Cog6ToothIcon },
+  { to: '/accounting', label: 'نظرة عامة', icon: Landmark, end: true },
+  { to: '/accounting/coa', label: 'دليل الحسابات', icon: ListTree },
+  { to: '/accounting/entries', label: 'قيود اليومية', icon: FileSpreadsheet },
+  { to: '/accounting/ledger', label: 'الأستاذ العام', icon: BookOpen },
+  { to: '/accounting/trial-balance', label: 'ميزان المراجعة', icon: Scale },
+  { to: '/accounting/income-statement', label: 'قائمة الدخل', icon: LineChart },
+  { to: '/accounting/balance-sheet', label: 'الميزانية العمومية', icon: Building2 },
+  { to: '/accounting/periods', label: 'الفترات المالية', icon: Calendar },
+  { to: '/accounting/vat-report', label: 'إقرار ض.ق.م', icon: Receipt },
+  { to: '/accounting/settings', label: 'الإعدادات والترحيل', icon: Settings },
 ];
 
 interface AccountingHeaderProps {
@@ -33,18 +33,18 @@ interface AccountingHeaderProps {
 
 export const AccountingHeader: React.FC<AccountingHeaderProps> = ({ title, actions }) => {
   return (
-    <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20">
+    <div className="border-b border-border/70 bg-card sticky top-0 z-20">
       {/* Top action bar */}
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <BanknotesIcon className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <Landmark className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
               {title || 'نظام الحسابات المالية العامة'}
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-muted-foreground">
               النظام المحاسبي المزدوج المتوافق مع معايير المحاسبة المصرية (EAS)
             </p>
           </div>
@@ -54,7 +54,7 @@ export const AccountingHeader: React.FC<AccountingHeaderProps> = ({ title, actio
       </div>
 
       {/* Horizontal navigation tabs */}
-      <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-100 dark:border-slate-800/60">
+      <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-border/60">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
@@ -63,14 +63,14 @@ export const AccountingHeader: React.FC<AccountingHeaderProps> = ({ title, actio
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
+                `flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
                   isActive
-                    ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20'
-                    : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:border-slate-300'
+                    ? 'border-primary text-primary bg-primary/5 font-semibold'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`
               }
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               <span>{item.label}</span>
             </NavLink>
           );
@@ -79,3 +79,5 @@ export const AccountingHeader: React.FC<AccountingHeaderProps> = ({ title, actio
     </div>
   );
 };
+
+export default AccountingHeader;

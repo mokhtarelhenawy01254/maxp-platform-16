@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  PresentationChartLineIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ArrowDownTrayIcon,
-} from '@heroicons/react/24/outline';
+  LineChart,
+  TrendingUp,
+  TrendingDown,
+  Printer,
+  RotateCw,
+  Calendar,
+} from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, ProfitLossReport } from './accountingApi';
 
@@ -43,16 +45,28 @@ export const AccountingProfitLossPage: React.FC = () => {
     });
   };
 
+  const revenuesList = report?.revenues?.items || (Array.isArray(report?.revenues) ? report.revenues : []);
+  const cogsList = report?.cogs?.items || (Array.isArray(report?.cogs) ? report.cogs : []);
+  const opexList = report?.operatingExpenses?.items || (Array.isArray(report?.expenses) ? report.expenses : []);
+  const otherRevenuesList = report?.otherRevenues?.items || [];
+
+  const totalRev = report?.revenues?.total ?? report?.summary?.totalRevenue ?? 0;
+  const totalCogs = report?.cogs?.total ?? report?.summary?.totalCogs ?? 0;
+  const grossProfit = report?.grossProfit ?? report?.summary?.grossProfit ?? (totalRev - totalCogs);
+  const totalOpex = report?.operatingExpenses?.total ?? report?.summary?.totalExpenses ?? 0;
+  const operatingProfit = report?.operatingProfit ?? (grossProfit - totalOpex);
+  const netProfit = report?.netProfit ?? report?.summary?.netIncome ?? operatingProfit;
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground font-sans" dir="rtl">
       <AccountingHeader
         title="قائمة الدخل والأرباح والخسائر (Income Statement)"
         actions={
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-card border border-border/70 text-foreground hover:bg-muted/50 shadow-sm transition-all"
           >
-            <ArrowDownTrayIcon className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5" />
             <span>طباعة التقرير</span>
           </button>
         }
@@ -60,135 +74,152 @@ export const AccountingProfitLossPage: React.FC = () => {
 
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
-              إعادة المحاولة
+            <button
+              onClick={loadReport}
+              className="px-2.5 py-1 rounded bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 text-[11px] flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>إعادة المحاولة</span>
             </button>
           </div>
         )}
 
         {/* Date Filter Bar */}
-        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
+        <div className="p-3 rounded-xl bg-card border border-border/70 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span>من:</span>
+              <span className="text-muted-foreground font-medium">من:</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+                className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span>إلى:</span>
+              <span className="text-muted-foreground font-medium">إلى:</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+                className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <button
               onClick={loadReport}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition shadow-sm"
             >
-              تحديث
+              {loading ? 'جارٍ التحديث...' : 'تحديث'}
             </button>
           </div>
 
-          <div className="text-xs text-slate-500 font-medium">
+          <div className="text-xs text-muted-foreground font-medium font-mono">
             العملة: الجنيه المصري (EGP)
           </div>
         </div>
 
         {/* P&L Statement Chassis */}
-        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6 space-y-6">
+        <div className="rounded-xl bg-card border border-border/70 shadow-xs overflow-hidden p-6 space-y-6">
           {/* 1. Revenues */}
           <div>
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
+            <div className="flex justify-between items-center pb-2 border-b border-border/60 text-sm font-bold text-foreground">
               <span>إيرادات النشاط التشغيلي الرئيسي (Revenues)</span>
               <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                {formatEGP(report?.revenues?.total || 0)} ج.م
+                {formatEGP(totalRev)} ج.م
               </span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.revenues?.items || []).map((item) => (
-                <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                  <span>
-                    <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                    {item.name}
-                  </span>
-                  <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                </div>
-              ))}
+            <div className="divide-y divide-border/40 text-xs">
+              {revenuesList.length === 0 ? (
+                <div className="py-2 text-muted-foreground">لا توجد إيرادات مسجلة في هذه الفترة</div>
+              ) : (
+                revenuesList.map((item: any) => (
+                  <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                    <span>
+                      <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                      {item.name}
+                    </span>
+                    <span className="font-mono tabular-nums font-semibold">{formatEGP(item.amount ?? item.balance ?? 0)} ج.م</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* 2. COGS */}
           <div>
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
+            <div className="flex justify-between items-center pb-2 border-b border-border/60 text-sm font-bold text-foreground">
               <span>تكلفة النشاط والمبيعات (COGS)</span>
               <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">
-                ({formatEGP(report?.cogs?.total || 0)}) ج.م
+                ({formatEGP(totalCogs)}) ج.م
               </span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.cogs?.items || []).map((item) => (
-                <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                  <span>
-                    <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                    {item.name}
-                  </span>
-                  <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                </div>
-              ))}
+            <div className="divide-y divide-border/40 text-xs">
+              {cogsList.length === 0 ? (
+                <div className="py-2 text-muted-foreground">لا توجد تكاليف مسجلة في هذه الفترة</div>
+              ) : (
+                cogsList.map((item: any) => (
+                  <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                    <span>
+                      <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                      {item.name}
+                    </span>
+                    <span className="font-mono tabular-nums font-semibold text-rose-600 dark:text-rose-400">({formatEGP(item.amount ?? item.balance ?? 0)}) ج.م</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Gross Profit Callout */}
-          <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 flex justify-between items-center font-bold text-sm">
-            <span>مجمل الربح (Gross Profit)</span>
+          <div className="p-3.5 rounded-lg bg-muted/40 border border-border/50 flex justify-between items-center font-bold text-sm">
+            <span className="text-foreground">مجمل الربح (Gross Profit)</span>
             <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400 text-base">
-              {formatEGP(report?.grossProfit || 0)} ج.م
+              {formatEGP(grossProfit)} ج.م
             </span>
           </div>
 
           {/* 3. Operating Expenses */}
           <div>
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
+            <div className="flex justify-between items-center pb-2 border-b border-border/60 text-sm font-bold text-foreground">
               <span>المصروفات التشغيلية والبيعية والإدارية (OPEX)</span>
               <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">
-                ({formatEGP(report?.operatingExpenses?.total || 0)}) ج.م
+                ({formatEGP(totalOpex)}) ج.م
               </span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.operatingExpenses?.items || []).map((item) => (
-                <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
-                  <span>
-                    <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
-                    {item.name}
-                  </span>
-                  <span className="font-mono tabular-nums">{formatEGP(item.amount)} ج.م</span>
-                </div>
-              ))}
+            <div className="divide-y divide-border/40 text-xs">
+              {opexList.length === 0 ? (
+                <div className="py-2 text-muted-foreground">لا توجد مصروفات تشغيلية مسجلة</div>
+              ) : (
+                opexList.map((item: any) => (
+                  <div key={item.code || item.id} className="py-2 flex justify-between items-center text-foreground hover:bg-muted/20 px-1 rounded transition">
+                    <span>
+                      <span className="font-mono text-muted-foreground ml-2">[{item.code || '-'}]</span>
+                      {item.name}
+                    </span>
+                    <span className="font-mono tabular-nums font-semibold text-rose-600 dark:text-rose-400">({formatEGP(item.amount ?? item.balance ?? 0)}) ج.م</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Operating Profit Callout */}
-          <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 flex justify-between items-center font-bold text-sm">
-            <span>الربح التشغيلي (Operating Profit / EBIT)</span>
-            <span className="font-mono tabular-nums text-slate-900 dark:text-white text-base">
-              {formatEGP(report?.operatingProfit || 0)} ج.م
+          <div className="p-3.5 rounded-lg bg-muted/40 border border-border/50 flex justify-between items-center font-bold text-sm">
+            <span className="text-foreground">الربح التشغيلي (Operating Profit / EBIT)</span>
+            <span className="font-mono tabular-nums text-foreground text-base">
+              {formatEGP(operatingProfit)} ج.م
             </span>
           </div>
 
           {/* 4. Other Revenues */}
           {(report?.otherRevenues?.total || 0) > 0 && (
             <div>
-              <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
+              <div className="flex justify-between items-center pb-2 border-b border-border/60 text-sm font-bold text-foreground">
                 <span>إيرادات أخرى وتمويلية</span>
-                <span className="font-mono tabular-nums text-emerald-600">
+                <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatEGP(report?.otherRevenues?.total || 0)} ج.م
                 </span>
               </div>
@@ -197,22 +228,22 @@ export const AccountingProfitLossPage: React.FC = () => {
 
           {/* Net Profit / Loss Highlight */}
           <div
-            className={`p-5 rounded-2xl border flex justify-between items-center ${
-              (report?.netProfit || 0) >= 0
+            className={`p-5 rounded-xl border flex justify-between items-center ${
+              netProfit >= 0
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200'
                 : 'bg-rose-500/10 border-rose-500/30 text-rose-950 dark:text-rose-200'
             }`}
           >
             <div>
               <span className="text-base font-bold block">
-                {(report?.netProfit || 0) >= 0 ? 'صافي أرباح الفترة (Net Profit)' : 'صافي خسائر الفترة (Net Loss)'}
+                {netProfit >= 0 ? 'صافي أرباح الفترة (Net Profit)' : 'صافي خسائر الفترة (Net Loss)'}
               </span>
-              <span className="text-xs opacity-75">
-                {(report?.netProfit || 0) >= 0 ? 'ربح مالي حقيقي قابل للترحيل للأرباح المبقاة' : 'عجز في نتائج الأعمال'}
+              <span className="text-xs opacity-80 mt-0.5 block">
+                {netProfit >= 0 ? 'ربح مالي حقيقي قابل للترحيل للأرباح المبقاة' : 'عجز في نتائج الأعمال'}
               </span>
             </div>
             <div className="text-2xl font-black font-mono tabular-nums">
-              {formatEGP(report?.netProfit || 0)} <span className="text-sm font-normal">ج.م</span>
+              {formatEGP(netProfit)} <span className="text-sm font-normal font-sans">ج.م</span>
             </div>
           </div>
         </div>

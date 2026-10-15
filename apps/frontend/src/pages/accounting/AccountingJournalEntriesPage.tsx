@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
-  PlusIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  NoSymbolIcon,
-  DocumentDuplicateIcon,
-} from '@heroicons/react/24/outline';
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Ban,
+  FileSpreadsheet,
+  RotateCw,
+  CheckCircle2,
+} from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, JournalEntry, Account } from './accountingApi';
 import { AccountingNewEntryModal, AccountingVoidModal } from './AccountingEntryModals';
@@ -99,15 +101,15 @@ export const AccountingJournalEntriesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground font-sans" dir="rtl">
       <AccountingHeader
         title="دفتر قيود اليومية العامة (Journal Entries)"
         actions={
           <button
             onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:opacity-90 shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
           >
-            <PlusIcon className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>تسجيل قيد جديد</span>
           </button>
         }
@@ -115,17 +117,21 @@ export const AccountingJournalEntriesPage: React.FC = () => {
 
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={loadData} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
-              إعادة المحاولة
+            <button
+              onClick={loadData}
+              className="px-2.5 py-1 rounded bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 text-[11px] flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>إعادة المحاولة</span>
             </button>
           </div>
         )}
 
         {/* Status Filter Tabs */}
-        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 text-xs">
+        <div className="p-3 rounded-xl bg-card border border-border/70 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
             {[
               { id: 'ALL', label: 'جميع القيود' },
               { id: 'POSTED', label: 'المرحلة' },
@@ -137,8 +143,8 @@ export const AccountingJournalEntriesPage: React.FC = () => {
                 onClick={() => setStatusFilter(s.id)}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                   statusFilter === s.id
-                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 }`}
               >
                 {s.label}
@@ -146,14 +152,23 @@ export const AccountingJournalEntriesPage: React.FC = () => {
             ))}
           </div>
 
-          <span className="text-xs text-slate-400 font-mono">العدد: {entries.length} قيد</span>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            العدد: {entries.length} قيد
+          </span>
         </div>
 
         {/* Entries List */}
         <div className="space-y-3">
           {entries.length === 0 ? (
-            <div className="p-12 text-center rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 text-xs">
-              {loading ? 'جارٍ تحميل قيود اليومية...' : 'لا توجد قيود مسجلة في هذا النطاق'}
+            <div className="p-12 text-center rounded-xl bg-card border border-border/70 text-muted-foreground text-xs">
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <RotateCw className="w-4 h-4 animate-spin text-primary" />
+                  <span>جارٍ تحميل قيود اليومية...</span>
+                </div>
+              ) : (
+                'لا توجد قيود مسجلة في هذا النطاق'
+              )}
             </div>
           ) : (
             entries.map((entry) => {
@@ -163,66 +178,66 @@ export const AccountingJournalEntriesPage: React.FC = () => {
               return (
                 <div
                   key={entry.id}
-                  className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+                  className="rounded-xl bg-card border border-border/70 shadow-xs overflow-hidden"
                 >
                   <div
                     onClick={() => setExpandedEntryId(isExpanded ? null : entry.id)}
-                    className="p-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                    className="p-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`p-2 rounded-lg ${
                           entry.status === 'POSTED'
-                            ? 'bg-emerald-500/10 text-emerald-600'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : entry.status === 'VOID'
-                            ? 'bg-rose-500/10 text-rose-600'
-                            : 'bg-slate-500/10 text-slate-600'
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
-                        <DocumentDuplicateIcon className="w-5 h-5" />
+                        <FileSpreadsheet className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-sm">{entry.entryNumber}</span>
+                          <span className="font-mono font-bold text-sm text-foreground">{entry.entryNumber}</span>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                               entry.status === 'POSTED'
-                                ? 'bg-emerald-500/10 text-emerald-600'
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                                 : entry.status === 'VOID'
-                                ? 'bg-rose-500/10 text-rose-600'
-                                : 'bg-slate-500/10 text-slate-600'
+                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
+                                : 'bg-muted text-muted-foreground border border-border/60'
                             }`}
                           >
                             {entry.status === 'POSTED' ? 'مرحل' : entry.status === 'VOID' ? 'ملغي' : 'مسودة'}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">[{entry.sourceType}]</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">[{entry.sourceType}]</span>
                         </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{entry.narration}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{entry.narration}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                       <div className="text-left">
-                        <span className="text-[11px] text-slate-400 block">إجمالي القيد</span>
-                        <span className="text-xs font-bold tabular-nums">{formatEGP(entryTotal)} ج.م</span>
+                        <span className="text-[11px] text-muted-foreground block">إجمالي القيد</span>
+                        <span className="text-xs font-bold font-mono tabular-nums text-foreground">{formatEGP(entryTotal)} ج.م</span>
                       </div>
-                      <div className="text-left text-slate-500 text-xs">
+                      <div className="text-left text-muted-foreground text-xs font-mono tabular-nums">
                         <span>{new Date(entry.date).toLocaleDateString('ar-EG')}</span>
                       </div>
                       {isExpanded ? (
-                        <ChevronUpIcon className="w-4 h-4 text-slate-400" />
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
                       ) : (
-                        <ChevronDownIcon className="w-4 h-4 text-slate-400" />
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       )}
                     </div>
                   </div>
 
                   {/* Expanded Lines Table */}
                   {isExpanded && (
-                    <div className="border-t border-slate-100 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-950/30">
+                    <div className="border-t border-border/60 p-4 bg-muted/20">
                       <table className="w-full text-right text-xs">
                         <thead>
-                          <tr className="text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                          <tr className="text-muted-foreground border-b border-border/50">
                             <th className="py-2">كود الحساب</th>
                             <th className="py-2">اسم الحساب</th>
                             <th className="py-2">البيان الفرعي</th>
@@ -230,12 +245,12 @@ export const AccountingJournalEntriesPage: React.FC = () => {
                             <th className="py-2 text-left">دائن (Credit)</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tbody className="divide-y divide-border/40">
                           {entry.lines.map((l, i) => (
                             <tr key={i}>
-                              <td className="py-2 font-mono font-semibold">{l.account?.code || '—'}</td>
-                              <td className="py-2 font-medium">{l.account?.name || '—'}</td>
-                              <td className="py-2 text-slate-500">{l.narration || '—'}</td>
+                              <td className="py-2 font-mono font-semibold text-foreground">{l.account?.code || '—'}</td>
+                              <td className="py-2 font-medium text-foreground">{l.account?.name || '—'}</td>
+                              <td className="py-2 text-muted-foreground">{l.narration || '—'}</td>
                               <td className="py-2 text-left font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                                 {Number(l.debit) > 0 ? formatEGP(Number(l.debit)) : '—'}
                               </td>
@@ -248,15 +263,15 @@ export const AccountingJournalEntriesPage: React.FC = () => {
                       </table>
 
                       {/* Entry Actions */}
-                      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">
+                      <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground font-mono">
                           {entry.reversalOfId && `قيد عكسي للقيد رقم: ${entry.reversalOfId}`}
                         </span>
                         <div className="flex items-center gap-2">
                           {entry.status === 'DRAFT' && (
                             <button
                               onClick={() => handlePostEntry(entry.id)}
-                              className="px-3 py-1 text-xs font-semibold rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
                             >
                               ترحيل القيد الآن
                             </button>
@@ -264,9 +279,9 @@ export const AccountingJournalEntriesPage: React.FC = () => {
                           {entry.status === 'POSTED' && (
                             <button
                               onClick={() => setVoidingEntry(entry)}
-                              className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition"
                             >
-                              <NoSymbolIcon className="w-3.5 h-3.5" />
+                              <Ban className="w-3.5 h-3.5" />
                               <span>إلغاء وعكس القيد (Void)</span>
                             </button>
                           )}
