@@ -77,6 +77,7 @@ function checkRoute(toPath) {
     '/dental-portal',
     '/admin/education',
     '/admin/hotel',
+    '/accounting',
   ];
   for (const prefix of SUB_APP_ROUTERS) {
     if (cleanPath === prefix || cleanPath.startsWith(prefix + '/')) {

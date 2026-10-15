@@ -1132,6 +1132,9 @@ const DentalLabManagementPage = React.lazy(
 const TreasuryExpensesPage = React.lazy(
   () => import("./pages/treasury-expenses/TreasuryExpensesPage"),
 );
+const AccountingRoutes = React.lazy(
+  () => import("./pages/accounting/AccountingRoutes"),
+);
 const DentalCaseDetailPage = React.lazy(
   () => import("./pages/dental-lab/DentalCaseDetailPage"),
 );
@@ -8507,6 +8510,118 @@ const AppContent = () => {
                   }
                 />
                 <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
+
+                {/* General Accounting Cockpit Routes */}
+                <Route
+                  path="/accounting"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/coa"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/entries"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/ledger"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/trial-balance"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/income-statement"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/balance-sheet"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/periods"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/vat-report"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/settings"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/accounting/*"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                        <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
 
                 {/* MaxP Academy Routes */}
                 <Route

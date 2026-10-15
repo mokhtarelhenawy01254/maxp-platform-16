@@ -1460,6 +1460,26 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.6️⃣.6️⃣.b نظام الحسابات المالية العامة
+        {
+            id: 'accounting',
+            title: isEn ? 'General Accounting' : t('sidebar.accountingSection', 'الحسابات المالية العامة'),
+            icon: Landmark,
+            hidden: !isAppInstalled('accounting') && !isAppInstalled('accounting-app'),
+            items: [
+                { to: '/accounting', icon: BarChart3, label: isEn ? 'Overview' : t('sidebar.accountingOverview', 'نظرة عامة') },
+                { to: '/accounting/coa', icon: Table2, label: isEn ? 'Chart of Accounts' : t('sidebar.accountingCoa', 'دليل الحسابات') },
+                { to: '/accounting/entries', icon: FileText, label: isEn ? 'Journal Entries' : t('sidebar.accountingEntries', 'قيود اليومية') },
+                { to: '/accounting/ledger', icon: BookOpen, label: isEn ? 'General Ledger' : t('sidebar.accountingLedger', 'الأستاذ العام') },
+                { to: '/accounting/trial-balance', icon: Calculator, label: isEn ? 'Trial Balance' : t('sidebar.accountingTrialBalance', 'ميزان المراجعة') },
+                { to: '/accounting/income-statement', icon: TrendingUp, label: isEn ? 'Income Statement' : t('sidebar.accountingIncomeStatement', 'قائمة الدخل') },
+                { to: '/accounting/balance-sheet', icon: Landmark, label: isEn ? 'Balance Sheet' : t('sidebar.accountingBalanceSheet', 'الميزانية العمومية') },
+                { to: '/accounting/periods', icon: Calendar, label: isEn ? 'Fiscal Periods' : t('sidebar.accountingPeriods', 'الفترات المالية') },
+                { to: '/accounting/vat-report', icon: Receipt, label: isEn ? 'VAT Report' : t('sidebar.accountingVatReport', 'إقرار ض.ق.م') },
+                { to: '/accounting/settings', icon: Settings, label: isEn ? 'Settings & Auto-Posting' : t('sidebar.accountingSettings', 'الإعدادات والترحيل') },
+            ]
+        },
+
         // 7️⃣.6️⃣.7️⃣ أكاديمية ماكس بي
         {
             id: 'academy',
@@ -1714,6 +1734,7 @@ export const getSidebarConfig = (
  * Ensures robust mapping even if APP_REGISTRY metadata is modified or queried by sectionId.
  */
 const SECTION_APP_FALLBACKS: Record<string, string[]> = {
+    'accounting': ['accounting', 'accounting-app'],
     'dental-lab': ['dental-lab-app'],
     'lab': ['lab-app'],
     'radiology': ['radiology-app'],
