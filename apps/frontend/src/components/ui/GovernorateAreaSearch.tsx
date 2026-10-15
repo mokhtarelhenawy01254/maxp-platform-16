@@ -6,12 +6,13 @@ import React, {
   useMemo,
 } from "react";
 import {
-  MagnifyingGlassIcon,
-  CheckIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-  MapPinIcon,
-} from "@heroicons/react/24/outline";
+  Search,
+  Check,
+  X,
+  ChevronDown,
+  MapPin,
+  Loader2,
+} from "lucide-react";
 
 export interface AreaSearchResult {
   governorateId: string;
@@ -30,17 +31,10 @@ interface GovernorateAreaSearchProps {
   loadingText?: string;
   disabled?: boolean;
   autoSearchText?: string;
-  /** Use the public storefront endpoint (no auth). Requires companyId. */
   publicMode?: boolean;
-  /** Company id used when publicMode is true. */
   companyId?: string | null;
 }
 
-/**
- * بحث ذكي عن المحافظة + المنطقة على خريطة شركة الشحن.
- * يبحث عبر /api/v1/turbo/search-area ويعرض النتائج مجمّعة حسب المحافظة
- * (مثل خريطة توربو الداخلية). اختيار نتيجة يملأ المحافظة والمنطقة معاً.
- */
 const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   value,
   onChange,
@@ -62,7 +56,6 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Group results by governorate for display.
   const grouped = useMemo(() => {
     const groups = new Map<string, AreaSearchResult[]>();
     for (const r of results) {
@@ -108,7 +101,6 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
         }
         setResults(matches);
       } catch (error) {
-        // Ignore abort; on real failures keep whatever we had.
         if ((error as { code?: string })?.code !== "ERR_CANCELED") {
           setResults([]);
         }
@@ -119,8 +111,6 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
     [companyId, publicMode],
   );
 
-  // Auto-search: if the caller supplies pre-filled text (e.g. an existing
-  // address), run it once on mount so the merchant sees suggested areas.
   useEffect(() => {
     if (autoSearchText && autoSearchText.trim().length >= 2 && !value?.area) {
       setQuery(autoSearchText);
@@ -129,7 +119,6 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounced search as the merchant types.
   const handleQueryChange = (text: string) => {
     setQuery(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -174,12 +163,12 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   return (
     <div ref={containerRef} className="relative">
       {selectedGov && selectedArea ? (
-        <div className="w-full flex items-center justify-between px-3 py-2 text-right border rounded-md bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-gray-900 dark:text-gray-100">
+        <div className="w-full flex items-center justify-between px-3 py-2 text-right border rounded-lg bg-primary/10 border-primary/25 text-foreground shadow-xs">
           <div className="flex items-center gap-2 min-w-0">
-            <MapPinIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="truncate text-sm">
-              <span className="font-semibold">{selectedGov}</span>
-              <span className="mx-1 text-gray-400 dark:text-gray-500">→</span>
+            <MapPin className="size-4 text-primary shrink-0" />
+            <span className="truncate text-xs font-medium">
+              <span className="font-semibold text-primary">{selectedGov}</span>
+              <span className="mx-1 text-muted-foreground">←</span>
               <span>{selectedArea}</span>
             </span>
           </div>
@@ -189,10 +178,10 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
               onChange({ governorate: "", area: "" });
               setOpen(false);
             }}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
+            className="text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-primary/20 transition-colors"
             aria-label="إلغاء التحديد"
           >
-            <XMarkIcon className="w-4 h-4" />
+            <X className="size-3.5" />
           </button>
         </div>
       ) : (
@@ -200,92 +189,90 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
           type="button"
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
-          className={`w-full flex items-center justify-between px-3 py-2 text-right border rounded-md transition-colors ${
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          className={`w-full flex items-center justify-between px-3 py-2 text-right border rounded-lg transition-colors text-xs ${
             disabled
-              ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700"
-              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-900 dark:text-gray-100"
-          } ${open ? "ring-2 ring-blue-500 border-blue-500" : ""}`}
+              ? "bg-muted/50 cursor-not-allowed text-muted-foreground border-border/50"
+              : "bg-card border-border/70 hover:border-border text-foreground shadow-xs"
+          } ${open ? "ring-1 ring-primary/40 border-primary" : ""}`}
         >
-          <span className={`truncate text-sm ${value ? "" : "text-gray-400 dark:text-gray-500"}`}>
+          <span className={`truncate ${value ? "text-foreground font-medium" : "text-muted-foreground"}`}>
             {placeholder}
           </span>
-          <ChevronDownIcon className="w-4 h-4 text-gray-400 shrink-0 mr-2" />
+          <ChevronDown className="size-3.5 text-muted-foreground shrink-0 mr-2" />
         </button>
       )}
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          <div className="relative border-b border-gray-200 dark:border-gray-600">
-            <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="absolute z-50 mt-1 w-full bg-card border border-border/70 rounded-xl shadow-xl overflow-hidden divide-y divide-border/40 animate-in fade-in zoom-in-95 duration-100">
+          <div className="relative p-2 bg-muted/20">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
             <input
               ref={searchRef}
               type="text"
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pr-9 pl-3 py-2 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full pr-8 pl-7 py-1 text-xs bg-background border border-border/60 rounded-md outline-none text-foreground placeholder:text-muted-foreground focus:border-primary"
             />
             {query && (
               <button
+                type="button"
                 onClick={() => {
                   setQuery("");
                   setResults([]);
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                aria-label="مسح البحث"
               >
-                <XMarkIcon className="w-4 h-4" />
+                <X className="size-3" />
               </button>
             )}
           </div>
 
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto divide-y divide-border/20">
             {loading ? (
-              <div className="px-3 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                {loadingText}
+              <div className="px-3 py-6 text-xs text-muted-foreground text-center flex items-center justify-center gap-2">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                <span>{loadingText}</span>
               </div>
             ) : grouped.length === 0 ? (
-              <div className="px-3 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
+              <div className="px-3 py-6 text-xs text-muted-foreground text-center">
                 {emptyText}
               </div>
             ) : (
               grouped.map(([governorate, items]) => (
                 <div key={governorate}>
-                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-600 flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-sm bg-blue-500/70" />
-                    {governorate}
+                  <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/30 border-b border-border/40 flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-primary" />
+                    <span>{governorate}</span>
                   </div>
-                  {items.map((result) => (
-                    <button
-                      key={`${result.governorateId}-${result.areaId}`}
-                      onClick={() => handleSelect(result)}
-                      className={`w-full text-right px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                        selectedArea === result.area &&
-                        selectedGov === result.governorate
-                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      <span
-                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                          selectedArea === result.area &&
-                          selectedGov === result.governorate
-                            ? "bg-blue-600 border-blue-600"
-                            : "border-gray-300 dark:border-gray-500"
+                  {items.map((result) => {
+                    const isSelected = selectedArea === result.area && selectedGov === result.governorate;
+                    return (
+                      <button
+                        key={`${result.governorateId}-${result.areaId}`}
+                        type="button"
+                        onClick={() => handleSelect(result)}
+                        className={`w-full text-right px-3 py-2 text-xs flex items-center justify-between gap-2 transition-colors ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground hover:bg-muted/50"
                         }`}
                       >
-                        {selectedArea === result.area &&
-                          selectedGov === result.governorate && (
-                            <CheckIcon className="w-3 h-3 text-white" strokeWidth={3} />
-                          )}
-                      </span>
-                      <span className="truncate">{result.area}</span>
-                      {result.confidence < 0.7 && (
-                        <span className="ml-auto text-[10px] text-amber-500 shrink-0">
-                          تأكيد
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                        <div className="flex items-center gap-2 truncate">
+                          {isSelected && <Check className="size-3 text-primary shrink-0" />}
+                          <span className="truncate">{result.area}</span>
+                        </div>
+                        {result.confidence < 0.7 && (
+                          <span className="text-[10px] text-amber-500 font-medium shrink-0">
+                            تأكيد
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ))
             )}

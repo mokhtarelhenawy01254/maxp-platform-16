@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  PhoneIcon,
-  PhoneArrowUpRightIcon,
-  DevicePhoneMobileIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+  Phone,
+  PhoneCall,
+  Smartphone,
+  RotateCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { telephonyClientService } from "../../services/telephonyService";
 import { useDevicePresence, refreshDevicePresence } from "../../hooks/useDevicePresence";
@@ -56,7 +56,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     return () => clearInterval(interval);
   }, [cooldown]);
 
-  // عداد مرئي أثناء الرنين — الانتظار الصامت كان يوحي بالتعليق (الحارس 30ث موجود)
+  // عداد مرئي أثناء الرنين
   useEffect(() => {
     if (!isDialing) {
       setDialSeconds(0);
@@ -75,8 +75,6 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     }
   };
 
-  // حارس الرنين: لو الهاتف لم يرسل "انتهت المكالمة" خلال 30 ثانية فالأمر لم
-  // يصله أصلًا (تطبيق مقفول/سوكت ميت) — فشل صادق فورًا بدل زر معلق للأبد
   const armDialWatchdog = () => {
     clearDialWatchdog();
     dialWatchdogRef.current = setTimeout(() => {
@@ -148,10 +146,10 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
 
   const deviceBadge = (
     <div
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border font-mono tabular-nums ${
         presence.isOnline
-          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
-          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+          : "bg-muted text-muted-foreground border-border/70"
       }`}
       title={
         presence.isOnline
@@ -160,11 +158,11 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       }
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+        className={`size-1.5 rounded-full ${
+          presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
         }`}
       />
-      <DevicePhoneMobileIcon className="w-3 h-3 shrink-0" />
+      <Smartphone className="size-3 shrink-0 text-muted-foreground" />
       <span className="truncate max-w-[120px]">
         {presence.isOnline ? presence.device?.deviceName || "متصل" : "غير متصل"}
       </span>
@@ -190,22 +188,22 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
             ? `انتظر ${cooldown} ثانية بين المكالمات`
             : `اتصال بالرقم الأساسي (${customerPhone})`
         }
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-2xs active:scale-[0.97] ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono tabular-nums transition-colors shadow-xs active:scale-[0.98] ${
           isDialing
-            ? "bg-amber-600 text-white animate-pulse"
+            ? "bg-amber-500 text-white animate-pulse"
             : cooldown > 0
-            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border"
+            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border/70"
             : presence.isOnline
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
             : "bg-muted text-muted-foreground cursor-not-allowed"
         }`}
       >
         {isLoading ? (
-          <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+          <RotateCw className="size-3.5 animate-spin" />
         ) : isDialing ? (
-          <PhoneArrowUpRightIcon className="w-3.5 h-3.5 animate-bounce" />
+          <PhoneCall className="size-3.5 animate-bounce" />
         ) : (
-          <PhoneIcon className="w-3.5 h-3.5" />
+          <Phone className="size-3.5" />
         )}
         <span>
           {isLoading
@@ -227,9 +225,9 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           onClick={() => handleStartCall(secondaryPhone || undefined)}
           disabled={isLoading || isDialing || cooldown > 0}
           title={`اتصال بالرقم البديل (${secondaryPhone})`}
-          className="inline-flex h-8 items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 text-xs font-bold text-primary transition-transform active:scale-[0.98] hover:bg-primary/20 disabled:opacity-50"
+          className="inline-flex h-7 items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
         >
-          <PhoneIcon className="w-3 h-3" />
+          <Phone className="size-3" />
           <span>بديل</span>
         </button>
       )}
@@ -264,4 +262,5 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     </div>
   );
 };
+
 export default OrderCallButton;
