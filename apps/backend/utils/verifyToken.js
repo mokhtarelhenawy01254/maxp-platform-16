@@ -225,6 +225,34 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, getJwtSecret());
 
+    // 🎓 [STUDENT] Academy student portal tokens resolve by phone/enrollment, not platform User table
+    if (decoded.role === 'STUDENT') {
+      const studentPhone = decoded.studentPhone || decoded.phone;
+      if (!studentPhone) {
+        return res.status(401).json({
+          success: false,
+          message: 'رمز مصادقة الطالب غير صالح',
+          code: 'INVALID_TOKEN_PAYLOAD',
+        });
+      }
+
+      const studentId = decoded.id || decoded.userId || `student_${studentPhone}`;
+      const studentCompanyId = decoded.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
+      req.user = {
+        ...decoded,
+        id: studentId,
+        userId: studentId,
+        studentPhone,
+        name: decoded.studentName || 'طالب ماكس بي',
+        role: 'STUDENT',
+        companyId: studentCompanyId,
+        effectiveCompanyId: studentCompanyId,
+        userPermissions: ['academy.student.access'],
+      };
+
+      return require('../services/tenantContext').run(studentCompanyId, () => next());
+    }
+
     // Map userId to id for compatibility with code that expects req.user.id
     const userId = decoded.userId || decoded.id || decoded.user?.id;
     if (!userId) {

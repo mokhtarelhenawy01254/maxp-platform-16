@@ -674,7 +674,14 @@ exports.studentLogin = async (req, res) => {
     const primaryEnrollment = enrollments[0];
     const studentName = primaryEnrollment.studentName || 'طالب ماكس بي';
     const token = jwt.sign(
-      { studentPhone: cleanPhone, studentName, role: 'STUDENT' },
+      {
+        id: `student_${cleanPhone}`,
+        userId: `student_${cleanPhone}`,
+        studentPhone: cleanPhone,
+        studentName,
+        role: 'STUDENT',
+        companyId: primaryEnrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+      },
       getJwtSecret(),
       { expiresIn: '30d' }
     );
@@ -787,7 +794,14 @@ exports.checkoutCourse = async (req, res) => {
 
     if (existingEnrollment) {
       const token = jwt.sign(
-        { studentPhone: cleanPhone, studentName: existingEnrollment.studentName || cleanName, role: 'STUDENT' },
+        {
+          id: `student_${cleanPhone}`,
+          userId: `student_${cleanPhone}`,
+          studentPhone: cleanPhone,
+          studentName: existingEnrollment.studentName || cleanName,
+          role: 'STUDENT',
+          companyId: existingEnrollment.companyId || course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+        },
         getJwtSecret(),
         { expiresIn: '30d' }
       );
@@ -882,7 +896,15 @@ exports.checkoutCourse = async (req, res) => {
 
     // 5. Generate Student JWT Token
     const token = jwt.sign(
-      { studentPhone: cleanPhone, customerId: customer?.id, studentName: cleanName, role: 'STUDENT' },
+      {
+        id: `student_${cleanPhone}`,
+        userId: `student_${cleanPhone}`,
+        studentPhone: cleanPhone,
+        customerId: customer?.id,
+        studentName: cleanName,
+        role: 'STUDENT',
+        companyId: course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+      },
       getJwtSecret(),
       { expiresIn: '30d' }
     );
