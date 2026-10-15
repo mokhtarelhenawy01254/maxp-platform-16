@@ -49,7 +49,6 @@ export { default as AssetsDashboard } from "./assets/AssetsOverviewDashboard";
 export { default as AuditLogs } from "./AuditLogs";
 export { default as ClearanceChecklist } from "./ClearanceChecklist";
 export { default as CompanyPolicy } from "./CompanyPolicy";
-export { default as MyAttendance } from "../employee/MyAttendance";
 
 // Rewards Section
 export { default as RewardsList } from "./rewards/RewardsList";

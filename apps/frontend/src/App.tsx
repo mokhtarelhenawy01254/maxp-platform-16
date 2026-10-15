@@ -11,6 +11,7 @@ import { saveLastPath } from "./utils/postAuthRouting";
 import { pushNotificationService } from "./services/pushNotificationService";
 import { isCapacitorNative } from "./config/environment";
 import { telephonyClientService } from "./services/telephonyService";
+import { recoverFromChunkLoadError } from "./utils/chunkLoadRecovery";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
@@ -1840,11 +1841,23 @@ const AppContent = () => {
   const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
 
   // Catch Vite dynamic-import failures when a redeploy deleted old chunks
-  // that a cached browser still references. Reload to get fresh index.html.
+  // that a cached browser still references. Recover to get fresh index.html,
+  // but gate it with the shared throttle guard so a persistent chunk/CDN
+  // failure cannot trigger an endless reload loop.
   useEffect(() => {
     const handler = (e: Event) => {
-      e.preventDefault();
-      window.location.reload();
+      const ev = e as Event & {
+        payload?: unknown;
+        reason?: unknown;
+        error?: unknown;
+        detail?: unknown;
+        message?: string;
+      };
+      const chunkError =
+        ev.payload ?? ev.reason ?? ev.error ?? ev.detail ?? ev.message;
+      if (recoverFromChunkLoadError(chunkError ?? e, "vite-preload")) {
+        e.preventDefault();
+      }
     };
     window.addEventListener('vite:preloadError', handler);
     return () => window.removeEventListener('vite:preloadError', handler);
