@@ -412,6 +412,9 @@ const CodDepositSettings = React.lazy(
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
 );
+const BostaSettings = React.lazy(
+  () => import("./pages/settings/BostaSettings"),
+);
 const TurboStatusMapping = React.lazy(
   () => import("./pages/settings/TurboStatusMapping"),
 );
@@ -6990,6 +6993,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <DeliveryOptions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/bosta"
+                  element={
+                    <Layout>
+                      <BostaSettings />
                     </Layout>
                   }
                 />

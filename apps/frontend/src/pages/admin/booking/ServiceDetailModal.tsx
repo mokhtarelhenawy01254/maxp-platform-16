@@ -1,4 +1,4 @@
-import { XMarkIcon, BuildingOffice2Icon } from "@heroicons/react/24/outline";
+import { X, Building2, Layers, Clock, Coins, Stethoscope, Calendar, Tag } from "lucide-react";
 import { BookingService, MODAL_CONTENT_CLS } from "./shared";
 
 interface Props {
@@ -8,82 +8,191 @@ interface Props {
 
 export default function ServiceDetailModal({ service, onClose }: Props) {
   const bs = service.branchServices || [];
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={`${MODAL_CONTENT_CLS} max-w-2xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-bold">{service.name}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{service.description || "لا يوجد وصف"}</p>
+    <div
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className={`${MODAL_CONTENT_CLS} max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border/80 rounded-2xl shadow-2xl text-foreground font-sans`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/60">
+          <div className="flex items-start gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mt-0.5">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-foreground">
+                  {service.name}
+                </h3>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                    service.isActive
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                  }`}
+                >
+                  {service.isActive ? "نشط" : "غير نشط"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {service.description || "لا يوجد وصف مدخل لهذه الخدمة"}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${service.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{service.isActive ? "نشط" : "غير نشط"}</span>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Content Body */}
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">القسم</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.category ? `${service.category.icon ? service.category.icon + " " : ""}${service.category.name}` : "—"}</p>
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="bg-muted/30 border border-border/60 rounded-xl p-3">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mb-1">
+                <Tag className="w-3 h-3 text-primary" />
+                <span>القسم السريري</span>
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground">
+                {service.category?.name || "بدون قسم"}
+              </p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المدة</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.durationMinutes ? `${service.durationMinutes} دقيقة` : "—"}</p>
+            <div className="bg-muted/30 border border-border/60 rounded-xl p-3">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mb-1">
+                <Clock className="w-3 h-3 text-primary" />
+                <span>المدة التقريبية</span>
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground font-mono tabular-nums">
+                {service.durationMinutes ? `${service.durationMinutes} دقيقة` : "غير محدد"}
+              </p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">السعر الأساسي</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.basePrice ? `${service.basePrice} ج.م` : "—"}</p>
+            <div className="bg-muted/30 border border-border/60 rounded-xl p-3">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mb-1">
+                <Coins className="w-3 h-3 text-primary" />
+                <span>السعر الأساسي</span>
+              </p>
+              <p className="text-xs sm:text-sm font-bold text-foreground font-mono tabular-nums">
+                {service.basePrice != null ? `${Number(service.basePrice).toLocaleString()} ج.م` : "—"}
+              </p>
             </div>
           </div>
+
+          {/* Doctors List */}
           {service.doctorServices && service.doctorServices.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="font-semibold text-sm mb-3">الأطباء المقدمون للخدمة</h4>
-              <div className="flex flex-wrap gap-2">
-                {service.doctorServices.map(ds => (
-                  <span key={ds.id} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
-                    {ds.doctor?.title} {ds.doctor?.name}{ds.fee ? ` — ${ds.fee} ج.م` : ""}
+            <div className="bg-muted/20 border border-border/60 rounded-xl p-3.5 space-y-2">
+              <h4 className="font-semibold text-xs sm:text-sm text-foreground flex items-center gap-1.5">
+                <Stethoscope className="w-3.5 h-3.5 text-primary" />
+                <span>الأطباء المصرح لهم بتقديم الخدمة</span>
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {service.doctorServices.map((ds) => (
+                  <span
+                    key={ds.id}
+                    className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-medium"
+                  >
+                    {ds.doctor?.title} {ds.doctor?.name}
+                    {ds.fee ? (
+                      <span className="font-mono tabular-nums mr-1">
+                        {" "}
+                        — {ds.fee} ج.م
+                      </span>
+                    ) : null}
                   </span>
                 ))}
               </div>
             </div>
           )}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2"><BuildingOffice2Icon className="w-4 h-4" />الفروع والباقات</h4>
+
+          {/* Branches and Packages */}
+          <div className="bg-muted/20 border border-border/60 rounded-xl p-3.5 space-y-3">
+            <h4 className="font-semibold text-xs sm:text-sm text-foreground flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <span>الفروع المتاحة والباقات</span>
+            </h4>
             {bs.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">لم يتم ربط الخدمة بأي فرع</p>
+              <p className="text-xs text-muted-foreground text-center py-3 bg-card border border-border/60 rounded-lg">
+                لم يتم ربط الخدمة بأي فرع حتى الآن
+              </p>
             ) : (
-              <div className="space-y-3">
-                {bs.map(b => (
-                  <div key={b.id} className="border dark:border-gray-600 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{b.branch.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "متاحة" : "غير متاحة"}</span>
+              <div className="space-y-2.5">
+                {bs.map((b) => (
+                  <div
+                    key={b.id || b.branchId}
+                    className="border border-border/70 bg-card rounded-xl p-3 shadow-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-xs sm:text-sm text-foreground">
+                        {b.branch?.name || b.branchId}
+                      </span>
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded-full border ${
+                          b.isActive
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                        }`}
+                      >
+                        {b.isActive ? "متاحة" : "غير متاحة"}
+                      </span>
                     </div>
+
                     {b.hasPackages && (b.packages || []).length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border/50">
                         {(b.packages || []).map((pkg, i) => (
-                          <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
-                            {pkg.count} جلسات - {pkg.price} ج.م
-                            {pkg.originalPrice && <span className="line-through mr-1 text-gray-400">{pkg.originalPrice} ج.م</span>}
+                          <span
+                            key={i}
+                            className="text-xs bg-muted text-foreground border border-border/70 px-2.5 py-1 rounded-lg font-mono tabular-nums"
+                          >
+                            {pkg.count} جلسات — {pkg.price} ج.م
+                            {pkg.originalPrice && (
+                              <span className="line-through mr-1 text-muted-foreground text-[11px]">
+                                {pkg.originalPrice} ج.م
+                              </span>
+                            )}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">لا توجد باقات</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        لا توجد باقات مخفضة لهذا الفرع (سعر الكشف الافتراضي فقط)
+                      </p>
                     )}
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
-            <p>تاريخ الإضافة: {new Date(service.createdAt).toLocaleDateString("ar-EG")}</p>
-            <p>معرف الخدمة: {service.id}</p>
+
+          {/* Metadata Footer */}
+          <div className="text-[11px] text-muted-foreground flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+            <span className="flex items-center gap-1 font-mono tabular-nums">
+              <Calendar className="w-3 h-3 text-muted-foreground" />
+              <span>
+                تاريخ الإضافة:{" "}
+                {new Date(service.createdAt).toLocaleDateString("ar-EG")}
+              </span>
+            </span>
+            <span className="font-mono text-[10px] bg-muted px-2 py-0.5 rounded">
+              معرف: {service.id}
+            </span>
           </div>
         </div>
-        <div className="flex justify-end mt-6">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">إغلاق</button>
+
+        {/* Modal Close Action */}
+        <div className="flex justify-end pt-4 mt-4 border-t border-border/60">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs sm:text-sm font-medium border border-border/70 rounded-xl bg-card text-foreground hover:bg-muted/60 transition-colors shadow-xs"
+          >
+            إغلاق
+          </button>
         </div>
       </div>
     </div>
