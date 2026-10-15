@@ -1,10 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  CheckIcon,
-} from "@heroicons/react/24/outline";
+import { Search, X, Check, MapPin } from "lucide-react";
 import {
   EGYPT_GOVERNORATES,
   EGYPT_REGIONS,
@@ -52,7 +48,7 @@ const CANONICAL_TO_UI_ID: Record<string, string> = {
 };
 
 export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
-  selectedIds,
+  selectedIds = [],
   onChange,
   governorates,
 }) => {
@@ -72,9 +68,11 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
         id: uiId,
         nameAr: gov.nameAr,
         nameEn: gov.nameEn || fallback?.nameEn || gov.code,
-        region: fallback?.region || 'delta',
+        region: fallback?.region || "delta",
         regionNameAr: fallback?.regionNameAr || EGYPT_REGIONS.delta,
-        popular: fallback?.popular || ['cairo', 'giza', 'alexandria', 'qalyubia'].includes(uiId),
+        popular:
+          fallback?.popular ||
+          ["cairo", "giza", "alexandria", "qalyubia"].includes(uiId),
       };
     });
   }, [governorates]);
@@ -135,9 +133,9 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
   };
 
   const selectPopular = () => {
-    const popularIds = availableGovernorates.filter((g) => g.popular).map(
-      (g) => g.id,
-    );
+    const popularIds = availableGovernorates
+      .filter((g) => g.popular)
+      .map((g) => g.id);
     onChange(popularIds);
   };
 
@@ -145,51 +143,58 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
   const totalCount = availableGovernorates.length;
 
   return (
-    <div className="space-y-4">
-      {/* Header with counts */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {t("storeBranches.selectedCount", { selected: selectedCount, total: totalCount })}
+    <div className="space-y-3.5" dir="rtl">
+      {/* Header with counts and actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="text-xs text-muted-foreground font-mono tabular-nums">
+          {t("storeBranches.selectedCount", {
+            selected: selectedCount,
+            total: totalCount,
+          })}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={selectPopular}
-            className="px-3 py-1 text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 transition-colors"
           >
             {t("storeBranches.commonGovernorates")}
           </button>
           <button
+            type="button"
             onClick={selectAll}
-            className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium border border-border/70 text-foreground bg-muted/30 hover:bg-muted rounded-lg transition-colors"
           >
             {t("storeBranches.selectAll")}
           </button>
           <button
+            type="button"
             onClick={clearAll}
-            className="px-3 py-1 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
           >
             {t("storeBranches.deselectAll")}
           </button>
         </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Search and Region Filter */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t("storeBranches.searchGovernorates")}
-            className="w-full pr-10 pl-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pr-9 pl-8 py-2 text-xs bg-background border border-border/70 text-foreground rounded-xl placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
           />
           {searchTerm && (
             <button
+              type="button"
               onClick={() => setSearchTerm("")}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <XMarkIcon className="h-4 w-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -197,7 +202,7 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
         <select
           value={selectedRegion}
           onChange={(e) => setSelectedRegion(e.target.value)}
-          className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="px-3 py-2 text-xs bg-background border border-border/70 text-foreground rounded-xl focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
         >
           <option value="all">{t("storeBranches.allGovernorates")}</option>
           {Object.entries(EGYPT_REGIONS).map(([key, name]) => (
@@ -209,9 +214,9 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
       </div>
 
       {/* Governorates List */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg max-h-96 overflow-y-auto">
+      <div className="border border-border/70 rounded-xl max-h-80 overflow-y-auto bg-card divide-y divide-border/60">
         {Object.entries(groupedByRegion).length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-8 text-center text-xs text-muted-foreground">
             {t("storeBranches.noResults")}
           </div>
         ) : (
@@ -227,76 +232,67 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
             );
 
             return (
-              <div
-                key={region}
-                className="border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-              >
+              <div key={region} className="divide-y divide-border/40">
                 {/* Region Header */}
                 <div
                   onClick={() => toggleRegion(region)}
-                  className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 bg-muted/30 hover:bg-muted/50 cursor-pointer select-none transition-colors"
                 >
                   <div
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                       allRegionSelected
-                        ? "bg-indigo-600 border-indigo-600"
+                        ? "bg-primary border-primary text-primary-foreground"
                         : someRegionSelected
-                          ? "bg-indigo-300 dark:bg-indigo-700 border-indigo-300 dark:border-indigo-700"
-                          : "border-gray-300 dark:border-gray-600"
+                          ? "bg-primary/40 border-primary text-primary-foreground"
+                          : "border-border/80 bg-background"
                     }`}
                   >
                     {(allRegionSelected || someRegionSelected) && (
-                      <CheckIcon
-                        className="h-3 w-3 text-white"
-                        strokeWidth={3}
-                      />
+                      <Check className="w-3 h-3 stroke-[2.5]" />
                     )}
                   </div>
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-xs font-semibold text-foreground">
                     {regionName}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
                     ({regionIds.filter((id) => selectedIds.includes(id)).length}
                     /{govs.length})
                   </span>
                 </div>
 
                 {/* Governorates in Region */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/40">
                   {govs.map((gov) => {
                     const isSelected = selectedIds.includes(gov.id);
                     return (
                       <div
                         key={gov.id}
                         onClick={() => toggleGovernorate(gov.id)}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                        className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-muted/20 cursor-pointer select-none transition-colors"
                       >
                         <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                             isSelected
-                              ? "bg-indigo-600 border-indigo-600"
-                              : "border-gray-300 dark:border-gray-600"
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-border/80 bg-background"
                           }`}
                         >
                           {isSelected && (
-                            <CheckIcon
-                              className="h-3 w-3 text-white"
-                              strokeWidth={3}
-                            />
+                            <Check className="w-3 h-3 stroke-[2.5]" />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-900 dark:text-white">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-foreground truncate">
                               {gov.nameAr}
                             </span>
                             {gov.popular && (
-                              <span className="px-1.5 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 rounded">
-                                {t("storeBranches.commonGovernorates")}
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-primary/10 text-primary border border-primary/20">
+                                شائع
                               </span>
                             )}
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-[10px] text-muted-foreground font-mono">
                             {gov.nameEn}
                           </span>
                         </div>
@@ -312,35 +308,39 @@ export const GovernoratesSelector: React.FC<GovernoratesSelectorProps> = ({
 
       {/* Selected Summary */}
       {selectedCount > 0 && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <CheckIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-indigo-900 dark:text-indigo-300 mb-1">
-                {t("storeBranches.selectedGovernorates", { count: selectedCount })}
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {selectedIds.slice(0, 10).map((id) => {
-                  const gov = availableGovernorates.find((g) => g.id === id);
-                  return gov ? (
-                    <span
-                      key={id}
-                      className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-xs rounded"
-                    >
-                      {gov.nameAr}
-                    </span>
-                  ) : null;
-                })}
-                {selectedCount > 10 && (
-                  <span className="px-2 py-1 bg-indigo-200 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200 text-xs rounded font-medium">
-                    +{selectedCount - 10} {t("storeBranches.other")}
-                  </span>
-                )}
-              </div>
-            </div>
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-primary">
+              {t("storeBranches.selectedGovernorates", {
+                count: selectedCount,
+              })}
+            </span>
+            <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              {selectedCount} محافظة
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {selectedIds.slice(0, 10).map((id) => {
+              const gov = availableGovernorates.find((g) => g.id === id);
+              return gov ? (
+                <span
+                  key={id}
+                  className="px-2 py-0.5 bg-card border border-border/60 text-foreground text-[11px] rounded-md shadow-2xs"
+                >
+                  {gov.nameAr}
+                </span>
+              ) : null;
+            })}
+            {selectedCount > 10 && (
+              <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[11px] rounded-md font-mono tabular-nums border border-border/50">
+                +{selectedCount - 10} {t("storeBranches.other")}
+              </span>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
+
+export default GovernoratesSelector;
