@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
 import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  ArrowPathIcon,
-  ClockIcon,
-  ServerIcon,
-  CircleStackIcon,
-} from "@heroicons/react/24/outline";
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Info,
+  RotateCw,
+  Clock,
+  Server,
+  Database,
+} from "lucide-react";
 
 interface DiagnosticIssue {
   type: string;
@@ -27,6 +27,9 @@ interface DiagnosticRecommendation {
 }
 
 interface FacebookDiagnosticPage {
+  pageName?: string;
+  pageId?: string;
+  status?: string;
   [key: string]: unknown;
 }
 
@@ -75,7 +78,6 @@ const FacebookDiagnostics: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log("🔍 Running Facebook diagnostics...");
 
       const response = await fetch(
         buildApiUrl("integrations/facebook/diagnostics"),
@@ -95,48 +97,43 @@ const FacebookDiagnostics: React.FC = () => {
       if (data.success) {
         setDiagnostics(data.data);
         setLastRun(new Date().toLocaleString("ar-EG"));
-        console.log("✅ Diagnostics completed:", data.data);
       } else {
         const errorMsg = data.error || "فشل التشخيص";
         setError(errorMsg);
-        console.error("❌ Diagnostics failed:", data.error);
       }
-    } catch (error: unknown) {
-      const errorMsg = `خطأ في التشخيص: ${error instanceof Error ? error.message : "حدث خطأ غير متوقع"}`;
+    } catch (err: unknown) {
+      const errorMsg = `خطأ في التشخيص: ${err instanceof Error ? err.message : "حدث خطأ غير متوقع"}`;
       setError(errorMsg);
-      console.error("❌ Error running diagnostics:", error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    runDiagnostics();
+    void runDiagnostics();
   }, [runDiagnostics]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "critical":
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-rose-500 shrink-0" />;
       case "warning":
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />;
       case "info":
-        return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
       default:
-        return <InformationCircleIcon className="h-5 w-5 text-gray-500" />;
+        return <Info className="h-4 w-4 text-primary shrink-0" />;
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "high":
-        return "text-red-600 bg-red-50 border-red-200";
+        return "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/25";
       case "medium":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+        return "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25";
       case "low":
-        return "text-green-600 bg-green-50 border-green-200";
       default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
+        return "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25";
     }
   };
 
@@ -145,14 +142,13 @@ const FacebookDiagnostics: React.FC = () => {
       case "running":
       case "connected":
       case "configured":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
       case "error":
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-rose-500 shrink-0" />;
       case "mock-mode":
       case "unknown":
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
       default:
-        return <InformationCircleIcon className="h-5 w-5 text-gray-500" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />;
     }
   };
 
@@ -163,187 +159,124 @@ const FacebookDiagnostics: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4" dir="rtl">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              تشخيص Facebook Integration
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              فحص شامل لحالة النظام والمشاكل المحتملة
+      <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-foreground">
+            تشخيص ربط وتكامل Facebook
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            فحص شامل لخدمات Webhook، التطبيق، قاعدة البيانات، والصفحات المتصلة
+          </p>
+          {lastRun && (
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1 font-mono tabular-nums">
+              <Clock className="h-3 w-3" />
+              <span>آخر فحص: {lastRun}</span>
             </p>
-            {lastRun && (
-              <p className="text-xs text-gray-500 mt-1 flex items-center">
-                <ClockIcon className="h-4 w-4 ml-1" />
-                آخر فحص: {lastRun}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={runDiagnostics}
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
-          >
-            <ArrowPathIcon
-              className={`h-5 w-5 ml-2 ${loading ? "animate-spin" : ""}`}
-            />
-            {loading ? "جاري الفحص..." : "تشغيل التشخيص"}
-          </button>
+          )}
         </div>
+        <button
+          type="button"
+          onClick={runDiagnostics}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+        >
+          <RotateCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          <span>{loading ? "جاري الفحص..." : "تشغيل التشخيص الآن"}</span>
+        </button>
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <XCircleIcon className="h-5 w-5 text-red-500 ml-2" />
-            <span className="text-red-700">{error}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <ArrowPathIcon className="h-5 w-5 text-blue-500 ml-2 animate-spin" />
-            <span className="text-blue-700">جاري تشغيل التشخيص...</span>
-          </div>
+        <div className="bg-rose-500/10 border border-rose-500/25 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+          <XCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {diagnostics && !loading && (
         <>
-          {/* System Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Server Status */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <ServerIcon className="h-8 w-8 text-blue-500 ml-3" />
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">الخادم</h3>
-                  <div className="flex items-center mt-1">
-                    {getStatusIcon(diagnostics.server.status)}
-                    <span className="text-sm text-gray-600 mr-2">
-                      Port {diagnostics.server.port} •{" "}
-                      {formatUptime(diagnostics.server.uptime)}
-                    </span>
-                  </div>
+          {/* Server & DB Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="bg-card rounded-xl border border-border/70 p-4 shadow-2xs flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+                <Server className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-foreground">حالة الخادم الخلفي</h3>
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  {getStatusIcon(diagnostics.server.status)}
+                  <span className="font-mono tabular-nums text-muted-foreground text-[11px]">
+                    Port {diagnostics.server.port} • {formatUptime(diagnostics.server.uptime)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Database Status */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <CircleStackIcon className="h-8 w-8 text-green-500 ml-3" />
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    قاعدة البيانات
-                  </h3>
-                  <div className="flex items-center mt-1">
-                    {getStatusIcon(diagnostics.database.status)}
-                    <span className="text-sm text-gray-600 mr-2">
-                      {diagnostics.database.connection ? "متصلة" : "غير متصلة"}
-                    </span>
-                  </div>
+            <div className="bg-card rounded-xl border border-border/70 p-4 shadow-2xs flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                <Database className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-foreground">قاعدة البيانات</h3>
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  {getStatusIcon(diagnostics.database.status)}
+                  <span className="text-muted-foreground text-xs font-semibold">
+                    {diagnostics.database.connection ? "متصلة ومستقرة" : "غير متصلة"}
+                  </span>
                 </div>
               </div>
             </div>
-
           </div>
 
-          {/* Facebook Details */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                تفاصيل Facebook Integration
-              </h3>
+          {/* Configuration & Webhook */}
+          <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider pb-2 border-b border-border/60">
+              إعدادات تطبيق Facebook والويب هوك
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between">
+                <span className="text-muted-foreground font-medium">App ID:</span>
+                <span className="font-mono tabular-nums font-semibold text-foreground">
+                  {diagnostics.facebook.config.appId}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between">
+                <span className="text-muted-foreground font-medium">App Secret:</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {diagnostics.facebook.config.appSecret === "set" ? "مضبوط" : "غير مضبوط"}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 col-span-1 sm:col-span-2">
+                <span className="text-muted-foreground font-medium block mb-1">Webhook URL:</span>
+                <code className="font-mono text-[11px] text-foreground block truncate">
+                  {diagnostics.facebook.webhooks.url}
+                </code>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              {/* Configuration */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">
-                  الإعدادات
-                </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">App ID:</span>
-                    <span className="mr-2 font-mono">
-                      {diagnostics.facebook.config.appId ===
-                      "your-facebook-app-id" ? (
-                        <span className="text-red-600">غير محدد</span>
-                      ) : (
-                        diagnostics.facebook.config.appId
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">App Secret:</span>
-                    <span className="mr-2">
-                      {diagnostics.facebook.config.appSecret === "set" ? (
-                        <span className="text-green-600">محدد</span>
-                      ) : (
-                        <span className="text-red-600">غير محدد</span>
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Webhook URL:</span>
-                    <span className="mr-2 font-mono text-xs">
-                      {diagnostics.facebook.webhooks.url}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Verify Token:</span>
-                    <span className="mr-2 font-mono text-xs">
-                      {diagnostics.facebook.webhooks.verifyToken}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Pages */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">
-                  الصفحات المربوطة
-                </h4>
-                <div className="text-sm text-gray-600">
-                  المجموع: {diagnostics.facebook.pages.total} • المتصلة:{" "}
-                  {diagnostics.facebook.pages.connected}
-                </div>
-                {diagnostics.facebook.pages.list &&
-                  diagnostics.facebook.pages.list.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {diagnostics.facebook.pages.list.map((page, index) => (
-                        <div key={index} className="flex items-center text-sm">
-                          {getStatusIcon(page.status)}
-                          <span className="mr-2">{page.pageName}</span>
-                          <span className="text-gray-500">({page.pageId})</span>
-                        </div>
-                      ))}
+            {/* Pages */}
+            <div className="pt-2 border-t border-border/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-foreground">الصفحات المتصلة</h4>
+                <span className="text-xs font-mono tabular-nums text-muted-foreground">
+                  المجموع: {diagnostics.facebook.pages.total} • المتصلة: {diagnostics.facebook.pages.connected}
+                </span>
+              </div>
+              {diagnostics.facebook.pages.list && diagnostics.facebook.pages.list.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  {diagnostics.facebook.pages.list.map((page, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/50 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(page.status || "connected")}
+                        <span className="font-semibold text-foreground">{page.pageName}</span>
+                      </div>
+                      <span className="font-mono text-[10px] text-muted-foreground">({page.pageId})</span>
                     </div>
-                  )}
-              </div>
-
-              {/* Database Tables */}
-              {diagnostics.database.connection && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">
-                    جداول قاعدة البيانات
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                    {Object.entries(diagnostics.database.tables).map(
-                      ([table, count]) => (
-                        <div key={table}>
-                          <span className="text-gray-600">{table}:</span>
-                          <span className="mr-2 font-medium">{count}</span>
-                        </div>
-                      ),
-                    )}
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -351,27 +284,21 @@ const FacebookDiagnostics: React.FC = () => {
 
           {/* Issues */}
           {diagnostics.issues.length > 0 && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  المشاكل المكتشفة
-                </h3>
-              </div>
-              <div className="p-6 space-y-3">
+            <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-3">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider pb-2 border-b border-border/60">
+                الملاحظات والمشاكل المكتشفة ({diagnostics.issues.length})
+              </h3>
+              <div className="space-y-2">
                 {diagnostics.issues.map((issue, index) => (
                   <div
                     key={index}
-                    className="flex items-start p-3 border border-gray-200 rounded-lg"
+                    className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/40 border border-border/60 text-xs"
                   >
                     {getSeverityIcon(issue.severity)}
-                    <div className="mr-3 flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {issue.message}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {issue.details}
-                      </p>
-                      <span className="inline-block mt-1 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground">{issue.message}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{issue.details}</p>
+                      <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] rounded-md bg-muted text-muted-foreground font-mono">
                         {issue.type} • {issue.severity}
                       </span>
                     </div>
@@ -383,19 +310,19 @@ const FacebookDiagnostics: React.FC = () => {
 
           {/* Recommendations */}
           {diagnostics.recommendations.length > 0 && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">التوصيات</h3>
-              </div>
-              <div className="p-6 space-y-3">
+            <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-3">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider pb-2 border-b border-border/60">
+                توصيات التحسين الموصى بها
+              </h3>
+              <div className="space-y-2">
                 {diagnostics.recommendations.map((rec, index) => (
                   <div
                     key={index}
-                    className={`p-3 border rounded-lg ${getPriorityColor(rec.priority)}`}
+                    className={`p-3 rounded-xl border text-xs space-y-1 ${getPriorityBadge(rec.priority)}`}
                   >
-                    <p className="text-sm font-medium">{rec.message}</p>
-                    <p className="text-xs mt-1">{rec.action}</p>
-                    <span className="inline-block mt-2 px-2 py-1 text-xs rounded-full bg-white bg-opacity-50">
+                    <p className="font-bold">{rec.message}</p>
+                    <p className="text-[11px] opacity-90">{rec.action}</p>
+                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] rounded-full bg-background/50 font-mono">
                       {rec.type} • أولوية {rec.priority}
                     </span>
                   </div>

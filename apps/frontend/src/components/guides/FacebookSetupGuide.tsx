@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import i18n from "../../i18n";
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ArrowTopRightOnSquareIcon,
-  ClipboardDocumentIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  ChevronLeft,
+  ChevronDown,
+  ExternalLink,
+  Copy,
+  CheckCircle2,
+  Check,
+} from "lucide-react";
 import { buildWebhookUrl } from "../../utils/urlHelper";
 
 interface GuideStep {
@@ -20,15 +20,15 @@ interface GuideStep {
 
 const FacebookSetupGuide: React.FC = () => {
   const [expandedStep, setExpandedStep] = useState<number | null>(1);
+  const [copiedCode, setCopiedCode] = useState(false);
 
-  // Generate dynamic webhook URL based on environment
   const webhookUrl = buildWebhookUrl();
 
   const steps: GuideStep[] = [
     {
       id: 1,
-      title: "إنشاء Facebook App",
-      description: "إنشاء تطبيق Facebook جديد في Facebook Developers",
+      title: "إنشاء تطبيق Facebook App",
+      description: "إنشاء تطبيق Facebook جديد في منصة Facebook Developers",
       details: [
         "اذهب إلى Facebook for Developers",
         'انقر على "My Apps" ثم "Create App"',
@@ -111,136 +111,125 @@ const FacebookSetupGuide: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert(i18n.t("FacebookSetupGuide.msg_1aca"));
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
-    <div className="w-full p-6">
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <svg
-              className="h-6 w-6 text-blue-600 ml-3"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
+    <div className="w-full space-y-4" dir="rtl">
+      <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs">
+        <div className="pb-4 border-b border-border/60">
+          <h2 className="text-base sm:text-lg font-bold text-foreground">
             دليل إعداد Facebook Messenger
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            خطوات مفصلة لربط صفحة Facebook بالمنصة
+          <p className="text-xs text-muted-foreground mt-0.5">
+            خطوات مفصلة خطوة بخطوة لربط صفحة فيسبوك بالمنصة وتفعيل الرد التلقائي
           </p>
         </div>
 
-        <div className="p-6">
-          <div className="space-y-4">
-            {steps.map((step) => (
-              <div key={step.id} className="border border-gray-200 rounded-lg">
+        <div className="pt-4 space-y-3">
+          {steps.map((step) => {
+            const isExpanded = expandedStep === step.id;
+            return (
+              <div
+                key={step.id}
+                className="border border-border/70 rounded-xl bg-card transition-all overflow-hidden"
+              >
                 <button
+                  type="button"
                   onClick={() => toggleStep(step.id)}
-                  className="w-full px-4 py-3 text-right flex items-center justify-between hover:bg-gray-50"
+                  className="w-full p-3.5 text-right flex items-center justify-between hover:bg-muted/40 transition-colors cursor-pointer select-none"
                 >
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium ml-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="shrink-0 w-6 h-6 bg-primary/10 text-primary border border-primary/20 rounded-full flex items-center justify-center text-xs font-mono font-bold">
                       {step.id}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-foreground truncate">
                         {step.title}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-[11px] text-muted-foreground truncate">
                         {step.description}
                       </p>
                     </div>
                   </div>
-                  {expandedStep === step.id ? (
-                    <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                   ) : (
-                    <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground shrink-0 rtl:rotate-0 ltr:rotate-180" />
                   )}
                 </button>
 
-                {expandedStep === step.id && (
-                  <div className="px-4 pb-4 border-t border-gray-100">
-                    <div className="mt-4">
-                      <h4 className="font-medium text-gray-900 mb-3">
-                        الخطوات التفصيلية:
-                      </h4>
-                      <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
-                        {step.details.map((detail, detailIndex) => (
-                          <li key={detailIndex} className="flex items-start">
-                            <span className="ml-2">{detail}</span>
-                          </li>
-                        ))}
-                      </ol>
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-2 border-t border-border/60 space-y-3 text-xs bg-muted/20">
+                    <ol className="space-y-1.5 text-muted-foreground list-decimal list-inside leading-relaxed">
+                      {step.details.map((detail, detailIndex) => (
+                        <li key={detailIndex}>
+                          <span className="text-foreground">{detail}</span>
+                        </li>
+                      ))}
+                    </ol>
 
-                      {step.code &&
-                        (() => {
-                          const code = step.code;
-                          return (
-                            <div className="mt-4">
-                              <h5 className="font-medium text-gray-900 mb-2">
-                                مثال على الرابط:
-                              </h5>
-                              <div className="bg-gray-100 p-3 rounded-md flex items-center justify-between">
-                                <code className="text-sm text-gray-800">
-                                  {code}
-                                </code>
-                                <button
-                                  onClick={() => copyToClipboard(code)}
-                                  className="p-1 text-gray-500 hover:text-gray-700"
-                                  title="نسخ"
-                                >
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                      {step.links && (
-                        <div className="mt-4">
-                          <h5 className="font-medium text-gray-900 mb-2">
-                            روابط مفيدة:
-                          </h5>
-                          <div className="space-y-1">
-                            {step.links.map((link, linkIndex) => (
-                              <a
-                                key={linkIndex}
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                {link.text}
-                                <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1" />
-                              </a>
-                            ))}
-                          </div>
+                    {step.code && (
+                      <div className="pt-2">
+                        <span className="font-semibold text-foreground block mb-1">
+                          رابط الويب هوك (Callback URL):
+                        </span>
+                        <div className="bg-muted/60 border border-border/60 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                          <code className="text-xs font-mono text-foreground truncate">
+                            {step.code}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(step.code!)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95 transition-all text-xs shrink-0"
+                            title="نسخ الرابط"
+                          >
+                            {copiedCode ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                <span className="text-emerald-600 dark:text-emerald-400">تم النسخ</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" />
+                                <span>نسخ</span>
+                              </>
+                            )}
+                          </button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {step.links && (
+                      <div className="pt-1 flex flex-wrap gap-2">
+                        {step.links.map((link, linkIndex) => (
+                          <a
+                            key={linkIndex}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline font-semibold text-xs"
+                          >
+                            <span>{link.text}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Success Message */}
-          <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <CheckCircleIcon className="h-5 w-5 text-green-600 ml-2" />
-              <div>
-                <h4 className="font-medium text-green-900">نصائح مهمة</h4>
-                <ul className="mt-2 text-sm text-green-700 space-y-1">
-                  <li>• تأكد من أن صفحة Facebook منشورة وليست مسودة</li>
-                  <li>• احفظ Page Access Token في مكان آمن</li>
-                  <li>• اختبر التكامل قبل البدء في استخدامه مع العملاء</li>
-                  <li>• راجع سياسات Facebook للتأكد من الامتثال</li>
-                </ul>
-              </div>
-            </div>
+        {/* Tips footer */}
+        <div className="mt-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5 leading-relaxed">
+            <h4 className="font-bold text-emerald-700 dark:text-emerald-300">إرشادات هامة:</h4>
+            <p>تأكد من أن صفحة فيسبوك منشورة وليست في وضع المسودة، واحتفظ برمز الوصول (Token) في مكان آمن.</p>
           </div>
         </div>
       </div>

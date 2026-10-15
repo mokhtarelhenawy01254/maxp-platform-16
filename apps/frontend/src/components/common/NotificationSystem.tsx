@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  XCircleIcon,
-  XMarkIcon,
-  BellIcon,
-} from "@heroicons/react/24/outline";
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  XCircle,
+  X,
+  Bell,
+} from "lucide-react";
 
 export type NotificationType = "success" | "error" | "warning" | "info";
 
@@ -36,92 +36,98 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  useEffect(() => {
-    // Animation entrance
-    setTimeout(() => setIsVisible(true), 100);
-
-    // Auto dismiss
-    if (!notification.persistent && notification.duration) {
-      const timer = setTimeout(() => {
-        handleDismiss();
-      }, notification.duration);
-
-      return () => clearTimeout(timer);
-    }
-
-    return undefined;
-  }, [notification.duration, notification.persistent]);
-
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsLeaving(true);
     setTimeout(() => {
       onDismiss(notification.id);
-    }, 300);
-  };
+    }, 250);
+  }, [notification.id, onDismiss]);
 
-  const getIcon = () => {
+  useEffect(() => {
+    const enterTimer = setTimeout(() => setIsVisible(true), 50);
+
+    if (!notification.persistent && notification.duration) {
+      const dismissTimer = setTimeout(() => {
+        handleDismiss();
+      }, notification.duration);
+
+      return () => {
+        clearTimeout(enterTimer);
+        clearTimeout(dismissTimer);
+      };
+    }
+
+    return () => clearTimeout(enterTimer);
+  }, [notification.duration, notification.persistent, handleDismiss]);
+
+  const getNotificationConfig = () => {
     switch (notification.type) {
       case "success":
-        return <CheckCircleIcon className="w-6 h-6 text-green-500" />;
+        return {
+          icon: <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />,
+          border: "border-emerald-500/30",
+        };
       case "error":
-        return <XCircleIcon className="w-6 h-6 text-red-500" />;
+        return {
+          icon: <XCircle className="w-4 h-4 text-rose-500 shrink-0" />,
+          border: "border-rose-500/30",
+        };
       case "warning":
-        return <ExclamationTriangleIcon className="w-6 h-6 text-yellow-500" />;
+        return {
+          icon: <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />,
+          border: "border-amber-500/30",
+        };
       case "info":
-        return <InformationCircleIcon className="w-6 h-6 text-blue-500" />;
       default:
-        return <BellIcon className="w-6 h-6 text-gray-500" />;
+        return {
+          icon: <Info className="w-4 h-4 text-primary shrink-0" />,
+          border: "border-primary/30",
+        };
     }
   };
 
-  const getBackgroundColor = () => {
-    switch (notification.type) {
-      case "success":
-        return "bg-green-50 border-green-200";
-      case "error":
-        return "bg-red-50 border-red-200";
-      case "warning":
-        return "bg-yellow-50 border-yellow-200";
-      case "info":
-        return "bg-blue-50 border-blue-200";
-      default:
-        return "bg-gray-50 border-gray-200";
-    }
-  };
+  const config = getNotificationConfig();
 
   return (
     <div
-      className={`
-        transform transition-all duration-300 ease-in-out mb-3
-        ${isVisible && !isLeaving ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
-        ${getBackgroundColor()}
-        border rounded-lg shadow-lg p-4 max-w-sm w-full
-      `}
+      className={`transform transition-all duration-200 ease-out mb-2.5 bg-card/95 backdrop-blur-md border ${
+        config.border
+      } rounded-xl shadow-xl p-3.5 max-w-sm w-full select-none ${
+        isVisible && !isLeaving
+          ? "translate-x-0 opacity-100"
+          : "translate-x-full opacity-0"
+      }`}
+      dir="rtl"
     >
-      <div className="flex items-start">
-        <div className="flex-shrink-0">{getIcon()}</div>
-        <div className="mr-3 flex-1">
-          <h4 className="text-sm font-semibold text-gray-900 mb-1">
+      <div className="flex items-start gap-2.5">
+        <div className="shrink-0 mt-0.5">{config.icon}</div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-xs font-bold text-foreground mb-0.5">
             {notification.title}
           </h4>
-          <p className="text-sm text-gray-600">{notification.message}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {notification.message}
+          </p>
           {notification.action && (
             <button
+              type="button"
               onClick={notification.action.onClick}
-              className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
+              className="mt-2 text-xs font-semibold text-primary hover:underline transition-colors"
             >
               {notification.action.label}
             </button>
           )}
-          <div className="text-xs text-gray-400 mt-1">
-            {notification.timestamp.toLocaleTimeString("ar-SA")}
+          <div className="text-[10px] text-muted-foreground font-mono tabular-nums mt-1">
+            {notification.timestamp.toLocaleTimeString("ar-EG")}
           </div>
         </div>
         <button
+          type="button"
           onClick={handleDismiss}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+          className="shrink-0 p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/80 transition-colors active:scale-95"
+          aria-label="إغلاق الإشعار"
         >
-          <XMarkIcon className="w-5 h-5" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -164,7 +170,6 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
     setNotifications([]);
   }, []);
 
-  // Expose methods globally
   useEffect(() => {
     (window as any).showNotification = addNotification;
     (window as any).clearNotifications = clearAll;
@@ -204,8 +209,9 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
         ))}
         {notifications.length > 1 && (
           <button
+            type="button"
             onClick={clearAll}
-            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors duration-200"
+            className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground py-1.5 transition-colors"
           >
             مسح جميع الإشعارات ({notifications.length})
           </button>
@@ -215,7 +221,6 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
   );
 };
 
-// Hook for using notifications
 export const useNotifications = () => {
   const showSuccess = useCallback(
     (title: string, message: string, options?: Partial<Notification>) => {

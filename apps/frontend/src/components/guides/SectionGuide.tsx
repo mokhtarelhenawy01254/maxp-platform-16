@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import {
@@ -30,37 +30,37 @@ export function SectionGuide() {
       <Button
         variant="ghost"
         size="icon"
-        className="business-icon-button"
+        className="h-8 w-8 rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all shadow-2xs"
         aria-label={t("guides.help")}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <QuestionMarkCircleIcon className="h-5 w-5" />
+        <HelpCircle className="h-4 w-4" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg" closeLabel={t("common.close")}>
-          <DialogHeader>
-            <DialogTitle>{t(guide.titleKey)}</DialogTitle>
-            <DialogDescription>{t(guide.descriptionKey)}</DialogDescription>
+        <DialogContent className="sm:max-w-lg bg-card border border-border/80 rounded-2xl shadow-2xl" closeLabel={t("common.close")} dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-base font-bold text-foreground">{t(guide.titleKey)}</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">{t(guide.descriptionKey)}</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <ol className="space-y-4 p-1">
+          <ScrollArea className="max-h-[60vh] pr-1">
+            <ol className="space-y-3 p-1">
               {guide.stepKeys.map((key, i) => (
-                <li key={key} className="flex gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                <li key={key} className="flex gap-2.5 items-start">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-xs font-mono font-bold text-primary tabular-nums mt-0.5">
                     {i + 1}
                   </span>
-                  <p className="text-sm text-muted-foreground">{t(key)}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed flex-1">{t(key)}</p>
                 </li>
               ))}
             </ol>
             {guide.videoUrl && (
-              <div className="mt-6">
+              <div className="mt-4">
                 <video
                   src={guide.videoUrl}
                   controls
-                  className="w-full rounded-lg border"
+                  className="w-full rounded-xl border border-border/70 bg-black shadow-sm"
                 >
                   {t("guides.videoNotSupported")}
                 </video>

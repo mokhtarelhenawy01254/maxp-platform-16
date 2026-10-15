@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  ExclamationTriangleIcon,
-  XMarkIcon,
-  ArrowDownTrayIcon,
-  TrashIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+  AlertTriangle,
+  X,
+  Download,
+  Trash2,
+  Search,
+  FileJson,
+  FileSpreadsheet,
+} from "lucide-react";
 import errorTracking, { ErrorLog } from "../services/errorTracking";
 
-/**
- * Error Dashboard Component
- * لوحة تحكم لعرض وإدارة الأخطاء المسجلة
- */
 const ErrorDashboard: React.FC = () => {
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [filteredErrors, setFilteredErrors] = useState<ErrorLog[]>([]);
@@ -22,8 +20,6 @@ const ErrorDashboard: React.FC = () => {
 
   useEffect(() => {
     loadErrors();
-
-    // Auto refresh every 5 seconds
     const interval = setInterval(loadErrors, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -40,17 +36,14 @@ const ErrorDashboard: React.FC = () => {
   const applyFilters = () => {
     let filtered = [...errors];
 
-    // Filter by category
     if (filterCategory !== "all") {
       filtered = filtered.filter((err) => err.category === filterCategory);
     }
 
-    // Filter by severity
     if (filterSeverity !== "all") {
       filtered = filtered.filter((err) => err.severity === filterSeverity);
     }
 
-    // Search
     if (searchTerm) {
       filtered = filtered.filter((err) =>
         err.message.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -61,7 +54,7 @@ const ErrorDashboard: React.FC = () => {
   };
 
   const handleClearErrors = () => {
-    if (confirm("هل أنت متأكد من حذف جميع الأخطاء المسجلة؟")) {
+    if (confirm("هل أنت متأكد من مسح جميع الأخطاء المسجلة؟")) {
       errorTracking.clearStoredErrors();
       setErrors([]);
     }
@@ -87,49 +80,50 @@ const ErrorDashboard: React.FC = () => {
     a.click();
   };
 
-  const getSeverityColor = (severity: ErrorLog["severity"]) => {
+  const getSeverityBadge = (severity: ErrorLog["severity"]) => {
     switch (severity) {
       case "critical":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25";
       case "high":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/25";
       case "low":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border/60";
     }
   };
 
-  const getCategoryColor = (category: ErrorLog["category"]) => {
+  const getCategoryBadge = (category: ErrorLog["category"]) => {
     switch (category) {
       case "api":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
       case "network":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
       case "auth":
-        return "bg-red-100 text-red-800";
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400";
       case "validation":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
       case "ui":
-        return "bg-green-100 text-green-800";
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground";
     }
   };
 
-  // Only show in development or when explicitly enabled
   if (!import.meta.env.DEV && !showDashboard) {
     return (
       <button
+        type="button"
         onClick={() => setShowDashboard(true)}
-        className="fixed bottom-4 right-4 bg-red-600 text-white p-3 rounded-full shadow-lg hover:bg-red-700 transition-colors z-50"
-        title="عرض لوحة الأخطاء"
+        className="fixed bottom-4 right-4 bg-card border border-rose-500/30 text-rose-600 dark:text-rose-400 p-3 rounded-full shadow-xl hover:bg-muted active:scale-95 transition-all z-50 cursor-pointer"
+        title="عرض لوحة تشخيص الأخطاء"
+        aria-label="عرض لوحة تشخيص الأخطاء"
       >
-        <ExclamationTriangleIcon className="w-6 h-6" />
+        <AlertTriangle className="w-5 h-5" />
         {errors.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-yellow-400 text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-mono font-bold rounded-full w-5 h-5 flex items-center justify-center tabular-nums shadow-sm">
             {errors.length}
           </span>
         )}
@@ -138,49 +132,56 @@ const ErrorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      dir="rtl"
+    >
+      <div className="bg-card rounded-2xl shadow-2xl border border-border/80 w-full max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 flex items-center justify-between">
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="w-8 h-8 ml-3" />
+        <div className="bg-card p-5 border-b border-border/60 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold">لوحة تتبع الأخطاء</h2>
-              <p className="text-red-100 text-sm">
-                {errors.length} خطأ مسجل | {filteredErrors.length} ظاهر
+              <h2 className="text-base sm:text-lg font-bold text-foreground">
+                لوحة تشخيص وتتبع أخطاء النظام
+              </h2>
+              <p className="text-xs text-muted-foreground font-mono tabular-nums">
+                {errors.length} خطأ مسجل | {filteredErrors.length} مطابق للفلتر
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setShowDashboard(false)}
-            className="text-white hover:bg-red-800 p-2 rounded transition-colors"
+            className="p-1.5 rounded-lg border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors active:scale-95"
+            aria-label="إغلاق"
           >
-            <XMarkIcon className="w-6 h-6" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Filters & Actions */}
-        <div className="bg-gray-50 border-b border-gray-200 p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div className="flex-1 min-w-64">
+        <div className="bg-muted/30 border-b border-border/60 p-3.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex-1 min-w-56">
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="بحث في الأخطاء..."
+                  placeholder="بحث في سجل الأخطاء..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-border/70 bg-card text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                 />
               </div>
             </div>
 
-            {/* Category Filter */}
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="px-3 py-1.5 text-xs rounded-xl border border-border/70 bg-card text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             >
               <option value="all">كل الأنواع</option>
               <option value="api">API</option>
@@ -191,109 +192,110 @@ const ErrorDashboard: React.FC = () => {
               <option value="unknown">غير معروف</option>
             </select>
 
-            {/* Severity Filter */}
             <select
               value={filterSeverity}
               onChange={(e) => setFilterSeverity(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="px-3 py-1.5 text-xs rounded-xl border border-border/70 bg-card text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             >
-              <option value="all">كل الخطورات</option>
+              <option value="all">كل المستويات</option>
               <option value="critical">حرجة</option>
               <option value="high">عالية</option>
               <option value="medium">متوسطة</option>
               <option value="low">منخفضة</option>
             </select>
 
-            {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1.5 mr-auto">
               <button
+                type="button"
                 onClick={handleExportJSON}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                title="تصدير JSON"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95 transition-all shadow-2xs"
+                title="تصدير بصيغة JSON"
               >
-                <ArrowDownTrayIcon className="w-4 h-4" />
-                JSON
+                <FileJson className="w-3.5 h-3.5" />
+                <span>JSON</span>
               </button>
               <button
+                type="button"
                 onClick={handleExportCSV}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                title="تصدير CSV"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95 transition-all shadow-2xs"
+                title="تصدير بصيغة CSV"
               >
-                <ArrowDownTrayIcon className="w-4 h-4" />
-                CSV
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>CSV</span>
               </button>
               <button
+                type="button"
                 onClick={handleClearErrors}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-                title="مسح الكل"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all shadow-2xs"
+                title="مسح السجل بالكامل"
               >
-                <TrashIcon className="w-4 h-4" />
-                مسح
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>مسح</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Errors List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
           {filteredErrors.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <ExclamationTriangleIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium">لا توجد أخطاء مسجلة</p>
-              <p className="text-sm">هذا رائع! النظام يعمل بشكل صحيح</p>
+            <div className="text-center py-16 text-muted-foreground space-y-2">
+              <AlertTriangle className="w-10 h-10 mx-auto opacity-30 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">لا توجد أخطاء مسجلة حالياً</p>
+              <p className="text-xs text-muted-foreground">النظام يعمل باستقرار وهدوء تام.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredErrors.map((error) => (
-                <div
-                  key={error.id}
-                  className={`border rounded-lg p-4 ${getSeverityColor(
-                    error.severity,
-                  )}`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(
-                            error.category,
-                          )}`}
-                        >
-                          {error.category}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(error.timestamp).toLocaleString("ar-EG")}
-                        </span>
-                      </div>
-                      <p className="font-medium mb-1">{error.message}</p>
-                      {error.context && (
-                        <details className="text-sm opacity-80">
-                          <summary className="cursor-pointer hover:underline">
-                            عرض التفاصيل
-                          </summary>
-                          <pre className="mt-2 p-2 bg-black bg-opacity-10 rounded text-xs overflow-auto max-h-40">
-                            {JSON.stringify(error.context, null, 2)}
-                          </pre>
-                        </details>
-                      )}
-                      {error.stack && (
-                        <details className="text-sm opacity-80 mt-2">
-                          <summary className="cursor-pointer hover:underline">
-                            Stack Trace
-                          </summary>
-                          <pre
-                            className="mt-2 p-2 bg-black bg-opacity-10 rounded text-xs overflow-auto max-h-40 text-left"
-                            dir="ltr"
-                          >
-                            {error.stack}
-                          </pre>
-                        </details>
-                      )}
+            filteredErrors.map((error) => (
+              <div
+                key={error.id}
+                className={`border rounded-xl p-3.5 bg-card shadow-2xs space-y-2 ${getSeverityBadge(
+                  error.severity,
+                )}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold font-mono uppercase ${getCategoryBadge(
+                          error.category,
+                        )}`}
+                      >
+                        {error.category}
+                      </span>
+                      <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
+                        {new Date(error.timestamp).toLocaleString("ar-EG")}
+                      </span>
                     </div>
+                    <p className="text-xs font-semibold text-foreground mb-1">
+                      {error.message}
+                    </p>
+                    {error.context && (
+                      <details className="text-xs text-muted-foreground mt-1">
+                        <summary className="cursor-pointer hover:underline text-[11px]">
+                          عرض سياق الطلب
+                        </summary>
+                        <pre className="mt-1.5 p-2 bg-muted/60 border border-border/60 rounded-lg text-[10px] font-mono overflow-auto max-h-36">
+                          {JSON.stringify(error.context, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                    {error.stack && (
+                      <details className="text-xs text-muted-foreground mt-1">
+                        <summary className="cursor-pointer hover:underline text-[11px]">
+                          Stack Trace
+                        </summary>
+                        <pre
+                          className="mt-1.5 p-2 bg-muted/60 border border-border/60 rounded-lg text-[10px] font-mono overflow-auto max-h-36 text-left"
+                          dir="ltr"
+                        >
+                          {error.stack}
+                        </pre>
+                      </details>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
       </div>
