@@ -32,7 +32,7 @@ export const LessonCoachChat: React.FC<Props> = ({ lessonId }) => {
       const res = await fetch(`/api/v1/academy/lessons/${lessonId}/coach-chat`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ message: userText, phone: studentPhone }),
+        body: JSON.stringify({ message: userText }),
       });
       const data = await res.json();
       if (data.success && data.reply) {
