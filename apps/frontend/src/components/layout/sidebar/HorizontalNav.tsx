@@ -1,12 +1,11 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 import { useSidebarNavLink } from "./useSidebarNavLink";
-
 
 interface HorizontalNavProps {
   sections: SidebarSection[];
@@ -77,13 +76,14 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
           <span className="business-horizontal-link-icon">
             {React.isValidElement(icon)
               ? React.cloneElement(icon as React.ReactElement, {
-                  className: "h-4 w-4",
+                  className: "size-4",
                 })
               : icon}
           </span>
           <span className="business-horizontal-link-text">{children}</span>
+          <ExternalLink className="size-3 text-muted-foreground mr-auto" />
           {badge ? (
-            <span className="business-sidebar-badge">{badge}</span>
+            <span className="business-sidebar-badge font-mono tabular-nums">{badge}</span>
           ) : null}
         </a>
       );
@@ -101,12 +101,12 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
         <span className="business-horizontal-link-icon">
           {React.isValidElement(icon)
             ? React.cloneElement(icon as React.ReactElement, {
-                className: "h-4 w-4",
+                className: "size-4",
               })
             : icon}
         </span>
         <span className="business-horizontal-link-text">{children}</span>
-        {badge ? <span className="business-sidebar-badge">{badge}</span> : null}
+        {badge ? <span className="business-sidebar-badge font-mono tabular-nums">{badge}</span> : null}
       </Link>
     );
   };
@@ -115,8 +115,8 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
     <div className="app-header-theme business-horizontal-nav" ref={navRef}>
       <div className="container mx-auto px-4">
         <div className="flex items-center h-16 overflow-x-auto no-scrollbar gap-2">
-          <div className="flex-shrink-0 ml-4 flex items-center">
-            <div className="business-brand-glyph business-brand-glyph--small">
+          <div className="shrink-0 ml-4 flex items-center">
+            <div className="business-brand-glyph business-brand-glyph--small font-mono font-bold">
               {user?.company?.name?.charAt(0) || "M"}
             </div>
           </div>
@@ -152,12 +152,12 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                   >
                     {React.isValidElement(section.icon)
                       ? React.cloneElement(section.icon as React.ReactElement, {
-                          className: "h-5 w-5",
+                          className: "size-4.5",
                         })
                       : section.icon}
                     <span>{section.title}</span>
-                    <ChevronDownIcon
-                      className={`h-3 w-3 transition-transform ${
+                    <ChevronDown
+                      className={`size-3 transition-transform duration-200 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -166,10 +166,10 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                   {isOpen ? (
                     <div
                       id={menuId}
-                      className="business-shell-menu business-horizontal-menu"
+                      className="business-shell-menu business-horizontal-menu rounded-xl border border-border/70 bg-card text-card-foreground shadow-xl animate-in fade-in zoom-in-95 duration-100"
                       role="menu"
                     >
-                      <div className="business-horizontal-menu-label">
+                      <div className="business-horizontal-menu-label font-semibold text-xs border-b border-border/60 pb-1.5 mb-1 text-muted-foreground">
                         {section.title}
                       </div>
                       {section.items
@@ -196,16 +196,16 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                                     );
 
                                     return (
-                                    <Link
-                                      key={child.to}
-                                      to={child.to}
-                                      className="business-sidebar-child-link"
-                                      data-active={isChildActive}
-                                      onMouseEnter={() => prefetch(child.to)}
-                                      role="menuitem"
-                                    >
-                                      {child.label}
-                                    </Link>
+                                      <Link
+                                        key={child.to}
+                                        to={child.to}
+                                        className="business-sidebar-child-link text-xs"
+                                        data-active={isChildActive}
+                                        onMouseEnter={() => prefetch(child.to)}
+                                        role="menuitem"
+                                      >
+                                        {child.label}
+                                      </Link>
                                     );
                                   })}
                               </div>

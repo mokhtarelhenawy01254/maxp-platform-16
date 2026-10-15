@@ -1,17 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  HeartIcon,
-  AcademicCapIcon,
-  MegaphoneIcon,
-  ChatBubbleLeftRightIcon,
-  ShoppingBagIcon,
-  PlusIcon,
-  CalendarDaysIcon,
-  UsersIcon,
-  BriefcaseIcon,
-  WrenchScrewdriverIcon,
-} from '@heroicons/react/24/outline';
+  Heart,
+  GraduationCap,
+  Megaphone,
+  MessageSquare,
+  Plus,
+  Calendar,
+  Users,
+  Briefcase,
+  Wrench,
+} from 'lucide-react';
 import type { DashboardData } from '../../pages/dashboard/types';
 
 interface SpecialtyDashboardHeaderProps {
@@ -25,7 +24,6 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   const installedApps = dashboard.installedApps || [];
   const specialtyMetrics = dashboard.specialtyMetrics || {};
 
-  // Detect vertical domain with clean priority resolution to prevent duplicate stacking
   const primaryVertical = (() => {
     if (specialtySlug.includes('medical') || installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug))) return 'medical';
     if (specialtySlug.includes('dental') || installedApps.some(a => a.slug === 'dental-lab-app')) return 'dental';
@@ -36,7 +34,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   })();
 
   if (!primaryVertical) {
-    return null; // Regular e-commerce uses standard view
+    return null;
   }
 
   const isMedical = primaryVertical === 'medical';
@@ -46,26 +44,26 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   const isMessaging = primaryVertical === 'messaging';
 
   return (
-    <div className="relative overflow-hidden bg-zinc-950 text-white rounded-2xl border border-zinc-800/80 p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] space-y-4">
+    <div className="relative overflow-hidden bg-card text-card-foreground rounded-xl border border-border/70 p-4 sm:p-5 shadow-xs space-y-4">
       {/* Header with Title & Badge */}
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
             {isMedical ? (
-              <HeartIcon className="w-5 h-5 text-rose-400" />
+              <Heart className="size-5 text-rose-500" />
             ) : isDental ? (
-              <WrenchScrewdriverIcon className="w-5 h-5 text-zinc-300" />
+              <Wrench className="size-5 text-primary" />
             ) : isEducation ? (
-              <AcademicCapIcon className="w-5 h-5 text-indigo-400" />
+              <GraduationCap className="size-5 text-indigo-500" />
             ) : isMarketing ? (
-              <MegaphoneIcon className="w-5 h-5 text-amber-400" />
+              <Megaphone className="size-5 text-amber-500" />
             ) : (
-              <ChatBubbleLeftRightIcon className="w-5 h-5 text-emerald-400" />
+              <MessageSquare className="size-5 text-emerald-500" />
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
                 {isMedical
                   ? 'لوحة إدارة العيادات والمواعيد الطبية'
                   : isDental
@@ -76,35 +74,35 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
                   ? 'لوحة التسويق والحملات الرقمية'
                   : 'لوحة إدارة المحادثات وخدمة العملاء'}
               </h2>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>{specialtyName || 'نشط ومتصل'}</span>
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5 font-normal">
+            <p className="text-xs text-muted-foreground mt-0.5">
               مركز القيادة والعمليات التشغيلية التخصصية
             </p>
           </div>
         </div>
 
-        {/* Quick Action Buttons for this vertical */}
-        <div className="relative z-10 flex items-center gap-2 overflow-x-auto">
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {isMedical && (
             <>
               <button
                 type="button"
                 onClick={() => navigate('/appointments')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
               >
-                <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                <Plus className="size-3.5" />
                 حجز موعد
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/doctor/schedule')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
               >
-                <CalendarDaysIcon className="w-4 h-4 text-zinc-400" />
+                <Calendar className="size-3.5 text-muted-foreground" />
                 الجدول الطبي
               </button>
             </>
@@ -115,17 +113,17 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shadow-black/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
               >
-                <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                استلام حالة معمل
+                <Plus className="size-3.5" />
+                استلام حالة
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab/doctors')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
               >
-                <UsersIcon className="w-4 h-4 text-zinc-400" />
+                <Users className="size-3.5 text-muted-foreground" />
                 أطباء الأسنان
               </button>
             </>
@@ -136,17 +134,17 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/teacher/schedule')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
               >
-                <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                <Plus className="size-3.5" />
                 إضافة حصة
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/parent/children')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
               >
-                <UsersIcon className="w-4 h-4 text-zinc-400" />
+                <Users className="size-3.5 text-muted-foreground" />
                 الطلاب
               </button>
             </>
@@ -157,18 +155,18 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/advertising/facebook-ads')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
               >
-                <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                <Plus className="size-3.5" />
                 حملة إعلانية
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/marketing/facebook')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
               >
-                <BriefcaseIcon className="w-4 h-4 text-zinc-400" />
-                الصفحات المتصلة
+                <Briefcase className="size-3.5 text-muted-foreground" />
+                الصفحات
               </button>
             </>
           )}
@@ -178,15 +176,15 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/unified-inbox')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
               >
-                <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                صندوق الوارد الموحد
+                <MessageSquare className="size-3.5" />
+                الوارد الموحد
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/whatsapp')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
               >
                 قنوات الواتساب
               </button>
@@ -195,169 +193,169 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
         </div>
       </div>
 
-      {/* Specialty Metrics Strip - High Impact Bento Chassis */}
-      <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-white/10 bg-white/[0.02] divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-white/10 overflow-hidden backdrop-blur-xs">
+      {/* Specialty Metrics Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-lg border border-border/60 bg-muted/20 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/50 overflow-hidden">
         {isMedical && (
           <>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">حجوزات اليوم</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-rose-400 mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">حجوزات اليوم</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-rose-500 mt-1">
                 {specialtyMetrics.medical?.todayAppointments ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">مواعيد مؤكدة لليوم</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">مواعيد مؤكدة</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">إجمالي الحجوزات</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">إجمالي الحجوزات</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {specialtyMetrics.medical?.appointmentsCount ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">سجل العيادة التراكمي</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">سجل العيادة التراكمي</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">المرضى المسجلين</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">المرضى المسجلين</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">ملفات المرضى النشطة</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">ملفات المرضى</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">الطاقم الطبي</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الطاقم الطبي</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">أطباء ومساعدين</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">أطباء ومساعدين</span>
             </div>
           </>
         )}
 
         {isDental && (
           <>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">الحالات النشطة</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الحالات النشطة</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-primary mt-1">
                 {specialtyMetrics.dentalLab?.activeCases ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">حالة قيد التصنيع حالياً</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">قيد التصنيع</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">أطباء الأسنان</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">أطباء الأسنان</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {specialtyMetrics.dentalLab?.totalDoctors ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">عيادات متعاقدة</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">عيادات متعاقدة</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">العملاء والعيادات</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">العملاء والعيادات</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">إجمالي سجل الحالات</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">إجمالي سجل الحالات</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">فريق المعمل</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">فريق المعمل</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">فنيين ومشرفين نشطين</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">فنيين وموظفين</span>
             </div>
           </>
         )}
 
         {isEducation && (
           <>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">الطلاب المسجلين</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-indigo-400 mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الحصص اليومية</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-indigo-500 mt-1">
+                {specialtyMetrics.education?.todayClasses ?? 0}
+              </p>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">جلسات مجدولة</span>
+            </div>
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الطلاب النشطين</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">طلاب نشطين</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">اشتراكات فعالة</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">المعلمين والمدربين</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">المعلمين</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">طاقم التدريس</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">هيئة التدريس</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">محادثات الطلاب</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
-                {dashboard.counts?.conversations ?? 0}
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الكورسات</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+                {dashboard.counts?.products ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">تفاعل ودعم تعليمي</span>
-            </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">التطبيقات المفعلة</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
-                {installedApps.length}
-              </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">أدوات تعليمية متصلة</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">مناهج مسجلة</span>
             </div>
           </>
         )}
 
         {isMarketing && (
           <>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">العملاء المحتملين (Leads)</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-amber-400 mt-1.5 font-mono">
-                {dashboard.counts?.customers ?? 0}
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الحملات النشطة</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-amber-500 mt-1">
+                {specialtyMetrics.marketing?.activeCampaigns ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">عملاء جدد مستهدفين</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">حملة تعمل حالياً</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">المحادثات الجارية</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
-                {dashboard.counts?.conversations ?? 0}
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">الصفحات المتصلة</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+                {specialtyMetrics.marketing?.connectedPages ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">محادثات قمع البيع</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">ربط فيسبوك نشط</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">فريق الحملات</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">التحويلات</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+                {dashboard.counts?.orders ?? 0}
+              </p>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">طلبات الإعلانات</span>
+            </div>
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">فريق الميديا</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">مديري إعلانات ومسوقين</span>
-            </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">التطبيقات المرتبطة</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
-                {installedApps.length}
-              </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">قنوات تسويق مفعلة</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">مديري الحملات</span>
             </div>
           </>
         )}
 
         {isMessaging && (
           <>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">إجمالي المحادثات</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-emerald-400 mt-1.5 font-mono">
-                {dashboard.counts?.conversations ?? 0}
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">المحادثات المفتوحة</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-500 mt-1">
+                {specialtyMetrics.messaging?.openConversations ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">سجل الرسائل الشامل</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">بانتظار الرد</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">محادثات جديدة</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
-                {dashboard.recentActivity?.newConversations ?? 0}
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">رسائل اليوم</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+                {specialtyMetrics.messaging?.todayMessages ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">اليوم</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">محادثة واردة</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">العملاء وجهات الاتصال</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">العملاء النشطين</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">قاعدة بيانات العملاء</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">جهات اتصال</span>
             </div>
-            <div className="p-4 sm:p-5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">فريق الرد</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
+            <div className="p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground">فريق الدعم</span>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
-              <span className="text-[11px] text-slate-500 mt-1 block">وكلاء خدمة عملاء نشطين</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">وكلاء خدمة عملاء</span>
             </div>
           </>
         )}

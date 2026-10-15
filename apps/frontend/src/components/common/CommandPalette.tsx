@@ -12,19 +12,19 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import {
-  ShoppingBagIcon,
-  ChartBarIcon,
-  ArchiveBoxIcon,
-  Cog6ToothIcon,
-  PlusIcon,
-  ArrowDownTrayIcon,
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  TruckIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  CommandLineIcon,
-} from "@heroicons/react/24/outline";
+  ShoppingBag,
+  BarChart3,
+  Archive,
+  Settings,
+  Plus,
+  Download,
+  CheckCircle2,
+  Search,
+  Truck,
+  Users,
+  FileText,
+  Terminal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type PaletteShortcut = "navigation" | "create" | "bulk";
@@ -40,40 +40,20 @@ export interface PaletteCommand {
 }
 
 export interface CommandPaletteProps {
-  /**
-   * Render a trigger button somewhere in the page. Pass `false` if you mount
-   * the palette via shortcut only (the default keyboard shortcut still works).
-   */
   showTrigger?: boolean;
-  /**
-   * Custom commands to register. If omitted, a default navigation + create
-   * set is provided.
-   */
   commands?: PaletteCommand[];
-  /**
-   * Extra commands to append AFTER the default commands. Useful for adding
-   * page-specific actions like bulk operations without losing the built-in
-   * navigation shortcuts.
-   */
   extraCommands?: PaletteCommand[];
 }
 
-/**
- * App-wide command palette. Open with `⌘K` (macOS) or `Ctrl+K` (Windows/Linux).
- * Built on top of the shadcn `Command` primitive, which is wired to the
- * shared `OrderModal` Dialog underneath.
- */
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   showTrigger = true,
   commands,
   extraCommands,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Global ⌘K / Ctrl+K shortcut. Skipped if the user is typing in a form
-  // field so we don't hijack browser shortcuts.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -100,8 +80,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const runAndClose = useCallback((fn: () => void) => {
     setOpen(false);
-    // Defer navigation until the dialog close animation kicks in, otherwise
-    // the dialog leave animation gets cut off.
     setTimeout(fn, 50);
   }, []);
 
@@ -115,7 +93,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {
         id: "nav-orders",
         group: "navigation",
-        icon: ShoppingBagIcon,
+        icon: ShoppingBag,
         label: t("palette.navOrders", { defaultValue: "الطلبات" }),
         keywords: t("palette.navOrdersKeywords", { defaultValue: "orders" }),
         onSelect: () => runAndClose(() => navigate("/orders")),
@@ -123,7 +101,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {
         id: "nav-orders-workspace",
         group: "navigation",
-        icon: CheckCircleIcon,
+        icon: CheckCircle2,
         label: t("palette.navOrdersWorkspace", {
           defaultValue: "مركز التأكيد والمتابعة",
         }),
@@ -132,49 +110,49 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {
         id: "nav-orders-prep",
         group: "navigation",
-        icon: ArchiveBoxIcon,
+        icon: Archive,
         label: t("palette.navOrdersPrep", { defaultValue: "تجهيز الطلبات" }),
         onSelect: () => runAndClose(() => navigate("/orders/preparation")),
       },
       {
         id: "nav-analytics",
         group: "navigation",
-        icon: ChartBarIcon,
+        icon: BarChart3,
         label: t("palette.navAnalytics", { defaultValue: "تحليلات الطلبات" }),
         onSelect: () => runAndClose(() => navigate("/orders/analytics")),
       },
       {
         id: "nav-products",
         group: "navigation",
-        icon: DocumentTextIcon,
+        icon: FileText,
         label: t("palette.navProducts", { defaultValue: "المنتجات" }),
         onSelect: () => runAndClose(() => navigate("/products")),
       },
       {
         id: "nav-customers",
         group: "navigation",
-        icon: UserGroupIcon,
+        icon: Users,
         label: t("palette.navCustomers", { defaultValue: "العملاء" }),
         onSelect: () => runAndClose(() => navigate("/customers")),
       },
       {
         id: "nav-returns",
         group: "navigation",
-        icon: TruckIcon,
+        icon: Truck,
         label: t("palette.navReturns", { defaultValue: "مراجعة المرتجعات" }),
         onSelect: () => runAndClose(() => navigate("/returns")),
       },
       {
         id: "nav-settings",
         group: "navigation",
-        icon: Cog6ToothIcon,
+        icon: Settings,
         label: t("palette.navSettings", { defaultValue: "الإعدادات" }),
         onSelect: () => runAndClose(() => navigate("/settings/orders")),
       },
       {
         id: "create-manual",
         group: "create",
-        icon: PlusIcon,
+        icon: Plus,
         label: t("palette.createManualOrder", {
           defaultValue: "إنشاء طلب يدوي",
         }),
@@ -183,7 +161,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {
         id: "create-bulk",
         group: "create",
-        icon: ArrowDownTrayIcon,
+        icon: Download,
         label: t("palette.createBulkOrder", {
           defaultValue: "استيراد طلبات جماعية",
         }),
@@ -192,14 +170,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {
         id: "view-search",
         group: "view",
-        icon: MagnifyingGlassIcon,
+        icon: Search,
         label: t("palette.viewSearch", { defaultValue: "البحث المجمع" }),
         onSelect: () => runAndClose(() => navigate("/bulk-search")),
       },
       {
         id: "view-invoices",
         group: "view",
-        icon: DocumentTextIcon,
+        icon: FileText,
         label: t("palette.viewInvoices", { defaultValue: "فواتير الطلبات" }),
         onSelect: () => runAndClose(() => navigate("/orders/invoices")),
       },
@@ -236,14 +214,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           variant="outline"
           size="sm"
           onClick={() => setOpen(true)}
-          className="gap-2 text-muted-foreground"
+          className="gap-2 text-muted-foreground border-border/70 hover:bg-muted/50 h-8 rounded-lg"
           aria-label={String(t("palette.openPalette", { defaultValue: "فتح لوحة الأوامر" }))}
         >
-          <CommandLineIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">
+          <Terminal className="size-3.5 text-primary" />
+          <span className="hidden sm:inline text-xs font-medium text-foreground">
             {t("palette.quickSearch", { defaultValue: "بحث سريع" })}
           </span>
-          <CommandShortcut>{shortcutHint}</CommandShortcut>
+          <CommandShortcut className="font-mono tabular-nums text-[10px] bg-muted px-1.5 py-0.5 rounded border border-border/60">
+            {shortcutHint}
+          </CommandShortcut>
         </Button>
       )}
 
@@ -280,9 +260,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       value={`${cmd.label} ${cmd.keywords ?? ""}`}
                       onSelect={() => cmd.onSelect()}
                     >
-                      {Icon && <Icon className="text-muted-foreground" />}
-                      <span>{cmd.label}</span>
-                      {cmd.shortcut && <CommandShortcut>{cmd.shortcut}</CommandShortcut>}
+                      {Icon && <Icon className="size-4 text-muted-foreground shrink-0" />}
+                      <span className="text-xs font-medium">{cmd.label}</span>
+                      {cmd.shortcut && (
+                        <CommandShortcut className="font-mono tabular-nums text-[10px]">
+                          {cmd.shortcut}
+                        </CommandShortcut>
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -290,16 +274,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </React.Fragment>
           ))}
         </CommandList>
-        <div className="flex items-center justify-between border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground font-mono tabular-nums">
+          <span className="flex items-center gap-1.5">
             <CommandShortcut>↑↓</CommandShortcut>
             {t("palette.navigate", { defaultValue: "تنقل" })}
           </span>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5">
             <CommandShortcut>↵</CommandShortcut>
             {t("palette.open", { defaultValue: "فتح" })}
           </span>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5">
             <CommandShortcut>esc</CommandShortcut>
             {t("palette.close", { defaultValue: "إغلاق" })}
           </span>

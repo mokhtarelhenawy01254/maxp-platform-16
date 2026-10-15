@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { MagnifyingGlassIcon, CheckIcon, ChevronUpDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Search, Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 
 interface SearchableSelectOption {
   value: string;
@@ -81,79 +81,89 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         type="button"
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-3 py-2 text-right border rounded-md transition-colors ${
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        className={`w-full flex items-center justify-between px-3 py-2 text-right border rounded-lg transition-colors text-xs ${
           disabled
-            ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700"
-            : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-900 dark:text-gray-100"
-        } ${open ? "ring-2 ring-blue-500 border-blue-500" : ""}`}
+            ? "bg-muted/50 cursor-not-allowed text-muted-foreground border-border/50"
+            : "bg-card border-border/70 hover:border-border text-foreground shadow-xs"
+        } ${open ? "ring-1 ring-primary/40 border-primary" : ""}`}
       >
-        <span className={`truncate ${value ? "" : "text-gray-400 dark:text-gray-500"}`}>
-          {loading ? loadingText : value ? selectedLabel : placeholder}
+        <span className={`truncate ${value ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+          {loading ? (
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Loader2 className="size-3 animate-spin text-primary" />
+              {loadingText}
+            </span>
+          ) : value ? (
+            selectedLabel
+          ) : (
+            placeholder
+          )}
         </span>
-        <ChevronUpDownIcon className="w-4 h-4 text-gray-400 shrink-0 mr-2" />
+        <ChevronsUpDown className="size-3.5 text-muted-foreground shrink-0 mr-2" />
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          <div className="relative border-b border-gray-200 dark:border-gray-600">
-            <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="absolute z-50 mt-1 w-full bg-card border border-border/70 rounded-xl shadow-xl overflow-hidden divide-y divide-border/40 animate-in fade-in zoom-in-95 duration-100">
+          <div className="relative p-2 bg-muted/20">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pr-9 pl-3 py-2 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full pr-8 pl-7 py-1 text-xs bg-background border border-border/60 rounded-md outline-none text-foreground placeholder:text-muted-foreground focus:border-primary"
             />
             {search && (
               <button
+                type="button"
                 onClick={() => setSearch("")}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                aria-label="مسح البحث"
               >
-                <XMarkIcon className="w-4 h-4" />
+                <X className="size-3" />
               </button>
             )}
           </div>
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-48 overflow-y-auto divide-y divide-border/20">
             {value && (
               <button
+                type="button"
                 onClick={handleClear}
-                className="w-full text-right px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 border-b border-gray-100 dark:border-gray-600"
+                className="w-full text-right px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-500/10 flex items-center gap-2 transition-colors"
               >
-                <XMarkIcon className="w-4 h-4" />
-                إلغاء التحديد
+                <X className="size-3" />
+                <span>إلغاء التحديد</span>
               </button>
             )}
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
+              <div className="px-3 py-6 text-xs text-muted-foreground text-center">
                 {emptyText}
               </div>
             ) : (
-              filteredOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleSelect(opt.value)}
-                  className={`w-full text-right px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                    opt.value === value
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                      : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      opt.value === value
-                        ? "bg-blue-600 border-blue-600"
-                        : "border-gray-300 dark:border-gray-500"
+              filteredOptions.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleSelect(opt.value)}
+                    className={`w-full text-right px-3 py-2 text-xs flex items-center justify-between gap-2 transition-colors ${
+                      isSelected
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-foreground hover:bg-muted/50"
                     }`}
                   >
-                    {opt.value === value && (
-                      <CheckIcon className="w-3 h-3 text-white" strokeWidth={3} />
+                    <span className="truncate">{opt.label}</span>
+                    {isSelected && (
+                      <Check className="size-3.5 text-primary shrink-0" />
                     )}
-                  </span>
-                  <span className="truncate">{opt.label}</span>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
