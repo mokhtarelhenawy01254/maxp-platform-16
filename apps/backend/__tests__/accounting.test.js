@@ -289,9 +289,16 @@ const createInMemoryStore = () => {
     },
     $transaction: async (actions) => {
       if (Array.isArray(actions)) {
-        return await Promise.all(actions);
+        const error = new Error(
+          'All elements of the array need to be Prisma Client promises. Hint: Please make sure you are using the correct prisma client instance.'
+        );
+        error.statusCode = 400;
+        throw error;
       }
-      return await actions(prisma);
+      if (typeof actions === 'function') {
+        return await actions(prisma);
+      }
+      throw new Error('$transaction argument must be an interactive transaction function');
     },
   };
 
@@ -589,8 +596,13 @@ describe('Accounting Engine & General Ledger Test Suite (Wave 1)', () => {
     });
     expect(original.status).toBe('POSTED');
 
-    // 2. Void the entry
+    // 2. Void the entry (must invoke $transaction with an interactive function, not an array)
+    const transactionSpy = jest.spyOn(currentPrisma, '$transaction');
     const voidResult = await AccountingService.voidEntry(companyA, original.id, userAdmin, 'خطأ في الفاتورة');
+    expect(transactionSpy).toHaveBeenCalledTimes(1);
+    const transactionArg = transactionSpy.mock.calls[0][0];
+    expect(typeof transactionArg).toBe('function');
+    expect(Array.isArray(transactionArg)).toBe(false);
     expect(voidResult.voidedEntry.status).toBe('VOID');
 
     const reversing = voidResult.reversingEntry;
@@ -610,6 +622,16 @@ describe('Accounting Engine & General Ledger Test Suite (Wave 1)', () => {
     expect(tb.totals.isBalanced).toBe(true);
     expect(tb.totals.totalEndingDebit).toBe(0);
     expect(tb.totals.totalEndingCredit).toBe(0);
+  });
+
+  // --------------------------------------------------------------------------
+  // Test 5b: Regression Guard for Interactive Transaction
+  // --------------------------------------------------------------------------
+  test('5b. Regression guard: $transaction rejects non-Prisma array promises and requires interactive function', async () => {
+    // Array of standard promises must be rejected as in production Prisma deferred proxy
+    await expect(
+      currentPrisma.$transaction([Promise.resolve(), Promise.resolve()])
+    ).rejects.toThrow('All elements of the array need to be Prisma Client promises');
   });
 
   // --------------------------------------------------------------------------

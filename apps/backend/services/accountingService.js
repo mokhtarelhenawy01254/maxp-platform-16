@@ -785,12 +785,13 @@ class AccountingService {
       costCenter: line.costCenter,
     }));
 
-    const [updatedOriginal, reversingEntry] = await prisma.$transaction([
-      prisma.journalEntry.update({
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedOriginal = await tx.journalEntry.update({
         where: { id: entryId },
         data: { status: 'VOID' },
-      }),
-      prisma.journalEntry.create({
+      });
+
+      const reversingEntry = await tx.journalEntry.create({
         data: {
           companyId,
           entryNumber: reversingEntryNumber,
@@ -812,12 +813,14 @@ class AccountingService {
             include: { account: { select: { id: true, code: true, name: true, type: true } } },
           },
         },
-      }),
-    ]);
+      });
+
+      return { updatedOriginal, reversingEntry };
+    });
 
     return {
-      voidedEntry: updatedOriginal,
-      reversingEntry,
+      voidedEntry: result.updatedOriginal,
+      reversingEntry: result.reversingEntry,
     };
   }
 
