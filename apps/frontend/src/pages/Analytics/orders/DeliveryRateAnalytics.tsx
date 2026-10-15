@@ -6,7 +6,6 @@ import {
   XCircle,
   Clock,
   MapPin,
-  TrendingUp,
   Building2,
   LineChart as LineChartIcon,
 } from "lucide-react";
@@ -70,21 +69,21 @@ const DeliveryRateAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Truck className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات سرعة ونسب نجاح الشحن</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">معدلات التوصيل الفعلي، سرعة التسليم، ومقارنة أداء شركات الشحن</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات سرعة ونسب نجاح الشحن</h1>
+            <p className="text-xs text-muted-foreground">معدلات التوصيل الفعلي، سرعة التسليم، ومقارنة أداء شركات الشحن</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
           </Button>
         </div>
@@ -98,7 +97,7 @@ const DeliveryRateAnalytics: React.FC = () => {
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
               </div>
-              <div className={`text-lg font-bold font-mono tabular-nums ${c.alert ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
+              <div className={`text-xl font-bold font-mono tabular-nums ${c.alert ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
                 {loading ? "..." : c.val}
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
@@ -113,13 +112,13 @@ const DeliveryRateAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <LineChartIcon className="h-4 w-4 text-emerald-500" /> تطور نسبة التوصيل اليومية (%)
           </h3>
-          <div className="h-[250px]">
+          <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={stats.dailyTrends}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} />
-                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis dataKey="date" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} domain={[0, 100]} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
                 <Line type="monotone" dataKey="rate" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} name="نسبة التسليم %" />
               </LineChart>
             </ResponsiveContainer>
@@ -137,10 +136,10 @@ const DeliveryRateAnalytics: React.FC = () => {
           <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={stats?.regionPerformance || []} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={11} domain={[0, 100]} />
-                <YAxis dataKey="region" type="category" stroke="#94a3b8" fontSize={11} width={90} />
-                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} domain={[0, 100]} />
+                <YAxis dataKey="region" type="category" stroke="currentColor" className="text-muted-foreground" fontSize={11} width={90} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
                 <Bar dataKey="deliveryRate" fill="#10B981" name="نسبة التسليم %" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -154,36 +153,36 @@ const DeliveryRateAnalytics: React.FC = () => {
               <span className="font-semibold text-foreground flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-blue-500" /> كفاءة شركات الشحن المعتمدة
               </span>
-              <span className="text-muted-foreground font-mono">{stats?.shippingCompanies?.length || 0} شركات</span>
+              <span className="text-muted-foreground font-mono tabular-nums">{stats?.shippingCompanies?.length || 0} شركات</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs">
                 <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground text-[11px] font-medium">
                   <tr>
-                    <th className="py-2 px-3">شركة الشحن</th>
-                    <th className="py-2 px-3 text-center">الشحنات المسندة</th>
-                    <th className="py-2 px-3 text-center">نسبة التسليم</th>
+                    <th className="py-2.5 px-3.5">شركة الشحن</th>
+                    <th className="py-2.5 px-3.5 text-center">الشحنات المسندة</th>
+                    <th className="py-2.5 px-3.5 text-center">نسبة التسليم</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {!stats?.shippingCompanies || stats.shippingCompanies.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={3} className="py-10 text-center text-muted-foreground">
                         لا توجد إحصائيات لشركات الشحن
                       </td>
                     </tr>
                   ) : (
                     stats.shippingCompanies.map((c, idx) => (
                       <tr key={idx} className="hover:bg-muted/20 transition-colors">
-                        <td className="py-2.5 px-3 font-medium text-foreground text-sm flex items-center gap-2">
+                        <td className="py-2.5 px-3.5 font-medium text-foreground text-sm flex items-center gap-2">
                           <Truck className="h-3.5 w-3.5 text-muted-foreground" />
                           {c.company}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-foreground">
+                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground tabular-nums">
                           {c.orders.toLocaleString("en-US")}
                         </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                        <td className="py-2.5 px-3.5 text-center">
+                          <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold tabular-nums">
                             {c.deliveryRate.toFixed(1)}%
                           </span>
                         </td>

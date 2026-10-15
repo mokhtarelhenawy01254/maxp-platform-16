@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   BarChart3,
   DollarSign,
-  Layers,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
@@ -72,21 +71,21 @@ const CouponsAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Ticket className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الكوبونات والخصومات الترويجية</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">تتبع استخدام أكواد الخصم، العائد التجاري، ونفقات التخفيضات</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات الكوبونات والخصومات الترويجية</h1>
+            <p className="text-xs text-muted-foreground">تتبع استخدام أكواد الخصم، العائد التجاري، ونفقات التخفيضات</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
           </Button>
         </div>
@@ -100,7 +99,7 @@ const CouponsAnalytics: React.FC = () => {
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
               </div>
-              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
+              <div className="text-xl font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
             </CardContent>
           </Card>
@@ -113,13 +112,13 @@ const CouponsAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-purple-500" /> أكثر الكوبونات استخداماً
           </h3>
-          <div className="h-[260px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={coupons.slice(0, 8)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={11} />
-                <YAxis dataKey="code" type="category" stroke="#94a3b8" fontSize={11} width={110} />
-                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                <YAxis dataKey="code" type="category" stroke="currentColor" className="text-muted-foreground" fontSize={11} width={110} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
                 <Bar dataKey="usageCount" fill="#8B5CF6" name="عدد الاستخدامات" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -131,7 +130,7 @@ const CouponsAnalytics: React.FC = () => {
       <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
         <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
           <span className="font-semibold text-foreground">جدول تفاصيل الكوبونات الفعالة</span>
-          <span className="text-muted-foreground">عدد الأكواد: <strong className="text-foreground font-mono">{coupons.length}</strong></span>
+          <span className="text-muted-foreground">عدد الأكواد: <strong className="text-foreground font-mono tabular-nums">{coupons.length}</strong></span>
         </div>
 
         <div className="overflow-x-auto">
@@ -166,22 +165,22 @@ const CouponsAnalytics: React.FC = () => {
                         <Ticket className="h-3.5 w-3.5 text-muted-foreground" />
                         {coupon.code}
                       </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground tabular-nums">
                         {coupon.usageCount.toLocaleString("en-US")}
                       </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-rose-600 dark:text-rose-400">
+                      <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
                         {formatPrice(coupon.discountAmount)}
                       </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {formatPrice(coupon.revenue)}
                       </td>
                       <td className="py-2.5 px-3.5 text-center">
                         {isHighDiscount ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                             <AlertTriangle className="h-3 w-3" /> خصم مرتفع ({Math.round((coupon.discountAmount / (coupon.revenue || 1)) * 100)}%)
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                             <CheckCircle2 className="h-3 w-3" /> أداء ربحي ممتاز
                           </span>
                         )}
@@ -195,7 +194,7 @@ const CouponsAnalytics: React.FC = () => {
         </div>
 
         <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
-          <span>إجمالي الخصومات: <strong className="text-foreground font-mono">{formatPrice(totalDiscounts)}</strong></span>
+          <span>إجمالي الخصومات: <strong className="text-foreground font-mono tabular-nums">{formatPrice(totalDiscounts)}</strong></span>
           <span className="text-[11px]">مراقبة نسبة الخصم تمنع استنزاف هوامش الربح مع الحفاظ على الحافز البيعي</span>
         </div>
       </div>

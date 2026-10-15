@@ -74,21 +74,21 @@ const CODPerformanceAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+    <div className="space-y-4" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Banknote className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات كفاءة الدفع عند الاستلام (COD)</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">معدلات التسليم الفعلي، الإلغاءات، وتحصيل مبيعات الشحن</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">تحليلات كفاءة الدفع عند الاستلام (COD)</h1>
+            <p className="text-xs text-muted-foreground">معدلات التسليم الفعلي، الإلغاءات، وتحصيل مبيعات الشحن</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector onRangeChange={setRange} />
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono border-border/70">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
           </Button>
         </div>
@@ -102,7 +102,7 @@ const CODPerformanceAnalytics: React.FC = () => {
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
               </div>
-              <div className={`text-lg font-bold font-mono tabular-nums ${c.alert ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
+              <div className={`text-xl font-bold font-mono tabular-nums ${c.alert ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
                 {loading ? "..." : c.val}
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
@@ -112,33 +112,33 @@ const CODPerformanceAnalytics: React.FC = () => {
       </div>
 
       {/* Secondary Ribbon: Delivery Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border border-border/70 rounded-xl bg-card p-3 shadow-sm text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 border border-border/70 rounded-xl bg-card p-2.5 shadow-sm text-xs">
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/20">
-          <Clock className="h-4 w-4 text-amber-500" />
-          <div>
+          <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+          <div className="min-w-0">
             <div className="text-muted-foreground text-[11px]">في انتظار الاستلام</div>
-            <div className="font-mono font-bold text-foreground text-sm">{stats?.pendingOrders || 0}</div>
+            <div className="font-mono font-bold text-foreground text-sm tabular-nums">{stats?.pendingOrders || 0}</div>
           </div>
         </div>
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/20">
-          <RotateCcw className="h-4 w-4 text-orange-500" />
-          <div>
+          <RotateCcw className="h-4 w-4 text-orange-500 shrink-0" />
+          <div className="min-w-0">
             <div className="text-muted-foreground text-[11px]">مرتجعات المشترين</div>
-            <div className="font-mono font-bold text-foreground text-sm">{stats?.returnedOrders || 0} ({((stats?.returnRate || 0)).toFixed(1)}%)</div>
+            <div className="font-mono font-bold text-foreground text-sm tabular-nums">{stats?.returnedOrders || 0} ({((stats?.returnRate || 0)).toFixed(1)}%)</div>
           </div>
         </div>
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/20">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <div>
+          <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+          <div className="min-w-0">
             <div className="text-muted-foreground text-[11px]">متوسط قيمة الطلب (AOV)</div>
-            <div className="font-mono font-bold text-foreground text-sm">{formatPrice(stats?.avgOrderValue || 0)}</div>
+            <div className="font-mono font-bold text-foreground text-sm tabular-nums">{formatPrice(stats?.avgOrderValue || 0)}</div>
           </div>
         </div>
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/20">
-          <Truck className="h-4 w-4 text-emerald-500" />
-          <div>
+          <Truck className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div className="min-w-0">
             <div className="text-muted-foreground text-[11px]">الطلبيات المسلمة</div>
-            <div className="font-mono font-bold text-foreground text-sm">{stats?.deliveredOrders || 0}</div>
+            <div className="font-mono font-bold text-foreground text-sm tabular-nums">{stats?.deliveredOrders || 0}</div>
           </div>
         </div>
       </div>
@@ -157,10 +157,10 @@ const CODPerformanceAnalytics: React.FC = () => {
             <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={stats.regionalPerformance} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                  <XAxis type="number" stroke="#94a3b8" fontSize={11} />
-                  <YAxis dataKey="region" type="category" stroke="#94a3b8" fontSize={11} width={130} />
-                  <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis dataKey="region" type="category" stroke="currentColor" className="text-muted-foreground" fontSize={11} width={130} />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" }} />
                   <Bar dataKey="deliveredOrders" fill="#10B981" name="مسلم بنجاح" radius={[0, 4, 4, 0]} />
                   <Bar dataKey="cancelledOrders" fill="#EF4444" name="ملغي / مرفوض" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -200,22 +200,22 @@ const CODPerformanceAnalytics: React.FC = () => {
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                       {row.region}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground tabular-nums">
                       {row.totalOrders.toLocaleString("en-US")}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
                       {row.deliveredOrders.toLocaleString("en-US")}
                     </td>
-                    <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-rose-600 dark:text-rose-400">
+                    <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
                       {row.cancelledOrders.toLocaleString("en-US")}
                     </td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold tabular-nums">
                         {row.successRate.toFixed(1)}%
                       </span>
                     </td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 font-bold">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 font-bold tabular-nums">
                         {row.cancellationRate.toFixed(1)}%
                       </span>
                     </td>
@@ -227,7 +227,7 @@ const CODPerformanceAnalytics: React.FC = () => {
         </div>
 
         <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
-          <span>إجمالي المحصل: <strong className="text-foreground font-mono">{formatPrice(stats?.totalRevenue || 0)}</strong></span>
+          <span>إجمالي المحصل: <strong className="text-foreground font-mono tabular-nums">{formatPrice(stats?.totalRevenue || 0)}</strong></span>
           <span className="text-[11px]">تحليل الأداء يساعد في تخصيص شركات الشحن المناسبة لكل نطاق جغرافي</span>
         </div>
       </div>
