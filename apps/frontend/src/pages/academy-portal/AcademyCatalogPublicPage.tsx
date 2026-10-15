@@ -112,7 +112,7 @@ const AcademyCatalogPublicPage: React.FC = () => {
                       <span>أول درسين معاينة مجانًا</span>
                     </span>
                     <span className="text-xs font-semibold text-slate-500">
-                      {course.modules.length} وحدات · {totalLessons || 25} درس
+                      {course.modules.length} وحدات · 25 درس
                     </span>
                   </div>
 

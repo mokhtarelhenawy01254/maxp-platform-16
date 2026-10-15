@@ -25,11 +25,9 @@ export const LessonCoachChat: React.FC<Props> = ({ lessonId }) => {
 
     try {
       setLoading(true);
-      const studentPhone = localStorage.getItem("studentPhone") || "";
       const studentToken = localStorage.getItem("studentToken") || "";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (studentToken) headers["Authorization"] = `Bearer ${studentToken}`;
-      if (studentPhone) headers["x-student-phone"] = studentPhone;
 
       const res = await fetch(`/api/v1/academy/lessons/${lessonId}/coach-chat`, {
         method: "POST",

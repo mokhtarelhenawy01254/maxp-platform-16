@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import {
   PlayCircle,
   Sparkles,
@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Loader2,
   Video,
+  AlertCircle,
 } from "lucide-react";
 import AcademyCourseCheckoutModal from "./AcademyCourseCheckoutModal";
 import { CourseCurriculumAccordion, ModuleItem } from "./components/CourseCurriculumAccordion";
@@ -26,35 +27,79 @@ interface CourseOutline {
 
 const AcademyCoursePublicPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
   const [outline, setOutline] = useState<CourseOutline | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [paymentBanner, setPaymentBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    const fetchOutline = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const targetId = courseId || "cmuzmwaxs07r2juml2v04xon5";
-        const studentPhone = localStorage.getItem("studentPhone") || "";
-        const queryParams = studentPhone ? `?phone=${encodeURIComponent(studentPhone)}` : "";
-        const res = await fetch(`/api/v1/academy/courses/${targetId}/outline${queryParams}`);
-        const data = await res.json();
-        if (data.success && data.course) {
-          setOutline(data);
-        } else {
-          setError(data.error || "تعذر تحميل منهج الكورس");
-        }
-      } catch (err: any) {
-        setError(err.message || "حدث خطأ أثناء تحميل بيانات الكورس");
-      } finally {
-        setLoading(false);
+  const fetchOutline = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const targetId = courseId || "cmuzmwaxs07r2juml2v04xon5";
+      const studentToken = localStorage.getItem("studentToken") || "";
+      const headers: Record<string, string> = {};
+      if (studentToken) headers["Authorization"] = `Bearer ${studentToken}`;
+
+      const res = await fetch(`/api/v1/academy/courses/${targetId}/outline`, { headers });
+      const data = await res.json();
+      if (data.success && data.course) {
+        setOutline(data);
+      } else {
+        setError(data.error || "تعذر تحميل منهج الكورس");
       }
-    };
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ أثناء تحميل بيانات الكورس");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchOutline();
-  }, [courseId]);
+  // 1. Verify Payment on return from Kashier gateway
+  useEffect(() => {
+    const orderNumber = searchParams.get("orderNumber");
+    const paymentSuccess = searchParams.get("paymentSuccess");
+    const targetId = courseId || "cmuzmwaxs07r2juml2v04xon5";
+
+    if (orderNumber && paymentSuccess === "1") {
+      const verifyPayment = async () => {
+        try {
+          const res = await fetch(`/api/v1/academy/courses/${targetId}/verify-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderNumber }),
+          });
+          const data = await res.json();
+          if (data.success && data.verified) {
+            if (data.token) localStorage.setItem("studentToken", data.token);
+            if (data.student?.phone) localStorage.setItem("studentPhone", data.student.phone);
+            if (data.student?.name) localStorage.setItem("studentName", data.student.name);
+
+            setPaymentBanner({
+              type: 'success',
+              message: 'تم تأكيد الدفع بنجاح! تم فتح جميع الدروس الـ25 وتفعيل حسابك تلقائياً.',
+            });
+            await fetchOutline();
+          } else {
+            setPaymentBanner({
+              type: 'error',
+              message: data.message || 'لم يتم تأكيد السداد بعد من بوابة الدفع.',
+            });
+          }
+        } catch (e: any) {
+          setPaymentBanner({
+            type: 'error',
+            message: e.message || 'حدث خطأ أثناء التحقق من الدفع.',
+          });
+        }
+      };
+      verifyPayment();
+    } else {
+      fetchOutline();
+    }
+  }, [courseId, searchParams]);
 
   if (loading) {
     return (
@@ -81,6 +126,24 @@ const AcademyCoursePublicPage: React.FC = () => {
 
   return (
     <div className="space-y-12">
+      {/* Payment Feedback Banner */}
+      {paymentBanner && (
+        <div
+          className={`p-4 rounded-2xl border flex items-center gap-3 text-sm font-bold ${
+            paymentBanner.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          {paymentBanner.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          )}
+          <span>{paymentBanner.message}</span>
+        </div>
+      )}
+
       {/* 1. Hero Section */}
       <section className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-6">
         <div className="max-w-3xl space-y-4">

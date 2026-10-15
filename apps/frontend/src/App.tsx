@@ -2322,6 +2322,7 @@ const AppContent = () => {
             {/* Direct Academy Public Aliases for seamless linking */}
             <Route path="/academy/portal" element={<StudentPortalLayout><AcademyCatalogPublicPage /></StudentPortalLayout>} />
             <Route path="/academy/course/:courseId" element={<StudentPortalLayout><AcademyCoursePublicPage /></StudentPortalLayout>} />
+            <Route path="/academy/courses/:courseId" element={<StudentPortalLayout><AcademyCoursePublicPage /></StudentPortalLayout>} />
             <Route path="/academy/course/:courseId/lesson/:lessonId" element={<StudentPortalLayout><StudentLessonPlayerPage /></StudentPortalLayout>} />
             <Route path="/academy/my-courses" element={<StudentPortalLayout><StudentMyCoursesPage /></StudentPortalLayout>} />
             <Route path="/academy/student/login" element={<StudentPortalLayout><StudentLoginPage /></StudentPortalLayout>} />

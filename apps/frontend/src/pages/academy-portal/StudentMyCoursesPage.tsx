@@ -37,10 +37,9 @@ const StudentMyCoursesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const studentPhone = localStorage.getItem("studentPhone");
     const studentToken = localStorage.getItem("studentToken");
 
-    if (!studentPhone && !studentToken) {
+    if (!studentToken) {
       navigate("/portal/login", { replace: true });
       return;
     }
@@ -49,11 +48,11 @@ const StudentMyCoursesPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const headers: Record<string, string> = {};
-        if (studentToken) headers["Authorization"] = `Bearer ${studentToken}`;
-        if (studentPhone) headers["x-student-phone"] = studentPhone;
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${studentToken}`,
+        };
 
-        const res = await fetch(`/api/v1/academy/my-courses?phone=${encodeURIComponent(studentPhone || "")}`, {
+        const res = await fetch(`/api/v1/academy/my-courses`, {
           headers,
         });
         const data = await res.json();

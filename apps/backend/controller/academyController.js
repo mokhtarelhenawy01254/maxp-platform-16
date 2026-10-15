@@ -1,4 +1,5 @@
 const academyService = require('../services/academyService');
+const KashierService = require('../services/kashierService');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/jwtSecret');
 
@@ -17,23 +18,39 @@ function resolveAcademyCompanyId(req) {
   return getCompanyId(req) || 'cmopgxu3a07i4jujj6f1oh32h';
 }
 
-function extractStudentPhone(req) {
-  const headerPhone = req.headers['x-student-phone'];
-  if (headerPhone && typeof headerPhone === 'string') return headerPhone.trim();
+/**
+ * In-memory OTP store for student verification codes.
+ * Map<cleanPhone, { code: string, expiresAt: number, attempts: number, lastSentAt: number }>
+ */
+const studentOtpStore = new Map();
 
-  const queryPhone = req.query.phone || req.query.studentPhone;
-  if (queryPhone && typeof queryPhone === 'string') return queryPhone.trim();
+/**
+ * 🛡️ Security Law: Only extract student identity from verified JWT token.
+ * Raw query parameters (?phone=) and unauthenticated headers (x-student-phone) are NEVER trusted.
+ */
+function extractVerifiedStudentPhone(req) {
+  // 1. From authenticated req.user (populated by authenticateToken / optionalAuth)
+  if (req.user?.studentPhone && typeof req.user.studentPhone === 'string') {
+    return req.user.studentPhone.trim();
+  }
+  if (req.user?.role === 'STUDENT' && req.user?.phone && typeof req.user.phone === 'string') {
+    return req.user.phone.trim();
+  }
 
+  // 2. Direct Bearer token verification if present
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
-      if (decoded.studentPhone) return decoded.studentPhone;
+      if (decoded.role === 'STUDENT' && (decoded.studentPhone || decoded.phone)) {
+        return (decoded.studentPhone || decoded.phone).trim();
+      }
     } catch (_) {}
   }
 
-  return req.user?.phone || null;
+  return null;
 }
+
 
 // -------------------------------------------------------------
 // Course Management (Admin / Instructor)
@@ -209,8 +226,8 @@ exports.getPublishedCatalog = async (req, res) => {
     const companyId = resolveAcademyCompanyId(req);
 
     const studentUserId = req.user?.id || null;
-    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = extractStudentPhone(req);
+    const customerId = req.user?.customerId || null;
+    const studentPhone = extractVerifiedStudentPhone(req);
 
     let customerTags = [];
     if (req.user?.tags && Array.isArray(req.user.tags)) {
@@ -242,8 +259,12 @@ exports.getMyCourses = async (req, res) => {
   try {
     const companyId = resolveAcademyCompanyId(req);
     const studentUserId = req.user?.id || null;
-    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = extractStudentPhone(req);
+    const customerId = req.user?.customerId || null;
+    const studentPhone = extractVerifiedStudentPhone(req);
+
+    if (!studentUserId && !customerId && !studentPhone) {
+      return res.json({ success: true, enrollments: [] });
+    }
 
     const enrollments = await academyService.getMyEnrolledCourses({
       companyId,
@@ -263,8 +284,8 @@ exports.getCourseOutline = async (req, res) => {
     const companyId = resolveAcademyCompanyId(req);
     const { id } = req.params; // courseId
     const studentUserId = req.user?.id || null;
-    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = extractStudentPhone(req);
+    const customerId = req.user?.customerId || null;
+    const studentPhone = extractVerifiedStudentPhone(req);
 
     const data = await academyService.getCourseOutlineWithProgress({
       courseId: id,
@@ -285,8 +306,8 @@ exports.getLessonContent = async (req, res) => {
     const companyId = resolveAcademyCompanyId(req);
     const { id } = req.params; // lessonId
     const studentUserId = req.user?.id || null;
-    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = extractStudentPhone(req);
+    const customerId = req.user?.customerId || null;
+    const studentPhone = extractVerifiedStudentPhone(req);
 
     const data = await academyService.getLessonContent({
       lessonId: id,
@@ -594,14 +615,180 @@ exports.syncOrderEnrollment = async (req, res) => {
 // Student Authentication & Profile
 // -------------------------------------------------------------
 
-exports.studentLogin = async (req, res) => {
+exports.sendStudentLoginCode = async (req, res) => {
   try {
     const { phone } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لإرسال كود التحقق' });
+    }
+
+    const cleanPhone = phone.trim();
+    const db = academyService.getDb();
+
+    // 1. Verify that this phone has an active enrollment or customer account
+    const enrollment = await db.academyEnrollment.findFirst({
+      where: {
+        studentPhone: cleanPhone,
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      include: {
+        course: { select: { id: true, title: true } },
+      },
+    });
+
+    if (!enrollment) {
+      // Check customer table fallback
+      const customer = await db.customer.findFirst({
+        where: { phone: cleanPhone },
+      });
+      const customerEnrollment = customer ? await db.academyEnrollment.findFirst({
+        where: { customerId: customer.id, status: { in: ['ACTIVE', 'COMPLETED'] } },
+      }) : null;
+
+      if (!customerEnrollment) {
+        return res.status(404).json({
+          success: false,
+          message: 'لم يتم العثور على اشتراك مرتبط بهذا الرقم. يمكنك الاشتراك في الكورس أولاً أو مشاهدة أول درسين مجاناً.',
+        });
+      }
+    }
+
+    // 2. Rate limit check (minimum 30 seconds between resends for the same phone)
+    const existingOtp = studentOtpStore.get(cleanPhone);
+    const now = Date.now();
+    if (existingOtp && (now - existingOtp.lastSentAt) < 30 * 1000) {
+      const waitSeconds = Math.ceil((30 * 1000 - (now - existingOtp.lastSentAt)) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `يرجى الانتظار ${waitSeconds} ثانية قبل إعادة إرسال الكود.`,
+        retryAfter: waitSeconds,
+      });
+    }
+
+    // 3. Generate 6-digit code
+    // Internal test account 01000000099 has fixed predictable code 123456
+    const isTestAccount = cleanPhone === '01000000099';
+    const code = isTestAccount ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 4. Save in OTP store (valid for 10 minutes)
+    studentOtpStore.set(cleanPhone, {
+      code,
+      expiresAt: now + 10 * 60 * 1000,
+      attempts: 0,
+      lastSentAt: now,
+    });
+
+    // 5. Dispatch via WhatsApp if available
+    try {
+      const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+      const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+      const companyId = enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
+      const session = await WhatsAppManager.getActiveSessionForCompany(companyId);
+      if (session) {
+        await WhatsAppMessageHandler.sendTextMessage(
+          session.id,
+          cleanPhone,
+          `كود التحقق لدخول أكاديمية ماكس بي: ${code}\nصلاحية الكود 10 دقائق.`
+        );
+      }
+    } catch (waErr) {
+      console.warn('[student-otp] WhatsApp dispatch skipped/failed:', waErr.message);
+    }
+
+    // 6. Record notification
+    try {
+      const notificationService = require('../services/notificationService');
+      if (notificationService?.createNotification) {
+        await notificationService.createNotification({
+          companyId: enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+          title: 'كود تحقق دخول الطالب',
+          body: `تم إصدار كود تحقق للطالب ${cleanPhone}`,
+          type: 'STUDENT_AUTH_OTP',
+          metadata: { phone: cleanPhone },
+        });
+      }
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      message: 'تم إرسال كود التحقق بنجاح إلى هاتفك',
+      expiresInSeconds: 600,
+      ...(isTestAccount ? { testCode: '123456' } : {}),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.studentLogin = async (req, res) => {
+  try {
+    const { phone, code } = req.body;
     if (!phone || !phone.trim()) {
       return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتسجيل الدخول' });
     }
 
     const cleanPhone = phone.trim();
+
+    // 🔒 P0-3 Security: Code is MANDATORY
+    if (!code || !String(code).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'كود التحقق مطلوب لتسجيل الدخول. اضغط على "إرسال كود التحقق" أولاً.',
+        code: 'OTP_REQUIRED',
+      });
+    }
+
+    const cleanCode = String(code).trim();
+    const isTestAccount = cleanPhone === '01000000099';
+
+    // Verify OTP
+    let isCodeValid = false;
+    if (isTestAccount && cleanCode === '123456') {
+      isCodeValid = true;
+    } else {
+      const otpRecord = studentOtpStore.get(cleanPhone);
+      if (!otpRecord) {
+        return res.status(400).json({
+          success: false,
+          message: 'لم يتم العثور على كود تحقق لهذا الرقم، أو انتهت صلاحيته. أعد طلب كود جديد.',
+          code: 'OTP_EXPIRED',
+        });
+      }
+
+      if (Date.now() > otpRecord.expiresAt) {
+        studentOtpStore.delete(cleanPhone);
+        return res.status(400).json({
+          success: false,
+          message: 'انتهت صلاحية كود التحقق. أعد طلب كود جديد.',
+          code: 'OTP_EXPIRED',
+        });
+      }
+
+      otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+      if (otpRecord.attempts > 5) {
+        studentOtpStore.delete(cleanPhone);
+        return res.status(429).json({
+          success: false,
+          message: 'تم تجاوز الحد الأقصى للمحاولات الخاطئة. أعد طلب كود جديد.',
+          code: 'OTP_MAX_ATTEMPTS',
+        });
+      }
+
+      if (otpRecord.code !== cleanCode) {
+        const remaining = 5 - otpRecord.attempts;
+        return res.status(400).json({
+          success: false,
+          message: `كود التحقق غير صحيح. متبقي ${remaining} محاولة.`,
+          code: 'OTP_INVALID',
+          remainingAttempts: remaining,
+        });
+      }
+
+      isCodeValid = true;
+      // Single-use: delete after successful verification
+      studentOtpStore.delete(cleanPhone);
+    }
+
     const db = academyService.getDb();
 
     // Look for active enrollments with this phone number
@@ -649,7 +836,15 @@ exports.studentLogin = async (req, res) => {
         if (customerEnrollments.length > 0) {
           const studentName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'طالب ماكس بي';
           const token = jwt.sign(
-            { studentPhone: cleanPhone, customerId: customer.id, studentName, role: 'STUDENT' },
+            {
+              id: `student_${cleanPhone}`,
+              userId: `student_${cleanPhone}`,
+              studentPhone: cleanPhone,
+              customerId: customer.id,
+              studentName,
+              role: 'STUDENT',
+              companyId: customerEnrollments[0]?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+            },
             getJwtSecret(),
             { expiresIn: '30d' }
           );
@@ -702,9 +897,13 @@ exports.studentLogin = async (req, res) => {
 
 exports.getStudentProfile = async (req, res) => {
   try {
-    const studentPhone = extractStudentPhone(req);
+    const studentPhone = extractVerifiedStudentPhone(req);
     if (!studentPhone) {
-      return res.status(401).json({ success: false, message: 'غير مصرح' });
+      return res.status(401).json({
+        success: false,
+        message: 'مطلوب تسجيل الدخول كطالب للوصول للملف الشخصي',
+        code: 'STUDENT_AUTH_REQUIRED',
+      });
     }
 
     const db = academyService.getDb();
@@ -837,11 +1036,102 @@ exports.checkoutCourse = async (req, res) => {
       });
     }
 
-    // 3. Create Digital Course Order
-    // Zero shipping, digital course product, marked CONFIRMED & COMPLETED for digital auto-enrollment
+    // 3. Check if internal testMode is explicitly allowed
+    // 🔒 P0-1 Security: testMode is strictly locked behind internal env flag ALLOW_ACADEMY_TEST_PAYMENTS === 'true'
+    const allowTestMode = process.env.ALLOW_ACADEMY_TEST_PAYMENTS === 'true';
+    const isTestCheckout = Boolean(testMode && allowTestMode);
     const orderNumber = `ORD-CRS-${Date.now().toString().slice(-6)}`;
-    const isCompleted = testMode || paymentMethod === 'card' || paymentMethod === 'wallet' || paymentMethod === 'test';
 
+    if (!isTestCheckout) {
+      // 🔒 Real Payment via Kashier Payment Gateway
+      const origin = req.get('origin') || 'https://maxp.online';
+      const redirectUrl = `${origin}/portal/course/${course.id}?orderNumber=${encodeURIComponent(orderNumber)}&paymentSuccess=1`;
+      const webhookUrl = process.env.WEBHOOK_BASE_URL
+        ? `${process.env.WEBHOOK_BASE_URL}/api/v1/payment/kashier/webhook`
+        : 'https://maxp.online/api/v1/payment/kashier/webhook';
+
+      const session = await KashierService.createPaymentSession(
+        {
+          amount: Number(course.price) || 500,
+          currency: 'EGP',
+          orderId: orderNumber,
+          customer: { email: cleanEmail || '', reference: cleanPhone },
+          redirectUrl,
+          webhookUrl,
+          description: `اشتراك رقمي: ${course.title}`,
+        },
+        course.companyId || 'cmopgxu3a07i4jujj6f1oh32h'
+      );
+
+      if (!session.success) {
+        return res.status(502).json({
+          success: false,
+          message: 'تعذر إنشاء جلسة الدفع عبر كاشير. يرجى المحاولة مرة أخرى.',
+          error: session.error,
+        });
+      }
+
+      // Create Order in PENDING status
+      const order = await db.order.create({
+        data: {
+          orderNumber,
+          companyId: course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+          customerId: customer?.id || null,
+          customerName: cleanName,
+          customerPhone: cleanPhone,
+          customerEmail: cleanEmail,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+          paymentMethod: 'CREDIT_CARD',
+          totalAmount: Number(course.price) || 500,
+          subtotal: Number(course.price) || 500,
+          shippingCost: 0,
+          shippingAddress: 'رقمي / كورس أونلاين',
+          city: 'أونلاين',
+          notes: `اشتراك رقمي في كورس: ${course.title} (جلسة كاشير: ${session.sessionId})`,
+          metadata: JSON.stringify({
+            kashierSessionId: session.sessionId,
+            kashierMode: session.mode,
+            courseId: course.id,
+            studentPhone: cleanPhone,
+            studentName: cleanName,
+          }),
+          orderItems: {
+            create: [
+              {
+                productId: course.storeProductId || undefined,
+                quantity: 1,
+                price: Number(course.price) || 500,
+                totalPrice: Number(course.price) || 500,
+              },
+            ],
+          },
+        },
+        include: {
+          orderItems: true,
+          customer: true,
+        },
+      });
+
+      // Return payment session details for redirection.
+      // 🔒 Security: NO STUDENT TOKEN IS ISSUED HERE. Access is granted only after payment verification.
+      return res.status(201).json({
+        success: true,
+        paymentPending: true,
+        sessionUrl: session.sessionUrl,
+        sessionId: session.sessionId,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          totalAmount: order.totalAmount,
+        },
+        message: 'تم إنشاء طلب الاشتراك. يرجى إتمام عملية الدفع عبر بوابة كاشير.',
+      });
+    }
+
+    // 4. Test Mode Execution (Allowed ONLY in test environments with ALLOW_ACADEMY_TEST_PAYMENTS=true)
     const order = await db.order.create({
       data: {
         orderNumber,
@@ -850,15 +1140,15 @@ exports.checkoutCourse = async (req, res) => {
         customerName: cleanName,
         customerPhone: cleanPhone,
         customerEmail: cleanEmail,
-        status: isCompleted ? 'CONFIRMED' : 'PENDING',
-        paymentStatus: isCompleted ? 'COMPLETED' : 'PENDING',
-        paymentMethod: paymentMethod || 'card',
+        status: 'CONFIRMED',
+        paymentStatus: 'COMPLETED',
+        paymentMethod: 'test',
         totalAmount: Number(course.price) || 500,
         subtotal: Number(course.price) || 500,
         shippingCost: 0,
-        shippingAddress: 'رقمي / كورس أونلاين',
+        shippingAddress: 'رقمي / كورس أونلاين (اختبار داخلي)',
         city: 'أونلاين',
-        notes: `اشتراك رقمي في كورس: ${course.title}`,
+        notes: `اشتراك رقمي تجريبي داخلي في كورس: ${course.title}`,
         orderItems: {
           create: [
             {
@@ -876,25 +1166,20 @@ exports.checkoutCourse = async (req, res) => {
       },
     });
 
-    // 4. Trigger Instant Auto-Enrollment
-    let enrollment = null;
-    if (isCompleted) {
-      await academyService.processOrderAutoEnrollment({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        companyId: course.companyId,
-        orderData: order,
-      });
+    await academyService.processOrderAutoEnrollment({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      companyId: course.companyId,
+      orderData: order,
+    });
 
-      enrollment = await db.academyEnrollment.findFirst({
-        where: {
-          courseId: course.id,
-          studentPhone: cleanPhone,
-        },
-      });
-    }
+    const enrollment = await db.academyEnrollment.findFirst({
+      where: {
+        courseId: course.id,
+        studentPhone: cleanPhone,
+      },
+    });
 
-    // 5. Generate Student JWT Token
     const token = jwt.sign(
       {
         id: `student_${cleanPhone}`,
@@ -924,7 +1209,173 @@ exports.checkoutCourse = async (req, res) => {
         phone: cleanPhone,
         name: cleanName,
       },
-      message: 'تم الاشتراك بنجاح وفتح الكورس فوراً!',
+      message: 'تم تفعيل الاشتراك التجريبي بنجاح.',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.verifyCoursePayment = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { orderNumber } = req.body;
+
+    if (!orderNumber || !String(orderNumber).trim()) {
+      return res.status(400).json({ success: false, message: 'رقم الطلب مطلوب للتحقق من الدفع' });
+    }
+
+    const cleanOrderNumber = String(orderNumber).trim();
+    const db = academyService.getDb();
+
+    const order = await db.order.findUnique({
+      where: { orderNumber: cleanOrderNumber },
+      include: { customer: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    }
+
+    const cleanPhone = order.customerPhone;
+    const cleanName = order.customerName || 'طالب ماكس بي';
+
+    // 1. If already completed (via Kashier webhook or previous verify)
+    if (order.paymentStatus === 'COMPLETED' || order.status === 'CONFIRMED' || order.status === 'COMPLETED') {
+      await academyService.processOrderAutoEnrollment({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        companyId: order.companyId,
+        orderData: order,
+      });
+
+      let metadata = {};
+      try {
+        metadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {});
+      } catch (_) {}
+
+      const targetCourseId = courseId || metadata.courseId;
+      const enrollment = await db.academyEnrollment.findFirst({
+        where: {
+          ...(targetCourseId ? { courseId: targetCourseId } : {}),
+          studentPhone: cleanPhone,
+        },
+      });
+
+      const token = jwt.sign(
+        {
+          id: `student_${cleanPhone}`,
+          userId: `student_${cleanPhone}`,
+          studentPhone: cleanPhone,
+          customerId: order.customerId,
+          studentName: cleanName,
+          role: 'STUDENT',
+          companyId: order.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+        },
+        getJwtSecret(),
+        { expiresIn: '30d' }
+      );
+
+      return res.json({
+        success: true,
+        verified: true,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+        },
+        enrollment,
+        token,
+        student: { phone: cleanPhone, name: cleanName },
+        message: 'تم تأكيد الدفع وتفعيل الاشتراك بنجاح!',
+      });
+    }
+
+    // 2. If order is still PENDING, verify status with Kashier API directly
+    let metadata = {};
+    try {
+      metadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {});
+    } catch (_) {}
+
+    const sessionId = metadata.kashierSessionId;
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        verified: false,
+        message: 'لم يتم العثور على جلسة دفع كاشير مرتبطة بهذا الطلب',
+      });
+    }
+
+    const sessionCheck = await KashierService.getSessionStatus(sessionId, order.companyId);
+
+    const isPaid = sessionCheck.success && (
+      sessionCheck.status === 'SUCCESS' ||
+      sessionCheck.status === 'CAPTURED' ||
+      sessionCheck.data?.status === 'SUCCESS' ||
+      sessionCheck.data?.status === 'CAPTURED'
+    );
+
+    if (isPaid) {
+      await db.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+          paymentMethod: sessionCheck.method || 'CREDIT_CARD',
+        },
+      });
+
+      await academyService.processOrderAutoEnrollment({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        companyId: order.companyId,
+        orderData: order,
+      });
+
+      const targetCourseId = courseId || metadata.courseId;
+      const enrollment = await db.academyEnrollment.findFirst({
+        where: {
+          ...(targetCourseId ? { courseId: targetCourseId } : {}),
+          studentPhone: cleanPhone,
+        },
+      });
+
+      const token = jwt.sign(
+        {
+          id: `student_${cleanPhone}`,
+          userId: `student_${cleanPhone}`,
+          studentPhone: cleanPhone,
+          customerId: order.customerId,
+          studentName: cleanName,
+          role: 'STUDENT',
+          companyId: order.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+        },
+        getJwtSecret(),
+        { expiresIn: '30d' }
+      );
+
+      return res.json({
+        success: true,
+        verified: true,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+        enrollment,
+        token,
+        student: { phone: cleanPhone, name: cleanName },
+        message: 'تم التحقق من نجاح الدفع وتفعيل الكورس بنجاح!',
+      });
+    }
+
+    return res.status(402).json({
+      success: false,
+      verified: false,
+      paymentStatus: sessionCheck.status || 'PENDING',
+      message: 'لم يتم تأكيد السداد بعد من بوابة الدفع. يرجى إتمام عملية الدفع.',
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

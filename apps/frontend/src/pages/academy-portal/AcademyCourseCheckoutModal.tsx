@@ -23,7 +23,6 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
   const [studentName, setStudentName] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "test">("card");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -49,8 +48,7 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
           studentName: studentName.trim() || undefined,
           studentPhone: studentPhone.trim(),
           studentEmail: studentEmail.trim() || undefined,
-          paymentMethod,
-          testMode: paymentMethod === "test",
+          paymentMethod: "card",
         }),
       });
 
@@ -59,10 +57,16 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
         throw new Error(data.message || data.error || "فشل إتمام العملية");
       }
 
-      // Save student credentials to localStorage for instant authenticated access
+      // If already enrolled or test token returned immediately
       if (data.token) localStorage.setItem("studentToken", data.token);
       if (data.student?.phone) localStorage.setItem("studentPhone", data.student.phone);
       if (data.student?.name) localStorage.setItem("studentName", data.student.name);
+
+      if (data.paymentPending && data.sessionUrl) {
+        // Redirect to secure Kashier payment gateway
+        window.location.href = data.sessionUrl;
+        return;
+      }
 
       setSuccessData(data);
       setIsSuccess(true);
@@ -202,41 +206,22 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
                 />
               </div>
 
-              {/* Payment Mode Selection */}
+              {/* Payment Mode */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2">طريقة الدفع</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("card")}
-                    className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between gap-2 ${
-                      paymentMethod === "card"
-                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-950 font-bold"
-                        : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <CreditCard className="w-4 h-4 text-indigo-600" />
-                      <div className={`w-3.5 h-3.5 rounded-full border ${paymentMethod === "card" ? "border-indigo-600 bg-indigo-600" : "border-slate-300"}`} />
+                <div className="p-3.5 rounded-2xl border border-indigo-200 bg-indigo-50/40 text-slate-900 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                      <CreditCard className="w-5 h-5" />
                     </div>
-                    <span className="text-xs">بطاقة بنكية / فيزا</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("test")}
-                    className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between gap-2 ${
-                      paymentMethod === "test"
-                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-950 font-bold"
-                        : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      <div className={`w-3.5 h-3.5 rounded-full border ${paymentMethod === "test" ? "border-indigo-600 bg-indigo-600" : "border-slate-300"}`} />
+                    <div>
+                      <span className="text-xs font-bold block text-slate-900">بطاقة بنكية / فيزا / ميزة / محافظ</span>
+                      <span className="text-[11px] text-slate-500 block">بوابة كاشير الآمنة (Kashier Gateway)</span>
                     </div>
-                    <span className="text-xs">دفع تجريبي (اختبار فوري)</span>
-                  </button>
+                  </div>
+                  <div className="w-4 h-4 rounded-full border-2 border-indigo-600 bg-indigo-600 flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -244,7 +229,7 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Guarantees Note */}
             <div className="pt-2 flex items-center gap-2 text-[11px] text-slate-500 border-t border-slate-100">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>دفع رقمي آمن 100% · فتح فوري للمحتوى · لا توجد أي مصاريف شحن أو رسوم خفية.</span>
+              <span>دفع رقمي آمن 100% مشفّر · فتح تلقائي فوري بعد السداد مباشرة.</span>
             </div>
 
             {/* Submit Button */}
@@ -256,11 +241,11 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>جاري معالجة الاشتراك وتفعيل الكورس...</span>
+                  <span>جاري الانتقال لبوابة الدفع كاشير...</span>
                 </>
               ) : (
                 <>
-                  <span>تأكيد الاشتراك ودفع {price} ج.م</span>
+                  <span>الانتقال للدفع الآمن ({price} ج.م)</span>
                   <ArrowLeft className="w-4 h-4" />
                 </>
               )}

@@ -52,16 +52,12 @@ const StudentLessonPlayerPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const studentPhone = localStorage.getItem("studentPhone") || "";
         const studentToken = localStorage.getItem("studentToken") || "";
         const headers: Record<string, string> = {};
         if (studentToken) headers["Authorization"] = `Bearer ${studentToken}`;
-        if (studentPhone) headers["x-student-phone"] = studentPhone;
-
-        const queryParam = studentPhone ? `?phone=${encodeURIComponent(studentPhone)}` : "";
 
         // Fetch lesson content
-        const res = await fetch(`/api/v1/academy/lessons/${lessonId}/content${queryParam}`, { headers });
+        const res = await fetch(`/api/v1/academy/lessons/${lessonId}/content`, { headers });
         const data = await res.json();
         if (!data.success) {
           throw new Error(data.error || data.message || "تعذر فتح محتوى الدرس");
@@ -71,7 +67,7 @@ const StudentLessonPlayerPage: React.FC = () => {
 
         // Fetch course outline for the sidebar syllabus
         const targetCourseId = courseId || "cmuzmwaxs07r2juml2v04xon5";
-        const outlineRes = await fetch(`/api/v1/academy/courses/${targetCourseId}/outline${queryParam}`, { headers });
+        const outlineRes = await fetch(`/api/v1/academy/courses/${targetCourseId}/outline`, { headers });
         const outlineData = await outlineRes.json();
         if (outlineData.success && Array.isArray(outlineData.modules)) {
           setOutlineModules(outlineData.modules);
@@ -90,16 +86,14 @@ const StudentLessonPlayerPage: React.FC = () => {
     if (!lessonId) return;
     try {
       setIsCompleting(true);
-      const studentPhone = localStorage.getItem("studentPhone") || "";
       const studentToken = localStorage.getItem("studentToken") || "";
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (studentToken) headers["Authorization"] = `Bearer ${studentToken}`;
-      if (studentPhone) headers["x-student-phone"] = studentPhone;
 
       const res = await fetch(`/api/v1/academy/lessons/${lessonId}/complete`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ phone: studentPhone }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.success) {

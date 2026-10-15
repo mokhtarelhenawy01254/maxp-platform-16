@@ -3,8 +3,26 @@ const router = express.Router();
 const controller = require('../controller/academyController');
 const { authenticateToken, optionalAuth } = require('../utils/verifyToken');
 const checkAppAccess = require('../middleware/checkAppAccess');
+const rateLimit = require('express-rate-limit');
 
 const instructorAuth = [authenticateToken, checkAppAccess('academy-app')];
+
+// 🚦 Rate limiters for Student Portal
+const studentAuthLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'تجاوزت الحد المسموح لمحاولات الدخول. حاول بعد عدة دقائق.' },
+});
+
+const studentContentLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'تجاوزت الحد المسموح لتصفح المحتوى. حاول بعد دقيقة.' },
+});
 
 // -------------------------------------------------------------
 // Instructor / Company Course Management (Protected)
@@ -36,19 +54,21 @@ router.get('/courses/:id/students', instructorAuth, controller.getStudentsProgre
 router.get('/catalog', optionalAuth, controller.getPublishedCatalog);
 router.get('/my-courses', optionalAuth, controller.getMyCourses);
 router.get('/courses/:id/outline', optionalAuth, controller.getCourseOutline);
-router.get('/lessons/:id/content', optionalAuth, controller.getLessonContent);
+router.get('/lessons/:id/content', studentContentLimiter, optionalAuth, controller.getLessonContent);
 router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent);
 
 // Student Authentication & Clean Digital Checkout
-router.post('/student/login', controller.studentLogin);
-router.get('/student/me', optionalAuth, controller.getStudentProfile);
+router.post('/student/send-code', studentAuthLimiter, controller.sendStudentLoginCode);
+router.post('/student/login', studentAuthLimiter, controller.studentLogin);
+router.get('/student/me', authenticateToken, controller.getStudentProfile);
 router.post('/courses/:courseId/checkout', controller.checkoutCourse);
+router.post('/courses/:courseId/verify-payment', controller.verifyCoursePayment);
 
-// Student Actions
-router.post('/lessons/:id/complete', optionalAuth, controller.completeLesson);
-router.post('/lessons/:id/submit-quiz', optionalAuth, controller.submitQuiz);
-router.post('/lessons/:id/submit-exercise', optionalAuth, controller.submitExercise);
-router.post('/lessons/:id/coach-chat', optionalAuth, controller.askCoach);
+// Student Actions (Protected by Student JWT Token)
+router.post('/lessons/:id/complete', authenticateToken, controller.completeLesson);
+router.post('/lessons/:id/submit-quiz', authenticateToken, controller.submitQuiz);
+router.post('/lessons/:id/submit-exercise', authenticateToken, controller.submitExercise);
+router.post('/lessons/:id/coach-chat', authenticateToken, controller.askCoach);
 
 // Instructor Submissions Review
 router.get('/courses/:id/submissions', instructorAuth, controller.getCourseSubmissions);
