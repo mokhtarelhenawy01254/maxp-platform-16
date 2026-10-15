@@ -104,7 +104,7 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
 
       {/* Footer Info */}
       <div className="border-t border-[#2c2f35] p-3 text-[10px] text-[#8a8f96] leading-relaxed">
-        <span>💡 يتم حفظ أي تعديلات على الصفحة المحددة تلقائيًا ضمن هوية متجرك.</span>
+        <span>💡 يتم حفظ أي تعديلات تلقائيًا كمسودة في هوية متجرك، واستخدم زر «نشر» لاعتمادها على المتجر الحي.</span>
       </div>
     </div>
   );

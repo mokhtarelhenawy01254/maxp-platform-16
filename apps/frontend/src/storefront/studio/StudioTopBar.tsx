@@ -112,22 +112,31 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
           </button>
         )}
 
-        {/* Autosave badge (Desktop) */}
-        <div className="hidden lg:flex items-center gap-1.5 rounded-lg bg-[#1e2430] px-2.5 py-1 text-[11px] font-medium text-[#8fa4c8]">
+        {/* Autosave badge (Responsive - compact on mobile, full on desktop) */}
+        <div
+          className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-[#1e2430] px-1.5 sm:px-2.5 py-1 text-[11px] font-medium text-[#8fa4c8]"
+          title={
+            saving
+              ? "جاري الحفظ…"
+              : hasPendingChanges
+              ? "تعديلات غير منشورة"
+              : "تم الحفظ ✓"
+          }
+        >
           {saving ? (
             <>
               <ArrowPathIcon className="h-3.5 w-3.5 animate-spin text-[#3b82f6]" />
-              <span>جاري الحفظ…</span>
+              <span className="hidden sm:inline">جاري الحفظ…</span>
             </>
           ) : hasPendingChanges ? (
             <>
               <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-              <span>تعديلات غير محفوظة</span>
+              <span className="hidden sm:inline text-amber-300">تعديلات غير منشورة</span>
             </>
           ) : (
             <>
               <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-400" />
-              <span>☁ تم الحفظ التلقائي</span>
+              <span className="hidden sm:inline text-emerald-300">تم الحفظ ✓</span>
             </>
           )}
         </div>

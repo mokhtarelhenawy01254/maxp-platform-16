@@ -68,6 +68,19 @@ const StorefrontVisualEditorPage: React.FC = () => {
 
   const isInitialMountRef = useRef(true);
   const isInitializingRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const needsResaveRef = useRef(false);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const storefrontSettingsRef = useRef<StorefrontSettings | null>(null);
+  storefrontSettingsRef.current = storefrontSettings;
+
+  const activeThemeIdRef = useRef(DEFAULT_STOREFRONT_THEME_ID);
+  const savedTokensSignatureRef = useRef(savedTokensSignature);
+  savedTokensSignatureRef.current = savedTokensSignature;
+
+  const savedThemeIdRef = useRef(savedThemeId);
+  savedThemeIdRef.current = savedThemeId;
 
   const loadSettings = useCallback(async (options?: { silent?: boolean }) => {
     if (isInitializingRef.current) return;
@@ -103,6 +116,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
     queryThemeId && STOREFRONT_THEME_PRESETS[queryThemeId]
       ? queryThemeId
       : resolveStorefrontThemeId(storefrontSettings);
+  activeThemeIdRef.current = activeStorefrontThemeId;
 
   const currentTokensSignature = JSON.stringify(storefrontSettings?.designTokens || {});
   const currentContentSignature = getStorefrontContentSignature(storefrontSettings);
@@ -131,47 +145,173 @@ const StorefrontVisualEditorPage: React.FC = () => {
     activeStorefrontThemeId,
   ]);
 
-  const handleSave = async () => {
-    if (!storefrontSettings) return;
+  const performSave = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (isSavingRef.current) {
+        needsResaveRef.current = true;
+        return;
+      }
 
-    setSaving(true);
-    try {
+      const currentSettings = storefrontSettingsRef.current;
+      if (!currentSettings) return;
+
+      const currentThemeId = activeThemeIdRef.current;
       const tokensToSave = {
-        ...(storefrontSettings.designTokens || {}),
-        themeId: activeStorefrontThemeId,
+        ...(currentSettings.designTokens || {}),
+        themeId: currentThemeId,
       };
 
-      await storefrontSettingsService.updateSettings({
-        themeId: activeStorefrontThemeId,
-        designTokens: tokensToSave,
-      });
+      const payloadSignature = JSON.stringify(tokensToSave);
+      if (
+        payloadSignature === savedTokensSignatureRef.current &&
+        currentThemeId === savedThemeIdRef.current
+      ) {
+        return;
+      }
 
-      setSavedThemeId(activeStorefrontThemeId);
-      setSavedTokensSignature(JSON.stringify(tokensToSave));
-      setSavedContentSignature(getStorefrontContentSignature(storefrontSettings));
-      setSavedPageSignature(getStorefrontPageSignature(storefrontSettings));
-      setStorefrontSettings((cur) =>
-        cur
-          ? {
-              ...cur,
-              themeId: activeStorefrontThemeId,
-              designTokens: tokensToSave,
-            }
-          : cur,
-      );
-      toast.success("تم حفظ تعديلات المتجر بنجاح ✨");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "حدث خطأ أثناء حفظ التعديلات"));
-    } finally {
-      setSaving(false);
+      isSavingRef.current = true;
+      setSaving(true);
+      needsResaveRef.current = false;
+
+      try {
+        await storefrontSettingsService.updateSettings({
+          themeId: currentThemeId,
+          designTokens: tokensToSave,
+        });
+
+        savedThemeIdRef.current = currentThemeId;
+        savedTokensSignatureRef.current = payloadSignature;
+        setSavedThemeId(currentThemeId);
+        setSavedTokensSignature(payloadSignature);
+        setSavedContentSignature(getStorefrontContentSignature(currentSettings));
+        setSavedPageSignature(getStorefrontPageSignature(currentSettings));
+        setStorefrontSettings((cur) =>
+          cur
+            ? {
+                ...cur,
+                themeId: currentThemeId,
+                designTokens: tokensToSave,
+              }
+            : cur,
+        );
+
+        if (!options?.silent) {
+          toast.success("تم حفظ تعديلات المتجر بنجاح ✨");
+        }
+      } catch (error) {
+        if (!options?.silent) {
+          toast.error(getErrorMessage(error, "حدث خطأ أثناء حفظ التعديلات"));
+        } else {
+          console.error("Storefront editor autosave error:", error);
+        }
+      } finally {
+        isSavingRef.current = false;
+        setSaving(false);
+
+        if (needsResaveRef.current) {
+          needsResaveRef.current = false;
+          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+          autosaveTimerRef.current = setTimeout(() => {
+            autosaveTimerRef.current = null;
+            void performSave({ silent: true });
+          }, 2500);
+        }
+      }
+    },
+    [],
+  );
+
+  const flushSave = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      return performSave(options);
+    },
+    [performSave],
+  );
+
+  // Debounced Autosave: Save automatically after ~2.5s of idle time without toast spam
+  useEffect(() => {
+    if (loading || !storefrontSettings || isInitialMountRef.current) {
+      return;
     }
+
+    if (!hasPendingChanges) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      autosaveTimerRef.current = null;
+      void performSave({ silent: true });
+    }, 2500);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [
+    storefrontSettings?.designTokens,
+    activeStorefrontThemeId,
+    hasPendingChanges,
+    loading,
+    performSave,
+  ]);
+
+  // Leave guard: warn on refresh/close if pending changes exist in autosave window
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasPendingChanges || isSavingRef.current || autosaveTimerRef.current !== null) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [hasPendingChanges]);
+
+  const handleSave = () => flushSave({ silent: false });
+
+  const handleBack = async () => {
+    if (hasPendingChanges || autosaveTimerRef.current !== null) {
+      await flushSave({ silent: true });
+    }
+    navigate("/settings/store");
   };
 
   const handleDiscard = async () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
     setLoading(true);
     try {
       const fresh = await storefrontSettingsService.getSettings();
-      setStorefrontSettings(fresh.data);
+      const freshData = fresh.data;
+      setStorefrontSettings(freshData);
+      setSavedThemeId(resolveStorefrontThemeId(freshData));
+      setSavedTokensSignature(JSON.stringify(freshData?.designTokens || {}));
+      setSavedContentSignature(getStorefrontContentSignature(freshData));
+      setSavedPageSignature(getStorefrontPageSignature(freshData));
       toast.info("تم إلغاء التعديلات والعودة للنسخة المحفوظة 🔄");
     } catch {
       window.location.reload();
@@ -222,7 +362,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       previewUrl={storefrontPreviewUrl || undefined}
       onSave={handleSave}
       onDiscard={handleDiscard}
-      onBack={() => navigate("/settings/store")}
+      onBack={handleBack}
       onOpenPreview={handleOpenPreview}
       onChange={(nextDesignTokens) => {
         setStorefrontSettings((cur) =>
