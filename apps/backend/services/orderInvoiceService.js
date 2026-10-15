@@ -304,6 +304,17 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
     }
 
+    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('./accountingAutoPostingService');
+      AccountingAutoPostingService.postSalesInvoice(order.companyId, invoice.id, {
+        userId,
+        invoiceData: invoice,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Sales Invoice async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Sales Invoice hook error:', autoErr.message);
+    }
+
     return {
       success: true,
       invoice,

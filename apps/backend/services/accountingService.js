@@ -127,6 +127,26 @@ class AccountingService {
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE UNIQUE INDEX IF NOT EXISTS "accounting_settings_companyId_key" ON "accounting_settings"("companyId");
+
+        CREATE TABLE IF NOT EXISTS "unposted_entries" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "sourceType" TEXT NOT NULL,
+          "sourceId" TEXT NOT NULL,
+          "documentNo" TEXT,
+          "amount" DECIMAL(12,2) NOT NULL DEFAULT 0.0,
+          "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "reason" TEXT NOT NULL,
+          "errorDetails" TEXT,
+          "payload" JSONB,
+          "status" TEXT NOT NULL DEFAULT 'PENDING',
+          "retriedAt" TIMESTAMP(3),
+          "retriedById" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS "unposted_entries_companyId_status_idx" ON "unposted_entries"("companyId", "status");
+        CREATE INDEX IF NOT EXISTS "unposted_entries_companyId_sourceType_sourceId_idx" ON "unposted_entries"("companyId", "sourceType", "sourceId");
       `);
     } catch (err) {
       // In testing environments with mock Prisma clients, $executeRawUnsafe may not exist or fail gracefully
@@ -363,6 +383,11 @@ class AccountingService {
     });
 
     return period ? period.status : 'OPEN';
+  }
+
+  static async isPeriodClosed(companyId, date = new Date()) {
+    const status = await this.checkPeriodStatus(companyId, date);
+    return status === 'CLOSED';
   }
 
   static async openPeriod(companyId, year, month, userId = null) {

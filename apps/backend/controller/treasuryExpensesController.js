@@ -777,6 +777,17 @@ exports.depositCapital = async (req, res) => {
       };
     });
 
+    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.postCapitalDeposit(companyId, result.capitalTransaction.id, {
+        userId,
+        capitalData: result.capitalTransaction,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Capital async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Capital hook error:', autoErr.message);
+    }
+
     return res.status(201).json({ success: true, message: 'تم إيداع رأس المال بنجاح وتغذية الخزينة', data: result });
   } catch (error) {
     console.error('[treasury] depositCapital error:', error);
@@ -873,6 +884,17 @@ exports.reverseCapitalDeposit = async (req, res) => {
         accountName: account.name
       };
     });
+
+    // Accounting Auto-Posting Reversal Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.reverseDocument(companyId, 'CAPITAL', result.reversedCapitalTransaction.id, {
+        userId,
+        reason: `عكس إيداع رأس مال: ${result.reversedCapitalTransaction.referenceNumber || result.reversedCapitalTransaction.id}`,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Capital reversal async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Capital reversal hook error:', autoErr.message);
+    }
 
     return res.json({
       success: true,
@@ -1143,6 +1165,17 @@ exports.createExpense = async (req, res) => {
       };
     });
 
+    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.postExpense(companyId, result.expense.id, {
+        userId,
+        expenseData: result.expense,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Expense async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Expense hook error:', autoErr.message);
+    }
+
     return res.status(201).json({ success: true, message: 'تم تسجيل النفقة بنجاح', data: result });
   } catch (error) {
     console.error('[treasury] createExpense error:', error);
@@ -1334,6 +1367,17 @@ exports.deleteExpense = async (req, res) => {
 
       return { id, expenseNumber: expense.expenseNumber };
     });
+
+    // Accounting Auto-Posting Reversal Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.reverseDocument(companyId, 'EXPENSE', id, {
+        userId,
+        reason: `حذف النفقة رقم ${result.expenseNumber || id}`,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Expense reversal async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Expense reversal hook error:', autoErr.message);
+    }
 
     return res.json({ success: true, message: 'تم حذف النفقة وإعادة رصيدها للخزينة بنجاح', data: result });
   } catch (error) {

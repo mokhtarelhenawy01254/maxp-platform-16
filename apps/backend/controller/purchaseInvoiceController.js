@@ -209,6 +209,17 @@ exports.createPurchaseInvoice = async (req, res) => {
       );
     }
 
+    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.postPurchaseInvoice(companyId, invoice.id, {
+        userId,
+        invoiceData: invoice,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Purchase Invoice async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Purchase Invoice hook error:', autoErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: paidAmount >= totalAmount ? "تم إنشاء الفاتورة وسدادها بنجاح" : "تم إنشاء الفاتورة بنجاح",

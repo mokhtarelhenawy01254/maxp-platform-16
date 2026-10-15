@@ -19,13 +19,13 @@ require.cache[sharedDbPath] = {
   filename: sharedDbPath,
   loaded: true,
   exports: {
-    getSharedPrismaClient: () => currentPrisma,
+    getSharedPrismaClient: () => global.__testPrisma || currentPrisma,
   },
 };
 
 if (typeof jest !== 'undefined') {
   jest.mock('../services/sharedDatabase', () => ({
-    getSharedPrismaClient: () => currentPrisma,
+    getSharedPrismaClient: () => global.__testPrisma || currentPrisma,
   }));
 }
 
@@ -313,6 +313,7 @@ describe('Accounting Engine & General Ledger Test Suite (Wave 1)', () => {
   beforeEach(() => {
     const store = createInMemoryStore();
     currentPrisma = store.prisma;
+    global.__testPrisma = currentPrisma;
   });
 
   // --------------------------------------------------------------------------

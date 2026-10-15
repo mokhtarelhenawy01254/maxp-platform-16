@@ -144,6 +144,17 @@ exports.createSupplierPayment = async (req, res) => {
       console.warn('Warning: Financial posting failed for supplier payment:', finErr.message);
     }
 
+    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
+    try {
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      AccountingAutoPostingService.postSupplierPayment(companyId, payment.id, {
+        userId,
+        paymentData: payment,
+      }).catch((err) => console.error('[Accounting Auto-Posting] Supplier Payment async error:', err.message));
+    } catch (autoErr) {
+      console.error('[Accounting Auto-Posting] Supplier Payment hook error:', autoErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'تم تسجيل الدفعة بنجاح',

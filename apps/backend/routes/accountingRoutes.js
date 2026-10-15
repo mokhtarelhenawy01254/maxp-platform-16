@@ -45,4 +45,9 @@ router.get('/reports/profit-loss', controller.getProfitAndLoss);
 router.get('/reports/balance-sheet', controller.getBalanceSheet);
 router.get('/reports/vat', controller.getVatReport);
 
+// 7. Auto-Posting Unposted Queue
+router.get('/unposted', controller.listUnpostedQueue);
+router.post('/unposted/:id/retry', controller.retryUnpostedEntry);
+router.post('/unposted/retry-all', controller.retryAllUnposted);
+
 module.exports = router;

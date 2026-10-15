@@ -137,3 +137,26 @@ model AccountingSettings {
 
   @@map("accounting_settings")
 }
+
+/// Unposted / Deferred Queue for Auto-Posting (طابور العمليات المعلقة)
+model UnpostedEntry {
+  id           String    @id @default(cuid())
+  companyId    String
+  sourceType   String
+  sourceId     String
+  documentNo   String?
+  amount       Decimal   @default(0.0) @db.Decimal(12, 2)
+  date         DateTime  @default(now())
+  reason       String
+  errorDetails String?
+  payload      Json?
+  status       String    @default("PENDING")
+  retriedAt    DateTime?
+  retriedById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([companyId, sourceType, sourceId])
+  @@map("unposted_entries")
+}

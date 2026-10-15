@@ -301,6 +301,43 @@ class AccountingController {
       res.status(error.statusCode || 500).json({ success: false, message: error.message });
     }
   }
+
+  // ==========================================================================
+  // 7. Auto-Posting Unposted Queue
+  // ==========================================================================
+
+  static async listUnpostedQueue(req, res) {
+    try {
+      const { companyId } = req.user;
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      const items = await AccountingAutoPostingService.listUnpostedQueue(companyId, req.query);
+      res.json({ success: true, data: items });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async retryUnpostedEntry(req, res) {
+    try {
+      const { companyId, id: userId } = req.user;
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      const result = await AccountingAutoPostingService.retryUnpostedEntry(companyId, req.params.id, { userId });
+      res.json({ success: true, data: result, message: 'تم إعادة معالجة القيد المعلق بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async retryAllUnposted(req, res) {
+    try {
+      const { companyId, id: userId } = req.user;
+      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+      const result = await AccountingAutoPostingService.retryAllPending(companyId, { userId });
+      res.json({ success: true, data: result, message: `تمت معالجة ${result.processed} من إجمالي ${result.total} قيد معلق` });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = AccountingController;

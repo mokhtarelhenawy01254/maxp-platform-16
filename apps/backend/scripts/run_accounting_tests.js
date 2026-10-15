@@ -11,20 +11,34 @@ global.describe = (name, fn) => {
   fn();
 };
 
-let beforeEachFn = null;
+let currentBeforeEach = null;
 global.beforeEach = (fn) => {
-  beforeEachFn = fn;
+  currentBeforeEach = fn;
 };
 
 const passedTests = [];
 const failedTests = [];
+const testsQueue = [];
 
 global.test = (name, fn) => {
-  // Push to queue to run sequentially
-  testsQueue.push({ name, fn });
+  // Push to queue with current suite's beforeEach
+  testsQueue.push({ name, fn, beforeEach: currentBeforeEach });
 };
 
-const testsQueue = [];
+global.jest = {
+  mock: () => {},
+  spyOn: (obj, method) => {
+    const original = obj[method];
+    const calls = [];
+    const spy = function (...args) {
+      calls.push(args);
+      return original.apply(this, args);
+    };
+    spy.mock = { calls };
+    obj[method] = spy;
+    return spy;
+  },
+};
 
 global.expect = (actual) => ({
   toBe: (expected) => {
@@ -36,6 +50,9 @@ global.expect = (actual) => ({
   },
   toHaveLength: (len) => {
     assert.strictEqual(actual.length, len);
+  },
+  toHaveBeenCalledTimes: (count) => {
+    assert.strictEqual(actual.mock?.calls?.length, count);
   },
   not: {
     toBe: (expected) => {
@@ -61,16 +78,17 @@ global.expect = (actual) => ({
   },
 });
 
-// Load test suite
+// Load test suites
 require('../__tests__/accounting.test.js');
+require('../__tests__/accountingAutoPosting.test.js');
 
 // Execute tests sequentially
 (async () => {
-  console.log('🚀 Running Accounting Engine Test Suite...\n');
+  console.log('🚀 Running Accounting Engine & Auto-Posting Test Suites...\n');
   const startTime = Date.now();
 
   for (const t of testsQueue) {
-    if (beforeEachFn) beforeEachFn();
+    if (t.beforeEach) await t.beforeEach();
     try {
       await t.fn();
       passedTests.push(t.name);
