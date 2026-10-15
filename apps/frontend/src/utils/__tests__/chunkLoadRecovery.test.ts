@@ -40,7 +40,23 @@ describe("chunkLoadRecovery", () => {
     ).toBe(true);
   });
 
+  it("detects dynamic import undefined default chunk failure", () => {
+    expect(
+      isChunkLoadError(
+        new TypeError("Cannot read properties of undefined (reading 'default')"),
+      ),
+    ).toBe(true);
+    expect(
+      isChunkLoadError(
+        new TypeError("Cannot read property 'default' of undefined"),
+      ),
+    ).toBe(true);
+  });
+
   it("ignores unrelated runtime errors", () => {
+    expect(isChunkLoadError(new Error("Cannot read properties of undefined (reading 'id')"))).toBe(
+      false,
+    );
     expect(isChunkLoadError(new Error("Cannot read properties of undefined"))).toBe(
       false,
     );

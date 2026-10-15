@@ -240,7 +240,7 @@ def cmd_claim(args):
         "task": args.task,
         "scope": args.scope or "",
         "repo": str(root),
-        "started": lk.get("started", now) if (lk and lk.get("agent") == agent) else now,
+        "started": lk.get("started", now) if (lk and lk.get("agent") == agent and lk.get("task") == args.task) else now,
         "heartbeat": now,
         "ttl_min": int(args.ttl),
         "host": socket.gethostname(),
@@ -354,7 +354,7 @@ def cmd_guard(args):
         if pp.returncode == 0:
             head = (run_git(root, ["rev-parse", "--short", "HEAD"]).stdout or "").strip()
             log_event(agent=agent, event="push", repo=str(root), branch=branch, commit=head,
-                      task=(lk or {}).get("task"))
+                      task=(lk or {}).get("task") if (lk and lk.get("agent") == agent) else None)
             print(f"PUSH OK: origin/{branch} is now at {head}.")
             return 0
         print("push rejected (remote moved again) — refetching and retrying after rebase ...")

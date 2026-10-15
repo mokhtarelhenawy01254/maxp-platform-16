@@ -18,8 +18,10 @@ interface StudioPropertyInspectorProps {
   selectedSectionKey: string;
   sectionConfig: any;
   deviceMode?: StudioDeviceMode;
+  initialTab?: StudioInspectorTab;
   onClose: () => void;
   onUpdateField: (field: string, value: any) => void;
+  onBatchUpdateFields?: (updates: Record<string, any>) => void;
   onOpenImagePicker?: () => void;
   onSwitchDevice?: (device: StudioDeviceMode) => void;
 }
@@ -28,12 +30,20 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   selectedSectionKey,
   sectionConfig,
   deviceMode = "desktop",
+  initialTab = "design",
   onClose,
   onUpdateField,
+  onBatchUpdateFields,
   onOpenImagePicker,
   onSwitchDevice = () => {},
 }) => {
-  const [activeTab, setActiveTab] = useState<StudioInspectorTab>("design");
+  const [activeTab, setActiveTab] = useState<StudioInspectorTab>(initialTab);
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   if (!selectedSectionKey || !sectionConfig) {
     return (
@@ -72,7 +82,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
     { id: "design", label: "تصميم", icon: PaintBrushIcon },
     { id: "layout", label: "تخطيط", icon: Squares2X2Icon },
     { id: "content", label: "محتوى", icon: DocumentTextIcon },
-    { id: "interactions", label: "تفاعلات", icon: SparklesIcon },
+    { id: "interactions", label: "تجاوب", icon: SparklesIcon },
   ];
 
   return (
@@ -155,6 +165,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
             sectionType={sectionType}
             settings={settings}
             onUpdateField={onUpdateField}
+            onBatchUpdateFields={onBatchUpdateFields}
             onSwitchDevice={onSwitchDevice}
           />
         )}

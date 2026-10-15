@@ -123,6 +123,7 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 5. **منع التكرار**: قبل البدء راجع `status` + آخر commits + `log` — لا تعد شغلًا بدأه/أنهاه إيجينت آخر؛ عند الشك طابق مع المستخدم.
 6. **QA متعدد الوكلاء**: كل تاسك جوهري يمر على أكثر من إيجينت (تنفيذ + مراجعة diff/تفتيش) قبل اعتباره منتهيًا — طبقًا لقاعدة الـ Multi-Agent أعلاه.
 7. الحالة محلية لكل جهاز: `~/.agent-coordination/` (أقفال + لوج). البروتوكول الكامل: `docs/agent-coordination.md`.
+8. **الـ staging في شجرة مشتركة:** مسارات صريحة بالاسم فقط — ممنوع `git add -A` / `git add .` / `git checkout .` / `git restore .` / `git reset --hard` / `git stash` بدون قفل التنسيق (خطوة عشوائية واحدة يمكن أن تدمج أو تدمر شغلًا غير ملتزم لإيجينت آخر على نفس الشجرة).
 
 ## 📐 Rule: Ergonomic Workspace Design (Ban Wasted Space, Explanatory Clutter, and Single-Use Permanent Columns)
 - **Ban Permanent Columns for Single-Use Tools**: Never allocate a permanent screen column/panel (eating 20-30%+ of screen width) to an action that the user performs only once per session (e.g. selecting a product, browsing historical chat sessions, or picking initial filters). Such tools MUST be placed inside top-bar comboboxes, dropdowns, or collapsible slide-over sheets/modals that disappear immediately after selection, reserving 75-85%+ of the screen for the active workspace and live canvas.

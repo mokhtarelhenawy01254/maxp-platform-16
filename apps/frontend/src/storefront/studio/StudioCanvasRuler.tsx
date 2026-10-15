@@ -36,7 +36,7 @@ export const StudioCanvasRuler: React.FC<StudioCanvasRulerProps> = ({
         className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 border-x-2 border-[#2b6cf6] bg-[rgba(43,108,246,0.18)]"
       >
         <span className="absolute top-0.5 start-2 text-[8.5px] font-bold text-[#8fa4c8] bg-[#17181c]/80 px-1 rounded">
-          {activeWidth}px*
+          {activeWidth}px
         </span>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -22,9 +22,16 @@ import { StudioCanvasStage } from "./StudioCanvasStage";
 import { StudioSortableSection } from "./StudioSortableSection";
 import { StudioStatusBar } from "./StudioStatusBar";
 import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
+import { StudioPagesPanel } from "./StudioPagesPanel";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 
-import type { StudioDeviceMode, StudioLeftRailTab, StudioZoomLevel } from "./StudioTypes";
+import type {
+  StudioDeviceMode,
+  StudioLeftRailTab,
+  StudioLeftPanelTab,
+  StudioZoomLevel,
+  StudioInspectorTab,
+} from "./StudioTypes";
 import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
 import type { StorefrontThemeInput } from "../engine/themeResolver";
@@ -64,6 +71,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [zoomLevel, setZoomLevel] = useState<StudioZoomLevel>(1);
   const [showSpacingOverlay, setShowSpacingOverlay] = useState<boolean>(true);
   const [leftRailTab, setLeftRailTab] = useState<StudioLeftRailTab>("elements");
+  const [layersPanelTab, setLayersPanelTab] = useState<StudioLeftPanelTab>("layers");
   const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState<boolean>(() =>
     typeof window !== "undefined" ? window.innerWidth >= 1024 : true
   );
@@ -96,6 +104,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDeleteSection,
     handleAddSection,
     handleUpdateSectionField,
+    handleBatchUpdateSectionFields,
   } = useStorefrontStudioState({
     themeId,
     externalDesignTokens,
@@ -108,6 +117,25 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const [inspectorTab, setInspectorTab] = useState<StudioInspectorTab>("design");
+
+  const pageSectionCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      home: 0,
+      shop: 0,
+      pdp: 0,
+      cart: 0,
+      checkout: 0,
+    };
+    if (previewTheme && previewTheme.pages) {
+      Object.entries(previewTheme.pages).forEach(([key, page]: [string, any]) => {
+        counts[key] = Array.isArray(page?.sections) ? page.sections.length : 0;
+      });
+    }
+    counts[activePageKey] = activeSections.length;
+    return counts;
+  }, [previewTheme, activePageKey, activeSections]);
 
   const themeName = STOREFRONT_THEME_PRESETS[themeId]?.name || themeId;
   const selectedLabel = selectedSectionConfig
@@ -155,74 +183,106 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onOpenPreview={onOpenPreview}
       />
 
-      {/* 2. Main Studio Workspace Chassis */}
-      <div className="relative flex flex-1 h-[calc(100vh-52px-30px)] w-full overflow-hidden">
-        {/* Leftmost Iconic Rail */}
-        <StudioLeftRail
-          activeTab={leftRailTab}
-          isPanelOpen={isLeftDrawerOpen}
-          onSelectTab={(tab) => {
-            setLeftRailTab(tab);
-            setIsLeftDrawerOpen(true);
-            if (tab === "media") setShowImagePickerModal(true);
-            if (tab === "ai") setIsInspectorOpen(true);
-          }}
-          onToggleTab={() => setIsLeftDrawerOpen((prev) => !prev)}
-        />
+      {/* 2. Main Studio Workspace Chassis with unified DnD */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="relative flex flex-1 h-[calc(100vh-52px-30px)] w-full overflow-hidden">
+          {/* Leftmost Iconic Rail */}
+          <StudioLeftRail
+            activeTab={leftRailTab}
+            isPanelOpen={isLeftDrawerOpen}
+            isAiActive={isInspectorOpen && inspectorTab === "interactions"}
+            onSelectTab={(tab) => {
+              if (tab === "media") {
+                setShowImagePickerModal(true);
+                return;
+              }
+              if (tab === "ai") {
+                setInspectorTab("interactions");
+                setIsInspectorOpen(true);
+                return;
+              }
+              if (tab === "settings") {
+                setLeftRailTab("styles");
+                setLayersPanelTab("theme");
+                setIsLeftDrawerOpen(true);
+                return;
+              }
+              setLeftRailTab(tab);
+              setIsLeftDrawerOpen(true);
+              if (tab === "styles") setLayersPanelTab("theme");
+              if (tab === "layers") setLayersPanelTab("layers");
+            }}
+            onToggleTab={() => setIsLeftDrawerOpen((prev) => !prev)}
+          />
 
-        {/* Left Expandable Panel (Elements / Layers) - Slide-over on mobile, inline on desktop */}
-        {isLeftDrawerOpen && (
-          <>
-            {/* Mobile Backdrop */}
-            <div
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
-              onClick={() => setIsLeftDrawerOpen(false)}
-            />
-            <div className="fixed inset-y-0 start-0 z-50 flex shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:shadow-none h-full shrink-0">
-              {leftRailTab === "elements" && (
-                <StudioElementsPanel
-                  onAddSection={(type) => {
-                    handleAddSection(type);
-                    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                      setIsLeftDrawerOpen(false);
-                    }
-                    setIsInspectorOpen(true);
-                  }}
-                  onOpenFullCatalog={() => setShowCatalogModal(true)}
-                  onClose={() => setIsLeftDrawerOpen(false)}
-                />
-              )}
-
-              {leftRailTab === "layers" && (
-                <div className="w-72 max-w-[85vw] h-full flex flex-col bg-[#202226] border-e border-[#0c0d0f]">
-                  <StudioLayersDrawer
-                    sections={activeSections}
-                    selectedSectionKey={selectedSectionKey}
-                    leftPanelTab="layers"
-                    designTokens={currentDesignTokens}
-                    onSelectSection={(key) => {
-                      setSelectedSectionKey(key);
+          {/* Left Expandable Panel (Elements / Layers / Theme / Pages) */}
+          {isLeftDrawerOpen && (
+            <>
+              {/* Mobile Backdrop */}
+              <div
+                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+                onClick={() => setIsLeftDrawerOpen(false)}
+              />
+              <div className="fixed inset-y-0 start-0 z-50 flex shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:shadow-none h-full shrink-0">
+                {leftRailTab === "elements" && (
+                  <StudioElementsPanel
+                    onAddSection={(type) => {
+                      handleAddSection(type);
                       if (typeof window !== "undefined" && window.innerWidth < 1024) {
                         setIsLeftDrawerOpen(false);
                       }
                       setIsInspectorOpen(true);
                     }}
-                    onMoveSection={handleMoveSection}
-                    onDuplicateSection={handleDuplicateSection}
-                    onDeleteSection={handleDeleteSection}
-                    onOpenSectionCatalog={() => setShowCatalogModal(true)}
-                    onTabChange={() => {}}
-                    onUpdateThemeTokens={handleDesignTokensChange}
-                    onCollapse={() => setIsLeftDrawerOpen(false)}
+                    onOpenFullCatalog={() => setShowCatalogModal(true)}
+                    onClose={() => setIsLeftDrawerOpen(false)}
                   />
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                )}
 
-        {/* Center Live Stage with @dnd-kit Context */}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                {(leftRailTab === "layers" || leftRailTab === "styles" || leftRailTab === "code" || leftRailTab === "settings") && (
+                  <div className="w-72 max-w-[85vw] h-full flex flex-col bg-[#202226] border-e border-[#0c0d0f]">
+                    <StudioLayersDrawer
+                      sections={activeSections}
+                      sectionKeys={sectionKeys}
+                      selectedSectionKey={selectedSectionKey}
+                      leftPanelTab={layersPanelTab}
+                      designTokens={currentDesignTokens}
+                      onSelectSection={(key) => {
+                        setSelectedSectionKey(key);
+                        if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                          setIsLeftDrawerOpen(false);
+                        }
+                        setIsInspectorOpen(true);
+                      }}
+                      onMoveSection={handleMoveSection}
+                      onDuplicateSection={handleDuplicateSection}
+                      onDeleteSection={handleDeleteSection}
+                      onOpenSectionCatalog={() => setShowCatalogModal(true)}
+                      onTabChange={(nextTab) => setLayersPanelTab(nextTab)}
+                      onUpdateThemeTokens={handleDesignTokensChange}
+                      onCollapse={() => setIsLeftDrawerOpen(false)}
+                    />
+                  </div>
+                )}
+
+                {leftRailTab === "pages" && (
+                  <StudioPagesPanel
+                    activePageKey={activePageKey}
+                    onSelectPage={(pageKey) => {
+                      setActivePageKey(pageKey);
+                      setSelectedSectionKey("");
+                      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                        setIsLeftDrawerOpen(false);
+                      }
+                    }}
+                    onClose={() => setIsLeftDrawerOpen(false)}
+                    pageSectionCounts={pageSectionCounts}
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Center Live Stage */}
           <StudioCanvasStage deviceMode={deviceMode} zoomLevel={zoomLevel}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
               <div className="relative min-h-[800px] bg-background">
@@ -274,30 +334,32 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
               </div>
             </StorefrontThemeProvider>
           </StudioCanvasStage>
-        </DndContext>
 
-        {/* Right Inspector Panel - Slide-over on mobile, inline on desktop */}
-        {isInspectorOpen && (
-          <>
-            {/* Mobile Backdrop */}
-            <div
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
-              onClick={() => setIsInspectorOpen(false)}
-            />
-            <div className="fixed inset-y-0 end-0 z-50 flex shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:shadow-none h-full w-80 max-w-[85vw] lg:w-[320px] shrink-0 border-s border-[#0c0d0f] transition-all bg-white">
-              <StudioPropertyInspector
-                selectedSectionKey={selectedSectionKey}
-                sectionConfig={selectedSectionConfig}
-                deviceMode={deviceMode}
-                onClose={() => setIsInspectorOpen(false)}
-                onUpdateField={handleUpdateSectionField}
-                onOpenImagePicker={() => setShowImagePickerModal(true)}
-                onSwitchDevice={setDeviceMode}
+          {/* Right Inspector Panel - Slide-over on mobile, inline on desktop */}
+          {isInspectorOpen && (
+            <>
+              {/* Mobile Backdrop */}
+              <div
+                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+                onClick={() => setIsInspectorOpen(false)}
               />
-            </div>
-          </>
-        )}
-      </div>
+              <div className="fixed inset-y-0 end-0 z-50 flex shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:shadow-none h-full w-80 max-w-[85vw] lg:w-[320px] shrink-0 border-s border-[#0c0d0f] transition-all bg-white">
+                <StudioPropertyInspector
+                  selectedSectionKey={selectedSectionKey}
+                  sectionConfig={selectedSectionConfig}
+                  deviceMode={deviceMode}
+                  initialTab={inspectorTab}
+                  onClose={() => setIsInspectorOpen(false)}
+                  onUpdateField={handleUpdateSectionField}
+                  onBatchUpdateFields={handleBatchUpdateSectionFields}
+                  onOpenImagePicker={() => setShowImagePickerModal(true)}
+                  onSwitchDevice={setDeviceMode}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </DndContext>
 
       {/* 3. Pro Studio Status Bar */}
       <StudioStatusBar

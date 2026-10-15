@@ -31,6 +31,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
             transform: `scale(${zoomLevel})`,
             transformOrigin: "top center",
             transition: "transform 0.15s ease-out",
+            marginBottom: zoomLevel > 1 ? `${(zoomLevel - 1) * 500}px` : undefined,
           }}
           className={`mx-auto w-full ${getViewportMaxWidth()} transition-all duration-200`}
         >

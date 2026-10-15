@@ -6,7 +6,11 @@ const ExclamationTriangleIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 import errorTracking from "../services/errorTracking";
-import { recoverFromChunkLoadError } from "../utils/chunkLoadRecovery";
+import {
+  recoverFromChunkLoadError,
+  isChunkLoadError,
+  emergencyPurgeAndHardReload,
+} from "../utils/chunkLoadRecovery";
 
 /**
  * Error Boundary Component
@@ -57,9 +61,25 @@ class ErrorBoundary extends Component<Props, State> {
 
   private logErrorToService = (error: Error, errorInfo: React.ErrorInfo): void => {
     try {
-      // Import dynamic to avoid circular dependency if possible, or just use global
-      // Note: errorTracking is already imported in many files, here we just use it
-      errorTracking.logError("ErrorBoundary caught error", error, {
+      let chunkName = (error as any)?.chunkName;
+      if (!chunkName && errorInfo.componentStack) {
+        const matches = errorInfo.componentStack.match(/\bat\s+([A-Za-z0-9_]+)/g);
+        if (matches) {
+          const names = matches
+            .map((m) => m.replace(/^at\s+/, ""))
+            .filter((n) => n !== "Lazy" && n !== "Suspense" && n !== "Route" && n !== "Routes" && n !== "RouteAwareErrorBoundary");
+          if (names.length > 0) {
+            chunkName = names[0];
+          }
+        }
+      }
+      if (!chunkName && typeof window !== "undefined") {
+        const segs = window.location.pathname.split("/").filter(Boolean);
+        chunkName = segs[segs.length - 1] || "root";
+      }
+
+      errorTracking.logError("ErrorBoundary caught error: " + (chunkName ? `[${chunkName}] ` : "") + error.message, error, {
+        chunkName,
         componentStack: errorInfo.componentStack,
         digest: (error as any).digest, // minified React error group ID
         timestamp: new Date().toISOString(),
@@ -73,6 +93,10 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReload = (): void => {
+    if (this.state.error && isChunkLoadError(this.state.error)) {
+      void emergencyPurgeAndHardReload();
+      return;
+    }
     window.location.reload();
   };
 
@@ -87,7 +111,50 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Default fallback UI
+      const isChunkError = Boolean(this.state.error && isChunkLoadError(this.state.error));
+
+      // Specialized graceful update fallback for chunk loading failures
+      if (isChunkError) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+            <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm text-center">
+              <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-5">
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                تم تحديث المنصة
+              </h2>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                تم إصدار تحديث جديد للنظام أثناء عملك. يرجى تحديث الصفحة لتشغيل أحدث نسخة خالية من المشاكل.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={this.handleReload}
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+                >
+                  تحديث ومتابعة
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = "/"; }}
+                  className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  الرئيسية
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Default fallback UI for unexpected runtime errors
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
           <div className="max-w-md w-full">

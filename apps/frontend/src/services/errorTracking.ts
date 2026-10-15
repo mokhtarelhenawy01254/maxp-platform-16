@@ -27,6 +27,8 @@ export interface ErrorLog {
   type: "error" | "warning" | "info";
   category: "api" | "ui" | "network" | "auth" | "validation" | "unknown";
   message: string;
+  chunkName?: string;
+  componentStack?: string;
   stack?: string;
   context?: ErrorContext;
   userId?: string;
@@ -52,15 +54,30 @@ class ErrorTrackingService {
     context?: ErrorContext,
   ): void {
     const errorDetails = this.getErrorDetails(error);
+    const chunkName =
+      (context?.chunkName as string) ||
+      ((error && typeof error === "object" && "chunkName" in error)
+        ? String((error as Record<string, unknown>).chunkName)
+        : undefined);
+    const componentStack =
+      (context?.componentStack as string) ||
+      ((error && typeof error === "object" && "componentStack" in error)
+        ? String((error as Record<string, unknown>).componentStack)
+        : undefined);
+
     const errorLog: ErrorLog = {
       id: this.generateId(),
       timestamp: new Date().toISOString(),
       type: "error",
       category: this.categorizeError(error),
       message,
+      chunkName,
+      componentStack,
       stack: errorDetails.stack,
       context: {
         ...context,
+        chunkName,
+        componentStack,
         errorName: errorDetails.name,
         errorMessage: errorDetails.message,
       },

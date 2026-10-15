@@ -21,6 +21,13 @@ const CHUNK_LOAD_ERROR_PATTERNS = [
   "vite:preloaderror",
   "err_cache_read_failure",
   "node_modules/.vite/deps/chunk-",
+  // 🛡️ Vite / React lazy failure when dynamic import resolves to undefined or chunk 404s
+  "cannot read properties of undefined (reading 'default')",
+  "cannot read property 'default' of undefined",
+  "cannot read properties of null (reading 'default')",
+  "undefined (reading 'default')",
+  "failed to load lazy",
+  "failed to load chunk",
 ];
 
 type RecoverSource =

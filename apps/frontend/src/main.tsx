@@ -9,6 +9,7 @@ import {
   recoverFromChunkLoadError,
   resetChunkLoadRecovery,
 } from "./utils/chunkLoadRecovery";
+import { installResilientLazy } from "./utils/resilientLazy";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
 // Proactively unregister any active or legacy Service Workers, wipe CacheStorage, and purge manifest
@@ -46,6 +47,7 @@ if (!rootElement) {
 
 const rootWindow = window as RootWindow;
 installChunkLoadRecovery();
+installResilientLazy();
 
 // Preserve a single React root across HMR re-evaluations to avoid remounting
 // the entire app into the same container more than once in development.

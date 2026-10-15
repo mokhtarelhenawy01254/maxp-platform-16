@@ -24,6 +24,7 @@ import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/prote
 import { AppAccessRoute } from "./components/protection/AppAccessRoute";
 import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
 import { STORE_APP_SLUGS } from "./utils/storeShortcut";
+import { resilientLazy } from "./utils/resilientLazy";
 
 const SHIPPING_APP_ACCESS_SLUGS = [
   'internal-courier-fleet',
@@ -1751,30 +1752,36 @@ const WorkReportRecordsPage = React.lazy(
 );
 
 // Employee Self-Service
-const MyAttendance = React.lazy(() => import("./pages/employee/MyAttendance"));
-const MyDashboard = React.lazy(() => import("./pages/employee/MyDashboard"));
-const MyAdvances = React.lazy(() =>
-  import("./pages/employee").then((m) => ({ default: m.MyAdvances })),
+const MyAttendance = resilientLazy(() => import("./pages/employee/MyAttendance"), "MyAttendance");
+const MyDashboard = resilientLazy(() => import("./pages/employee/MyDashboard"), "MyDashboard");
+const MyAdvances = resilientLazy(
+  () => import("./pages/employee").then((m) => ({ default: m.MyAdvances })),
+  "MyAdvances",
 );
-const MyPayroll = React.lazy(() => import("./pages/hr/MyPayroll"));
-const EmployeePerformanceScorePage = React.lazy(
+const MyPayroll = resilientLazy(() => import("./pages/hr/MyPayroll"), "MyPayroll");
+const EmployeePerformanceScorePage = resilientLazy(
   () => import("./pages/hr/EmployeePerformanceScorePage"),
+  "EmployeePerformanceScorePage",
 );
-const MyCustody = React.lazy(() => import("./pages/my-custody/MyCustody"));
-const MyFeedback = React.lazy(() => import("./pages/hr/MyFeedback"));
-const MyWarnings = React.lazy(() =>
-  import("./pages/employee").then((m) => ({ default: m.MyWarnings })),
+const MyCustody = resilientLazy(() => import("./pages/my-custody/MyCustody"), "MyCustody");
+const MyFeedback = resilientLazy(() => import("./pages/hr/MyFeedback"), "MyFeedback");
+const MyWarnings = resilientLazy(
+  () => import("./pages/employee").then((m) => ({ default: m.MyWarnings })),
+  "MyWarnings",
 );
-const MyPromotions = React.lazy(() =>
-  import("./pages/employee").then((m) => ({ default: m.MyPromotions })),
+const MyPromotions = resilientLazy(
+  () => import("./pages/employee").then((m) => ({ default: m.MyPromotions })),
+  "MyPromotions",
 );
-const MyRewards = React.lazy(() =>
-  import("./pages/employee").then((m) => ({ default: m.MyRewards })),
+const MyRewards = resilientLazy(
+  () => import("./pages/employee").then((m) => ({ default: m.MyRewards })),
+  "MyRewards",
 );
-const MyResignation = React.lazy(() =>
-  import("./pages/employee").then((m) => ({ default: m.MyResignation })),
+const MyResignation = resilientLazy(
+  () => import("./pages/employee").then((m) => ({ default: m.MyResignation })),
+  "MyResignation",
 );
-const MyTraining = React.lazy(() => import("./pages/employee/MyTraining"));
+const MyTraining = resilientLazy(() => import("./pages/employee/MyTraining"), "MyTraining");
 
 import { PageSkeleton } from "./components/common/PageSkeleton";
 

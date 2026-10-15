@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
-
+import { ChevronDownIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
 import type { StudioDeviceMode } from "../StudioTypes";
 
 interface StudioInspectorDesignTabProps {
@@ -20,6 +19,7 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
     fill: true,
     shadow: true,
     corners: true,
+    css: Boolean(settings.customCss),
   });
 
   const toggleAcc = (key: string) => {
@@ -27,59 +27,68 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   };
 
   const currentColor = settings.backgroundColor || settings.bgColor || "#ffffff";
-  const shadowMode = settings.shadow || "soft";
-  const cornerRadius = settings.borderRadius || "medium";
+  const shadowMode = settings.shadow || "none";
+  const cornerRadius = settings.borderRadius || "none";
+  const containerWidth = settings.containerWidth || "fluid";
+  const customCss = settings.customCss || "";
 
   const colorSwatches = [
-    { label: "أبيض", val: "#ffffff" },
-    { label: "كريمي دافئ", val: "#f3ecdf" },
+    { label: "أبيض ناصع", val: "#ffffff" },
+    { label: "كريمي دافئ", val: "#fdfbf7" },
+    { label: "رمادي فاخر", val: "#f8fafc" },
     { label: "كحلي هادئ", val: "#0f172a" },
     { label: "طوبي أنيق", val: "#b4552d" },
-    { label: "رمادي خفيف", val: "#f8fafc" },
+  ];
+
+  const cornerOptions = [
+    { id: "none", label: "حادة (0px)" },
+    { id: "small", label: "خفيفة (8px)" },
+    { id: "medium", label: "متوسطة (16px)" },
+    { id: "large", label: "دائرية (24px)" },
   ];
 
   return (
     <div className="space-y-3.5 select-none text-[11.5px] text-[#17181c]">
-      {/* 1. Dimensions Grid (X, Y, W, H) */}
-      <div>
-        <span className="block text-[10px] font-bold text-[#8a8f96] mb-1.5">الأبعاد والموضع</span>
-        <div className="grid grid-cols-4 gap-1.5 font-mono">
-          <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
-            <span className="block text-[9.5px] text-[#8a8f96]">X</span>
-            <b className="text-[11.5px] text-[#17181c] font-semibold">0</b>
-          </div>
-          <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
-            <span className="block text-[9.5px] text-[#8a8f96]">Y</span>
-            <b className="text-[11.5px] text-[#17181c] font-semibold">84</b>
-          </div>
-          <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
-            <span className="block text-[9.5px] text-[#8a8f96]">W</span>
-            <b className="text-[11.5px] text-[#17181c] font-semibold">
-              {deviceMode === "mobile" ? "375" : deviceMode === "tablet" ? "768" : "1200"}
-              <i className="text-[9px] text-[#7c5cff] not-italic ms-0.5">px*</i>
-            </b>
-          </div>
-          <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
-            <span className="block text-[9.5px] text-[#8a8f96]">H</span>
-            <b className="text-[11.5px] text-[#17181c] font-semibold">320<i className="text-[9px] text-[#7c5cff] not-italic ms-0.5">px*</i></b>
-          </div>
+      {/* 1. Layout Mode & Responsive Width */}
+      <div className="space-y-1.5">
+        <span className="block text-[10px] font-bold text-[#8a8f96]">عرض وتخطيط السيكشن</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onUpdateField("containerWidth", "fluid")}
+            className={`rounded-lg border p-2 text-start transition-all ${
+              containerWidth === "fluid"
+                ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
+                : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
+            }`}
+          >
+            <span className="block text-[10.5px]">عرض كامل (Fluid)</span>
+            <span className="text-[9.5px] text-[#8a8f96] font-normal">100% بعرض الشاشة</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onUpdateField("containerWidth", "contained")}
+            className={`rounded-lg border p-2 text-start transition-all ${
+              containerWidth === "contained"
+                ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
+                : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
+            }`}
+          >
+            <span className="block text-[10.5px]">حاوية مقيدة (Box)</span>
+            <span className="text-[9.5px] text-[#8a8f96] font-normal">بحد أقصى 1240px</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Responsive Behavior */}
-      <div className="flex items-center justify-between rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2.5">
-        <span className="text-[11px] text-[#6f747b]">السلوك المتجاوب</span>
-        <b className="text-[11.5px] text-[#17181c] font-bold">خلفية ممتدة (Fluid) ▾</b>
-      </div>
-
-      {/* 3. Accordion: Fill & Stroke */}
+      {/* 2. Accordion: Fill & Background Color */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
           onClick={() => toggleAcc("fill")}
           className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
         >
-          <span>التعبئة والحدود</span>
+          <span>لون خلفية السيكشن</span>
           <ChevronDownIcon
             className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
               openAcc.fill ? "rotate-180" : ""
@@ -104,30 +113,74 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
                   }`}
                 />
               ))}
-              <span className="ms-auto text-[10px] text-[#8a8f96]">شفافية 0%</span>
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[10.5px] text-[#8a8f96]">لون مخصص:</span>
-              <input
-                type="color"
-                value={currentColor.startsWith("#") ? currentColor : "#ffffff"}
-                onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
-                className="h-6 w-12 cursor-pointer rounded border border-[#ececee] bg-transparent"
-              />
+              <span className="text-[10.5px] text-[#8a8f96]">لون مخصص (HEX):</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={currentColor}
+                  onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
+                  className="w-16 rounded border border-[#ececee] px-1.5 py-0.5 text-[10.5px] font-mono text-[#17181c]"
+                />
+                <input
+                  type="color"
+                  value={currentColor.startsWith("#") && currentColor.length === 7 ? currentColor : "#ffffff"}
+                  onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
+                  className="h-6 w-7 cursor-pointer rounded border border-[#ececee] bg-transparent"
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 4. Accordion: Shadow & Corners */}
+      {/* 3. Accordion: Corners & Border Radius */}
+      <div className="overflow-hidden rounded-lg border border-[#ececee]">
+        <button
+          type="button"
+          onClick={() => toggleAcc("corners")}
+          className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
+        >
+          <span>استدارة الزوايا (Radius)</span>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
+              openAcc.corners ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {openAcc.corners && (
+          <div className="p-3 bg-white">
+            <div className="grid grid-cols-2 gap-1.5">
+              {cornerOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onUpdateField("borderRadius", opt.id)}
+                  className={`rounded-md border py-1.5 px-2 text-center text-[10.5px] transition-all ${
+                    cornerRadius === opt.id
+                      ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
+                      : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. Accordion: Shadows */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
           onClick={() => toggleAcc("shadow")}
           className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
         >
-          <span>الزوايا والظل</span>
+          <span>الظل والتأثيرات (Shadows)</span>
           <ChevronDownIcon
             className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
               openAcc.shadow ? "rotate-180" : ""
@@ -136,16 +189,16 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         </button>
 
         {openAcc.shadow && (
-          <div className="p-3 bg-white space-y-2">
+          <div className="p-3 bg-white space-y-1.5">
             {[
-              { id: "soft", label: "ظل ناعم (Soft Studio)" },
-              { id: "card", label: "ظل بطاقة بارز (Elevated)" },
               { id: "none", label: "بلا ظل (Flat)" },
+              { id: "soft", label: "ظل ناعم خفيف (Soft Subtle)" },
+              { id: "card", label: "ظل بارز (Elevated Card)" },
             ].map((option) => (
               <label
                 key={option.id}
                 onClick={() => onUpdateField("shadow", option.id)}
-                className="flex items-center gap-2 cursor-pointer text-[11px] text-[#3f434a]"
+                className="flex items-center gap-2 cursor-pointer text-[11px] text-[#3f434a] p-1 rounded hover:bg-[#f6f7f8]"
               >
                 <input
                   type="radio"
@@ -161,14 +214,40 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         )}
       </div>
 
-      {/* Custom CSS link */}
-      <button
-        type="button"
-        onClick={() => onUpdateField("customCssEnabled", true)}
-        className="text-[11px] font-semibold text-[#2b6cf6] hover:underline block pt-1"
-      >
-        + إضافة CSS مخصص للسيكشن
-      </button>
+      {/* 5. Custom CSS Accordion (Real Pro Feature) */}
+      <div className="overflow-hidden rounded-lg border border-[#ececee]">
+        <button
+          type="button"
+          onClick={() => toggleAcc("css")}
+          className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
+        >
+          <div className="flex items-center gap-1.5">
+            <CodeBracketIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+            <span>تخصيص CSS مباشر (Custom CSS)</span>
+          </div>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
+              openAcc.css ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {openAcc.css && (
+          <div className="p-3 bg-white space-y-2">
+            <p className="text-[10px] text-[#8a8f96] leading-relaxed">
+              أضف قواعد CSS مخصصة تُطبق مباشرة على حاوية هذا السيكشن:
+            </p>
+            <textarea
+              rows={3}
+              value={customCss}
+              onChange={(e) => onUpdateField("customCss", e.target.value)}
+              placeholder="/* مثال: border-top: 1px solid #e2e8f0; */"
+              className="w-full rounded-md border border-[#ececee] bg-[#1a1b20] p-2 font-mono text-[10.5px] text-[#e8eaee] placeholder-[#666c77] outline-none focus:border-[#2b6cf6] dir-ltr text-left"
+              dir="ltr"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

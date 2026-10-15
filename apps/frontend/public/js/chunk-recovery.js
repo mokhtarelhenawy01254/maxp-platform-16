@@ -17,7 +17,13 @@
     "chunkloaderror",
     "vite:preloaderror",
     "err_cache_read_failure",
-    "node_modules/.vite/deps/chunk-"
+    "node_modules/.vite/deps/chunk-",
+    "cannot read properties of undefined (reading 'default')",
+    "cannot read property 'default' of undefined",
+    "cannot read properties of null (reading 'default')",
+    "undefined (reading 'default')",
+    "failed to load lazy",
+    "failed to load chunk"
   ];
 
   var stringifyError = function (error) {

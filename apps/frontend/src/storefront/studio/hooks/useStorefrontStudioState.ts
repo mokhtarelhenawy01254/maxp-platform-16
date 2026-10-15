@@ -129,7 +129,11 @@ export function useStorefrontStudioState({
     const newIndex = sectionKeys.indexOf(String(over.id));
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const nextSections = arrayMove(activeSections, oldIndex, newIndex);
+      const normalizedSections = activeSections.map((s: any, idx: number) => {
+        const key = getSectionKey(s, idx);
+        return typeof s === "string" ? { type: s, key } : { ...s, key: s.key || key };
+      });
+      const nextSections = arrayMove(normalizedSections, oldIndex, newIndex);
       const nextPages = {
         ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
         ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
@@ -152,7 +156,11 @@ export function useStorefrontStudioState({
       const targetIndex = direction === "up" ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= activeSections.length) return;
 
-      const nextSections = arrayMove(activeSections, index, targetIndex);
+      const normalizedSections = activeSections.map((s: any, idx: number) => {
+        const key = getSectionKey(s, idx);
+        return typeof s === "string" ? { type: s, key } : { ...s, key: s.key || key };
+      });
+      const nextSections = arrayMove(normalizedSections, index, targetIndex);
       const nextPages = {
         ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
         ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
@@ -252,41 +260,53 @@ export function useStorefrontStudioState({
     });
   };
 
-  const handleUpdateSectionField = (field: string, value: any) => {
-    if (!selectedSectionKey) return;
+  const handleBatchUpdateSectionFields = useCallback(
+    (updates: Record<string, any>) => {
+      if (!selectedSectionKey) return;
 
-    const nextSections = activeSections.map((s: any, idx: number) => {
-      const key = getSectionKey(s, idx);
-      if (key !== selectedSectionKey) return s;
+      const nextSections = activeSections.map((s: any, idx: number) => {
+        const key = getSectionKey(s, idx);
+        if (key !== selectedSectionKey) return s;
 
-      const base = typeof s === "string" ? { type: s } : { ...s };
-      const baseSettings =
-        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+        const base = typeof s === "string" ? { type: s } : { ...s };
+        const baseSettings =
+          typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
 
-      baseSettings[field] = value;
+        Object.entries(updates).forEach(([field, value]) => {
+          baseSettings[field] = value;
+          base[field] = value;
+        });
 
-      return {
-        ...base,
-        [field]: value,
-        settings: baseSettings,
+        return {
+          ...base,
+          settings: baseSettings,
+        };
+      });
+
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
       };
-    });
 
-    const nextPages = {
-      ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
-      ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
-      [activePageKey]: {
-        ...activePageConfig,
-        sections: nextSections,
-      },
-    };
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+    },
+    [selectedSectionKey, activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
+  );
 
-    handleDesignTokensChange({
-      ...currentDesignTokens,
-      pages: nextPages,
-      pageOverrides: nextPages,
-    });
-  };
+  const handleUpdateSectionField = useCallback(
+    (field: string, value: any) => {
+      handleBatchUpdateSectionFields({ [field]: value });
+    },
+    [handleBatchUpdateSectionFields]
+  );
 
   return {
     activePageKey,
@@ -310,5 +330,6 @@ export function useStorefrontStudioState({
     handleDeleteSection,
     handleAddSection,
     handleUpdateSectionField,
+    handleBatchUpdateSectionFields,
   };
 }

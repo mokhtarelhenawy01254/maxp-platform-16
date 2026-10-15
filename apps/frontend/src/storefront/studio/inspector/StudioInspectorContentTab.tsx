@@ -21,23 +21,22 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
   const ctaLink = settings.ctaLink ?? settings.primaryButtonUrl ?? settings.buttonUrl ?? "";
   const currentImage = settings.image ?? settings.backgroundImage ?? settings.heroImage ?? "";
 
-  const items: any[] = Array.isArray(settings.items)
-    ? settings.items
-    : Array.isArray(settings.features)
-    ? settings.features
+  const itemsKey = Array.isArray(settings.features)
+    ? "features"
     : Array.isArray(settings.questions)
-    ? settings.questions
+    ? "questions"
     : Array.isArray(settings.reviews)
-    ? settings.reviews
-    : [];
+    ? "reviews"
+    : Array.isArray(settings.items)
+    ? "items"
+    : "items";
+
+  const items: any[] = Array.isArray(settings[itemsKey]) ? settings[itemsKey] : [];
 
   const handleUpdateItem = (index: number, field: string, val: any) => {
     const next = [...items];
     next[index] = { ...(next[index] || {}), [field]: val };
-    onUpdateField("items", next);
-    onUpdateField("features", next);
-    onUpdateField("questions", next);
-    onUpdateField("reviews", next);
+    onUpdateField(itemsKey, next);
   };
 
   const handleAddItem = () => {
@@ -52,18 +51,12 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
       comment: "تجربة رائعة!",
     };
     const next = [...items, newItem];
-    onUpdateField("items", next);
-    onUpdateField("features", next);
-    onUpdateField("questions", next);
-    onUpdateField("reviews", next);
+    onUpdateField(itemsKey, next);
   };
 
   const handleDeleteItem = (index: number) => {
     const next = items.filter((_, idx) => idx !== index);
-    onUpdateField("items", next);
-    onUpdateField("features", next);
-    onUpdateField("questions", next);
-    onUpdateField("reviews", next);
+    onUpdateField(itemsKey, next);
   };
 
   return (

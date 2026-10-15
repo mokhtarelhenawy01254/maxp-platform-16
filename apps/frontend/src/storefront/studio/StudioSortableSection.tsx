@@ -78,15 +78,15 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           {/* Main selection outline */}
           <div className="pointer-events-none absolute inset-0 z-30 outline outline-2 outline-[#2b6cf6] outline-offset-[-2px]" />
 
-          {/* 4 Corner Anchor Handles */}
-          <span className="pointer-events-none absolute -top-1 -end-1 z-40 h-2.5 w-2.5 rounded-[2px] border-2 border-[#2b6cf6] bg-white shadow-sm" />
-          <span className="pointer-events-none absolute -top-1 -start-1 z-40 h-2.5 w-2.5 rounded-[2px] border-2 border-[#2b6cf6] bg-white shadow-sm" />
-          <span className="pointer-events-none absolute -bottom-1 -end-1 z-40 h-2.5 w-2.5 rounded-[2px] border-2 border-[#2b6cf6] bg-white shadow-sm" />
-          <span className="pointer-events-none absolute -bottom-1 -start-1 z-40 h-2.5 w-2.5 rounded-[2px] border-2 border-[#2b6cf6] bg-white shadow-sm" />
+          {/* 4 Corner Anchor Indicators */}
+          <span className="pointer-events-none absolute -top-1 -end-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
+          <span className="pointer-events-none absolute -top-1 -start-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
+          <span className="pointer-events-none absolute -bottom-1 -end-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
+          <span className="pointer-events-none absolute -bottom-1 -start-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
 
-          {/* Pixel Size Badge */}
-          <div className="absolute -top-7 end-0 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none font-mono">
-            <span>{deviceMode === "mobile" ? "375 × 420 px*" : deviceMode === "tablet" ? "768 × 420 px*" : "1,180 × 420 px*"}</span>
+          {/* Section Indicator Badge */}
+          <div className="absolute -top-7 end-0 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none">
+            <span>#{index + 1} {sectionLabel}</span>
           </div>
 
           {/* Floating Action Bar (fbtool) */}

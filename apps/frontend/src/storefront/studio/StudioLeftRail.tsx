@@ -16,6 +16,7 @@ interface StudioLeftRailProps {
   onSelectTab: (tab: StudioLeftRailTab) => void;
   onToggleTab: (tab: StudioLeftRailTab) => void;
   isPanelOpen: boolean;
+  isAiActive?: boolean;
 }
 
 export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
@@ -23,6 +24,7 @@ export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
   onSelectTab,
   onToggleTab,
   isPanelOpen,
+  isAiActive = false,
 }) => {
   const items: Array<{
     id: StudioLeftRailTab;
@@ -31,14 +33,17 @@ export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
     isAi?: boolean;
   }> = [
     { id: "elements", label: "إضافة", icon: PlusIcon },
-    { id: "layers", label: "طبقات", icon: Squares2X2Icon },
+    { id: "layers", label: "الهيكل", icon: Squares2X2Icon },
     { id: "pages", label: "صفحات", icon: DocumentDuplicateIcon },
     { id: "media", label: "وسائط", icon: PhotoIcon },
     { id: "styles", label: "أنماط", icon: PaintBrushIcon },
-    { id: "code", label: "كود", icon: CodeBracketIcon },
   ];
 
   const handleClick = (id: StudioLeftRailTab) => {
+    if (id === "media" || id === "ai") {
+      onSelectTab(id);
+      return;
+    }
     if (activeTab === id && isPanelOpen) {
       onToggleTab(id);
     } else {
@@ -76,20 +81,20 @@ export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
 
       <div className="flex-1" />
 
-      {/* Responsive AI Button */}
+      {/* Smart Responsive Tab Button */}
       <button
         type="button"
         onClick={() => handleClick("ai")}
-        title="Responsive AI"
-        aria-pressed={activeTab === "ai" && isPanelOpen}
+        title="قواعد التجاوب الذكية"
+        aria-pressed={isAiActive}
         className={`group relative flex h-10 w-10 flex-col items-center justify-center rounded-xl transition-all ${
-          activeTab === "ai" && isPanelOpen
+          isAiActive
             ? "bg-[#7c5cff] text-white shadow-[0_4px_14px_rgba(124,92,255,0.4)]"
             : "text-[#b7a5ff] hover:bg-[#202226] hover:text-[#d3c7ff]"
         }`}
       >
         <SparklesIcon className="h-4.5 w-4.5" />
-        <span className="text-[8.5px] font-bold leading-none mt-1">AI</span>
+        <span className="text-[8.5px] font-bold leading-none mt-1">تجاوب</span>
       </button>
 
       {/* Settings Button */}

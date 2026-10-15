@@ -13,6 +13,9 @@ const ErrorTrackingController = {
         try {
             const errorLog = req.body || {};
 
+            const chunkName = errorLog.chunkName || errorLog.metadata?.chunkName || errorLog.context?.chunkName;
+            const componentStack = errorLog.componentStack || errorLog.metadata?.componentStack || errorLog.context?.componentStack;
+
             if (process.env.NODE_ENV === 'production') {
                 const compactErrorLog = {
                     message: truncate(errorLog.message, 180),
@@ -20,6 +23,8 @@ const ErrorTrackingController = {
                     timestamp: errorLog.timestamp,
                     type: errorLog.type || 'unknown',
                     userAgent: truncate(errorLog.userAgent, 120),
+                    chunkName: chunkName ? truncate(chunkName, 120) : undefined,
+                    componentStack: componentStack ? truncate(componentStack, 500) : undefined,
                     stack: truncate(
                         typeof errorLog.stack === 'string'
                             ? errorLog.stack.split('\n')[0]
@@ -28,7 +33,9 @@ const ErrorTrackingController = {
                     ),
                     metadataKeys: errorLog.metadata && typeof errorLog.metadata === 'object' && !Array.isArray(errorLog.metadata)
                         ? Object.keys(errorLog.metadata).slice(0, 10)
-                        : undefined
+                        : (errorLog.context && typeof errorLog.context === 'object' && !Array.isArray(errorLog.context)
+                            ? Object.keys(errorLog.context).slice(0, 10)
+                            : undefined)
                 };
 
                 console.error('[FRONTEND-ERROR]', JSON.stringify(compactErrorLog));
@@ -36,6 +43,12 @@ const ErrorTrackingController = {
                 console.error('\n================ FRONTEND ERROR ================');
                 console.error('Message:', errorLog.message);
                 console.error('URL:', errorLog.url);
+                if (chunkName) {
+                    console.error('Chunk Name:', chunkName);
+                }
+                if (componentStack) {
+                    console.error('Component Stack:', componentStack);
+                }
                 console.error('Timestamp:', errorLog.timestamp);
                 console.error('UserAgent:', errorLog.userAgent);
                 console.error('Type:', errorLog.type || 'unknown');
@@ -45,9 +58,10 @@ const ErrorTrackingController = {
                     console.error(errorLog.stack);
                 }
 
-                if (errorLog.metadata) {
+                const metadataObj = errorLog.metadata || errorLog.context;
+                if (metadataObj) {
                     try {
-                        console.error('Metadata:', JSON.stringify(errorLog.metadata, null, 2));
+                        console.error('Metadata:', JSON.stringify(metadataObj, null, 2));
                     } catch (_) {}
                 }
 
