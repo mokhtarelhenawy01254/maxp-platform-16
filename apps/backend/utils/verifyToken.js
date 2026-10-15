@@ -152,9 +152,13 @@ const authenticateToken = async (req, res, next) => {
   console.log('🔐 [VERIFY-TOKEN] authenticateToken called for:', req.method, req.path);
   console.log('🔐 [VERIFY-TOKEN] Headers:', req.headers.authorization ? 'Token present' : 'No token');
 
+  if (req.user && req.user.service && req.user.id === 'manager-service') {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   const token =
-    (authHeader && authHeader.split(' ')[1]) ||
+    (authHeader && (authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.split(' ')[1] || authHeader.trim())) ||
     req.headers['x-api-key'] ||
     req.headers['X-Api-Key'] ||
     req.query?.token;

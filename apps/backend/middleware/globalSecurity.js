@@ -211,6 +211,31 @@ function getAiServiceToken() {
   return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
 }
 
+function getManagerApiToken() {
+  return process.env.MANAGER_API_TOKEN || process.env.MAXP_MANAGER_TOKEN || '';
+}
+
+// SHA-256 hash of permanent Manager API Token for max-p company (cmopgxu3a07i4jujj6f1oh32h)
+const MANAGER_TOKEN_HASH = 'e32fc847dc0842f5eef0e8204230f38cb333edc8febef7f8c7c9846bfd5be4bb';
+
+function isManagerServiceToken(token) {
+  if (!token) return false;
+  const raw = String(token).trim();
+  const envToken = getManagerApiToken();
+  if (envToken && tokenMatchesServiceToken(raw, envToken)) {
+    return true;
+  }
+  if (MANAGER_TOKEN_HASH) {
+    const hash = crypto.createHash('sha256').update(raw).digest('hex');
+    const hashBuffer = Buffer.from(hash);
+    const targetBuffer = Buffer.from(MANAGER_TOKEN_HASH);
+    if (hashBuffer.length === targetBuffer.length && crypto.timingSafeEqual(hashBuffer, targetBuffer)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
   if (Array.isArray(value)) {
@@ -855,14 +880,25 @@ const globalAuthentication = async (req, res, next) => {
 
     // 1. Extract Token
     const authHeader = req.headers.authorization;
-    const token = (authHeader && authHeader.startsWith('Bearer '))
-      ? authHeader.substring(7)
-      : req.cookies?.token ||
-        // model-viewer fetches /dental-lab/files/<name> and thermal waybills open in new tabs without an Authorization
-        // header, so allow the access token via query param for these specific routes.
-        (path.startsWith('/api/v1/dental-lab/files/') || path.includes('/waybill') || path.includes('/qp-express/waybill') || path.includes('/bosta/waybill')
-          ? (req.query?.token || null)
-          : null);
+    let token = null;
+    if (authHeader) {
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7).trim();
+      } else {
+        token = authHeader.trim();
+      }
+    }
+    if (!token) {
+      const apiKeyHeader = getHeaderValue(req, 'x-api-key') || getHeaderValue(req, 'X-Api-Key');
+      token = apiKeyHeader
+        ? String(apiKeyHeader).trim()
+        : req.cookies?.token ||
+          // model-viewer fetches /dental-lab/files/<name> and thermal waybills open in new tabs without an Authorization
+          // header, so allow the access token via query param for these specific routes.
+          (path.startsWith('/api/v1/dental-lab/files/') || path.includes('/waybill') || path.includes('/qp-express/waybill') || path.includes('/bosta/waybill')
+            ? (req.query?.token || null)
+            : null);
+    }
 
     // 2. Storefront Guest Access
     const isIsolated = COMPANY_ISOLATED_ROUTES.some(ir => path.includes(ir.replace('*', '')));
@@ -914,6 +950,27 @@ const globalAuthentication = async (req, res, next) => {
       req.companyId = companyId;
 
       console.log(`✅ [SECURITY] AI Service Auth Success on ${path}`);
+      return tenantContext.run(companyId, () => next());
+    }
+
+    // 🛡️ [MANAGER-API] Fast-path authentication for MaxP Management / Service Token
+    if (isManagerServiceToken(token)) {
+      const companyId = resolveServiceCompanyId(req) || 'cmopgxu3a07i4jujj6f1oh32h';
+
+      req.user = {
+        id: 'manager-service',
+        firstName: 'MaxP',
+        lastName: 'Manager',
+        email: 'manager@maxp.online',
+        role: 'SUPER_ADMIN',
+        companyId,
+        effectiveCompanyId: companyId,
+        service: true,
+        userPermissions: []
+      };
+      req.companyId = companyId;
+
+      console.log(`✅ [SECURITY] Manager API Auth Success on ${path} (company: ${companyId})`);
       return tenantContext.run(companyId, () => next());
     }
 
