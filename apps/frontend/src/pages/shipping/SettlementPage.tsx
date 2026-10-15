@@ -1,26 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  TruckIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon
-} from "@heroicons/react/24/outline";
+  Truck,
+  RotateCcw,
+  Search,
+  Check,
+  CheckCircle2,
+  Clock,
+  ArrowLeft,
+  Building2,
+  Calendar,
+  Layers,
+  Banknote,
+} from "lucide-react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import shippingSettlementService, {
   SettlementCompanySummary,
-  SettlementOrder
+  SettlementOrder,
 } from "../../services/shippingSettlementService";
+import { SettlementOrdersTable } from "./SettlementOrdersTable";
 
 const SETTLEMENT_STATUS_OPTIONS = [
   { value: "", labelKey: "shippingSettlement.allStatuses", fallback: "كل الحالات" },
   { value: "PENDING", labelKey: "shippingSettlement.pending", fallback: "قيد التسوية" },
-  { value: "SETTLED", labelKey: "shippingSettlement.settled", fallback: "تم التسوية" }
+  { value: "SETTLED", labelKey: "shippingSettlement.settled", fallback: "تم التسوية" },
 ];
 
 const SettlementPage: React.FC = () => {
@@ -47,7 +53,7 @@ const SettlementPage: React.FC = () => {
     try {
       setLoadingSummary(true);
       const res = await shippingSettlementService.getSummary();
-      setSummary(Array.isArray(res.data) ? res.data : []);
+      setSummary(Array.isArray(res?.data) ? res.data : []);
     } catch (error: any) {
       toast.error(error?.message || "تعذر تحميل ملخص التسويات");
     } finally {
@@ -59,15 +65,15 @@ const SettlementPage: React.FC = () => {
     try {
       setLoadingOrders(true);
       const params: Record<string, any> = { page };
-      if (selectedCompanyId) params['shippingCompanyId'] = selectedCompanyId;
-      if (statusFilter) params['settlementStatus'] = statusFilter;
-      if (search) params['search'] = search;
-      if (dateFrom) params['startDate'] = dateFrom;
-      if (dateTo) params['endDate'] = dateTo;
+      if (selectedCompanyId) params["shippingCompanyId"] = selectedCompanyId;
+      if (statusFilter) params["settlementStatus"] = statusFilter;
+      if (search) params["search"] = search;
+      if (dateFrom) params["startDate"] = dateFrom;
+      if (dateTo) params["endDate"] = dateTo;
       const res = await shippingSettlementService.getOrders(params);
-      setOrders(Array.isArray(res.data) ? res.data : []);
-      setTotalPages(res.pagination?.pages || 1);
-      setTotalOrders(res.pagination?.total || 0);
+      setOrders(Array.isArray(res?.data) ? res.data : []);
+      setTotalPages(res?.pagination?.pages || 1);
+      setTotalOrders(res?.pagination?.total || 0);
     } catch (error: any) {
       toast.error(error?.message || "تعذر تحميل الشحنات");
     } finally {
@@ -99,28 +105,28 @@ const SettlementPage: React.FC = () => {
   }, [search, dateFrom, dateTo]);
 
   const totalPending = useMemo(
-    () => summary.reduce((sum, item) => sum + item.pendingAmount, 0),
-    [summary]
+    () => (summary || []).reduce((sum, item) => sum + (item.pendingAmount || 0), 0),
+    [summary],
   );
   const totalDelivered = useMemo(
-    () => summary.reduce((sum, item) => sum + item.deliveredShipments, 0),
-    [summary]
+    () => (summary || []).reduce((sum, item) => sum + (item.deliveredShipments || 0), 0),
+    [summary],
   );
   const totalSettled = useMemo(
-    () => summary.reduce((sum, item) => sum + item.settledAmount, 0),
-    [summary]
+    () => (summary || []).reduce((sum, item) => sum + (item.settledAmount || 0), 0),
+    [summary],
   );
 
   const allSelected = orders.length > 0 && selectedIds.length === orders.length;
 
   const sourceTypeOf = useMemo(() => {
     const map = new Map<string, string>();
-    orders.forEach((o) => map.set(o.id, o.sourceType));
+    (orders || []).forEach((o) => map.set(o.id, o.sourceType));
     return map;
   }, [orders]);
 
   const toggleSelectAll = () => {
-    setSelectedIds((prev) => (prev.length === orders.length ? [] : orders.map((o) => o.id)));
+    setSelectedIds((prev) => (prev.length === orders.length ? [] : (orders || []).map((o) => o.id)));
   };
 
   const toggleSelect = (id: string) => {
@@ -132,7 +138,7 @@ const SettlementPage: React.FC = () => {
       try {
         setProcessing(true);
         const res = await shippingSettlementService.settle({ shippingCompanyId });
-        toast.success(`تمت تسوية ${res.data.updated} شحنة`);
+        toast.success(`تمت تسوية ${res.data?.updated || 0} شحنة`);
         setSelectedIds([]);
         await Promise.all([loadSummary(), loadOrders()]);
       } catch (error: any) {
@@ -152,7 +158,7 @@ const SettlementPage: React.FC = () => {
     try {
       setProcessing(true);
       const res = await shippingSettlementService.settle({ shipmentIds, turboOrderIds });
-      toast.success(`تمت تسوية ${res.data.updated} شحنة`);
+      toast.success(`تمت تسوية ${res.data?.updated || 0} شحنة`);
       setSelectedIds([]);
       await Promise.all([loadSummary(), loadOrders()]);
     } catch (error: any) {
@@ -169,7 +175,7 @@ const SettlementPage: React.FC = () => {
       const res = isTurbo
         ? await shippingSettlementService.unsettle([], [id])
         : await shippingSettlementService.unsettle([id]);
-      toast.success(`تم التراجع عن تسوية ${res.data.updated} شحنة`);
+      toast.success(`تم التراجع عن تسوية ${res.data?.updated || 0} شحنة`);
       await Promise.all([loadSummary(), loadOrders()]);
     } catch (error: any) {
       toast.error(error?.message || "تعذر التراجع عن التسوية");
@@ -178,271 +184,172 @@ const SettlementPage: React.FC = () => {
     }
   };
 
-  const selectedCompany = summary.find((item) => item.company.id === selectedCompanyId);
-
   const getCompanyName = (item: SettlementCompanySummary) =>
     item.company.id === "TURBO" ? t("shippingSettlement.turbo", "Turbo Express") : item.company.name;
 
-  const getStatusBadge = (order: SettlementOrder) => {
-    if (order.settlementStatus === "SETTLED") {
-      return <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 dark:bg-green-900/25 dark:text-green-300">{t("shippingSettlement.settled", "تم التسوية")}</span>;
-    }
-    if (!order.delivered) {
-      return <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("shippingSettlement.notDelivered", "غير مسلّم")}</span>;
-    }
-    return <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/25 dark:text-amber-300">{t("shippingSettlement.pending", "قيد التسوية")}</span>;
-  };
-
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t("shippingSettlement.title", "تسويات شركات الشحن")}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+    <div className="space-y-4 max-w-7xl mx-auto pb-12" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/70">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <Truck className="h-5 w-5" />
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              {t("shippingSettlement.title", "تسويات شركات الشحن")}
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {t("shippingSettlement.description", "تقفيل حسابات الشحنات المسلّمة مع شركات الشحن")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/shipping/courier-settlements"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border border-border/70 bg-card hover:bg-muted/30 text-foreground rounded-xl transition shadow-2xs"
           >
-            تسويات المناديب والتوصيل الداخلي ←
+            <span>تسويات المناديب والتوصيل الداخلي</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
 
+      {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.pendingAmount", "مستحق التحصيل من الشركات")}</div>
-          <div className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{formatPrice(totalPending)}</div>
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <div className="text-xs text-muted-foreground">{t("shippingSettlement.pendingAmount", "مستحق التحصيل من الشركات")}</div>
+          <div className="mt-1 text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+            {formatPrice(totalPending)}
+          </div>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.deliveredCount", "شحنات مسلّمة بانتظار التسوية")}</div>
-          <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white">{totalDelivered}</div>
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <div className="text-xs text-muted-foreground">{t("shippingSettlement.deliveredCount", "شحنات مسلّمة بانتظار التسوية")}</div>
+          <div className="mt-1 text-2xl font-bold font-mono tabular-nums text-foreground">
+            {totalDelivered}
+          </div>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("shippingSettlement.settledAmount", "تمت تسويته")}</div>
-          <div className="mt-1 text-2xl font-black text-green-600 dark:text-green-400">{formatPrice(totalSettled)}</div>
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <div className="text-xs text-muted-foreground">{t("shippingSettlement.settledAmount", "تمت تسويته")}</div>
+          <div className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+            {formatPrice(totalSettled)}
+          </div>
         </div>
       </div>
 
+      {/* Company Cards */}
       {loadingSummary ? (
-        <div className="p-6 text-center text-sm text-gray-500">جاري التحميل...</div>
-      ) : summary.length === 0 ? (
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
+        <div className="p-8 text-center text-xs text-muted-foreground">جاري تحميل الملخص...</div>
+      ) : (summary || []).length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border/70 bg-card p-8 text-center text-xs text-muted-foreground">
           {t("shippingSettlement.noCompanies", "لا توجد شركات شحن")}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {summary.map((item) => (
+          {(summary || []).map((item) => (
             <button
               key={item.company.id}
+              type="button"
               onClick={() => {
                 setSelectedCompanyId((prev) => (prev === item.company.id ? "" : item.company.id));
                 setPage(1);
               }}
-              className={`rounded-2xl border p-4 text-right transition-colors ${
+              className={`rounded-2xl border p-4 text-right transition-all shadow-2xs ${
                 selectedCompanyId === item.company.id
-                  ? "border-indigo-400 bg-indigo-50/60 dark:border-indigo-500 dark:bg-indigo-950/20"
-                  : "border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 hover:border-gray-200"
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "border-border/70 bg-card hover:border-border"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-900 dark:text-white">{getCompanyName(item)}</span>
-                <TruckIcon className="h-5 w-5 text-gray-400" />
+                <span className="font-bold text-xs sm:text-sm text-foreground">{getCompanyName(item)}</span>
+                <Truck className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>{item.deliveredShipments} {t("shippingSettlement.deliveredCount", "مسلّمة")}</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">{formatPrice(item.pendingAmount)}</span>
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono tabular-nums">
+                  {item.deliveredShipments} {t("shippingSettlement.deliveredCount", "مسلّمة")}
+                </span>
+                <span className="font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+                  {formatPrice(item.pendingAmount)}
+                </span>
               </div>
-              {item.deliveredShipments > 0 && (
-                <div className="mt-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBulkSettle(item.company.id);
-                    }}
-                    disabled={processing}
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    {t("shippingSettlement.settleCompany", "تسوية الكل")}
-                  </button>
-                </div>
-              )}
             </button>
           ))}
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      {/* Filters and Search Bar */}
+      <div className="bg-card p-3 rounded-2xl border border-border/70 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <MagnifyingGlassIcon className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={String(t("shippingSettlement.search", "ابحث برقم الطلب أو التتبع أو العميل..."))}
-              className="min-h-[42px] w-full rounded-xl border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm dark:border-gray-600 dark:bg-gray-900"
+              placeholder="البحث برقم الطلب، التتبع، أو اسم العميل..."
+              className="w-full pr-9 pl-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground placeholder:text-muted-foreground focus:outline-hidden"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="flex items-center gap-2">
             <select
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground focus:outline-hidden"
             >
               {SETTLEMENT_STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {t(opt.labelKey, opt.fallback)}
+                  {opt.fallback}
                 </option>
               ))}
             </select>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"
-            />
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"
-            />
-          </div>
-        </div>
 
-        {selectedCompany && (
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm dark:border-indigo-900/60 dark:bg-indigo-950/20">
-            <span className="font-bold text-indigo-700 dark:text-indigo-300">
-              {getCompanyName(selectedCompany)}
-            </span>
-            <button
-              onClick={() => setSelectedCompanyId("")}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              {t("shippingSettlement.clearCompany", "إزالة الفلتر")}
-            </button>
-          </div>
-        )}
-
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-                checked={allSelected}
-                onChange={toggleSelectAll}
-              />
-              {t("shippingSettlement.selectAll", "تحديد الكل")}
-            </label>
-            <span className="text-xs text-gray-500">{selectedIds.length}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => handleBulkSettle()}
-              disabled={processing || selectedIds.length === 0}
-              className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-            >
-              <BanknotesIcon className="ml-1 inline h-4 w-4" />
-              {t("shippingSettlement.settleSelected", "تسوية المحدد")}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-3 overflow-x-auto">
-          {loadingOrders ? (
-            <div className="p-6 text-center text-sm text-gray-500">جاري التحميل...</div>
-          ) : orders.length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-500">
-              {t("shippingSettlement.noOrders", "لا توجد شحنات")}
-            </div>
-          ) : (
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-right text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                  <th className="py-2 pl-3" />
-                  <th className="py-2">{t("shippingSettlement.order", "الطلب")}</th>
-                  <th className="py-2">{t("shippingSettlement.customer", "العميل")}</th>
-                  <th className="py-2">{t("shippingSettlement.tracking", "التتبع")}</th>
-                  <th className="py-2">{t("shippingSettlement.date", "التاريخ")}</th>
-                  <th className="py-2">{t("shippingSettlement.amount", "المبلغ")}</th>
-                  <th className="py-2">{t("shippingSettlement.status", "الحالة")}</th>
-                  <th className="py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-200">
-                    <td className="py-2 pl-3">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-                        checked={selectedIds.includes(order.id)}
-                        onChange={() => toggleSelect(order.id)}
-                        disabled={!order.delivered || order.settlementStatus === "SETTLED"}
-                      />
-                    </td>
-                    <td className="py-2 font-bold">{order.order?.orderNumber || "—"}</td>
-                    <td className="py-2">{order.order?.customerName || "—"}</td>
-                    <td className="py-2 text-xs text-gray-500">{order.trackingNumber || order.externalShipmentId || "—"}</td>
-                    <td className="py-2 text-xs text-gray-500">{formatDate(order.createdAt)}</td>
-                    <td className="py-2 font-semibold">{order.order ? formatPrice(order.order.total) : formatPrice(order.cost)}</td>
-                    <td className="py-2">{getStatusBadge(order)}</td>
-                    <td className="py-2 text-left">
-                      {order.settlementStatus === "SETTLED" && (
-                        <button
-                          onClick={() => handleUnsettle(order.id)}
-                          disabled={processing}
-                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
-                        >
-                          <ArrowPathIcon className="h-3.5 w-3.5" />
-                          {t("shippingSettlement.unsettle", "تراجع")}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {totalPages > 1 && (
-          <div className="mt-3 flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-            <span>{t("shippingSettlement.showing", { count: orders.length, total: totalOrders })}</span>
-            <div className="flex gap-2">
+            {selectedIds.length > 0 && (
               <button
-                disabled={page <= 1}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                className="rounded-lg border px-3 py-1 disabled:opacity-50"
+                type="button"
+                onClick={() => handleBulkSettle()}
+                disabled={processing}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs active:scale-[0.97] disabled:opacity-50"
               >
-                {t("shippingSettlement.previous", "السابق")}
+                <Check className="w-3.5 h-3.5" />
+                <span>تسوية المحددة ({selectedIds.length})</span>
               </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                className="rounded-lg border px-3 py-1 disabled:opacity-50"
-              >
-                {t("shippingSettlement.next", "التالي")}
-              </button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-800">
-        <CheckCircleIcon className="h-4 w-4 text-green-500" />
-        {t("shippingSettlement.hint", "التسوية تشمل الشحنات المرتبطة بطلبات بحالة DELIVERED فقط")}
-        <XCircleIcon className="h-4 w-4 text-gray-400" />
-      </div>
+      {/* Orders Table */}
+      {loadingOrders && (orders || []).length === 0 ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground">
+          <RotateCcw className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (orders || []).length === 0 ? (
+        <div className="bg-card border border-border/70 rounded-2xl p-12 text-center shadow-2xs">
+          <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center text-muted-foreground mx-auto mb-3 border border-border/60">
+            <Truck className="h-6 w-6" />
+          </div>
+          <h3 className="text-sm font-bold text-foreground mb-1">لا توجد شحنات مطابقة</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            لم يتم العثور على أي شحنات بانتظار التسوية بحسب الفلاتر المحددة.
+          </p>
+        </div>
+      ) : (
+        <SettlementOrdersTable
+          orders={orders}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          allSelected={allSelected}
+          formatPrice={formatPrice}
+          formatDate={formatDate}
+          onUnsettle={handleUnsettle}
+          processing={processing}
+          totalPages={totalPages}
+          page={page}
+          setPage={setPage}
+        />
+      )}
     </div>
   );
 };
