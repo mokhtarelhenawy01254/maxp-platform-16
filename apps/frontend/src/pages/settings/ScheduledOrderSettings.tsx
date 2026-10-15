@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from "react";
 import {
   Calendar,
-  Clock,
-  Bell,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  Save,
+  PlayCircle,
 } from "lucide-react";
 import { config } from "../../config";
 import tokenManager from "../../utils/tokenManager";
+import {
+  ScheduledOrderStatsStrip,
+  ScheduledOrderStats,
+} from "./ScheduledOrderStatsStrip";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
-interface ScheduledOrderSettings {
+interface ScheduledOrderSettingsData {
   enabled: boolean;
   minScheduleDays: number;
   maxScheduleDays: number;
@@ -24,15 +28,8 @@ interface ScheduledOrderSettings {
   allowTimeSelection: boolean;
 }
 
-interface Stats {
-  total: number;
-  pending: number;
-  upcoming: number;
-  overdue: number;
-}
-
-const ScheduledOrderSettings: React.FC = () => {
-  const [settings, setSettings] = useState<ScheduledOrderSettings>({
+export const ScheduledOrderSettings: React.FC = () => {
+  const [settings, setSettings] = useState<ScheduledOrderSettingsData>({
     enabled: true,
     minScheduleDays: 1,
     maxScheduleDays: 90,
@@ -43,7 +40,7 @@ const ScheduledOrderSettings: React.FC = () => {
     allowTimeSelection: true,
   });
 
-  const [stats, setStats] = useState<Stats>({
+  const [stats, setStats] = useState<ScheduledOrderStats>({
     total: 0,
     pending: 0,
     upcoming: 0,
@@ -52,10 +49,8 @@ const ScheduledOrderSettings: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -65,17 +60,12 @@ const ScheduledOrderSettings: React.FC = () => {
   const loadSettings = async () => {
     try {
       setLoading(true);
-
-      const response = await fetch(
-        `${config.apiUrl}/scheduled-orders/settings`,
-        {
-          headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        setSettings(data.data);
+      const res = await fetch(`${config.apiUrl}/scheduled-orders/settings`, {
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      });
+      const data = await res.json();
+      if (data?.success && data?.data) {
+        setSettings((prev) => ({ ...prev, ...data.data }));
       }
     } catch (error) {
       console.error("Error loading settings:", error);
@@ -87,12 +77,11 @@ const ScheduledOrderSettings: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${config.apiUrl}/scheduled-orders/stats`, {
+      const res = await fetch(`${config.apiUrl}/scheduled-orders/stats`, {
         headers: getAuthHeaders({ "Content-Type": "application/json" }),
       });
-
-      const data = await response.json();
-      if (data.success) {
+      const data = await res.json();
+      if (data?.success && data?.stats) {
         setStats(data.stats);
       }
     } catch (error) {
@@ -103,19 +92,15 @@ const ScheduledOrderSettings: React.FC = () => {
   const saveSettings = async () => {
     try {
       setSaving(true);
+      const res = await fetch(`${config.apiUrl}/scheduled-orders/settings`, {
+        method: "PUT",
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(settings),
+      });
 
-      const response = await fetch(
-        `${config.apiUrl}/scheduled-orders/settings`,
-        {
-          method: "PUT",
-          headers: getAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify(settings),
-        },
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        showMessage("success", "تم حفظ الإعدادات بنجاح");
+      const data = await res.json();
+      if (data?.success) {
+        showMessage("success", "تم حفظ إعدادات الطلبات المجدولة بنجاح");
         loadStats();
       } else {
         showMessage("error", "فشل في حفظ الإعدادات");
@@ -130,22 +115,24 @@ const ScheduledOrderSettings: React.FC = () => {
 
   const runManualTransition = async () => {
     try {
-      const response = await fetch(
-        `${config.apiUrl}/scheduled-orders/transition`,
-        {
-          method: "POST",
-          headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        },
-      );
+      setTransitioning(true);
+      const res = await fetch(`${config.apiUrl}/scheduled-orders/transition`, {
+        method: "POST",
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      });
 
-      const data = await response.json();
-      if (data.success) {
-        showMessage("success", `تم معالجة ${data.processed} طلب بنجاح`);
+      const data = await res.json();
+      if (data?.success) {
+        showMessage("success", `تمت معالجة ${data.processed ?? 0} طلب بنجاح`);
         loadStats();
+      } else {
+        showMessage("error", "فشل في تشغيل التحويل اليدوي");
       }
     } catch (error) {
       console.error("Error running transition:", error);
       showMessage("error", "فشل في تشغيل التحويل اليدوي");
+    } finally {
+      setTransitioning(false);
     }
   };
 
@@ -156,315 +143,189 @@ const ScheduledOrderSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[300px] p-6 text-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="mt-2 text-xs text-muted-foreground">جاري تحميل إعدادات الجدولة...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-background">
+      {/* 1. TOP COMMAND BAR */}
+      <header className="h-auto min-h-12 border-b border-border/70 px-3 sm:px-4 py-2 bg-card/95 backdrop-blur-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 shrink-0 z-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <Calendar className="h-4 w-4 text-primary shrink-0" />
+          <h1 className="text-xs sm:text-sm font-bold text-foreground truncate">
+            إعدادات الطلبات المجدولة
+          </h1>
+          <span className="hidden md:inline-block text-[10px] text-muted-foreground font-mono">
+            Scheduled Orders
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={runManualTransition}
+            disabled={transitioning}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium text-foreground bg-muted/60 hover:bg-muted border border-border/70 transition-all active:scale-[0.97] disabled:opacity-50"
+            title="تشغيل محرك النقل للطلبات المستحقة الآن"
+          >
+            <PlayCircle className={`h-3.5 w-3.5 ${transitioning ? "animate-spin" : ""}`} />
+            <span>{transitioning ? "جاري التحويل..." : "تشغيل التحويل يدوياً"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={saveSettings}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all active:scale-[0.97] disabled:opacity-50"
+          >
+            <Save className={`h-3.5 w-3.5 ${saving ? "animate-spin" : ""}`} />
+            <span>{saving ? "جاري الحفظ..." : "حفظ الإعدادات"}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Notification Toast Banner */}
       {message && (
         <div
-          className={`p-4 rounded-lg ${
+          className={`p-2.5 border-b flex items-center gap-2 text-xs font-medium shrink-0 ${
             message.type === "success"
-              ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800"
-              : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              : "bg-destructive/10 text-destructive border-destructive/20"
           }`}
         >
-          {message.text}
+          {message.type === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+          <span>{message.text}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                إجمالي الطلبات المجدولة
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {stats.total}
-              </p>
-            </div>
-            <Calendar className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-          </div>
-        </div>
+      {/* 2. CHASSIS SURFACE BODY */}
+      <main className="flex-1 overflow-y-auto min-h-0 bg-background divide-y divide-border/60">
+        <ScheduledOrderStatsStrip stats={stats} />
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
+        <section className="p-4 sm:p-5 max-w-4xl space-y-4">
+          <div className="flex items-center justify-between p-3.5 rounded-md border border-border/70 bg-card">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                قيد الانتظار
-              </p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {stats.pending}
-              </p>
+              <span className="text-xs font-semibold text-foreground">تفعيل نظام الطلبات المجدولة</span>
+              <p className="text-[11px] text-muted-foreground mt-0.5">إتاحة خيار الجدولة والتسليم المستقبلي عند إنشاء الطلبات</p>
             </div>
-            <Clock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                قادمة (7 أيام)
-              </p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                {stats.upcoming}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">متأخرة</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                {stats.overdue}
-              </p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-          الإعدادات العامة
-        </h3>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                تفعيل الطلبات المجدولة
-              </span>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                السماح للموظفين بإنشاء طلبات مجدولة
-              </p>
-            </div>
-            <label
-              htmlFor="scheduled-orders-enabled"
-              className="relative inline-flex items-center cursor-pointer"
-            >
+            <label className="relative inline-flex items-center cursor-pointer">
               <input
-                id="scheduled-orders-enabled"
-                name="enabled"
                 type="checkbox"
                 checked={settings.enabled}
-                onChange={(e) =>
-                  setSettings({ ...settings, enabled: e.target.checked })
-                }
+                onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-600"></div>
+              <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="scheduled-orders-min-days"
-                className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
-              >
-                الحد الأدنى للجدولة (أيام)
-              </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="p-3.5 rounded-md border border-border/70 bg-card space-y-1.5">
+              <label htmlFor="min-days-input" className="text-xs font-semibold text-foreground">الحد الأدنى للجدولة (أيام)</label>
               <input
-                id="scheduled-orders-min-days"
-                name="minScheduleDays"
+                id="min-days-input"
                 type="number"
-                autoComplete="off"
                 min="0"
                 value={settings.minScheduleDays}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    minScheduleDays: parseInt(e.target.value),
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                onChange={(e) => setSettings({ ...settings, minScheduleDays: parseInt(e.target.value) || 0 })}
+                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                الحد الأدنى للمدة قبل موعد الاستلام
-              </p>
+              <p className="text-[10px] text-muted-foreground">أقل مهلة مسموحة للعميل قبل موعد التسليم</p>
             </div>
 
-            <div>
-              <label
-                htmlFor="scheduled-orders-max-days"
-                className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
-              >
-                الحد الأقصى للجدولة (أيام)
-              </label>
+            <div className="p-3.5 rounded-md border border-border/70 bg-card space-y-1.5">
+              <label htmlFor="max-days-input" className="text-xs font-semibold text-foreground">الحد الأقصى للجدولة (أيام)</label>
               <input
-                id="scheduled-orders-max-days"
-                name="maxScheduleDays"
+                id="max-days-input"
                 type="number"
-                autoComplete="off"
                 min="1"
                 value={settings.maxScheduleDays}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    maxScheduleDays: parseInt(e.target.value),
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                onChange={(e) => setSettings({ ...settings, maxScheduleDays: parseInt(e.target.value) || 1 })}
+                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                أقصى مدة يمكن جدولة الطلب فيها
-              </p>
+              <p className="text-[10px] text-muted-foreground">أقصى مدى زمني متاح لاختيار تاريخ الاستلام</p>
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="scheduled-orders-auto-transition-days"
-              className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
-            >
-              التحويل التلقائي قبل الموعد (أيام)
-            </label>
-            <input
-              id="scheduled-orders-auto-transition-days"
-              name="autoTransitionDaysBefore"
-              type="number"
-              autoComplete="off"
-              min="0"
-              value={settings.autoTransitionDaysBefore}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  autoTransitionDaysBefore: parseInt(e.target.value),
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              0 = التحويل في نفس اليوم، 1 = قبل يوم واحد، إلخ
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="scheduled-orders-target-status"
-              className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
-            >
-              الحالة المستهدفة بعد التحويل
-            </label>
-            <select
-              id="scheduled-orders-target-status"
-              name="targetStatusAfterTransition"
-              autoComplete="off"
-              value={settings.targetStatusAfterTransition}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  targetStatusAfterTransition: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="CONFIRMED">مؤكد</option>
-              <option value="PROCESSING">قيد التجهيز</option>
-              <option value="PENDING">قيد الانتظار</option>
-            </select>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              الحالة التي سينتقل إليها الطلب تلقائياً
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="p-3.5 rounded-md border border-border/70 bg-card space-y-1.5">
+              <label htmlFor="transition-days-input" className="text-xs font-semibold text-foreground">التحويل التلقائي قبل الموعد (أيام)</label>
               <input
-                type="checkbox"
-                id="customerNotif"
-                name="sendCustomerNotification"
-                checked={settings.sendCustomerNotification}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    sendCustomerNotification: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                id="transition-days-input"
+                type="number"
+                min="0"
+                value={settings.autoTransitionDaysBefore}
+                onChange={(e) => setSettings({ ...settings, autoTransitionDaysBefore: parseInt(e.target.value) || 0 })}
+                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
-              <label
-                htmlFor="customerNotif"
-                className="text-sm font-medium text-gray-900 dark:text-white"
+              <p className="text-[10px] text-muted-foreground">0 = التحويل في نفس يوم الاستلام، 1 = قبل الموعد بيوم واحد</p>
+            </div>
+
+            <div className="p-3.5 rounded-md border border-border/70 bg-card space-y-1.5">
+              <label htmlFor="target-status-select" className="text-xs font-semibold text-foreground">الحالة المستهدفة بعد التحويل</label>
+              <select
+                id="target-status-select"
+                value={settings.targetStatusAfterTransition}
+                onChange={(e) => setSettings({ ...settings, targetStatusAfterTransition: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-xs font-medium rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               >
-                إرسال إشعار للعميل عند التحويل
+                <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
+                <option value="PROCESSING">قيد التجهيز (PROCESSING)</option>
+                <option value="PENDING">قيد الانتظار (PENDING)</option>
+              </select>
+              <p className="text-[10px] text-muted-foreground">الحالة التشغيلية التي يدخل إليها الطلب تلقائياً للتنفيذ</p>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-md border border-border/70 bg-card space-y-2.5">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">خيارات التنبيهات والوقت</span>
+            <div className="divide-y divide-border/50">
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <span className="text-xs font-medium text-foreground">إرسال إشعار للعميل عند التحويل</span>
+                  <p className="text-[10px] text-muted-foreground">إشعار العميل بأن طلبه دخل مرحلة التأكيد والتجهيز</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.sendCustomerNotification}
+                  onChange={(e) => setSettings({ ...settings, sendCustomerNotification: e.target.checked })}
+                  className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                />
               </label>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="staffNotif"
-                name="sendStaffNotification"
-                checked={settings.sendStaffNotification}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    sendStaffNotification: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
-              />
-              <label
-                htmlFor="staffNotif"
-                className="text-sm font-medium text-gray-900 dark:text-white"
-              >
-                إرسال إشعار للموظفين عند التحويل
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <span className="text-xs font-medium text-foreground">إرسال إشعار لفريق العمل والمخزن</span>
+                  <p className="text-[10px] text-muted-foreground">تنبيه مسؤولي التجهيز ببدء تجهيز الطلبات المستحقة</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.sendStaffNotification}
+                  onChange={(e) => setSettings({ ...settings, sendStaffNotification: e.target.checked })}
+                  className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                />
               </label>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="timeSelection"
-                name="allowTimeSelection"
-                checked={settings.allowTimeSelection}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    allowTimeSelection: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
-              />
-              <label
-                htmlFor="timeSelection"
-                className="text-sm font-medium text-gray-900 dark:text-white"
-              >
-                السماح باختيار وقت محدد للاستلام
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <span className="text-xs font-medium text-foreground">إتاحة اختيار نافذة زمنية للتسليم (Time Slots)</span>
+                  <p className="text-[10px] text-muted-foreground">السماح بتحديد فترة صباحية أو مسائية للاستلام</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.allowTimeSelection}
+                  onChange={(e) => setSettings({ ...settings, allowTimeSelection: e.target.checked })}
+                  className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                />
               </label>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <CheckCircle className="w-4 h-4" />
-            {saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
-          </button>
-
-          <button
-            onClick={runManualTransition}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Bell className="w-4 h-4" />
-            تشغيل التحويل يدوياً
-          </button>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };
