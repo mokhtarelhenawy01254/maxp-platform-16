@@ -2,7 +2,8 @@ export type PlatformLandingVariantId =
   | "enterprise-os"
   | "sales-flow"
   | "executive-atlas"
-  | "business-os";
+  | "business-os"
+  | "merchant-daylight";
 
 export interface PlatformLandingVariantDefinition {
   id: PlatformLandingVariantId;
@@ -68,6 +69,23 @@ export const PLATFORM_LANDING_VARIANTS: PlatformLandingVariantDefinition[] = [
       "سرد قيادي",
       "Metrics أوضح",
       "إحساس boardroom / control room",
+    ],
+  },
+  {
+    id: "merchant-daylight",
+    label: "نسخة التاجر — نهارية",
+    badge: "نسخة نهارية تجارية",
+    summary:
+      "لاند فاتحة بمنطق معرض بيع لا كونسول هندسي: وعد واحد واضح، أرقام إنتاج حقيقية، أسعار من كتالوج المنصة، ودورة الأوردر كاملة في سطح واحد.",
+    audience:
+      "لتجّار مصر (متاجر أونلاين، مطاعم، عيادات، شركات) اللي بيقارنوا بين شراء 4-5 أدوات منفصلة ونظام واحد.",
+    tone: "فاتح، تجاري، عالي الوضوح.",
+    accent: "#2f6bff",
+    surface: "#ffffff",
+    focusPoints: [
+      "أرقام إنتاج حقيقية فوق الطية",
+      "باقات الكتالوج بأسعارها الفعلية",
+      "دفتر قيمة يقارن الفردي بالباقة",
     ],
   },
   {

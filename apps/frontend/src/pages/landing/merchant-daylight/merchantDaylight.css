@@ -1,0 +1,473 @@
+/* ============================================================================
+   merchant-daylight — لاند «نسخة التاجر» النهارية
+   ملف مُنطّق بالكامل تحت .mdl — مش بيلمس أي ستايل عام في التطبيق.
+   القاعدة: سطح واحد متصل + هايرلاينز، بدون صناديق داخل صناديق وبدون توهّج.
+   ========================================================================== */
+
+.mdl {
+  --mdl-bg: #ffffff;
+  --mdl-panel: #f7f8fa;
+  --mdl-soft: #f1f3f6;
+  --mdl-ink: #0e1116;
+  --mdl-ink-2: #39414d;
+  --mdl-muted: #6b7280;
+  --mdl-line: #e6e8ec;
+  --mdl-line-strong: #d3d7de;
+  --mdl-accent: #2f6bff;
+  --mdl-accent-soft: #eef3ff;
+  --mdl-money: #0b7a52;
+  --mdl-money-soft: #ecf7f2;
+  --mdl-shell: 1180px;
+
+  font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--mdl-bg);
+  color: var(--mdl-ink);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mdl *,
+.mdl *::before,
+.mdl *::after {
+  box-sizing: border-box;
+}
+
+.mdl-shell {
+  width: 100%;
+  max-width: var(--mdl-shell);
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 640px) {
+  .mdl-shell {
+    padding-inline: 24px;
+  }
+}
+
+.mdl-section {
+  border-top: 1px solid var(--mdl-line);
+  padding-block: 52px;
+}
+
+@media (min-width: 768px) {
+  .mdl-section {
+    padding-block: 72px;
+  }
+}
+
+/* ---------- Typography ---------- */
+
+.mdl-h1 {
+  font-size: clamp(27px, 4.4vw, 45px);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.mdl-h2 {
+  font-size: clamp(21px, 2.9vw, 31px);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.mdl-h3 {
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 0;
+}
+
+.mdl-lead {
+  color: var(--mdl-ink-2);
+  font-size: clamp(15px, 1.5vw, 17px);
+  line-height: 1.9;
+  text-wrap: pretty;
+  margin: 0;
+}
+
+.mdl-body {
+  color: var(--mdl-ink-2);
+  font-size: 14px;
+  line-height: 1.85;
+  text-wrap: pretty;
+  margin: 0;
+}
+
+.mdl-eyebrow {
+  color: var(--mdl-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mdl-muted {
+  color: var(--mdl-muted);
+}
+
+/* أرقام لاتينية بعرض ثابت داخل نص عربي — بدون أي مونو على الحروف العربية */
+.mdl-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  unicode-bidi: isolate;
+  direction: ltr;
+  display: inline-block;
+}
+
+.mdl-code {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ---------- Surfaces ---------- */
+
+.mdl-surface {
+  background: #fff;
+  border: 1px solid var(--mdl-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.mdl-panel {
+  background: var(--mdl-panel);
+  border-block: 1px solid var(--mdl-line);
+}
+
+.mdl-row-divide > * + * {
+  border-top: 1px solid var(--mdl-line);
+}
+
+/* ---------- Buttons ---------- */
+
+.mdl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease-out, background-color 160ms ease-out,
+    border-color 160ms ease-out, color 160ms ease-out;
+}
+
+.mdl-btn:active {
+  transform: scale(0.97);
+}
+
+.mdl-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--mdl-accent);
+}
+
+.mdl-btn--primary {
+  background: var(--mdl-ink);
+  color: #fff;
+}
+
+.mdl-btn--primary:hover {
+  background: #232a34;
+}
+
+.mdl-btn--accent {
+  background: var(--mdl-accent);
+  color: #fff;
+}
+
+.mdl-btn--accent:hover {
+  background: #245ae0;
+}
+
+.mdl-btn--ghost {
+  background: #fff;
+  color: var(--mdl-ink);
+  border-color: var(--mdl-line-strong);
+}
+
+.mdl-btn--ghost:hover {
+  background: var(--mdl-soft);
+}
+
+.mdl-btn--wa {
+  background: var(--mdl-money-soft);
+  color: var(--mdl-money);
+  border-color: #cbe9dc;
+}
+
+.mdl-btn--wa:hover {
+  background: #e2f2ea;
+}
+
+.mdl-btn--sm {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.mdl-btn--block {
+  width: 100%;
+}
+
+/* ---------- Chips & links ---------- */
+
+.mdl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--mdl-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--mdl-ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.mdl-link {
+  color: var(--mdl-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--mdl-line-strong);
+  text-underline-offset: 4px;
+}
+
+.mdl-link:hover {
+  text-decoration-color: var(--mdl-ink);
+}
+
+/* ---------- Rail (stepper) ---------- */
+
+.mdl-rail {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--mdl-line);
+}
+
+.mdl-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.mdl-rail-item {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--mdl-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 160ms ease-out, background-color 160ms ease-out;
+  white-space: nowrap;
+}
+
+.mdl-rail-item:hover {
+  color: var(--mdl-ink);
+}
+
+.mdl-rail-item[aria-selected="true"] {
+  color: var(--mdl-ink);
+}
+
+.mdl-rail-item[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 10px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--mdl-ink);
+  border-radius: 2px 2px 0 0;
+}
+
+.mdl-rail-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--mdl-accent);
+  border-radius: 8px;
+}
+
+/* ---------- Pill toggle (ledger) ---------- */
+
+.mdl-toggle {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--mdl-soft);
+  border: 1px solid var(--mdl-line);
+  border-radius: 10px;
+}
+
+.mdl-toggle button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mdl-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
+}
+
+.mdl-toggle button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--mdl-ink);
+  border: 1px solid var(--mdl-line);
+}
+
+.mdl-toggle button:active {
+  transform: scale(0.97);
+}
+
+.mdl-toggle button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--mdl-accent);
+}
+
+/* ---------- Chat bubbles (WhatsApp vignette) ---------- */
+
+.mdl-bubble {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  background: var(--mdl-soft);
+  color: var(--mdl-ink);
+}
+
+.mdl-bubble--out {
+  background: var(--mdl-money-soft);
+  color: #0a5c3f;
+}
+
+/* ---------- FAQ ---------- */
+
+.mdl-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mdl-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.mdl-faq summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--mdl-muted);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 160ms ease-out;
+}
+
+.mdl-faq[open] summary::after {
+  content: "–";
+}
+
+.mdl-faq[open] summary {
+  padding-bottom: 6px;
+}
+
+/* ---------- Sticky mobile action bar (mobile only) ---------- */
+
+.mdl-sticky {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid var(--mdl-line);
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 768px) {
+  .mdl-sticky {
+    display: none;
+  }
+}
+
+/* ---------- Anchors clear the sticky header ---------- */
+
+.mdl [id] {
+  scroll-margin-top: 78px;
+}
+
+/* ---------- Focus ---------- */
+
+.mdl a:focus-visible,
+.mdl button:focus-visible,
+.mdl input:focus-visible,
+.mdl select:focus-visible,
+.mdl textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--mdl-accent);
+  border-radius: 8px;
+}
+
+/* ---------- Form ---------- */
+
+.mdl-field {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--mdl-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--mdl-ink);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.mdl-field::placeholder {
+  color: #9aa1ac;
+}
+
+.mdl-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mdl-ink-2);
+}
+
+/* ---------- Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .mdl *,
+  .mdl *::before,
+  .mdl *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -10,6 +10,7 @@ const ALLOWED_LANDING_IDS = [
   "sales-flow",
   "executive-atlas",
   "business-os",
+  "merchant-daylight",
 ];
 
 const DEFAULT_SETTINGS = Object.freeze({

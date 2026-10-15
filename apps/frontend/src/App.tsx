@@ -925,6 +925,9 @@ const StoreCompleteBundleLanding = React.lazy(
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
 );
+const PlatformLandingComparePage = React.lazy(
+  () => import("./pages/landing/PlatformLandingComparePage"),
+);
 const StorefrontShell = React.lazy(
   () => import("./storefront/StorefrontShell"),
 );
@@ -2380,6 +2383,7 @@ const AppContent = () => {
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
             />
+            <Route path="/preview/landing-compare" element={<PlatformLandingComparePage />} />
             <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
             {/* Phase 3 — COD Sales Landing (#3 of 4 product display shapes) */}
             <Route path="/funnel/:slug" element={<FunnelCodSalesPage />} />

@@ -13,6 +13,7 @@ import {
 const PlatformLandingSalesFlow = React.lazy(() => import("./PlatformLandingSalesFlow"));
 const PlatformLandingExecutiveAtlas = React.lazy(() => import("./PlatformLandingExecutiveAtlas"));
 const PlatformLandingBusinessOs = React.lazy(() => import("./PlatformLandingBusinessOs"));
+const MerchantDaylightLanding = React.lazy(() => import("./merchant-daylight/MerchantDaylightLanding"));
 
 const variantComponents: Record<
   PlatformLandingVariantId,
@@ -22,6 +23,7 @@ const variantComponents: Record<
   "sales-flow": PlatformLandingSalesFlow,
   "executive-atlas": PlatformLandingExecutiveAtlas,
   "business-os": PlatformLandingBusinessOs,
+  "merchant-daylight": MerchantDaylightLanding,
 };
 
 interface PlatformLandingRendererProps {
