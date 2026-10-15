@@ -8,6 +8,9 @@ import {
   Gift,
   Sparkles,
   Wallet as WalletIcon,
+  RotateCw,
+  TrendingUp,
+  Receipt
 } from "lucide-react";
 
 import { apiClient } from "../../services/apiClient";
@@ -40,14 +43,6 @@ const transactionIcons: Record<string, typeof ArrowDownCircle> = {
   DEBIT: ArrowUpCircle,
 };
 
-const transactionStyles: Record<string, string> = {
-  CASHBACK: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
-  REFUND: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  CREDIT: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  BONUS: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  DEBIT: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-};
-
 const positiveTypes = new Set(["CASHBACK", "REFUND", "CREDIT", "BONUS"]);
 
 const toNumber = (value: unknown): number => {
@@ -56,203 +51,207 @@ const toNumber = (value: unknown): number => {
 };
 
 const formatMoney = (value: number, currency = "EGP") =>
-  `${value.toFixed(2)} ${currency}`;
+  `${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 
 export default function CustomerWalletPage() {
   const [wallet, setWallet] = useState<CustomerWalletData | null>(null);
-  const [transactions, setTransactions] = useState<CustomerWalletTransaction[]>(
-    [],
-  );
+  const [transactions, setTransactions] = useState<CustomerWalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [walletRes, transactionsRes] = await Promise.all([
+        apiClient.get("/wallet/my-wallet"),
+        apiClient.get("/wallet/my-transactions?limit=20"),
+      ]);
+
+      const nextWallet = walletRes?.data?.data || null;
+      const nextTransactions = transactionsRes?.data?.data?.transactions || [];
+
+      setWallet(nextWallet);
+      setTransactions(Array.isArray(nextTransactions) ? nextTransactions : []);
+    } catch (loadError) {
+      const err = loadError as {
+        response?: { data?: { message?: string } };
+      };
+      console.error("Error loading customer wallet:", loadError);
+      setError(err?.response?.data?.message || "تعذر تحميل بيانات المحفظة");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [walletRes, transactionsRes] = await Promise.all([
-          apiClient.get("/wallet/my-wallet"),
-          apiClient.get("/wallet/my-transactions?limit=20"),
-        ]);
-
-        const nextWallet = walletRes?.data?.data || null;
-        const nextTransactions = transactionsRes?.data?.data?.transactions || [];
-
-        setWallet(nextWallet);
-        setTransactions(Array.isArray(nextTransactions) ? nextTransactions : []);
-      } catch (loadError) {
-        const error = loadError as {
-          response?: { data?: { message?: string } };
-        };
-        console.error("Error loading customer wallet:", loadError);
-        setError(
-          error?.response?.data?.message || "تعذر تحميل بيانات المحفظة",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void load();
+    void loadData();
   }, []);
 
   const currency = wallet?.currency || "EGP";
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center text-gray-600 dark:text-gray-300">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="mt-4">جاري تحميل محفظتك...</p>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <RotateCw className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">جاري تحميل بيانات المحفظة...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="rounded-3xl bg-gradient-to-r from-pink-600 to-rose-600 p-8 text-white shadow-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="text-right">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-              <WalletIcon size={14} />
-              محفظة العملاء
+    <div className="mx-auto max-w-5xl space-y-6" dir="rtl">
+      {/* 1. Header Banner & Current Balance Chassis */}
+      <div className="relative overflow-hidden rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 text-right">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <WalletIcon className="h-3.5 w-3.5" />
+              <span>محفظة الرصيد والكاش باك</span>
             </div>
-            <h1 className="mt-4 text-3xl font-black">محفظتي والكاش باك</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-white/85">
-              رصيدك المتاح، الكاش باك المضاف من الطلبات المؤهلة، وآخر الحركات
-              على محفظتك.
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              رصيدي ومكافآت الولاء
+            </h1>
+            <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
+              سجل فوري للرصيد المتاح، عوائد الكاش باك المضافة من الطلبات المؤهلة، وتفاصيل العمليات المالية.
             </p>
           </div>
 
-          <div className="rounded-3xl bg-white/15 px-6 py-5 text-right backdrop-blur-sm">
-            <div className="text-sm text-white/80">الرصيد الحالي</div>
-            <div className="mt-2 text-4xl font-black">
-              {formatMoney(toNumber(wallet?.balance), currency)}
+          <div className="flex flex-col items-start rounded-lg border border-border/60 bg-muted/30 p-5 text-right sm:items-end">
+            <span className="text-xs font-medium text-muted-foreground">الرصيد المتاح للاستخدام</span>
+            <div className="mt-1 flex items-baseline gap-1.5 font-mono text-3xl font-bold tracking-tight text-foreground">
+              <span className="tabular-nums">{toNumber(wallet?.balance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="text-sm font-normal text-muted-foreground">{currency}</span>
             </div>
           </div>
         </div>
       </div>
 
       {error ? (
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
-          <AlertCircle size={18} />
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-xs font-medium text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            إجمالي الكاش باك
-            <Sparkles size={16} className="text-pink-500" />
+      {/* 2. KPI Telemetry Ribbon */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>إجمالي الكاش باك المكتسب</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-pink-500/20 bg-pink-500/10 text-pink-500">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
+          <div className="mt-2 font-mono text-xl font-bold tabular-nums text-foreground">
             {formatMoney(toNumber(wallet?.totalCashback), currency)}
           </div>
         </div>
 
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            إجمالي ما كسبته
-            <Gift size={16} className="text-amber-500" />
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>إجمالي الأرباح والمكافآت</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-500">
+              <Gift className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
+          <div className="mt-2 font-mono text-xl font-bold tabular-nums text-foreground">
             {formatMoney(toNumber(wallet?.totalEarned), currency)}
           </div>
         </div>
 
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-right shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-center justify-end gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            إجمالي ما أنفقته
-            <CreditCard size={16} className="text-red-500" />
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>الرصيد المستخدم في الشراء</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-500">
+              <CreditCard className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-3 text-2xl font-black text-gray-900 dark:text-white">
+          <div className="mt-2 font-mono text-xl font-bold tabular-nums text-foreground">
             {formatMoney(toNumber(wallet?.totalSpent), currency)}
           </div>
         </div>
       </div>
 
-      <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center justify-between gap-4">
-          <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-900 dark:text-gray-300">
-            {transactions.length} حركة
+      {/* 3. Transactions Ledger Chassis */}
+      <div className="rounded-xl border border-border/70 bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">سجل الحركات المالية</h2>
           </div>
-          <div className="text-right">
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-              آخر الحركات
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              راجع عمليات الكاش باك، الاسترجاع، واستخدام الرصيد داخل الطلبات.
-            </p>
-          </div>
+          <span className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+            {transactions.length} عملية
+          </span>
         </div>
 
         {transactions.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-400">
-            لا توجد حركات على المحفظة بعد.
+          <div className="py-12 text-center text-xs text-muted-foreground">
+            لا توجد حركات مسجلة على المحفظة حتى الآن.
           </div>
         ) : (
-          <div className="mt-6 space-y-3">
-            {transactions.map((transaction) => {
-              const Icon = transactionIcons[transaction.type] || Clock3;
-              const style =
-                transactionStyles[transaction.type] ||
-                "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200";
-              const isPositive = positiveTypes.has(transaction.type);
+          <div className="divide-y divide-border/50">
+            {transactions.map((tx) => {
+              const Icon = transactionIcons[tx.type] || Clock3;
+              const isPositive = positiveTypes.has(tx.type);
 
               return (
                 <div
-                  key={transaction.id}
-                  className="rounded-3xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/60"
+                  key={tx.id}
+                  className="flex flex-col gap-3 p-4 transition-colors hover:bg-muted/10 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-start justify-end gap-3 text-right">
-                      <div>
-                        <div className="font-bold text-gray-900 dark:text-white">
-                          {transaction.description || "حركة على المحفظة"}
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+                        isPositive
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                          : "border-rose-500/20 bg-rose-500/10 text-rose-500"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="space-y-0.5 text-right">
+                      <div className="text-xs font-semibold text-foreground">
+                        {tx.description || "حركة على المحفظة"}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <span className="font-mono">
                           {new Intl.DateTimeFormat("ar-EG", {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
                             hour: "numeric",
                             minute: "2-digit",
-                          }).format(new Date(transaction.createdAt))}
-                        </div>
-                        {transaction.orderId ? (
-                          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            مرجع الطلب: {transaction.orderId}
-                          </div>
+                          }).format(new Date(tx.createdAt))}
+                        </span>
+                        {tx.orderId ? (
+                          <>
+                            <span>•</span>
+                            <span>الطلب: <span className="font-mono font-medium">{tx.orderId}</span></span>
+                          </>
                         ) : null}
                       </div>
-                      <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${style}`}
-                      >
-                        <Icon size={18} />
-                      </div>
                     </div>
+                  </div>
 
-                    <div className="text-right">
-                      <div
-                        className={`text-xl font-black ${
-                          isPositive ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {isPositive ? "+" : "-"}
-                        {formatMoney(toNumber(transaction.amount), currency)}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        الرصيد بعد الحركة:{" "}
-                        {formatMoney(
-                          toNumber(transaction.balanceAfter),
-                          currency,
-                        )}
-                      </div>
+                  <div className="text-left sm:text-right">
+                    <div
+                      className={`font-mono text-sm font-bold tabular-nums ${
+                        isPositive ? "text-emerald-500" : "text-rose-500"
+                      }`}
+                      dir="ltr"
+                    >
+                      {isPositive ? "+" : "-"}
+                      {formatMoney(toNumber(tx.amount), currency)}
                     </div>
+                    {tx.balanceAfter !== undefined && (
+                      <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                        الرصيد بعد: {formatMoney(toNumber(tx.balanceAfter), currency)}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

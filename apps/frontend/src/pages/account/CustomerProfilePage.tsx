@@ -11,6 +11,8 @@ import {
   Save,
   Loader2,
   Lock,
+  CheckCircle2,
+  RotateCw
 } from "lucide-react";
 
 import { apiClient } from "../../services/apiClient";
@@ -30,29 +32,26 @@ const formatDate = (value?: string | null) => {
 export default function CustomerProfilePage() {
   const { data, loading, error, reload } = useCustomerLoyaltySummary();
 
-  // ── العنوان بالتفصيل ──
   const [address, setAddress] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressMsg, setAddressMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // ── كلمة المرور ──
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // تعبئة العنوان من بيانات العميل لما تحمّل
   useEffect(() => {
     if (data?.customer?.address) setAddress(data.customer.address);
   }, [data]);
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center text-gray-500">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="mt-4">جاري تحميل بياناتك...</p>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <RotateCw className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">جاري تحميل بيانات الحساب...</p>
         </div>
       </div>
     );
@@ -61,9 +60,9 @@ export default function CustomerProfilePage() {
   if (error || !data) {
     return (
       <div className="mx-auto max-w-3xl">
-        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
-          <AlertCircle size={18} />
-          <span>{error || "تعذر تحميل بياناتك"}</span>
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-xs font-medium text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error || "تعذر تحميل بيانات الملف الشخصي"}</span>
         </div>
       </div>
     );
@@ -76,7 +75,7 @@ export default function CustomerProfilePage() {
     setAddressMsg(null);
     try {
       await apiClient.put("/public/customers/profile", { address });
-      setAddressMsg({ ok: true, text: "تم حفظ العنوان بنجاح" });
+      setAddressMsg({ ok: true, text: "تم تحديث وحفظ العنوان بنجاح" });
     } catch (err) {
       const e = err as { response?: { data?: { message?: string } } };
       setAddressMsg({ ok: false, text: e.response?.data?.message || "فشل حفظ العنوان" });
@@ -103,7 +102,7 @@ export default function CustomerProfilePage() {
         currentPassword: currentPassword || undefined,
         newPassword,
       });
-      setPasswordMsg({ ok: true, text: "تم حفظ كلمة المرور بنجاح" });
+      setPasswordMsg({ ok: true, text: "تم تحديث كلمة المرور بنجاح" });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -117,183 +116,188 @@ export default function CustomerProfilePage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="rounded-3xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 p-8 text-white shadow-xl">
-        <div className="text-right">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-            <ShieldCheck size={14} />
-            بياناتي
+    <div className="mx-auto max-w-3xl space-y-6" dir="rtl">
+      {/* 1. Header Card Chassis */}
+      <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5 text-right">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>الملف الشخصي والبيانات</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">بياناتي الشخصية</h1>
+            <p className="text-xs text-muted-foreground">
+              المعلومات المسجلة لحسابك لدى {data.company?.nameAr || data.company?.name || "المتجر"}.
+            </p>
           </div>
-          <h1 className="mt-4 text-3xl font-black">بياناتي الشخصية</h1>
-          <p className="mt-2 text-sm leading-7 text-white/85">
-            المعلومات المسجلة عنك في متجر{" "}
-            {data.company?.nameAr || data.company?.name || "المتجر"}.
-          </p>
         </div>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-5 dark:border-gray-700">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
-            <UserRound size={30} />
+      {/* 2. Customer Credentials Info */}
+      <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-4 border-b border-border/60 pb-5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+            <UserRound className="h-6 w-6" />
           </div>
           <div className="text-right">
-            <div className="text-xl font-black text-gray-900 dark:text-white">
+            <div className="text-base font-bold text-foreground">
               {fullName || "عميل"}
             </div>
-            <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              عميل منذ {formatDate(data.customer.joinedAt)}
+            <div className="text-xs font-mono text-muted-foreground">
+              عضو منذ {formatDate(data.customer.joinedAt)}
             </div>
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <Phone size={16} />
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Phone className="h-4 w-4" />
               <span>رقم الهاتف</span>
             </div>
-            <span
-              className="font-bold text-gray-900 dark:text-white"
-              dir="ltr"
-            >
+            <span className="font-mono text-xs font-medium tabular-nums text-foreground" dir="ltr">
               {data.customer.phone || "—"}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <Mail size={16} />
+
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Mail className="h-4 w-4" />
               <span>البريد الإلكتروني</span>
             </div>
-            <span
-              className="font-bold text-gray-900 dark:text-white"
-              dir="ltr"
-            >
+            <span className="font-mono text-xs font-medium text-foreground" dir="ltr">
               {data.customer.email || "—"}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <CalendarDays size={16} />
-              <span>تاريخ الانضمام</span>
+
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:col-span-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarDays className="h-4 w-4" />
+              <span>تاريخ الانضمام الرسمي</span>
             </div>
-            <span className="font-bold text-gray-900 dark:text-white">
+            <span className="text-xs font-medium text-foreground">
               {formatDate(data.customer.joinedAt)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* العنوان بالتفصيل */}
-      <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-            <MapPin size={20} />
+      {/* 3. Detailed Shipping Address */}
+      <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+            <MapPin className="h-4 w-4" />
           </div>
           <div className="text-right">
-            <div className="font-bold text-gray-900 dark:text-white">العنوان بالتفصيل</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              عنوانك للشحن والتوصيل
-            </div>
+            <h2 className="text-sm font-semibold text-foreground">عنوان الشحن والتوصيل</h2>
+            <p className="text-xs text-muted-foreground">العنوان المعتمد لتسليم الطلبيات والشحنات</p>
           </div>
         </div>
+
         <div className="mt-4 space-y-3">
           <textarea
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             rows={3}
-            placeholder="مثال: شارع 9، حي المعادي، القاهرة — بجوار محطة المترو"
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            placeholder="مثال: شارع 9، المعادي، القاهرة — بجوار محطة المترو"
+            className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           {addressMsg && (
             <div
-              className={`rounded-xl px-4 py-2 text-sm ${
+              className={`flex items-center gap-2 rounded-lg border p-3 text-xs ${
                 addressMsg.ok
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                  : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                  : "border-destructive/30 bg-destructive/10 text-destructive"
               }`}
             >
-              {addressMsg.text}
+              {addressMsg.ok ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+              <span>{addressMsg.text}</span>
             </div>
           )}
           <button
             onClick={saveAddress}
             disabled={savingAddress}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
           >
-            {savingAddress ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            حفظ العنوان
+            {savingAddress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            <span>حفظ العنوان</span>
           </button>
         </div>
       </div>
 
-      {/* إدارة كلمة المرور */}
-      <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
-            <KeyRound size={20} />
+      {/* 4. Password Security Settings */}
+      <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-500">
+            <KeyRound className="h-4 w-4" />
           </div>
           <div className="text-right">
-            <div className="font-bold text-gray-900 dark:text-white">كلمة المرور</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              سجّل الدخول برقم الموبايل + كلمة مرور بدل دخول الموبايل فقط
-            </div>
+            <h2 className="text-sm font-semibold text-foreground">أمان كلمة المرور</h2>
+            <p className="text-xs text-muted-foreground">تسجيل الدخول برقم الهاتف وكلمة المرور</p>
           </div>
         </div>
+
         <div className="mt-4 grid gap-3">
           <div>
-            <label className="mb-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <Lock size={12} /> كلمة المرور الحالية (لو عندك واحدة)
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" />
+              <span>كلمة المرور الحالية (إن وجدت)</span>
             </label>
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="••••••"
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              placeholder="••••••••"
+              className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">كلمة المرور الجديدة</label>
+              <label className="mb-1.5 block text-xs text-muted-foreground">كلمة المرور الجديدة</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="••••••••"
+                className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">تأكيد كلمة المرور</label>
+              <label className="mb-1.5 block text-xs text-muted-foreground">تأكيد كلمة المرور</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-violet-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="••••••••"
+                className="w-full rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
+
           {passwordMsg && (
             <div
-              className={`rounded-xl px-4 py-2 text-sm ${
+              className={`flex items-center gap-2 rounded-lg border p-3 text-xs ${
                 passwordMsg.ok
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                  : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                  : "border-destructive/30 bg-destructive/10 text-destructive"
               }`}
             >
-              {passwordMsg.text}
+              {passwordMsg.ok ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+              <span>{passwordMsg.text}</span>
             </div>
           )}
-          <button
-            onClick={savePassword}
-            disabled={savingPassword}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50"
-          >
-            {savingPassword ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            حفظ كلمة المرور
-          </button>
+
+          <div>
+            <button
+              onClick={savePassword}
+              disabled={savingPassword}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+            >
+              {savingPassword ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              <span>تحديث كلمة المرور</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

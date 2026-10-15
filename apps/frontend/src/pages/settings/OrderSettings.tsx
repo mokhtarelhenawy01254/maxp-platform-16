@@ -42,10 +42,6 @@ import ExchangeReturnSettings from "./ExchangeReturnSettings";
 import DiscountApprovalSettings from "./DiscountApprovalSettings";
 import OrderWebhookSettings from "./OrderWebhookSettings";
 
-// ═══════════════════════════════════════════════════════════════
-// 📦 Order Settings Page with Sidebar Tabs
-// ═══════════════════════════════════════════════════════════════
-
 type TabId =
   | "status"
   | "ratings"
@@ -115,7 +111,6 @@ const OrderSettings: React.FC = () => {
     () => normalizeOrderSettingsTab(searchParams.get("tab")),
   );
 
-  // Update URL when tab changes
   useEffect(() => {
     const rawTab = searchParams.get("tab");
 
@@ -233,7 +228,7 @@ const OrderSettings: React.FC = () => {
       id: "easy_warehouse",
       label: "وضع المستودع السهل",
       icon: Package,
-      description: "استيراد المنتجات تلقائيًا",
+      description: "استيراد المنتجات تلقائيا",
     },
     {
       id: "sound",
@@ -262,26 +257,26 @@ const OrderSettings: React.FC = () => {
   ];
 
   return (
-    <div className="order-settings-root h-full min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900" dir="rtl">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+    <div className="order-settings-root h-full min-h-0 overflow-y-auto bg-background text-foreground" dir="rtl">
+      {/* Header Chassis */}
+      <div className="border-b border-border/70 bg-card">
+        <div className="w-full px-4 sm:px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400 rotate-180" />
+              <ChevronLeft className="h-4 w-4 rotate-180" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <Settings className="w-5 h-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                <Settings className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl font-bold tracking-tight text-foreground">
                   {t('orderSettings.title')}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {t('orderSettings.k_139')}
                 </p>
               </div>
@@ -290,39 +285,39 @@ const OrderSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar Tabs — full-width pill bar on mobile, vertical sidebar on desktop */}
+      <div className="w-full px-4 sm:px-6 py-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          {/* Sidebar Tabs */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-5rem)] lg:flex lg:flex-col">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 hidden lg:block shrink-0">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
+            <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm lg:sticky lg:top-6 lg:flex lg:max-h-[calc(100vh-5rem)] lg:flex-col">
+              <div className="hidden border-b border-border/60 p-4 shrink-0 lg:block">
+                <h2 className="text-xs font-semibold text-muted-foreground">
                   {t('orderSettings.k_140')}
                 </h2>
               </div>
               <nav
                 aria-label={t('orderSettings.k_140')}
-                className="p-2 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto no-scrollbar"
+                className="flex gap-1.5 overflow-x-auto p-2 no-scrollbar lg:flex-col lg:overflow-y-auto"
               >
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     data-tab-id={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors whitespace-nowrap lg:whitespace-normal ${activeTab === tab.id
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
-                      }`}
+                    className={`flex flex-shrink-0 items-center gap-3 rounded-lg px-3.5 py-2.5 text-right transition-colors whitespace-nowrap lg:w-full lg:whitespace-normal ${
+                      activeTab === tab.id
+                        ? "border border-primary/20 bg-primary/10 font-medium text-primary shadow-xs"
+                        : "border border-transparent text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                    }`}
                   >
                     <tab.icon
-                      className={`w-5 h-5 flex-shrink-0 ${activeTab === tab.id
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-gray-400"
-                        }`}
+                      className={`h-4 w-4 shrink-0 ${
+                        activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+                      }`}
                     />
                     <div className="flex-1 min-w-0 text-right">
-                      <div className="font-medium text-sm">{tab.label}</div>
-                      <div className="hidden lg:block text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs font-medium">{tab.label}</div>
+                      <div className="hidden text-[11px] text-muted-foreground line-clamp-1 lg:block">
                         {tab.description}
                       </div>
                     </div>

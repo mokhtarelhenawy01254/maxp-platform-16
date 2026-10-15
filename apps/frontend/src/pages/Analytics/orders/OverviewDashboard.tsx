@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowDownTrayIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { Download, XCircle, RotateCw, BarChart3, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import analyticsService from "../../../services/analyticsService";
@@ -57,7 +57,7 @@ const OverviewDashboard: React.FC = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("تم تصدير ملف الطلبات بنجاح");
+      toast.success("تم تصدير ملف تحليلات الطلبات بنجاح");
     } catch (err: any) {
       toast.error(err?.message || "فشل تصدير ملف الطلبات");
     } finally {
@@ -199,7 +199,7 @@ const OverviewDashboard: React.FC = () => {
         }
       } catch (err: any) {
         if (!background) {
-          setError(err.message || "حدث خطأ في جلب بيانات التحليلات");
+          setError(err.message || "حدث خطأ أثناء جلب بيانات لوحة التحليلات");
         }
       } finally {
         if (!background) {
@@ -227,23 +227,27 @@ const OverviewDashboard: React.FC = () => {
 
   if (loading && !stats) {
     return (
-      <div className="flex items-center justify-center min-h-[360px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <RotateCw className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">جاري تحميل لوحة تحليلات الطلبات...</p>
+        </div>
       </div>
     );
   }
 
   if (error && !stats) {
     return (
-      <div className="bg-rose-50 dark:bg-rose-950/20 p-6 rounded-xl border border-rose-200 dark:border-rose-900/30 text-center">
-        <XCircleIcon className="h-10 w-10 text-rose-500 mx-auto mb-3" />
-        <p className="text-rose-700 dark:text-rose-300 text-sm font-medium">{error}</p>
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center shadow-sm">
+        <XCircle className="mx-auto mb-3 h-8 w-8 text-destructive" />
+        <p className="text-xs font-medium text-destructive">{error}</p>
         <button
           type="button"
           onClick={() => fetchDashboardData()}
-          className="mt-3 px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 active:scale-[0.98] transition-all"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3.5 py-1.5 text-xs font-medium text-destructive-foreground transition-all hover:bg-destructive/90 active:scale-[0.98]"
         >
-          إعادة المحاولة
+          <RotateCw className="h-3.5 w-3.5" />
+          <span>إعادة المحاولة</span>
         </button>
       </div>
     );
@@ -252,30 +256,32 @@ const OverviewDashboard: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <div className="space-y-4 sm:space-y-5" dir="rtl">
-      {/* 1. Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-gray-100 dark:border-white/5">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+    <div className="space-y-5" dir="rtl">
+      {/* 1. Header Control Bar Chassis */}
+      <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1 text-right">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span>مركز قيادة العمليات والطلبات</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
             نظرة عامة على أداء الطلبات
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            مركز القيادة التنفيذي: مؤشرات التسليم والسيولة وحركة دورة حياة الأوردر
+          <p className="text-xs text-muted-foreground">
+            مؤشرات التسليم، معدلات التحصيل، وحركة التدفق التشغيلي لدورة حياة الأوردر
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={handleExportOrders}
             disabled={exporting}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted/40 active:scale-[0.98] disabled:opacity-50"
             title="تصدير بيانات الطلبات للفترة المحددة بصيغة Excel"
           >
-            <ArrowDownTrayIcon
-              className={`h-3.5 w-3.5 ${exporting ? "animate-bounce" : ""}`}
-            />
-            <span>{exporting ? "جاري التصدير…" : "تصدير (Excel)"}</span>
+            <Download className={`h-3.5 w-3.5 ${exporting ? "animate-bounce" : ""}`} />
+            <span>{exporting ? "جاري التصدير..." : "تصدير Excel"}</span>
           </button>
           <PeriodSelector onRangeChange={setRange} />
         </div>
@@ -293,7 +299,7 @@ const OverviewDashboard: React.FC = () => {
       <OverviewKpiStrip stats={stats} formatPrice={formatPrice} />
 
       {/* 4. Asymmetrical Bento: Trend Chart & Velocity Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <OverviewDualTrendChart
             data={stats.dailyTrend}
