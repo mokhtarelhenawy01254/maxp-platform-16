@@ -38,7 +38,6 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
     else setPlatform("other");
   }, []);
 
-  // Do not render inside installed standalone PWA or native Capacitor wrapper
   if (isCapacitorNative() || isStandalone) {
     return null;
   }
@@ -47,12 +46,12 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
     <button
       type="button"
       onClick={() => setShowIosModal(true)}
-      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/90 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 active:scale-[0.97] transition-all border border-slate-200/80 dark:border-slate-700/80 shadow-xs group ${
+      className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-foreground bg-card hover:bg-muted/70 transition-colors border border-border/70 shadow-xs group ${
         fullWidth ? "w-full" : ""
       }`}
       title="تثبيت التطبيق على هواتف الآيفون (iOS)"
     >
-      <Apple className="w-4 h-4 text-slate-800 dark:text-white shrink-0 group-hover:scale-110 transition-transform" />
+      <Apple className="size-4 text-foreground shrink-0 group-hover:scale-105 transition-transform" />
       <span>تثبيت للآيفون (iOS)</span>
     </button>
   );
@@ -61,12 +60,12 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
     <a
       href="/download/maxp.apk"
       download="MaxP.apk"
-      className={`inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/90 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 active:scale-[0.97] transition-all border border-slate-200/80 dark:border-slate-700/80 shadow-xs group ${
+      className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-foreground bg-card hover:bg-muted/70 transition-colors border border-border/70 shadow-xs group ${
         fullWidth ? "w-full" : ""
       }`}
       title="تحميل مباشر لتطبيق الأندرويد بصيغة APK"
     >
-      <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+      <Smartphone className="size-4 text-emerald-500 shrink-0 group-hover:scale-105 transition-transform" />
       <span>تحميل للأندرويد (APK)</span>
     </a>
   );
@@ -74,23 +73,23 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
   if (layout === "sidebar") {
     return (
       <>
-        <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/20 space-y-1.5">
+        <div className="p-2 border-t border-border/60 bg-muted/20 space-y-1.5">
           {platform === "ios" ? (
             <button
               type="button"
               onClick={() => setShowIosModal(true)}
-              className={`flex items-center gap-2.5 p-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all w-full text-start ${
+              className={`flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium text-foreground hover:bg-card border border-transparent hover:border-border/60 transition-colors w-full text-start ${
                 isCollapsed ? "justify-center" : ""
               }`}
               title="تثبيت تطبيق الآيفون (iOS)"
             >
-              <span className="p-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 shrink-0">
-                <Apple className="h-4 w-4" />
+              <span className="p-1.5 rounded-md bg-foreground text-background shrink-0">
+                <Apple className="size-3.5" />
               </span>
               {!isCollapsed && (
                 <div className="flex flex-col text-start overflow-hidden">
-                  <span className="font-semibold text-gray-900 dark:text-white leading-tight truncate">تطبيق الآيفون</span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">تثبيت سريع (iOS)</span>
+                  <span className="font-semibold text-foreground leading-tight truncate">تطبيق الآيفون</span>
+                  <span className="text-[10px] text-muted-foreground font-mono tabular-nums">تثبيت سريع (iOS)</span>
                 </div>
               )}
             </button>
@@ -98,18 +97,18 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
             <a
               href="/download/maxp.apk"
               download="MaxP.apk"
-              className={`flex items-center gap-2.5 p-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all ${
+              className={`flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium text-foreground hover:bg-card border border-transparent hover:border-border/60 transition-colors ${
                 isCollapsed ? "justify-center" : ""
               }`}
               title="تحميل تطبيق الأندرويد (APK)"
             >
-              <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-                <Smartphone className="h-4 w-4" />
+              <span className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500 shrink-0">
+                <Smartphone className="size-3.5" />
               </span>
               {!isCollapsed && (
                 <div className="flex flex-col text-start overflow-hidden">
-                  <span className="font-semibold text-gray-900 dark:text-white leading-tight truncate">تطبيق الأندرويد</span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">تحميل مباشر (APK)</span>
+                  <span className="font-semibold text-foreground leading-tight truncate">تطبيق الأندرويد</span>
+                  <span className="text-[10px] text-muted-foreground font-mono tabular-nums">تحميل مباشر (APK)</span>
                 </div>
               )}
             </a>
@@ -118,18 +117,18 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
               <a
                 href="/download/maxp.apk"
                 download="MaxP.apk"
-                className={`flex items-center gap-2.5 p-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all ${
+                className={`flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium text-foreground hover:bg-card border border-transparent hover:border-border/60 transition-colors ${
                   isCollapsed ? "justify-center" : ""
                 }`}
                 title="تحميل تطبيق الأندرويد (APK)"
               >
-                <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-                  <Smartphone className="h-4 w-4" />
+                <span className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500 shrink-0">
+                  <Smartphone className="size-3.5" />
                 </span>
                 {!isCollapsed && (
                   <div className="flex flex-col text-start overflow-hidden">
-                    <span className="font-semibold text-gray-900 dark:text-white leading-tight truncate">تطبيق الأندرويد</span>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">تحميل مباشر (APK)</span>
+                    <span className="font-semibold text-foreground leading-tight truncate">تطبيق الأندرويد</span>
+                    <span className="text-[10px] text-muted-foreground font-mono tabular-nums">تحميل مباشر (APK)</span>
                   </div>
                 )}
               </a>
@@ -137,15 +136,15 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowIosModal(true)}
-                  className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all w-full text-start"
+                  className="flex items-center gap-2.5 p-2 rounded-lg text-xs font-medium text-foreground hover:bg-card border border-transparent hover:border-border/60 transition-colors w-full text-start"
                   title="تثبيت تطبيق الآيفون (iOS)"
                 >
-                  <span className="p-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 shrink-0">
-                    <Apple className="h-4 w-4" />
+                  <span className="p-1.5 rounded-md bg-foreground text-background shrink-0">
+                    <Apple className="size-3.5" />
                   </span>
                   <div className="flex flex-col text-start overflow-hidden">
-                    <span className="font-semibold text-gray-900 dark:text-white leading-tight truncate">تطبيق الآيفون</span>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">تثبيت سريع (iOS)</span>
+                    <span className="font-semibold text-foreground leading-tight truncate">تطبيق الآيفون</span>
+                    <span className="text-[10px] text-muted-foreground font-mono tabular-nums">تثبيت سريع (iOS)</span>
                   </div>
                 </button>
               )}
@@ -159,7 +158,7 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
 
   return (
     <>
-      <div className={`mt-6 pt-4 border-t border-slate-200/70 dark:border-slate-800/70 text-center ${className}`}>
+      <div className={`mt-6 pt-4 border-t border-border/60 text-center ${className}`}>
         {platform === "ios" ? (
           renderIosButton(true)
         ) : platform === "android" ? (
@@ -175,3 +174,5 @@ export const AppInstallActions: React.FC<AppInstallActionsProps> = ({
     </>
   );
 };
+
+export default AppInstallActions;
