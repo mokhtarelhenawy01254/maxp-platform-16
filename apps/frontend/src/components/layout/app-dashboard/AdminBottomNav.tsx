@@ -2,12 +2,12 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  HomeIcon,
-  Squares2X2Icon,
-  ChatBubbleLeftRightIcon,
-  BellIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline';
+  Home,
+  LayoutGrid,
+  MessageSquare,
+  Bell,
+  User,
+} from 'lucide-react';
 
 interface AdminBottomNavItem {
   key: string;
@@ -33,28 +33,28 @@ const buildItems = (
     key: 'home',
     label: labels?.home ?? 'الرئيسية',
     href: '/apps/main',
-    icon: HomeIcon,
+    icon: Home,
     matchPaths: ['/apps/main'],
   },
   {
     key: 'apps',
     label: labels?.apps ?? 'التطبيقات',
     href: '/apps',
-    icon: Squares2X2Icon,
+    icon: LayoutGrid,
     matchPaths: ['/apps'],
   },
   {
     key: 'whatsapp',
     label: labels?.whatsapp ?? 'الواتساب',
     href: '/apps/whatsapp',
-    icon: ChatBubbleLeftRightIcon,
+    icon: MessageSquare,
     matchPaths: ['/apps/whatsapp', '/apps/messaging-automation'],
   },
   {
     key: 'notifications',
     label: labels?.notifications ?? 'الإشعارات',
     href: '/apps/notifications',
-    icon: BellIcon,
+    icon: Bell,
     matchPaths: ['/apps/notifications'],
     badge: notificationCount && notificationCount > 0 ? notificationCount : undefined,
   },
@@ -62,7 +62,7 @@ const buildItems = (
     key: 'account',
     label: labels?.account ?? 'حسابي',
     href: '/apps/my-account',
-    icon: UserIcon,
+    icon: User,
     matchPaths: ['/apps/my-account', '/apps/company', '/apps/settings'],
   },
 ];
@@ -83,7 +83,7 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ notificationCount, labe
   return (
     <nav
       aria-label="التنقل السفلي للتاجر"
-      className="admin-bottom-nav lg:hidden"
+      className="admin-bottom-nav lg:hidden border-t border-border/70 bg-card/95 backdrop-blur-md"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <ul className="admin-bottom-nav-list" role="list">
@@ -104,7 +104,7 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ notificationCount, labe
                 <span className="admin-bottom-nav-icon-wrap">
                   <Icon className="admin-bottom-nav-icon" aria-hidden="true" />
                   {item.badge ? (
-                    <span className="admin-bottom-nav-badge" aria-label={`${item.badge} جديد`}>
+                    <span className="admin-bottom-nav-badge font-mono tabular-nums" aria-label={`${item.badge} جديد`}>
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   ) : null}

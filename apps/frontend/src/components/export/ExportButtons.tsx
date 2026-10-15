@@ -1,80 +1,86 @@
 import React from 'react';
 import {
-    DocumentArrowDownIcon,
-    PrinterIcon,
-} from '@heroicons/react/24/outline';
+  FileSpreadsheet,
+  FileText,
+  Printer,
+  Download,
+} from 'lucide-react';
 import {
-    exportToCSV,
-    exportToExcel,
-    exportToPDF,
-    printTable,
-    ExportColumn,
+  exportToCSV,
+  exportToExcel,
+  exportToPDF,
+  printTable,
+  ExportColumn,
 } from '../../utils/exportHelpers';
 
 interface ExportButtonsProps {
-    data: any[];
-    columns: ExportColumn[];
-    filename?: string;
-    title?: string;
+  data: any[];
+  columns: ExportColumn[];
+  filename?: string;
+  title?: string;
 }
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({
-    data,
-    columns,
-    filename = 'export',
-    title = 'تقرير',
+  data,
+  columns,
+  filename = 'export',
+  title = 'تقرير',
 }) => {
-    const handleExportCSV = () => {
-        exportToCSV(data, columns, `${filename}.csv`);
-    };
+  const handleExportCSV = () => {
+    exportToCSV(data, columns, `${filename}.csv`);
+  };
 
-    const handleExportExcel = () => {
-        exportToExcel(data, columns, `${filename}.xlsx`);
-    };
+  const handleExportExcel = () => {
+    exportToExcel(data, columns, `${filename}.xlsx`);
+  };
 
-    const handleExportPDF = () => {
-        exportToPDF(data, columns, title, `${filename}.pdf`);
-    };
+  const handleExportPDF = () => {
+    exportToPDF(data, columns, title, `${filename}.pdf`);
+  };
 
-    const handlePrint = () => {
-        printTable(data, columns, title);
-    };
+  const handlePrint = () => {
+    printTable(data, columns, title);
+  };
 
-    return (
-        <div className="flex flex-wrap gap-2">
-            <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-                <DocumentArrowDownIcon className="w-5 h-5" />
-                <span>تصدير CSV</span>
-            </button>
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={handleExportCSV}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+      >
+        <Download className="w-3.5 h-3.5 text-primary" />
+        <span>تصدير CSV</span>
+      </button>
 
-            <button
-                onClick={handleExportExcel}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
-            >
-                <DocumentArrowDownIcon className="w-5 h-5" />
-                <span>تصدير Excel</span>
-            </button>
+      <button
+        type="button"
+        onClick={handleExportExcel}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+      >
+        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        <span>تصدير Excel</span>
+      </button>
 
-            <button
-                onClick={handleExportPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-                <DocumentArrowDownIcon className="w-5 h-5" />
-                <span>تصدير PDF</span>
-            </button>
+      <button
+        type="button"
+        onClick={handleExportPDF}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+      >
+        <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+        <span>تصدير PDF</span>
+      </button>
 
-            <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-                <PrinterIcon className="w-5 h-5" />
-                <span>طباعة</span>
-            </button>
-        </div>
-    );
+      <button
+        type="button"
+        onClick={handlePrint}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+      >
+        <Printer className="w-3.5 h-3.5 text-muted-foreground" />
+        <span>طباعة</span>
+      </button>
+    </div>
+  );
 };
 
 export default ExportButtons;
