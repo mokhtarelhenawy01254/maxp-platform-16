@@ -46,14 +46,16 @@ export function useStorefrontStudioState({
     redo,
     canUndo,
     canRedo,
-  } = useStudioHistory<Record<string, unknown>>(externalDesignTokens, { maxHistory: 30 });
+  } = useStudioHistory<Record<string, unknown>>(externalDesignTokens, {
+    maxHistory: 30,
+    onChange,
+  });
 
   const handleDesignTokensChange = useCallback(
     (next: Record<string, unknown>) => {
       setDesignTokensWithHistory(next);
-      onChange(next);
     },
-    [setDesignTokensWithHistory, onChange]
+    [setDesignTokensWithHistory]
   );
 
   // Keyboard Shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Y)
