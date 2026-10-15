@@ -5,47 +5,21 @@ import {
   Search,
   Radio,
   RefreshCw,
-  Clock,
-  Wifi,
   WifiOff,
-  Building2,
   Briefcase,
   UserCircle2,
 } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import useSocket from "../../hooks/useSocket";
 import api from "../../services/api";
 import { toast } from "sonner";
-
-interface OnlineEmployee {
-  id: string;
-  userId: string;
-  employeeNumber: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  avatar: string;
-  isActive: boolean;
-  status: string;
-  department: { id: string; name: string; color: string } | null;
-  position: { id: string; title: string; level: number } | null;
-  role: string | null;
-  lastLoginAt: string | null;
-  isOnline: boolean;
-  onlineSince: string | null;
-}
+import { OnlineEmployee, OnlineEmployeeCard } from "./OnlineEmployeeCard";
 
 interface OnlineTeamResponse {
   data?: {
-    onlineCount: number;
-    totalCount: number;
-    onlineEmployees: OnlineEmployee[];
-    employees: OnlineEmployee[];
+    onlineCount?: number;
+    totalCount?: number;
+    onlineEmployees?: OnlineEmployee[];
+    employees?: OnlineEmployee[];
   };
 }
 
@@ -60,7 +34,7 @@ const getAvatarSrc = (emp: OnlineEmployee): string => {
       : `${AVATAR_BASE}${emp.avatar}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    `${emp.firstName} ${emp.lastName}`,
+    `${emp.firstName || ""} ${emp.lastName || ""}`,
   )}&background=random`;
 };
 
@@ -77,7 +51,7 @@ const formatSince = (iso: string | null): string => {
   return `منذ ${days} يوم`;
 };
 
-const OnlineTeam: React.FC = () => {
+export const OnlineTeam: React.FC = () => {
   const { t } = useTranslation();
   const { socket, isConnected } = useSocket();
 
@@ -100,10 +74,10 @@ const OnlineTeam: React.FC = () => {
       } as any);
       const data = response.data?.data;
       if (data) {
-        const ids = new Set(data.onlineEmployees.map((e) => e.userId));
+        const ids = new Set((data.onlineEmployees || []).map((e) => e.userId));
         onlineIdsRef.current = ids;
         setOnlineIds(new Set(ids));
-        setEmployees(data.employees);
+        setEmployees(data.employees || []);
       }
     } catch (error) {
       console.error("Error fetching online team:", error);
@@ -123,11 +97,9 @@ const OnlineTeam: React.FC = () => {
         const parsed = localStorage.getItem("user");
         if (parsed) {
           const user = JSON.parse(parsed);
-          setCurrentUserId(user.id || user._id || null);
+          if (user?.id) setCurrentUserId(user.id);
         }
-      } catch {
-        // ignore
-      }
+      } catch (e) {}
     }
   }, []);
 
@@ -135,71 +107,42 @@ const OnlineTeam: React.FC = () => {
     fetchOnlineTeam();
   }, [fetchOnlineTeam]);
 
-  // Periodic refresh fallback (in case socket events are missed)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState !== "hidden") {
-        fetchOnlineTeam();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [fetchOnlineTeam]);
-
-  // Live updates from socket
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const onOnlineUsers = (data: { users: string[] }) => {
-      const ids = new Set((data.users || []).map(String));
-      onlineIdsRef.current = ids;
-      setOnlineIds(new Set(ids));
+    const handleUserOnline = (payload: { userId: string }) => {
+      if (!payload?.userId) return;
+      onlineIdsRef.current.add(payload.userId);
+      setOnlineIds(new Set(onlineIdsRef.current));
     };
 
-    const onUserOnline = (data: { userId: string }) => {
-      const id = String(data.userId);
-      const next = new Set(onlineIdsRef.current);
-      next.add(id);
-      onlineIdsRef.current = next;
-      setOnlineIds(new Set(next));
+    const handleUserOffline = (payload: { userId: string }) => {
+      if (!payload?.userId) return;
+      onlineIdsRef.current.delete(payload.userId);
+      setOnlineIds(new Set(onlineIdsRef.current));
     };
 
-    const onUserOffline = (data: { userId: string }) => {
-      const id = String(data.userId);
-      const next = new Set(onlineIdsRef.current);
-      next.delete(id);
-      onlineIdsRef.current = next;
-      setOnlineIds(new Set(next));
-    };
-
-    socket.on("online_users", onOnlineUsers);
-    socket.on("online_users_initial", onOnlineUsers);
-    socket.on("user_online", onUserOnline);
-    socket.on("user_offline", onUserOffline);
+    socket.on("user:online", handleUserOnline);
+    socket.on("user:offline", handleUserOffline);
 
     return () => {
-      socket.off("online_users", onOnlineUsers);
-      socket.off("online_users_initial", onOnlineUsers);
-      socket.off("user_online", onUserOnline);
-      socket.off("user_offline", onUserOffline);
+      socket.off("user:online", handleUserOnline);
+      socket.off("user:offline", handleUserOffline);
     };
   }, [socket, isConnected]);
 
   const decoratedEmployees = useMemo(() => {
-    return employees.map((emp) => ({
+    return (employees || []).map((emp) => ({
       ...emp,
       isOnline: onlineIds.has(emp.userId) || onlineIds.has(emp.id),
-      onlineSince:
-        onlineIds.has(emp.userId) || onlineIds.has(emp.id)
-          ? emp.onlineSince
-          : null,
     }));
   }, [employees, onlineIds]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return decoratedEmployees.filter((emp) => {
-      const name = `${emp.firstName} ${emp.lastName}`.toLowerCase();
-      const email = emp.email.toLowerCase();
+      const name = `${emp.firstName || ""} ${emp.lastName || ""}`.toLowerCase();
+      const email = (emp.email || "").toLowerCase();
       const dept = emp.department?.name?.toLowerCase() || "";
       const position = emp.position?.title?.toLowerCase() || "";
       const matchesSearch = !q || name.includes(q) || email.includes(q) || dept.includes(q) || position.includes(q);
@@ -215,271 +158,163 @@ const OnlineTeam: React.FC = () => {
     [decoratedEmployees],
   );
 
-  const roleLabel = (role: string | null): string => {
-    const map: Record<string, string> = {
-      SUPER_ADMIN: t("sidebar.roleSuperAdmin"),
-      COMPANY_ADMIN: t("sidebar.roleCompanyAdmin"),
-      OWNER: t("sidebar.roleOwner"),
-      MANAGER: t("sidebar.roleManager"),
-      AGENT: t("sidebar.roleAgent"),
-      AFFILIATE: t("sidebar.roleAffiliate"),
-    };
-    return role ? map[role] || role : "-";
-  };
-
   return (
-    <div
-      className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
-      dir="rtl"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 inline-flex">
-              <Radio className="h-7 w-7" />
-            </span>
-            {t("onlineTeam.pageTitle")}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {t("onlineTeam.pageSubtitle")}
-          </p>
+    <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-background" dir="rtl">
+      {/* 1. TOP COMMAND BAR */}
+      <header className="h-auto min-h-12 border-b border-border/70 px-3 sm:px-4 py-2 bg-card/95 backdrop-blur-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 shrink-0 z-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <Radio className="h-4 w-4" />
+          </span>
+          <div>
+            <h1 className="text-xs sm:text-sm font-bold text-foreground truncate">
+              {t("onlineTeam.pageTitle")}
+            </h1>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {t("onlineTeam.pageSubtitle")}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge
-            variant="outline"
-            className="px-4 py-2 text-base gap-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-          >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            {onlineCount} {t("onlineTeam.live")}
-          </Badge>
-          <Button
-            variant="outline"
+            <span>{onlineCount} {t("onlineTeam.live")}</span>
+          </span>
+
+          <button
+            type="button"
             onClick={fetchOnlineTeam}
             disabled={refreshing}
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all active:scale-[0.97] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ml-2 ${refreshing ? "animate-spin" : ""}`} />
-            {t("onlineTeam.refresh")}
-          </Button>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">{t("onlineTeam.refresh")}</span>
+          </button>
         </div>
-      </div>
+      </header>
 
-      {/* Filters */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative w-full md:w-96">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
-              <Input
-                placeholder={t("onlineTeam.searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pr-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-              />
+      {/* 2. CHASSIS SURFACE BODY */}
+      <main className="flex-1 overflow-y-auto min-h-0 bg-background divide-y divide-border/60">
+        
+        {/* Strip 1: Telemetry Summary Ribbon */}
+        <section className="p-3 sm:p-4 grid grid-cols-3 gap-2.5 sm:gap-3 bg-muted/10">
+          <div className="p-2.5 sm:p-3 rounded-md border border-border/60 bg-card flex items-center gap-2.5">
+            <span className="p-2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Users className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm sm:text-base font-bold font-mono text-foreground tabular-nums">{onlineCount}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t("onlineTeam.onlineEmployees")}</p>
             </div>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as FilterTab)}>
-              <TabsList className="bg-gray-100 dark:bg-gray-700">
-                <TabsTrigger value="all">
-                  {t("onlineTeam.allFilter")} ({decoratedEmployees.length})
-                </TabsTrigger>
-                <TabsTrigger value="online">
-                  {t("onlineTeam.onlineFilter")} ({onlineCount})
-                </TabsTrigger>
-                <TabsTrigger value="offline">
-                  {t("onlineTeam.offlineFilter")} ({decoratedEmployees.length - onlineCount})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Summary strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-5 flex items-center gap-4">
-            <span className="p-3 rounded-xl bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
-              <Users className="h-6 w-6" />
+          <div className="p-2.5 sm:p-3 rounded-md border border-border/60 bg-card flex items-center gap-2.5">
+            <span className="p-2 rounded bg-muted text-muted-foreground">
+              <WifiOff className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{onlineCount}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t("onlineTeam.onlineEmployees")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-5 flex items-center gap-4">
-            <span className="p-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-              <WifiOff className="h-6 w-6" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm sm:text-base font-bold font-mono text-foreground tabular-nums">
                 {decoratedEmployees.length - onlineCount}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t("onlineTeam.offlineEmployees")}
-              </p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t("onlineTeam.offlineEmployees")}</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-5 flex items-center gap-4">
-            <span className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-              <Briefcase className="h-6 w-6" />
+          </div>
+
+          <div className="p-2.5 sm:p-3 rounded-md border border-border/60 bg-card flex items-center gap-2.5">
+            <span className="p-2 rounded bg-primary/10 text-primary">
+              <Briefcase className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm sm:text-base font-bold font-mono text-foreground tabular-nums">
                 {decoratedEmployees.length}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t("onlineTeam.totalEmployees")}
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t("onlineTeam.totalEmployees")}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Strip 2: Filters & Search */}
+        <section className="px-3 sm:px-4 py-2.5 bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground h-3.5 w-3.5" />
+            <input
+              type="text"
+              placeholder={t("onlineTeam.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full ps-8 pe-3 py-1 text-xs rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 bg-muted/30 p-0.5 rounded-md border border-border/50 text-xs">
+            <button
+              type="button"
+              onClick={() => setTab("all")}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                tab === "all" ? "bg-card text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("onlineTeam.allFilter")} ({decoratedEmployees.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("online")}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                tab === "online" ? "bg-card text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("onlineTeam.onlineFilter")} ({onlineCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("offline")}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                tab === "offline" ? "bg-card text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("onlineTeam.offlineFilter")} ({decoratedEmployees.length - onlineCount})
+            </button>
+          </div>
+        </section>
+
+        {/* Strip 3: Team Grid */}
+        <section className="p-3 sm:p-4">
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-md border border-border/60 bg-card animate-pulse space-y-2">
+                  <div className="h-9 w-9 rounded-full bg-muted" />
+                  <div className="h-3 w-28 bg-muted rounded" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center border border-dashed border-border/80 rounded-md">
+              <UserCircle2 className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
+              <p className="text-xs font-medium text-foreground">
+                {tab === "online" ? t("onlineTeam.noOnlineEmployees") : t("onlineTeam.noEmployees")}
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filtered.map((emp) => (
+                <OnlineEmployeeCard
+                  key={emp.id}
+                  emp={emp}
+                  isCurrentUser={currentUserId === emp.userId || currentUserId === emp.id}
+                  getAvatarSrc={getAvatarSrc}
+                  formatSince={formatSince}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
-      {/* Team grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardContent className="p-5 animate-pulse">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-full bg-gray-200 dark:bg-gray-700" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-12 text-center">
-            <UserCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-            <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
-              {tab === "online" ? t("onlineTeam.noOnlineEmployees") : t("onlineTeam.noEmployees")}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              {tab === "online"
-                ? t("onlineTeam.noOnlineEmployeesDesc")
-                : t("onlineTeam.noEmployeesDesc")}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((emp) => {
-            const isOnline = emp.isOnline;
-            const isCurrentUser = currentUserId === emp.userId || currentUserId === emp.id;
-            return (
-              <Card
-                key={emp.id}
-                className={`bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-md hover:-translate-y-0.5 ${
-                  isOnline
-                    ? "ring-1 ring-green-200 dark:ring-green-800"
-                    : ""
-                }`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative shrink-0">
-                        <Avatar className="h-14 w-14 border-2 border-white dark:border-gray-700 shadow-sm">
-                          <AvatarImage src={getAvatarSrc(emp)} alt={`${emp.firstName} ${emp.lastName}`} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                            {emp.firstName?.[0] || ""}
-                            {emp.lastName?.[0] || ""}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span
-                          className={`absolute -bottom-0.5 -left-0.5 h-4 w-4 rounded-full border-2 border-white dark:border-gray-800 ${
-                            isOnline ? "bg-green-500" : "bg-gray-400"
-                          }`}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
-                          {emp.firstName} {emp.lastName}
-                          {isCurrentUser && (
-                            <span className="text-xs font-normal text-blue-600 dark:text-blue-400">
-                              (أنت)
-                            </span>
-                          )}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate" dir="ltr">
-                          {emp.email}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        isOnline
-                          ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                          : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-                      }
-                    >
-                      {isOnline ? (
-                        <span className="flex items-center gap-1.5">
-                          <Wifi className="h-3.5 w-3.5" />
-                          {t("onlineTeam.online")}
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <WifiOff className="h-3.5 w-3.5" />
-                          {t("onlineTeam.offline")}
-                        </span>
-                      )}
-                    </Badge>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
-                      {emp.department && (
-                        <span className="flex items-center gap-1.5">
-                          <Building2 className="h-4 w-4 text-gray-400" />
-                          {emp.department.name}
-                        </span>
-                      )}
-                      {emp.position && (
-                        <span className="flex items-center gap-1.5">
-                          <Briefcase className="h-4 w-4 text-gray-400" />
-                          {emp.position.title}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      {isOnline && emp.onlineSince ? (
-                        <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                          <Clock className="h-4 w-4" />
-                          {t("onlineTeam.onlineSince", { time: formatSince(emp.onlineSince) })}
-                        </span>
-                      ) : emp.lastLoginAt ? (
-                        <span className="flex items-center gap-1.5">
-                          <Clock className="h-4 w-4" />
-                          {t("onlineTeam.lastSeen", {
-                            date: new Date(emp.lastLoginAt).toLocaleString("ar-EG"),
-                          })}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      </main>
     </div>
   );
 };
