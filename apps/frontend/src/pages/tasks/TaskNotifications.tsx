@@ -3,14 +3,19 @@ import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import {
-  BellIcon,
-  CheckIcon,
-  ClockIcon,
-  ChatBubbleLeftIcon,
-  UserPlusIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  Bell,
+  Check,
+  CheckCheck,
+  Clock,
+  MessageSquare,
+  UserPlus,
+  AlertTriangle,
+  CheckCircle2,
+  RotateCw,
+  ExternalLink,
+  Layers,
+  ArrowRight
+} from "lucide-react";
 
 interface Notification {
   id: string;
@@ -51,8 +56,8 @@ const TaskNotifications: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        setNotifications(data.data.notifications);
-        setUnreadCount(data.data.unreadCount);
+        setNotifications(data.data.notifications || []);
+        setUnreadCount(data.data.unreadCount || 0);
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -106,18 +111,18 @@ const TaskNotifications: React.FC = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "task_assigned":
-        return <UserPlusIcon className="h-5 w-5 text-blue-500" />;
+        return <UserPlus className="h-4 w-4 text-blue-500" />;
       case "due_soon":
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-amber-500" />;
       case "overdue":
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
+        return <AlertTriangle className="h-4 w-4 text-rose-500" />;
       case "comment":
       case "mention":
-        return <ChatBubbleLeftIcon className="h-5 w-5 text-indigo-500" />;
+        return <MessageSquare className="h-4 w-4 text-primary" />;
       case "status_changed":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
       default:
-        return <BellIcon className="h-5 w-5 text-gray-500" />;
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -136,151 +141,169 @@ const TaskNotifications: React.FC = () => {
     return date.toLocaleDateString("ar-EG");
   };
 
-  if (loading) {
+  if (loading && notifications.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل الإشعارات...</span>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <BellIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Bell className="w-5 h-5" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                الإشعارات
-              </h1>
-              {unreadCount > 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {unreadCount} إشعار غير مقروء
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black text-foreground">
+                  مركز إشعارات المهام
+                </h1>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-destructive/10 text-destructive border border-destructive/20">
+                    {unreadCount} غير مقروء
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                متابعة تحديثات المهام المسندة والمواعيد النهائية وإشعارات تطبيق واتساب
+              </p>
             </div>
           </div>
+        </div>
+
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={markAllAsRead}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-xs font-semibold text-foreground transition-colors shadow-sm"
+          >
+            <CheckCheck className="w-3.5 h-3.5 text-primary" />
+            <span>تحديد الكل كمقروء</span>
+          </button>
+        )}
+      </div>
+
+      {/* Filter Switcher */}
+      <div className="bg-card border border-border/70 rounded-xl p-1 shadow-sm inline-flex gap-1">
+        <button
+          type="button"
+          onClick={() => setFilter("all")}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            filter === "all"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          كافة الإشعارات
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter("unread")}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            filter === "unread"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span>غير المقروء فقط</span>
           {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm flex items-center"
-            >
-              <CheckIcon className="h-4 w-4 ml-1" />
-              تحديد الكل كمقروء
-            </button>
+            <span className="font-mono tabular-nums text-[10px] bg-destructive text-destructive-foreground px-1.5 py-0.2 rounded-full">
+              {unreadCount}
+            </span>
           )}
-        </div>
+        </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setFilter("all")}
-              className={`py-3 px-6 text-sm font-medium border-b-2 ${
-                filter === "all"
-                  ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              الكل
-            </button>
-            <button
-              onClick={() => setFilter("unread")}
-              className={`py-3 px-6 text-sm font-medium border-b-2 ${
-                filter === "unread"
-                  ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              غير مقروء
-              {unreadCount > 0 && (
-                <span className="mr-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full text-xs">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Notifications List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow divide-y divide-gray-100 dark:divide-gray-700">
+      {/* Notifications List Surface */}
+      <div className="bg-card border border-border/70 rounded-xl shadow-sm overflow-hidden divide-y divide-border/40">
         {notifications.length === 0 ? (
-          <div className="text-center py-12">
-            <BellIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">لا توجد إشعارات</p>
+          <div className="text-center py-12 space-y-2">
+            <Bell className="w-8 h-8 text-muted-foreground/60 mx-auto" />
+            <p className="text-xs text-muted-foreground">لا توجد إشعارات حالياً</p>
           </div>
         ) : (
           notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                !notification.isRead ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
+              className={`p-4 transition-colors hover:bg-muted/20 ${
+                !notification.isRead ? "bg-primary/[0.03]" : ""
               }`}
             >
-              <div className="flex items-start">
-                <div className="flex-shrink-0 mt-1">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-background border border-border/60 shrink-0 mt-0.5">
                   {getNotificationIcon(notification.type)}
                 </div>
-                <div className="mr-3 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p
-                      className={`text-sm font-medium ${!notification.isRead ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}
-                    >
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-xs font-bold ${!notification.isRead ? "text-foreground" : "text-muted-foreground"}`}>
                       {notification.title}
                     </p>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] text-muted-foreground font-mono">
                         {formatTime(notification.createdAt)}
                       </span>
                       {!notification.isRead && (
                         <button
+                          type="button"
                           onClick={() => markAsRead(notification.id)}
-                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                          className="p-1 rounded hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
                           title="تحديد كمقروء"
                         >
-                          <CheckIcon className="h-4 w-4" />
+                          <Check className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {notification.message}
                   </p>
-                  {notification.link && (
-                    <Link
-                      to={notification.link}
-                      className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 mt-2 inline-block"
-                    >
-                      عرض التفاصيل ←
-                    </Link>
-                  )}
-                  {notification.whatsappStatus && (
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      {notification.whatsappStatus === "sent" && (
-                        <span className="text-green-600 dark:text-green-400 flex items-center">
-                          <CheckCircleIcon className="h-3.5 w-3.5 ml-1" />✓ أُرسلت عبر واتساب
-                        </span>
-                      )}
-                      {notification.whatsappStatus === "failed" && (
-                        <button
-                          onClick={() => resendWhatsApp(notification.id)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center"
-                        >
-                          <ExclamationTriangleIcon className="h-3.5 w-3.5 ml-1" />✗ فشل الإرسال — إعادة إرسال
-                        </button>
-                      )}
-                      {notification.whatsappStatus === "pending" && (
-                        <span className="text-yellow-600 dark:text-yellow-400 flex items-center">
-                          <ClockIcon className="h-3.5 w-3.5 ml-1" />⏳ في انتظار الإرسال
-                        </span>
-                      )}
-                    </div>
-                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {notification.link && (
+                      <Link
+                        to={notification.link}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        <span>عرض تفاصيل المهمة</span>
+                        <ArrowRight className="w-3 h-3 rotate-180" />
+                      </Link>
+                    )}
+
+                    {notification.whatsappStatus && (
+                      <div className="flex items-center gap-1 text-[11px] font-medium">
+                        {notification.whatsappStatus === "sent" && (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>أُرسلت بنجاح عبر واتساب</span>
+                          </span>
+                        )}
+                        {notification.whatsappStatus === "failed" && (
+                          <button
+                            type="button"
+                            onClick={() => resendWhatsApp(notification.id)}
+                            className="inline-flex items-center gap-1 text-destructive hover:underline"
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            <span>تعذر الإرسال — إعادة المحاولة الآن</span>
+                          </button>
+                        )}
+                        {notification.whatsappStatus === "pending" && (
+                          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <Clock className="w-3 h-3" />
+                            <span>بانتظار الإرسال المجدول</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  BriefcaseIcon,
-  UserGroupIcon,
-  ClipboardDocumentCheckIcon,
-  CalendarDaysIcon,
-  ChartBarIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
-import { motion } from "framer-motion";
+  Briefcase,
+  Users,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Plus,
+  BarChart3,
+  GitBranch,
+  FileText
+} from "lucide-react";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import JobPostingsSection from "./sections/JobPostingsSection";
 import ApplicantsSection from "./sections/ApplicantsSection";
@@ -70,200 +67,195 @@ const RecruitmentDashboard: React.FC = () => {
   };
 
   const tabs = [
-    { id: "overview", name: "نظرة عامة", icon: ChartBarIcon },
-    { id: "jobs", name: "الوظائف المتاحة", icon: BriefcaseIcon },
-    { id: "applicants", name: "المتقدمين", icon: UserGroupIcon },
-    { id: "interviews", name: "المقابلات", icon: CalendarDaysIcon },
-    { id: "pipeline", name: "مسار التوظيف", icon: ClipboardDocumentCheckIcon },
-    {
-      id: "forms",
-      name: "استبيانات التقديم",
-      icon: ClipboardDocumentCheckIcon,
-    },
+    { id: "overview", name: "نظرة عامة", icon: BarChart3 },
+    { id: "jobs", name: "الوظائف المتاحة", icon: Briefcase },
+    { id: "applicants", name: "المتقدمين للوظائف", icon: Users },
+    { id: "interviews", name: "المقابلات المجدولة", icon: Calendar },
+    { id: "pipeline", name: "مسار مراحل التوظيف", icon: GitBranch },
+    { id: "forms", name: "استبيانات ونماذج التقديم", icon: FileText },
   ];
 
   const statCards = [
     {
-      title: "الوظائف النشطة",
+      title: "الوظائف المفتوحة",
       value: stats.activeJobs,
-      icon: BriefcaseIcon,
-      color: "blue",
-      bgColor: "bg-blue-50",
-      iconColor: "text-blue-600",
-      borderColor: "border-blue-200",
+      icon: Briefcase,
     },
     {
       title: "إجمالي المتقدمين",
       value: stats.totalApplicants,
-      icon: UserGroupIcon,
-      color: "purple",
-      bgColor: "bg-purple-50",
-      iconColor: "text-purple-600",
-      borderColor: "border-purple-200",
+      icon: Users,
     },
     {
       title: "المقابلات المجدولة",
       value: stats.scheduledInterviews,
-      icon: CalendarDaysIcon,
-      color: "green",
-      bgColor: "bg-green-50",
-      iconColor: "text-green-600",
-      borderColor: "border-green-200",
+      icon: Calendar,
     },
     {
       title: "بانتظار المراجعة",
       value: stats.pendingReviews,
-      icon: ClockIcon,
-      color: "amber",
-      bgColor: "bg-amber-50",
-      iconColor: "text-amber-600",
-      borderColor: "border-amber-200",
+      icon: Clock,
     },
     {
-      title: "تم التوظيف هذا الشهر",
+      title: "تم توظيفهم هذا الشهر",
       value: stats.hiredThisMonth,
-      icon: CheckCircleIcon,
-      color: "emerald",
-      bgColor: "bg-emerald-50",
-      iconColor: "text-emerald-600",
-      borderColor: "border-emerald-200",
+      icon: CheckCircle2,
     },
     {
-      title: "متوسط وقت التوظيف",
+      title: "متوسط فترة التوظيف",
       value: `${stats.averageTimeToHire} يوم`,
-      icon: ChartBarIcon,
-      color: "indigo",
-      bgColor: "bg-indigo-50",
-      iconColor: "text-indigo-600",
-      borderColor: "border-indigo-200",
+      icon: BarChart3,
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              إدارة التوظيف
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              إدارة الوظائف والمتقدمين ومراحل التوظيف
-            </p>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Briefcase className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-foreground">
+                إدارة التوظيف واستقطاب الكفاءات
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                متابعة الوظائف المعلنة، المتقدمين، المقابلات الشخصية، ومراحل قبول الموظفين
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("jobs")}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>نشر إعلان وظيفة جديدة</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs Switcher */}
+      <div className="bg-card border border-border/70 rounded-xl p-1.5 shadow-sm">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                {tab.name}
+                <Icon className="w-4 h-4" />
+                <span>{tab.name}</span>
               </button>
             );
           })}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Content */}
+      {/* Overview Content */}
       {activeTab === "overview" && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-6"
-        >
+        <div className="space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {statCards.map((card, index) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {statCards.map((card) => {
               const Icon = card.icon;
               return (
-                <motion.div
+                <div
                   key={card.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`${card.bgColor} border-2 ${card.borderColor} rounded-2xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105`}
+                  className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div
-                      className={`p-3 rounded-xl ${card.bgColor} border ${card.borderColor}`}
-                    >
-                      <Icon className={`w-6 h-6 ${card.iconColor}`} />
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">{card.title}</span>
+                    <Icon className="w-3.5 h-3.5 text-primary/70" />
                   </div>
-                  <h3 className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                    {card.title}
-                  </h3>
-                  <p className={`text-3xl font-bold ${card.iconColor}`}>
+                  <span className="text-xl font-bold font-mono tabular-nums text-foreground block">
                     {card.value}
-                  </p>
-                </motion.div>
+                  </span>
+                </div>
               );
             })}
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-              إجراءات سريعة
+          {/* Quick Actions Surface */}
+          <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-foreground border-b border-border/40 pb-3">
+              إجراءات التوظيف السريعة
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <button
+                type="button"
                 onClick={() => setActiveTab("jobs")}
-                className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl hover:shadow-md transition-all border-2 border-blue-200 dark:border-blue-700"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors text-right"
               >
-                <PlusIcon className="w-6 h-6 text-blue-600" />
-                <span className="font-medium text-gray-800 dark:text-white">
-                  إضافة وظيفة جديدة
-                </span>
+                <div className="p-2 rounded-lg bg-background border border-border/60 shrink-0 text-primary">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-xs text-foreground block">إضافة وظيفة</span>
+                  <span className="text-[11px] text-muted-foreground">صياغة ونشر إعلان وظيفي</span>
+                </div>
               </button>
+
               <button
+                type="button"
                 onClick={() => setActiveTab("applicants")}
-                className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl hover:shadow-md transition-all border-2 border-purple-200 dark:border-purple-700"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors text-right"
               >
-                <UserGroupIcon className="w-6 h-6 text-purple-600" />
-                <span className="font-medium text-gray-800 dark:text-white">
-                  عرض المتقدمين
-                </span>
+                <div className="p-2 rounded-lg bg-background border border-border/60 shrink-0 text-primary">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-xs text-foreground block">سجل المتقدمين</span>
+                  <span className="text-[11px] text-muted-foreground">فحص السير الذاتية والطلبات</span>
+                </div>
               </button>
+
               <button
+                type="button"
                 onClick={() => setActiveTab("interviews")}
-                className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl hover:shadow-md transition-all border-2 border-green-200 dark:border-green-700"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors text-right"
               >
-                <CalendarDaysIcon className="w-6 h-6 text-green-600" />
-                <span className="font-medium text-gray-800 dark:text-white">
-                  جدولة مقابلة
-                </span>
+                <div className="p-2 rounded-lg bg-background border border-border/60 shrink-0 text-primary">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-xs text-foreground block">جدولة مقابلة</span>
+                  <span className="text-[11px] text-muted-foreground">تحديد مواعيد المقابلات الفنية</span>
+                </div>
               </button>
+
               <button
+                type="button"
                 onClick={() => setActiveTab("pipeline")}
-                className="flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl hover:shadow-md transition-all border-2 border-amber-200 dark:border-amber-700"
+                className="flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors text-right"
               >
-                <ClipboardDocumentCheckIcon className="w-6 h-6 text-amber-600" />
-                <span className="font-medium text-gray-800 dark:text-white">
-                  تتبع المراحل
-                </span>
+                <div className="p-2 rounded-lg bg-background border border-border/60 shrink-0 text-primary">
+                  <GitBranch className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-xs text-foreground block">مسار القبول</span>
+                  <span className="text-[11px] text-muted-foreground">لوحة كانبان لمراحل المرشحين</span>
+                </div>
               </button>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
+      {/* Sub-sections */}
       {activeTab === "jobs" && <JobPostingsSection />}
       {activeTab === "applicants" && <ApplicantsSection />}
       {activeTab === "interviews" && <InterviewsSection />}

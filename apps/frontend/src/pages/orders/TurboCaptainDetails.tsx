@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { 
+  ArrowRight, 
+  Phone, 
+  MapPin, 
+  Clock, 
+  AlertTriangle, 
+  RotateCcw, 
+  CheckCircle2, 
+  Truck, 
+  Package,
+  Layers
+} from 'lucide-react';
 import { apiClient } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -45,10 +57,10 @@ interface Stats {
 
 const statusBadgeClass = (status: string) => {
   const s = (status || '').toLowerCase().trim();
-  if (s === 'delivered' || s === 'remitted') return 'bg-green-100 text-green-700 border-green-200';
-  if (s.startsWith('returned')) return 'bg-red-100 text-red-700 border-red-200';
-  if (s === 'delayed') return 'bg-amber-100 text-amber-700 border-amber-200';
-  return 'bg-blue-100 text-blue-700 border-blue-200';
+  if (s === 'delivered' || s === 'remitted') return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+  if (s.startsWith('returned')) return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
+  if (s === 'delayed') return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+  return 'bg-primary/10 text-primary border border-primary/20';
 };
 
 const statusArabic = (status: string) => {
@@ -90,161 +102,220 @@ const TurboCaptainDetails: React.FC = () => {
         setTotalPages(res.data.pagination?.pages || 1);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load captain orders');
+      toast.error(err.response?.data?.error || 'تعذر تحميل تفاصيل شحنات المندوب');
     } finally {
       setLoading(false);
     }
   }, [captainName, page, statusFilter]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { 
+    fetchOrders(); 
+  }, [fetchOrders]);
 
   if (loading && orders.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل سجل شحنات المندوب...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-6" dir="rtl">
-      <div className="mb-6">
-        <Link to="/orders/turbo-captains" className="text-sm text-blue-600 hover:text-blue-800 mb-2 inline-block">
-          ← العودة لتقارير المندوبين
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {captain?.name || captainName}
-        </h1>
-        {captain && (
-          <div className="flex gap-4 mt-2 text-sm text-gray-500">
-            {captain.phone && <span>📞 {captain.phone}</span>}
-            {captain.branch && <span>📍 {captain.branch}{captain.branchPhone ? ` (${captain.branchPhone})` : ''}</span>}
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <Link 
+              to="/orders/turbo-captains" 
+              className="p-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-black text-foreground">
+                {captain?.name || captainName}
+              </h1>
+              {captain && (
+                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground">
+                  {captain.phone && (
+                    <span className="inline-flex items-center gap-1 font-mono" dir="ltr">
+                      <Phone className="w-3 h-3 text-primary" />
+                      <span>{captain.phone}</span>
+                    </span>
+                  )}
+                  {captain.branch && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-primary" />
+                      <span>{captain.branch}{captain.branchPhone ? ` (${captain.branchPhone})` : ''}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        <Link
+          to="/orders/turbo-captains"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-xs font-semibold text-foreground transition-colors"
+        >
+          <Truck className="w-3.5 h-3.5 text-muted-foreground" />
+          <span>كل المناديب</span>
+        </Link>
       </div>
 
+      {/* Telemetry Ribbon */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-xs text-gray-500 mt-1">إجمالي الشحنات</div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">إجمالي الشحنات</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.total}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.delivered + stats.remitted}</div>
-            <div className="text-xs text-gray-500 mt-1">تم التسليم</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">تم التسليم والتحصيل</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{stats.delivered + stats.remitted}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-red-600">{stats.returned}</div>
-            <div className="text-xs text-gray-500 mt-1">مرتجعات</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">المرتجعات</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">{stats.returned}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-amber-600">{stats.active}</div>
-            <div className="text-xs text-gray-500 mt-1">نشط</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">شحنات نشطة</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-primary">{stats.active}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.deliveryRate}%</div>
-            <div className="text-xs text-gray-500 mt-1">نسبة التسليم</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">نسبة التسليم</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.deliveryRate}%</span>
           </div>
         </div>
       )}
 
+      {/* Reasons Summary */}
       {stats && (Object.keys(stats.delayReasons).length > 0 || Object.keys(stats.returnReasons).length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.keys(stats.delayReasons).length > 0 && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4">
-              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200 mb-2">⏰ أسباب التأخير</h3>
-              {Object.entries(stats.delayReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
-                <div key={reason} className="flex justify-between text-sm py-1 border-b border-amber-100 last:border-0">
-                  <span className="text-amber-700 dark:text-amber-300 truncate ml-2">{reason}</span>
-                  <span className="font-bold text-amber-800 dark:text-amber-200">{count}</span>
-                </div>
-              ))}
+            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-sm space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span>أسباب التأخير المسجلة</span>
+              </div>
+              <div className="space-y-1 text-xs">
+                {Object.entries(stats.delayReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+                  <div key={reason} className="flex justify-between py-1 border-b border-border/30 last:border-0">
+                    <span className="text-muted-foreground truncate">{reason}</span>
+                    <span className="font-bold font-mono tabular-nums text-foreground">{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+
           {Object.keys(stats.returnReasons).length > 0 && (
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg shadow p-4">
-              <h3 className="text-sm font-bold text-red-800 dark:text-red-200 mb-2">❌ أسباب الارتجاع</h3>
-              {Object.entries(stats.returnReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
-                <div key={reason} className="flex justify-between text-sm py-1 border-b border-red-100 last:border-0">
-                  <span className="text-red-700 dark:text-red-300 truncate ml-2">{reason}</span>
-                  <span className="font-bold text-red-800 dark:text-red-200">{count}</span>
-                </div>
-              ))}
+            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-sm space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
+                <RotateCcw className="w-4 h-4 text-rose-500" />
+                <span>أسباب الارتجاع المسجلة</span>
+              </div>
+              <div className="space-y-1 text-xs">
+                {Object.entries(stats.returnReasons).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+                  <div key={reason} className="flex justify-between py-1 border-b border-border/30 last:border-0">
+                    <span className="text-muted-foreground truncate">{reason}</span>
+                    <span className="font-bold font-mono tabular-nums text-foreground">{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap">
-          {['', 'delivered', 'returned', 'active', 'delayed'].map(f => (
+      {/* Table Surface */}
+      <div className="bg-card border border-border/70 rounded-xl shadow-sm overflow-hidden space-y-0">
+        <div className="p-3 border-b border-border/70 bg-muted/20 flex gap-1.5 flex-wrap">
+          {[
+            { key: '', label: 'كافة الشحنات' },
+            { key: 'delivered', label: 'تم التسليم' },
+            { key: 'returned', label: 'مرتجع' },
+            { key: 'active', label: 'قيد التوصيل' },
+            { key: 'delayed', label: 'مؤجلة' }
+          ].map(f => (
             <button
-              key={f}
-              onClick={() => { setStatusFilter(f); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+              key={f.key}
+              type="button"
+              onClick={() => { setStatusFilter(f.key); setPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                statusFilter === f.key
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/30'
               }`}
             >
-              {f === '' ? 'الكل' : f === 'delivered' ? 'تم التسليم' : f === 'returned' ? 'مرتجع' : f === 'active' ? 'نشط' : 'مؤجلة'}
+              {f.label}
             </button>
           ))}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="w-full text-xs text-right">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground font-semibold">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">الطلب</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">العميل</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">الإجمالي</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">حالة النظام</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">حالة Turbo</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">سبب التأخير</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">سبب الارتجاع</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">التاريخ</th>
+                <th className="px-4 py-3">رقم الطلب</th>
+                <th className="px-4 py-3">العميل</th>
+                <th className="px-4 py-3 text-center">الإجمالي</th>
+                <th className="px-4 py-3 text-center">حالة النظام</th>
+                <th className="px-4 py-3 text-center">حالة Turbo</th>
+                <th className="px-4 py-3">سبب التأخير</th>
+                <th className="px-4 py-3">سبب الارتجاع</th>
+                <th className="px-4 py-3 text-center">التاريخ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-border/40">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    لا توجد طلبات بهذا الفلتر
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                    لا توجد شحنات مطابقة للفلتر المحدد
                   </td>
                 </tr>
               ) : (
                 orders.map(o => (
-                  <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr key={o.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
-                      <Link to={`/orders/${encodeURIComponent(o.orderNumber)}`} className="text-blue-600 hover:text-blue-800 font-mono text-sm font-medium">
+                      <Link 
+                        to={`/orders/${encodeURIComponent(o.orderNumber)}`} 
+                        className="text-primary hover:underline font-mono font-bold"
+                      >
                         {o.orderNumber}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900 dark:text-gray-100">{o.customerName || '-'}</div>
-                      {o.customerPhone && <div className="text-xs text-gray-500 ltr">{o.customerPhone}</div>}
+                      <div className="text-xs font-bold text-foreground">{o.customerName || '—'}</div>
+                      {o.customerPhone && (
+                        <span className="text-[11px] text-muted-foreground font-mono block" dir="ltr">
+                          {o.customerPhone}
+                        </span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {parseFloat(o.total.toString()).toFixed(0)} ج.م
+                    <td className="px-4 py-3 text-center font-mono font-bold tabular-nums text-foreground">
+                      {parseFloat(o.total.toString()).toFixed(0)} <span className="text-[10px] font-normal text-muted-foreground">ج.م</span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(o.status)}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadgeClass(o.status)}`}>
                         {o.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(o.turboShipmentStatus)}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadgeClass(o.turboShipmentStatus)}`}>
                         {statusArabic(o.turboShipmentStatus)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-amber-600 max-w-[200px] truncate" title={o.turboDelayReason || ''}>
-                      {o.turboDelayReason || '-'}
+                    <td className="px-4 py-3 text-[11px] text-amber-600 dark:text-amber-400 max-w-[180px] truncate" title={o.turboDelayReason || ''}>
+                      {o.turboDelayReason || '—'}
                     </td>
-                    <td className="px-4 py-3 text-xs text-red-600 max-w-[200px] truncate" title={o.turboReturnReason || ''}>
-                      {o.turboReturnReason || '-'}
+                    <td className="px-4 py-3 text-[11px] text-rose-600 dark:text-rose-400 max-w-[180px] truncate" title={o.turboReturnReason || ''}>
+                      {o.turboReturnReason || '—'}
                     </td>
-                    <td className="px-4 py-3 text-center text-xs text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-center text-[11px] text-muted-foreground font-mono tabular-nums whitespace-nowrap">
                       {new Date(o.createdAt).toLocaleDateString('ar-EG')}
                     </td>
                   </tr>
@@ -255,19 +326,21 @@ const TurboCaptainDetails: React.FC = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-center items-center gap-2 p-3.5 border-t border-border/70 bg-muted/10">
             <button
+              type="button"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 rounded text-sm bg-gray-100 dark:bg-gray-700 disabled:opacity-50"
+              className="px-3 py-1 rounded-lg text-xs font-semibold border border-border/70 bg-card hover:bg-muted/30 disabled:opacity-50"
             >
               السابق
             </button>
-            <span className="text-sm text-gray-500">صفحة {page} من {totalPages}</span>
+            <span className="text-xs text-muted-foreground font-mono">صفحة {page} من {totalPages}</span>
             <button
+              type="button"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 rounded text-sm bg-gray-100 dark:bg-gray-700 disabled:opacity-50"
+              className="px-3 py-1 rounded-lg text-xs font-semibold border border-border/70 bg-card hover:bg-muted/30 disabled:opacity-50"
             >
               التالي
             </button>

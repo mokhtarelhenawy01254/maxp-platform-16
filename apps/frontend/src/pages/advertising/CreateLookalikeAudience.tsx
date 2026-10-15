@@ -1,12 +1,15 @@
-/**
- * Create Lookalike Audience Page
- *
- * صفحة إنشاء جمهور مشابه جديد
- */
-
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useNavigate, Link } from "react-router-dom";
+import { 
+  ArrowRight, 
+  Users, 
+  Globe, 
+  Percent, 
+  Sparkles, 
+  AlertCircle,
+  CheckCircle2,
+  Sliders
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -19,9 +22,7 @@ import {
 const CreateLookalikeAudience: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [customAudiences, setCustomAudiences] = useState<
-    FacebookCustomAudience[]
-  >([]);
+  const [customAudiences, setCustomAudiences] = useState<FacebookCustomAudience[]>([]);
   const [adAccounts, setAdAccounts] = useState<FacebookAdAccount[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -47,7 +48,7 @@ const CreateLookalikeAudience: React.FC = () => {
       ]);
 
       setCustomAudiences(audiences.filter((a) => a.status === "ACTIVE"));
-      setAdAccounts(accounts);
+      setAdAccounts(accounts || []);
 
       if (accounts.length > 0 && !formData.adAccountId) {
         setFormData((prev) => ({ ...prev, adAccountId: accounts[0].id }));
@@ -91,205 +92,200 @@ const CreateLookalikeAudience: React.FC = () => {
   };
 
   const countries = [
-    { value: "EG", label: "مصر" },
-    { value: "SA", label: "السعودية" },
-    { value: "AE", label: "الإمارات" },
-    { value: "KW", label: "الكويت" },
-    { value: "QA", label: "قطر" },
-    { value: "US", label: "الولايات المتحدة" },
-    { value: "GB", label: "المملكة المتحدة" },
+    { value: "EG", label: "مصر (Egypt)" },
+    { value: "SA", label: "المملكة العربية السعودية (Saudi Arabia)" },
+    { value: "AE", label: "الإمارات العربية المتحدة (UAE)" },
+    { value: "KW", label: "الكويت (Kuwait)" },
+    { value: "QA", label: "قطر (Qatar)" },
+    { value: "US", label: "الولايات المتحدة (United States)" },
+    { value: "GB", label: "المملكة المتحدة (United Kingdom)" },
   ];
 
   if (loadingData) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">جاري التحميل...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل بيانات الجماهير والحسابات الإعلانية...</span>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <button
-          onClick={() => navigate("/advertising/facebook-ads/audiences")}
-          aria-label="الرجوع إلى إدارة الجماهير"
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          رجوع
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">إنشاء جمهور مشابه</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          أنشئ جمهوراً مشابهاً للجمهور المخصص الخاص بك
-        </p>
-      </div>
-
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow p-6 space-y-6"
-      >
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
         <div>
-          <label
-            htmlFor="lookalike-audience-name"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            اسم الجمهور المشابه *
-          </label>
-          <input
-            id="lookalike-audience-name"
-            name="name"
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleInputChange("name", e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="مثال: جمهور مشابه - عملاء نشطون"
-            autoComplete="off"
-            required
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="lookalike-audience-description"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            الوصف (اختياري)
-          </label>
-          <textarea
-            id="lookalike-audience-description"
-            name="description"
-            autoComplete="off"
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            rows={3}
-            placeholder="وصف مختصر..."
-          />
-        </div>
-
-        <div>
-          {customAudiences.length === 0 ? (
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="mb-2 text-sm font-medium text-yellow-900">
-                الجمهور المصدر *
-              </p>
-              <p className="text-sm text-yellow-800">
-                لا توجد جماهير مخصصة متاحة. يرجى إنشاء جمهور مخصص أولاً.
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/advertising/facebook-ads/audiences"
+              className="p-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-black text-foreground">
+                إنشاء جمهور مشابه (Lookalike Audience)
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                توسيع استهداف الحملات الإعلانية عبر خوارزميات Meta لاستهداف عملاء يشبهون عملاءك الحاليين
               </p>
             </div>
-          ) : (
-            <>
-              <label
-                htmlFor="lookalike-source-audience"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                الجمهور المصدر *
+          </div>
+        </div>
+
+        <Link
+          to="/advertising/facebook-ads/audiences"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-xs font-semibold text-foreground transition-colors"
+        >
+          إلغاء والعودة
+        </Link>
+      </div>
+
+      {/* Main Form Card */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <Users className="w-4 h-4 text-primary" />
+              <span>معايير الجمهور المشابه والمصدر</span>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Meta Graph Lookalike API
+            </span>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Audience Name */}
+            <div className="space-y-1.5">
+              <label htmlFor="lookalike-audience-name" className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>اسم الجمهور المشابه</span>
+                <span className="text-[10px] text-destructive font-medium">* مطلوب</span>
+              </label>
+              <input
+                id="lookalike-audience-name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="مثال: جمهور مشابه 1% - المشترين النشطين"
+                required
+              />
+            </div>
+
+            {/* Source Audience Select */}
+            <div className="space-y-1.5">
+              <label htmlFor="lookalike-source-audience" className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>الجمهور المخصص المصدر (Seed Audience)</span>
+                <span className="text-[10px] text-destructive font-medium">* مطلوب</span>
+              </label>
+              {customAudiences.length === 0 ? (
+                <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>لا توجد جماهير مخصصة نشطة. يرجى إنشاء جمهور مخصص أولاً.</span>
+                </div>
+              ) : (
+                <select
+                  id="lookalike-source-audience"
+                  name="sourceAudienceId"
+                  value={formData.sourceAudienceId}
+                  onChange={(e) => handleInputChange("sourceAudienceId", e.target.value)}
+                  className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  required
+                >
+                  <option value="">اختر الجمهور المصدر لبناء التشابه...</option>
+                  {customAudiences.map((audience) => (
+                    <option key={audience.id} value={audience.id}>
+                      {audience.name} ({audience.audienceSize?.toLocaleString("ar-EG") || 0} عميل)
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label htmlFor="lookalike-audience-description" className="text-xs font-bold text-foreground block">
+              الوصف والهدف (اختياري)
+            </label>
+            <textarea
+              id="lookalike-audience-description"
+              name="description"
+              value={formData.description}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              rows={2}
+              placeholder="وصف مختصر للجمهور المستهدف ونطاق الحملة..."
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 pt-1">
+            {/* Country */}
+            <div className="space-y-1.5">
+              <label htmlFor="lookalike-country" className="text-xs font-bold text-foreground block">
+                الدولة المستهدفة
               </label>
               <select
-                id="lookalike-source-audience"
-                name="sourceAudienceId"
-                autoComplete="off"
-                value={formData.sourceAudienceId}
-                onChange={(e) =>
-                  handleInputChange("sourceAudienceId", e.target.value)
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                id="lookalike-country"
+                name="country"
+                value={formData.country}
+                onChange={(e) => handleInputChange("country", e.target.value)}
+                className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 required
               >
-                <option value="">اختر الجمهور المصدر</option>
-                {customAudiences.map((audience) => (
-                  <option key={audience.id} value={audience.id}>
-                    {audience.name} (
-                    {audience.audienceSize?.toLocaleString() || 0})
+                {countries.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
                   </option>
                 ))}
               </select>
-            </>
-          )}
-        </div>
+            </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="lookalike-country"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              الدولة *
-            </label>
-            <select
-              id="lookalike-country"
-              name="country"
-              autoComplete="country-name"
-              value={formData.country}
-              onChange={(e) => handleInputChange("country", e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            >
-              {countries.map((country) => (
-                <option key={country.value} value={country.value}>
-                  {country.label}
-                </option>
-              ))}
-            </select>
+            {/* Ratio */}
+            <div className="space-y-1.5">
+              <label htmlFor="lookalike-ratio" className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>نسبة الشبه والتقارب (Ratio)</span>
+                <span className="text-[10px] text-muted-foreground font-mono">1% - 10%</span>
+              </label>
+              <select
+                id="lookalike-ratio"
+                name="ratio"
+                value={formData.ratio}
+                onChange={(e) => handleInputChange("ratio", parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                required
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((ratio) => (
+                  <option key={ratio} value={ratio}>
+                    {ratio}% — {ratio === 1 ? "أعلى درجات التطابق وأدق استهداف" : ratio === 10 ? "أوسع نطاق وصول جماهيري" : `مستوى تشابه ${ratio}%`}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground">
+                كلما انخفضت النسبة (1%)، زاد تقارب الجمهور مع العملاء الفعليين.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="lookalike-ratio"
-              className="block text-sm font-medium text-gray-700 mb-2"
+          {/* Action Row */}
+          <div className="pt-3 border-t border-border/40 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/advertising/facebook-ads/audiences")}
+              className="px-4 py-2 border border-border/70 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
             >
-              نسبة الشبه *
-            </label>
-            <select
-              id="lookalike-ratio"
-              name="ratio"
-              autoComplete="off"
-              value={formData.ratio}
-              onChange={(e) =>
-                handleInputChange("ratio", parseInt(e.target.value))
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={loading || customAudiences.length === 0}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((ratio) => (
-                <option key={ratio} value={ratio}>
-                  {ratio}% -{" "}
-                  {ratio === 1
-                    ? "أكثر تشابه"
-                    : ratio === 10
-                      ? "أقل تشابه"
-                      : `${ratio}%`}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              كلما انخفضت النسبة، زاد التشابه (وأصغر الجمهور)
-            </p>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{loading ? "جارِ التوليد في فيسبوك..." : "إنشاء الجمهور المشابه الآن"}</span>
+            </button>
           </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={() => navigate("/advertising/facebook-ads/audiences")}
-            className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            إلغاء
-          </button>
-          <button
-            type="submit"
-            disabled={loading || customAudiences.length === 0}
-            className="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {loading ? "جاري الإنشاء..." : "إنشاء الجمهور المشابه"}
-          </button>
         </div>
       </form>
     </div>
