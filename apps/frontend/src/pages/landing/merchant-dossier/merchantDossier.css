@@ -1,0 +1,457 @@
+/* ============================================================================
+   merchant-dossier — «نسخة الملف» (tasteskill v2 · direction: One motif)
+   Motif = the tab (لسان الملف/البوليصة): a trapezoid rising from every band,
+   photograph mask, bullet and footer block. Scoped under .md — touches nothing else.
+   Palette dealt: "Bottle ink, yellow".  Type slot redrawn: Chillax has no Arabic
+   glyphs, so the face is the project's own IBM Plex Sans Arabic (see report).
+   House rules enforced: no gradients, no shadows at rest, no hairlines,
+   no monospace, no eyebrows, no index numbers, no emoji.
+   ========================================================================== */
+
+.md {
+  --md-bg: #f7f7f7;
+  --md-surface: #ebebeb;
+  --md-field-2: #d9d9d2;
+  --md-ink: #0d2a1c;
+  --md-muted: #5f6b64;
+  --md-paper: #f7f7f7;
+  --md-accent: #f6e016;
+  --md-accent-ink: #0d2a1c;
+
+  --step-small: 14px;
+  --step-body: clamp(17px, 1rem + 0.25vw, 19px);
+  --step-lead: clamp(20px, 1.1rem + 0.7vw, 26px);
+  --step-head: clamp(30px, 1.4rem + 3vw, 58px);
+  --step-display: clamp(42px, 2.4rem + 6.4vw, 116px);
+
+  --tab-h: 34px;
+  --tab-skew: 14px;
+
+  background: var(--md-bg);
+  color: var(--md-ink);
+  font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: var(--step-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.md *,
+.md *::before,
+.md *::after {
+  box-sizing: border-box;
+}
+
+.md-shell {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 768px) {
+  .md-shell {
+    padding-inline: 24px;
+  }
+}
+
+/* ---------- The motif: a tab rising from a band or a photograph ---------- */
+
+.md-tab-label {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: var(--tab-h);
+  inset-inline-start: calc(var(--tab-x) + var(--tab-skew));
+  width: var(--tab-w);
+  font-size: var(--step-small);
+  font-weight: 600;
+}
+
+/* The file stack: five folders, each showing only its tab and a strip */
+.md-stack {
+  position: relative;
+  height: 352px;
+}
+
+@media (min-width: 768px) {
+  .md-stack {
+    height: 470px;
+  }
+}
+
+.md-folder {
+  position: absolute;
+  inset-inline: 4%;
+}
+
+@media (min-width: 768px) {
+  .md-folder {
+    inset-inline: 7%;
+  }
+}
+
+.md-folder--0 {
+  top: 0;
+  height: 108px;
+}
+
+.md-folder--1 {
+  top: 52px;
+  height: 108px;
+}
+
+.md-folder--2 {
+  top: 104px;
+  height: 108px;
+}
+
+.md-folder--3 {
+  top: 156px;
+  height: 108px;
+}
+
+.md-folder--front {
+  top: 208px;
+  height: 144px;
+}
+
+@media (min-width: 768px) {
+  .md-folder--0 {
+    top: 0;
+    height: 120px;
+  }
+
+  .md-folder--1 {
+    top: 62px;
+    height: 120px;
+  }
+
+  .md-folder--2 {
+    top: 124px;
+    height: 120px;
+  }
+
+  .md-folder--3 {
+    top: 186px;
+    height: 120px;
+  }
+
+  .md-folder--front {
+    top: 248px;
+    height: 168px;
+  }
+}
+
+/* التاب مرسوم من بداية السطر (يمين في RTL) — نفس جهة اللافتة اللي جوّاه */
+.md-tabbed {
+  --tab-x: 0px;
+  --tab-w: 190px;
+  clip-path: polygon(
+    0 var(--tab-h),
+    calc(100% - var(--tab-x) - var(--tab-w) - var(--tab-skew) * 2) var(--tab-h),
+    calc(100% - var(--tab-x) - var(--tab-w) - var(--tab-skew)) 0,
+    calc(100% - var(--tab-x) - var(--tab-skew)) 0,
+    calc(100% - var(--tab-x)) var(--tab-h),
+    100% var(--tab-h),
+    100% 100%,
+    0 100%
+  );
+}
+
+.md-photo-tab {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--tab-skew) * 2 - var(--tab-w)) 0,
+    calc(100% - var(--tab-skew) - var(--tab-w)) var(--tab-h),
+    calc(100% - var(--tab-w)) var(--tab-h),
+    calc(100% - var(--tab-w) + var(--tab-skew)) calc(var(--tab-h) * 2),
+    100% calc(var(--tab-h) * 2),
+    100% 100%,
+    0 100%
+  );
+}
+
+.md-bullet {
+  width: 22px;
+  height: 12px;
+  flex: none;
+  background: currentColor;
+  clip-path: polygon(0 100%, 0 40%, 8px 0, 22px 0, 14px 100%);
+}
+
+/* ---------- Type ---------- */
+
+.md-display {
+  font-size: var(--step-display);
+  line-height: 1.14;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.md-head {
+  font-size: var(--step-head);
+  line-height: 1.06;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.md-lead {
+  font-size: var(--step-lead);
+  line-height: 1.35;
+  font-weight: 400;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.md-body {
+  font-size: var(--step-body);
+  line-height: 1.6;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.md-small {
+  font-size: var(--step-small);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.md-muted {
+  color: var(--md-muted);
+}
+
+.md-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  unicode-bidi: isolate;
+}
+
+.md-field {
+  background: var(--md-ink);
+  color: var(--md-paper);
+}
+
+.md-field-yellow {
+  background: var(--md-accent);
+  color: var(--md-accent-ink);
+}
+
+/* ---------- Controls (flat, square, one shape; two states only) ---------- */
+
+.md-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 0;
+  background: var(--md-accent);
+  color: var(--md-accent-ink);
+  font-family: inherit;
+  font-size: var(--step-body);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+}
+
+.md-action:hover {
+  background: #e9d413;
+}
+
+.md-action:active {
+  transform: scale(0.97);
+}
+
+.md-action--ink {
+  background: var(--md-ink);
+  color: var(--md-paper);
+}
+
+.md-action--ink:hover {
+  background: #17402b;
+}
+
+.md-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0;
+  transition: opacity 160ms ease-out;
+}
+
+.md-link:hover {
+  opacity: 0.62;
+}
+
+.md :focus-visible,
+.md :where(a, button, input, textarea, select):focus-visible {
+  outline: 3px solid var(--md-accent);
+  outline-offset: 3px;
+}
+
+.md-field .md :focus-visible,
+.md-field :focus-visible {
+  outline-color: var(--md-accent);
+}
+
+/* ---------- Real interface fragments (the product's own conventions) ---------- */
+
+.md-dialog {
+  box-shadow: 0 28px 70px rgba(13, 42, 28, 0.22); /* taste-skill-ignore: this shadow belongs to the product's own create dialog, which is an overlay open above the page */
+}
+
+.md-ui {
+  font-size: 13px;
+  line-height: 1.45;
+  background: #fff;
+  color: #0e1116;
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+
+.md-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.md-ui-strong {
+  font-weight: 600;
+}
+
+.md-ui-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #ecf7f2;
+  color: #0b7a52;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Section rhythm: space and tone steps, never lines ---------- */
+
+.md-section {
+  padding-block: 88px;
+}
+
+@media (min-width: 768px) {
+  .md-section {
+    padding-block: 148px;
+  }
+}
+
+.md-tone-surface {
+  background: var(--md-surface);
+}
+
+/* ---------- Entrances (transform + opacity only; content always readable) ---------- */
+
+.md-rise {
+  opacity: 1;
+  transform: none;
+}
+
+.md-js .md-rise {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 520ms ease-out, transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.md-js .md-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.md-drift {
+  animation: md-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes md-drift {
+  from {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.07) translate3d(-1.2%, -1.4%, 0);
+  }
+}
+
+/* ---------- Index with preview (signature move) ---------- */
+
+.md-index-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: opacity 240ms ease-out;
+}
+
+@media (hover: hover) {
+  .md-index:hover .md-index-row {
+    opacity: 0.38;
+  }
+
+  .md-index:hover .md-index-row:hover,
+  .md-index-row:focus-visible {
+    opacity: 1;
+  }
+}
+
+.md-index-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.md-index-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 240ms ease-out;
+}
+
+.md-index-img.is-active {
+  opacity: 1;
+}
+
+.md-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.md-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md *,
+  .md *::before,
+  .md *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .md-js .md-rise {
+    opacity: 1;
+    transform: none;
+  }
+}

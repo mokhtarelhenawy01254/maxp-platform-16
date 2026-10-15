@@ -14,7 +14,8 @@ const FRAME_HEIGHT: Record<CompareMode, number> = { desktop: 2400, mobile: 2400 
 
 const VARIANTS = [
   { id: "enterprise-os", label: "الحالية — Enterprise OS" },
-  { id: "merchant-daylight", label: "الجديدة — نسخة التاجر النهارية" },
+  { id: "merchant-daylight", label: "نسخة التاجر النهارية" },
+  { id: "merchant-dossier", label: "نسخة الملف — tasteskill v2" },
 ] as const;
 
 const useScale = (frameWidth: number, paneWidth: number) =>

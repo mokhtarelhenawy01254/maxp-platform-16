@@ -3,7 +3,8 @@ export type PlatformLandingVariantId =
   | "sales-flow"
   | "executive-atlas"
   | "business-os"
-  | "merchant-daylight";
+  | "merchant-daylight"
+  | "merchant-dossier";
 
 export interface PlatformLandingVariantDefinition {
   id: PlatformLandingVariantId;
@@ -86,6 +87,23 @@ export const PLATFORM_LANDING_VARIANTS: PlatformLandingVariantDefinition[] = [
       "أرقام إنتاج حقيقية فوق الطية",
       "باقات الكتالوج بأسعارها الفعلية",
       "دفتر قيمة يقارن الفردي بالباقة",
+    ],
+  },
+  {
+    id: "merchant-dossier",
+    label: "نسخة الملف — الحس الفني",
+    badge: "مبنية بـtasteskill v2",
+    summary:
+      "لاند اتحادت لها اتجاه فني من مكتبة الـskill (One motif: رزمة ملفات بألسنة) مع صور حقيقية من أرشيف مفتوح معتمدة على الصفحة، وحركة على مراحل، ومرور على بوابة فحص المتصفح.",
+    audience:
+      "لتجّار مصر (محل + أونلاين) اللي مربوطين بالدفع عند الاستلام — الصفحة بتبدأ من بوليصة الشحن وتنتهي بكاش في الخزنة.",
+    tone: "حبر أخضر داكن على أرض فاتحة، وأصفر أكسنت واحد.",
+    accent: "#f6e016",
+    surface: "#f7f7f7",
+    focusPoints: [
+      "هيرو رزمة ملفات بألسنة",
+      "الصور من عالم التاجر (أرشيف مفتوح)",
+      "شاشة إنشاء المتجر مفتوحة فعلًا",
     ],
   },
   {

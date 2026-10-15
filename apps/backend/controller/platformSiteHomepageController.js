@@ -11,6 +11,7 @@ const ALLOWED_LANDING_IDS = [
   "executive-atlas",
   "business-os",
   "merchant-daylight",
+  "merchant-dossier",
 ];
 
 const DEFAULT_SETTINGS = Object.freeze({
