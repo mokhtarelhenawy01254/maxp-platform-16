@@ -230,6 +230,12 @@ const OrderConfirmationSettings: React.FC = () => {
       const res = await orderConfirmationService.updateSettings(payload);
       setSettings(res.data);
       await loadEligibleUsers();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('order-confirmation-settings-updated', { detail: res.data }));
+        try {
+          window.localStorage.setItem('order-confirmation-settings-updated-at', Date.now().toString());
+        } catch {}
+      }
       tToast.success("OrderConfirmationSettings.success_save_8804");
     } catch (error: any) {
       toast.error(error?.message || 'فشل حفظ الإعدادات');
@@ -396,10 +402,13 @@ const OrderConfirmationSettings: React.FC = () => {
             <p className="text-xs text-gray-500">عند التفعيل سيتم إظهار الطلبات التي تطابق القواعد أدناه.</p>
           </div>
           <button
+            type="button"
+            role="switch"
+            aria-checked={settings.enabled}
             onClick={() => setSettings({ ...settings, enabled: !settings.enabled })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full ${settings.enabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${settings.enabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition-transform ${settings.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
         </div>
 

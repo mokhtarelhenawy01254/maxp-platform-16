@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   PhoneIcon,
   ExclamationTriangleIcon,
@@ -22,19 +23,22 @@ interface WorkspaceOrderQueueProps {
   fetchError: string | null;
   onRetry: () => void;
   activeTab: string;
+  confirmationDisabled?: boolean;
 }
 
 export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   orders,
   selectedOrderId,
   onSelectOrder,
-  loading,  loadingMore,
+  loading,
+  loadingMore,
   onLoadMore,
   pagination,
   page,
   fetchError,
   onRetry,
   activeTab,
+  confirmationDisabled = false,
 }) => {
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -186,13 +190,35 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
       {/* Stream list */}
       <div className="flex-1 divide-y divide-border/30 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border">
         {displayOrders.length === 0 ? (
-          <div className="flex h-32 flex-col items-center justify-center p-4 text-center text-muted-foreground">
-            <p className="text-xs font-medium">
-              {riskOnly
-                ? (isArabic ? 'لا توجد طلبات عالية الخطورة' : 'No high-risk orders')
-                : (isArabic ? 'لا توجد طلبات مطابقة' : 'No matching orders')}
-            </p>
-          </div>
+          confirmationDisabled && (activeTab === 'pending' || activeTab === 'all' || activeTab === 'confirmation') ? (
+            <div className="m-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-center dark:border-amber-500/20 dark:bg-amber-500/5">
+              <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                <ExclamationTriangleIcon className="h-5 w-5" />
+              </div>
+              <h4 className="mt-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                {isArabic ? 'المركز مقفول من الإعدادات' : 'Confirmation Center Disabled'}
+              </h4>
+              <p className="mt-1 text-[11px] leading-relaxed text-amber-800/90 dark:text-amber-300/80">
+                {isArabic
+                  ? 'تم إيقاف مركز التأكيد من الإعدادات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.'
+                  : 'Order confirmation center is disabled in settings. No orders will appear until enabled.'}
+              </p>
+              <Link
+                to="/settings/orders?tab=confirmation"
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 dark:bg-amber-500 dark:hover:bg-amber-600"
+              >
+                <span>{isArabic ? 'الانتقال لإعدادات التأكيد ←' : 'Go to Settings →'}</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex h-32 flex-col items-center justify-center p-4 text-center text-muted-foreground">
+              <p className="text-xs font-medium">
+                {riskOnly
+                  ? (isArabic ? 'لا توجد طلبات عالية الخطورة' : 'No high-risk orders')
+                  : (isArabic ? 'لا توجد طلبات مطابقة' : 'No matching orders')}
+              </p>
+            </div>
+          )
         ) : (
           displayOrders.map((order) => {
           const isSelected = order.id === selectedOrderId;

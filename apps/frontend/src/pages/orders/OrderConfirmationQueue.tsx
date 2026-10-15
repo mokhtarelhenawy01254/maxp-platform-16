@@ -12,7 +12,8 @@ import {
   PrinterIcon,
   PencilSquareIcon,
   CreditCardIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -427,6 +428,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   const { settings: invoiceSettings } = useInvoiceSettings();
 
   const [settings, setSettings] = useState<OrderConfirmationSettings | null>(null);
+  const [isQueueDisabled, setIsQueueDisabled] = useState(false);
+  const isConfirmationDisabled = isQueueDisabled || (settings !== null && !settings.enabled);
   const [orders, setOrders] = useState<ConfirmationOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -520,6 +523,9 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
     try {
       const res = await orderConfirmationService.getSettings();
       setSettings(res.data);
+      if (res.data && typeof res.data.enabled === 'boolean') {
+        setIsQueueDisabled(!res.data.enabled);
+      }
     } catch (error: any) {
       toast.error(error?.message || t('orders.failedToLoadSettings'));
     }
@@ -547,6 +553,11 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       if (onlyUnassigned) params.onlyUnassigned = true;
 
       const res = await orderConfirmationService.getQueue(params);
+      if (res?.disabled) {
+        setIsQueueDisabled(true);
+      } else if (res?.success) {
+        setIsQueueDisabled(false);
+      }
       setOrders(Array.isArray(res.data) ? res.data : []);
       setTotalOrders(res.pagination?.total || 0);
       setTotalPages(res.pagination?.pages || 1);
@@ -578,8 +589,46 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   }, []);
 
   useEffect(() => {
+    const handleSettingsUpdated = () => {
+      fetchSettings();
+      fetchQueue();
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSettings();
+        fetchQueue();
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'order-confirmation-settings-updated-at') {
+        fetchSettings();
+        fetchQueue();
+      }
+    };
+
+    window.addEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleVisibility);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleVisibility);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
     if (settings?.enabled) {
+      setIsQueueDisabled(false);
       fetchEligibleUsers();
+      fetchQueue();
+      fetchStats();
+    } else if (settings && !settings.enabled) {
+      setIsQueueDisabled(true);
     }
   }, [settings?.enabled]);
 
@@ -934,30 +983,44 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   });
 
 
-  if (settings && !settings.enabled) {
+  if (isConfirmationDisabled) {
     return (
       <div className="space-y-6" dir="rtl">
         {!embedded && (
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.ordersNeedingConfirmation')}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {t('orders.ordersNeedingConfirmation', 'طلبات تحتاج إلى تأكيد')}
+              </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {t('orders.ordersNeedingConfirmationDescDisabled')}
+                {t('orders.ordersNeedingConfirmationDescDisabled', 'المركز مقفول من الإعدادات حالياً')}
               </p>
             </div>
           </div>
         )}
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-6">
-          <h2 className="text-lg font-bold text-amber-800 dark:text-amber-300">{t('orders.confirmationFeatureDisabled')}</h2>
-          <p className="text-sm text-amber-700 dark:text-amber-400 mt-2">
-            {t('orders.confirmationFeatureDisabledDesc')}
-          </p>
-          <Link
-            to="/settings/orders?tab=confirmation"
-            className="inline-flex mt-4 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold"
-          >
-            {t('orders.openSettings')}
-          </Link>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-700/60 dark:bg-amber-900/20">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              <ExclamationTriangleIcon className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-base font-bold text-amber-900 dark:text-amber-200">
+                المركز مقفول من الإعدادات
+              </h2>
+              <p className="text-xs text-amber-800 dark:text-amber-300/90 leading-relaxed">
+                تم إيقاف مركز التأكيد من إعدادات الطلبات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.
+              </p>
+              <div className="pt-3">
+                <Link
+                  to="/settings/orders?tab=confirmation"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition-transform hover:bg-amber-700 active:scale-95"
+                >
+                  <span>فتح إعدادات مركز التأكيد</span>
+                  <span dir="ltr">←</span>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1383,6 +1446,22 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:rounded-xl">
         {loading ? (
           <div className="p-8 text-center text-sm text-gray-500 sm:p-10">{t('orders.loadingOrders')}</div>
+        ) : isConfirmationDisabled ? (
+          <div className="p-6 text-center sm:p-10" dir="rtl">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+              <ExclamationTriangleIcon className="h-6 w-6" />
+            </div>
+            <div className="font-bold text-gray-900 dark:text-gray-100">المركز مقفول من الإعدادات</div>
+            <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              تم إيقاف مركز التأكيد من الإعدادات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.
+            </div>
+            <Link
+              to="/settings/orders?tab=confirmation"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-amber-700 active:scale-95"
+            >
+              فتح إعدادات مركز التأكيد ←
+            </Link>
+          </div>
         ) : orders.length === 0 ? (
           <div className="p-6 text-center sm:p-10">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-300">

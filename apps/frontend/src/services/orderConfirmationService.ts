@@ -46,6 +46,7 @@ export interface OrderConfirmationApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  disabled?: boolean;
 }
 
 export interface OrderConfirmationCallLogData {

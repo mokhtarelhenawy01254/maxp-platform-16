@@ -119,16 +119,19 @@ const mockOrdersResponse = ({
   orders,
   stats,
   pagination,
+  confirmationDisabled,
 }: {
   orders: TestOrder[];
   stats?: unknown;
   pagination?: unknown;
+  confirmationDisabled?: boolean;
 }) => ({
   data: {
     success: true,
     data: orders,
     stats,
     pagination,
+    confirmationDisabled,
   },
 });
 
@@ -834,6 +837,34 @@ describe("AgentWorkspace", () => {
     fireEvent.click(dossierToggleBtn);
     // Toggle back on
     fireEvent.click(dossierToggleBtn);
+  });
+
+  it("renders disabled confirmation warning banner with link to settings when confirmationDisabled is true", async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('/agent-workspace/my-orders')) {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [],
+            stats: defaultStats(0),
+            pagination: { total: 0, page: 1, limit: 50, pages: 1 },
+            confirmationDisabled: true,
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    renderWorkspace();
+
+    // Verify warning banner in queue and inspector
+    const banners = await screen.findAllByText(/المركز مقفول من الإعدادات|مركز التأكيد مقفول من الإعدادات|Confirmation Center Disabled/i);
+    expect(banners.length).toBeGreaterThan(0);
+
+    // Verify link to settings is present
+    const settingsLinks = screen.getAllByRole("link", { name: /الانتقال لإعدادات التأكيد|فتح إعدادات مركز التأكيد|Settings/i });
+    expect(settingsLinks.length).toBeGreaterThan(0);
+    expect(settingsLinks[0]).toHaveAttribute("href", "/settings/orders?tab=confirmation");
   });
 });
 

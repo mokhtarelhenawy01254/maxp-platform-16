@@ -66,6 +66,16 @@ const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلو�
 
 const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
+const checkConfirmationDisabled = async (companyId) => {
+  try {
+    const orderConfirmationService = require('../services/orderConfirmationService');
+    const settings = await orderConfirmationService.getSettings(companyId);
+    return settings ? settings.enabled === false : false;
+  } catch (_e) {
+    return false;
+  }
+};
+
 const normalizeDigits = (value) => {
   if (!value) return '';
   return String(value)
@@ -753,11 +763,14 @@ const getMyOrders = async (req, res) => {
         stats = await getWorkspaceStats(prisma, companyId, userId, { assignedTo, isManager });
       }
 
+      const confirmationDisabled = await checkConfirmationDisabled(companyId);
+
       return res.json({
         success: true,
         data: paginatedOrders,
         pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
-        stats
+        stats,
+        confirmationDisabled
       });
     }
 
@@ -843,11 +856,14 @@ const getMyOrders = async (req, res) => {
       stats = await getWorkspaceStats(prisma, companyId, userId, { assignedTo, isManager });
     }
 
+    const confirmationDisabled = await checkConfirmationDisabled(companyId);
+
     res.json({
       success: true,
       data: formattedOrders,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
-      stats
+      stats,
+      confirmationDisabled
     });
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in getMyOrders:', error);

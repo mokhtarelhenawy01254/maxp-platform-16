@@ -65,6 +65,7 @@ export const AgentWorkspace: React.FC = () => {
     handleConvertIncomplete,
     handleUpdateOrderItems,
     handleUpdateCustomer,
+    confirmationDisabled,
   } = useAgentWorkspace();
 
   const { i18n } = useTranslation();
@@ -229,6 +230,7 @@ export const AgentWorkspace: React.FC = () => {
                 fetchError={fetchError}
                 onRetry={() => void fetchOrders()}
                 activeTab={activeTab}
+                confirmationDisabled={confirmationDisabled}
               />
             </div>
 
@@ -260,6 +262,7 @@ export const AgentWorkspace: React.FC = () => {
 
               <WorkspaceInspector
                 order={selectedOrder}
+                confirmationDisabled={confirmationDisabled}
                 busyAction={selectedOrder ? busyOrders[selectedOrder.id] : undefined}
                 onConfirm={(o) => void handleQuickAction(o, 'confirm')}
                 onCancel={(o) => setCancellingOrder(o)}

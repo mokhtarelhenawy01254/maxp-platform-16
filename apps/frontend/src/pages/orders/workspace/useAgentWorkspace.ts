@@ -63,6 +63,7 @@ export function useAgentWorkspace() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [confirmationDisabled, setConfirmationDisabled] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<FilterTab>(() =>
     normalizeWorkspaceTab(searchParams.get('tab')),
@@ -278,6 +279,10 @@ export function useAgentWorkspace() {
       }
 
       const payload = response?.data as any;
+
+      if (typeof payload?.confirmationDisabled === 'boolean') {
+        setConfirmationDisabled(payload.confirmationDisabled);
+      }
 
       if (activeTabForRequest !== 'incomplete' && !payload?.success) {
         throw new Error(
@@ -778,6 +783,32 @@ export function useAgentWorkspace() {
   }, [isManager]);
 
   useEffect(() => {
+    const handleSettingsUpdated = () => {
+      void fetchOrders({ silent: true });
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'order-confirmation-settings-updated-at') {
+        void fetchOrders({ silent: true });
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchOrders({ silent: true });
+      }
+    };
+
+    window.addEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
@@ -948,5 +979,6 @@ export function useAgentWorkspace() {
     setSelectedOrderForModal,
     isModalOpen,
     setIsModalOpen,
+    confirmationDisabled,
   };
 }
