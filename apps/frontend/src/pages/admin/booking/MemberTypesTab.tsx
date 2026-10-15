@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { PlusIcon, PencilIcon, TrashIcon, X as XMarkIcon } from "lucide-react";
-import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, InsuranceMemberType } from "./shared";
+import { Plus, Pencil, Trash2, X, Users, AlertCircle, Shield } from "lucide-react";
+import { api, fetchJson, getAuthHeaders, InsuranceMemberType } from "./shared";
 
 interface MemberTypeRow extends InsuranceMemberType {
   _count?: { patients?: number };
@@ -84,91 +84,158 @@ export default function MemberTypesTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">جارٍ التحميل...</div>;
+    return <div className="text-center py-16 text-muted-foreground text-xs">جارٍ تحميل أنواع العضوية...</div>;
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+    <div className="space-y-4">
+      {/* Header Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h2 className="text-xl font-bold">أنواع عضوية التأمين</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">أدوار العائلة (المؤمَّن له، الزوج، الزوجة، الأطفال) مع نسبة التغطية لكل نوع</p>
+          <h2 className="text-lg font-bold text-foreground">أنواع عضوية التأمين</h2>
+          <p className="text-xs text-muted-foreground">أدوار وفئات المستفيدين وتحديد نسبة التغطية التأمينية لكل فئة</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />نوع عضوية جديد</button>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>نوع عضوية جديد</span>
+        </button>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center justify-between bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded"><XMarkIcon className="w-4 h-4" /></button>
+        <div className="flex items-center justify-between bg-destructive/10 text-destructive border border-destructive/20 rounded-xl px-3 py-2 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="p-1 hover:bg-destructive/20 rounded-lg transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                <th className="text-right py-3 px-4">الاسم</th>
-                <th className="text-right py-3 px-4 whitespace-nowrap">نسبة التغطية %</th>
-                <th className="text-right py-3 px-4">الحالة</th>
-                <th className="text-right py-3 px-4">إجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {types.length === 0 && (
-                <tr><td colSpan={4} className="py-12 text-center text-gray-400 dark:text-gray-500">لا توجد أنواع عضوية بعد</td></tr>
-              )}
-              {types.map((t) => (
-                <tr key={t.id} className="border-b dark:border-gray-700 last:border-b-0">
-                  <td className="py-3 px-4 font-medium">{t.name}</td>
-                  <td className="py-3 px-4 whitespace-nowrap font-semibold">{t.coveragePercent}%</td>
-                  <td className="py-3 px-4">
-                    {t.isActive ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">نشط</span>
-                    ) : (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">معطل</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(t)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
-                      <button onClick={() => remove(t)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="حذف"><TrashIcon className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {types.length === 0 ? (
+        <div className="bg-card border border-border/70 rounded-xl p-12 text-center text-muted-foreground">
+          <Shield className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+          <p className="text-xs">لا توجد أنواع عضوية مضافة بعد</p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground text-[11px] font-medium">
+                  <th className="text-right py-2.5 px-3">اسم الفئة</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">نسبة التغطية التأمينية</th>
+                  <th className="text-right py-2.5 px-3">الحالة</th>
+                  <th className="text-right py-2.5 px-3">إجراء</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {types.map((t) => (
+                  <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-2.5 px-3 font-medium text-foreground">{t.name}</td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span className="font-mono tabular-nums font-semibold text-foreground">
+                        {t.coveragePercent}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        t.isActive
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {t.isActive ? "نشط" : "معطل"}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => openEdit(t)}
+                          className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="تعديل"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => remove(t)}
+                          className="p-1 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          title="حذف"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setModal(null)}>
-          <div className={`${MODAL_CONTENT_CLS}`} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">{modal.id ? "تعديل نوع العضوية" : "نوع عضوية جديد"}</h3>
-              <button onClick={() => setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setModal(null)}>
+          <div className="bg-card border border-border/70 rounded-2xl shadow-xl w-full max-w-md p-5 text-foreground space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 className="text-sm font-bold text-foreground">
+                {modal.id ? "تعديل نوع العضوية" : "نوع عضوية جديد"}
+              </h3>
+              <button onClick={() => setModal(null)} className="p-1 hover:bg-muted rounded-lg text-muted-foreground transition-colors">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
-                <input className={MODAL_INPUT_CLS} value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} placeholder="مثال: الزوج، الزوجة، الأطفال" />
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">اسم الفئة</label>
+                <input
+                  className="w-full border border-border/70 rounded-xl px-3 py-1.5 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  value={modal.name}
+                  onChange={e => setModal({ ...modal, name: e.target.value })}
+                  placeholder="مثال: المؤمَّن له، الزوج، الزوجة، الأطفال"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نسبة التغطية %</label>
-                <input type="number" min={0} max={100} className={MODAL_INPUT_CLS} value={modal.coveragePercent} onChange={e => setModal({ ...modal, coveragePercent: e.target.value })} placeholder="0 - 100" />
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">نسبة التغطية %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="w-full border border-border/70 rounded-xl px-3 py-1.5 text-xs font-mono tabular-nums bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  value={modal.coveragePercent}
+                  onChange={e => setModal({ ...modal, coveragePercent: e.target.value })}
+                  placeholder="0 - 100"
+                />
               </div>
               {modal.id && (
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" checked={modal.isActive} onChange={e => setModal({ ...modal, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                  مفعّل
+                <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={modal.isActive}
+                    onChange={e => setModal({ ...modal, isActive: e.target.checked })}
+                    className="rounded border-border/70 text-primary focus:ring-primary/40"
+                  />
+                  <span>مفعّل ونشط</span>
                 </label>
               )}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={save} disabled={saving || !modal.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+            <div className="flex justify-end gap-2 border-t border-border/70 pt-3">
+              <button
+                onClick={() => setModal(null)}
+                className="px-3 py-1.5 text-xs border border-border/70 text-foreground rounded-xl hover:bg-muted transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={save}
+                disabled={saving || !modal.name.trim()}
+                className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                حفظ
+              </button>
             </div>
           </div>
         </div>

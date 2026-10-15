@@ -1,45 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Ban, CalendarDays, CheckCircle2, ClipboardList, FileCheck2, Loader2, RefreshCw, Send, Stethoscope, UserRound, XCircle } from "lucide-react";
-import { BookingAppointment, BookingBranch, BookingDoctor, BOOKING_STATUS_MAP, MODAL_INPUT_CLS, REPORT_STATUS_MAP, api, fetchJson } from "./shared";
-import WorkflowStatusBadge from "./WorkflowStatusBadge";
-
-type SubTab = "reception" | "doctor" | "reports";
-
-interface WorkflowRow extends BookingAppointment {
-  patient?: { id: string; name: string; phone?: string } | null;
-  doctorName?: string;
-  assignedDoctorName?: string;
-  branchName?: string;
-}
-
-const NEXT_BOOKING_STATUS: Record<string, string> = {
-  UNCONFIRMED: "CONFIRMED",
-  CONFIRMED: "CHECKED_IN",
-  CHECKED_IN: "PROCEDURE_STARTED",
-  PROCEDURE_STARTED: "PROCEDURE_COMPLETED",
-  PROCEDURE_COMPLETED: "CHECKED_OUT",
-};
-
-const NEXT_REPORT_STATUS: Record<string, string> = {
-  PENDING: "NOTES_IN_PROGRESS",
-  NOTES_IN_PROGRESS: "NOTES_COMPLETED",
-  NOTES_COMPLETED: "UNDER_REVIEW",
-  UNDER_REVIEW: "APPROVED",
-};
-
-const LEGACY_TO_BOOKING: Record<string, string> = {
-  pending: "UNCONFIRMED",
-  confirmed: "CONFIRMED",
-  completed: "CHECKED_OUT",
-  cancelled: "CANCELLED",
-  no_show: "MISSED",
-};
+import { Ban, CalendarDays, CheckCircle2, ClipboardList, FileCheck2, Loader2, RefreshCw, Send, Stethoscope, UserRound, XCircle, Clock } from "lucide-react";
+import { BookingAppointment, BookingBranch, BookingDoctor, BOOKING_STATUS_MAP, REPORT_STATUS_MAP, api, fetchJson } from "./shared";
+import WorkflowStatusBadge, { NEXT_BOOKING_STATUS, NEXT_REPORT_STATUS, LEGACY_TO_BOOKING } from "./WorkflowStatusBadge";
 
 const SUB_TABS: { id: SubTab; label: string; icon: typeof CalendarDays }[] = [
-  { id: "reception", label: "استقبال", icon: UserRound },
+  { id: "reception", label: "الاستقبال", icon: UserRound },
   { id: "doctor", label: "طابور الطبيب", icon: Stethoscope },
-  { id: "reports", label: "التقارير", icon: ClipboardList },
+  { id: "reports", label: "التقارير الطبية", icon: ClipboardList },
 ];
 
 const todayStr = () => {
@@ -176,189 +144,232 @@ export default function WorkflowPage() {
   const rowPatientPhone = (row: WorkflowRow) => row.patient?.phone || row.customerPhone || "";
   const rowDoctorName = (row: WorkflowRow) => row.assignedDoctorName || row.doctorName || "—";
 
-  const actionBtn =
-    "p-1.5 rounded text-white disabled:opacity-40 disabled:cursor-not-allowed";
-
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">سير عمل الكشف</h2>
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-4">
+      {/* Header Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">سير عمل الكشف</h2>
+          <p className="text-xs text-muted-foreground">متابعة مراحل الكشف من الاستقبال إلى غرفة الطبيب وإصدار التقارير</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <CalendarDays className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+            <CalendarDays className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-muted-foreground" />
             <input
               type="date"
-              className={`${MODAL_INPUT_CLS} pr-9 w-44`}
+              className="border border-border/70 rounded-xl pr-8 pl-3 py-1.5 text-xs font-mono tabular-nums bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
           <button
             onClick={() => load()}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground hover:bg-muted text-xs font-medium rounded-xl transition-colors shadow-sm"
           >
-            <RefreshCw className="w-4 h-4" />
-            تحديث
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>تحديث</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {SUB_TABS.map((t) => {
-          const Icon = t.icon;
-          const isActive = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${isActive ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+      {/* Segmented Queue Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border/70 rounded-xl p-1.5 shadow-sm">
+        <div className="flex flex-wrap gap-1">
+          {SUB_TABS.map((t) => {
+            const Icon = t.icon;
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Dynamic Queue Filter */}
+        <div className="flex items-center gap-2">
+          {activeTab === "reception" && (
+            <select
+              className="border border-border/70 rounded-lg px-2.5 py-1 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
             >
-              <Icon className="w-4 h-4" />
-              {t.label}
-            </button>
-          );
-        })}
+              <option value="">كل الفروع</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
+
+          {activeTab === "doctor" && (
+            <select
+              className="border border-border/70 rounded-lg px-2.5 py-1 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              value={doctorId}
+              onChange={(e) => setDoctorId(e.target.value)}
+            >
+              <option value="">اختر الطبيب...</option>
+              {doctors.map((d) => (
+                <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
-      {activeTab === "reception" && (
-        <div className="flex flex-wrap gap-3 mb-4">
-          <select className={MODAL_INPUT_CLS + " w-56"} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-            <option value="">كل الفروع</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {activeTab === "doctor" && (
-        <div className="flex flex-wrap gap-3 mb-4">
-          <select className={MODAL_INPUT_CLS + " w-56"} value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-            <option value="">اختر الطبيب...</option>
-            {doctors.map((d) => (
-              <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {activeTab === "doctor" && !doctorId && (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">اختر طبيباً لعرض قائمة الكشوف</p>
+        <div className="bg-card border border-border/70 rounded-xl py-12 text-center text-muted-foreground">
+          <Stethoscope className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+          <p className="text-xs">اختر طبيباً لعرض قائمة المرضى المنتظرين في الطابور</p>
+        </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400 dark:text-gray-500">
-          <Loader2 className="w-6 h-6 animate-spin" />
+        <div className="flex justify-center py-16 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : error ? (
-        <p className="text-center py-12 text-red-500">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl p-4 text-center text-xs">
+          {error}
+        </div>
       ) : rows.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
+        <div className="bg-card border border-border/70 rounded-xl py-12 text-center text-muted-foreground">
+          <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+          <p className="text-xs">لا توجد مواعيد في هذا الطابور للتاريخ المحدد</p>
+        </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                {["المريض", "الخدمة", "الوقت", activeTab === "doctor" ? "التشخيص" : "الطبيب", "حالة الحجز", "حالة التقرير", "إجراءات"].map((h) => (
-                  <th key={h} className="text-right py-3 px-4">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-                  <td className="py-3 px-4">
-                    <span className="font-medium">{rowPatientName(row)}</span>
-                    {rowPatientPhone(row) && <span className="block text-xs text-gray-400 dark:text-gray-500" dir="ltr">{rowPatientPhone(row)}</span>}
-                  </td>
-                  <td className="py-3 px-4">{row.serviceName || "—"}</td>
-                  <td className="py-3 px-4" dir="ltr">{row.startTime || ""}</td>
-                  <td className="py-3 px-4">
-                    {activeTab === "doctor" ? (
-                      <span>{row.diagnosis || "—"}</span>
-                    ) : (
-                      rowDoctorName(row)
-                    )}
-                  </td>
-                  <td className="py-3 px-4"><WorkflowStatusBadge status={row.bookingStatus || LEGACY_TO_BOOKING[row.status]} type="booking" /></td>
-                  <td className="py-3 px-4"><WorkflowStatusBadge status={row.reportStatus} type="report" /></td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-wrap items-center gap-1.5 justify-end">
-                      {activeTab === "reception" && doctors.length > 0 && (
-                        <select
-                          className="w-36 border rounded-lg px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 disabled:opacity-40"
-                          value={row.assignedDoctorId || row.doctorId || ""}
-                          disabled={busyId === row.id}
-                          onChange={(e) => assignDoctor(row, e.target.value)}
-                        >
-                          <option value="">تعيين طبيب...</option>
-                          {doctors.map((d) => (
-                            <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
-                          ))}
-                        </select>
-                      )}
-                      {nextBooking(row) && (
-                        <button
-                          onClick={() => advanceBooking(row)}
-                          disabled={busyId === row.id}
-                          title={`الخطوة التالية: ${bookingLabel(nextBooking(row)) || nextBooking(row)}`}
-                          className={`${actionBtn} bg-blue-600 hover:bg-blue-700`}
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                      )}
-                      {activeTab !== "reception" && nextReport(row) && (
-                        <button
-                          onClick={() => advanceReport(row)}
-                          disabled={busyId === row.id}
-                          title={`التقرير التالي: ${reportLabel(nextReport(row)) || nextReport(row)}`}
-                          className={`${actionBtn} bg-indigo-600 hover:bg-indigo-700`}
-                        >
-                          <FileCheck2 className="w-4 h-4" />
-                        </button>
-                      )}
-                      {activeTab === "reception" && (
-                        <button
-                          onClick={() => toggleDeliveredWithoutReport(row)}
-                          disabled={busyId === row.id}
-                          title={row.deliveredWithoutReport ? "إلغاء التسليم بدون تقرير" : "تسليم بدون تقرير"}
-                          className={`${actionBtn} ${row.deliveredWithoutReport ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-500 hover:bg-gray-600"}`}
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      )}
-                      {activeTab !== "doctor" && (
-                        <button
-                          onClick={() => toggleResultDelivered(row)}
-                          disabled={busyId === row.id}
-                          title={row.resultDelivered ? "إلغاء تسليم النتيجة" : "تسليم النتيجة"}
-                          className={`${actionBtn} ${row.resultDelivered ? "bg-teal-600 hover:bg-teal-700" : "bg-gray-500 hover:bg-gray-600"}`}
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => missBooking(row)}
-                        disabled={busyId === row.id}
-                        title="لم يحضر"
-                        className={`${actionBtn} bg-orange-500 hover:bg-orange-600`}
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => cancelBooking(row)}
-                        disabled={busyId === row.id}
-                        title="إلغاء"
-                        className={`${actionBtn} bg-red-500 hover:bg-red-600`}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground text-[11px] font-medium">
+                  {["العميل / المريض", "الخدمة", "الوقت", activeTab === "doctor" ? "التشخيص" : "الطبيب المعين", "حالة الحجز", "حالة التقرير", "إجراءات الطابور"].map((h) => (
+                    <th key={h} className="text-right py-2.5 px-3 whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-2.5 px-3">
+                      <span className="font-medium text-foreground">{rowPatientName(row)}</span>
+                      {rowPatientPhone(row) && (
+                        <span className="block text-[10px] text-muted-foreground font-mono tabular-nums" dir="ltr">
+                          {rowPatientPhone(row)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-foreground">{row.serviceName || "—"}</td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-foreground font-medium" dir="ltr">
+                      {row.startTime || "—"}
+                    </td>
+                    <td className="py-2.5 px-3 text-foreground">
+                      {activeTab === "doctor" ? (
+                        <span>{row.diagnosis || "—"}</span>
+                      ) : (
+                        rowDoctorName(row)
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <WorkflowStatusBadge status={row.bookingStatus || LEGACY_TO_BOOKING[row.status]} type="booking" />
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <WorkflowStatusBadge status={row.reportStatus} type="report" />
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex flex-wrap items-center gap-1 justify-end">
+                        {activeTab === "reception" && doctors.length > 0 && (
+                          <select
+                            className="w-32 border border-border/70 rounded-lg px-2 py-0.5 text-[11px] bg-background text-foreground disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            value={row.assignedDoctorId || row.doctorId || ""}
+                            disabled={busyId === row.id}
+                            onChange={(e) => assignDoctor(row, e.target.value)}
+                          >
+                            <option value="">تعيين طبيب...</option>
+                            {doctors.map((d) => (
+                              <option key={d.id} value={d.id}>{`${d.title || ""} ${d.name || ""}`.trim()}</option>
+                            ))}
+                          </select>
+                        )}
+                        {nextBooking(row) && (
+                          <button
+                            onClick={() => advanceBooking(row)}
+                            disabled={busyId === row.id}
+                            title={`الخطوة التالية: ${bookingLabel(nextBooking(row)) || nextBooking(row)}`}
+                            className="p-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-40 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {activeTab !== "reception" && nextReport(row) && (
+                          <button
+                            onClick={() => advanceReport(row)}
+                            disabled={busyId === row.id}
+                            title={`التقرير التالي: ${reportLabel(nextReport(row)) || nextReport(row)}`}
+                            className="p-1 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 disabled:opacity-40 transition-colors"
+                          >
+                            <FileCheck2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {activeTab === "reception" && (
+                          <button
+                            onClick={() => toggleDeliveredWithoutReport(row)}
+                            disabled={busyId === row.id}
+                            title={row.deliveredWithoutReport ? "إلغاء التسليم بدون تقرير" : "تسليم بدون تقرير"}
+                            className={`p-1 rounded-lg border transition-colors ${
+                              row.deliveredWithoutReport
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                : "bg-muted text-muted-foreground border-border/70 hover:bg-muted/80"
+                            }`}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {activeTab !== "doctor" && (
+                          <button
+                            onClick={() => toggleResultDelivered(row)}
+                            disabled={busyId === row.id}
+                            title={row.resultDelivered ? "إلغاء تسليم النتيجة" : "تسليم النتيجة"}
+                            className={`p-1 rounded-lg border transition-colors ${
+                              row.resultDelivered
+                                ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
+                                : "bg-muted text-muted-foreground border-border/70 hover:bg-muted/80"
+                            }`}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => missBooking(row)}
+                          disabled={busyId === row.id}
+                          title="تسجيل عدم الحضور"
+                          className="p-1 rounded-lg bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 disabled:opacity-40 transition-colors"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => cancelBooking(row)}
+                          disabled={busyId === row.id}
+                          title="إلغاء الموعد"
+                          className="p-1 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 disabled:opacity-40 transition-colors"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
