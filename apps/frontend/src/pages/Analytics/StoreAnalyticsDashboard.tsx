@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import analyticsService from "../../services/analyticsService";
-import { ArrowPathIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { RotateCcw, Sparkles } from "lucide-react";
 import StoreAnalyticsTabs from "./StoreAnalyticsTabs";
 import {
   AnalyticsData,
@@ -259,16 +259,16 @@ export const StoreAnalyticsDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4 max-w-7xl mx-auto pb-12" dir="rtl">
       {/* 1. Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               لوحة تحليلات المتجر والتحويل
             </h1>
             {activeVisitors > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {activeVisitors} متواجد حالياً
               </span>
@@ -284,7 +284,7 @@ export const StoreAnalyticsDashboard: React.FC = () => {
           <select
             value={filterDraft.period}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground"
+            className="rounded-xl border border-border/70 bg-card px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-hidden"
           >
             {PERIOD_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -299,19 +299,19 @@ export const StoreAnalyticsDashboard: React.FC = () => {
                 type="date"
                 value={filterDraft.startDate}
                 onChange={(e) => setFilterDraft((prev) => ({ ...prev, startDate: e.target.value }))}
-                className="px-2 py-1 text-xs border border-border/70 rounded bg-background text-foreground"
+                className="px-2.5 py-1 text-xs border border-border/70 rounded-xl bg-card text-foreground"
               />
               <span className="text-xs text-muted-foreground">إلى</span>
               <input
                 type="date"
                 value={filterDraft.endDate}
                 onChange={(e) => setFilterDraft((prev) => ({ ...prev, endDate: e.target.value }))}
-                className="px-2 py-1 text-xs border border-border/70 rounded bg-background text-foreground"
+                className="px-2.5 py-1 text-xs border border-border/70 rounded-xl bg-card text-foreground"
               />
               <button
                 type="button"
                 onClick={applyCustomRange}
-                className="px-2.5 py-1 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                className="px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all active:scale-[0.97]"
               >
                 تطبيق
               </button>
@@ -322,10 +322,10 @@ export const StoreAnalyticsDashboard: React.FC = () => {
             type="button"
             onClick={() => setAppliedFilters((prev) => ({ ...prev }))}
             disabled={isRefreshing}
-            className="p-1.5 rounded-md border border-border/70 bg-card text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            className="p-2 rounded-xl border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
             title="تحديث البيانات"
           >
-            <ArrowPathIcon className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RotateCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -335,10 +335,10 @@ export const StoreAnalyticsDashboard: React.FC = () => {
 
       {/* Executive Briefing Banner */}
       {executiveBriefing && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2.5">
-          <SparklesIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3 shadow-2xs">
+          <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed text-foreground">
-            <span className="font-semibold">{executiveBriefing.headline}: </span>
+            <span className="font-bold">{executiveBriefing.headline}: </span>
             <span className="text-muted-foreground">{executiveBriefing.details}</span>
           </div>
         </div>

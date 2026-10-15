@@ -1,23 +1,17 @@
-/**
- * Catalog Details Page
- *
- * صفحة تفاصيل Product Catalog مع Sync Products
- */
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeftIcon,
-  TrashIcon,
-  ArrowPathIcon,
-  ShoppingBagIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  LinkIcon,
-  ClipboardDocumentIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  Trash2,
+  RotateCcw,
+  ShoppingBag,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Link2,
+  Copy,
+  Layers,
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -25,6 +19,7 @@ import {
   FacebookProductCatalog,
   FacebookCatalogProduct,
 } from "../../services/facebookAdsService";
+import { CatalogProductsTable } from "./CatalogProductsTable";
 
 const CatalogDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,7 +61,7 @@ const CatalogDetails: React.FC = () => {
     try {
       setLoadingProducts(true);
       const result = await facebookAdsService.getCatalogProducts(id, page, 50);
-      setProducts(result.data);
+      setProducts(result?.data || []);
     } catch (error: any) {
       console.error("Error loading catalog products:", error);
       tToast.error("CatalogDetails.failed_load_53c9");
@@ -85,9 +80,8 @@ const CatalogDetails: React.FC = () => {
         productIds: syncAll ? undefined : selectedProducts,
       });
 
-      toast.success(`تم مزامنة ${result.successful} منتج بنجاح`);
+      toast.success(`تم مزامنة ${result.successful || 0} منتج بنجاح`);
 
-      // تحديث البيانات
       await loadCatalog();
       await loadCatalogProducts();
 
@@ -117,369 +111,185 @@ const CatalogDetails: React.FC = () => {
 
   const toggleProductSelection = (productId: string) => {
     if (selectedProducts.includes(productId)) {
-      setSelectedProducts(selectedProducts.filter((id) => id !== productId));
+      setSelectedProducts(selectedProducts.filter((pid) => pid !== productId));
     } else {
       setSelectedProducts([...selectedProducts, productId]);
     }
   };
 
-  const getSyncStatusIcon = (status?: string) => {
-    switch (status) {
-      case "SUCCESS":
-        return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
-      case "FAILED":
-        return <XCircleIcon className="w-5 h-5 text-red-500" />;
-      case "IN_PROGRESS":
-        return <ClockIcon className="w-5 h-5 text-yellow-500 animate-spin" />;
-      default:
-        return null;
+  const copyFeedUrl = () => {
+    if (catalog?.feedUrl) {
+      navigator.clipboard.writeText(catalog.feedUrl);
+      toast.success("تم نسخ رابط Feed بنجاح");
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <ArrowPathIcon className="w-8 h-8 animate-spin mx-auto text-indigo-600" />
-          <p className="mt-2 text-gray-600">جاري التحميل...</p>
-        </div>
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <RotateCcw className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!catalog) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600">لم يتم العثور على Catalog</p>
+      <div className="text-center py-16 border border-dashed border-border/70 rounded-2xl bg-card p-6">
+        <p className="text-xs text-muted-foreground">لم يتم العثور على Catalog</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-w-7xl mx-auto pb-12" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+        <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => navigate("/advertising/facebook-ads/catalogs")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="p-2 rounded-xl border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 active:scale-[0.96] transition-all"
+            title="رجوع"
           >
-            <ArrowLeftIcon className="w-5 h-5" />
-            رجوع
+            <ArrowRight className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-3">
-            <ShoppingBagIcon className="w-8 h-8 text-indigo-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <ShoppingBag className="w-5 h-5" />
+              </span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {catalog.name}
               </h1>
-              {catalog.description && (
-                <p className="mt-1 text-sm text-gray-600">
-                  {catalog.description}
-                </p>
-              )}
             </div>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleSync}
-            disabled={syncing || (!syncAll && selectedProducts.length === 0)}
-            className="flex items-center gap-2 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
-            <ArrowPathIcon
-              className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`}
-            />
-            {syncing ? "جاري المزامنة..." : "مزامنة المنتجات"}
-          </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50"
-          >
-            <TrashIcon className="w-5 h-5" />
-            حذف
-          </button>
-        </div>
-      </div>
-
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600">إجمالي المنتجات</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">
-            {catalog.totalProducts || 0}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600">المنتجات المتزامنة</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">
-            {catalog.syncedProducts || 0}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600">حالة المزامنة</p>
-          <div className="mt-1 flex items-center gap-2">
-            {getSyncStatusIcon(catalog.lastSyncStatus)}
-            <span className="text-sm font-medium text-gray-900">
-              {catalog.lastSyncStatus === "SUCCESS"
-                ? "مكتمل"
-                : catalog.lastSyncStatus === "FAILED"
-                  ? "فشل"
-                  : catalog.lastSyncStatus === "IN_PROGRESS"
-                    ? "جاري"
-                    : "غير متزامن"}
-            </span>
-          </div>
-          {catalog.lastSyncAt && (
-            <p className="mt-1 text-xs text-gray-500">
-              {new Date(catalog.lastSyncAt).toLocaleString("ar-EG")}
-            </p>
-          )}
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600">الحالة</p>
-          <p className="mt-1">
-            <span
-              className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                catalog.status === "ACTIVE"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {catalog.status === "ACTIVE"
-                ? "نشط"
-                : catalog.status === "PAUSED"
-                  ? "متوقف"
-                  : "محذوف"}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      {/* Product Feed Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <LinkIcon className="w-5 h-5 text-indigo-600" />
-          Product Feed URL
-        </h2>
-        <p className="text-sm text-gray-600 mb-3">
-          استخدم هذا الرابط في Facebook Catalog أو أي منصة أخرى لاستيراد المنتجات تلقائياً
-        </p>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            readOnly
-            value={`${window.location.origin}/api/v1/public/products/feed/${catalog.id}.xml`}
-            className="flex-1 px-3 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg ltr text-left font-mono"
-            onClick={(e) => e.currentTarget.select()}
-          />
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/api/v1/public/products/feed/${catalog.id}.xml`);
-              tToast.success("CatalogDetails.msg_fa82");
-            }}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <ClipboardDocumentIcon className="w-4 h-4" />
-            نسخ
-          </button>
-        </div>
-      </div>
-
-      {/* Sync Options */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          خيارات المزامنة
-        </h2>
-        <div className="space-y-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              checked={syncAll}
-              onChange={() => {
-                setSyncAll(true);
-                setSelectedProducts([]);
-              }}
-              className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-            />
-            <div>
-              <p className="font-medium text-gray-900">مزامنة جميع المنتجات</p>
-              <p className="text-sm text-gray-500">
-                سيتم مزامنة جميع المنتجات النشطة
-              </p>
-            </div>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              checked={!syncAll}
-              onChange={() => setSyncAll(false)}
-              className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-            />
-            <div>
-              <p className="font-medium text-gray-900">مزامنة منتجات محددة</p>
-              <p className="text-sm text-gray-500">
-                اختر المنتجات التي تريد مزامنتها
-              </p>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Products List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            المنتجات في Catalog
-          </h2>
-          <div className="flex items-center gap-3">
-            {!syncAll && selectedProducts.length > 0 && (
-              <span className="text-sm text-gray-600">
-                {selectedProducts.length} منتج محدد
-              </span>
+            {catalog.description && (
+              <p className="text-xs text-muted-foreground mt-0.5">{catalog.description}</p>
             )}
           </div>
         </div>
 
-        {loadingProducts ? (
-          <div className="p-12 text-center">
-            <ArrowPathIcon className="w-8 h-8 animate-spin mx-auto text-indigo-600" />
-            <p className="mt-2 text-gray-600">جاري تحميل المنتجات...</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={syncing || (!syncAll && selectedProducts.length === 0)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-xs disabled:opacity-50"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+            <span>{syncing ? "جاري المزامنة…" : "مزامنة المنتجات"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl text-destructive hover:bg-destructive/10 border border-destructive/20 active:scale-[0.97] transition-all"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>حذف</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Info KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <span className="text-xs text-muted-foreground">إجمالي المنتجات</span>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-foreground">
+            {catalog.totalProducts || 0}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <span className="text-xs text-muted-foreground">المنتجات المتزامنة</span>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+            {catalog.syncedProducts || 0}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs">
+          <span className="text-xs text-muted-foreground">حالة المزامنة الأخيرة</span>
+          <div className="mt-1 flex items-center gap-2">
+            {catalog.lastSyncStatus === "SUCCESS" ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+                مكتمل بنجاح
+              </span>
+            ) : catalog.lastSyncStatus === "FAILED" ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
+                <AlertCircle className="w-4 h-4" />
+                فشل في المزامنة
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <Clock className="w-4 h-4" />
+                قيد المعالجة
+              </span>
+            )}
           </div>
-        ) : products.length === 0 ? (
-          <div className="p-12 text-center">
-            <ShoppingBagIcon className="w-16 h-16 mx-auto text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              لا توجد منتجات
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              ابدأ بمزامنة المنتجات مع Catalog
+          {catalog.lastSyncAt && (
+            <p className="mt-1 text-[11px] font-mono tabular-nums text-muted-foreground">
+              {new Date(catalog.lastSyncAt).toLocaleString("ar-EG")}
             </p>
+          )}
+        </div>
+      </div>
+
+      {/* Feed URL Card */}
+      {catalog.feedUrl && (
+        <div className="bg-card rounded-2xl border border-border/70 p-4 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-foreground">رابط Product Feed التلقائي</span>
+            </div>
+            <button
+              type="button"
+              onClick={copyFeedUrl}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>نسخ الرابط</span>
+            </button>
+          </div>
+          <p className="font-mono text-xs text-muted-foreground bg-muted/20 p-2.5 rounded-xl border border-border/60 break-all select-all" dir="ltr">
+            {catalog.feedUrl}
+          </p>
+        </div>
+      )}
+
+      {/* Products Section */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground">المنتجات في الكتالوج</h3>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted/40 text-muted-foreground border border-border/70 font-mono tabular-nums">
+              {products.length} منتج
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-2 cursor-pointer bg-muted/20 px-3 py-1.5 rounded-xl border border-border/70">
+              <input
+                type="checkbox"
+                checked={syncAll}
+                onChange={(e) => setSyncAll(e.target.checked)}
+                className="rounded border-border/80 text-primary focus:ring-0"
+              />
+              <span className="font-semibold text-foreground">مزامنة جميع المنتجات</span>
+            </label>
+          </div>
+        </div>
+
+        {loadingProducts ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <RotateCcw className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {!syncAll && (
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedProducts.length === products.length &&
-                          products.length > 0
-                        }
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedProducts(products.map((p) => p.id));
-                          } else {
-                            setSelectedProducts([]);
-                          }
-                        }}
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
-                      />
-                    </th>
-                  )}
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    المنتج
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    السعر
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    الحالة
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    حالة المزامنة
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    آخر مزامنة
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    {!syncAll && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => toggleProductSelection(product.id)}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
-                        />
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {product.imageUrl && (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="w-10 h-10 rounded object-cover mr-3"
-                          />
-                        )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name}
-                          </div>
-                          {product.sku && (
-                            <div className="text-sm text-gray-500">
-                              SKU: {product.sku}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {product.price
-                        ? `${product.price} ${product.currency || "EGP"}`
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          product.availability === "in stock"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {product.availability === "in stock"
-                          ? "متوفر"
-                          : "غير متوفر"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          product.syncStatus === "SYNCED"
-                            ? "bg-green-100 text-green-800"
-                            : product.syncStatus === "FAILED"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {product.syncStatus === "SYNCED"
-                          ? "متزامن"
-                          : product.syncStatus === "FAILED"
-                            ? "فشل"
-                            : product.syncStatus === "UPDATED"
-                              ? "محدث"
-                              : "في الانتظار"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.lastSyncedAt
-                        ? new Date(product.lastSyncedAt).toLocaleDateString(
-                            "ar-EG",
-                          )
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <CatalogProductsTable
+            products={products}
+            selectedProducts={selectedProducts}
+            onToggleProduct={toggleProductSelection}
+            syncAll={syncAll}
+          />
         )}
       </div>
     </div>

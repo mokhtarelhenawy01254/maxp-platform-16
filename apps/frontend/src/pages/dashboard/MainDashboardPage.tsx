@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { EyeIcon } from "@heroicons/react/24/outline";
+import { Eye, BarChart3, Box, RotateCcw } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useDashboardLiveSync } from "../../hooks/useDashboardLiveSync";
@@ -20,7 +20,6 @@ import { SetupProgressBanner } from "./SetupProgressBanner";
 import DateRangeToolbar from "./DateRangeToolbar";
 import { InstalledAppsDashboard } from "../../components/dashboard/InstalledAppsDashboard";
 import { SpecialtyDashboardHeader } from "../../components/dashboard/SpecialtyDashboardHeader";
-import { ChartBarSquareIcon, CubeIcon } from "@heroicons/react/24/outline";
 import { hasStoreApp as checkStoreApp } from "../../utils/storeShortcut";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
@@ -158,9 +157,9 @@ export default function MainDashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="p-4 rounded-2xl bg-destructive/10 mb-4">
-          <EyeIcon className="w-8 h-8 text-destructive" />
+          <Eye className="w-8 h-8 text-destructive" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground mb-2">
+        <h2 className="text-lg font-bold text-foreground mb-2">
           {t("companyDashboard.errors.fetchFailed")}
         </h2>
         <p className="text-sm text-muted-foreground max-w-md">
@@ -169,7 +168,7 @@ export default function MainDashboardPage() {
         <button
           type="button"
           onClick={() => refetch()}
-          className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
         >
           {t("common.retry")}
         </button>
@@ -177,18 +176,17 @@ export default function MainDashboardPage() {
     );
   }
 
-
   return (
-    <div className="space-y-6" style={{ viewTransitionName: "main-dashboard" }}>
+    <div className="space-y-4 max-w-7xl mx-auto pb-12" style={{ viewTransitionName: "main-dashboard" }}>
       {/* Top Welcome Bar with View Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border/50">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/70">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             {dashboard?.company?.name
               ? t("companyDashboard.welcome", { name: dashboard.company.name })
               : t("companyDashboard.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {now.toLocaleDateString(locale, {
               weekday: "long", year: "numeric", month: "long", day: "numeric",
             })}
@@ -196,31 +194,31 @@ export default function MainDashboardPage() {
         </div>
 
         {/* Dashboard Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/60 w-fit shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-xl border border-border/70 w-fit shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab("specialty")}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-[background-color,color,transform] duration-150 ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-all ${
               activeTab === "specialty"
-                ? "bg-background text-foreground shadow-sm border border-border/40"
+                ? "bg-card text-foreground shadow-2xs border border-border/70"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <ChartBarSquareIcon className="w-4 h-4" />
+            <BarChart3 className="w-3.5 h-3.5" />
             <span>لوحة التخصص والأعمال</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("installed-apps")}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-[background-color,color,transform] duration-150 ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-all ${
               activeTab === "installed-apps"
-                ? "bg-background text-foreground shadow-sm border border-border/40"
+                ? "bg-card text-foreground shadow-2xs border border-border/70"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <CubeIcon className="w-4 h-4" />
-            <span>التطبيقات المثبتة <span className="tabular-nums">({installedApps.length})</span></span>
+            <Box className="w-3.5 h-3.5" />
+            <span>التطبيقات المثبتة <span className="tabular-nums font-mono">({installedApps.length})</span></span>
           </button>
         </div>
       </div>
@@ -237,7 +235,7 @@ export default function MainDashboardPage() {
           {dashboard && <SpecialtyDashboardHeader dashboard={dashboard} />}
 
           {/* Date range toolbar & actions bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-xl bg-card border border-border/60 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-card border border-border/70 shadow-2xs">
             <DateRangeToolbar
               start={customStart}
               end={customEnd}

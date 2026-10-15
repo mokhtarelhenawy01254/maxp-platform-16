@@ -1,12 +1,6 @@
-/**
- * Create A/B Test Page
- *
- * صفحة إنشاء اختبار A/B جديد
- */
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowRight, Check, Split } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -14,6 +8,8 @@ import {
   CreateAdTestData,
   FacebookCampaign,
 } from "../../services/facebookAdsService";
+import { CreateABTestVariantsStep } from "./CreateABTestVariantsStep";
+import { CreateABTestReview } from "./CreateABTestReview";
 
 const CreateABTest: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +40,7 @@ const CreateABTest: React.FC = () => {
       setLoadingCampaigns(true);
       const data = await facebookAdsService.getCampaigns();
       setCampaigns(
-        data.filter((c) => c.status === "ACTIVE" || c.status === "PAUSED"),
+        (data || []).filter((c) => c.status === "ACTIVE" || c.status === "PAUSED"),
       );
     } catch (error: any) {
       console.error("Error loading campaigns:", error);
@@ -62,6 +58,25 @@ const CreateABTest: React.FC = () => {
     const updatedVariants = [...formData.variants];
     updatedVariants[index] = { ...updatedVariants[index], [field]: value };
     setFormData((prev) => ({ ...prev, variants: updatedVariants }));
+  };
+
+  const handleAddVariant = () => {
+    const nextLetter = String.fromCharCode(65 + formData.variants.length);
+    setFormData((prev) => ({
+      ...prev,
+      variants: [...prev.variants, { name: `Variant ${nextLetter}` }],
+    }));
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    if (formData.variants.length <= 2) {
+      toast.error("الحد الأدنى لمتغيرات الاختبار هو متغيرين");
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index),
+    }));
   };
 
   const validateStep = (step: number): boolean => {
@@ -87,7 +102,7 @@ const CreateABTest: React.FC = () => {
         }
         return true;
       case 3:
-        return true; // Review step
+        return true;
       default:
         return true;
     }
@@ -143,57 +158,65 @@ const CreateABTest: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-6">
+    <div className="space-y-4 max-w-5xl mx-auto pb-12" dir="rtl">
       {/* Header */}
-      <div>
-        <button
-          onClick={() => navigate("/advertising/facebook-ads/tests")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          رجوع
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">إنشاء اختبار A/B</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          أنشئ اختبار A/B لتحسين أداء الإعلانات
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/advertising/facebook-ads/tests")}
+            className="p-2 rounded-xl border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 active:scale-[0.96] transition-all"
+            title="رجوع"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <Split className="h-5 w-5" />
+              </span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                إنشاء اختبار A/B
+              </h1>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              أنشئ تجربة علمية لمقارنة أداء التصاميم، الجماهير، أو الميزانيات
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      {/* Progress Steps Strip */}
+      <div className="bg-card rounded-2xl border border-border/70 p-4 shadow-2xs">
         <div className="flex items-center justify-between">
           {[1, 2, 3].map((step) => (
             <React.Fragment key={step}>
               <div className="flex flex-col items-center flex-1">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     step < currentStep
-                      ? "bg-green-500 text-white"
+                      ? "bg-primary text-primary-foreground"
                       : step === currentStep
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-200 text-gray-600"
+                        ? "bg-foreground text-background"
+                        : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {step < currentStep ? (
-                    <CheckCircleIcon className="w-6 h-6" />
-                  ) : (
-                    <span>{step}</span>
-                  )}
+                  {step < currentStep ? <Check className="w-4 h-4" /> : <span>{step}</span>}
                 </div>
                 <p
-                  className={`mt-2 text-sm font-medium ${
-                    step <= currentStep ? "text-gray-900" : "text-gray-500"
+                  className={`mt-1.5 text-xs font-semibold ${
+                    step <= currentStep ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   {step === 1 && "معلومات الاختبار"}
-                  {step === 2 && "المتغيرات"}
-                  {step === 3 && "المراجعة"}
+                  {step === 2 && "المتغيرات والحملة"}
+                  {step === 3 && "المراجعة والتأكيد"}
                 </p>
               </div>
               {step < 3 && (
                 <div
-                  className={`flex-1 h-1 mx-4 ${
-                    step < currentStep ? "bg-green-500" : "bg-gray-200"
+                  className={`flex-1 h-0.5 mx-2 rounded-full ${
+                    step < currentStep ? "bg-primary" : "bg-border/60"
                   }`}
                 />
               )}
@@ -203,262 +226,120 @@ const CreateABTest: React.FC = () => {
       </div>
 
       {/* Form Content */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-4">
         {/* Step 1: Test Info */}
         {currentStep === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-4 text-xs">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                اسم الاختبار *
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                اسم الاختبار <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="مثال: اختبار Creative - صيف 2025"
+                className="w-full px-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground focus:outline-hidden"
+                placeholder="مثال: اختبار Creative - موسم الصيف"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الوصف
-              </label>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">الوصف</label>
               <textarea
                 value={formData.description}
-                onChange={(e) =>
-                  handleInputChange("description", e.target.value)
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground focus:outline-hidden"
                 rows={3}
-                placeholder="وصف الاختبار..."
+                placeholder="تفاصيل الهدف من الاختبار والفرضية الأساسية…"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                نوع الاختبار *
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                نوع الاختبار <span className="text-destructive">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {testTypes.map((type) => (
-                  <button
+                  <label
                     key={type.value}
-                    onClick={() => handleInputChange("testType", type.value)}
-                    className={`p-4 border-2 rounded-lg text-left ${
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                       formData.testType === type.value
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                        : "border-border/70 bg-card hover:bg-muted/20"
                     }`}
                   >
-                    <div className="font-medium text-gray-900">
-                      {type.label}
+                    <input
+                      type="radio"
+                      name="testType"
+                      value={type.value}
+                      checked={formData.testType === type.value}
+                      onChange={(e) => handleInputChange("testType", e.target.value)}
+                      className="mt-0.5 text-primary focus:ring-0"
+                    />
+                    <div>
+                      <p className="font-bold text-xs text-foreground">{type.label}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{type.description}</p>
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {type.description}
-                    </div>
-                  </button>
+                  </label>
                 ))}
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                توزيع حركة المرور (Traffic Split)
-              </label>
-              <input
-                type="number"
-                value={formData.trafficSplit}
-                onChange={(e) =>
-                  handleInputChange("trafficSplit", parseInt(e.target.value))
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                min={10}
-                max={90}
-                step={10}
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.trafficSplit}% / {100 - formData.trafficSplit}%
-              </p>
-            </div>
           </div>
         )}
 
-        {/* Step 2: Variants */}
+        {/* Step 2: Campaign & Variants Subcomponent */}
         {currentStep === 2 && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الحملة *
-              </label>
-              {loadingCampaigns ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
-                </div>
-              ) : campaigns.length === 0 ? (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    لا توجد حملات متاحة. يرجى إنشاء حملة أولاً.
-                  </p>
-                </div>
-              ) : (
-                <select
-                  value={formData.campaignId}
-                  onChange={(e) =>
-                    handleInputChange("campaignId", e.target.value)
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                >
-                  <option value="">اختر الحملة</option>
-                  {campaigns.map((campaign) => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                المتغيرات (Variants)
-              </label>
-              {formData.variants.map((variant, index) => (
-                <div
-                  key={index}
-                  className="mb-4 p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="font-medium text-gray-900 mb-2">
-                    {variant.name ||
-                      `Variant ${String.fromCharCode(65 + index)}`}
-                  </div>
-                  <input
-                    type="text"
-                    value={variant.name}
-                    onChange={(e) =>
-                      handleVariantChange(index, "name", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder={`اسم Variant ${String.fromCharCode(65 + index)}`}
-                  />
-                  <p className="mt-2 text-sm text-gray-500">
-                    سيتم إضافة المزيد من الحقول حسب نوع الاختبار في المرحلة
-                    القادمة
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الحد الأدنى للنتائج (Minimum Results)
-              </label>
-              <input
-                type="number"
-                value={formData.minimumResults}
-                onChange={(e) =>
-                  handleInputChange("minimumResults", parseInt(e.target.value))
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                min={50}
-                step={50}
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                عدد التحويلات المطلوبة لتحديد الفائز
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="autoPromote"
-                checked={formData.autoPromote}
-                onChange={(e) =>
-                  handleInputChange("autoPromote", e.target.checked)
-                }
-                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-              />
-              <label htmlFor="autoPromote" className="text-sm text-gray-700">
-                تعزيز الفائز تلقائياً عند الوصول لثقة إحصائية 95%
-              </label>
-            </div>
-          </div>
+          <CreateABTestVariantsStep
+            formData={formData}
+            campaigns={campaigns}
+            loadingCampaigns={loadingCampaigns}
+            onInputChange={handleInputChange}
+            onVariantChange={handleVariantChange}
+            onAddVariant={handleAddVariant}
+            onRemoveVariant={handleRemoveVariant}
+          />
         )}
 
-        {/* Step 3: Review */}
+        {/* Step 3: Review Subcomponent */}
         {currentStep === 3 && (
-          <div className="space-y-6">
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-              <h3 className="font-medium text-gray-900">مراجعة المعلومات</h3>
-
-              <div>
-                <span className="text-sm text-gray-500">اسم الاختبار:</span>
-                <p className="font-medium">{formData.name}</p>
-              </div>
-
-              {formData.description && (
-                <div>
-                  <span className="text-sm text-gray-500">الوصف:</span>
-                  <p className="font-medium">{formData.description}</p>
-                </div>
-              )}
-
-              <div>
-                <span className="text-sm text-gray-500">نوع الاختبار:</span>
-                <p className="font-medium">
-                  {testTypes.find((t) => t.value === formData.testType)?.label}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-sm text-gray-500">الحملة:</span>
-                <p className="font-medium">
-                  {campaigns.find((c) => c.id === formData.campaignId)?.name ||
-                    "-"}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-sm text-gray-500">عدد المتغيرات:</span>
-                <p className="font-medium">{formData.variants.length}</p>
-              </div>
-
-              <div>
-                <span className="text-sm text-gray-500">
-                  توزيع حركة المرور:
-                </span>
-                <p className="font-medium">
-                  {formData.trafficSplit}% / {100 - formData.trafficSplit}%
-                </p>
-              </div>
-            </div>
-          </div>
+          <CreateABTestReview
+            formData={formData}
+            campaigns={campaigns}
+            testTypes={testTypes}
+          />
         )}
 
-        {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            السابق
-          </button>
+        {/* Footer Navigation Buttons */}
+        <div className="flex items-center justify-between pt-4 border-t border-border/60">
+          {currentStep > 1 ? (
+            <button
+              type="button"
+              onClick={handlePrevious}
+              className="px-4 py-2 text-xs font-semibold rounded-xl border border-border/70 bg-card hover:bg-muted/30 text-foreground transition-colors"
+            >
+              السابق
+            </button>
+          ) : (
+            <div />
+          )}
 
           {currentStep < totalSteps ? (
             <button
+              type="button"
               onClick={handleNext}
-              className="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98]"
             >
-              التالي
+              <span>التالي</span>
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50"
             >
-              {loading ? "جاري الإنشاء..." : "إنشاء الاختبار"}
+              <Check className="w-4 h-4" />
+              <span>{loading ? "جاري إنشاء الاختبار…" : "بدء اختبار A/B الآن"}</span>
             </button>
           )}
         </div>
