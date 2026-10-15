@@ -11,6 +11,7 @@ import {
   ClockIcon,
   XCircleIcon,
   ShieldExclamationIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -430,32 +431,31 @@ const IncompleteReports: React.FC = () => {
                     : `كشف السلات غير المكتملة (${period === "custom" ? "فترة مخصصة" : `آخر ${period} يوم`})`}
               </h2>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                إجمالي غير المكتمل ({totalUncompletedCount}) = ألغاها الفريق ({summary.cancelled}) + مفقودة بالتقادم (
-                {summary.lost}) + معلقة في الطابور ({summary.active})
+                استرد الفريق: <strong className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">{summary.byTeam.toLocaleString()}</strong> طلب بقيمة {formatPrice(summary.byTeamValue)} | المتبقي غير المكتمل: <strong className="text-gray-900 dark:text-white tabular-nums">{totalUncompletedCount.toLocaleString()}</strong> (ألغاها: {summary.cancelled}، مفقودة: {summary.lost}، معلقة: {summary.active})
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* 1. إجمالي غير المكتمل (الفاقد والمعلق) */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              {/* 1. حولها الفريق لأوردرات (تم إنقاذها) */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-emerald-200 dark:border-emerald-800/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                      إجمالي غير المكتمل (المهدر والمعلق)
+                    <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                      حولها الفريق لأوردرات (تم إنقاذها)
                     </span>
-                    <div className="p-1.5 rounded-lg text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-700">
-                      <ShoppingCartIcon className="h-4 w-4" />
+                    <div className="p-1.5 rounded-lg text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30">
+                      <CheckCircleIcon className="h-4 w-4" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-                    {totalUncompletedCount.toLocaleString()}
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                    {summary.byTeam.toLocaleString()}
                   </div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
-                    {formatPrice(totalUncompletedValue)}
+                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
+                    {formatPrice(summary.byTeamValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/60">
-                  سلات بدأت الشراء ولم تكتمل كأوردرات
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-emerald-50 dark:border-emerald-800/30">
+                  سلات متروكة استردها الفريق كطلبات فعلية
                 </div>
               </div>
 
@@ -482,7 +482,30 @@ const IncompleteReports: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. مفقودة بالتقادم */}
+              {/* 3. معلقة في الطابور حالياً */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-blue-200 dark:border-blue-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                      معلقة في الطابور (فرص قائمة)
+                    </span>
+                    <div className="p-1.5 rounded-lg text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30">
+                      <ClockIcon className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 tabular-nums">
+                    {summary.active.toLocaleString()}
+                  </div>
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5 tabular-nums">
+                    {formatPrice(summary.activeValue)}
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-blue-50 dark:border-blue-800/30">
+                  في طابور العمل لم تنتهِ ومتاحة للإنقاذ الآن
+                </div>
+              </div>
+
+              {/* 4. مفقودة بالتقادم */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-amber-200 dark:border-amber-800/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -505,41 +528,41 @@ const IncompleteReports: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4. معلقة في الطابور حالياً */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-blue-200 dark:border-blue-800/40 flex flex-col justify-between">
+              {/* 5. إجمالي غير المكتمل (الفاقد والمعلق) */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                      معلقة في الطابور (فرص قائمة)
+                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      إجمالي غير المكتمل (المهدر والمعلق)
                     </span>
-                    <div className="p-1.5 rounded-lg text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30">
-                      <ClockIcon className="h-4 w-4" />
+                    <div className="p-1.5 rounded-lg text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-700">
+                      <ShoppingCartIcon className="h-4 w-4" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 tabular-nums">
-                    {summary.active.toLocaleString()}
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                    {totalUncompletedCount.toLocaleString()}
                   </div>
-                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5 tabular-nums">
-                    {formatPrice(summary.activeValue)}
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                    {formatPrice(totalUncompletedValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-blue-50 dark:border-blue-800/30">
-                  في طابور العمل لم تنتهِ ومتاحة للإنقاذ الآن
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                  سلات بدأت الشراء ولم تكتمل كأوردرات
                 </div>
               </div>
             </div>
 
-            {/* سطر مرجعي شفاف لتوضيح أن ما تحول خرج للطلبات */}
+            {/* سطر مرجعي شفاف لتوضيح حركة السلات */}
             <div className="flex items-center justify-between gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50/70 dark:bg-gray-800/40 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/60 flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  التقرير يركز حصرياً على السلات التي لم تتحول لأوردرات (الملغاة + المفقودة + المعلقة)
+                  نجح الفريق في استرداد وتحويل {summary.byTeam.toLocaleString()} سلة بقيمة {formatPrice(summary.byTeamValue)} إلى طلبات فعلية
                 </span>
               </div>
-              {summary.converted > 0 && (
+              {summary.natural > 0 && (
                 <span className="text-[11px] text-gray-400">
-                  * السلات التي تحولت بنجاح ({summary.converted.toLocaleString()} طلب بقيمة {formatPrice(summary.convertedValue)}) خرجت من هذا القسم وأصبحت أوردرات فعلية في إدارة الطلبات
+                  * تحول ذاتياً من المتجر بدون تدخل الفريق: {summary.natural.toLocaleString()} طلب ({formatPrice(summary.naturalValue)})
                 </span>
               )}
             </div>
@@ -571,6 +594,9 @@ const IncompleteReports: React.FC = () => {
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         إجمالي غير المكتمل
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        حولها الفريق لأوردرات
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                         ألغاها الفريق بالتأكيد
@@ -631,6 +657,18 @@ const IncompleteReports: React.FC = () => {
                             <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
                               {formatPrice(rowUncompletedValue)}
                             </div>
+                          </td>
+
+                          {/* حولها الفريق لأوردرات */}
+                          <td className="px-4 py-3 text-center">
+                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              {row.byTeamConverted.toLocaleString()}
+                            </div>
+                            {row.byTeamConvertedValue > 0 && (
+                              <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                                {formatPrice(row.byTeamConvertedValue)}
+                              </div>
+                            )}
                           </td>
 
                           {/* ألغاها الفريق بالتأكيد */}
@@ -707,6 +745,14 @@ const IncompleteReports: React.FC = () => {
                           {formatPrice(totalUncompletedValue)}
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-center text-emerald-600 dark:text-emerald-400 tabular-nums font-bold">
+                        <div>{summary.byTeam.toLocaleString()}</div>
+                        {summary.byTeamValue > 0 && (
+                          <div className="text-emerald-600/80 dark:text-emerald-400/80 text-[11px]">
+                            {formatPrice(summary.byTeamValue)}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center text-rose-600 dark:text-rose-400 tabular-nums font-bold">
                         <div>{summary.cancelled.toLocaleString()}</div>
                         {summary.cancelledValue > 0 && (
@@ -779,7 +825,7 @@ const IncompleteReports: React.FC = () => {
                   تعامل الفريق مع السلات المتروكة
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  تفصيل إنجاز كل موظف: السلات المتداولة، السلات المستبعدة بعد التأكيد، ومحاولات التواصل
+                  تفصيل إنجاز كل موظف: كم سلة نجح في استردادها وتحويلها لأوردر، كم ألغى بالتأكيد، ومحاولات التواصل
                 </p>
               </div>
               {data.team.length > 0 && (
@@ -792,11 +838,14 @@ const IncompleteReports: React.FC = () => {
 
             {data.team.length ? (
               <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700/60">
-                <table className="w-full text-start min-w-[700px] divide-y divide-gray-100 dark:divide-gray-700/60">
+                <table className="w-full text-start min-w-[750px] divide-y divide-gray-100 dark:divide-gray-700/60">
                   <thead className="bg-gray-50/70 dark:bg-gray-700/30">
                     <tr>
                       <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         {t("orders.incompleteTeamEmployee", "الموظف")}
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        سلات حولها لأوردرات
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                         سلات ألغاها بالتأكيد
@@ -806,6 +855,9 @@ const IncompleteReports: React.FC = () => {
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         إجمالي التعامل
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        نسبة التحويل
                       </th>
                       <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         معدل الاستجابة
@@ -861,6 +913,17 @@ const IncompleteReports: React.FC = () => {
                           </td>
 
                           <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 tabular-nums">
+                              {Number(member.conversions || 0).toLocaleString()}
+                            </span>
+                            {Number(member.value || 0) > 0 && (
+                              <div className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
+                                {formatPrice(member.value)}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 tabular-nums">
                               {Number(member.dismissed || 0).toLocaleString()}
                             </span>
@@ -872,6 +935,10 @@ const IncompleteReports: React.FC = () => {
 
                           <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white tabular-nums">
                             {handled.toLocaleString()}
+                          </td>
+
+                          <td className="px-4 py-3 text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                            {Number(member.conversionRate || 0).toFixed(1)}%
                           </td>
 
                           <td className="px-4 py-3 text-end text-sm text-gray-700 dark:text-gray-300 tabular-nums">
@@ -887,6 +954,14 @@ const IncompleteReports: React.FC = () => {
                         <td className="px-4 py-3 text-start text-gray-900 dark:text-white font-bold">
                           إجمالي تعامل الفريق
                         </td>
+                        <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300 tabular-nums font-bold">
+                          <div>
+                            {data.team.reduce((s, m) => s + Number(m.conversions || 0), 0).toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400">
+                            {formatPrice(data.team.reduce((s, m) => s + Number(m.value || 0), 0))}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-center text-rose-700 dark:text-rose-300 tabular-nums font-bold">
                           {data.team.reduce((s, m) => s + Number(m.dismissed || 0), 0).toLocaleString()}
                         </td>
@@ -897,6 +972,16 @@ const IncompleteReports: React.FC = () => {
                           {data.team
                             .reduce((s, m) => s + Number(m.handledTotal ?? m.conversions + (m.dismissed || 0)), 0)
                             .toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300 tabular-nums font-bold">
+                          {(() => {
+                            const totalHandled = data.team.reduce(
+                              (s, m) => s + Number(m.handledTotal ?? m.conversions + (m.dismissed || 0)),
+                              0
+                            );
+                            const totalConv = data.team.reduce((s, m) => s + Number(m.conversions || 0), 0);
+                            return `${totalHandled > 0 ? ((totalConv / totalHandled) * 100).toFixed(1) : "0.0"}%`;
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-end text-gray-700 dark:text-gray-300 tabular-nums font-bold">
                           {(() => {
