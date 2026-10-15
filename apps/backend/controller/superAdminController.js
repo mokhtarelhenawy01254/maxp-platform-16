@@ -7144,8 +7144,8 @@ const getBillingActivity = async (req, res) => {
     if (search && search.trim()) {
       const searchTerm = search.trim();
       where.OR = [
-        { description: { contains: searchTerm, mode: 'insensitive' } },
-        { company: { name: { contains: searchTerm, mode: 'insensitive' } } },
+        { description: { contains: searchTerm } },
+        { company: { name: { contains: searchTerm } } },
       ];
     }
 
@@ -7156,13 +7156,13 @@ const getBillingActivity = async (req, res) => {
       ...(companyId ? { companyId } : {
         company: {
           AND: [
-            { name: { not: { contains: 'test', mode: 'insensitive' } } },
-            { name: { not: { contains: 'تجريب', mode: 'insensitive' } } },
-            { name: { not: { contains: 'demo', mode: 'insensitive' } } },
-            { name: { not: { contains: 'اختبار', mode: 'insensitive' } } },
-            { name: { not: { contains: '00000000', mode: 'insensitive' } } },
-            { slug: { not: { contains: 'test', mode: 'insensitive' } } },
-            { slug: { not: { contains: 'demo', mode: 'insensitive' } } },
+            { name: { not: { contains: 'test' } } },
+            { name: { not: { contains: 'تجريب' } } },
+            { name: { not: { contains: 'demo' } } },
+            { name: { not: { contains: 'اختبار' } } },
+            { name: { not: { contains: '00000000' } } },
+            { slug: { not: { contains: 'test' } } },
+            { slug: { not: { contains: 'demo' } } },
           ],
         },
       }),
