@@ -1,12 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  ExclamationTriangleIcon,
-  WifiIcon,
-  ServerIcon,
-  ShieldExclamationIcon,
-  ArrowPathIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+  Wifi,
+  Server,
+  ShieldAlert,
+  AlertTriangle,
+  RotateCcw,
+  X,
+  Lightbulb,
+  Link2,
+  BarChart2,
+  Upload,
+  Download,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+} from "lucide-react";
 import { ErrorState } from "../../hooks/useErrorHandler";
 
 interface ErrorDisplayProps {
@@ -22,74 +30,88 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   onDismiss,
   compact = false,
 }) => {
-  const [showDetails, setShowDetails] = React.useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  const getErrorIcon = (errorType: ErrorState["errorType"]) => {
-    const iconClass = "w-6 h-6";
-
+  const getErrorConfig = (errorType: ErrorState["errorType"]) => {
     switch (errorType) {
       case "network":
-        return <WifiIcon className={`${iconClass} text-red-500`} />;
+        return {
+          icon: Wifi,
+          title: "مشكلة في الاتصال بالشبكة",
+          border: "border-rose-500/30",
+          iconColor: "text-rose-500",
+          badgeBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+        };
       case "server":
-        return <ServerIcon className={`${iconClass} text-red-500`} />;
+        return {
+          icon: Server,
+          title: "خطأ في استجابة الخادم",
+          border: "border-rose-500/30",
+          iconColor: "text-rose-500",
+          badgeBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+        };
       case "auth":
-        return (
-          <ShieldExclamationIcon className={`${iconClass} text-yellow-500`} />
-        );
+        return {
+          icon: ShieldAlert,
+          title: "مشكلة في المصادقة والصلاحيات",
+          border: "border-amber-500/30",
+          iconColor: "text-amber-500",
+          badgeBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+        };
       case "validation":
-        return (
-          <ExclamationTriangleIcon className={`${iconClass} text-orange-500`} />
-        );
+        return {
+          icon: AlertTriangle,
+          title: "تنبيه في صحة البيانات المدخلة",
+          border: "border-amber-500/30",
+          iconColor: "text-amber-500",
+          badgeBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+        };
       default:
-        return (
-          <ExclamationTriangleIcon className={`${iconClass} text-red-500`} />
-        );
+        return {
+          icon: AlertTriangle,
+          title: "خطأ غير متوقع",
+          border: "border-rose-500/30",
+          iconColor: "text-rose-500",
+          badgeBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+        };
     }
   };
 
-  const getErrorColor = (errorType: ErrorState["errorType"]) => {
-    switch (errorType) {
-      case "network":
-        return "red";
-      case "server":
-        return "red";
-      case "auth":
-        return "yellow";
-      case "validation":
-        return "orange";
-      default:
-        return "red";
-    }
-  };
-
-  const color = getErrorColor(error.errorType);
+  const config = getErrorConfig(error.errorType);
+  const Icon = config.icon;
 
   if (compact) {
     return (
       <div
-        className={`flex items-center p-3 bg-${color}-50 border border-${color}-200 rounded-lg`}
+        className={`flex items-center gap-3 p-3 bg-card border ${config.border} rounded-xl shadow-2xs`}
       >
-        <div className="flex-shrink-0">{getErrorIcon(error.errorType)}</div>
-        <div className="ml-3 flex-1">
-          <p className={`text-sm text-${color}-800`}>{error.errorMessage}</p>
+        <div className="shrink-0">
+          <Icon className={`w-4 h-4 ${config.iconColor}`} />
         </div>
-        <div className="flex items-center space-x-2 space-x-reverse">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-foreground truncate">{error.errorMessage}</p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           {error.canRetry && onRetry && (
             <button
+              type="button"
               onClick={onRetry}
-              className={`text-${color}-600 hover:text-${color}-800 transition-colors duration-200`}
+              className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors active:scale-95"
               title="إعادة المحاولة"
+              aria-label="إعادة المحاولة"
             >
-              <ArrowPathIcon className="w-5 h-5" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
           {onDismiss && (
             <button
+              type="button"
               onClick={onDismiss}
-              className={`text-${color}-400 hover:text-${color}-600 transition-colors duration-200`}
+              className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors active:scale-95"
               title="إغلاق"
+              aria-label="إغلاق"
             >
-              <XMarkIcon className="w-5 h-5" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -98,88 +120,90 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   }
 
   return (
-    <div className={`rounded-lg bg-${color}-50 border border-${color}-200 p-6`}>
-      <div className="flex items-start">
-        <div className="flex-shrink-0">{getErrorIcon(error.errorType)}</div>
-        <div className="ml-4 flex-1">
-          <h3 className={`text-lg font-medium text-${color}-800 mb-2`}>
-            {error.errorType === "network" && "مشكلة في الاتصال"}
-            {error.errorType === "server" && "خطأ في الخادم"}
-            {error.errorType === "auth" && "مشكلة في المصادقة"}
-            {error.errorType === "validation" && "خطأ في البيانات"}
-            {error.errorType === "unknown" && "خطأ غير متوقع"}
+    <div className={`rounded-2xl bg-card border ${config.border} p-5 shadow-sm space-y-4`}>
+      <div className="flex items-start gap-3.5">
+        <div className="shrink-0 p-2.5 rounded-xl bg-muted/60 border border-border/70">
+          <Icon className={`w-5 h-5 ${config.iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-foreground mb-1.5">
+            {config.title}
           </h3>
 
-          {/* عرض رسالة الخطأ مع دعم الأسطر المتعددة */}
-          <div className={`text-sm text-${color}-700 mb-4 whitespace-pre-line`}>
+          <div className="text-xs text-muted-foreground space-y-1 leading-relaxed">
             {error.errorMessage.split("\n").map((line, index) => (
-              <p key={index} className={index > 0 ? "mt-2" : ""}>
-                {line}
-              </p>
+              <p key={index}>{line}</p>
             ))}
           </div>
 
-          {/* عرض رسالة المستخدم المبسطة */}
           {error.details?.userMessage && (
-            <div
-              className={`text-sm text-${color}-800 mb-4 bg-${color}-100 px-4 py-3 rounded-lg border border-${color}-300`}
-            >
-              <span className="font-semibold">💡 نصيحة: </span>
-              {error.details.userMessage}
+            <div className="mt-3 flex items-start gap-2 text-xs text-foreground bg-muted/40 px-3 py-2.5 rounded-xl border border-border/70">
+              <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 leading-relaxed">
+                <span className="font-semibold text-foreground">إرشاد: </span>
+                <span className="text-muted-foreground">{error.details.userMessage}</span>
+              </div>
             </div>
           )}
 
           {error.errorCode && (
-            <div
-              className={`text-xs text-${color}-600 mb-4 bg-${color}-100 px-3 py-2 rounded border border-${color}-200`}
-            >
-              <span className="font-semibold">رمز الخطأ:</span>{" "}
-              {error.errorCode}
+            <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-mono tabular-nums text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-md border border-border/60">
+              <span className="font-semibold text-foreground">كود الخطأ:</span>
+              <span>{error.errorCode}</span>
             </div>
           )}
 
-          {/* عرض التفاصيل التقنية (للمطورين) */}
           {error.details &&
             (error.details.endpoint ||
               error.details.method ||
               error.details.statusCode) && (
-              <div className="mt-4">
+              <div className="mt-4 pt-3 border-t border-border/60">
                 <button
+                  type="button"
                   onClick={() => setShowDetails(!showDetails)}
-                  className={`text-sm text-${color}-700 hover:text-${color}-900 font-medium flex items-center gap-2 mb-2`}
+                  className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors active:scale-95"
                 >
-                  <span>{showDetails ? "▼" : "◀"}</span>
+                  {showDetails ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronLeft className="w-3.5 h-3.5 rtl:rotate-0 ltr:rotate-180" />
+                  )}
                   <span>
                     {showDetails
                       ? "إخفاء التفاصيل التقنية"
-                      : "عرض التفاصيل التقنية (للمطورين)"}
+                      : "عرض التفاصيل التقنية للتشخيص"}
                   </span>
                 </button>
 
                 {showDetails && (
-                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs font-mono space-y-2 max-h-96 overflow-auto">
+                  <div className="mt-3 bg-muted/70 text-foreground p-3.5 rounded-xl border border-border/70 text-xs font-mono space-y-2.5 max-h-80 overflow-auto">
                     {error.details.endpoint && (
-                      <div>
-                        <span className="text-gray-400">🔗 Endpoint:</span>
-                        <div className="text-yellow-300 mt-1">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">المسار:</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold truncate">
                           {error.details.method} {error.details.endpoint}
-                        </div>
+                        </span>
                       </div>
                     )}
 
                     {error.details.statusCode && (
-                      <div>
-                        <span className="text-gray-400">📊 Status Code:</span>
-                        <div className="text-red-400 mt-1">
+                      <div className="flex items-center gap-2">
+                        <BarChart2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">كود الاستجابة:</span>
+                        <span className="text-rose-600 dark:text-rose-400 font-semibold tabular-nums">
                           {error.details.statusCode}
-                        </div>
+                        </span>
                       </div>
                     )}
 
                     {error.details.requestData && (
                       <div>
-                        <span className="text-gray-400">📤 Request Data:</span>
-                        <pre className="text-blue-300 mt-1 overflow-x-auto">
+                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                          <Upload className="w-3.5 h-3.5 shrink-0" />
+                          <span>بيانات الطلب المرسلة:</span>
+                        </div>
+                        <pre className="p-2 rounded-lg bg-background/80 border border-border/60 text-foreground text-[11px] overflow-x-auto">
                           {JSON.stringify(error.details.requestData, null, 2)}
                         </pre>
                       </div>
@@ -187,14 +211,13 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
 
                     {error.details.responseData && (
                       <div>
-                        <span className="text-gray-400">📥 Response Data:</span>
-                        <pre className="text-red-300 mt-1 overflow-x-auto">
+                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                          <Download className="w-3.5 h-3.5 shrink-0" />
+                          <span>بيانات الرد المستلمة:</span>
+                        </div>
+                        <pre className="p-2 rounded-lg bg-background/80 border border-border/60 text-foreground text-[11px] overflow-x-auto">
                           {typeof error.details.responseData === "object"
-                            ? JSON.stringify(
-                                error.details.responseData,
-                                null,
-                                2,
-                              )
+                            ? JSON.stringify(error.details.responseData, null, 2)
                             : error.details.responseData}
                         </pre>
                       </div>
@@ -203,8 +226,11 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
                     {error.details.stackTrace &&
                       process.env["NODE_ENV"] === "development" && (
                         <div>
-                          <span className="text-gray-400">🔍 Stack Trace:</span>
-                          <pre className="text-gray-300 mt-1 text-[10px] overflow-x-auto">
+                          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                            <Search className="w-3.5 h-3.5 shrink-0" />
+                            <span>تتبع المكدس (Stack Trace):</span>
+                          </div>
+                          <pre className="p-2 rounded-lg bg-background/80 border border-border/60 text-muted-foreground text-[10px] overflow-x-auto">
                             {error.details.stackTrace}
                           </pre>
                         </div>
@@ -214,21 +240,23 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
               </div>
             )}
 
-          <div className="flex items-center space-x-3 space-x-reverse mt-4">
+          <div className="flex items-center gap-2.5 mt-4">
             {error.canRetry && onRetry && (
               <button
+                type="button"
                 onClick={onRetry}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-${color}-600 hover:bg-${color}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${color}-500 transition-colors duration-200`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 active:scale-95 transition-all shadow-2xs"
               >
-                <ArrowPathIcon className="w-4 h-4 ml-2" />
-                إعادة المحاولة
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>إعادة المحاولة</span>
               </button>
             )}
 
             {onDismiss && (
               <button
+                type="button"
                 onClick={onDismiss}
-                className={`inline-flex items-center px-4 py-2 border border-${color}-300 text-sm font-medium rounded-md text-${color}-700 bg-white hover:bg-${color}-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${color}-500 transition-colors duration-200`}
+                className="inline-flex items-center px-3 py-1.5 border border-border/70 text-xs font-medium rounded-lg text-muted-foreground bg-card hover:bg-muted hover:text-foreground active:scale-95 transition-all shadow-2xs"
               >
                 إغلاق
               </button>
@@ -240,20 +268,20 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   );
 };
 
-// مكون خطأ مبسط للاستخدام في القوائم
 export const InlineError: React.FC<{
   message: string;
   onRetry?: () => void;
 }> = ({ message, onRetry }) => {
   return (
-    <div className="flex items-center justify-center p-4 text-center">
-      <div className="flex items-center space-x-3 space-x-reverse text-red-600">
-        <ExclamationTriangleIcon className="w-5 h-5" />
-        <span className="text-sm">{message}</span>
+    <div className="flex items-center justify-center p-3 text-center">
+      <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-medium">
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+        <span>{message}</span>
         {onRetry && (
           <button
+            type="button"
             onClick={onRetry}
-            className="text-blue-600 hover:text-blue-800 underline text-sm"
+            className="text-primary hover:underline font-semibold text-xs ml-1"
           >
             إعادة المحاولة
           </button>
@@ -263,40 +291,42 @@ export const InlineError: React.FC<{
   );
 };
 
-// مكون إشعار خطأ عائم
 export const ErrorToast: React.FC<{
   error: ErrorState;
   onDismiss: () => void;
   onRetry?: () => void;
 }> = ({ error, onDismiss, onRetry }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
-      <div className="bg-white rounded-lg shadow-lg border border-red-200 overflow-hidden">
-        <div className="p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900">حدث خطأ</p>
-              <p className="text-sm text-gray-600 mt-1">{error.errorMessage}</p>
-            </div>
-            <div className="flex items-center space-x-2 space-x-reverse">
-              {error.canRetry && onRetry && (
-                <button
-                  onClick={onRetry}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                >
-                  إعادة
-                </button>
-              )}
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-50 max-w-sm w-full p-2">
+      <div className="bg-card/95 backdrop-blur-md rounded-xl shadow-xl border border-rose-500/30 p-3.5">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-foreground">تنبيه بالنظام</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed truncate">
+              {error.errorMessage}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {error.canRetry && onRetry && (
               <button
-                onClick={onDismiss}
-                className="text-gray-400 hover:text-gray-600"
+                type="button"
+                onClick={onRetry}
+                className="text-xs font-semibold text-primary hover:underline px-1 py-0.5"
               >
-                <XMarkIcon className="w-4 h-4" />
+                إعادة
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors active:scale-95"
+              aria-label="إغلاق"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

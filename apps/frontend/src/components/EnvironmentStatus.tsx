@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { testApiConnection, environmentInfo } from "../utils/environmentTest";
 import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Check,
+  X,
+  Server,
+} from "lucide-react";
 
-interface EnvironmentStatus {
+interface EnvironmentStatusState {
   apiConnection: "loading" | "success" | "error";
   configValid: boolean;
   environment: string;
@@ -14,7 +17,7 @@ interface EnvironmentStatus {
 }
 
 const EnvironmentStatus: React.FC = () => {
-  const [status, setStatus] = useState<EnvironmentStatus>({
+  const [status, setStatus] = useState<EnvironmentStatusState>({
     apiConnection: "loading",
     configValid: environmentInfo.configTest.allUrlsValid,
     environment: environmentInfo.environment,
@@ -29,7 +32,7 @@ const EnvironmentStatus: React.FC = () => {
           ...prev,
           apiConnection: result ? "success" : "error",
         }));
-      } catch (error) {
+      } catch {
         setStatus((prev) => ({
           ...prev,
           apiConnection: "error",
@@ -37,115 +40,128 @@ const EnvironmentStatus: React.FC = () => {
       }
     };
 
-    checkApiConnection();
+    void checkApiConnection();
   }, []);
 
-  const getStatusIcon = (status: "loading" | "success" | "error") => {
-    switch (status) {
+  const getStatusIcon = (st: "loading" | "success" | "error") => {
+    switch (st) {
       case "loading":
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-amber-500 animate-spin shrink-0" />;
       case "success":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
       case "error":
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-rose-500 shrink-0" />;
     }
   };
 
-  const getStatusText = (status: "loading" | "success" | "error") => {
-    switch (status) {
+  const getStatusText = (st: "loading" | "success" | "error") => {
+    switch (st) {
       case "loading":
-        return "جاري الاختبار...";
+        return "جاري الفحص...";
       case "success":
-        return "متصل بنجاح";
+        return "متصل ومستقر";
       case "error":
-        return "فشل في الاتصال";
+        return "فشل الاتصال";
     }
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">
-        حالة إعدادات البيئة
-      </h3>
-
-      <div className="space-y-4">
-        {/* Environment Info */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">
-            البيئة الحالية:
-          </span>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              status.environment === "development"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-green-100 text-green-800"
-            }`}
-          >
-            {status.environment === "development" ? "تطوير" : "إنتاج"}
-          </span>
+    <div className="bg-card border border-border/70 rounded-2xl p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <Server className="w-4 h-4 text-primary" />
+          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+            حالة بيئة التشغيل والخادم
+          </h3>
         </div>
+        <span
+          className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${
+            status.environment === "development"
+              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+          }`}
+        >
+          {status.environment === "development" ? "تطوير (DEV)" : "إنتاج (PROD)"}
+        </span>
+      </div>
 
-        {/* API URL */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">رابط API:</span>
-          <span className="text-sm text-gray-600 font-mono">
+      <div className="space-y-2.5 text-xs">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/60">
+          <span className="font-medium text-muted-foreground">رابط الواجهة الخلفية (API):</span>
+          <span className="font-mono tabular-nums text-foreground text-[11px] truncate max-w-xs">
             {status.apiUrl}
           </span>
         </div>
 
-        {/* Config Validation */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">
-            صحة الإعدادات:
-          </span>
-          <div className="flex items-center">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/60">
+          <span className="font-medium text-muted-foreground">صحة الروابط والتكوين:</span>
+          <div className="flex items-center gap-1.5 font-semibold">
             {status.configValid ? (
-              <CheckCircleIcon className="h-5 w-5 text-green-500" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             ) : (
-              <XCircleIcon className="h-5 w-5 text-red-500" />
+              <XCircle className="h-4 w-4 text-rose-500" />
             )}
-            <span className="ml-2 text-sm text-gray-600">
-              {status.configValid ? "صحيحة" : "خاطئة"}
+            <span className={status.configValid ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+              {status.configValid ? "سليمة ومطابقة" : "غير مطابقة"}
             </span>
           </div>
         </div>
 
-        {/* API Connection */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">اتصال API:</span>
-          <div className="flex items-center">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/60">
+          <span className="font-medium text-muted-foreground">فحص الاتصال الحي:</span>
+          <div className="flex items-center gap-1.5 font-semibold">
             {getStatusIcon(status.apiConnection)}
-            <span className="ml-2 text-sm text-gray-600">
+            <span
+              className={
+                status.apiConnection === "success"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : status.apiConnection === "error"
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-amber-600 dark:text-amber-400"
+              }
+            >
               {getStatusText(status.apiConnection)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Environment Details */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">
-          تفاصيل البيئة:
+      <div className="pt-3 border-t border-border/60 space-y-2">
+        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          بيانات العميل الحالية:
         </h4>
-        <div className="text-xs text-gray-600 space-y-1">
-          <div>Hostname: {window.location.hostname}</div>
-          <div>Port: {window.location.port || "80/443"}</div>
-          <div>Protocol: {window.location.protocol}</div>
-          <div>
-            Config API Match:{" "}
-            {environmentInfo.configTest.apiUrlMatch ? "✅" : "❌"}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono tabular-nums">
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <span className="text-[10px] text-muted-foreground block">المضيف</span>
+            <span className="text-foreground truncate block">{window.location.hostname}</span>
+          </div>
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <span className="text-[10px] text-muted-foreground block">المنفذ</span>
+            <span className="text-foreground block">{window.location.port || "80/443"}</span>
+          </div>
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <span className="text-[10px] text-muted-foreground block">البروتوكول</span>
+            <span className="text-foreground block">{window.location.protocol.replace(":", "")}</span>
+          </div>
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] text-muted-foreground block">تطابق الرابط</span>
+              <span className="text-foreground block">{environmentInfo.configTest.apiUrlMatch ? "متطابق" : "مختلف"}</span>
+            </div>
+            <div className={`p-1 rounded-full ${environmentInfo.configTest.apiUrlMatch ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+              {environmentInfo.configTest.apiUrlMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Recommendations */}
       {status.apiConnection === "error" && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <h4 className="text-sm font-medium text-red-800 mb-1">
-            مشكلة في الاتصال
+        <div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl space-y-1">
+          <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400">
+            تنبيه في الاتصال بالخادم الخلفي
           </h4>
-          <p className="text-sm text-red-700">
-            تأكد من أن الخادم الخلفي يعمل على {status.apiUrl}
+          <p className="text-xs text-rose-600/90 dark:text-rose-400/90 leading-relaxed font-mono">
+            يرجى التأكد من تشغيل خادم الـ API على: {status.apiUrl}
           </p>
         </div>
       )}

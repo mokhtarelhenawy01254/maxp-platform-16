@@ -1,101 +1,91 @@
 import React from "react";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { Loader2, RotateCw } from "lucide-react";
 
-// Skeleton Loader للمحادثات
 export const ConversationSkeleton: React.FC = () => {
   return (
-    <div className="animate-pulse">
+    <div className="divide-y divide-border/60">
       {[...Array(5)].map((_, index) => (
-        <div
-          key={index}
-          className="flex items-center p-4 border-b border-gray-200"
-        >
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
-          </div>
-          <div className="ml-4 flex-1">
-            <div className="flex items-center justify-between">
-              <div className="h-4 bg-gray-300 rounded w-1/3"></div>
-              <div className="h-3 bg-gray-300 rounded w-16"></div>
+        <div key={index} className="flex items-center gap-3.5 p-3.5 animate-pulse">
+          <div className="w-10 h-10 bg-muted/80 rounded-full shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-3.5 bg-muted/80 rounded-md w-1/3" />
+              <div className="h-3 bg-muted/60 rounded-md w-12 font-mono" />
             </div>
-            <div className="mt-2 h-3 bg-gray-300 rounded w-2/3"></div>
+            <div className="h-3 bg-muted/60 rounded-md w-2/3" />
           </div>
-          <div className="ml-2">
-            <div className="w-6 h-6 bg-gray-300 rounded-full"></div>
-          </div>
+          <div className="w-2.5 h-2.5 bg-muted/60 rounded-full shrink-0" />
         </div>
       ))}
     </div>
   );
 };
 
-// Skeleton Loader للرسائل
 export const MessagesSkeleton: React.FC = () => {
   return (
     <div className="flex-1 p-4 space-y-4">
-      {[...Array(8)].map((_, index) => (
-        <div
-          key={index}
-          className={`flex ${index % 3 === 0 ? "justify-end" : "justify-start"}`}
-        >
-          <div className="animate-pulse">
-            <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                index % 3 === 0
-                  ? "bg-gray-300 rounded-br-none"
-                  : "bg-gray-200 rounded-bl-none"
-              }`}
-            >
-              <div className="h-4 bg-gray-400 rounded mb-2"></div>
+      {[...Array(6)].map((_, index) => {
+        const isSelf = index % 3 === 0;
+        return (
+          <div
+            key={index}
+            className={`flex ${isSelf ? "justify-end" : "justify-start"}`}
+          >
+            <div className="animate-pulse space-y-1.5 max-w-xs sm:max-w-md w-full">
               <div
-                className={`h-4 bg-gray-400 rounded ${index % 2 === 0 ? "w-3/4" : "w-full"}`}
-              ></div>
-            </div>
-            <div className="mt-1 text-xs text-gray-500">
-              <div className="h-3 bg-gray-300 rounded w-16"></div>
+                className={`p-3 rounded-2xl border ${
+                  isSelf
+                    ? "bg-primary/10 border-primary/20 rounded-br-none ml-auto"
+                    : "bg-muted/60 border-border/60 rounded-bl-none mr-auto"
+                }`}
+              >
+                <div className="h-3.5 bg-muted/80 rounded-md w-full mb-1.5" />
+                <div className={`h-3 bg-muted/60 rounded-md ${index % 2 === 0 ? "w-3/4" : "w-1/2"}`} />
+              </div>
+              <div className={`flex ${isSelf ? "justify-end" : "justify-start"}`}>
+                <div className="h-2.5 bg-muted/40 rounded w-12" />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
 
-// مؤشر التحميل العام
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
-  color?: "blue" | "gray" | "white";
+  color?: "primary" | "muted" | "white";
   text?: string;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = "md",
-  color = "blue",
+  color = "primary",
   text,
 }) => {
   const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-6 h-6",
-    lg: "w-8 h-8",
+    sm: "w-3.5 h-3.5",
+    md: "w-5 h-5",
+    lg: "w-7 h-7",
   };
 
   const colorClasses = {
-    blue: "text-blue-600",
-    gray: "text-gray-600",
+    primary: "text-primary",
+    muted: "text-muted-foreground",
     white: "text-white",
   };
 
   return (
-    <div className="flex items-center justify-center space-x-2 space-x-reverse">
-      <ArrowPathIcon
-        className={`${sizeClasses[size]} ${colorClasses[color]} animate-spin`}
+    <div className="flex items-center justify-center gap-2">
+      <Loader2
+        className={`${sizeClasses[size]} ${colorClasses[color]} animate-spin shrink-0`}
       />
-      {text && <span className={`text-sm ${colorClasses[color]}`}>{text}</span>}
+      {text && <span className={`text-xs font-medium ${colorClasses[color]}`}>{text}</span>}
     </div>
   );
 };
 
-// مؤشر إعادة المحاولة
 interface RetryIndicatorProps {
   retryCount: number;
   maxRetries: number;
@@ -110,21 +100,20 @@ export const RetryIndicator: React.FC<RetryIndicatorProps> = ({
   if (!isRetrying && retryCount === 0) return null;
 
   return (
-    <div className="flex items-center justify-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-      <div className="flex items-center space-x-3 space-x-reverse">
-        <LoadingSpinner size="sm" color="gray" />
-        <div className="text-sm text-yellow-800">
-          <p className="font-medium">
-            جاري إعادة المحاولة... ({retryCount}/{maxRetries})
+    <div className="flex items-center justify-center p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-amber-700 dark:text-amber-300">
+      <div className="flex items-center gap-2.5">
+        <RotateCw className="w-4 h-4 animate-spin text-amber-600 shrink-0" />
+        <div className="text-xs leading-normal">
+          <p className="font-semibold">
+            جاري إعادة المحاولة... <span className="font-mono tabular-nums">({retryCount}/{maxRetries})</span>
           </p>
-          <p className="text-xs text-yellow-600 mt-1">يرجى الانتظار قليلاً</p>
+          <p className="text-[11px] opacity-80 mt-0.5">يرجى الانتظار قليلاً</p>
         </div>
       </div>
     </div>
   );
 };
 
-// مؤشر حالة الإرسال
 interface SendingIndicatorProps {
   isSending: boolean;
 }
@@ -135,37 +124,33 @@ export const SendingIndicator: React.FC<SendingIndicatorProps> = ({
   if (!isSending) return null;
 
   return (
-    <div className="flex items-center justify-center p-2">
-      <div className="flex items-center space-x-2 space-x-reverse text-blue-600">
-        <LoadingSpinner size="sm" color="blue" />
-        <span className="text-sm">جاري الإرسال...</span>
+    <div className="flex items-center justify-center p-1.5">
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        <span>جاري الإرسال...</span>
       </div>
     </div>
   );
 };
 
-// مؤشر التحميل الأولي
 interface InitialLoadingProps {
   message?: string;
 }
 
 export const InitialLoading: React.FC<InitialLoadingProps> = ({
-  message = "جاري تحميل المحادثات...",
+  message = "جاري تحميل المحتوى...",
 }) => {
   return (
-    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="text-center">
-        <div className="mb-4">
-          <LoadingSpinner size="lg" color="blue" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{message}</h3>
-        <p className="text-sm text-gray-600">يرجى الانتظار قليلاً...</p>
+    <div className="flex-1 flex items-center justify-center min-h-[300px] p-6">
+      <div className="text-center space-y-2.5">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+        <h3 className="text-sm font-semibold text-foreground">{message}</h3>
+        <p className="text-xs text-muted-foreground">يرجى الانتظار لحظات...</p>
       </div>
     </div>
   );
 };
 
-// مؤشر عدم وجود بيانات
 interface EmptyStateProps {
   title: string;
   description: string;
@@ -184,17 +169,20 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        {icon && <div className="mb-4 flex justify-center">{icon}</div>}
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-        <p className="text-sm text-gray-600 mb-6">{description}</p>
+      <div className="text-center max-w-sm space-y-3 bg-card border border-border/70 rounded-2xl p-6 shadow-2xs">
+        {icon && <div className="flex justify-center text-muted-foreground">{icon}</div>}
+        <h3 className="text-sm font-bold text-foreground">{title}</h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
         {action && (
-          <button
-            onClick={action.onClick}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-          >
-            {action.label}
-          </button>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-95 shadow-2xs"
+            >
+              {action.label}
+            </button>
+          </div>
         )}
       </div>
     </div>

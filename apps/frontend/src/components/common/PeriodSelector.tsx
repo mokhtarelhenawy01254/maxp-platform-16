@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ExclamationCircleIcon,
-  ExclamationTriangleIcon,
-  CalendarDaysIcon,
-} from "@heroicons/react/24/outline";
+  AlertCircle,
+  AlertTriangle,
+  Calendar,
+} from "lucide-react";
 
 export type PeriodKey =
   | "today"
@@ -152,7 +152,6 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const [customStart, setCustomStart] = useState(initialStartDate);
   const [customEnd, setCustomEnd] = useState(initialEndDate);
 
-  // Sync state if initial props change externally
   useEffect(() => {
     if (initialPeriod && initialPeriod !== period) {
       setPeriod(initialPeriod);
@@ -171,7 +170,6 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     }
   }, [initialEndDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Validation state for custom date range
   let validationError: string | null = null;
   let validationType: "warning" | "error" | null = null;
   let isValid = true;
@@ -242,7 +240,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
 
   const baseInput =
     inputClassName ??
-    "px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition";
+    "px-2.5 py-1.5 border border-border/70 rounded-lg bg-card text-foreground font-mono tabular-nums text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition";
 
   const appliedLabel = getPeriodLabel(period, t);
   const activeRangeDates =
@@ -252,28 +250,31 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
 
   return (
     <div className={`flex flex-col gap-2.5 ${className ?? ""}`}>
-      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-        {PRESET_OPTIONS.map(({ key, labelKey }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setPeriod(key)}
-            className={`px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition ${
-              period === key
-                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60"
-            }`}
-          >
-            {t(labelKey)}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {PRESET_OPTIONS.map(({ key, labelKey }) => {
+          const isActive = period === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setPeriod(key)}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all duration-150 active:scale-95 ${
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+                  : "bg-card text-muted-foreground border-border/70 hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {t(labelKey)}
+            </button>
+          );
+        })}
         <button
           type="button"
           onClick={() => setPeriod("custom")}
-          className={`px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition ${
+          className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all duration-150 active:scale-95 ${
             period === "custom"
-              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60"
+              ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+              : "bg-card text-muted-foreground border-border/70 hover:bg-muted hover:text-foreground"
           }`}
         >
           {t("periodSelector.custom", "فترة مخصصة")}
@@ -281,10 +282,10 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
       </div>
 
       {period === "custom" && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-card border border-border/70 shadow-2xs">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {t("periodSelector.from", "من")}:
               </span>
               <input
@@ -294,8 +295,8 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 className={`${baseInput} ${
                   validationError
                     ? validationType === "error"
-                      ? "border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-amber-400 dark:border-amber-500 focus:border-amber-500 focus:ring-amber-500/20"
+                      ? "border-rose-500/50 focus:border-rose-500"
+                      : "border-amber-500/50 focus:border-amber-500"
                     : ""
                 }`}
                 aria-label={t("periodSelector.from", "من") as string}
@@ -303,7 +304,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {t("periodSelector.to", "إلى")}:
               </span>
               <input
@@ -313,8 +314,8 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 className={`${baseInput} ${
                   validationError
                     ? validationType === "error"
-                      ? "border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : "border-amber-400 dark:border-amber-500 focus:border-amber-500 focus:ring-amber-500/20"
+                      ? "border-rose-500/50 focus:border-rose-500"
+                      : "border-amber-500/50 focus:border-amber-500"
                     : ""
                 }`}
                 aria-label={t("periodSelector.to", "إلى") as string}
@@ -326,16 +327,16 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           {validationError && (
             <div
               role="alert"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
                 validationType === "error"
-                  ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60"
-                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25"
               }`}
             >
               {validationType === "error" ? (
-                <ExclamationCircleIcon className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
               ) : (
-                <ExclamationTriangleIcon className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" />
               )}
               <span>{validationError}</span>
             </div>
@@ -344,14 +345,14 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
       )}
 
       {showAppliedBadge && isValid && (
-        <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-          <CalendarDaysIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
           <span>{t("periodSelector.appliedPeriod", "الفترة المطبقة")}:</span>
-          <span className="font-semibold text-gray-900 dark:text-white">
+          <span className="font-semibold text-foreground">
             {appliedLabel}
           </span>
           {activeRangeDates.startDate && activeRangeDates.endDate && (
-            <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
+            <span className="font-mono tabular-nums text-[11px] text-muted-foreground">
               {activeRangeDates.startDate === activeRangeDates.endDate
                 ? `(${activeRangeDates.startDate})`
                 : `(${activeRangeDates.startDate} → ${activeRangeDates.endDate})`}
