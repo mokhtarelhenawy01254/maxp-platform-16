@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CreditCardIcon,
-  BanknotesIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  TruckIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  CreditCard,
+  Banknote,
+  Truck,
+  CheckCircle2,
+  RefreshCw,
+  AlertCircle,
+  PieChart as PieIcon,
+  TrendingUp,
+} from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -18,15 +20,13 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  LineChart,
-  Line,
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface PaymentStats {
   methods: Array<{
@@ -45,15 +45,6 @@ interface PaymentStats {
   dailyTrends: Array<{ date: string; cod: number; online: number }>;
 }
 
-const COLORS = [
-  "#3B82F6",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#EC4899",
-];
-
 const PaymentMethodAnalytics: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -62,72 +53,28 @@ const PaymentMethodAnalytics: React.FC = () => {
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<PaymentStats | null>(null);
 
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getPaymentMethodsAnalytics(
-        range?.startDate,
-        range?.endDate,
-      );
-      if (response.success && response.data) {
-        const data = response.data || {};
+      const res = await analyticsService.getPaymentMethodsAnalytics(range?.startDate, range?.endDate);
+      if (res?.success && res.data) {
+        const data = res.data || {};
         const methodsData = Array.isArray(data) ? data : data.methods || [];
-
-        // Calculate COD vs Online
-        const codData = methodsData.filter((m: any) => {
-          const name = m.name || "";
-          return (
-            name.toLowerCase().includes("cod") ||
-            name.toLowerCase().includes("نقد")
-          );
-        });
-        const onlineData = methodsData.filter((m: any) => {
-          const name = m.name || "";
-          return (
-            !name.toLowerCase().includes("cod") &&
-            !name.toLowerCase().includes("نقد")
-          );
-        });
-
-        const codTotal = codData.reduce(
-          (sum: number, m: any) => sum + (m.count || 0),
-          0,
-        );
-        const codRevenue = codData.reduce(
-          (sum: number, m: any) => sum + (m.revenue || 0),
-          0,
-        );
-        const onlineTotal = onlineData.reduce(
-          (sum: number, m: any) => sum + (m.count || 0),
-          0,
-        );
-        const onlineRevenue = onlineData.reduce(
-          (sum: number, m: any) => sum + (m.revenue || 0),
-          0,
-        );
+        const codData = methodsData.filter((m: any) => (m.name || "").toLowerCase().includes("cod") || (m.name || "").includes("نقد"));
+        const onlineData = methodsData.filter((m: any) => !(m.name || "").toLowerCase().includes("cod") && !(m.name || "").includes("نقد"));
+        const codTotal = codData.reduce((sum: number, m: any) => sum + (m.count || 0), 0);
+        const codRevenue = codData.reduce((sum: number, m: any) => sum + (m.revenue || 0), 0);
+        const onlineTotal = onlineData.reduce((sum: number, m: any) => sum + (m.count || 0), 0);
+        const onlineRevenue = onlineData.reduce((sum: number, m: any) => sum + (m.revenue || 0), 0);
         const totalCount = codTotal + onlineTotal;
 
         setStats({
           methods: methodsData,
           totalOrders: data.totalOrders || totalCount || 0,
           codVsOnline: {
-            cod: {
-              count: codTotal,
-              revenue: codRevenue,
-              percentage: totalCount > 0 ? (codTotal / totalCount) * 100 : 0,
-            },
-            online: {
-              count: onlineTotal,
-              revenue: onlineRevenue,
-              percentage: totalCount > 0 ? (onlineTotal / totalCount) * 100 : 0,
-            },
+            cod: { count: codTotal, revenue: codRevenue, percentage: totalCount > 0 ? (codTotal / totalCount) * 100 : 0 },
+            online: { count: onlineTotal, revenue: onlineRevenue, percentage: totalCount > 0 ? (onlineTotal / totalCount) * 100 : 0 },
           },
           successRate: data.successRate || 95,
           dailyTrends: data.dailyTrends || [],
@@ -135,345 +82,204 @@ const PaymentMethodAnalytics: React.FC = () => {
       }
     } catch (err: any) {
       console.error("PaymentMethodAnalytics error:", err);
-      setError(err.message || t("paymentAnalytics.fetchError"));
+      setError(err?.message || "فشل تحميل إحصائيات وسائل الدفع");
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("paymentAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("paymentAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("paymentAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const codVsOnlineChartData = stats
+    ? [
+        { name: "عند الاستلام (COD)", value: stats.codVsOnline.cod.count, color: "#F59E0B" },
+        { name: "الدفع الإلكتروني", value: stats.codVsOnline.online.count, color: "#10B981" },
+      ]
+    : [];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Basic Analytics Notice */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <InformationCircleIcon className="h-5 w-5 text-blue-500" />
-          <p className="text-blue-700 dark:text-blue-300 text-sm">
-            {t("paymentAnalytics.basicAnalyticsNotice")}
+    <div className="space-y-5" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-indigo-500" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {t("paymentAnalytics.title", "تحليل وسائل وبوابات الدفع")}
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("paymentAnalytics.subtitle", "مقارنة الدفع عند الاستلام (COD) بالدفع الإلكتروني، وتوزيع الإيرادات")}
           </p>
         </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <CreditCardIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("paymentAnalytics.totalOrders")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalOrders?.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-orange-500">
-              <TruckIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("paymentAnalytics.codPercentage")}
-              </p>
-              <p className="text-2xl font-bold text-orange-600">
-                {typeof stats?.codVsOnline?.cod?.percentage === "number"
-                  ? stats.codVsOnline.cod.percentage.toFixed(1)
-                  : "0.0"}
-                %
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {stats?.codVsOnline?.cod?.count?.toLocaleString()}{" "}
-                {t("paymentAnalytics.orders")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <BanknotesIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("paymentAnalytics.onlinePercentage")}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {typeof stats?.codVsOnline?.online?.percentage === "number"
-                  ? stats.codVsOnline.online.percentage.toFixed(1)
-                  : "0.0"}
-                %
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {stats?.codVsOnline?.online?.count?.toLocaleString()}{" "}
-                {t("paymentAnalytics.orders")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <CheckCircleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("paymentAnalytics.successRate")}
-              </p>
-              <p className="text-2xl font-bold text-purple-600">
-                {typeof stats?.successRate === "number"
-                  ? stats.successRate.toFixed(1)
-                  : "0.0"}
-                %
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Payment Methods Pie Chart */}
-        {stats?.methods && stats.methods.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {t("paymentAnalytics.paymentMethodsDistribution")}
-            </h3>
-            <div style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer width="100%" height={300} minHeight={300}>
-                <PieChart>
-                  <Pie
-                    data={stats.methods}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="count"
-                    nameKey="name"
-                    label={({ name, percent }) =>
-                      `${name || t("paymentAnalytics.undefined")} (${percent ? (percent * 100).toFixed(1) : 0}%)`
-                    }
-                  >
-                    {stats.methods.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Revenue by Payment Method */}
-        {stats?.methods && stats.methods.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {t("paymentAnalytics.revenueByPaymentMethod")}
-            </h3>
-            <div style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer width="100%" height={300} minHeight={300}>
-                <BarChart data={stats.methods} layout="vertical">
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#374151"
-                    opacity={0.1}
-                  />
-                  <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    stroke="#9CA3AF"
-                    fontSize={12}
-                    width={100}
-                  />
-                  <Tooltip
-                    formatter={(value) =>
-                      value ? formatPrice(value as number) : "0"
-                    }
-                  />
-                  <Bar
-                    dataKey="revenue"
-                    fill="#10B981"
-                    name={t("paymentAnalytics.revenue")}
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* COD vs Online Trends */}
-      {stats?.dailyTrends && stats.dailyTrends.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("paymentAnalytics.paymentTrends")}
-          </h3>
-          <div style={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer width="100%" height={300} minHeight={300}>
-              <LineChart data={stats.dailyTrends}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="cod"
-                  stroke="#F59E0B"
-                  strokeWidth={2}
-                  name="COD"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="online"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  name={t("paymentAnalytics.electronicPayment")}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm"><AlertCircle className="h-4 w-4 shrink-0" /><span>{error}</span></div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs">إعادة المحاولة</Button>
         </div>
       )}
 
-      {/* Payment Methods Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("paymentAnalytics.paymentMethodsDetails")}
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("paymentAnalytics.paymentMethod")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("paymentAnalytics.ordersCount")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("paymentAnalytics.revenue")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("paymentAnalytics.averageOrderValue")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("paymentAnalytics.percentage")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.methods?.map((method, index) => {
-                const methodName =
-                  method.name || t("paymentAnalytics.undefined");
-                const isCOD =
-                  methodName.toLowerCase().includes("cod") ||
-                  methodName.toLowerCase().includes("نقد") ||
-                  methodName.includes("استلام");
-                return (
-                  <tr
-                    key={index}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        {isCOD ? (
-                          <BanknotesIcon className="h-5 w-5 text-orange-500" />
-                        ) : (
-                          <CreditCardIcon className="h-5 w-5 text-blue-500" />
-                        )}
-                        <span className="text-sm text-gray-900 dark:text-white">
-                          {methodName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-blue-600 font-medium">
-                      {method.count || 0}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-green-600 font-medium">
-                      {formatPrice(method.revenue || 0)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-purple-600 font-medium">
-                      {formatPrice(
-                        method.averageOrderValue ||
-                          (method.count > 0
-                            ? method.revenue / method.count
-                            : 0),
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
-                      {typeof method.percentage === "number"
-                        ? method.percentage.toFixed(1)
-                        : method.percentage || "0.0"}
-                      %
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* Telemetry Metrics Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>إجمالي الطلبات المحصلة</span>
+              <CreditCard className="h-4 w-4 text-indigo-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{(stats?.totalOrders || 0).toLocaleString()}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">عبر جميع وسائل الدفع</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>عند الاستلام (COD)</span>
+              <Truck className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+              {stats?.codVsOnline?.cod?.percentage?.toFixed(1) || 0}%
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+              {(stats?.codVsOnline?.cod?.count || 0).toLocaleString()} طلب ({formatPrice(stats?.codVsOnline?.cod?.revenue || 0)})
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>الدفع الإلكتروني (Online)</span>
+              <Banknote className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {stats?.codVsOnline?.online?.percentage?.toFixed(1) || 0}%
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+              {(stats?.codVsOnline?.online?.count || 0).toLocaleString()} طلب ({formatPrice(stats?.codVsOnline?.online?.revenue || 0)})
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>نسبة نجاح السداد</span>
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">{stats?.successRate || 95}%</div>
+            <div className="text-[11px] text-muted-foreground mt-1">معدل العمليات المكتملة</div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <PieIcon className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-semibold text-foreground">توزيع الطلبات: COD مقابل أونلاين</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">نسبة التحصيل</span>
+            </div>
+            <div className="h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={codVsOnlineChartData} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={4} dataKey="value" nameKey="name">
+                    {codVsOnlineChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} formatter={(val: any) => [Number(val).toLocaleString(), "طلب"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-center gap-6 mt-2 pt-3 border-t border-border/50 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="text-muted-foreground">عند الاستلام:</span>
+                <span className="font-mono font-semibold text-foreground">{(stats?.codVsOnline?.cod?.count || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                <span className="text-muted-foreground">أونلاين:</span>
+                <span className="font-mono font-semibold text-foreground">{(stats?.codVsOnline?.online?.count || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-indigo-500" />
+                <h3 className="text-sm font-semibold text-foreground">حجم الطلبات حسب وسيلة الدفع</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">{stats?.methods?.length || 0} وسائل</span>
+            </div>
+            <div className="h-[270px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats?.methods || []} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis dataKey="name" type="category" stroke="currentColor" className="text-muted-foreground" fontSize={11} width={110} />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} formatter={(val: any) => [Number(val).toLocaleString(), "طلب"]} />
+                  <Bar dataKey="count" fill="#4F46E5" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Methods Table */}
+      {stats?.methods && stats.methods.length > 0 && (
+        <Card className="border-border/70 bg-card overflow-hidden">
+          <div className="p-4 border-b border-border/70 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">تفاصيل أداء وإيرادات وسائل الدفع</h3>
+            </div>
+            <span className="text-xs text-muted-foreground font-mono">تقرير تفصيلي</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+                <tr>
+                  <th className="py-2.5 px-4 text-right font-medium">وسيلة الدفع</th>
+                  <th className="py-2.5 px-4 text-center font-medium">عدد الطلبات</th>
+                  <th className="py-2.5 px-4 text-center font-medium">حصة الطلبات %</th>
+                  <th className="py-2.5 px-4 text-center font-medium">إجمالي الإيرادات</th>
+                  <th className="py-2.5 px-4 text-left font-medium">متوسط السلة</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {stats.methods.map((method, idx) => (
+                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-4 font-medium text-foreground">{method.name}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-foreground font-semibold">{method.count.toLocaleString()}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-muted-foreground">{method.percentage?.toFixed(1) || 0}%</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{formatPrice(method.revenue || 0)}</td>
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-muted-foreground">{formatPrice(method.averageOrderValue || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

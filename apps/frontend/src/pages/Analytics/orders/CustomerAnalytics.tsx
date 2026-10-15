@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  UsersIcon,
-  ArrowPathIcon,
-  XCircleIcon,
-  StarIcon,
-  CurrencyDollarIcon,
-  ShoppingBagIcon,
-} from "@heroicons/react/24/outline";
+  Users,
+  UserCheck,
+  Repeat,
+  DollarSign,
+  ShoppingBag,
+  Star,
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+} from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -21,10 +24,10 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface CustomerStats {
   totalCustomers: number;
@@ -41,11 +44,7 @@ interface CustomerStats {
     totalSpent: number;
     lastOrderDate: string;
   }>;
-  customerSegments: Array<{
-    segment: string;
-    count: number;
-    revenue: number;
-  }>;
+  customerSegments: Array<{ segment: string; count: number; revenue: number }>;
 }
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
@@ -58,337 +57,229 @@ const CustomerAnalytics: React.FC = () => {
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<CustomerStats | null>(null);
 
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const qualityData =
-        await analyticsService.getCustomerQualityAnalytics(
-          range?.period,
-          range?.startDate,
-          range?.endDate,
-        );
-
-      if (qualityData.success) {
-        const data = qualityData.data || {};
+      const res = await analyticsService.getCustomerQualityAnalytics(
+        range?.period,
+        range?.startDate,
+        range?.endDate,
+      );
+      if (res?.success) {
+        const d = res.data || {};
         setStats({
-          totalCustomers: data.totalCustomers || 0,
-          repeatCustomers: data.repeatCustomers || 0,
-          newCustomers: data.newCustomers || 0,
-          repeatRate: data.repeatRate || 0,
-          averageOrderValue: data.averageOrderValue || 0,
-          customerLifetimeValue: data.customerLifetimeValue || 0,
-          topCustomers: data.topCustomers || [],
-          customerSegments: data.segments || [
-            { segment: t("customerAnalytics.vip"), count: 0, revenue: 0 },
-            { segment: t("customerAnalytics.active"), count: 0, revenue: 0 },
-            { segment: t("customerAnalytics.atRisk"), count: 0, revenue: 0 },
-            { segment: t("customerAnalytics.lost"), count: 0, revenue: 0 },
+          totalCustomers: d.totalCustomers || 0,
+          repeatCustomers: d.repeatCustomers || 0,
+          newCustomers: d.newCustomers || 0,
+          repeatRate: d.repeatRate || 0,
+          averageOrderValue: d.averageOrderValue || 0,
+          customerLifetimeValue: d.customerLifetimeValue || 0,
+          topCustomers: d.topCustomers || [],
+          customerSegments: d.segments || [
+            { segment: t("customerAnalytics.vip", "عملاء VIP"), count: 0, revenue: 0 },
+            { segment: t("customerAnalytics.active", "نشطون"), count: 0, revenue: 0 },
+            { segment: t("customerAnalytics.atRisk", "معرضون للفقد"), count: 0, revenue: 0 },
+            { segment: t("customerAnalytics.lost", "مفقودون"), count: 0, revenue: 0 },
           ],
         });
       }
     } catch (err: any) {
       console.error("CustomerAnalytics error:", err);
-      setError(err.message || t("customerAnalytics.fetchError"));
+      setError(err?.message || "فشل تحميل إحصائيات وجودة العملاء");
     } finally {
       setLoading(false);
     }
   };
 
-  const customerData = stats
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
+
+  const customerDistributionData = stats
     ? [
-        {
-          name: t("customerAnalytics.repeatCustomers"),
-          value: stats.repeatCustomers,
-        },
-        {
-          name: t("customerAnalytics.newCustomers"),
-          value: stats.newCustomers,
-        },
+        { name: t("customerAnalytics.repeatCustomers", "عملاء متكررون"), value: stats.repeatCustomers },
+        { name: t("customerAnalytics.newCustomers", "عملاء جدد"), value: stats.newCustomers },
       ]
     : [];
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("customerAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("customerAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("customerAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <UsersIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.totalCustomers")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalCustomers?.toLocaleString()}
-              </p>
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-500" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {t("customerAnalytics.title", "تحليل وجودة العملاء")}
+            </h1>
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("customerAnalytics.subtitle", "معدلات تكرار الشراء، القيمة الدائمة للعملاء (LTV)، وتصنيف الشرائح")}
+          </p>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <ArrowPathIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.repeatCustomers")}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats?.repeatCustomers?.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <UsersIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.newCustomers")}
-              </p>
-              <p className="text-2xl font-bold text-purple-600">
-                {stats?.newCustomers?.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-orange-500">
-              <ArrowPathIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.repeatRate")}
-              </p>
-              <p className="text-2xl font-bold text-orange-600">
-                {stats?.repeatRate?.toFixed(1)}%
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
         </div>
       </div>
 
-      {/* Additional Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-indigo-500">
-              <ShoppingBagIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.averageOrderValue")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(stats?.averageOrderValue || 0)}
-              </p>
-            </div>
-          </div>
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm"><AlertCircle className="h-4 w-4 shrink-0" /><span>{error}</span></div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs">إعادة المحاولة</Button>
         </div>
+      )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-yellow-500">
-              <CurrencyDollarIcon className="h-6 w-6 text-white" />
+      {/* Telemetry Metrics Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>إجمالي قاعدة العملاء</span>
+              <Users className="h-4 w-4 text-indigo-500" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("customerAnalytics.customerLifetimeValue")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(stats?.customerLifetimeValue || 0)}
-              </p>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{(stats?.totalCustomers || 0).toLocaleString()}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">إجمالي العملاء المسجلين</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>عملاء متكررون</span>
+              <UserCheck className="h-4 w-4 text-emerald-500" />
             </div>
-          </div>
-        </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{(stats?.repeatCustomers || 0).toLocaleString()}</div>
+            <div className="text-[11px] text-muted-foreground mt-1 font-mono">معدل تكرار {stats?.repeatRate?.toFixed(1) || 0}%</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>متوسط السلة (AOV)</span>
+              <ShoppingBag className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{formatPrice(stats?.averageOrderValue || 0)}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">لكل طلب مسجل</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>القيمة الدائمة (LTV)</span>
+              <DollarSign className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">{formatPrice(stats?.customerLifetimeValue || 0)}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">العائد التراكمي المتوقع</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Customer Distribution Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("customerAnalytics.customerDistribution")}
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={customerData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                  nameKey="name"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {customerData.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {/* Charts: Customer Distribution & Segments */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-indigo-500" />
+                <h3 className="text-sm font-semibold text-foreground">توزيع العملاء (جدد مقابل متكررون)</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">نسبة الولاء</span>
+            </div>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={customerDistributionData} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={4} dataKey="value" nameKey="name">
+                    {customerDistributionData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} formatter={(val: any) => [Number(val).toLocaleString(), "عميل"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-center gap-6 mt-2 pt-3 border-t border-border/50 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#3B82F6]" />
+                <span className="text-muted-foreground">متكرر:</span>
+                <span className="font-mono font-semibold text-foreground">{(stats?.repeatCustomers || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                <span className="text-muted-foreground">جديد:</span>
+                <span className="font-mono font-semibold text-foreground">{(stats?.newCustomers || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Customer Segments */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("customerAnalytics.customerSegments")}
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={stats?.customerSegments || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis dataKey="segment" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} />
-                <Tooltip
-                  formatter={(value) => (value ? value.toLocaleString() : "0")}
-                />
-                <Bar
-                  dataKey="count"
-                  fill="#3B82F6"
-                  name={t("customerAnalytics.count")}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <h3 className="text-sm font-semibold text-foreground">شرائح سلوك وتفاعل العملاء</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">تصنيف المحفظة</span>
+            </div>
+            <div className="h-[285px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats?.customerSegments || []} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis dataKey="segment" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} formatter={(val: any) => [Number(val).toLocaleString(), "عميل"]} />
+                  <Bar dataKey="count" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Top Customers Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <StarIcon className="h-5 w-5 text-yellow-500" />
-          {t("customerAnalytics.topCustomers")}
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  #
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("customerAnalytics.customer")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("customerAnalytics.email")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("customerAnalytics.ordersCount")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("customerAnalytics.totalSpent")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("customerAnalytics.lastOrder")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.topCustomers?.map((customer, index) => (
-                <tr
-                  key={customer.id}
-                  className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
-                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                    {index + 1}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                    {customer.name}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
-                    {customer.email}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-blue-600 font-medium">
-                    {customer.orders}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-green-600 font-medium">
-                    {formatPrice(customer.totalSpent)}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
-                    {new Date(customer.lastOrderDate).toLocaleDateString(
-                      i18n.language === "ar" ? "ar-EG" : "en-US",
-                    )}
-                  </td>
+      {/* Top Customers Leaderboard Table */}
+      {stats?.topCustomers && stats.topCustomers.length > 0 && (
+        <Card className="border-border/70 bg-card overflow-hidden">
+          <div className="p-4 border-b border-border/70 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-foreground">كبار العملاء الأكثر إنفاقاً (VIPs)</h3>
+            </div>
+            <span className="text-xs text-muted-foreground font-mono">أعلى {stats.topCustomers.length} عملاء</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+                <tr>
+                  <th className="py-2.5 px-4 text-center font-medium w-12">#</th>
+                  <th className="py-2.5 px-4 text-right font-medium">اسم العميل</th>
+                  <th className="py-2.5 px-4 text-right font-medium">البريد الإلكتروني</th>
+                  <th className="py-2.5 px-4 text-center font-medium">عدد الطلبات</th>
+                  <th className="py-2.5 px-4 text-center font-medium">إجمالي الإنفاق</th>
+                  <th className="py-2.5 px-4 text-left font-medium">آخر طلب</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {stats.topCustomers.map((customer, index) => (
+                  <tr key={customer.id || index} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-4 text-center font-mono text-muted-foreground">{index + 1}</td>
+                    <td className="py-2.5 px-4 font-medium text-foreground">{customer.name}</td>
+                    <td className="py-2.5 px-4 text-muted-foreground font-mono dir-ltr text-right">{customer.email || "-"}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums font-semibold text-indigo-600 dark:text-indigo-400">{customer.orders}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{formatPrice(customer.totalSpent)}</td>
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-muted-foreground">
+                      {customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString(i18n.language === "ar" ? "ar-EG" : "en-US") : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
