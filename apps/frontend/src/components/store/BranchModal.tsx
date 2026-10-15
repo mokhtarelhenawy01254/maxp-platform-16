@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { X, Building2, MapPin, Phone, Mail, Clock, Check } from "lucide-react";
 import { Branch } from "../../services/storeSettingsService";
 
 interface BranchModalProps {
@@ -19,146 +19,192 @@ export const BranchModal: React.FC<BranchModalProps> = ({
   onChange,
 }) => {
   const { t } = useTranslation();
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-gray-700 shadow-2xl">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? t("storeBranches.modalEditTitle") : t("storeBranches.modalAddTitle")}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+      dir="rtl"
+    >
+      <div className="bg-card border border-border/70 text-card-foreground shadow-2xl rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/20">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {isEditing
+                  ? t("storeBranches.modalEditTitle")
+                  : t("storeBranches.modalAddTitle")}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                إدارة معلومات الفرع ونقاط الاستلام والتسليم
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            aria-label="إغلاق"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Form Body */}
+        <div className="p-6 space-y-4 overflow-y-auto">
+          {/* Branch Name */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              {t("storeBranches.branchName")} <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={branch.name || ""}
+              onChange={(e) => onChange({ ...branch, name: e.target.value })}
+              className="w-full px-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
+              placeholder={t("storeBranches.branchNamePlaceholder")}
+            />
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t("storeBranches.branchName")} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={branch.name || ""}
-                onChange={(e) => onChange({ ...branch, name: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder={t("storeBranches.branchNamePlaceholder")}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t("storeBranches.address")}
-              </label>
+          {/* Address */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              {t("storeBranches.address")}
+            </label>
+            <div className="relative">
+              <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 type="text"
                 value={branch.address || ""}
                 onChange={(e) =>
                   onChange({ ...branch, address: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pr-9 pl-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
                 placeholder={t("storeBranches.addressPlaceholder")}
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t("storeBranches.city")}
+          {/* City */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              {t("storeBranches.city")}
+            </label>
+            <input
+              type="text"
+              value={branch.city || ""}
+              onChange={(e) => onChange({ ...branch, city: e.target.value })}
+              className="w-full px-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
+              placeholder={t("storeBranches.cityPlaceholder")}
+            />
+          </div>
+
+          {/* Phone & Email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-foreground">
+                {t("storeBranches.phone")} <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
-                value={branch.city || ""}
-                onChange={(e) => onChange({ ...branch, city: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder={t("storeBranches.cityPlaceholder")}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t("storeBranches.phone")} <span className="text-red-500">*</span>
-                </label>
+              <div className="relative">
+                <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   type="tel"
                   value={branch.phone || ""}
                   onChange={(e) =>
                     onChange({ ...branch, phone: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  dir="ltr"
+                  className="w-full pr-9 pl-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all text-right font-mono tabular-nums"
                   placeholder={t("storeBranches.phonePlaceholder")}
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t("storeBranches.email")}
-                </label>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-foreground">
+                {t("storeBranches.email")}
+              </label>
+              <div className="relative">
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   type="email"
                   value={branch.email || ""}
                   onChange={(e) =>
                     onChange({ ...branch, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  dir="ltr"
+                  className="w-full pr-9 pl-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all text-right"
                   placeholder="branch@example.com"
                 />
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t("storeBranches.workingHours")}
-              </label>
+          {/* Working Hours */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              {t("storeBranches.workingHours")}
+            </label>
+            <div className="relative">
+              <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 type="text"
                 value={branch.workingHours || ""}
                 onChange={(e) =>
                   onChange({ ...branch, workingHours: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pr-9 pl-3.5 py-2 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all font-mono tabular-nums"
                 placeholder={t("storeBranches.workingHoursPlaceholder")}
               />
             </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="branchActive"
-                checked={branch.isActive !== false}
-                onChange={(e) =>
-                  onChange({ ...branch, isActive: e.target.checked })
-                }
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              />
-              <label
-                htmlFor="branchActive"
-                className="mr-2 text-sm text-gray-700 dark:text-gray-300"
-              >
-                {t("storeBranches.branchActive")}
-              </label>
-            </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          {/* Active Switch */}
+          <div className="flex items-center gap-2.5 pt-2">
+            <input
+              type="checkbox"
+              id="branchActive"
+              checked={branch.isActive !== false}
+              onChange={(e) =>
+                onChange({ ...branch, isActive: e.target.checked })
+              }
+              className="w-4 h-4 rounded border-border/70 text-primary focus:ring-primary/40 cursor-pointer"
+            />
+            <label
+              htmlFor="branchActive"
+              className="text-xs font-medium text-foreground cursor-pointer select-none"
             >
-              {t("storeBranches.cancel")}
-            </button>
-            <button
-              onClick={onSave}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-lg"
-            >
+              {t("storeBranches.branchActive")}
+            </label>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border/60 bg-muted/10">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-medium border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-xl transition-colors"
+          >
+            {t("storeBranches.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!branch.name?.trim()}
+            className="px-4 py-2 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>
               {isEditing ? t("storeBranches.save") : t("storeBranches.addBranch")}
-            </button>
-          </div>
+            </span>
+          </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default BranchModal;

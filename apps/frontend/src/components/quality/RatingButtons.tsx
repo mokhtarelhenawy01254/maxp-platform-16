@@ -1,14 +1,7 @@
 import React, { useState } from "react";
 import i18n from "../../i18n";
-import {
-  HandThumbUpIcon,
-  HandThumbDownIcon,
-} from "@heroicons/react/24/outline";
-import {
-  HandThumbUpIcon as HandThumbUpSolidIcon,
-  HandThumbDownIcon as HandThumbDownSolidIcon,
-} from "@heroicons/react/24/solid";
-import { getApiUrl } from "../../config/environment"; // Import environment config
+import { ThumbsUp, ThumbsDown, Check, Loader2 } from "lucide-react";
+import { getApiUrl } from "../../config/environment";
 
 interface RatingButtonsProps {
   messageId: string;
@@ -38,11 +31,9 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
 
     setSelectedRating(rating);
 
-    // للتقييم الإيجابي، نرسل مباشرة
     if (rating === "positive") {
       await submitRating(rating);
     } else {
-      // للتقييم السلبي، نظهر صندوق التعليق
       setShowCommentBox(true);
     }
   };
@@ -56,7 +47,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
     setIsSubmitting(true);
 
     try {
-      const apiUrl = getApiUrl(); // Use environment-configured API URL
+      const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/monitor/quality/rating`, {
         method: "POST",
         headers: {
@@ -77,25 +68,17 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
         setIsSubmitted(true);
         setShowCommentBox(false);
 
-        // استدعاء callback إذا كان موجود
         if (onRatingSubmit) {
           onRatingSubmit(rating, userComment || comment);
         }
-
-        console.log("✅ Rating submitted successfully:", data.data.ratingId);
       } else {
         throw new Error(data.message || "Failed to submit rating");
       }
     } catch (error) {
-      console.error("❌ Error submitting rating:", error);
-
-      // إعادة تعيين الحالة في حالة الخطأ
+      console.error("Error submitting rating:", error);
       setSelectedRating(null);
       setShowCommentBox(false);
       setIsSubmitted(false);
-
-      // يمكن إضافة toast notification هنا
-      alert(i18n.t("RatingButtons.error_error_1ca7"));
     } finally {
       setIsSubmitting(false);
     }
@@ -116,101 +99,96 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
   if (isSubmitted) {
     return (
       <div
-        className={`flex items-center space-x-2 space-x-reverse text-sm text-green-600 ${className}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ${className}`}
+        dir="rtl"
       >
-        <span className="text-green-500">✓</span>
+        <Check className="w-3.5 h-3.5" />
         <span>شكراً لتقييمك!</span>
         {selectedRating === "positive" ? (
-          <HandThumbUpSolidIcon className="w-4 h-4 text-green-500" />
+          <ThumbsUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400 mr-1" />
         ) : (
-          <HandThumbDownSolidIcon className="w-4 h-4 text-red-500" />
+          <ThumbsDown className="w-3 h-3 text-rose-500 mr-1" />
         )}
       </div>
     );
   }
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      {/* أزرار التقييم */}
-      <div className="flex items-center space-x-2 space-x-reverse">
-        <span className="text-xs text-gray-500">هل كان هذا الرد مفيداً؟</span>
+    <div className={`space-y-2 ${className}`} dir="rtl">
+      {/* Rating actions bar */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">هل كان هذا الرد مفيداً؟</span>
 
         <button
           onClick={() => handleRatingClick("positive")}
           disabled={isSubmitting || isSubmitted}
-          className={`p-1.5 rounded-full transition-all duration-200 ${
+          className={`p-1.5 rounded-lg border transition-all ${
             selectedRating === "positive"
-              ? "bg-green-100 text-green-600"
-              : "text-gray-400 hover:text-green-500 hover:bg-green-50"
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              : "border-border/60 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20"
           } ${isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           title="مفيد"
+          aria-label="مفيد"
         >
-          {selectedRating === "positive" ? (
-            <HandThumbUpSolidIcon className="w-4 h-4" />
-          ) : (
-            <HandThumbUpIcon className="w-4 h-4" />
-          )}
+          <ThumbsUp className="w-3.5 h-3.5" />
         </button>
 
         <button
           onClick={() => handleRatingClick("negative")}
           disabled={isSubmitting || isSubmitted}
-          className={`p-1.5 rounded-full transition-all duration-200 ${
+          className={`p-1.5 rounded-lg border transition-all ${
             selectedRating === "negative"
-              ? "bg-red-100 text-red-600"
-              : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+              : "border-border/60 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 hover:border-rose-500/20"
           } ${isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           title="غير مفيد"
+          aria-label="غير مفيد"
         >
-          {selectedRating === "negative" ? (
-            <HandThumbDownSolidIcon className="w-4 h-4" />
-          ) : (
-            <HandThumbDownIcon className="w-4 h-4" />
-          )}
+          <ThumbsDown className="w-3.5 h-3.5" />
         </button>
 
         {isSubmitting && (
-          <div className="flex items-center space-x-1 space-x-reverse text-xs text-gray-500">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin text-primary" />
             <span>جاري الإرسال...</span>
           </div>
         )}
       </div>
 
-      {/* صندوق التعليق للتقييم السلبي */}
+      {/* Negative Feedback Drawer */}
       {showCommentBox && (
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 animate-fade-in">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-700">
-              ما الذي يمكن تحسينه؟ (اختياري)
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="اكتب تعليقك هنا..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows={2}
-              maxLength={200}
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">
-                {comment.length}/200
-              </span>
-              <div className="flex space-x-2 space-x-reverse">
-                <button
-                  onClick={handleCommentCancel}
-                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={handleCommentSubmit}
-                  disabled={isSubmitting}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? "جاري الإرسال..." : "إرسال"}
-                </button>
-              </div>
+        <div className="bg-muted/20 rounded-xl p-3 border border-border/70 space-y-2">
+          <label className="block text-xs font-medium text-foreground">
+            ما الذي يمكن تحسينه في هذا الرد؟ (اختياري)
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="اكتب ملاحظاتك لمساعدة النظام في التحسين..."
+            className="w-full px-3 py-2 text-xs bg-background border border-border/70 rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary resize-none"
+            rows={2}
+            maxLength={200}
+          />
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              {comment.length}/200
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCommentCancel}
+                className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg hover:bg-muted/40 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleCommentSubmit}
+                disabled={isSubmitting}
+                className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {isSubmitting ? "جاري الإرسال..." : "إرسال"}
+              </button>
             </div>
           </div>
         </div>

@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  ArrowTopRightOnSquareIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+import { ExternalLink, Sparkles } from "lucide-react";
 import type { ProductPageConversionSummaryItem } from "./productPageConversionSummaryItems";
 
 interface ProductPageConversionSummaryCardProps {
@@ -15,13 +12,15 @@ interface ProductPageConversionSummaryCardProps {
   showManageButton?: boolean;
 }
 
-const STATUS_TONE_CLASSES: Record<ProductPageConversionSummaryCardProps["statusTone"], string> = {
+const STATUS_TONE_CLASSES: Record<
+  ProductPageConversionSummaryCardProps["statusTone"],
+  string
+> = {
   active:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
-  inactive:
-    "border-gray-200 bg-white/70 text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300",
+    "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  inactive: "border-border/70 bg-muted/40 text-muted-foreground",
   warning:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+    "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
 };
 
 export default function ProductPageConversionSummaryCard({
@@ -34,79 +33,78 @@ export default function ProductPageConversionSummaryCard({
   showManageButton = true,
 }: ProductPageConversionSummaryCardProps) {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-2xl space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:text-indigo-200">
-              <SparklesIcon className="h-3.5 w-3.5" />
-              Conversion Suite
+    <section
+      className="overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm text-card-foreground"
+      dir="rtl"
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-2xl space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary font-mono">
+              <Sparkles className="w-3 h-3" />
+              CONVERSION SUITE
             </span>
             <span
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${STATUS_TONE_CLASSES[statusTone]}`}
+              className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium ${STATUS_TONE_CLASSES[statusTone]}`}
             >
               {statusLabel}
             </span>
           </div>
           <div>
-            <h4 className="text-lg font-black tracking-tight text-gray-900 dark:text-white">
-              الأدوات المفعلة الآن
+            <h4 className="text-sm font-semibold tracking-tight text-foreground">
+              الأدوات المفعلة الآن لزيادة معدل التحويل
             </h4>
-            <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
-              هذه هي الأدوات المرتبطة الآن بقرار الشراء داخل صفحة المنتج.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              هذه هي الأدوات المؤثرة في قرارات الشراء المعروضة داخل صفحة المنتج.
             </p>
           </div>
         </div>
 
-        {showManageButton ? (
+        {showManageButton && (
           <button
             type="button"
             onClick={onManage}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
-              loading
-                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
-                : "border-indigo-200 bg-indigo-600 text-white hover:-translate-y-0.5 hover:bg-indigo-700 dark:border-indigo-400/30 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            }`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-primary text-primary-foreground hover:bg-primary/90 px-3.5 py-2 text-xs font-medium shadow-xs transition-colors disabled:opacity-50"
           >
-            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            <ExternalLink className="w-3.5 h-3.5" />
             <span>{ctaLabel}</span>
           </button>
-        ) : null}
+        )}
       </div>
 
-      <div className="mt-6 grid gap-3 lg:grid-cols-2">
+      <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
         {items.map((item) => (
           <div
             key={item.key}
-            className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-white/5"
+            className="rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:border-border transition-colors flex items-start justify-between gap-3"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      item.enabled ? "bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,0.14)]" : "bg-gray-300 dark:bg-gray-600"
-                    }`}
-                  />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {item.label}
-                  </span>
-                </div>
-                <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
-                  {item.description}
-                </p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    item.enabled
+                      ? "bg-emerald-500 ring-2 ring-emerald-500/20"
+                      : "bg-muted-foreground/40"
+                  }`}
+                />
+                <span className="text-xs font-semibold text-foreground">
+                  {item.label}
+                </span>
               </div>
-              <span
-                className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-black ${
-                  item.enabled
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                    : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                }`}
-              >
-                {item.enabled ? "On" : "Off"}
-              </span>
+              <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                {item.description}
+              </p>
             </div>
+            <span
+              className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[10px] font-mono font-medium border ${
+                item.enabled
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-muted text-muted-foreground border-border/50"
+              }`}
+            >
+              {item.enabled ? "نشط" : "معطل"}
+            </span>
           </div>
         ))}
       </div>

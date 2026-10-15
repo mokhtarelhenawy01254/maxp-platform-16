@@ -1,12 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowTopRightOnSquareIcon,
-  ArchiveBoxIcon,
-  BuildingStorefrontIcon,
-  CubeIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+  ExternalLink,
+  Archive,
+  Store,
+  Package,
+  Users,
+} from "lucide-react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { cn } from "../../lib/utils";
 
@@ -116,15 +116,15 @@ const formatOptionalText = (value?: string | null) => {
 
 const toneClasses: Record<NonNullable<DetailItem["tone"]>, string> = {
   default:
-    "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200",
+    "border-border/60 bg-background/80 text-foreground",
   emerald:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200",
+    "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   amber:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200",
+    "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
   violet:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200",
+    "border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400",
   sky:
-    "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200",
+    "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400",
 };
 
 const DetailCard: React.FC<{
@@ -142,35 +142,37 @@ const DetailCard: React.FC<{
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
-            <Icon className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <h5 className="truncate text-sm font-bold text-slate-900 dark:text-white">
-            {title}
-          </h5>
+    <section className="rounded-xl border border-border/70 bg-card p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/40 text-foreground">
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <h5 className="truncate text-xs font-semibold text-foreground">
+              {title}
+            </h5>
+          </div>
+          {action}
         </div>
-        {action}
-      </div>
 
-      {visibleItems.length > 0 ? (
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {visibleItems.map((item) => (
-            <div
-              key={item.label}
-              className={cn(
-                "min-w-0 rounded-lg border px-3 py-2 text-xs",
-                toneClasses[item.tone || "default"],
-              )}
-            >
-              <div className="font-medium opacity-75">{item.label}</div>
-              <div className="mt-1 truncate font-semibold">{item.value}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+        {visibleItems.length > 0 && (
+          <div className="mt-3.5 grid gap-2 sm:grid-cols-2">
+            {visibleItems.map((item) => (
+              <div
+                key={item.label}
+                className={cn(
+                  "min-w-0 rounded-lg border px-2.5 py-1.5 text-xs font-mono tabular-nums",
+                  toneClasses[item.tone || "default"],
+                )}
+              >
+                <div className="text-[10px] font-medium opacity-70 font-sans">{item.label}</div>
+                <div className="mt-0.5 truncate font-semibold">{item.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 };
@@ -238,47 +240,49 @@ const OrderPartnerOperationsCard: React.FC<OrderPartnerOperationsCardProps> = ({
   const merchantAction = merchantOrder?.merchantId ? (
     <Link
       to={`/merchants/${merchantOrder.merchantId}`}
-      className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+      className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/70 bg-muted/40 hover:bg-muted px-2 text-[11px] font-medium text-foreground transition-colors"
     >
-      <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
-      فتح التاجر
+      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      <span>فتح التاجر</span>
     </Link>
   ) : null;
+
   const affiliateAction = affiliate?.id ? (
     <Link
       to={`/affiliates/management/${affiliate.id}`}
-      className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
+      className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/70 bg-muted/40 hover:bg-muted px-2 text-[11px] font-medium text-foreground transition-colors"
     >
-      <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
-      فتح المسوق
+      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      <span>فتح المسوق</span>
     </Link>
   ) : null;
 
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40",
+        "rounded-2xl border border-border/70 bg-card p-4 shadow-sm text-card-foreground space-y-3.5",
         className,
       )}
+      dir="rtl"
     >
-      <div className="mb-4 flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         <h4
           className={cn(
-            "font-bold text-slate-900 dark:text-white",
-            compact ? "text-sm" : "text-base",
+            "font-semibold text-foreground tracking-tight",
+            compact ? "text-xs" : "text-sm",
           )}
         >
-          تشغيل الطلب
+          بيانات تشغيل الطلب والشركاء
         </h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          مراجعة التشغيل والعمولات المرتبطة بالطلب.
+        <p className="text-[11px] text-muted-foreground">
+          تفاصيل التاجر، المخزن المشحن منه، والمسوق المحال من خلاله
         </p>
       </div>
 
       <div className="grid gap-3 xl:grid-cols-3">
         <DetailCard
           title="التاجر والأرباح"
-          icon={BuildingStorefrontIcon}
+          icon={Store}
           action={merchantAction}
           items={[
             { label: "التاجر", value: merchantName, tone: "emerald" },
@@ -307,15 +311,15 @@ const OrderPartnerOperationsCard: React.FC<OrderPartnerOperationsCardProps> = ({
 
         <DetailCard
           title="المخزن والتنفيذ"
-          icon={ArchiveBoxIcon}
+          icon={Archive}
           action={
             hasWarehouseContext ? (
               <Link
                 to="/inventory"
-                className="inline-flex h-8 items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200"
+                className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/70 bg-muted/40 hover:bg-muted px-2 text-[11px] font-medium text-foreground transition-colors"
               >
-                <CubeIcon className="h-4 w-4" aria-hidden="true" />
-                فتح المخزون
+                <Package className="h-3 w-3" aria-hidden="true" />
+                <span>فتح المخزون</span>
               </Link>
             ) : null
           }
@@ -340,7 +344,7 @@ const OrderPartnerOperationsCard: React.FC<OrderPartnerOperationsCardProps> = ({
 
         <DetailCard
           title="المسوق والأرباح"
-          icon={UserGroupIcon}
+          icon={Users}
           action={affiliateAction}
           items={[
             { label: "المسوق", value: affiliateName, tone: "violet" },
