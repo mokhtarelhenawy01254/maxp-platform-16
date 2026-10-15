@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  CalendarDaysIcon,
-  LockClosedIcon,
-  LockOpenIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+  Calendar,
+  Lock,
+  Unlock,
+  AlertCircle,
+  RotateCw,
+} from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, FiscalPeriod } from './accountingApi';
 
@@ -62,16 +62,16 @@ export const AccountingPeriodsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground font-sans" dir="rtl">
       <AccountingHeader
         title="إدارة الفترات المالية والإقفال الشهري والسنوي"
         actions={
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">السنة المالية:</span>
+            <span className="text-xs text-muted-foreground">السنة المالية:</span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold font-mono"
+              className="px-3 py-1.5 rounded-lg border border-border/70 bg-card text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value={2026}>2026</option>
               <option value={2025}>2025</option>
@@ -83,21 +83,25 @@ export const AccountingPeriodsPage: React.FC = () => {
 
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={loadPeriods} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
-              إعادة المحاولة
+            <button
+              onClick={loadPeriods}
+              className="px-2.5 py-1 rounded bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 text-[11px] flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>إعادة المحاولة</span>
             </button>
           </div>
         )}
 
         {/* Information Callout */}
-        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-3">
-          <CalendarDaysIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground flex items-start gap-3">
+          <Calendar className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-bold">قواعد الرقابة على الفترات المالية والإقفال المحاسبي:</p>
-            <p className="text-blue-700 dark:text-blue-300 leading-relaxed">
-              عند إقفال فترة مالية، يُمنع تسجيل أي قيود يدوية أو تعديلات بأثر رجعي في ذلك الشهر. الحركات الآلية الجديدة (فواتير/مصروفات) ستكتمل تشغيلياً دون انقطاع ويتم ترحيل قيودها إلى قائمة الانتظار المعلقة لحين فتح الفترة أو معالجتها محاسبياً.
+            <p className="text-muted-foreground leading-relaxed">
+              عند إقفال فترة مالية، يُمنع تسجيل أي قيود يدوية أو تعديلات بأثر رجعي في ذلك الشهر. الحركات الآلية الجديدة ستكتمل تشغيلياً دون انقطاع ويتم ترحيل قيودها إلى قائمة الانتظار المعلقة لحين فتح الفترة أو معالجتها محاسبياً.
             </p>
           </div>
         </div>
@@ -111,32 +115,32 @@ export const AccountingPeriodsPage: React.FC = () => {
             return (
               <div
                 key={m}
-                className={`p-4 rounded-2xl border transition-all ${
+                className={`p-4 rounded-xl border transition-all ${
                   isClosed
-                    ? 'bg-slate-100 dark:bg-slate-900/60 border-slate-300 dark:border-slate-800 opacity-90'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
+                    ? 'bg-muted/30 border-border/50 opacity-90'
+                    : 'bg-card border-border/70 shadow-xs'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="font-mono text-xs text-slate-400 block">{selectedYear}/{String(m).padStart(2, '0')}</span>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white mt-0.5">شهر {MONTH_NAMES[m - 1]}</h3>
+                    <span className="font-mono text-xs text-muted-foreground block">{selectedYear}/{String(m).padStart(2, '0')}</span>
+                    <h3 className="font-bold text-sm text-foreground mt-0.5">شهر {MONTH_NAMES[m - 1]}</h3>
                   </div>
 
                   <span
-                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                       isClosed
-                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                        : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                     }`}
                   >
-                    {isClosed ? <LockClosedIcon className="w-3 h-3" /> : <LockOpenIcon className="w-3 h-3" />}
+                    {isClosed ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
                     <span>{isClosed ? 'مقفلة' : 'مفتوحة'}</span>
                   </span>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
-                  <span className="text-slate-400 text-[11px]">
+                <div className="mt-4 pt-3 border-t border-border/50 flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground text-[11px] font-mono">
                     {isClosed && period?.closedAt
                       ? `أقفلت: ${new Date(period.closedAt).toLocaleDateString('ar-EG')}`
                       : 'تقبل حركات وقيود'}
@@ -147,7 +151,7 @@ export const AccountingPeriodsPage: React.FC = () => {
                     disabled={loading}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                       isClosed
-                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300'
+                        ? 'bg-muted text-foreground hover:bg-muted/80'
                         : 'bg-rose-600 text-white hover:bg-rose-700'
                     }`}
                   >

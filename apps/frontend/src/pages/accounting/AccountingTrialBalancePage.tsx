@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ScaleIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ArrowDownTrayIcon,
-} from '@heroicons/react/24/outline';
+  Scale,
+  CheckCircle2,
+  AlertCircle,
+  Printer,
+  RotateCw,
+  Calendar,
+} from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, TrialBalanceReport } from './accountingApi';
 
@@ -43,16 +45,20 @@ export const AccountingTrialBalancePage: React.FC = () => {
     });
   };
 
+  const rows = report?.rows || (Array.isArray(report?.accounts) ? report.accounts : []);
+  const totals = report?.totals || report?.summary;
+  const isBalanced = totals?.isBalanced ?? (totals?.totalEndingDebit === totals?.totalEndingCredit);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground font-sans" dir="rtl">
       <AccountingHeader
         title="ميزان المراجعة بالأرصدة والمجاميع (Trial Balance)"
         actions={
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-card border border-border/70 text-foreground hover:bg-muted/50 shadow-sm transition-all"
           >
-            <ArrowDownTrayIcon className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5" />
             <span>طباعة الميزان</span>
           </button>
         }
@@ -60,60 +66,68 @@ export const AccountingTrialBalancePage: React.FC = () => {
 
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
-              إعادة المحاولة
+            <button
+              onClick={loadReport}
+              className="px-2.5 py-1 rounded bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 text-[11px] flex items-center gap-1"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>إعادة المحاولة</span>
             </button>
           </div>
         )}
 
         {/* Date Filter Bar */}
-        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
+        <div className="p-3 rounded-xl bg-card border border-border/70 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span>من:</span>
+              <span className="text-muted-foreground font-medium flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>من:</span>
+              </span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+                className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span>إلى:</span>
+              <span className="text-muted-foreground font-medium">إلى:</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+                className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <button
               onClick={loadReport}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition shadow-sm"
             >
-              تحديث
+              {loading ? 'جارٍ التحديث...' : 'تحديث'}
             </button>
           </div>
 
           {/* Balance Status Badge */}
-          {report?.totals && (
+          {totals && (
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs ${
-                report.totals.isBalanced
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs border ${
+                isBalanced
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
               }`}
             >
-              {report.totals.isBalanced ? (
+              {isBalanced ? (
                 <>
-                  <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span>الميزان متوازن ومطابق: إجمالي المدين = إجمالي الدائن</span>
                 </>
               ) : (
                 <>
-                  <ExclamationCircleIcon className="w-4 h-4 text-rose-500" />
+                  <AlertCircle className="w-4 h-4 text-rose-500" />
                   <span>تحذير: يوجد فارق محاسبي في الميزان!</span>
                 </>
               )}
@@ -122,72 +136,79 @@ export const AccountingTrialBalancePage: React.FC = () => {
         </div>
 
         {/* Trial Balance Table */}
-        <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="rounded-xl bg-card border border-border/70 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400">
-                  <th rowSpan={2} className="py-2.5 px-4 font-semibold border-l border-slate-200 dark:border-slate-800">كود الحساب</th>
-                  <th rowSpan={2} className="py-2.5 px-4 font-semibold border-l border-slate-200 dark:border-slate-800">اسم الحساب</th>
-                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center border-b border-l border-slate-200 dark:border-slate-800 bg-slate-100/40 dark:bg-slate-800/60">رصيد أول المدة</th>
-                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center border-b border-l border-slate-200 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-800/80">حركات الفترة</th>
-                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center bg-slate-100/40 dark:bg-slate-800/60">رصيد آخر المدة (الإقفال)</th>
+                <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground">
+                  <th rowSpan={2} className="py-2.5 px-4 font-semibold border-l border-border/60">كود الحساب</th>
+                  <th rowSpan={2} className="py-2.5 px-4 font-semibold border-l border-border/60">اسم الحساب</th>
+                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center border-b border-l border-border/60 bg-muted/30">رصيد أول المدة</th>
+                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center border-b border-l border-border/60 bg-muted/40">حركات الفترة</th>
+                  <th colSpan={2} className="py-1.5 px-4 font-semibold text-center bg-muted/30">رصيد آخر المدة (الإقفال)</th>
                 </tr>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-slate-400 font-mono text-[11px]">
-                  <th className="py-1 px-3 text-left border-l border-slate-200 dark:border-slate-800">مدين</th>
-                  <th className="py-1 px-3 text-left border-l border-slate-200 dark:border-slate-800">دائن</th>
-                  <th className="py-1 px-3 text-left border-l border-slate-200 dark:border-slate-800">مدين</th>
-                  <th className="py-1 px-3 text-left border-l border-slate-200 dark:border-slate-800">دائن</th>
-                  <th className="py-1 px-3 text-left border-l border-slate-200 dark:border-slate-800">مدين</th>
+                <tr className="border-b border-border/60 bg-muted/10 text-muted-foreground font-mono text-[11px]">
+                  <th className="py-1 px-3 text-left border-l border-border/60">مدين</th>
+                  <th className="py-1 px-3 text-left border-l border-border/60">دائن</th>
+                  <th className="py-1 px-3 text-left border-l border-border/60">مدين</th>
+                  <th className="py-1 px-3 text-left border-l border-border/60">دائن</th>
+                  <th className="py-1 px-3 text-left border-l border-border/60">مدين</th>
                   <th className="py-1 px-3 text-left">دائن</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono tabular-nums">
-                {!report || !report.rows || report.rows.length === 0 ? (
+              <tbody className="divide-y divide-border/40 font-mono tabular-nums">
+                {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400 font-sans">
-                      {loading ? 'جارٍ احتساب ميزان المراجعة...' : 'لا توجد حركات مالية في هذه الفترة'}
+                    <td colSpan={8} className="py-12 text-center text-muted-foreground font-sans">
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <RotateCw className="w-4 h-4 animate-spin text-primary" />
+                          <span>جارٍ احتساب ميزان المراجعة...</span>
+                        </div>
+                      ) : (
+                        'لا توجد حركات مالية في هذه الفترة'
+                      )}
                     </td>
                   </tr>
                 ) : (
-                  (report.rows || []).map((row) => (
-                    <tr key={row.accountId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2 px-4 font-bold border-l border-slate-100 dark:border-slate-800/60">{row.code}</td>
-                      <td className="py-2 px-4 font-sans font-medium text-slate-800 dark:text-slate-200 border-l border-slate-100 dark:border-slate-800/60">
+                  rows.map((row: any) => (
+                    <tr key={row.accountId || row.id || row.code} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-2 px-4 font-bold border-l border-border/40 text-foreground">{row.code}</td>
+                      <td className="py-2 px-4 font-sans font-medium text-foreground border-l border-border/40">
                         {row.name}
                       </td>
-                      <td className="py-2 px-3 text-left border-l border-slate-100 dark:border-slate-800/60 text-slate-500">
+                      <td className="py-2 px-3 text-left border-l border-border/40 text-muted-foreground">
                         {row.openingDebit > 0 ? formatEGP(row.openingDebit) : '—'}
                       </td>
-                      <td className="py-2 px-3 text-left border-l border-slate-100 dark:border-slate-800/60 text-slate-500">
+                      <td className="py-2 px-3 text-left border-l border-border/40 text-muted-foreground">
                         {row.openingCredit > 0 ? formatEGP(row.openingCredit) : '—'}
                       </td>
-                      <td className="py-2 px-3 text-left border-l border-slate-100 dark:border-slate-800/60 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <td className="py-2 px-3 text-left border-l border-border/40 text-emerald-600 dark:text-emerald-400 font-medium">
                         {row.periodDebit > 0 ? formatEGP(row.periodDebit) : '—'}
                       </td>
-                      <td className="py-2 px-3 text-left border-l border-slate-100 dark:border-slate-800/60 text-rose-600 dark:text-rose-400 font-medium">
+                      <td className="py-2 px-3 text-left border-l border-border/40 text-rose-600 dark:text-rose-400 font-medium">
                         {row.periodCredit > 0 ? formatEGP(row.periodCredit) : '—'}
                       </td>
-                      <td className="py-2 px-3 text-left border-l border-slate-100 dark:border-slate-800/60 font-bold text-slate-900 dark:text-slate-100">
+                      <td className="py-2 px-3 text-left border-l border-border/40 font-bold text-foreground">
                         {row.endingDebit > 0 ? formatEGP(row.endingDebit) : '—'}
                       </td>
-                      <td className="py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-100">
+                      <td className="py-2 px-3 text-left font-bold text-foreground">
                         {row.endingCredit > 0 ? formatEGP(row.endingCredit) : '—'}
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
-              {report?.totals && (
+              {totals && (
                 <tfoot>
-                  <tr className="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/70 font-mono font-bold text-slate-900 dark:text-white">
-                    <td colSpan={2} className="py-3 px-4 font-sans text-sm">الإجمالي العام لميزان المراجعة</td>
-                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningDebit || 0)}</td>
-                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningCredit || 0)}</td>
-                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalPeriodDebit || 0)}</td>
-                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalPeriodCredit || 0)}</td>
-                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalEndingDebit || 0)}</td>
-                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalEndingCredit || 0)}</td>
+                  <tr className="border-t-2 border-border/80 bg-muted/40 font-mono font-bold text-foreground">
+                    <td colSpan={2} className="py-3 px-4 font-sans text-xs sm:text-sm">الإجمالي العام لميزان المراجعة</td>
+                    <td className="py-3 px-3 text-left">{formatEGP(totals.totalOpeningDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left">{formatEGP(totals.totalOpeningCredit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(totals.totalPeriodDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(totals.totalPeriodCredit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(totals.totalEndingDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(totals.totalEndingCredit || 0)}</td>
                   </tr>
                 </tfoot>
               )}
