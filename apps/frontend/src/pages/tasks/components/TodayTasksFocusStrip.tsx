@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  CalendarDaysIcon,
   CheckCircle2,
   Circle,
   Clock,

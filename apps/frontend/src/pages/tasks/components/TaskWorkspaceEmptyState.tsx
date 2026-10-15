@@ -4,7 +4,7 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
-  AcademicCap,
+  GraduationCap,
   Clapperboard,
   TrendingUp,
   PackageCheck,
@@ -25,7 +25,7 @@ interface TaskWorkspaceEmptyStateProps {
 }
 
 const TEMPLATE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  AcademicCapIcon: AcademicCap,
+  AcademicCapIcon: GraduationCap,
   VideoCameraIcon: Clapperboard,
   ChartBarIcon: TrendingUp,
   TruckIcon: PackageCheck,

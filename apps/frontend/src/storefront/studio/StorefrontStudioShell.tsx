@@ -1,16 +1,10 @@
 import React, { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
 import { StudioTopBar } from "./StudioTopBar";
@@ -146,7 +140,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       )
     : "";
 
-  return (
+  const studioContent = (
     <div
       className="fixed inset-0 z-[100] flex h-screen w-full flex-col overflow-hidden bg-[#17181c] text-[#e8eaee]"
       dir="rtl"
@@ -396,4 +390,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       />
     </div>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(studioContent, document.body)
+    : studioContent;
 };
