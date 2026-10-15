@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  SparklesIcon,
-  GlobeAltIcon,
-  BanknotesIcon,
-  UserGroupIcon,
-  AdjustmentsHorizontalIcon,
-} from "@heroicons/react/24/outline";
+  Sparkles,
+  Globe,
+  Coins,
+  Users,
+  Sliders,
+} from "lucide-react";
 import { MetaGeoLocation } from "../../../services/facebookAdsService";
 
 interface AdSetReviewStepProps {
@@ -87,18 +87,18 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-cyan-50/50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/60 rounded-2xl flex items-center justify-between">
+      <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-bold text-cyan-700 dark:text-cyan-300 block">
+          <span className="text-[11px] font-semibold text-primary block">
             اسم المجموعة الإعلانية
           </span>
-          <h3 className="text-base font-bold text-gray-900 dark:text-white mt-0.5">
+          <h3 className="text-sm font-bold text-foreground mt-0.5">
             {name || "مجموعة إعلانات بدون اسم"}
           </h3>
         </div>
         {isDynamicCreative && (
-          <span className="px-2.5 py-1 rounded-full bg-cyan-600 text-white text-xs font-bold flex items-center gap-1 shadow-xs">
-            <SparklesIcon className="w-3.5 h-3.5" />
+          <span className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Dynamic Creative</span>
           </span>
         )}
@@ -106,27 +106,27 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
         {/* Conversion & Pixel */}
-        <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
-            <GlobeAltIcon className="w-4 h-4 text-cyan-600" />
+        <div className="p-4 rounded-xl border border-border/70 bg-card space-y-2">
+          <div className="flex items-center gap-2 font-bold text-foreground border-b border-border/40 pb-2">
+            <Globe className="w-4 h-4 text-primary" />
             <span>التحويل والبيكسل</span>
           </div>
-          <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
+          <div className="space-y-1.5 text-foreground">
             <div className="flex justify-between">
-              <span className="text-gray-400">وجهة التحويل:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">وجهة التحويل:</span>
+              <span className="font-semibold text-foreground">
                 {conversionLocation === "WEBSITE" ? "الموقع الإلكتروني" : conversionLocation}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">البيكسل:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">البيكسل:</span>
+              <span className="font-semibold text-foreground font-mono">
                 {pixelName || (pixelId ? `ID: ${pixelId}` : "غير محدد")}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">حدث التحويل:</span>
-              <span className="font-bold text-cyan-700 dark:text-cyan-400">
+              <span className="text-muted-foreground">حدث التحويل:</span>
+              <span className="font-bold text-primary font-mono">
                 {conversionEvent}
               </span>
             </div>
@@ -134,15 +134,15 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
         </div>
 
         {/* Budget & Schedule */}
-        <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
-            <BanknotesIcon className="w-4 h-4 text-cyan-600" />
+        <div className="p-4 rounded-xl border border-border/70 bg-card space-y-2">
+          <div className="flex items-center gap-2 font-bold text-foreground border-b border-border/40 pb-2">
+            <Coins className="w-4 h-4 text-primary" />
             <span>الميزانية والجدولة</span>
           </div>
-          <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
+          <div className="space-y-1.5 text-foreground">
             <div className="flex justify-between">
-              <span className="text-gray-400">نظام الميزانية:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">نظام الميزانية:</span>
+              <span className="font-semibold text-foreground font-mono tabular-nums">
                 {isCboCampaign
                   ? "ميزانية الحملة Advantage+ (CBO)"
                   : `${budgetAmount?.toLocaleString() || 0} ج.م (${budgetType === "DAILY" ? "يومية" : "إجمالية"})`}
@@ -150,8 +150,8 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
             </div>
             {isCboCampaign && (dailyMinSpendTarget || dailySpendCap) && (
               <div className="flex justify-between">
-                <span className="text-gray-400">حدود إنفاق المجموعة:</span>
-                <span className="font-semibold text-cyan-700 dark:text-cyan-400 text-xs">
+                <span className="text-muted-foreground">حدود إنفاق المجموعة:</span>
+                <span className="font-semibold text-primary text-xs font-mono tabular-nums">
                   {[
                     dailyMinSpendTarget ? `أدنى: ${dailyMinSpendTarget} ج.م` : null,
                     dailySpendCap ? `أقصى: ${dailySpendCap} ج.م` : null,
@@ -162,8 +162,8 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-gray-400">التحكم بالتكلفة:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">التحكم بالتكلفة:</span>
+              <span className="font-semibold text-foreground">
                 {bidStrategy === "COST_CAP" && bidValue
                   ? `Cost Cap: ${bidValue} ج.م`
                   : bidStrategy === "BID_CAP" && bidValue
@@ -174,15 +174,15 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">توقيت البدء:</span>
-              <span className="font-semibold text-gray-900 dark:text-white dir-ltr text-right">
+              <span className="text-muted-foreground">توقيت البدء:</span>
+              <span className="font-semibold text-foreground dir-ltr text-right font-mono">
                 {startTime ? new Date(startTime).toLocaleString("ar-EG") : "فورياً"}
               </span>
             </div>
             {hasEndDate && endTime && (
               <div className="flex justify-between">
-                <span className="text-gray-400">توقيت الانتهاء:</span>
-                <span className="font-semibold text-gray-900 dark:text-white dir-ltr text-right">
+                <span className="text-muted-foreground">توقيت الانتهاء:</span>
+                <span className="font-semibold text-foreground dir-ltr text-right font-mono">
                   {new Date(endTime).toLocaleString("ar-EG")}
                 </span>
               </div>
@@ -191,33 +191,33 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
         </div>
 
         {/* Audience & Targeting */}
-        <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
-            <UserGroupIcon className="w-4 h-4 text-cyan-600" />
+        <div className="p-4 rounded-xl border border-border/70 bg-card space-y-2">
+          <div className="flex items-center gap-2 font-bold text-foreground border-b border-border/40 pb-2">
+            <Users className="w-4 h-4 text-primary" />
             <span>الجمهور والاستهداف</span>
           </div>
-          <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
+          <div className="space-y-1.5 text-foreground">
             <div className="flex justify-between">
-              <span className="text-gray-400">نوع الجمهور:</span>
-              <span className="font-bold text-purple-600 dark:text-purple-400">
+              <span className="text-muted-foreground">نوع الجمهور:</span>
+              <span className="font-bold text-primary">
                 {advantageAudience ? "جمهور Advantage+ الذكي" : "خيارات الجمهور الأصلية"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">السن والجنس:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">السن والجنس:</span>
+              <span className="font-semibold text-foreground font-mono tabular-nums">
                 {ageMin} - {ageMax}+ سنة | {genderText}
               </span>
             </div>
             <div className="flex justify-between items-start gap-2">
-              <span className="text-gray-400 shrink-0">المواقع:</span>
-              <span className="font-semibold text-gray-900 dark:text-white text-left truncate">
+              <span className="text-muted-foreground shrink-0">المواقع:</span>
+              <span className="font-semibold text-foreground text-left truncate">
                 {geoText}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">الاهتمامات:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="text-muted-foreground">الاهتمامات:</span>
+              <span className="font-semibold text-foreground">
                 {interestsCount > 0
                   ? `${interestsCount} اهتمام (${interestsNames.slice(0, 2).join("، ")}${interestsNames.length > 2 ? "..." : ""})`
                   : "موسع (بدون تقييد)"}
@@ -225,43 +225,43 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
             </div>
             {customAudiencesCount > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400">الجماهير المخصصة:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="text-muted-foreground">الجماهير المخصصة:</span>
+                <span className="font-semibold text-foreground font-mono tabular-nums">
                   {customAudiencesCount} جمهور
                 </span>
               </div>
             )}
             {excludedAudiencesCount > 0 && (
-              <div className="flex justify-between text-red-600 dark:text-red-400">
+              <div className="flex justify-between text-destructive">
                 <span>الجماهير المستبعدة:</span>
-                <span className="font-bold">{excludedAudiencesCount} جمهور</span>
+                <span className="font-bold font-mono tabular-nums">{excludedAudiencesCount} جمهور</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Placements */}
-        <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
-            <AdjustmentsHorizontalIcon className="w-4 h-4 text-cyan-600" />
+        <div className="p-4 rounded-xl border border-border/70 bg-card space-y-2">
+          <div className="flex items-center gap-2 font-bold text-foreground border-b border-border/40 pb-2">
+            <Sliders className="w-4 h-4 text-primary" />
             <span>مواضع العرض</span>
           </div>
-          <div className="space-y-1.5 text-gray-600 dark:text-gray-300">
+          <div className="space-y-1.5 text-foreground">
             <div className="flex justify-between">
-              <span className="text-gray-400">نوع المواضع:</span>
-              <span className="font-bold text-cyan-700 dark:text-cyan-400">
+              <span className="text-muted-foreground">نوع المواضع:</span>
+              <span className="font-bold text-primary">
                 {placementType === "AUTOMATIC" ? "مواضع Advantage+ التلقائية" : "مواضع يدوية مخصصة"}
               </span>
             </div>
             {placementType === "MANUAL" && (
               <div className="flex justify-between">
-                <span className="text-gray-400">المواضع المحددة:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="text-muted-foreground">المواضع المحددة:</span>
+                <span className="font-semibold text-foreground font-mono tabular-nums">
                   {placementsCount} موضع عرض
                 </span>
               </div>
             )}
-            <p className="text-[11px] text-gray-400 mt-2">
+            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
               {placementType === "AUTOMATIC"
                 ? "سيتم توزيع الميزانية بمرونة على فيسبوك، إنستجرام، ريلز، وستوري وفق أفضل أداء وسعر."
                 : "سيتم حصر الإعلان في المواضع اليدوية المحددة فقط."}

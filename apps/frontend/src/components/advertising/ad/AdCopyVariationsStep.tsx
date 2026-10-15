@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import {
-  PlusIcon,
-  XMarkIcon,
-  SparklesIcon,
-  ChatBubbleBottomCenterTextIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+  Plus,
+  X,
+  Sparkles,
+  RefreshCw,
+  Zap,
+} from "lucide-react";
 import { AdFormData } from "./types";
 import { toast } from "sonner";
 
@@ -30,15 +30,15 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     const generatedTexts = [
-      `🔥 عرض حصري لفترة محدودة! احصل على ${cleanName} بجودة استثنائية وسعر لا يتكرر. شحن سريع لجميع المحافظات والدفع بعد المعاينة عند الاستلام!`,
-      `✨ أناقة وراحة فائقة تناسب يومك بالكامل مع ${cleanName}. خامات ممتازة تدوم طويلاً، وتصميم عصري يجمع بين التميز والعملية اليومية.`,
-      `⭐ انضم لآلاف العملاء الراضين مع ${cleanName}! تجربة شراء مضمونة 100%، معاينة مجانية قبل الاستلام وضمان استبدال واسترجاع فوري.`,
+      `عرض حصري لفترة محدودة: احصل على ${cleanName} بجودة استثنائية وسعر لا يتكرر. شحن سريع لجميع المحافظات والدفع بعد المعاينة عند الاستلام.`,
+      `أناقة وراحة فائقة تناسب يومك بالكامل مع ${cleanName}. خامات ممتازة تدوم طويلاً، وتصميم عصري يجمع بين التميز والعملية اليومية.`,
+      `انضم لآلاف العملاء الموثوقين مع ${cleanName}: تجربة شراء مضمونة، معاينة مجانية قبل الاستلام وضمان استبدال واسترجاع فوري.`,
     ];
 
     const generatedHeadlines = [
       `${cleanName} - خصم خاص وشحن سريع`,
       `${cleanName} الأصلي - اطلب الآن واستلم غداً`,
-      `الأكثر طلباً وتقييماً ⭐ معاينة قبل الدفع`,
+      `الأعلى طلباً وتقييماً - معاينة قبل الدفع`,
     ];
 
     updateFormData({
@@ -51,8 +51,8 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
     setIsAiGenerating(false);
     toast.success(
       isEn
-        ? "AI generated 3 high-converting angles & headlines!"
-        : "تم توليد 3 زوايا إعلانية وعناوين بالذكاء الاصطناعي بنجاح!",
+        ? "AI generated 3 high-converting angles & headlines"
+        : "تم توليد 3 زوايا إعلانية وعناوين بالذكاء الاصطناعي بنجاح",
     );
   };
 
@@ -136,13 +136,13 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
   return (
     <div className="space-y-6">
       {/* Advantage+ Dynamic Text Info Banner */}
-      <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5">
-        <SparklesIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+        <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
         <div className="text-xs">
-          <p className="font-black text-indigo-950">
+          <p className="font-bold text-foreground">
             {isEn ? "Meta v26 Advantage+ Dynamic Text" : "ميزة التوزيع الذكي للنصوص (Meta v26 Dynamic Text)"}
           </p>
-          <p className="mt-0.5 text-indigo-800 font-medium">
+          <p className="mt-0.5 text-muted-foreground font-normal leading-relaxed">
             {isEn
               ? "Add up to 5 text and headline variations. Meta's AI dynamically matches the best copy to each customer based on their buying behavior."
               : "يمكنك إضافة حتى 5 نصوص و 5 عناوين مختلفة. خوارزميات Meta تقوم باختبار التوليفات تلقائياً وإظهار النص الأكثر إقناعاً لكل عميل."}
@@ -151,19 +151,19 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
       </div>
 
       {/* AI Copywriter Action Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 via-indigo-50/40 to-white p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-md shadow-purple-200 shrink-0">
-            <SparklesIcon className="h-5 w-5" />
+          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <h4 className="text-xs font-black text-slate-900">
+            <h4 className="text-xs font-bold text-foreground">
               {isEn ? "MaxP AI Copywriter (3 Strategic Angles)" : "كاتب الإعلانات الذكي (MaxP AI Copywriter)"}
             </h4>
-            <p className="text-[11px] text-slate-500 font-medium">
+            <p className="text-[11px] text-muted-foreground font-normal">
               {isEn
                 ? "Auto-generates FOMO, Value, and Social Proof variations"
-                : "يولد 3 زوايا بيعية (العرض والخصم، الراحة والجودة، الثقة والأمان) متوافقة مع سياسات Meta"}
+                : "توليد 3 زوايا بيعية (العرض والخصم، الراحة والجودة، الثقة والأمان) متوافقة مع سياسات Meta"}
             </p>
           </div>
         </div>
@@ -172,17 +172,17 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
           type="button"
           disabled={isAiGenerating}
           onClick={generateAiCopyVariations}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-black text-white hover:bg-purple-700 disabled:opacity-50 shadow-sm transition shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-xs transition shrink-0"
         >
           {isAiGenerating ? (
             <>
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               <span>{isEn ? "Generating Copy..." : "جاري التوليد الذكي..."}</span>
             </>
           ) : (
             <>
-              <SparklesIcon className="h-4 w-4 text-purple-200" />
-              <span>{isEn ? "Generate 3 AI Variations" : "✨ توليد 3 زوايا إعلانية ذكية"}</span>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{isEn ? "Generate 3 AI Variations" : "توليد 3 زوايا إعلانية ذكية"}</span>
             </>
           )}
         </button>
@@ -190,23 +190,26 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
 
       {/* Quick Hooks Assistant */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-2">
-          {isEn ? "Quick Creative Hooks (E-Commerce)" : "خطافات إعلانية سريعة مقترحة (للتحفيز والشراء)"}
-        </label>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Zap className="h-3.5 w-3.5 text-primary" />
+          <label className="text-xs font-semibold text-foreground">
+            {isEn ? "Quick Creative Hooks (E-Commerce)" : "خطافات إعلانية سريعة مقترحة (للتحفيز والشراء)"}
+          </label>
+        </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "⚡ عرض حصري لفترة محدودة", text: "⚡ عرض حصري لفترة محدودة! احصل على أفضل جودة مع شحن سريع ومعاينة قبل الاستلام." },
-            { label: "⭐ الأكثر طلباً وتقييماً", text: "⭐ المنتج الأكثر طلباً وتقييماً من آلاف العملاء في مصر. لا تفوت الفرصة!" },
-            { label: "🚚 الدفع عند الاستلام والتوصيل مجاناً", text: "🚚 اطلب الآن واستمتع بالشحن المجاني والدفع عند الاستلام مع ضمان استبدال واسترجاع كامل." },
-            { label: "🔥 خصم 30% على أول طلب", text: "🔥 وفر حتى 30% اليوم على طلبك، الكمية المتبقية محدودة جداً!" },
+            { label: "عرض حصري لفترة محدودة", text: "عرض حصري لفترة محدودة: احصل على أفضل جودة مع شحن سريع ومعاينة قبل الاستلام." },
+            { label: "الأكثر طلباً وتقييماً", text: "المنتج الأكثر طلباً وتقييماً من آلاف العملاء في مصر. لا تفوت الفرصة." },
+            { label: "الدفع عند الاستلام والتوصيل مجاناً", text: "اطلب الآن واستمتع بالشحن المجاني والدفع عند الاستلام مع ضمان استبدال واسترجاع كامل." },
+            { label: "خصم 30% على أول طلب", text: "وفر حتى 30% اليوم على طلبك، الكمية المتبقية محدودة." },
           ].map((hook) => (
             <button
               key={hook.label}
               type="button"
               onClick={() => insertQuickHook(hook.text)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/30 transition"
+              className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition"
             >
-              <PlusIcon className="h-3 w-3 text-indigo-600" />
+              <Plus className="h-3 w-3 text-primary" />
               <span>{hook.label}</span>
             </button>
           ))}
@@ -217,10 +220,10 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <label className="block text-xs font-bold text-slate-800">
+            <label className="block text-xs font-bold text-foreground">
               {isEn ? "Primary Text Variations (1 - 5) *" : "النص الإعلاني الأساسي (1 إلى 5 نصوص) *"}
             </label>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-muted-foreground font-normal">
               {isEn ? "The main copy shown above your ad media" : "النص الرئيسي الذي يظهر أعلى الصورة أو الفيديو"}
             </p>
           </div>
@@ -228,27 +231,28 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
             <button
               type="button"
               onClick={addPrimaryText}
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
-              <PlusIcon className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               {isEn ? "Add Text Variation" : "إضافة تنويع نص"}
             </button>
           )}
         </div>
 
         {formData.primaryTexts.map((text, idx) => (
-          <div key={idx} className="relative rounded-xl border border-slate-200 bg-white p-3 space-y-1">
+          <div key={idx} className="relative rounded-xl border border-border/70 bg-card p-3 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500">
+              <span className="text-[11px] font-semibold text-muted-foreground">
                 {isEn ? `Primary Text #${idx + 1}` : `النص الأساسي #${idx + 1}`} {idx === 0 ? "(الرئيسي)" : "(تنويع ذكي)"}
               </span>
               {formData.primaryTexts.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removePrimaryText(idx)}
-                  className="text-slate-400 hover:text-red-500 p-1"
+                  className="text-muted-foreground hover:text-destructive p-1 rounded transition"
+                  aria-label="Remove variation"
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -257,7 +261,7 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
               value={text}
               onChange={(e) => updatePrimaryText(idx, e.target.value)}
               placeholder={isEn ? "Write your persuasive ad copy here..." : "اكتب النص الإعلاني المقنع هنا، اذكر الفوائد والعرض والضمان..."}
-              className="w-full rounded-lg border-0 p-0 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 resize-y"
+              className="w-full rounded-md border border-border/60 bg-muted/20 p-2.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:bg-card resize-y"
             />
           </div>
         ))}
@@ -267,10 +271,10 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <label className="block text-xs font-bold text-slate-800">
+            <label className="block text-xs font-bold text-foreground">
               {isEn ? "Headline Variations (1 - 5)" : "عناوين الإعلان (1 إلى 5 عناوين)"}
             </label>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-muted-foreground font-normal">
               {isEn ? "Catchy bold text next to your call to action button" : "العنوان البارز المكتوب بجوار زر الدعوة لاتخاذ إجراء"}
             </p>
           </div>
@@ -278,9 +282,9 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
             <button
               type="button"
               onClick={addHeadline}
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
-              <PlusIcon className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               {isEn ? "Add Headline" : "إضافة عنوان"}
             </button>
           )}
@@ -293,15 +297,16 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
               value={hl}
               onChange={(e) => updateHeadline(idx, e.target.value)}
               placeholder={isEn ? `Headline #${idx + 1}` : `العنوان #${idx + 1} (مثال: خصم 30% لفترة محدودة)`}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-border/70 bg-card px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {formData.headlines.length > 1 && (
               <button
                 type="button"
                 onClick={() => removeHeadline(idx)}
-                className="text-slate-400 hover:text-red-500 p-2"
+                className="text-muted-foreground hover:text-destructive p-2 rounded transition"
+                aria-label="Remove headline"
               >
-                <XMarkIcon className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -310,7 +315,7 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
 
       {/* Description (Optional) */}
       <div>
-        <label className="block text-xs font-bold text-slate-800 mb-1">
+        <label className="block text-xs font-semibold text-foreground mb-1">
           {isEn ? "Link Description (Optional)" : "وصف الرابط الإضافي (اختياري)"}
         </label>
         <input
@@ -318,7 +323,7 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
           value={formData.description || ""}
           onChange={(e) => updateFormData({ description: e.target.value })}
           placeholder={isEn ? "e.g. Free shipping on all orders" : "مثال: شحن مجاني لكافة محافظات مصر"}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-border/70 bg-card px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
     </div>

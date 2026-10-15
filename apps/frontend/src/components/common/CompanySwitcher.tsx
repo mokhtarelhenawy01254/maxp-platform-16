@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowsRightLeftIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  BuildingOfficeIcon,
-} from "@heroicons/react/24/outline";
+  ArrowLeftRight,
+  Check,
+  ChevronDown,
+  Building2,
+  Zap,
+} from "lucide-react";
 
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
@@ -85,8 +86,8 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
         disabled={isSwitchingCompany}
         className={`w-full text-right transition-all disabled:opacity-50 ${
           isCurrent
-            ? "bg-violet-50 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200"
-            : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+            ? "bg-primary/10 text-primary"
+            : "text-foreground hover:bg-muted/40"
         } ${mobile ? "px-5 py-4" : "px-4 py-2.5"}`}
       >
         <div className="flex items-center justify-between gap-3">
@@ -94,14 +95,14 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
             <p className={`truncate font-semibold ${mobile ? "text-base" : "text-sm"}`}>
               {company.name}
             </p>
-            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {company.role || "شركة"}
             </p>
           </div>
 
           {isCurrent ? (
-            <span className="flex items-center justify-center rounded-full bg-violet-600 p-0.5 dark:bg-violet-500">
-              <CheckIcon className="h-3 w-3 text-white" />
+            <span className="flex items-center justify-center rounded-full bg-primary text-primary-foreground p-0.5">
+              <Check className="h-3 w-3" />
             </span>
           ) : null}
         </div>
@@ -116,59 +117,59 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
           type="button"
           onClick={() => setIsOpen(true)}
           disabled={isSwitchingCompany}
-          className="flex min-w-0 max-w-[7.75rem] items-center gap-2 rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-right text-violet-600 transition-all hover:border-violet-200 hover:bg-violet-50/50 active:scale-[0.98] disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-violet-400 dark:hover:border-violet-800 dark:hover:bg-violet-900/20"
+          className="flex min-w-0 max-w-[7.75rem] items-center gap-2 rounded-lg border border-border/70 bg-card px-2.5 py-2 text-right text-foreground transition-all hover:bg-muted/40 active:scale-[0.98] disabled:opacity-50"
           title={switcherLabel}
           aria-label={switcherLabel}
         >
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
             {isSwitchingCompany ? (
-              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-violet-600 border-t-transparent dark:border-violet-400" />
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : (
-              <ArrowsRightLeftIcon className="h-3.5 w-3.5" />
+              <ArrowLeftRight className="h-3.5 w-3.5" />
             )}
           </span>
 
           <span className="min-w-0 flex-1 text-right">
-            <span className="block truncate text-xs font-semibold leading-tight text-gray-900 dark:text-white">
+            <span className="block truncate text-xs font-semibold leading-tight text-foreground">
               {currentCompanyName}
             </span>
-            <span className="block truncate text-[10px] text-gray-500 dark:text-gray-400">
+            <span className="block truncate text-[10px] text-muted-foreground font-mono tabular-nums">
               {companies.length} شركات
             </span>
           </span>
 
-          <span className="inline-flex min-h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-md bg-gray-100 px-1 text-[10px] font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+          <span className="inline-flex min-h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-md bg-muted px-1 text-[10px] font-semibold text-muted-foreground font-mono tabular-nums">
             {companies.length}
           </span>
         </button>
 
         <SheetContent
           side="bottom"
-          className="gap-0 rounded-t-2xl px-0 pb-6"
+          className="gap-0 rounded-t-2xl px-0 pb-6 bg-card border-t border-border/70"
           showCloseButton={false}
         >
-          <SheetHeader className="border-b border-gray-100 px-5 pb-3 pt-2 text-right dark:border-gray-800">
-            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
-            <SheetTitle className="flex items-center gap-2 text-base text-right">
-              <BuildingOfficeIcon className="h-4 w-4 text-violet-500" />
+          <SheetHeader className="border-b border-border/60 px-5 pb-3 pt-2 text-right">
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-muted-foreground/30" />
+            <SheetTitle className="flex items-center gap-2 text-base text-right text-foreground">
+              <Building2 className="h-4 w-4 text-primary" />
               تبديل الشركة
             </SheetTitle>
-            <SheetDescription className="text-sm text-right text-gray-500">
-              تعمل الآن داخل <span className="font-medium text-gray-900 dark:text-white">{currentCompanyName}</span>
+            <SheetDescription className="text-sm text-right text-muted-foreground">
+              تعمل الآن داخل <span className="font-semibold text-foreground">{currentCompanyName}</span>
             </SheetDescription>
           </SheetHeader>
 
           <div className="max-h-[70vh] space-y-0.5 overflow-y-auto pt-1">
             {companies.map((company) => renderCompanyOption(company, true))}
             {user?.role === 'SUPER_ADMIN' && (
-              <div className="border-t border-gray-100 p-3 dark:border-gray-800">
+              <div className="border-t border-border/60 p-3">
                 <Link
                   to="/super-admin/companies-v2"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between rounded-xl bg-amber-500/10 px-4 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
+                  className="flex items-center justify-between rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-2.5 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
                 >
                   <span>إدارة جميع شركات المنصة (Super Admin)</span>
-                  <span>⚡</span>
+                  <Zap className="h-3.5 w-3.5" />
                 </Link>
               </div>
             )}
@@ -186,29 +187,29 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
         disabled={isSwitchingCompany}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className={`flex w-full items-center gap-2.5 rounded-xl border bg-white px-3 py-2 text-right transition-all disabled:opacity-50 dark:bg-gray-800 ${
+        className={`flex w-full items-center gap-2.5 rounded-lg border bg-card px-3 py-2 text-right transition-all disabled:opacity-50 ${
           isOpen
-            ? "border-violet-200 shadow-sm dark:border-violet-800"
-            : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+            ? "border-primary shadow-xs ring-1 ring-primary"
+            : "border-border/70 hover:border-border"
         }`}
       >
-        <span className="flex items-center justify-center rounded-lg bg-violet-50 p-1.5 dark:bg-violet-900/30">
-          <ArrowsRightLeftIcon className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+        <span className="flex items-center justify-center rounded-md bg-primary/10 p-1.5 text-primary">
+          <ArrowLeftRight className="h-3.5 w-3.5" />
         </span>
 
-        <span className="flex-1 truncate text-sm font-semibold text-gray-900 dark:text-white">
+        <span className="flex-1 truncate text-xs font-semibold text-foreground">
           {currentCompany?.name || "الشركة"}
         </span>
 
-        <span className="flex-shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+        <span className="flex-shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground font-mono tabular-nums">
           {companies.length}
         </span>
 
         {isSwitchingCompany ? (
-          <div className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         ) : (
-          <ChevronDownIcon
-            className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
+          <ChevronDown
+            className={`h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
@@ -216,22 +217,22 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute inset-x-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-          <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700/50">
-            <p className="text-xs font-medium text-gray-400 dark:text-gray-500">
+        <div className="absolute inset-x-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-border/70 bg-card py-1 shadow-lg">
+          <div className="border-b border-border/60 px-4 py-2">
+            <p className="text-xs font-semibold text-muted-foreground">
               اختر الشركة
             </p>
           </div>
           {companies.map((company) => renderCompanyOption(company))}
           {user?.role === 'SUPER_ADMIN' && (
-            <div className="border-t border-gray-100 p-2 dark:border-gray-700/50">
+            <div className="border-t border-border/60 p-2">
               <Link
                 to="/super-admin/companies-v2"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
+                className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
               >
                 <span>إدارة جميع شركات المنصة (Super Admin)</span>
-                <span>⚡</span>
+                <Zap className="h-3.5 w-3.5" />
               </Link>
             </div>
           )}
