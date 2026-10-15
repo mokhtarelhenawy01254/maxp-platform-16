@@ -53,6 +53,8 @@ class AgentTemplateList(BaseModel):
 
 
 class AgentCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     company_id: str = Field(..., min_length=1)
     name: str | None = None
     description: str | None = None
@@ -70,6 +72,10 @@ class AgentCreate(BaseModel):
     budget: dict[str, Any] | None = None
     parent_id: str | None = None
     config: dict[str, Any] | None = None
+    department: str | None = None
+    department_id: str | None = None
+    safety_mode: str | None = None
+
 
 
 class AgentUpdate(BaseModel):

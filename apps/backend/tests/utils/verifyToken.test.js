@@ -44,6 +44,7 @@ describe("verifyToken middleware", () => {
     process.env.JWT_SECRET = "test-jwt-secret";
     sharedDatabase.executeWithRetry.mockImplementation(async (operation) => operation());
     sharedDatabase.getSharedPrismaClientAsync.mockResolvedValue(mockPrisma);
+    tenantContext.run.mockImplementation((companyId, callback) => callback());
   });
 
   it("allows ai-service token with explicit company scope without JWT lookup", async () => {

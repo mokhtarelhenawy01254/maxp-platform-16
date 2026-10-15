@@ -21,6 +21,9 @@ interface DiscoveredItem {
   suggestedName: string;
   reason: string;
   matchedProducts: number;
+  url?: string;
+  category?: string;
+  source?: string;
 }
 
 export const AutoDiscoverPage: React.FC = () => {
@@ -57,11 +60,16 @@ export const AutoDiscoverPage: React.FC = () => {
     }
   };
 
-  const handleAdd = (name: string) => {
+  const handleAdd = (item: DiscoveredItem) => {
     toast.success(t('competitors.autoDiscover.addedSuccess') || 'تم اختيار المنافس للمتابعة', {
-      description: name,
+      description: item.suggestedName,
     });
-    navigate(`/competitors/add?name=${encodeURIComponent(name)}`);
+    const params = new URLSearchParams({
+      name: item.suggestedName,
+      ...(item.url ? { url: item.url } : {}),
+      ...(item.category ? { activityType: item.category } : {}),
+    });
+    navigate(`/competitors/add?${params.toString()}`);
   };
 
   return (
@@ -218,19 +226,39 @@ export const AutoDiscoverPage: React.FC = () => {
             <div className="divide-y divide-border/60">
               {data.discovered.map((item, idx) => (
                 <div key={idx} className="p-4 flex items-center justify-between gap-3 hover:bg-muted/15 transition-colors">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h4 className="text-xs font-bold text-foreground truncate">{item.suggestedName}</h4>
+                      {item.source && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/60">
+                          {item.source}
+                        </span>
+                      )}
+                      {item.category && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          {item.category}
+                        </span>
+                      )}
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20">
                         {item.matchedProducts} منتجات متطابقة
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">{item.reason}</p>
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-mono text-primary/80 hover:underline inline-block truncate max-w-xs"
+                      >
+                        {item.url}
+                      </a>
+                    )}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleAdd(item.suggestedName)}
+                    onClick={() => handleAdd(item)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0 cursor-pointer active:scale-[0.98]"
                   >
                     <Plus className="w-3.5 h-3.5 text-primary" />

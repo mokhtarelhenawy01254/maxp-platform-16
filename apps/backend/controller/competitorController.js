@@ -57,6 +57,12 @@ exports.create = async (req, res) => {
       yearlyPrice,
       pricingNotes,
       trafficSource,
+      price,
+      currency,
+      pricingCurrency,
+      cycle,
+      pricingCycle,
+      metadata,
       activityImages,
       featureImages,
       mediaNotes,
@@ -96,6 +102,10 @@ exports.create = async (req, res) => {
       socialProfiles, status,
       founderName, founderLink, country, city,
       monthlyPrice, yearlyPrice, pricingNotes, trafficSource,
+      price,
+      currency: currency || pricingCurrency,
+      cycle: cycle || pricingCycle,
+      metadata,
       activityImages, featureImages, mediaNotes, comparisons, devIdeas,
     });
     if (!createdCompetitor) return res.status(500).json({ success: false, error: t('competitor.create_failed') });
@@ -357,6 +367,19 @@ exports.getBattlecard = async (req, res) => {
         platform: competitor.platform,
         url: competitor.url,
         status: competitor.status,
+        monthlyPrice: competitor.monthlyPrice ? Number(competitor.monthlyPrice) : null,
+        yearlyPrice: competitor.yearlyPrice ? Number(competitor.yearlyPrice) : null,
+        pricingNotes: competitor.pricingNotes || null,
+        structuredPricing: competitor.metadata && typeof competitor.metadata === 'object' && competitor.metadata.structuredPricing
+          ? competitor.metadata.structuredPricing
+          : {
+              price: competitor.monthlyPrice ? Number(competitor.monthlyPrice) : null,
+              currency: 'EGP',
+              cycle: 'monthly',
+              monthlyPrice: competitor.monthlyPrice ? Number(competitor.monthlyPrice) : null,
+              yearlyPrice: competitor.yearlyPrice ? Number(competitor.yearlyPrice) : null,
+              notes: competitor.pricingNotes || '',
+            },
       },
       metrics: {
         theirProducts: competitor._count.products,
@@ -380,6 +403,199 @@ exports.getBattlecard = async (req, res) => {
   }
 };
 
+const INDUSTRY_COMPETITORS_CATALOG = {
+  software: [
+    {
+      suggestedName: 'منصة سلة (Salla)',
+      url: 'https://salla.com',
+      category: 'منصات التجارة والأنظمة السحابية',
+      source: 'دليل منصات التجارة الإلكترونية وإدارة المتاجر',
+      reason: 'منافس مباشر في قطاع التجارة الإلكترونية وإدارة الطلبات السحابية متطابق مع خدمات شركتك',
+      keywords: ['كورس', 'نظام', 'برنامج', 'متجر', 'منصة', 'saas', 'software', 'erp', 'orders', 'ecommerce'],
+    },
+    {
+      suggestedName: 'زد (Zid)',
+      url: 'https://zid.sa',
+      category: 'حلول التجارة المتكاملة',
+      source: 'دليل أنظمة التجارة وتطبيقات نقاط البيع',
+      reason: 'منظومة تجارة سحابية رائدة تقدم حلولاً منافسة لإدارة المخزون والمبيعات',
+      keywords: ['متجر', 'نظام', 'مبيعات', 'تجارة', 'سحابي', 'erp', 'pos', 'store'],
+    },
+    {
+      suggestedName: 'أودو (Odoo)',
+      url: 'https://www.odoo.com',
+      category: 'أنظمة إدارة الموارد والمخزون (ERP)',
+      source: 'دليل برمجيات الأعمال وإدارة الشركات',
+      reason: 'حل عالمي ومحلي لإدارة العمليات والمخازن والفوترة للشركات المتوسطة والصغيرة',
+      keywords: ['erp', 'محاسبة', 'مخازن', 'مبيعات', 'إدارة', 'نظام', 'برنامج'],
+    },
+    {
+      suggestedName: 'إيزي أوردرز (Easy Orders)',
+      url: 'https://easy-orders.net',
+      category: 'منصات تأكيد وتتبع الطلبات',
+      source: 'دليل منصات التجارة الإلكترونية المحلية',
+      reason: 'منصة إدارة وتأكيد طلبات الدفع عند الاستلام المباشرة للتجار',
+      keywords: ['اوردرز', 'طلبات', 'تأكيد', 'شحن', 'orders', 'cod'],
+    },
+    {
+      suggestedName: 'ويلت (Wuilt)',
+      url: 'https://wuilt.com',
+      category: 'بناء المتاجر والمواقع السحابية',
+      source: 'دليل حلول التجارة الإلكترونية العربية',
+      reason: 'منصة إنشاء مواقع ومتاجر إلكترونية للتجار ورواد الأعمال في الشرق الأوسط',
+      keywords: ['متجر', 'موقع', 'ويب', 'تجارة'],
+    },
+    {
+      suggestedName: 'دفترة (Daftra)',
+      url: 'https://www.daftra.com',
+      category: 'برامج الفوترة والحسابات السحابية',
+      source: 'دليل البرمجيات المحاسبية وإدارة الشركات',
+      reason: 'برنامج محاسبي سحابي وإدارة موارد للمتاجر والشركات',
+      keywords: ['محاسبة', 'فواتير', 'نظام', 'حسابات'],
+    },
+  ],
+  fashion: [
+    {
+      suggestedName: 'تاون تيم (Town Team)',
+      url: 'https://townteam.com',
+      category: 'أزياء وملابس رجالية',
+      source: 'دليل براندات الملابس والموضة',
+      reason: 'سلسلة متاجر تجزئة منافسة تبيع الأزياء والملابس الجاهزة في السوق المحلي',
+      keywords: ['قميص', 'بنطلون', 'تيشيرت', 'ملابس', 'أزياء', 'بدلة', 'fashion', 'clothes', 'shirt'],
+    },
+    {
+      suggestedName: 'دالي دريس (Dalydress)',
+      url: 'https://dalydress.com',
+      category: 'أزياء راقية وموضة',
+      source: 'دليل براندات الملابس والموضة',
+      reason: 'علامة تجارية رائدة في الأزياء والموضة العصرية للملابس والأحذية',
+      keywords: ['فستان', 'ملابس', 'موضة', 'حذاء', 'شنطة', 'أزياء', 'dress', 'jacket'],
+    },
+    {
+      suggestedName: 'ديفاكتو (DeFacto Egypt)',
+      url: 'https://www.defacto.com',
+      category: 'أزياء سريعة وملابس عائلية',
+      source: 'دليل متاجر الملابس والتجزئة',
+      reason: 'منفذ تجزئة ومتجر إلكتروني منافس في مجال الملابس العائلية بأسعار منافسة',
+      keywords: ['ملابس', 'أطفال', 'رجالي', 'حريمي', 'كوتشي', 'تيشيرت'],
+    },
+    {
+      suggestedName: 'إل سي وايكيكي (LC Waikiki)',
+      url: 'https://www.lcwaikiki.eg',
+      category: 'ملابس واكسسوارات',
+      source: 'دليل سلاسل الموضة بالتجزئة',
+      reason: 'منافس رئيسي يقدم منتجات ملابس واكسسوارات عائلية واسعة النطاق',
+      keywords: ['ملابس', 'جينز', 'جاكيت', 'شوز', 'شنط'],
+    },
+  ],
+  electronics: [
+    {
+      suggestedName: 'بي تك (B.TECH)',
+      url: 'https://btech.com',
+      category: 'أجهزة إلكترونية ومنزلية',
+      source: 'دليل تجارة الأجهزة الذكية والإلكترونيات',
+      reason: 'سلسلة تجزئة ومنصة إلكترونية منافسة متخصصة في الأجهزة المنزلية والإلكترونيات',
+      keywords: ['موبايل', 'شاشة', 'لاب توب', 'تلفزيون', 'سماعة', 'إلكترونيات', 'electronics', 'phone'],
+    },
+    {
+      suggestedName: 'تو بي (2B Egypt)',
+      url: 'https://2b.com.eg',
+      category: 'أجهزة كمبيوتر واكسسوارات إلكترونية',
+      source: 'دليل التكنولوجيا والإلكترونيات الاستهلاكية',
+      reason: 'متجر تقني رائد لبيع ملحقات الكمبيوتر والموبايل والأجهزة الذكية',
+      keywords: ['كمبيوتر', 'لابتوب', 'ماوس', 'كيبورد', 'شاحن', 'سماعات'],
+    },
+    {
+      suggestedName: 'راية شوب (RayaShop)',
+      url: 'https://www.rayashop.com',
+      category: 'إلكترونيات وهواتف ذكية',
+      source: 'دليل الأجهزة الاستهلاكية والاتصالات',
+      reason: 'منصة بيع هواتف ذكية ومستلزمات تكنولوجية مع خطط تقسيط منافسة',
+      keywords: ['هاتف', 'سامسونج', 'ايفون', 'شاومي', 'تابلت'],
+    },
+  ],
+  beauty: [
+    {
+      suggestedName: 'مزايا (Mazaya Stores)',
+      url: 'https://mazayastores.com',
+      category: 'عطور ومستحضرات تجميل',
+      source: 'دليل المتاجر المتخصصة في التجميل والعطور',
+      reason: 'سلسلة متاجر متخصصة في العطور الفاخرة ومستحضرات العناية والتجميل',
+      keywords: ['عطر', 'برفان', 'ميك اب', 'كريم', 'سيروم', 'تجميل', 'perfume', 'makeup'],
+    },
+    {
+      suggestedName: 'إيفا لمستحضرات التجميل (Eva Cosmetics)',
+      url: 'https://eva-cosmetics.com',
+      category: 'منتجات العناية بالبشرة والشعر',
+      source: 'دليل مصنعي وموزعي منتجات العناية الشخصية',
+      reason: 'علامة محلية رائدة في منتجات العناية بالبشرة والشعر ومستحضرات التجميل',
+      keywords: ['شعر', 'بشرة', 'غسول', 'لوشن', 'كريم', 'شامبو'],
+    },
+  ],
+  dental: [
+    {
+      suggestedName: 'Dentsply Sirona',
+      url: 'https://www.dentsplysirona.com',
+      category: 'معدات ومستهلكات معامل الأسنان',
+      source: 'دليل تجهيزات ومختبرات الأسنان الطبية',
+      reason: 'مزود عالمي رائد لحلول رقمنة ومواد تركيبات الأسنان',
+      keywords: ['زركونيا', 'تركيبات', 'أسنان', 'فينير', 'e-max', 'dental', 'crown'],
+    },
+    {
+      suggestedName: 'Ivoclar Vivadent',
+      url: 'https://www.ivoclar.com',
+      category: 'خامات ومواد طب الأسنان المتقدمة',
+      source: 'دليل خامات وتكنولوجيا الأسنان',
+      reason: 'شركة رائدة في تصنيع أقراص الزركونيا والـ IPS e.max ومواد المعامل',
+      keywords: ['معمل', 'أسنان', 'طباشير', 'سيراميك', 'قوالب'],
+    },
+  ],
+  academy: [
+    {
+      suggestedName: 'المنتور (Almentor)',
+      url: 'https://www.almentor.net',
+      category: 'منصة دورات تدريبية وتعليمية',
+      source: 'دليل المنصات التعليمية والأكاديمية',
+      reason: 'منصة رائدة للدورات التدريبية المباشرة والمسجلة في مختلف المهارات',
+      keywords: ['كورس', 'دورة', 'تدريب', 'محاضرة', 'دبلومة', 'course', 'academy', 'training'],
+    },
+    {
+      suggestedName: 'يوديمي (Udemy)',
+      url: 'https://www.udemy.com',
+      category: 'دورات ومهارات تعليمية رقمية',
+      source: 'دليل منصات التعليم الذاتي والشهادات',
+      reason: 'سوق عالمي للدورات التدريبية والمحتوى التعليمي عبر الإنترنت',
+      keywords: ['كورس', 'تعليم', 'برمجة', 'تسويق', 'دورة'],
+    },
+  ],
+  general: [
+    {
+      suggestedName: 'نون مصر (Noon Egypt)',
+      url: 'https://www.noon.com/egypt-ar',
+      category: 'سوق إلكتروني متكامل',
+      source: 'دليل الأسواق الكبرى ومنصات التجزئة',
+      reason: 'منصة تجارة إلكترونية كبرى تبيع مختلف فئات المنتجات الاستهلاكية وتوفر عروض أسعار تنافسية',
+      keywords: [],
+    },
+    {
+      suggestedName: 'أمازون مصر (Amazon Egypt)',
+      url: 'https://www.amazon.eg',
+      category: 'سوق إلكتروني وتجارة عامة',
+      source: 'دليل منصات التجارة الإلكترونية الإقليمية',
+      reason: 'المنصة الأكبر للتجارة والتجزئة في السوق المحلي لتتبع عروض المنتجات والأسعار',
+      keywords: [],
+    },
+    {
+      suggestedName: 'جوميا (Jumia Egypt)',
+      url: 'https://www.jumia.com.eg',
+      category: 'منصة بيع وتجزئة إلكترونية',
+      source: 'دليل مواقع التجارة الإلكترونية',
+      reason: 'سوق تجزئة شامل يقدم عروضاً يومية وحملات تخفيض متزامنة',
+      keywords: [],
+    },
+  ],
+};
+
 exports.autoDiscover = async (req, res) => {
   try {
     const { companyId } = req.user;
@@ -387,49 +603,123 @@ exports.autoDiscover = async (req, res) => {
     const prisma = getPrisma();
     const max = parseInt(maxResults, 10) || 5;
 
-    const myProducts = await prisma.product.findMany({
-      where: { companyId, isActive: true, ...(category ? { category } : {}) },
-      take: 50,
-      select: { id: true, name: true, sku: true, category: true },
-    });
+    // 1. Fetch Company details with businessSpecialty
+    const [company, myProducts, existingCompetitors] = await Promise.all([
+      prisma.company.findUnique({
+        where: { id: companyId },
+        include: { businessSpecialty: true },
+      }),
+      prisma.product.findMany({
+        where: { companyId, isActive: true, ...(category ? { category } : {}) },
+        take: 100,
+        select: { id: true, name: true, sku: true, category: true },
+      }),
+      prisma.competitor.findMany({
+        where: { companyId },
+        select: { name: true, url: true, slug: true },
+      }),
+    ]);
 
-    if (myProducts.length === 0) {
-      return res.json({
-        success: true,
-        data: { discovered: [], searchedTerms: 0, yourProductCount: 0, suggestion: t('competitor.discover_suggestion_add_products') },
-      });
+    // 2. Build Exclusion sets: NEVER suggest our own company or our own products or existing tracked competitors!
+    const companyName = (company?.name || '').toLowerCase().trim();
+    const ownProductNames = new Set(
+      myProducts.map(p => (p.name || '').toLowerCase().trim()).filter(Boolean)
+    );
+    const existingNames = new Set(
+      existingCompetitors.map(c => (c.name || '').toLowerCase().trim()).filter(Boolean)
+    );
+    const existingUrls = new Set(
+      existingCompetitors.map(c => (c.url || '').toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '')).filter(Boolean)
+    );
+
+    // 3. Determine active industry specialty
+    const specialtySlug = (company?.businessSpecialty?.slug || '').toLowerCase();
+    const specialtyNameAr = (company?.businessSpecialty?.nameAr || '').toLowerCase();
+    const reqCategory = (category || '').toLowerCase().trim();
+
+    let industryKey = 'software'; // default for max-p platform
+    if (specialtySlug.includes('fashion') || specialtySlug.includes('apparel') || specialtyNameAr.includes('ملابس') || specialtyNameAr.includes('أزياء') || reqCategory.includes('fashion')) {
+      industryKey = 'fashion';
+    } else if (specialtySlug.includes('dental') || specialtyNameAr.includes('أسنان') || reqCategory.includes('dental')) {
+      industryKey = 'dental';
+    } else if (specialtySlug.includes('electro') || reqCategory.includes('electro')) {
+      industryKey = 'electronics';
+    } else if (specialtySlug.includes('beauty') || specialtyNameAr.includes('تجميل') || reqCategory.includes('beauty')) {
+      industryKey = 'beauty';
+    } else if (specialtySlug.includes('academy') || specialtyNameAr.includes('تعليم') || reqCategory.includes('academy')) {
+      industryKey = 'academy';
+    } else if (specialtySlug.includes('ecommerce') || specialtySlug.includes('software') || specialtySlug.includes('services')) {
+      industryKey = 'software';
     }
 
-    const sampleProducts = myProducts.slice(0, 10);
-    const searchTerms = sampleProducts.map(p => p.name.split(' ').slice(0, 2).join(' '));
+    // 4. Gather candidates from target industry and general retail
+    const candidates = [
+      ...(INDUSTRY_COMPETITORS_CATALOG[industryKey] || []),
+      ...(INDUSTRY_COMPETITORS_CATALOG.general || []),
+    ];
+
     const discovered = [];
 
-    for (const term of searchTerms.slice(0, max)) {
-      const existing = await prisma.competitor.findFirst({
-        where: {
-          companyId,
-          OR: [
-            { name: { contains: term.split(' ')[0], mode: 'insensitive' } },
-            { url: { contains: term.split(' ')[0], mode: 'insensitive' } },
-          ],
-        },
-      });
+    for (const cand of candidates) {
+      if (discovered.length >= max) break;
 
-      if (!existing) {
-        discovered.push({
-          suggestedName: term,
-          reason: t('competitor.discover_similar_products', 'ar', { name: sampleProducts.find(p => p.name.includes(term))?.name || term }),
-          matchedProducts: myProducts.filter(p => p.name.toLowerCase().includes(term.toLowerCase().split(' ')[0])).length,
-        });
+      const candName = cand.suggestedName.toLowerCase();
+      const candCleanUrl = (cand.url || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+      // Check Exclusion: Is it our own company?
+      if (companyName && (candName.includes(companyName) || companyName.includes(candName))) {
+        continue;
       }
+
+      // Check Exclusion: Is it one of our own products? (e.g. "كورس MaxP")
+      let matchesOwnProduct = false;
+      for (const ownProd of ownProductNames) {
+        if (ownProd && (candName.includes(ownProd) || ownProd.includes(candName))) {
+          matchesOwnProduct = true;
+          break;
+        }
+      }
+      if (matchesOwnProduct) continue;
+
+      // Check Exclusion: Is it already added?
+      let alreadyTracked = false;
+      for (const exist of existingNames) {
+        if (exist && (exist.includes(candName) || candName.includes(exist))) {
+          alreadyTracked = true;
+          break;
+        }
+      }
+      if (alreadyTracked) continue;
+
+      if (candCleanUrl && existingUrls.has(candCleanUrl)) {
+        continue;
+      }
+
+      // Calculate matched products based on domain keywords
+      const matchedCount = cand.keywords && cand.keywords.length > 0
+        ? myProducts.filter(p => {
+            const pName = (p.name || '').toLowerCase();
+            return cand.keywords.some(k => pName.includes(k.toLowerCase()));
+          }).length
+        : myProducts.length;
+
+      discovered.push({
+        suggestedName: cand.suggestedName,
+        url: cand.url,
+        category: cand.category,
+        source: cand.source,
+        reason: cand.reason,
+        matchedProducts: Math.max(1, matchedCount),
+      });
     }
 
     res.json({
       success: true,
       data: {
         discovered: discovered.slice(0, max),
-        searchedTerms: searchTerms.length,
+        searchedTerms: candidates.length,
         yourProductCount: myProducts.length,
+        industrySpecialty: company?.businessSpecialty?.nameAr || 'حلول التجارة الرقمية',
         suggestion: discovered.length > 0
           ? t('competitor.discover_suggestion_start_tracking')
           : t('competitor.discover_no_new'),

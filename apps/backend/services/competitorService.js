@@ -26,8 +26,22 @@ class CompetitorService {
       getPrisma().competitor.count({ where }),
     ]);
 
+    const enrichedData = data.map((c) => ({
+      ...c,
+      structuredPricing: c.metadata && typeof c.metadata === 'object' && c.metadata.structuredPricing
+        ? c.metadata.structuredPricing
+        : {
+            price: c.monthlyPrice ? Number(c.monthlyPrice) : null,
+            currency: 'EGP',
+            cycle: 'monthly',
+            monthlyPrice: c.monthlyPrice ? Number(c.monthlyPrice) : null,
+            yearlyPrice: c.yearlyPrice ? Number(c.yearlyPrice) : null,
+            notes: c.pricingNotes || '',
+          },
+    }));
+
     return {
-      data,
+      data: enrichedData,
       pagination: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / parseInt(limit)) },
     };
   }
@@ -56,6 +70,19 @@ class CompetitorService {
         _count: { select: { products: true, ads: true, reports: true } },
       },
     });
+
+    if (competitor) {
+      competitor.structuredPricing = competitor.metadata && typeof competitor.metadata === 'object' && competitor.metadata.structuredPricing
+        ? competitor.metadata.structuredPricing
+        : {
+            price: competitor.monthlyPrice ? Number(competitor.monthlyPrice) : null,
+            currency: 'EGP',
+            cycle: 'monthly',
+            monthlyPrice: competitor.monthlyPrice ? Number(competitor.monthlyPrice) : null,
+            yearlyPrice: competitor.yearlyPrice ? Number(competitor.yearlyPrice) : null,
+            notes: competitor.pricingNotes || '',
+          };
+    }
     return competitor;
   }
 
@@ -90,6 +117,17 @@ class CompetitorService {
           yearlyPrice: yearlyPrice ? parseFloat(yearlyPrice) : null,
           pricingNotes,
           trafficSource,
+          metadata: {
+            ...(data.metadata || {}),
+            structuredPricing: {
+              price: data.price !== undefined && data.price !== '' ? parseFloat(data.price) : (monthlyPrice ? parseFloat(monthlyPrice) : null),
+              currency: data.currency || data.pricingCurrency || 'EGP',
+              cycle: data.cycle || data.pricingCycle || 'monthly',
+              monthlyPrice: monthlyPrice ? parseFloat(monthlyPrice) : null,
+              yearlyPrice: yearlyPrice ? parseFloat(yearlyPrice) : null,
+              notes: pricingNotes || '',
+            },
+          },
         },
       });
 
@@ -213,10 +251,31 @@ class CompetitorService {
           founderLink: data.founderLink,
           country: data.country,
           city: data.city,
-          monthlyPrice: data.monthlyPrice ? parseFloat(data.monthlyPrice) : null,
-          yearlyPrice: data.yearlyPrice ? parseFloat(data.yearlyPrice) : null,
-          pricingNotes: data.pricingNotes,
+          monthlyPrice: data.monthlyPrice !== undefined ? (data.monthlyPrice ? parseFloat(data.monthlyPrice) : null) : undefined,
+          yearlyPrice: data.yearlyPrice !== undefined ? (data.yearlyPrice ? parseFloat(data.yearlyPrice) : null) : undefined,
+          pricingNotes: data.pricingNotes !== undefined ? data.pricingNotes : undefined,
           trafficSource: data.trafficSource,
+          metadata: {
+            ...(existing.metadata && typeof existing.metadata === 'object' ? existing.metadata : {}),
+            ...(data.metadata || {}),
+            structuredPricing: {
+              ...((existing.metadata && typeof existing.metadata === 'object' && existing.metadata.structuredPricing) || {}),
+              price: data.price !== undefined && data.price !== ''
+                ? parseFloat(data.price)
+                : (data.monthlyPrice ? parseFloat(data.monthlyPrice) : (existing.metadata?.structuredPricing?.price ?? null)),
+              currency: data.currency || data.pricingCurrency || existing.metadata?.structuredPricing?.currency || 'EGP',
+              cycle: data.cycle || data.pricingCycle || existing.metadata?.structuredPricing?.cycle || 'monthly',
+              monthlyPrice: data.monthlyPrice !== undefined
+                ? (data.monthlyPrice ? parseFloat(data.monthlyPrice) : null)
+                : (existing.metadata?.structuredPricing?.monthlyPrice ?? null),
+              yearlyPrice: data.yearlyPrice !== undefined
+                ? (data.yearlyPrice ? parseFloat(data.yearlyPrice) : null)
+                : (existing.metadata?.structuredPricing?.yearlyPrice ?? null),
+              notes: data.pricingNotes !== undefined
+                ? data.pricingNotes
+                : (existing.metadata?.structuredPricing?.notes ?? ''),
+            },
+          },
         },
       });
 

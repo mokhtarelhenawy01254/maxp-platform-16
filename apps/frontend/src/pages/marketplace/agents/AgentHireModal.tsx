@@ -128,7 +128,7 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
       const res = await apiClient.post("/agent-manager/hire", {
         templateSlug: agent.slug,
         name: customName.trim() || agent.name,
-        role: agent.position,
+        description: agent.position,
         department,
         safetyMode,
       });
@@ -138,14 +138,17 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
         onHired(agent.slug, customName || agent.name);
         onClose();
       } else {
-        toast.success(`تم تفعيل الإيجنت ${customName || agent.name} في حسابك.`);
-        onHired(agent.slug, customName || agent.name);
-        onClose();
+        const errorMsg = res.data?.error || res.data?.message || "تعذر إتمام التوظيف";
+        toast.error(errorMsg);
       }
-    } catch (err: unknown) {
-      toast.success(`تم تفعيل وتعيين ${customName || agent.name} ضمن الكوادر النشطة.`);
-      onHired(agent.slug, customName || agent.name);
-      onClose();
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+        err?.message ||
+        "تعذر توظيف الإيجنت حالياً";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -16,6 +16,15 @@ interface PriceComparisonRow {
   priceDiff: string | null;
 }
 
+interface StructuredPricing {
+  price?: number | null;
+  currency?: string;
+  cycle?: string;
+  monthlyPrice?: number | null;
+  yearlyPrice?: number | null;
+  notes?: string;
+}
+
 interface BattlecardData {
   competitor: {
     id: string;
@@ -23,6 +32,10 @@ interface BattlecardData {
     platform: string;
     url: string;
     status: CompetitorStatus;
+    monthlyPrice?: number | null;
+    yearlyPrice?: number | null;
+    pricingNotes?: string | null;
+    structuredPricing?: StructuredPricing | null;
   };
   metrics: {
     theirProducts: number;
@@ -207,6 +220,48 @@ const BattlecardViewer: React.FC = () => {
           </div>
         </div>
 
+        {/* Structured Pricing Baseline Card */}
+        {data.competitor.structuredPricing && (
+          <div className="bg-card border border-border/70 rounded-xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">هيكل أسعار المنافس المعتمد (Baseline Pricing)</span>
+                {data.competitor.structuredPricing.cycle && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+                    {data.competitor.structuredPricing.cycle === 'yearly' ? 'سنوي (Yearly)' : data.competitor.structuredPricing.cycle === 'one_time' ? 'دفعة واحدة (One-Time)' : 'شهري (Monthly)'}
+                  </span>
+                )}
+              </div>
+              {data.competitor.structuredPricing.notes && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {data.competitor.structuredPricing.notes}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-end">
+                <div className="text-[10px] text-muted-foreground uppercase font-mono">سعر الاشتراك/الباقة</div>
+                <div className="text-base font-bold font-mono tabular-nums text-foreground">
+                  {data.competitor.structuredPricing.price != null
+                    ? `${Number(data.competitor.structuredPricing.price).toFixed(2)} ${data.competitor.structuredPricing.currency || 'EGP'}`
+                    : data.competitor.monthlyPrice
+                    ? `${Number(data.competitor.monthlyPrice).toFixed(2)} EGP`
+                    : '--'}
+                </div>
+              </div>
+              {data.competitor.yearlyPrice && (
+                <div className="text-end border-r border-border/60 pr-3">
+                  <div className="text-[10px] text-muted-foreground uppercase font-mono">الاشتراك السنوي</div>
+                  <div className="text-base font-bold font-mono tabular-nums text-foreground">
+                    {`${Number(data.competitor.yearlyPrice).toFixed(2)} ${data.competitor.structuredPricing.currency || 'EGP'}`}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Head-to-Head Price Parity Matrix */}
         <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
           <div className="px-4 py-3 bg-muted/30 border-b border-border/70 flex items-center justify-between">
@@ -221,40 +276,50 @@ const BattlecardViewer: React.FC = () => {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-muted/15 border-b border-border/60 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                <tr>
-                  <th className="py-2.5 px-4">{t("competitors.battlecard.yourProduct")}</th>
-                  <th className="py-2.5 px-4">{t("competitors.battlecard.yourPrice")}</th>
-                  <th className="py-2.5 px-4">{t("competitors.battlecard.theirProduct")}</th>
-                  <th className="py-2.5 px-4">{t("competitors.battlecard.theirPrice")}</th>
-                  <th className="py-2.5 px-4 text-end">{t("competitors.battlecard.diffPercent")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60 font-medium">
-                {data.priceComparison.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/10 transition-colors">
-                    <td className="py-2.5 px-4 font-semibold text-foreground max-w-xs truncate">
-                      {row.yourProduct || "--"}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono tabular-nums text-muted-foreground">
-                      {row.yourPrice != null ? Number(row.yourPrice).toFixed(2) : "--"}
-                    </td>
-                    <td className="py-2.5 px-4 text-foreground max-w-xs truncate">
-                      {row.competitorProduct}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono tabular-nums text-muted-foreground">
-                      {row.competitorPrice != null ? Number(row.competitorPrice).toFixed(2) : "--"}
-                    </td>
-                    <td className="py-2.5 px-4 text-end">
-                      <DiffBadge value={row.priceDiff} />
-                    </td>
+          {data.priceComparison.length === 0 ? (
+            <div className="p-8 text-center space-y-2 text-muted-foreground">
+              <AlertTriangle size={20} className="text-amber-500 mx-auto" />
+              <p className="text-xs font-semibold text-foreground">لا توجد مقارنات أسعار متطابقة بعد</p>
+              <p className="text-[11px] text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                تنبيه للمستخدم: مصفوفة مقارنة الأسعار تحتاج لمنتجات مسجلة للمنافس تطابق منتجات متجرك لعرض الفروق السعرية ونسب التغير. قم بتغذية منتجات المنافس لتفعيل المقارنة الفورية.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/15 border-b border-border/60 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-4">{t("competitors.battlecard.yourProduct")}</th>
+                    <th className="py-2.5 px-4">{t("competitors.battlecard.yourPrice")}</th>
+                    <th className="py-2.5 px-4">{t("competitors.battlecard.theirProduct")}</th>
+                    <th className="py-2.5 px-4">{t("competitors.battlecard.theirPrice")}</th>
+                    <th className="py-2.5 px-4 text-end">{t("competitors.battlecard.diffPercent")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border/60 font-medium">
+                  {data.priceComparison.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-muted/10 transition-colors">
+                      <td className="py-2.5 px-4 font-semibold text-foreground max-w-xs truncate">
+                        {row.yourProduct || "--"}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono tabular-nums text-muted-foreground">
+                        {row.yourPrice != null ? Number(row.yourPrice).toFixed(2) : "--"}
+                      </td>
+                      <td className="py-2.5 px-4 text-foreground max-w-xs truncate">
+                        {row.competitorProduct}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono tabular-nums text-muted-foreground">
+                        {row.competitorPrice != null ? Number(row.competitorPrice).toFixed(2) : "--"}
+                      </td>
+                      <td className="py-2.5 px-4 text-end">
+                        <DiffBadge value={row.priceDiff} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Market Gaps & Insights Row */}

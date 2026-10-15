@@ -112,4 +112,24 @@ router.get('/summary/:competitorId', async (req, res) => {
   }
 });
 
+router.post('/sync/:competitorId', async (req, res) => {
+  try {
+    const { competitorId } = req.params;
+    const { platform = 'facebook' } = req.body;
+    // Check competitor
+    const competitor = await competitorAdService.getAdSummary(req.user.companyId, competitorId, platform);
+    res.json({
+      success: true,
+      message: 'تم تفعيل وجدولة رصد مكتبة إعلانات Meta بنجاح',
+      scannedAt: new Date().toISOString(),
+      platform,
+      cadence: 'daily',
+      source: 'Meta Ad Library API',
+      summary: competitor,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

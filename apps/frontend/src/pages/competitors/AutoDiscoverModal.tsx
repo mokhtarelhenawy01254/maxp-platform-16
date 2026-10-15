@@ -13,6 +13,9 @@ interface DiscoveredItem {
   suggestedName: string;
   reason: string;
   matchedProducts: number;
+  url?: string;
+  category?: string;
+  source?: string;
 }
 
 interface Props {
@@ -114,20 +117,37 @@ const AutoDiscoverModal: React.FC<Props> = ({ visible, onClose, onAddCompetitor 
               ) : (
                 <div className="space-y-2">
                   {data.discovered.map((item, idx) => (
-                    <div key={idx} className="flex items-start justify-between p-3 border rounded-lg">
+                    <div key={idx} className="flex items-start justify-between p-3 border rounded-lg gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold">
-                          {t('competitors.autoDiscover.suggestedName')}: {item.suggestedName}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-xs text-foreground">
+                            {item.suggestedName}
+                          </span>
+                          {item.source && (
+                            <Badge variant="secondary" className="text-[10px] py-0">
+                              {item.source}
+                            </Badge>
+                          )}
+                          {item.category && (
+                            <Badge variant="outline" className="text-[10px] py-0 border-blue-500/40 text-blue-600">
+                              {item.category}
+                            </Badge>
+                          )}
                         </div>
-                        <div className="text-sm mt-1">
-                          <span className="font-medium">{t('competitors.autoDiscover.reason')}:</span> {item.reason}
+                        <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          <span className="font-medium text-foreground">{t('competitors.autoDiscover.reason')}:</span> {item.reason}
                         </div>
-                        <Badge variant="outline" className="border-blue-500 text-blue-500 mt-1">
+                        {item.url && (
+                          <div className="text-[11px] font-mono text-primary truncate mt-0.5">
+                            {item.url}
+                          </div>
+                        )}
+                        <Badge variant="outline" className="border-primary/40 text-primary mt-1.5 text-[10px]">
                           {t('competitors.autoDiscover.matchedProducts')}: {item.matchedProducts}
                         </Badge>
                       </div>
-                      <Button variant="link" className="shrink-0" onClick={() => onAddCompetitor(item.suggestedName)}>
-                        <Plus className="size-4" />
+                      <Button variant="outline" size="sm" className="shrink-0 gap-1 text-xs" onClick={() => onAddCompetitor(item.suggestedName)}>
+                        <Plus className="size-3.5" />
                         {t('competitors.autoDiscover.add')}
                       </Button>
                     </div>

@@ -493,6 +493,54 @@ const CompetitorDetail: React.FC = () => {
             )}
           </div>
 
+          {/* Structured Pricing Card */}
+          <div className="border rounded-lg p-4 dark:border-gray-700 bg-card space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <DollarSign size={16} className="text-emerald-500" />
+                <span>هيكل أسعار المنافس والباقات (Structured Pricing)</span>
+              </h3>
+              {competitor?.structuredPricing?.cycle && (
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+                  {competitor.structuredPricing.cycle === 'yearly'
+                    ? 'سنوي (Yearly)'
+                    : competitor.structuredPricing.cycle === 'one_time'
+                    ? 'دفعة واحدة (One-Time)'
+                    : 'شهري (Monthly)'}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-muted/20 border border-border/60">
+                <div className="text-[11px] text-muted-foreground">السعر الأساسي / الباقة</div>
+                <div className="text-base font-bold font-mono tabular-nums text-foreground mt-0.5">
+                  {competitor?.structuredPricing?.price != null
+                    ? `${Number(competitor.structuredPricing.price).toFixed(2)} ${competitor.structuredPricing.currency || 'EGP'}`
+                    : competitor?.monthlyPrice
+                    ? `${Number(competitor.monthlyPrice).toFixed(2)} EGP`
+                    : 'غير محدد'}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/20 border border-border/60">
+                <div className="text-[11px] text-muted-foreground">الاشتراك السنوي</div>
+                <div className="text-base font-bold font-mono tabular-nums text-foreground mt-0.5">
+                  {competitor?.yearlyPrice
+                    ? `${Number(competitor.yearlyPrice).toFixed(2)} ${competitor?.structuredPricing?.currency || 'EGP'}`
+                    : 'غير محدد'}
+                </div>
+              </div>
+            </div>
+
+            {(competitor?.pricingNotes || competitor?.structuredPricing?.notes) && (
+              <div className="text-xs text-muted-foreground leading-relaxed p-2.5 rounded bg-muted/10 border border-border/40">
+                <span className="font-semibold text-foreground">ملاحظات التسعير: </span>
+                {competitor.pricingNotes || competitor.structuredPricing?.notes}
+              </div>
+            )}
+          </div>
+
           {/* Price Comparison */}
           <div className="border rounded-lg p-4 dark:border-gray-700">
             <h3 className="font-semibold mb-2">{t('competitors.priceComparison')}</h3>
@@ -548,7 +596,35 @@ const CompetitorDetail: React.FC = () => {
       {tab === 'ads' && (
         <div>
           {ads.length === 0 ? (
-            <p className="text-gray-500">{t('competitors.noAds')}</p>
+            <div className="border border-dashed border-border/70 rounded-xl p-6 text-center space-y-4 bg-card">
+              <div className="max-w-md mx-auto space-y-2">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center mx-auto">
+                  <Share2 size={20} />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">رصد إعلانات المنافس عبر Meta Ad Library</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  لم يتم تسجيل إعلانات بعد. يتم فحص الحملات الإعلانية على فيسبوك وإنستجرام دورياً (يومياً وأسبوعياً) عبر مكتبة إعلانات ميتا ووكيل «زياد رادار».
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/competitors/${id}/ads`)}
+                  className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
+                >
+                  فتح مركز رصد الإعلانات (Ad Intelligence)
+                </button>
+                <a
+                  href={`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&q=${encodeURIComponent(competitor?.name || '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg border border-border/70 text-xs font-medium hover:bg-muted text-foreground transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>بحث مباشر في Meta Ad Library</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {ads.map(a => (
@@ -604,7 +680,12 @@ const CompetitorDetail: React.FC = () => {
             </button>
           </div>
           {reports.length === 0 ? (
-            <p className="text-gray-500">{t('competitors.noReports')}</p>
+            <div className="border border-dashed border-border/70 rounded-xl p-6 text-center space-y-2 bg-card">
+              <p className="text-xs font-semibold text-foreground">{t('competitors.noReports') || 'لا توجد تقارير مولدة بعد'}</p>
+              <p className="text-[11px] text-muted-foreground max-w-md mx-auto leading-relaxed">
+                تنبيه للمستخدم: التقارير والباتل كارد التحليلي تعتمد على وجود منتجات أو إعلانات للمنافس لمقارنتها بمتجرك. اضغط أحد الأزرار بالأعلى لتوليد أول تقرير بعد تغذية المنتجات.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {reports.map(r => (

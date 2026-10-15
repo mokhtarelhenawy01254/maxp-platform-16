@@ -6,6 +6,7 @@ const mockPrisma = {
   competitorSocialProfile: { create: jest.fn() },
   competitorPriceHistory: { create: jest.fn(), findMany: jest.fn() },
   product: { findMany: jest.fn() },
+  company: { findUnique: jest.fn() },
 };
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -372,6 +373,128 @@ describe('CompetitorController', () => {
       await controller.getAllReports(req, res);
 
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+  });
+
+  describe('autoDiscover (Smart Radar & Exclusion Engine)', () => {
+    it('excludes own company products, company name, and already tracked competitors, and returns rationale and source', async () => {
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: 'company-1',
+        name: 'MaxP Online',
+        businessSpecialty: { slug: 'software', nameAr: 'برمجيات وحلول رقمية' },
+      });
+      mockPrisma.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'كورس MaxP الاحترافي', sku: 'MX-COURSE', category: 'software' },
+        { id: 'p2', name: 'نظام إدارة المخزون', sku: 'MX-INV', category: 'software' },
+      ]);
+      mockPrisma.competitor.findMany.mockResolvedValue([
+        { name: 'أودو (Odoo)', url: 'https://www.odoo.com', slug: 'odoo' },
+      ]);
+
+      const req = { user: { companyId: 'company-1' }, query: { maxResults: '5' } };
+      const res = createResponse();
+
+      await controller.autoDiscover(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          discovered: expect.any(Array),
+        }),
+      }));
+
+      const callArgs = res.json.mock.calls[0][0];
+      const discovered = callArgs.data.discovered;
+
+      // 1. Must NOT suggest own company ("MaxP Online")
+      expect(discovered.some(d => d.suggestedName.toLowerCase().includes('maxp'))).toBe(false);
+
+      // 2. Must NOT suggest own product ("كورس MaxP الاحترافي")
+      expect(discovered.some(d => d.suggestedName === 'كورس MaxP الاحترافي')).toBe(false);
+
+      // 3. Must NOT re-suggest already tracked competitor ("أودو (Odoo)")
+      expect(discovered.some(d => d.suggestedName.includes('Odoo'))).toBe(false);
+
+      // 4. Must suggest valid ecosystem competitors with source, reason, and matchedProducts
+      expect(discovered.length).toBeGreaterThan(0);
+      const first = discovered[0];
+      expect(first).toHaveProperty('suggestedName');
+      expect(first).toHaveProperty('source');
+      expect(first).toHaveProperty('reason');
+      expect(first).toHaveProperty('matchedProducts');
+      expect(first.source.length).toBeGreaterThan(0);
+      expect(first.reason.length).toBeGreaterThan(0);
+    });
+
+    it('matches fashion specialty when company businessSpecialty is fashion', async () => {
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: 'company-fashion',
+        name: 'My Fashion Brand',
+        businessSpecialty: { slug: 'fashion', nameAr: 'ملابس وأزياء' },
+      });
+      mockPrisma.product.findMany.mockResolvedValue([
+        { id: 'pf1', name: 'قميص أكسفورد أزرق', sku: 'FASH-01', category: 'fashion' },
+      ]);
+      mockPrisma.competitor.findMany.mockResolvedValue([]);
+
+      const req = { user: { companyId: 'company-fashion' }, query: { maxResults: '3' } };
+      const res = createResponse();
+
+      await controller.autoDiscover(req, res);
+
+      const discovered = res.json.mock.calls[0][0].data.discovered;
+      expect(discovered.length).toBeGreaterThan(0);
+      // Fashion competitors like Town Team or Dalydress should be recommended
+      const hasFashionComp = discovered.some(d => d.suggestedName.includes('Town Team') || d.suggestedName.includes('تاون تيم') || d.suggestedName.includes('دالي دريس'));
+      expect(hasFashionComp).toBe(true);
+    });
+  });
+
+  describe('structuredPricing in getBattlecard', () => {
+    it('returns structuredPricing in battlecard competitor data', async () => {
+      mockPrisma.competitor.findFirst.mockResolvedValue({
+        id: 'c1',
+        name: 'Salla',
+        platform: 'salla',
+        url: 'https://salla.com',
+        status: 'FOLLOWING',
+        monthlyPrice: 500,
+        yearlyPrice: 5000,
+        pricingNotes: 'باقة المتاجر المحترفة',
+        metadata: {
+          structuredPricing: {
+            price: 500,
+            currency: 'SAR',
+            cycle: 'monthly',
+            monthlyPrice: 500,
+            yearlyPrice: 5000,
+            notes: 'باقة المتاجر المحترفة',
+          },
+        },
+        _count: { products: 10, ads: 5 },
+      });
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.competitorReport.findMany.mockResolvedValue([]);
+      mockPrisma.competitorProduct.findMany.mockResolvedValue([]);
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'c1' }, query: {} };
+      const res = createResponse();
+
+      await controller.getBattlecard(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          competitor: expect.objectContaining({
+            id: 'c1',
+            structuredPricing: expect.objectContaining({
+              price: 500,
+              currency: 'SAR',
+              cycle: 'monthly',
+            }),
+          }),
+        }),
+      }));
     });
   });
 });

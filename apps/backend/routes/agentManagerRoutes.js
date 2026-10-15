@@ -54,7 +54,18 @@ const agentManagerService = {
     }
   },
   hireAgent: async (companyId, body) => {
-    const result = await aiServiceAdminClient.spawnAgent({ companyId, ...body });
+    const payload = { ...body };
+    // If role is a long or descriptive title (e.g. Arabic job title from marketplace),
+    // map it to description and let ai-service use the canonical template role.
+    if (payload.role && (payload.role.length > 50 || /[\s\u0600-\u06FF]/.test(payload.role))) {
+      if (!payload.description) {
+        payload.description = payload.role;
+      }
+      if (payload.templateSlug) {
+        delete payload.role;
+      }
+    }
+    const result = await aiServiceAdminClient.spawnAgent({ companyId, ...payload });
     // 2026: ai-service manages ai.agents table; no dual-write to public.company_agents
     if (result && result.id) {
       console.log('[MANAGER] Agent spawned via ai-service:', result.id, result.name);

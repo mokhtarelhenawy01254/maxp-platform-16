@@ -44,7 +44,7 @@ from src.api.admin.agents_schemas import (
 )
 from src.api.chat import sanitize_model_reply
 from src.db.models.agent import Agent as AgentModel
-from src.db.models.agent import AgentTemplate
+from src.db.models.agent import AgentDepartment, AgentTemplate
 from src.db.models.provider import AiKey, AiModelConfig
 from src.db.models.thread import Thread
 from src.db.session import get_session
@@ -672,7 +672,7 @@ async def seed_agent_templates(session: SessionDep) -> dict:
 @router.post("/agents/spawn", response_model=AgentRead, status_code=201)
 async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
     """Create (spawn) a new runtime agent for a company."""
-    role = (body.role or "").upper().strip()
+    raw_role = (body.role or "").strip()
     template_slug = body.template_slug
     template: AgentTemplate | None = None
 
@@ -684,13 +684,29 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
                 detail=f"Template not found: {template_slug}",
             )
 
-    if not role and template:
-        role = template.role
-    if not role:
+    # Detect if passed role is a descriptive Arabic/job title rather than a system role key
+    is_descriptive_role = len(raw_role) > 50 or any(ord(c) > 127 for c in raw_role) or " " in raw_role
+
+    if template:
+        if not raw_role or is_descriptive_role:
+            # If descriptive role was passed, preserve it as description if not already set
+            if is_descriptive_role and not body.description:
+                body.description = raw_role
+            role = template.role
+        else:
+            role = raw_role.upper()
+    elif not raw_role:
         raise HTTPException(
             status_code=400,
             detail="Either role or template_slug is required",
         )
+    elif len(raw_role) > 50:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Role identifier '{raw_role[:30]}...' exceeds maximum allowed length of 50 characters",
+        )
+    else:
+        role = raw_role.upper()
 
     if not template and role:
         templates_result = await session.execute(
@@ -749,6 +765,22 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         resolved = await model_resolver.resolve_for_company(body.company_id)
         if resolved:
             model = resolved.model_name
+
+    # Resolve department_id if department was passed
+    department_id = body.department_id
+    if not department_id and body.department:
+        dept_stmt = select(AgentDepartment).where(
+            AgentDepartment.company_id == body.company_id,
+            (AgentDepartment.id == body.department) | (AgentDepartment.key == body.department),
+        )
+        dept = (await session.execute(dept_stmt)).scalar_one_or_none()
+        if dept:
+            department_id = dept.id
+
+    agent_config = (template.config if template else {}) | (body.config or {})
+    if body.safety_mode:
+        agent_config["safetyMode"] = body.safety_mode
+
     agent = AgentModel(
         id=agent_id,
         company_id=body.company_id,
@@ -777,8 +809,9 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         guardrails=body.guardrails or (template.guardrails if template else {}),
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
+        department_id=department_id,
         version=template.version if template else "1.0.0",
-        config=(template.config if template else {}) | (body.config or {}),
+        config=agent_config,
     )
     session.add(agent)
     try:
@@ -787,8 +820,16 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         await session.rollback()
         raise HTTPException(
             status_code=409,
-            detail=f"Agent with name '{name}' already exists for this company",
+            detail=f"Active agent with name '{name}' already exists for this company",
         ) from exc
+    except Exception as exc:
+        await session.rollback()
+        logger.exception("agent_spawn_failed", error=str(exc), company_id=body.company_id)
+        raise HTTPException(
+            status_code=400,
+            detail=f"فشل إنشاء الوكيل: {str(exc)}",
+        ) from exc
+
     await session.refresh(agent)
     logger.info("Agent spawned", agent_id=agent_id, company_id=body.company_id, role=role)
     return _agent_to_read(agent)

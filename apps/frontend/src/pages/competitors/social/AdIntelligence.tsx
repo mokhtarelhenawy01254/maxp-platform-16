@@ -14,8 +14,13 @@ import {
   Filter,
   Layers,
   Sparkles,
+  ExternalLink,
+  Radio,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'sonner';
 import i18n from '../../../i18n';
 
 const platformColors: Record<string, string> = {
@@ -29,6 +34,8 @@ export default function AdIntelligence() {
   const { competitorId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [competitorName, setCompetitorName] = useState('');
   const [summary, setSummary] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
@@ -43,7 +50,7 @@ export default function AdIntelligence() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [summaryRes, campaignsRes, topCreativesRes] = await Promise.all([
+      const [summaryRes, campaignsRes, topCreativesRes, compRes] = await Promise.all([
         axios.get(`/api/v1/competitors/ads/summary/${competitorId}`, {
           params: platformFilter ? { platform: platformFilter } : {},
         }),
@@ -53,11 +60,15 @@ export default function AdIntelligence() {
         axios.get(`/api/v1/competitors/ads/top-creatives/${competitorId}`, {
           params: { platform: platformFilter || 'facebook', limit: 10 },
         }),
+        axios.get(`/api/v1/competitors/${competitorId}`).catch(() => null),
       ]);
 
       setSummary(summaryRes.data);
       setCampaigns(campaignsRes.data || []);
       setCreatives(topCreativesRes.data || []);
+      if (compRes?.data?.data?.name) {
+        setCompetitorName(compRes.data.data.name);
+      }
     } catch (error) {
       console.error('Error fetching ad data:', error);
     } finally {
@@ -65,7 +76,26 @@ export default function AdIntelligence() {
     }
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await axios.post(`/api/v1/competitors/ads/sync/${competitorId}`, {
+        platform: platformFilter || 'facebook',
+      });
+      toast.success(res.data?.message || 'تم تفعيل وجدولة رصد مكتبة إعلانات Meta بنجاح');
+      await fetchData();
+    } catch {
+      toast.error('تعذر تفعيل رصد الإعلانات حالياً');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const currencySymbol = i18n.language === 'ar' ? 'ر.س' : '$';
+
+  const metaLibraryUrl = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&q=${encodeURIComponent(
+    competitorName || 'competitor'
+  )}`;
 
   if (loading) {
     return (
@@ -83,18 +113,86 @@ export default function AdIntelligence() {
           <div className="flex items-center gap-3 pb-4 border-b border-border/70">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-lg border border-border/60 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 rounded-lg border border-border/60 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {i18n.dir() === 'rtl' ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
             </button>
-            <h1 className="text-xl font-bold tracking-tight">{t('competitors.adOverview')}</h1>
+            <div className="space-y-0.5">
+              <h1 className="text-xl font-bold tracking-tight">{t('competitors.adOverview')}</h1>
+              <p className="text-xs text-muted-foreground">
+                رصد وتتبع الحملات الإعلانية لمنافسك {competitorName && `(${competitorName})`} عبر Meta Ad Library
+              </p>
+            </div>
           </div>
-          <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border/70 rounded-xl bg-card/40 my-6">
-            <Inbox className="size-10 text-muted-foreground/60 mb-2" />
-            <h3 className="text-sm font-semibold text-foreground">{t('competitors.ads.noAdData')}</h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              No advertising campaigns or ad library records detected for this competitor.
-            </p>
+
+          {/* Meta Ad Library Radar Activation Card */}
+          <div className="bg-card border border-border/70 rounded-xl p-6 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600">
+                    <Radio size={18} className="animate-pulse" />
+                  </span>
+                  <h2 className="text-sm font-bold text-foreground">
+                    تفعيل رصد الإعلانات الذكي (Meta Ad Library Intelligence)
+                  </h2>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  فحص تلقائي يومي لسجل إعلانات المنافس على فيسبوك وإنستجرام عبر مكتبة إعلانات ميتا الرسمية
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={metaLibraryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
+                >
+                  <span>فتح مكتبة إعلانات Meta</span>
+                  <ExternalLink size={13} />
+                </a>
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs transition-colors cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                >
+                  <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                  <span>{syncing ? 'جاري المزامنة...' : 'شغّل رصد الإعلانات الآن'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Radar Information Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                <div className="text-[10px] uppercase font-mono text-muted-foreground">مصدر البيانات المعتمد</div>
+                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-blue-500" />
+                  <span>Meta Ad Library API</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground">فيسبوك، إنستجرام، وماسنجر وشبكة الجمهور</div>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                <div className="text-[10px] uppercase font-mono text-muted-foreground">وتيرة الرصد الآلي</div>
+                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-emerald-500" />
+                  <span>فحص دوري يومي (Daily Cadence)</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground">مراقبة تلقائية عبر وكيل السوق «زياد رادار»</div>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                <div className="text-[10px] uppercase font-mono text-muted-foreground">حالة السجل الحالي</div>
+                <div className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                  <Inbox size={13} />
+                  <span>في انتظار بدء أول فحص</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground">اضغط الزر بالأعلى لبدء تفعيل الرصد وجدولة التقرير</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

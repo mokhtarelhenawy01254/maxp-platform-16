@@ -96,6 +96,7 @@ const CompetitorAdd: React.FC = () => {
     country: '', city: '',
     trafficSource: '',
     strengths: '', weaknesses: '',
+    price: '', currency: 'EGP', cycle: 'monthly',
     monthlyPrice: '', yearlyPrice: '', pricingNotes: '',
     status: '',
   });
@@ -117,8 +118,15 @@ const CompetitorAdd: React.FC = () => {
 
   useEffect(() => {
     const prefillName = searchParams.get('name');
-    if (prefillName) {
-      setFormData(prev => ({ ...prev, name: prefillName }));
+    const prefillUrl = searchParams.get('url');
+    const prefillActivityType = searchParams.get('activityType');
+    if (prefillName || prefillUrl || prefillActivityType) {
+      setFormData(prev => ({
+        ...prev,
+        ...(prefillName ? { name: prefillName } : {}),
+        ...(prefillUrl ? { websiteUrl: prefillUrl } : {}),
+        ...(prefillActivityType ? { activityType: prefillActivityType } : {}),
+      }));
     }
   }, [searchParams]);
 
@@ -128,6 +136,7 @@ const CompetitorAdd: React.FC = () => {
     apiClient.get(`/competitors/${id}`).then(res => {
       if (res.data.success) {
         const c = res.data.data;
+        const sp = c.structuredPricing || c.metadata?.structuredPricing || {};
         setFormData({
           name: c.name || '', websiteUrl: c.url || '', platform: c.platform || 'manual',
           activityType: c.activityType || '', targetMarket: c.targetMarket || '',
@@ -136,8 +145,12 @@ const CompetitorAdd: React.FC = () => {
           country: c.country || '', city: c.city || '',
           trafficSource: c.trafficSource || '',
           strengths: c.strengths || '', weaknesses: c.weaknesses || '',
-          monthlyPrice: c.monthlyPrice?.toString() || '', yearlyPrice: c.yearlyPrice?.toString() || '',
-          pricingNotes: c.pricingNotes || '',
+          price: sp.price?.toString() || c.monthlyPrice?.toString() || '',
+          currency: sp.currency || 'EGP',
+          cycle: sp.cycle || 'monthly',
+          monthlyPrice: c.monthlyPrice?.toString() || sp.monthlyPrice?.toString() || '',
+          yearlyPrice: c.yearlyPrice?.toString() || sp.yearlyPrice?.toString() || '',
+          pricingNotes: c.pricingNotes || sp.notes || '',
           status: c.status || 'NEW',
         });
         if (c.socialProfiles?.length) {
@@ -949,7 +962,47 @@ const CompetitorAdd: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label>السعر الأساسي / الباقة</Label>
+                  <Input
+                    type="number"
+                    value={formData.price}
+                    onChange={e => handleInputChange('price', e.target.value)}
+                    placeholder="مثال: 500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>العملة</Label>
+                  <select
+                    value={formData.currency || 'EGP'}
+                    onChange={e => handleInputChange('currency', e.target.value)}
+                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="EGP">EGP - جنيه مصري</option>
+                    <option value="USD">USD - دولار أمريكي ($)</option>
+                    <option value="SAR">SAR - ريال سعودي (ر.س)</option>
+                    <option value="AED">AED - درهم إماراتي (د.إ)</option>
+                    <option value="EUR">EUR - يورو (€)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>دورة التسعير</Label>
+                  <select
+                    value={formData.cycle || 'monthly'}
+                    onChange={e => handleInputChange('cycle', e.target.value)}
+                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="monthly">شهرياً (Monthly)</option>
+                    <option value="yearly">سنوياً (Yearly)</option>
+                    <option value="one_time">دفعة واحدة (One-Time)</option>
+                    <option value="usage_based">حسب الاستخدام (Usage-Based)</option>
+                    <option value="custom">مخصص / تفاوضي</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/60">
                 <div className="space-y-1.5">
                   <Label>{t('competitors.monthlyPrice') || 'السعر الشهري'}</Label>
                   <div className="relative">
@@ -960,7 +1013,7 @@ const CompetitorAdd: React.FC = () => {
                       placeholder={t('competitors.pricePlaceholder')}
                       className="ltr:pl-7 rtl:pr-7"
                     />
-                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{t('competitors.currencySymbol')}</span>
+                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{formData.currency || 'EGP'}</span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -973,7 +1026,7 @@ const CompetitorAdd: React.FC = () => {
                       placeholder={t('competitors.pricePlaceholder')}
                       className="ltr:pl-7 rtl:pr-7"
                     />
-                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{t('competitors.currencySymbol')}</span>
+                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{formData.currency || 'EGP'}</span>
                   </div>
                 </div>
               </div>
@@ -983,7 +1036,7 @@ const CompetitorAdd: React.FC = () => {
                   value={formData.pricingNotes}
                   onChange={e => handleInputChange('pricingNotes', e.target.value)}
                   rows={4}
-                  placeholder={t('competitors.pricingNotesPlaceholder') || 'أي ملاحظات حول الأسعار...'}
+                  placeholder={t('competitors.pricingNotesPlaceholder') || 'أي تفاصيل عن خطط الأسعار والخصومات...'}
                 />
               </div>
             </CardContent>
