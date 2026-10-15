@@ -517,3 +517,61 @@ export const generateExecutiveBriefing = (
     },
   };
 };
+
+export const PERIOD_OPTIONS = [
+  { value: "1", label: "اليوم" },
+  { value: "yesterday", label: "أمس" },
+  { value: "2", label: "اليوم وأمس" },
+  { value: "7", label: "آخر 7 أيام" },
+  { value: "30", label: "آخر 30 يوم" },
+  { value: "90", label: "آخر 90 يوم" },
+  { value: "180", label: "آخر 6 شهور" },
+  { value: "365", label: "آخر سنة" },
+  { value: "custom", label: "فترة مخصصة" },
+];
+
+export function buildDropOffAnalysis(
+  totalVisits: number,
+  totalViews: number,
+  totalCarts: number,
+  totalPurchases: number
+) {
+  if (totalVisits === 0) return null;
+  const viewDrop = totalVisits > 0 ? ((totalVisits - totalViews) / totalVisits) * 100 : 0;
+  const cartDrop = totalViews > 0 ? ((totalViews - totalCarts) / totalViews) * 100 : 0;
+  const checkoutDrop = totalCarts > 0 ? ((totalCarts - totalPurchases) / totalCarts) * 100 : 0;
+
+  if (totalCarts === 0 && totalPurchases > 0) {
+    return {
+      stage: "طلب سريع ومباشر",
+      description: "المتجر يعتمد نموذج الطلب الفوري من صفحة المنتج متجاوزاً السلة.",
+      recommendation: "أداء ممتاز! عزز سرعة نموذج الشراء الفوري وشارات الثقة.",
+    };
+  }
+  if (viewDrop > 60 && totalVisits > 20) {
+    return {
+      stage: "بين الزيارة وتصفح المنتجات",
+      description: `أكثر من ${viewDrop.toFixed(0)}% من الزوار يغادرون الصفحة الرئيسية دون تصفح صفحة منتج.`,
+      recommendation: "قم بتحسين سرعة المتجر ووضع أفضل المنتجات مبيعاً في واجهة المتجر الرئيسية.",
+    };
+  }
+  if (cartDrop > 70 && totalViews > 20) {
+    return {
+      stage: "بين مشاهدة المنتج والإضافة للسلة",
+      description: `أكثر من ${cartDrop.toFixed(0)}% من مشاهدي المنتجات لا يضيفونها للسلة.`,
+      recommendation: "راجع وضوح زر الشراء، صور المنتج، السعر، وتفعيل زر الشراء الفوري.",
+    };
+  }
+  if (checkoutDrop > 50 && totalCarts > 5) {
+    return {
+      stage: "بين السلة وإتمام الطلب",
+      description: `تسرب ملحوظ بنسبة ${checkoutDrop.toFixed(0)}% للعملاء بعد إضافة المنتج للسلة.`,
+      recommendation: "فعّل رسائل استرجاع السلات المتروكة وبسط خطوات الدفع.",
+    };
+  }
+  return {
+    stage: "مسار التحويل متزن",
+    description: "المسار بين الزيارات والطلبات يسير بنسب مقبولة دون انقطاع حاد.",
+    recommendation: "استمر في زيادة حركة الزيارات المستهدفة من الحملات الإعلانية المربحة.",
+  };
+}
