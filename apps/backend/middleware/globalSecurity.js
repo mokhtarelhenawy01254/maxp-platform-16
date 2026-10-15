@@ -530,6 +530,8 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/academy/lessons/*/content',
   'POST /api/v1/academy/courses/*/enroll',
   'POST /api/v1/academy/courses/*/checkout',
+  'POST /api/v1/academy/courses/*/verify-payment',
+  'POST /api/v1/academy/student/send-code',
   'POST /api/v1/academy/student/login',
   'GET /api/v1/academy/student/me',
   'POST /api/v1/academy/lessons/*/complete',
