@@ -946,19 +946,20 @@ exports.checkoutCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
     const {
-      studentName,
-      studentPhone,
-      studentEmail,
       paymentMethod = 'card',
       testMode = false,
     } = req.body;
 
-    if (!studentPhone || !studentPhone.trim()) {
+    const rawPhone = req.body.studentPhone || req.body.phone;
+    const rawName = req.body.studentName || req.body.name;
+    const rawEmail = req.body.studentEmail || req.body.email;
+
+    if (!rawPhone || !rawPhone.toString().trim()) {
       return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لإتمام الاشتراك' });
     }
-    const cleanPhone = studentPhone.trim();
-    const cleanName = studentName ? studentName.trim() : 'طالب جديد';
-    const cleanEmail = studentEmail ? studentEmail.trim() : null;
+    const cleanPhone = rawPhone.toString().trim();
+    const cleanName = rawName && rawName.toString().trim() ? rawName.toString().trim() : 'طالب جديد';
+    const cleanEmail = rawEmail && rawEmail.toString().trim() ? rawEmail.toString().trim() : null;
 
     const db = academyService.getDb();
     const course = await db.academyCourse.findUnique({
@@ -975,6 +976,8 @@ exports.checkoutCourse = async (req, res) => {
     if (!course) {
       return res.status(404).json({ success: false, message: 'الكورس غير موجود' });
     }
+
+    const targetCompanyId = course.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
 
     // 1. Idempotency Check: if student already enrolled, return existing enrollment immediately
     const existingEnrollment = await db.academyEnrollment.findFirst({
@@ -999,7 +1002,7 @@ exports.checkoutCourse = async (req, res) => {
           studentPhone: cleanPhone,
           studentName: existingEnrollment.studentName || cleanName,
           role: 'STUDENT',
-          companyId: existingEnrollment.companyId || course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+          companyId: existingEnrollment.companyId || targetCompanyId,
         },
         getJwtSecret(),
         { expiresIn: '30d' }
@@ -1014,26 +1017,36 @@ exports.checkoutCourse = async (req, res) => {
       });
     }
 
-    // 2. Find or create Customer
+    // 2. Find or create Customer with required relations
     let customer = await db.customer.findFirst({
       where: {
-        companyId: course.companyId,
+        companyId: targetCompanyId,
         phone: cleanPhone,
       },
     });
 
     if (!customer) {
+      const nameParts = cleanName.split(' ');
+      const firstName = nameParts[0] || 'طالب';
+      const lastName = nameParts.slice(1).join(' ') || '.';
+
       customer = await db.customer.create({
         data: {
-          companyId: course.companyId,
-          firstName: cleanName,
+          company: { connect: { id: targetCompanyId } },
+          firstName,
+          lastName,
           phone: cleanPhone,
           email: cleanEmail,
           status: 'ACTIVE',
         },
-      }).catch(async () => {
-        return db.customer.findFirst({ where: { companyId: course.companyId, phone: cleanPhone } });
+      }).catch(async (createErr) => {
+        console.warn('[Academy] Customer creation fallback find:', createErr.message);
+        return db.customer.findFirst({ where: { companyId: targetCompanyId, phone: cleanPhone } });
       });
+    }
+
+    if (!customer) {
+      return res.status(500).json({ success: false, message: 'تعذر ربط بيانات العميل للاشتراك' });
     }
 
     // 3. Check if internal testMode is explicitly allowed
@@ -1060,7 +1073,7 @@ exports.checkoutCourse = async (req, res) => {
           webhookUrl,
           description: `اشتراك رقمي: ${course.title}`,
         },
-        course.companyId || 'cmopgxu3a07i4jujj6f1oh32h'
+        targetCompanyId
       );
 
       if (!session.success) {
@@ -1075,8 +1088,8 @@ exports.checkoutCourse = async (req, res) => {
       const order = await db.order.create({
         data: {
           orderNumber,
-          companyId: course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
-          customerId: customer?.id || null,
+          company: { connect: { id: targetCompanyId } },
+          customer: { connect: { id: customer.id } },
           customerName: cleanName,
           customerPhone: cleanPhone,
           customerEmail: cleanEmail,
@@ -1101,9 +1114,10 @@ exports.checkoutCourse = async (req, res) => {
             create: [
               {
                 productId: course.storeProductId || undefined,
+                productName: course.title || 'كورس رقمي',
                 quantity: 1,
                 price: Number(course.price) || 500,
-                totalPrice: Number(course.price) || 500,
+                total: Number(course.price) || 500,
               },
             ],
           },
@@ -1136,14 +1150,14 @@ exports.checkoutCourse = async (req, res) => {
     const order = await db.order.create({
       data: {
         orderNumber,
-        companyId: course.companyId,
-        customerId: customer?.id || null,
+        company: { connect: { id: targetCompanyId } },
+        customer: { connect: { id: customer.id } },
         customerName: cleanName,
         customerPhone: cleanPhone,
         customerEmail: cleanEmail,
         status: 'CONFIRMED',
         paymentStatus: 'COMPLETED',
-        paymentMethod: 'test',
+        paymentMethod: 'CREDIT_CARD',
         total: Number(course.price) || 500,
         totalAmount: Number(course.price) || 500,
         subtotal: Number(course.price) || 500,
@@ -1155,9 +1169,10 @@ exports.checkoutCourse = async (req, res) => {
           create: [
             {
               productId: course.storeProductId || undefined,
+              productName: course.title || 'كورس رقمي',
               quantity: 1,
               price: Number(course.price) || 500,
-              totalPrice: Number(course.price) || 500,
+              total: Number(course.price) || 500,
             },
           ],
         },
@@ -1319,12 +1334,18 @@ exports.verifyCoursePayment = async (req, res) => {
     );
 
     if (isPaid) {
+      let validPaymentMethod = 'CREDIT_CARD';
+      const validMethods = ['CASH', 'CREDIT_CARD', 'BANK_TRANSFER', 'PAYPAL', 'STRIPE', 'WALLET', 'INSTAPAY', 'VISA', 'MASTERCARD', 'VODAFONE_CASH'];
+      if (sessionCheck.method && validMethods.includes(sessionCheck.method.toUpperCase())) {
+        validPaymentMethod = sessionCheck.method.toUpperCase();
+      }
+
       await db.order.update({
         where: { id: order.id },
         data: {
           status: 'CONFIRMED',
           paymentStatus: 'COMPLETED',
-          paymentMethod: sessionCheck.method || 'CREDIT_CARD',
+          paymentMethod: validPaymentMethod,
         },
       });
 

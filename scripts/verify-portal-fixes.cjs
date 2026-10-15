@@ -1,4 +1,5 @@
-const jwt = require('jsonwebtoken');
+const path = require('path');
+const jwt = require(path.resolve(__dirname, '../apps/backend/node_modules/jsonwebtoken'));
 
 process.env.JWT_SECRET = 'test_jwt_secret_key_for_portal_fixes_verification_2026';
 
