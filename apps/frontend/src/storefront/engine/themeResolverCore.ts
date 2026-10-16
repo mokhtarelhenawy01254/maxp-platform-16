@@ -257,6 +257,33 @@ const extractContentOverrides = (input?: StorefrontThemeInput): Record<string, u
   };
 };
 
+const mergeSinglePageConfig = (
+  base: unknown,
+  incoming: unknown,
+): Record<string, unknown> => {
+  const baseRec = isRecord(base) ? (base as Record<string, unknown>) : {};
+  const incomingRec = isRecord(incoming) ? (incoming as Record<string, unknown>) : {};
+
+  const merged: Record<string, unknown> = {
+    ...baseRec,
+    ...incomingRec,
+  };
+
+  const baseSections = Array.isArray(baseRec["sections"]) ? baseRec["sections"] : null;
+  const incomingSections = Array.isArray(incomingRec["sections"]) ? incomingRec["sections"] : null;
+
+  if (baseSections && incomingSections) {
+    merged["sections"] =
+      baseSections.length > incomingSections.length ? baseSections : incomingSections;
+  } else if (baseSections) {
+    merged["sections"] = baseSections;
+  } else if (incomingSections) {
+    merged["sections"] = incomingSections;
+  }
+
+  return merged;
+};
+
 const extractPageOverrides = (input?: StorefrontThemeInput): Record<string, unknown> => {
   const inputRecord: Record<string, unknown> = isRecord(input) ? input : {};
   const settings = isRecord(inputRecord["settings"])
@@ -269,32 +296,27 @@ const extractPageOverrides = (input?: StorefrontThemeInput): Record<string, unkn
     ? (settings["designTokens"] as Record<string, unknown>)
     : {};
 
-  return {
-    ...(isRecord(settingsDesignTokens["pages"])
-      ? (settingsDesignTokens["pages"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(topLevelDesignTokens["pages"])
-      ? (topLevelDesignTokens["pages"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(settings["pages"])
-      ? (settings["pages"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(inputRecord["pages"]) && !Array.isArray(inputRecord["pages"])
-      ? (inputRecord["pages"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(settingsDesignTokens["pageOverrides"])
-      ? (settingsDesignTokens["pageOverrides"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(topLevelDesignTokens["pageOverrides"])
-      ? (topLevelDesignTokens["pageOverrides"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(settings["pageOverrides"])
-      ? (settings["pageOverrides"] as Record<string, unknown>)
-      : {}),
-    ...(isRecord(inputRecord["pageOverrides"])
-      ? (inputRecord["pageOverrides"] as Record<string, unknown>)
-      : {}),
-  };
+  const sources: Array<Record<string, unknown>> = [
+    isRecord(settingsDesignTokens["pages"]) ? (settingsDesignTokens["pages"] as Record<string, unknown>) : {},
+    isRecord(topLevelDesignTokens["pages"]) ? (topLevelDesignTokens["pages"] as Record<string, unknown>) : {},
+    isRecord(settings["pages"]) ? (settings["pages"] as Record<string, unknown>) : {},
+    isRecord(inputRecord["pages"]) && !Array.isArray(inputRecord["pages"]) ? (inputRecord["pages"] as Record<string, unknown>) : {},
+    isRecord(settingsDesignTokens["pageOverrides"]) ? (settingsDesignTokens["pageOverrides"] as Record<string, unknown>) : {},
+    isRecord(topLevelDesignTokens["pageOverrides"]) ? (topLevelDesignTokens["pageOverrides"] as Record<string, unknown>) : {},
+    isRecord(settings["pageOverrides"]) ? (settings["pageOverrides"] as Record<string, unknown>) : {},
+    isRecord(inputRecord["pageOverrides"]) ? (inputRecord["pageOverrides"] as Record<string, unknown>) : {},
+  ];
+
+  const result: Record<string, unknown> = {};
+  for (const source of sources) {
+    for (const [key, pageVal] of Object.entries(source)) {
+      if (isRecord(pageVal)) {
+        result[key] = mergeSinglePageConfig(result[key], pageVal);
+      }
+    }
+  }
+
+  return result;
 };
 
 const SEO_KEYS: Array<keyof StorefrontSEOConfig> = [

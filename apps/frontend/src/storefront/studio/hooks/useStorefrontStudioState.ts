@@ -147,11 +147,28 @@ export function useStorefrontStudioState({
 
   const activePageConfig = useMemo(() => {
     const page = previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
+    const fromPages = (currentDesignTokens?.pages as Record<string, any>)?.[activePageKey];
+    const fromOverrides = (currentDesignTokens?.pageOverrides as Record<string, any>)?.[activePageKey];
+
+    const themeSecs = Array.isArray(page?.sections) ? page.sections : [];
+    const pagesSecs = Array.isArray(fromPages?.sections) ? fromPages.sections : [];
+    const overSecs = Array.isArray(fromOverrides?.sections) ? fromOverrides.sections : [];
+
+    let bestSections = themeSecs;
+    if (pagesSecs.length > bestSections.length) {
+      bestSections = pagesSecs;
+    }
+    if (overSecs.length > bestSections.length) {
+      bestSections = overSecs;
+    }
+
     return {
       ...page,
-      sections: page.sections || [],
+      ...(fromPages || {}),
+      ...(fromOverrides || {}),
+      sections: bestSections,
     };
-  }, [previewTheme, activePageKey]);
+  }, [previewTheme, activePageKey, currentDesignTokens]);
 
   const activeSections = useMemo(() => {
     return activePageConfig.sections || [];
@@ -295,8 +312,13 @@ export function useStorefrontStudioState({
 
     const newKey = `${sectionType}-${Date.now()}`;
     const starterSettings = STUDIO_STARTER_SETTINGS[sectionType] || {};
+    const baseSections =
+      activeSections.length >= (activePageConfig.sections?.length || 0)
+        ? activeSections
+        : activePageConfig.sections || [];
+
     const nextSections = [
-      ...activeSections,
+      ...baseSections,
       {
         type: sectionType,
         key: newKey,

@@ -150,7 +150,33 @@ export const getStorefrontPageOverridesFromDesignTokens = (
     return {};
   }
 
-  return normalizeStorefrontPageOverrides(designTokens["pageOverrides"]);
+  const fromOverrides = normalizeStorefrontPageOverrides(designTokens["pageOverrides"]);
+  const fromPages = normalizeStorefrontPageOverrides(designTokens["pages"]);
+
+  const allKeys = Array.from(
+    new Set([...Object.keys(fromOverrides), ...Object.keys(fromPages)]),
+  );
+
+  const merged: StorefrontPageOverrides = {};
+  for (const key of allKeys) {
+    const pageKey = key as StorefrontPageKey;
+    const overConfig = fromOverrides[pageKey];
+    const pageConfig = fromPages[pageKey];
+
+    if (overConfig && pageConfig) {
+      const overLen = overConfig.sections?.length || 0;
+      const pageLen = pageConfig.sections?.length || 0;
+      merged[pageKey] = {
+        ...pageConfig,
+        ...overConfig,
+        sections: pageLen > overLen ? pageConfig.sections : overConfig.sections,
+      };
+    } else {
+      merged[pageKey] = overConfig || pageConfig;
+    }
+  }
+
+  return merged;
 };
 
 export const upsertStorefrontPageOverridesInDesignTokens = (

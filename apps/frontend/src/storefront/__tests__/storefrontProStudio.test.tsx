@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, renderHook, act } from "@testing-library/react";
 
 import { generateResponsiveSectionRules } from "../studio/StudioResponsiveAIGenerator";
 import { StudioCanvasRuler } from "../studio/StudioCanvasRuler";
@@ -10,6 +10,8 @@ import { StudioElementsPanel } from "../studio/StudioElementsPanel";
 import { StudioStatusBar } from "../studio/StudioStatusBar";
 import { StudioTopBar } from "../studio/StudioTopBar";
 import { StudioPropertyInspector } from "../studio/StudioPropertyInspector";
+import { useStorefrontStudioState } from "../studio/hooks/useStorefrontStudioState";
+import { resolveStorefrontTheme } from "../engine/themeResolver";
 
 describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
   describe("StudioResponsiveAIGenerator", () => {
@@ -204,6 +206,123 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       fireEvent.click(screen.getByText("تجاوب"));
       expect(screen.getByText("قواعد التجاوب الذكية")).toBeDefined();
       expect(screen.getByText(/قواعد التجاوب الذكية قيد التجهيز/)).toBeDefined();
+    });
+  });
+
+  describe("Section Append & Zero-Loss Regression (Ticket 1A.1)", () => {
+    it("preserves all 7 existing sections when resolving theme with divergent pages and pageOverrides", () => {
+      const designTokens = {
+        pages: {
+          home: {
+            sections: [
+              { type: "hero-banner" },
+              { type: "promo-strip" },
+              { type: "featured-collections" },
+              { type: "featured-products" },
+              { type: "offer-bento" },
+              { type: "features-bar" },
+              { type: "newsletter" },
+            ],
+          },
+        },
+        pageOverrides: {
+          home: {
+            sections: [
+              { type: "hero-banner" },
+              { type: "promo-strip" },
+              { type: "featured-collections" },
+              { type: "featured-products" },
+              { type: "offer-bento" },
+              { type: "features-bar" },
+            ],
+          },
+        },
+      };
+
+      const resolved = resolveStorefrontTheme({
+        themeId: "modern-minimal",
+        designTokens,
+      });
+
+      const homeSections = resolved.pages.home.sections;
+      expect(homeSections).toHaveLength(7);
+      expect((homeSections[6] as any).type).toBe("newsletter");
+    });
+
+    it("strictly appends a new section to all existing sections [A..G] -> [A..G, X] and supports undo", () => {
+      let currentTokens: Record<string, unknown> = {
+        pages: {
+          home: {
+            sections: [
+              { type: "hero-banner" },
+              { type: "promo-strip" },
+              { type: "featured-collections" },
+              { type: "featured-products" },
+              { type: "offer-bento" },
+              { type: "features-bar" },
+              { type: "newsletter" },
+            ],
+          },
+        },
+        pageOverrides: {
+          home: {
+            sections: [
+              { type: "hero-banner" },
+              { type: "promo-strip" },
+              { type: "featured-collections" },
+              { type: "featured-products" },
+              { type: "offer-bento" },
+              { type: "features-bar" },
+            ],
+          },
+        },
+      };
+
+      const onChange = vi.fn((next: Record<string, unknown>) => {
+        currentTokens = next;
+      });
+
+      const { result } = renderHook(() =>
+        useStorefrontStudioState({
+          themeId: "modern-minimal",
+          designTokens: currentTokens,
+          onSave: vi.fn(),
+          onChange,
+        })
+      );
+
+      // Verify initial active sections count is 7 (reconciled, includes newsletter)
+      expect(result.current.activeSections).toHaveLength(7);
+      expect(result.current.activeSections[6].type).toBe("newsletter");
+
+      // Action: Add new section "hero-banner"
+      act(() => {
+        result.current.handleAddSection("hero-banner");
+      });
+
+      // Verify append: exactly 8 sections
+      const savedPages = (currentTokens.pages as any).home.sections;
+      const savedOverrides = (currentTokens.pageOverrides as any).home.sections;
+
+      expect(savedPages).toHaveLength(8);
+      expect(savedOverrides).toHaveLength(8);
+      expect(savedPages[6].type).toBe("newsletter");
+      expect(savedPages[7].type).toBe("hero-banner");
+      expect(savedOverrides[6].type).toBe("newsletter");
+      expect(savedOverrides[7].type).toBe("hero-banner");
+
+      // Verify undo: restores exact 7 sections
+      act(() => {
+        result.current.undo();
+      });
+
+      const undoPages = (currentTokens.pages as any).home.sections;
+      const undoOverrides = (currentTokens.pageOverrides as any).home.sections;
+
+      expect(undoPages).toHaveLength(7);
+      expect(undoOverrides).toHaveLength(7);
+      expect(undoPages[6].type).toBe("newsletter");
+      expect(undoOverrides[6].type).toBe("newsletter");
     });
   });
 });
