@@ -24,19 +24,19 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
         <span className="text-xs text-muted-foreground font-mono">جاري تحميل الإعدادات...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-foreground">
       {/* Top Header & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div className="space-y-1">
-          <h2 className="text-lg font-bold text-foreground tracking-tight">
+          <h2 className="text-base font-semibold text-foreground tracking-tight">
             {title}
           </h2>
           {description && (
@@ -51,7 +51,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
             type="button"
             onClick={onReset}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border/70 text-xs font-medium rounded-lg text-muted-foreground bg-card hover:bg-muted hover:text-foreground active:scale-95 transition-all duration-150 disabled:opacity-50 shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border/70 text-xs font-medium rounded-lg text-muted-foreground bg-card hover:bg-muted/40 hover:text-foreground active:scale-[0.98] transition-all disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>إعادة تعيين</span>
@@ -61,7 +61,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 active:scale-95 transition-all duration-150 disabled:opacity-50 shadow-2xs shadow-primary/20"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
           >
             {saving ? (
               <>
@@ -78,9 +78,11 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
         </div>
       </div>
 
-      <div className={fullWidth ? "w-full" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"}>
+      <div className={fullWidth ? "w-full" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
         {children}
       </div>
     </div>
   );
 };
+
+export default SettingsPageLayout;

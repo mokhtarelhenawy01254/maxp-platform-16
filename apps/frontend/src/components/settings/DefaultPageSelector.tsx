@@ -67,31 +67,31 @@ export function DefaultPageSelector({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         {selectedOption && (
-          <selectedOption.icon className="size-4 text-primary" />
+          <selectedOption.icon className="w-4 h-4 text-primary" />
         )}
-        <span className="text-sm font-semibold text-foreground">
-          {t("settings.defaultPage")}
+        <span className="text-xs font-semibold text-foreground">
+          {t("settings.defaultPage", "الصفحة الرئيسية الافتراضية")}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {t("settings.defaultPageHint")}
+      <p className="text-[11px] text-muted-foreground">
+        {t("settings.defaultPageHint", "الصفحة التي يتم فتحها مباشرة بعد تسجيل الدخول")}
       </p>
       <Select value={value || "/apps"} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="h-10 rounded-lg border border-border/70 bg-card hover:bg-muted/50 transition-colors">
-          <SelectValue placeholder={t("settings.selectDefaultPage")}>
+        <SelectTrigger className="h-9 rounded-lg border border-border/70 bg-card hover:bg-muted/40 transition-colors text-xs text-foreground">
+          <SelectValue placeholder={t("settings.selectDefaultPage", "اختر الصفحة الافتراضية")}>
             {selectedOption && (
               <span className="flex items-center gap-2 text-xs font-medium">
-                <selectedOption.icon className="size-3.5 text-muted-foreground" />
+                <selectedOption.icon className="w-3.5 h-3.5 text-muted-foreground" />
                 {t(selectedOption.labelKey)}
               </span>
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent align="end" className="border border-border/70 bg-card">
+        <SelectContent align="end" className="border border-border/70 bg-card rounded-xl shadow-xl">
           {DEFAULT_PAGE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value} className="text-xs">
+            <SelectItem key={option.value} value={option.value} className="text-xs focus:bg-muted/60">
               <span className="flex items-center gap-2">
-                <option.icon className="size-3.5 text-muted-foreground" />
+                <option.icon className="w-3.5 h-3.5 text-muted-foreground" />
                 {t(option.labelKey)}
               </span>
             </SelectItem>
@@ -101,3 +101,5 @@ export function DefaultPageSelector({
     </div>
   );
 }
+
+export default DefaultPageSelector;
