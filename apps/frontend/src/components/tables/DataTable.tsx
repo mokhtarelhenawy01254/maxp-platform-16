@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Inbox,
+  X,
 } from "lucide-react";
 
 interface Column {
@@ -95,12 +96,14 @@ const DataTable: React.FC<DataTableProps> = ({
 
   const renderSortIndicator = (columnKey: string) => {
     if (sortConfig?.key !== columnKey) {
-      return <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />;
+      return (
+        <ChevronsUpDown className="size-3.5 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
+      );
     }
     return sortConfig.direction === "asc" ? (
-      <ChevronUp className="w-3.5 h-3.5 text-primary" />
+      <ChevronUp className="size-3.5 text-primary" />
     ) : (
-      <ChevronDown className="w-3.5 h-3.5 text-primary" />
+      <ChevronDown className="size-3.5 text-primary" />
     );
   };
 
@@ -108,9 +111,9 @@ const DataTable: React.FC<DataTableProps> = ({
     <div className="w-full space-y-3" dir="rtl">
       {/* Search Bar */}
       {searchable && (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="relative w-full max-w-xs">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
             <input
               type="text"
               placeholder={searchPlaceholder}
@@ -119,26 +122,38 @@ const DataTable: React.FC<DataTableProps> = ({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pr-9 pl-3 py-1.5 text-xs bg-background border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
+              className="h-8.5 w-full rounded-lg border border-border/70 bg-background/80 pr-9 pl-8 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+            {searchTerm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                }}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            ) : null}
           </div>
-          <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
-            إجمالي: {filteredData.length} سجل
+          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+            إجمالي: {filteredData.length.toLocaleString()} سجل
           </span>
         </div>
       )}
 
-      {/* Table Container */}
-      <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
-        <table className="w-full text-right border-collapse">
+      {/* Table Container Single-Surface */}
+      <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-none">
+        <table className="w-full border-collapse text-right">
           <thead>
-            <tr className="border-b border-border/70 bg-muted/30">
+            <tr className="border-b border-border/60 bg-muted/30">
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 text-[11px] font-semibold text-muted-foreground tracking-wider ${
+                  className={`px-3.5 py-2.5 text-xs font-semibold tracking-tight text-muted-foreground ${
                     column.sortable
-                      ? "cursor-pointer hover:bg-muted/50 select-none group transition-colors"
+                      ? "group cursor-pointer select-none transition-colors hover:bg-muted/50"
                       : ""
                   }`}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -156,10 +171,10 @@ const DataTable: React.FC<DataTableProps> = ({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-muted-foreground"
+                  className="px-4 py-10 text-center text-muted-foreground"
                 >
                   <div className="flex flex-col items-center justify-center gap-1.5">
-                    <Inbox className="w-7 h-7 opacity-25" />
+                    <Inbox className="size-7 opacity-30" />
                     <p className="text-xs">لا توجد بيانات متاحة لعرضها</p>
                   </div>
                 </td>
@@ -168,12 +183,12 @@ const DataTable: React.FC<DataTableProps> = ({
               paginatedData.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="hover:bg-muted/20 transition-colors"
+                  className="transition-colors hover:bg-muted/20"
                 >
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className="px-4 py-3 whitespace-nowrap text-foreground font-normal"
+                      className="px-3.5 py-2.5 whitespace-nowrap font-normal text-foreground"
                     >
                       {column.render
                         ? column.render(row[column.key], row)
@@ -190,20 +205,20 @@ const DataTable: React.FC<DataTableProps> = ({
       {/* Pagination */}
       {showPagination && totalPages > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-1 text-xs text-muted-foreground">
-          <div className="font-mono tabular-nums text-[11px]">
+          <div className="font-mono text-[11px] tabular-nums">
             عرض {((currentPage - 1) * pageSize) + 1} إلى{" "}
             {Math.min(currentPage * pageSize, sortedData.length)} من{" "}
-            {sortedData.length} نتيجة
+            {sortedData.length.toLocaleString()} نتيجة
           </div>
 
           <div className="flex items-center gap-1.5 font-mono tabular-nums">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 border border-border/70 rounded-lg hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-foreground"
+              className="flex size-7 items-center justify-center rounded-lg border border-border/70 text-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="الصفحة السابقة"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="size-3.5" />
             </button>
 
             <div className="flex items-center gap-1">
@@ -222,16 +237,16 @@ const DataTable: React.FC<DataTableProps> = ({
                   return (
                     <React.Fragment key={page}>
                       {hasGap && (
-                        <span className="px-1 text-muted-foreground/60 select-none">
+                        <span className="select-none px-1 text-muted-foreground/60">
                           ...
                         </span>
                       )}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`min-w-[28px] h-7 px-2 text-xs font-medium rounded-lg border transition-colors ${
+                        className={`h-7 min-w-[28px] rounded-lg border px-2 text-xs font-medium transition-colors ${
                           currentPage === page
-                            ? "bg-foreground text-background border-foreground shadow-sm"
-                            : "border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground"
+                            ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                            : "border-border/70 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                         }`}
                       >
                         {page}
@@ -244,10 +259,10 @@ const DataTable: React.FC<DataTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 border border-border/70 rounded-lg hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-foreground"
+              className="flex size-7 items-center justify-center rounded-lg border border-border/70 text-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="الصفحة التالية"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="size-3.5" />
             </button>
           </div>
         </div>

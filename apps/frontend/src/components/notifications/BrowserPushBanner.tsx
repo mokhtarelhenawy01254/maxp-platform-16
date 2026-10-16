@@ -102,7 +102,7 @@ export const BrowserPushBanner: React.FC = () => {
 
   if (successMessage) {
     return (
-      <div className="bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-4 py-2 shadow-xs flex items-center justify-between text-xs z-50">
+      <div className="z-50 flex items-center justify-between border-b border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-800 shadow-none dark:text-emerald-300">
         <div className="flex items-center gap-2 font-medium">
           <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>{successMessage}</span>
@@ -110,7 +110,7 @@ export const BrowserPushBanner: React.FC = () => {
         <button
           type="button"
           onClick={() => setSuccessMessage(null)}
-          className="p-1 hover:bg-emerald-500/20 rounded-md transition-colors"
+          className="rounded-lg p-1 text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-300"
           aria-label="إغلاق"
         >
           <X className="size-3.5" />
@@ -121,19 +121,19 @@ export const BrowserPushBanner: React.FC = () => {
 
   if (permission === "denied") {
     return (
-      <div className="bg-amber-500/10 border-b border-amber-500/20 text-foreground px-4 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs z-50">
-        <div className="flex items-start sm:items-center gap-2.5 font-medium">
-          <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5 sm:mt-0" />
+      <div className="z-50 flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs text-foreground shadow-none">
+        <div className="flex items-start gap-2.5 font-medium sm:items-center">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500 sm:mt-0" />
           <div className="leading-relaxed">
             <span className="font-semibold text-amber-600 dark:text-amber-400">تنبيه صلاحيات الإشعارات:</span>{" "}
-            لتصلك الطلبات والرسائل والمتصفح مغلق، اضغط على علامة القفل <Lock className="inline-block size-3 -mt-0.5" /> بجانب رابط الموقع في شريط العنوان بالأعلى، واضبط الإشعارات على <span className="font-semibold underline">"سماح" (Allow)</span> ثم أعد تحميل الصفحة.
+            لتصلك الطلبات والرسائل والمتصفح مغلق، اضغط على علامة القفل <Lock className="-mt-0.5 inline-block size-3" /> بجانب رابط الموقع في شريط العنوان بالأعلى، واضبط الإشعارات على <span className="font-semibold underline">"سماح" (Allow)</span> ثم أعد تحميل الصفحة.
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-1.5 bg-background border border-border/70 hover:bg-muted font-medium px-2.5 py-1 rounded-md text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:bg-muted/50"
           >
             <RefreshCw className="size-3" />
             إعادة تحميل الصفحة
@@ -141,7 +141,7 @@ export const BrowserPushBanner: React.FC = () => {
           <button
             type="button"
             onClick={() => setDismissed(true)}
-            className="p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             aria-label="إغلاق"
           >
             <X className="size-3.5" />
@@ -152,19 +152,19 @@ export const BrowserPushBanner: React.FC = () => {
   }
 
   return (
-    <div className="bg-primary/5 border-b border-primary/20 text-foreground px-4 py-2 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs z-50">
+    <div className="z-50 flex flex-wrap items-center justify-between gap-3 border-b border-primary/20 bg-primary/5 px-4 py-2 text-xs text-foreground shadow-none">
       <div className="flex items-center gap-2.5 font-medium">
         <BellRing className="size-4 shrink-0 text-primary" />
         <span>
           <strong className="font-semibold text-primary">تنبيه الإشعارات:</strong> لتصلك تنبيهات الطلبات والرسائل الجديدة بصوت عالي حتى عندما يكون المتصفح مغلقاً، يرجى تفعيل إشعارات المتصفح.
         </span>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={handleActivate}
           disabled={isLoading}
-          className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-3 py-1 rounded-md text-xs shadow-xs transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {isLoading ? (
             <>
@@ -181,7 +181,7 @@ export const BrowserPushBanner: React.FC = () => {
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           title="إغلاق التنبيه مؤقتاً"
           aria-label="إغلاق التنبيه"
         >

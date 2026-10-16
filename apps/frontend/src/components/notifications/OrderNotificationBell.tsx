@@ -99,11 +99,14 @@ const OrderNotificationBell: React.FC = () => {
   const markOrderAsViewed = useCallback(async (orderId: string) => {
     const token = getToken();
     if (!token) return;
+
     try {
-      await fetch(buildApiUrl(`orders-v2/simple/${orderId}/viewed`), {
+      await fetch(buildApiUrl(`orders-v2/simple/mark-viewed/${orderId}`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
+      setNewOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setNewOrdersCount((c) => Math.max(0, c - 1));
     } catch {
       // silent fail
     }
@@ -112,31 +115,51 @@ const OrderNotificationBell: React.FC = () => {
   const markAllAsViewed = useCallback(async () => {
     const token = getToken();
     if (!token) return;
+
     try {
-      const res = await fetch(buildApiUrl("orders-v2/simple/mark-all-viewed"), {
+      await fetch(buildApiUrl("orders-v2/simple/mark-all-viewed"), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-      if (res.ok) {
-        setNewOrdersCount(0);
-        setNewOrders([]);
-        setIsOpen(false);
-      }
+      setNewOrders([]);
+      setNewOrdersCount(0);
     } catch {
       // silent fail
     }
   }, []);
 
-  const handleOrderClick = useCallback(
-    async (order: NewOrderItem) => {
-      await markOrderAsViewed(order.id);
-      setNewOrdersCount((prev) => Math.max(0, prev - 1));
-      setNewOrders((prev) => prev.filter((o) => o.id !== order.id));
-      setIsOpen(false);
-      navigate(`/orders?search=${order.orderNumber}`);
-    },
-    [markOrderAsViewed, navigate],
-  );
+  useEffect(() => {
+    if (!canAccessOrders) return;
+    fetchNewOrdersCount();
+
+    const intervalId = setInterval(fetchNewOrdersCount, 30000);
+    return () => clearInterval(intervalId);
+  }, [canAccessOrders, fetchNewOrdersCount]);
+
+  useEffect(() => {
+    if (!canAccessOrders) return;
+
+    const handleNewOrder = () => {
+      fetchNewOrdersCount();
+      if (isOpen) fetchNewOrdersList();
+    };
+
+    socketService.on("order:new", handleNewOrder);
+    socketService.on("new_order", handleNewOrder);
+    socketService.on("order:created", handleNewOrder);
+
+    return () => {
+      socketService.off("order:new", handleNewOrder);
+      socketService.off("new_order", handleNewOrder);
+      socketService.off("order:created", handleNewOrder);
+    };
+  }, [canAccessOrders, fetchNewOrdersCount, fetchNewOrdersList, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNewOrdersList();
+    }
+  }, [isOpen, fetchNewOrdersList]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -144,58 +167,46 @@ const OrderNotificationBell: React.FC = () => {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || !user || !canAccessOrders) return;
-    fetchNewOrdersCount();
-    const handleVisibility = () => { if (!document.hidden) fetchNewOrdersCount(); };
-    document.addEventListener("visibilitychange", handleVisibility);
-    const interval = setInterval(() => { if (!document.hidden) fetchNewOrdersCount(); }, 30000);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
     return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [fetchNewOrdersCount, isAuthenticated, user, canAccessOrders]);
+  }, [isOpen]);
 
-  useEffect(() => {
-    if (!isAuthenticated || !user || !canAccessOrders) return;
-    socketService.getSocket();
-    const handleOrderEvent = () => {
-      fetchNewOrdersCount();
-      if (isOpen) fetchNewOrdersList();
-    };
-    socketService.on("order:created", handleOrderEvent);
-    socketService.on("order:updated", handleOrderEvent);
-    return () => {
-      socketService.off("order:created", handleOrderEvent);
-      socketService.off("order:updated", handleOrderEvent);
-    };
-  }, [isAuthenticated, user, isOpen, fetchNewOrdersCount, fetchNewOrdersList, canAccessOrders]);
+  const handleOrderClick = (order: NewOrderItem) => {
+    markOrderAsViewed(order.id);
+    setIsOpen(false);
+    navigate(`/orders?orderNumber=${encodeURIComponent(order.orderNumber)}`);
+  };
 
-  useEffect(() => {
-    if (!isOpen || !canAccessOrders) return;
-    fetchNewOrdersList();
-    const interval = setInterval(() => { if (!document.hidden) fetchNewOrdersList(); }, 15000);
-    return () => clearInterval(interval);
-  }, [isOpen, fetchNewOrdersList, canAccessOrders]);
+  const formatTimestamp = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
 
-  const formatTimestamp = (timestamp: string) => {
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    if (minutes < 1) return "الآن";
-    if (minutes < 60) return `منذ ${minutes} د`;
-    if (hours < 24) return `منذ ${hours} س`;
-    if (days < 7) return `منذ ${days} ي`;
-    return new Date(timestamp).toLocaleDateString("ar-EG");
+      if (diffMins < 1) return "الآن";
+      if (diffMins < 60) return `منذ ${diffMins} د`;
+      if (diffHours < 24) return `منذ ${diffHours} س`;
+      return date.toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
+    } catch {
+      return "";
+    }
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("ar-EG", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
+    try {
+      return Number(amount || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
+    } catch {
+      return String(amount || 0);
+    }
   };
 
   if (!user || !canAccessOrders) return null;
@@ -206,28 +217,28 @@ const OrderNotificationBell: React.FC = () => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         title="الطلبات الجديدة"
         aria-label="الطلبات الجديدة"
       >
-        <Bell className={`h-4.5 w-4.5 transition-colors ${hasNew ? "text-amber-500 fill-amber-500/20" : "text-muted-foreground"}`} />
+        <Bell className={`size-4.5 transition-colors ${hasNew ? "fill-amber-500/20 text-amber-500" : "text-muted-foreground"}`} />
         {hasNew && (
-          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-mono tabular-nums font-bold text-white bg-rose-500 rounded-full border-2 border-background shadow-xs">
+          <span className="absolute -top-1 -right-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-rose-500 px-1 font-mono text-[10px] font-bold text-white tabular-nums shadow-xs">
             {newOrdersCount > 99 ? "99+" : newOrdersCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute ltr:right-0 rtl:left-0 z-50 mt-2 max-h-[420px] w-96 max-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-border/70 bg-card text-card-foreground shadow-xl flex flex-col animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-3.5 py-2.5 border-b border-border/60 bg-muted/40 flex items-center justify-between gap-2">
+        <div className="absolute z-50 mt-2 flex max-h-[420px] w-96 max-w-[min(24rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-xl border border-border/70 bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 ltr:right-0 rtl:left-0">
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/30 px-3.5 py-2.5">
             <div className="flex items-center gap-2">
-              <div className="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-                <ShoppingBag className="w-3.5 h-3.5" />
+              <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                <ShoppingBag className="size-3.5" />
               </div>
               <h3 className="text-xs font-semibold text-foreground">الطلبات الجديدة</h3>
               {hasNew && (
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-mono tabular-nums font-bold text-white bg-rose-500 rounded-full">
+                <span className="inline-flex items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white tabular-nums">
                   {newOrdersCount}
                 </span>
               )}
@@ -237,7 +248,7 @@ const OrderNotificationBell: React.FC = () => {
                 <button
                   type="button"
                   onClick={markAllAsViewed}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2 py-0.5 rounded-md hover:bg-primary/10"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary/80"
                 >
                   <CheckCheck className="size-3" />
                   تعليم الكل مقروء
@@ -246,7 +257,7 @@ const OrderNotificationBell: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="إغلاق"
               >
                 <X className="size-3.5" />
@@ -254,17 +265,17 @@ const OrderNotificationBell: React.FC = () => {
             </div>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto divide-y divide-border/40">
+          <div className="max-h-[300px] divide-y divide-border/40 overflow-y-auto">
             {loading ? (
               <div className="px-4 py-8 text-center text-muted-foreground">
-                <Loader2 className="animate-spin size-5 mx-auto mb-2 text-primary" />
+                <Loader2 className="mx-auto mb-2 size-5 animate-spin text-primary" />
                 <p className="text-xs">جاري فحص الطلبات...</p>
               </div>
             ) : newOrders.length === 0 ? (
               <div className="px-4 py-8 text-center text-muted-foreground">
-                <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-500/80" />
+                <CheckCircle2 className="mx-auto mb-2 size-7 text-emerald-500/80" />
                 <p className="text-xs font-semibold text-foreground">لا توجد طلبات جديدة</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">جميع الطلبات تمت مراجعتها</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">جميع الطلبات تمت مراجعتها</p>
               </div>
             ) : (
               newOrders.map((order) => (
@@ -272,20 +283,20 @@ const OrderNotificationBell: React.FC = () => {
                   key={`${order.type}-${order.id}`}
                   type="button"
                   onClick={() => handleOrderClick(order)}
-                  className="w-full text-right px-3.5 py-2.5 hover:bg-muted/50 transition-colors duration-150 group flex items-start gap-3"
+                  className="group flex w-full items-start gap-3 px-3.5 py-2.5 text-right transition-colors duration-150 hover:bg-muted/40"
                 >
-                  <div className="shrink-0 mt-0.5 size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
                     <ShoppingBag className="size-3.5" />
                   </div>
-                  <div className="flex-1 min-w-0 text-right">
+                  <div className="min-w-0 flex-1 text-right">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-mono tabular-nums font-semibold text-primary">#{order.orderNumber}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono tabular-nums">{formatTimestamp(order.createdAt)}</span>
+                      <span className="font-mono text-xs font-semibold text-primary tabular-nums">#{order.orderNumber}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{formatTimestamp(order.createdAt)}</span>
                     </div>
-                    <p className="text-xs font-medium text-foreground truncate mt-0.5">{order.displayName || `#${order.orderNumber}`}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs font-mono tabular-nums font-semibold text-foreground">{formatAmount(order.displayTotal)} ج.م</span>
-                      <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                    <p className="mt-0.5 truncate text-xs font-medium text-foreground">{order.displayName || `#${order.orderNumber}`}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono text-xs font-semibold text-foreground tabular-nums">{formatAmount(order.displayTotal)} ج.م</span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
                         فتح الطلب
                         <ArrowLeft className="size-3 rtl:rotate-0 ltr:rotate-180" />
                       </span>
@@ -296,14 +307,14 @@ const OrderNotificationBell: React.FC = () => {
             )}
           </div>
 
-          <div className="px-3 py-2 border-t border-border/60 bg-muted/20">
+          <div className="border-t border-border/60 bg-muted/20 px-3 py-2">
             <button
               type="button"
               onClick={() => {
                 setIsOpen(false);
                 navigate("/orders?isViewed=false");
               }}
-              className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors font-medium py-1 rounded-md hover:bg-primary/5"
+              className="w-full rounded-md py-1 text-center text-xs font-medium text-primary transition-colors hover:bg-primary/5 hover:text-primary/80"
             >
               عرض جميع الطلبات
             </button>

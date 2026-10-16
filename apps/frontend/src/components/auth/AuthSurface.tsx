@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { AlertCircle, CheckCircle2, Info, AlertTriangle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { envConfig } from "../../config/environment";
 import "../../pages/auth/authRedesign.css";
@@ -75,8 +76,13 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
         }
       : {}),
   } as React.CSSProperties;
+
   return (
-    <div className={cn("elite-auth-container", wide && "elite-auth-container--wide")} dir={dir} style={themeStyle as React.CSSProperties}>
+    <div
+      className={cn("elite-auth-container", wide && "elite-auth-container--wide")}
+      dir={dir}
+      style={themeStyle}
+    >
       {/* Visual Side */}
       <div className="elite-auth-visual">
         <div className="visual-content animate-fade-up">
@@ -100,7 +106,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
             <div className="visual-stats-inline">
               {visualStats.map((stat, idx) => (
                 <div key={idx} className="stat-inline">
-                  <span className="stat-inline-value">{stat.value}</span>
+                  <span className="stat-inline-value font-mono tabular-nums">{stat.value}</span>
                   <span className="stat-inline-label">{stat.label}</span>
                 </div>
               ))}
@@ -108,11 +114,11 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
           ) : (
             <div className="visual-stats-inline">
               <span className="stat-inline">
-                <span className="stat-inline-value">{t("auth.visualStart")}</span>
+                <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualStart")}</span>
                 <span className="stat-inline-label">{t("auth.visualImmediately")}</span>
               </span>
               <span className="stat-inline">
-                <span className="stat-inline-value">{t("auth.visualWithout")}</span>
+                <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualWithout")}</span>
                 <span className="stat-inline-label">{t("auth.visualTrialPeriod")}</span>
               </span>
             </div>
@@ -122,12 +128,19 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
 
       {/* Form Side */}
       <div className="elite-auth-form-side">
-        <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
+        <div
+          className={cn(
+            "elite-form-container animate-fade-up",
+            wide && "elite-form-container--wide",
+          )}
+        >
           <Link to="/" className="elite-brand-logo">
             {companyLogo ? (
               <img
                 src={
-                  companyLogo.startsWith("http://") || companyLogo.startsWith("https://") || companyLogo.startsWith("data:")
+                  companyLogo.startsWith("http://") ||
+                  companyLogo.startsWith("https://") ||
+                  companyLogo.startsWith("data:")
                     ? companyLogo
                     : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
                 }
@@ -147,7 +160,10 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
                 className="logo-img"
               />
             )}
-            <div className="logo-icon" style={{ display: companyLogo || !companyName ? "none" : "flex" }}>
+            <div
+              className="logo-icon"
+              style={{ display: companyLogo || !companyName ? "none" : "flex" }}
+            >
               {(companyName || t("auth.brandName")).charAt(0)}
             </div>
             <span className="logo-text">
@@ -156,8 +172,8 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
           </Link>
 
           <div className="form-header">
-            {eyebrow && <span className="elite-form-eyebrow">{eyebrow}</span>}
-            <h2 className="form-title">{title}</h2>
+            {eyebrow && <span className="elite-form-eyebrow font-mono tabular-nums">{eyebrow}</span>}
+            <h2 className="form-title tracking-tight">{title}</h2>
             <p className="form-subtitle">{description}</p>
           </div>
 
@@ -165,15 +181,30 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
             {children}
           </div>
 
-          {footer && (
-            <footer className="elite-form-footer">
-              {footer}
-            </footer>
-          )}
+          {footer && <footer className="elite-form-footer">{footer}</footer>}
         </div>
       </div>
     </div>
   );
+};
+
+const noticeVariants = {
+  error: {
+    container: "border-destructive/20 bg-destructive/10 text-destructive",
+    icon: AlertCircle,
+  },
+  success: {
+    container: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    icon: CheckCircle2,
+  },
+  info: {
+    container: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    icon: Info,
+  },
+  warning: {
+    container: "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    icon: AlertTriangle,
+  },
 };
 
 export const AuthNotice: React.FC<AuthNoticeProps> = ({
@@ -183,16 +214,25 @@ export const AuthNotice: React.FC<AuthNoticeProps> = ({
   variant = "info",
 }) => {
   const isError = variant === "error";
+  const currentVariant = noticeVariants[variant] || noticeVariants.info;
+  const Icon = currentVariant.icon;
 
   return (
     <div
-      className={cn("business-auth-notice", className)}
+      className={cn(
+        "business-auth-notice flex items-start gap-2.5 rounded-xl border p-3 text-xs",
+        currentVariant.container,
+        className,
+      )}
       data-variant={variant}
       aria-live="polite"
       role={isError ? "alert" : "status"}
     >
-      {title ? <p className="business-auth-notice-title">{title}</p> : null}
-      <div className="business-auth-notice-copy">{children}</div>
+      <Icon className="mt-0.5 size-4 shrink-0" />
+      <div className="min-w-0 flex-1">
+        {title ? <p className="font-semibold">{title}</p> : null}
+        <div className="business-auth-notice-copy leading-relaxed">{children}</div>
+      </div>
     </div>
   );
 };
