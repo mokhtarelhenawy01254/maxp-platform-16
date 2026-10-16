@@ -78,6 +78,7 @@ function checkRoute(toPath) {
     '/admin/education',
     '/admin/hotel',
     '/accounting',
+    '/manufacturing',
   ];
   for (const prefix of SUB_APP_ROUTERS) {
     if (cleanPath === prefix || cleanPath.startsWith(prefix + '/')) {

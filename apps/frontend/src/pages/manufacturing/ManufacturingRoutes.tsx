@@ -10,12 +10,12 @@ import ManufacturingSettingsPage from './settings/ManufacturingSettingsPage';
 export const ManufacturingRoutes: React.FC = () => {
   return (
     <Routes>
-      <Route path="/" element={<ManufacturingDashboardPage />} />
-      <Route path="/orders" element={<ManufacturingOrdersPage />} />
-      <Route path="/orders/:id" element={<ManufacturingOrderDetailPage />} />
-      <Route path="/boms" element={<ManufacturingBomsPage />} />
-      <Route path="/reports" element={<ManufacturingReportsPage />} />
-      <Route path="/settings" element={<ManufacturingSettingsPage />} />
+      <Route index element={<ManufacturingDashboardPage />} />
+      <Route path="orders" element={<ManufacturingOrdersPage />} />
+      <Route path="orders/:id" element={<ManufacturingOrderDetailPage />} />
+      <Route path="boms" element={<ManufacturingBomsPage />} />
+      <Route path="reports" element={<ManufacturingReportsPage />} />
+      <Route path="settings" element={<ManufacturingSettingsPage />} />
       <Route path="*" element={<Navigate to="/manufacturing" replace />} />
     </Routes>
   );
