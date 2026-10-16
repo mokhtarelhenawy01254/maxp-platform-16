@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Check, CheckCircle2, Ban, AlertTriangle } from 'lucide-react';
-import { ProductionOrder, ProductionOrderStatus } from '../../../manufacturingApi';
+import { ProductionOrder, ProductionOrderStatus } from '../../manufacturingApi';
 
 interface OrderCockpitHeaderProps {
   order: ProductionOrder;

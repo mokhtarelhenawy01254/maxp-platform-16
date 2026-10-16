@@ -6,7 +6,7 @@ import {
   VariantRequirementResolution,
   WarehouseOption,
   ProductionOrder,
-} from '../../manufacturingApi';
+} from '../manufacturingApi';
 import { WizardVariantMatrixStep } from './wizard/WizardVariantMatrixStep';
 import { WizardRequirementsPreviewStep } from './wizard/WizardRequirementsPreviewStep';
 

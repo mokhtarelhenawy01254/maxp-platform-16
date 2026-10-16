@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import { ProductionOrder } from '../../../manufacturingApi';
+import { ProductionOrder } from '../../manufacturingApi';
 
 interface ReportOrdersTabProps {
   orders: ProductionOrder[];

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, TrendingUp, TrendingDown } from 'lucide-react';
-import { ProductionOrder } from '../../../manufacturingApi';
+import { ProductionOrder } from '../../manufacturingApi';
 
 interface ReportUnitCostTabProps {
   orders: ProductionOrder[];
