@@ -86,7 +86,6 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
             slug: true,
             name: true,
             mainImage: true,
-            image: true,
             images: true,
             updatedAt: true,
           },
@@ -211,7 +210,6 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
 
       const candidateImages = [
         prod.mainImage,
-        prod.image,
         ...parseImageList(prod.images),
       ]
         .map((img) => resolveAbsoluteImageUrl(img, baseUrl))
