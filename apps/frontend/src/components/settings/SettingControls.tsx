@@ -19,15 +19,15 @@ export const ToggleSetting: React.FC<ToggleSettingProps> = ({
 }) => {
   const checkedValue = value ?? false;
   return (
-    <div className="flex items-center justify-between py-1.5">
+    <div className="flex items-center justify-between py-1.5" dir="rtl">
       <span
-        className={`text-xs font-medium ${
+        className={`text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
         {label}
       </span>
-      <label className="relative inline-flex items-center cursor-pointer">
+      <label className="relative inline-flex items-center cursor-pointer select-none">
         <input
           type="checkbox"
           checked={checkedValue}
@@ -35,7 +35,7 @@ export const ToggleSetting: React.FC<ToggleSettingProps> = ({
           disabled={disabled}
           className="sr-only peer"
         />
-        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50 shadow-2xs"></div>
       </label>
     </div>
   );
@@ -64,9 +64,9 @@ export const NumberSetting: React.FC<NumberSettingProps> = ({
 }) => {
   const numValue = value ?? min ?? 0;
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" dir="rtl">
       <label
-        className={`block text-xs font-medium ${
+        className={`block text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
@@ -83,7 +83,7 @@ export const NumberSetting: React.FC<NumberSettingProps> = ({
         min={min}
         max={max}
         disabled={disabled}
-        className={`w-full px-3 py-1.5 bg-background border border-border/70 text-foreground font-mono tabular-nums rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs transition-all ${
+        className={`w-full px-3 py-2 bg-card border border-border/70 text-foreground font-mono tabular-nums rounded-xl focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs transition-all shadow-2xs ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         }`}
       />
@@ -112,9 +112,9 @@ export const SelectSetting: React.FC<SelectSettingProps> = ({
 }) => {
   const stringValue = value ?? (options[0]?.value || "");
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" dir="rtl">
       <label
-        className={`block text-xs font-medium ${
+        className={`block text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
@@ -124,7 +124,7 @@ export const SelectSetting: React.FC<SelectSettingProps> = ({
         value={stringValue}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full px-3 py-1.5 bg-background border border-border/70 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs transition-all ${
+        className={`w-full px-3 py-2 bg-card border border-border/70 text-foreground rounded-xl focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs transition-all shadow-2xs cursor-pointer ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         }`}
       >
@@ -162,9 +162,9 @@ export const InputSetting: React.FC<InputSettingProps> = ({
   helperText,
 }) => {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" dir="rtl">
       <label
-        className={`block text-xs font-medium ${
+        className={`block text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
@@ -176,11 +176,11 @@ export const InputSetting: React.FC<InputSettingProps> = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-3 py-1.5 bg-background border border-border/70 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs transition-all ${
+        className={`w-full px-3 py-2 bg-card border border-border/70 text-foreground rounded-xl focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs transition-all shadow-2xs placeholder:text-muted-foreground/60 ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         }`}
       />
-      {helperText && <p className="text-[11px] text-muted-foreground">{helperText}</p>}
+      {helperText && <p className="text-[11px] text-muted-foreground leading-relaxed">{helperText}</p>}
     </div>
   );
 };
@@ -209,9 +209,9 @@ export const TextAreaSetting: React.FC<TextAreaSettingProps> = ({
   rows = 3,
 }) => {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" dir="rtl">
       <label
-        className={`block text-xs font-medium ${
+        className={`block text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
@@ -223,11 +223,11 @@ export const TextAreaSetting: React.FC<TextAreaSettingProps> = ({
         placeholder={placeholder}
         disabled={disabled}
         rows={rows}
-        className={`w-full px-3 py-1.5 bg-background border border-border/70 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs transition-all resize-none ${
+        className={`w-full px-3 py-2 bg-card border border-border/70 text-foreground rounded-xl focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs transition-all resize-none shadow-2xs placeholder:text-muted-foreground/60 ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         }`}
       />
-      {helperText && <p className="text-[11px] text-muted-foreground">{helperText}</p>}
+      {helperText && <p className="text-[11px] text-muted-foreground leading-relaxed">{helperText}</p>}
     </div>
   );
 };
@@ -252,9 +252,9 @@ export const ColorSetting: React.FC<ColorSettingProps> = ({
   helperText,
 }) => {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" dir="rtl">
       <label
-        className={`block text-xs font-medium ${
+        className={`block text-xs font-semibold ${
           disabled ? "text-muted-foreground/50" : "text-foreground"
         }`}
       >
@@ -266,7 +266,7 @@ export const ColorSetting: React.FC<ColorSettingProps> = ({
           value={value?.startsWith("rgba") ? "#000000" : value || "#000000"}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className={`w-8 h-8 rounded-lg border border-border/70 cursor-pointer bg-background disabled:cursor-not-allowed ${
+          className={`w-9 h-9 rounded-xl border border-border/70 cursor-pointer bg-card shadow-2xs disabled:cursor-not-allowed p-0.5 ${
             disabled ? "opacity-50" : ""
           }`}
         />
@@ -276,12 +276,12 @@ export const ColorSetting: React.FC<ColorSettingProps> = ({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           placeholder="#000000 or rgba(0,0,0,0.9)"
-          className={`flex-1 px-3 py-1.5 bg-background border border-border/70 text-foreground font-mono tabular-nums rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs transition-all ${
+          className={`flex-1 px-3 py-2 bg-card border border-border/70 text-foreground font-mono tabular-nums rounded-xl focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs transition-all shadow-2xs ${
             disabled ? "opacity-50 cursor-not-allowed" : ""
           }`}
         />
       </div>
-      {helperText && <p className="text-[11px] text-muted-foreground">{helperText}</p>}
+      {helperText && <p className="text-[11px] text-muted-foreground leading-relaxed">{helperText}</p>}
     </div>
   );
 };

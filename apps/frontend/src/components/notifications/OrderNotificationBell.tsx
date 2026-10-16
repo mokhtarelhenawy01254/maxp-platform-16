@@ -217,7 +217,7 @@ const OrderNotificationBell: React.FC = () => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+        className="relative rounded-xl p-2 text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground active:scale-95 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
         title="الطلبات الجديدة"
         aria-label="الطلبات الجديدة"
       >
@@ -230,34 +230,34 @@ const OrderNotificationBell: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 flex max-h-[420px] w-96 max-w-[min(24rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-xl border border-border/70 bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 ltr:right-0 rtl:left-0">
-          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/30 px-3.5 py-2.5">
+        <div className="absolute z-50 mt-2 flex max-h-[420px] w-96 max-w-[min(24rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 ltr:right-0 rtl:left-0" dir="rtl">
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+              <div className="flex size-7 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-2xs">
                 <ShoppingBag className="size-3.5" />
               </div>
               <h3 className="text-xs font-semibold text-foreground">الطلبات الجديدة</h3>
               {hasNew && (
-                <span className="inline-flex items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white tabular-nums">
+                <span className="inline-flex items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 font-mono text-[10px] font-bold text-white tabular-nums">
                   {newOrdersCount}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {hasNew && (
                 <button
                   type="button"
                   onClick={markAllAsViewed}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary/80"
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-primary transition-all hover:bg-primary/10 active:scale-97 cursor-pointer"
                 >
                   <CheckCheck className="size-3" />
-                  تعليم الكل مقروء
+                  <span>تعليم الكل مقروء</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 cursor-pointer"
                 aria-label="إغلاق"
               >
                 <X className="size-3.5" />
@@ -269,7 +269,7 @@ const OrderNotificationBell: React.FC = () => {
             {loading ? (
               <div className="px-4 py-8 text-center text-muted-foreground">
                 <Loader2 className="mx-auto mb-2 size-5 animate-spin text-primary" />
-                <p className="text-xs">جاري فحص الطلبات...</p>
+                <p className="text-xs font-mono">جاري فحص الطلبات...</p>
               </div>
             ) : newOrders.length === 0 ? (
               <div className="px-4 py-8 text-center text-muted-foreground">
@@ -283,9 +283,9 @@ const OrderNotificationBell: React.FC = () => {
                   key={`${order.type}-${order.id}`}
                   type="button"
                   onClick={() => handleOrderClick(order)}
-                  className="group flex w-full items-start gap-3 px-3.5 py-2.5 text-right transition-colors duration-150 hover:bg-muted/40"
+                  className="group flex w-full items-start gap-3 px-4 py-3 text-right transition-all duration-150 hover:bg-muted/30 active:scale-[0.99] cursor-pointer"
                 >
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-2xs">
                     <ShoppingBag className="size-3.5" />
                   </div>
                   <div className="min-w-0 flex-1 text-right">
@@ -295,8 +295,8 @@ const OrderNotificationBell: React.FC = () => {
                     </div>
                     <p className="mt-0.5 truncate text-xs font-medium text-foreground">{order.displayName || `#${order.orderNumber}`}</p>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="font-mono text-xs font-semibold text-foreground tabular-nums">{formatAmount(order.displayTotal)} ج.م</span>
-                      <span className="flex items-center gap-0.5 text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="font-mono text-xs font-bold text-foreground tabular-nums">{formatAmount(order.displayTotal)} ج.م</span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100 font-medium">
                         فتح الطلب
                         <ArrowLeft className="size-3 rtl:rotate-0 ltr:rotate-180" />
                       </span>
@@ -314,7 +314,7 @@ const OrderNotificationBell: React.FC = () => {
                 setIsOpen(false);
                 navigate("/orders?isViewed=false");
               }}
-              className="w-full rounded-md py-1 text-center text-xs font-medium text-primary transition-colors hover:bg-primary/5 hover:text-primary/80"
+              className="w-full rounded-xl py-1.5 text-center text-xs font-semibold text-primary transition-all hover:bg-primary/10 active:scale-97 cursor-pointer"
             >
               عرض جميع الطلبات
             </button>

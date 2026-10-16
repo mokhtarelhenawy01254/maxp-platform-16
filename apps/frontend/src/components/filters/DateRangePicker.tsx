@@ -65,7 +65,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               key={filter.value}
               type="button"
               onClick={() => handleQuickFilter(filter.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 isSelected
                   ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'

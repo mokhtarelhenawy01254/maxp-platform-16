@@ -47,7 +47,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       <button
         type="button"
         onClick={handleExportCSV}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         title="تصدير بصيغة CSV"
       >
         <Download className="size-3.5 text-primary" />
@@ -57,7 +57,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       <button
         type="button"
         onClick={handleExportExcel}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         title="تصدير بصيغة Excel"
       >
         <FileSpreadsheet className="size-3.5 text-emerald-500" />
@@ -67,7 +67,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       <button
         type="button"
         onClick={handleExportPDF}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         title="تصدير بصيغة PDF"
       >
         <FileText className="size-3.5 text-rose-500" />
@@ -77,7 +77,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       <button
         type="button"
         onClick={handlePrint}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.98]"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         title="طباعة التقرير"
       >
         <Printer className="size-3.5 text-muted-foreground" />
