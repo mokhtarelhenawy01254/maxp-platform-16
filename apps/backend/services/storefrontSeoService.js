@@ -24,6 +24,37 @@ const PAGE_NAME_MAP = {
   blog: "المدونة",
   portal: "بوابة الطالب",
   academy: "أكاديمية MaxP",
+  // Standard policy and store pages
+  terms: "الشروط والأحكام",
+  "terms-and-conditions": "الشروط والأحكام",
+  "terms-of-service": "الشروط والأحكام",
+  conditions: "الشروط والأحكام",
+  policies: "السياسات والشروط",
+  policy: "السياسات والشروط",
+  privacy: "سياسة الخصوصية",
+  "privacy-policy": "سياسة الخصوصية",
+  "about-us": "من نحن",
+  about: "من نحن",
+  "who-we-are": "من نحن",
+  contact: "اتصل بنا",
+  "contact-us": "اتصل بنا",
+  "shipping-policy": "سياسة الشحن والتوصيل",
+  shipping: "سياسة الشحن والتوصيل",
+  delivery: "سياسة التوصيل",
+  "delivery-policy": "سياسة التوصيل",
+  "return-policy": "سياسة الاستبدال والاسترجاع",
+  returns: "سياسة الاستبدال والاسترجاع",
+  "refund-policy": "سياسة الاسترداد",
+  refund: "سياسة الاسترداد",
+  "exchange-policy": "سياسة الاستبدال",
+  exchange: "سياسة الاستبدال",
+  "payment-methods": "طرق الدفع",
+  payment: "طرق الدفع",
+  payments: "طرق الدفع",
+  faq: "الأسئلة الشائعة",
+  faqs: "الأسئلة الشائعة",
+  help: "المساعدة والدعم",
+  support: "الدعم الفني",
 };
 
 const RESERVED_PAGE_SEGMENTS = new Set([
@@ -100,6 +131,16 @@ const titleizeSegment = (segment) =>
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+const resolvePageNameFromSegment = (segment) => {
+  if (!segment || typeof segment !== "string") return null;
+  const normalized = segment
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/_+/g, "-");
+  return PAGE_NAME_MAP[normalized] || null;
+};
 
 const applyTitleTemplate = (template, pageTitle, storeName) =>
   template
@@ -723,16 +764,30 @@ const buildStorefrontSeoMetadata = ({
       facebookDomainVerification,
     };
   } else if (storePage) {
-    const pageTitle =
+    const rawTitle =
       trimToNull(storePage.metaTitle) ||
       trimToNull(storePage.title) ||
+      resolvePageNameFromSegment(routeContext.storePageSlug) ||
+      resolvePageNameFromSegment(routeContext.pageSegment) ||
       titleizeSegment(routeContext.pageSegment) ||
       storeName;
+
+    const pageTitle =
+      resolvePageNameFromSegment(rawTitle) ||
+      rawTitle;
+
     title = trimToNull(storePage.metaTitle)
-      ? pageTitle
+      ? storePage.metaTitle
       : applyTitleTemplate(titleTemplate, pageTitle, storeName);
-    description = trimToNull(storePage.metaDescription) || fallbackDescription;
-    canonicalUrl = `${baseUrl}/${encodeURIComponent(storePage.slug || routeContext.storePageSlug)}`;
+
+    const generatedDescription = companyDescription
+      ? `${pageTitle} — ${storeName}. ${companyDescription}`
+      : `${pageTitle} — تعرف على تفاصيل ${pageTitle} الخاصة بـ ${storeName}.`;
+
+    description = trimToNull(storePage.metaDescription) || generatedDescription;
+    canonicalUrl = `${baseUrl}/${encodeURIComponent(
+      storePage.slug || routeContext.storePageSlug || routeContext.pageSegment,
+    )}`;
   } else if (routeContext.isHomePage) {
     title = storeName;
     description = fallbackDescription;
@@ -869,6 +924,7 @@ const buildStorefrontSeoMetadata = ({
         : `أحدث المقالات والنصائح من ${storeName}.`;
     } else {
       pageTitle =
+        resolvePageNameFromSegment(routeContext.pageSegment) ||
         PAGE_NAME_MAP[routeContext.pageSegment] ||
         titleizeSegment(routeContext.pageSegment) ||
         storeName;
@@ -1109,6 +1165,7 @@ module.exports = {
   isHtmlRouteRequest,
   isReservedPageSegment,
   parseJsonObject,
+  resolvePageNameFromSegment,
   resolveRouteContext,
   resolveProductSeoOverrides,
   stripHtml,

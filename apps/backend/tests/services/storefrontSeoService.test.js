@@ -413,5 +413,100 @@ describe("storefrontSeoService", () => {
     });
     expect(productWithCategory.title).toBe("منتج أحذية رياضية | Swan");
   });
+
+  test("uses custom storePage title, metaTitle, and metaDescription when provided", () => {
+    // When custom storePage has metaTitle and metaDescription
+    const customPageMeta = buildStorefrontSeoMetadata({
+      pathname: "/vip-club",
+      currentUrl: "https://swan.maxp.online/vip-club",
+      company: { name: "Swan" },
+      storePage: {
+        title: "نادي كبار العملاء",
+        metaTitle: "انضم إلى نادي كبار العملاء في سوان",
+        metaDescription: "برنامج ولاء خاص ومكافآت حصرية لعملاء سوان.",
+        slug: "vip-club",
+      },
+    });
+    expect(customPageMeta.title).toBe("انضم إلى نادي كبار العملاء في سوان");
+    expect(customPageMeta.description).toBe("برنامج ولاء خاص ومكافآت حصرية لعملاء سوان.");
+
+    // When custom storePage has title only (no metaTitle or metaDescription)
+    const titleOnlyMeta = buildStorefrontSeoMetadata({
+      pathname: "/custom-warranty",
+      currentUrl: "https://swan.maxp.online/custom-warranty",
+      company: {
+        name: "Swan",
+        settings: JSON.stringify({ description: "احذية فاخرة" }),
+      },
+      storePage: {
+        title: "سياسة الضمان المعتمد",
+        slug: "custom-warranty",
+      },
+    });
+    expect(titleOnlyMeta.title).toBe("سياسة الضمان المعتمد | Swan");
+    expect(titleOnlyMeta.description).toBe("سياسة الضمان المعتمد — Swan. احذية فاخرة");
+  });
+
+  test("translates common English policy and store page slugs to Arabic and starts description with page title", () => {
+    // /terms with store description
+    const termsMeta = buildStorefrontSeoMetadata({
+      pathname: "/terms",
+      currentUrl: "https://swan.maxp.online/terms",
+      company: {
+        name: "Swan",
+        settings: JSON.stringify({ description: "احذية فاخرة" }),
+      },
+    });
+    expect(termsMeta.title).toBe("الشروط والأحكام | Swan");
+    expect(termsMeta.description).toBe("الشروط والأحكام — Swan. احذية فاخرة");
+    expect(termsMeta.description.startsWith("الشروط والأحكام")).toBe(true);
+
+    // /about-us without store description
+    const aboutMeta = buildStorefrontSeoMetadata({
+      pathname: "/about-us",
+      currentUrl: "https://tato.maxp.online/about-us",
+      company: { name: "TATO" },
+    });
+    expect(aboutMeta.title).toBe("من نحن | TATO");
+    expect(aboutMeta.description.startsWith("من نحن")).toBe(true);
+    expect(aboutMeta.description).toContain("TATO");
+
+    // /privacy, /contact, /shipping-policy, /return-policy, /refund-policy
+    const privacyMeta = buildStorefrontSeoMetadata({
+      pathname: "/privacy",
+      currentUrl: "https://swan.maxp.online/privacy",
+      company: { name: "Swan" },
+    });
+    expect(privacyMeta.title).toBe("سياسة الخصوصية | Swan");
+    expect(privacyMeta.description.startsWith("سياسة الخصوصية")).toBe(true);
+
+    const contactMeta = buildStorefrontSeoMetadata({
+      pathname: "/contact",
+      currentUrl: "https://swan.maxp.online/contact",
+      company: { name: "Swan" },
+    });
+    expect(contactMeta.title).toBe("اتصل بنا | Swan");
+
+    const shippingMeta = buildStorefrontSeoMetadata({
+      pathname: "/shipping-policy",
+      currentUrl: "https://swan.maxp.online/shipping-policy",
+      company: { name: "Swan" },
+    });
+    expect(shippingMeta.title).toBe("سياسة الشحن والتوصيل | Swan");
+
+    const returnMeta = buildStorefrontSeoMetadata({
+      pathname: "/return-policy",
+      currentUrl: "https://swan.maxp.online/return-policy",
+      company: { name: "Swan" },
+    });
+    expect(returnMeta.title).toBe("سياسة الاستبدال والاسترجاع | Swan");
+
+    const refundMeta = buildStorefrontSeoMetadata({
+      pathname: "/refund-policy",
+      currentUrl: "https://swan.maxp.online/refund-policy",
+      company: { name: "Swan" },
+    });
+    expect(refundMeta.title).toBe("سياسة الاسترداد | Swan");
+  });
 });
 
