@@ -4,6 +4,7 @@ const {
   getSharedPrismaClientAsync,
   safeQuery,
 } = require("../services/sharedDatabase");
+const { getCanonicalProductSlug } = require("../utils/productSlugValidation");
 
 const escapeXml = (value) => {
   if (value === null || value === undefined) return "";
@@ -199,7 +200,7 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
 
     // 4. Products
     for (const prod of safeProducts) {
-      const prodSlug = prod.slug || prod.id;
+      const prodSlug = prod.slug ? getCanonicalProductSlug(prod.slug) : prod.id;
       if (!prodSlug) continue;
       const prodUrl = `${baseUrl}/product/${encodeURIComponent(prodSlug)}`;
       xml += `  <url>\n`;

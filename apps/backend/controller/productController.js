@@ -28,6 +28,7 @@ const {
 const { formatProductResponse } = require('../utils/productNormalizationUtils');
 const { validateStock } = require('../utils/stockValidation');
 const { MAX_PRODUCT_STOCK } = require('../utils/stockValidation');
+const { INVALID_SLUG_ERROR_MESSAGE, isInvalidProductSlug } = require('../utils/productSlugValidation');
 const ragKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const productOfferService = require('../services/whatsapp/productOfferService');
@@ -1419,6 +1420,7 @@ const updateSingleProduct = async (req, res) => {
 
     const existingProduct = await getAuthorizedProductForMutation(req, id, {
       sku: true,
+      slug: true,
     });
     const currentMerchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
@@ -1724,6 +1726,16 @@ const updateSingleProduct = async (req, res) => {
     if (updateData.slug !== undefined) {
       if (updateData.slug && updateData.slug.trim() !== '') {
         const newSlug = updateData.slug.trim();
+        const existingSlug = existingProduct.slug ? existingProduct.slug.trim() : null;
+
+        // Reject if the slug is being changed and contains invalid patterns (spaces, encoded chars, digits-only)
+        if (newSlug !== existingSlug && isInvalidProductSlug(newSlug)) {
+          return res.status(400).json({
+            success: false,
+            message: INVALID_SLUG_ERROR_MESSAGE,
+            error: INVALID_SLUG_ERROR_MESSAGE,
+          });
+        }
 
         // Ensure uniqueness
         const slugExists = await getSharedPrismaClient().product.findFirst({
@@ -2175,6 +2187,13 @@ const createProduct = async (req, res) => {
 
     // Generate or validate slug
     let productSlug = req.body.slug ? req.body.slug.trim() : null;
+    if (productSlug && isInvalidProductSlug(productSlug)) {
+      return res.status(400).json({
+        success: false,
+        message: INVALID_SLUG_ERROR_MESSAGE,
+        error: INVALID_SLUG_ERROR_MESSAGE,
+      });
+    }
     if (!productSlug && normalizedName) {
       productSlug = normalizedName
         .trim()

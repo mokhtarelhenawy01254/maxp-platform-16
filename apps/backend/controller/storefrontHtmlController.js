@@ -11,6 +11,7 @@ const {
   isHtmlRouteRequest,
   resolveRouteContext,
 } = require("../services/storefrontSeoService");
+const { getCanonicalProductSlug } = require("../utils/productSlugValidation");
 
 const INDEX_HTML_CANDIDATES = [
   process.env.STOREFRONT_INDEX_HTML,
@@ -160,7 +161,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
       !routeContext.storePageSlug &&
       !routeContext.landingSlug;
 
-    const [template, storefrontSettings, product, category, article, storePage, landing, indexHtml] =
+    const [template, storefrontSettings, product, category, article, storePage, landing] =
       await Promise.all([
         isHomepage
           ? safeQuery(() =>
@@ -186,16 +187,26 @@ exports.handleStorefrontShell = async (req, res, next) => {
           }),
         ),
         routeContext.productKey
-          ? safeQuery(() =>
-              prisma.product.findFirst({
+          ? safeQuery(() => {
+              const key = routeContext.productKey;
+              const spacedKey = key.replace(/-/g, " ");
+              const hyphenatedKey = key.replace(/\s+/g, "-");
+              return prisma.product.findFirst({
                 where: {
                   companyId: req.companyId,
                   isActive: true,
                   deletedAt: null,
                   isHidden: false,
-                  OR: [{ id: routeContext.productKey }, { slug: routeContext.productKey }],
+                  OR: [
+                    { id: key },
+                    { slug: key },
+                    ...(spacedKey !== key ? [{ slug: spacedKey }] : []),
+                    ...(hyphenatedKey !== key ? [{ slug: hyphenatedKey }] : []),
+                  ],
                 },
                 select: {
+                  id: true,
+                  slug: true,
                   ...compatibleProductSelect,
                   category: {
                     select: {
@@ -209,8 +220,8 @@ exports.handleStorefrontShell = async (req, res, next) => {
                     select: { rating: true },
                   },
                 },
-              }),
-            )
+              });
+            })
           : Promise.resolve(null),
         routeContext.categorySlug
           ? safeQuery(() =>
@@ -305,8 +316,43 @@ exports.handleStorefrontShell = async (req, res, next) => {
               return null;
             })
           : Promise.resolve(null),
-        loadIndexHtml(),
       ]);
+
+    // Product slug auto-redirect (301):
+    // If the product was accessed via an unnormalized slug (e.g. spaces, %20, +, raw product id)
+    // redirect with 301 to the canonical official slug.
+    if (product && routeContext.productKey) {
+      const canonicalSlug = product.slug ? getCanonicalProductSlug(product.slug) : product.id;
+      if (canonicalSlug) {
+        const prefix = req.path.startsWith("/store/products")
+          ? "/store/products"
+          : req.path.startsWith("/store/product")
+            ? "/store/product"
+            : req.path.startsWith("/products")
+              ? "/products"
+              : "/product";
+
+        const rawRequestedPath = req.originalUrl.split("?")[0];
+        const canonicalPath = `${prefix}/${encodeURI(canonicalSlug)}`;
+        const decodedCanonicalPath = `${prefix}/${canonicalSlug}`;
+
+        let decodedRequestedPath = rawRequestedPath;
+        try {
+          decodedRequestedPath = decodeURIComponent(rawRequestedPath);
+        } catch {
+          // ignore
+        }
+
+        if (
+          rawRequestedPath !== canonicalPath &&
+          decodedRequestedPath !== decodedCanonicalPath
+        ) {
+          const queryIdx = req.originalUrl.indexOf("?");
+          const queryString = queryIdx !== -1 ? req.originalUrl.slice(queryIdx) : "";
+          return res.redirect(301, `${canonicalPath}${queryString}`);
+        }
+      }
+    }
 
     // A missing/preview-mode landing must NOT hard-404: the merchant preview
     // flow (?preview=1) loads the same shell for unpublished pages. Instead
@@ -334,9 +380,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
       );
 
       if (matchedProduct?.slug) {
+        const canonicalSlug = getCanonicalProductSlug(matchedProduct.slug);
         const queryIdx = req.url.indexOf("?");
         const queryString = queryIdx !== -1 ? req.url.slice(queryIdx) : "";
-        return res.redirect(301, `/product/${matchedProduct.slug}${queryString}`);
+        return res.redirect(301, `/product/${encodeURI(canonicalSlug)}${queryString}`);
       }
 
       const matchedLanding = await safeQuery(() =>
@@ -424,6 +471,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
       noIndex: isNotFound || landingMissing || isPortalRoute,
     });
 
+    const indexHtml = await loadIndexHtml();
     let html = injectStorefrontSeoTags(indexHtml, metadata);
 
     // Semantic body snippet for non-JS crawlers

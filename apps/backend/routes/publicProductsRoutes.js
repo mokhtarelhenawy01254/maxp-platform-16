@@ -165,6 +165,15 @@ function buildProductLookupOrConditions(rawIdentifier) {
     conditions.push({ slug: decoded });
   }
 
+  const spaced = decoded.replace(/-/g, ' ');
+  if (spaced !== decoded && spaced !== trimmed) {
+    conditions.push({ slug: spaced });
+  }
+  const hyphenated = decoded.replace(/\s+/g, '-');
+  if (hyphenated !== decoded && hyphenated !== trimmed) {
+    conditions.push({ slug: hyphenated });
+  }
+
   if (trimmed.length > 20) {
     conditions.unshift({ id: trimmed });
   }

@@ -356,3 +356,12 @@ chat request that ends up using an MCP tool.
 
 If the full plan is rolled back, the project is in the same state as
 before this plan started.
+
+## Public Exposure & Deployment Status (Updated 2026-10-16)
+
+The public reverse-proxy locations (`/mcp/catalog` and `/mcp/video`) in `nginx_configs/maxp.online.conf` were temporarily removed on 2026-10-16 because the underlying services (`apps/mcp-servers/catalog-mcp:7100` and `video-mcp:7102`) are not deployed in production, causing 502 Bad Gateway responses for public visitors.
+
+**Condition for re-enabling public routes:**
+Re-add the nginx proxy blocks ONLY after:
+1. `apps/mcp-servers/**` deployment is automated in `scripts/deploy-remote.sh` / `.github/workflows/deploy.yml` and managed via PM2 / systemd.
+2. The authentication story (merchant Bearer tokens / API keys) is documented, tested, and enforced at the gateway.
