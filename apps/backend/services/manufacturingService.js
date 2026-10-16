@@ -1308,8 +1308,8 @@ class ManufacturingService {
             // ignore
           }
 
+          const addUnits = Math.round(gQty);
           if (inv && tx.inventory?.update) {
-            const addUnits = Math.round(gQty);
             const currentTotalVal = Number(inv.quantity) * Number(inv.cost || 0);
             const newTotalVal = currentTotalVal + gQty * uCost;
             const newTotalQty = Number(inv.quantity) + addUnits;
@@ -1323,6 +1323,40 @@ class ManufacturingService {
                 cost: newAvgCost,
               },
             });
+          } else if (!inv && tx.inventory?.create) {
+            try {
+              await tx.inventory.create({
+                data: {
+                  productId: order.productId,
+                  warehouseId,
+                  quantity: addUnits,
+                  available: addUnits,
+                  reserved: 0,
+                  cost: uCost,
+                },
+              });
+            } catch (createErr) {
+              if (tx.inventory?.findFirst && tx.inventory?.update) {
+                const retryInv = await tx.inventory.findFirst({
+                  where: { productId: order.productId, warehouseId },
+                });
+                if (retryInv) {
+                  const currentTotalVal = Number(retryInv.quantity) * Number(retryInv.cost || 0);
+                  const newTotalVal = currentTotalVal + gQty * uCost;
+                  const newTotalQty = Number(retryInv.quantity) + addUnits;
+                  const newAvgCost = newTotalQty > 0 ? round2(newTotalVal / newTotalQty) : uCost;
+
+                  await tx.inventory.update({
+                    where: { id: retryInv.id },
+                    data: {
+                      quantity: { increment: addUnits },
+                      available: { increment: addUnits },
+                      cost: newAvgCost,
+                    },
+                  });
+                }
+              }
+            }
           }
 
           // Record stock movement (safe try/catch)
