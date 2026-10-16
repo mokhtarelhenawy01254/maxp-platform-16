@@ -989,6 +989,7 @@ class ManufacturingService {
     const runInTx = async (tx) => {
       let totalCost = 0;
       const preparedItems = [];
+      const costWarnings = [];
 
       for (const item of data.items) {
         const qty = round4(item.quantity);
@@ -1012,6 +1013,29 @@ class ManufacturingService {
 
         if (inv && (!item.unitCost || item.unitCost === 0)) {
           unitCost = round2(inv.cost || 0);
+        }
+
+        // Fallback to Product.cost if inventory cost is not set or 0
+        if (unitCost === 0 && tx.product?.findFirst) {
+          try {
+            const rawProd = await tx.product.findFirst({
+              where: { id: item.rawMaterialId },
+              select: { cost: true },
+            });
+            if (rawProd?.cost) {
+              unitCost = round2(rawProd.cost);
+            }
+          } catch {
+            // ignore if product table not available
+          }
+        }
+
+        if (unitCost === 0) {
+          costWarnings.push({
+            rawMaterialId: item.rawMaterialId,
+            rawMaterialName: item.rawMaterialName || null,
+            warning: `الخامة "${item.rawMaterialName || item.rawMaterialId}" تم صرفها بتكلفة صفرية (0.00 ج.م). لم يتم العثور على تكلفة في المخزون (Inventory.cost) أو المنتج (Product.cost).`,
+          });
         }
 
         const itemTotal = round2(qty * unitCost);
@@ -1110,10 +1134,15 @@ class ManufacturingService {
         }
       }
 
-      return await tx.materialIssue.findFirst({
+      const issueRecord = await tx.materialIssue.findFirst({
         where: { id: issue.id },
         include: { items: true },
       });
+      if (issueRecord) {
+        issueRecord.costWarnings = costWarnings;
+        issueRecord.hasZeroCostWarning = costWarnings.length > 0;
+      }
+      return issueRecord;
     };
 
     if (existingTx) {

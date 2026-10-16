@@ -884,7 +884,7 @@ exports.getAlerts = async (req, res) => {
 // Update stock quantity
 exports.updateStock = async (req, res) => {
   try {
-    const { productId, warehouseId, quantity, type, reason, notes, batchNumber, expiryDate, isApproved = true } = req.body;
+    const { productId, warehouseId, quantity, type, reason, notes, batchNumber, expiryDate, isApproved = true, cost } = req.body;
     const companyId = req.user.companyId;
     const scope = await resolveInventoryScope(req);
     const prisma = getSharedPrismaClient();
@@ -893,6 +893,7 @@ exports.updateStock = async (req, res) => {
     const persistedMovementType = getPersistedStockMovementType(movementType);
     const movementReason = normalizeStockMovementReason(reason, movementType);
     const quantityNumber = parseNonNegativeInteger(quantity, 0);
+    const parsedCost = parseOptionalNumber(cost);
     const actorName =
       req.user?.name ||
       `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() ||
@@ -974,7 +975,8 @@ exports.updateStock = async (req, res) => {
               expiryDate: expiryDate ? new Date(expiryDate) : null,
               quantity: 0,
               available: 0,
-              reserved: 0
+              reserved: 0,
+              ...(parsedCost !== null && { cost: parsedCost }),
             }
           });
         }
@@ -997,6 +999,7 @@ exports.updateStock = async (req, res) => {
           data: {
             quantity: Math.max(0, newQuantity),
             available: Math.max(0, newAvailable),
+            ...(parsedCost !== null && { cost: parsedCost }),
             updatedAt: new Date()
           },
           include: {
@@ -1014,6 +1017,7 @@ exports.updateStock = async (req, res) => {
           type: persistedMovementType,
           reason: movementReason,
           quantity: quantityNumber,
+          cost: parsedCost !== null ? parsedCost : (inventory?.cost || null),
           notes,
           batchNumber: normalizedBatchNumber,
           expiryDate: expiryDate ? new Date(expiryDate) : null,

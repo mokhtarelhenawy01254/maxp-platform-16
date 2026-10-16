@@ -164,7 +164,17 @@ class ManufacturingController {
         ...req.body,
         userId,
       });
-      res.json({ success: true, data: order, message: 'تم بدء تشغيل أمر الإنتاج بنجاح' });
+      const hasCostWarnings = order.costWarnings && order.costWarnings.length > 0;
+      const defaultMsg = order.message || (order.autoIssueSkipped ? order.autoIssueMessage : 'تم بدء تشغيل أمر الإنتاج بنجاح');
+      const message = hasCostWarnings
+        ? `${defaultMsg} (تنبيه: تم صرف ${order.costWarnings.length} خامة بتكلفة صفرية - تم تخطي قيد WIP)`
+        : defaultMsg;
+      res.json({
+        success: true,
+        data: order,
+        costWarnings: order.costWarnings || [],
+        message,
+      });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }
@@ -203,7 +213,17 @@ class ManufacturingController {
       const companyId = ManufacturingController.getCompanyId(req);
       const userId = req.user?.id || null;
       const issue = await ManufacturingService.issueMaterials(companyId, req.params.id, req.body, userId);
-      res.status(201).json({ success: true, data: issue, message: 'تم صرف خامات التشغيل بنجاح' });
+      const hasCostWarnings = issue.costWarnings && issue.costWarnings.length > 0;
+      const defaultMsg = issue.message || 'تم صرف خامات التشغيل بنجاح';
+      const message = hasCostWarnings
+        ? `${defaultMsg} (تنبيه: تم صرف ${issue.costWarnings.length} خامة بتكلفة صفرية - تم تخطي قيد WIP)`
+        : defaultMsg;
+      res.status(201).json({
+        success: true,
+        data: issue,
+        costWarnings: issue.costWarnings || [],
+        message,
+      });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }
