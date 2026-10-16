@@ -19,58 +19,6 @@ interface GlobalCompetitorStatusBarProps {
   isLoading?: boolean;
 }
 
-const filterConfig: Record<StatusFilter, {
-  activeBg: string;
-  activeText: string;
-  inactiveBg: string;
-  inactiveText: string;
-  hoverBg: string;
-  dotColor: string;
-  badgeBg: string;
-  badgeText: string;
-}> = {
-  ALL: {
-    activeBg: 'bg-gray-800 dark:bg-gray-200',
-    activeText: 'text-white dark:text-gray-900',
-    inactiveBg: 'bg-gray-100 dark:bg-gray-800/50',
-    inactiveText: 'text-gray-600 dark:text-gray-400',
-    hoverBg: 'hover:bg-gray-200 dark:hover:bg-gray-700/50',
-    dotColor: 'bg-gray-500',
-    badgeBg: 'bg-gray-200 dark:bg-gray-700',
-    badgeText: 'text-gray-700 dark:text-gray-300',
-  },
-  NEW: {
-    activeBg: 'bg-blue-600 dark:bg-blue-500',
-    activeText: 'text-white',
-    inactiveBg: 'bg-blue-50 dark:bg-blue-900/20',
-    inactiveText: 'text-blue-700 dark:text-blue-300',
-    hoverBg: 'hover:bg-blue-100 dark:hover:bg-blue-900/30',
-    dotColor: 'bg-blue-500',
-    badgeBg: 'bg-blue-100 dark:bg-blue-900/40',
-    badgeText: 'text-blue-700 dark:text-blue-300',
-  },
-  FOLLOWING: {
-    activeBg: 'bg-amber-500 dark:bg-amber-400',
-    activeText: 'text-white',
-    inactiveBg: 'bg-amber-50 dark:bg-amber-900/20',
-    inactiveText: 'text-amber-700 dark:text-amber-300',
-    hoverBg: 'hover:bg-amber-100 dark:hover:bg-amber-900/30',
-    dotColor: 'bg-amber-500',
-    badgeBg: 'bg-amber-100 dark:bg-amber-900/40',
-    badgeText: 'text-amber-700 dark:text-amber-300',
-  },
-  COMPLETED: {
-    activeBg: 'bg-emerald-600 dark:bg-emerald-500',
-    activeText: 'text-white',
-    inactiveBg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    inactiveText: 'text-emerald-700 dark:text-emerald-300',
-    hoverBg: 'hover:bg-emerald-100 dark:hover:bg-emerald-900/30',
-    dotColor: 'bg-emerald-500',
-    badgeBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-    badgeText: 'text-emerald-700 dark:text-emerald-300',
-  },
-};
-
 const filterItems: StatusFilter[] = ['ALL', ...COMPETITOR_STATUSES];
 
 function GlobalCompetitorStatusBar({
@@ -84,7 +32,7 @@ function GlobalCompetitorStatusBar({
 
   const getCount = (filter: StatusFilter): number => {
     if (filter === 'ALL') return counts.total;
-    return counts[filter];
+    return counts[filter] || 0;
   };
 
   const getLabelKey = (filter: StatusFilter): string => {
@@ -94,17 +42,8 @@ function GlobalCompetitorStatusBar({
 
   return (
     <div className="w-full" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className={`
-        flex items-center gap-1.5 sm:gap-2
-        p-1.5 sm:p-2
-        bg-white dark:bg-gray-900
-        border border-gray-200 dark:border-gray-700
-        rounded-xl shadow-sm
-        overflow-x-auto
-        ${isRtl ? 'flex-row' : 'flex-row'}
-      `}>
+      <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-card border border-border/70 rounded-2xl shadow-xs overflow-x-auto">
         {filterItems.map((filter) => {
-          const config = filterConfig[filter];
           const isActive = filter === selectedFilter;
           const count = getCount(filter);
 
@@ -115,35 +54,31 @@ function GlobalCompetitorStatusBar({
               disabled={isLoading}
               className={`
                 relative flex items-center gap-1.5 sm:gap-2
-                px-2.5 sm:px-4 py-1.5 sm:py-2
-                rounded-lg text-xs sm:text-sm font-medium
-                transition-all duration-200 ease-in-out
+                px-3 py-1.5 sm:py-2
+                rounded-xl text-xs sm:text-sm font-semibold
+                transition-all duration-150 ease-out
                 whitespace-nowrap
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-400
+                focus:outline-none focus-visible:ring-1 focus-visible:ring-primary
                 ${isActive
-                  ? `${config.activeBg} ${config.activeText} shadow-sm`
-                  : `${config.inactiveBg} ${config.inactiveText} ${config.hoverBg}`
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
                 }
-                ${isLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer'}
+                ${isLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer active:scale-[0.98]'}
               `}
               title={t(getLabelKey(filter))}
             >
-              {isActive && (
-                <span className={`w-1.5 h-1.5 rounded-full ${config.dotColor} shrink-0`} />
-              )}
               <span>{t(getLabelKey(filter))}</span>
               <span className={`
                 inline-flex items-center justify-center
                 min-w-[1.25rem] sm:min-w-[1.5rem]
                 h-4 sm:h-5
-                px-1 sm:px-1.5
-                rounded-full text-[10px] sm:text-xs font-bold
+                px-1.5
+                rounded-md text-[10px] sm:text-xs font-mono font-bold tabular-nums
                 leading-none
                 ${isActive
-                  ? `${config.badgeBg} ${config.badgeText}`
-                  : `bg-white/70 dark:bg-gray-800/70 text-gray-500 dark:text-gray-400`
+                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                  : 'bg-muted text-muted-foreground border border-border/60'
                 }
-                transition-colors duration-200
               `}>
                 {count}
               </span>

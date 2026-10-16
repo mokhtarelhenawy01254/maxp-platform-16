@@ -16,20 +16,20 @@ import { Loader2, ShoppingBag, MapPin, Store, Globe, Star, Inbox } from 'lucide-
 import axios from 'axios';
 
 const platformIcons = {
-  amazon: <ShoppingBag className="size-5 text-[#FF9900]" />,
-  google: <MapPin className="size-5 text-[#4285F4]" />,
-  shopify: <Store className="size-5 text-[#96BF48]" />,
-  tech: <Globe className="size-5 text-[#666]" />,
+  amazon: <ShoppingBag className="size-4 text-amber-500" />,
+  google: <MapPin className="size-4 text-sky-500" />,
+  shopify: <Store className="size-4 text-emerald-500" />,
+  tech: <Globe className="size-4 text-primary" />,
 };
 
 export default function PlatformOverview() {
   const { t } = useTranslation();
   const { competitorId } = useParams();
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
-  const [amazonProducts, setAmazonProducts] = useState([]);
-  const [googleBusiness, setGoogleBusiness] = useState(null);
-  const [techStack, setTechStack] = useState([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [amazonProducts, setAmazonProducts] = useState<any[]>([]);
+  const [googleBusiness, setGoogleBusiness] = useState<any>(null);
+  const [techStack, setTechStack] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('amazon');
 
   useEffect(() => {
@@ -43,15 +43,15 @@ export default function PlatformOverview() {
     try {
       const [summaryRes, amazonRes, googleRes, techRes] = await Promise.all([
         axios.get(`/api/v1/competitors/platform/summary/${competitorId}`),
-        axios.get(`/api/v1/competitors/platform/amazon/${competitorId}`).catch(() => []),
-        axios.get(`/api/v1/competitors/platform/google/${competitorId}`).catch(() => null),
-        axios.get(`/api/v1/competitors/platform/techstack/${competitorId}`).catch(() => []),
+        axios.get(`/api/v1/competitors/platform/amazon/${competitorId}`).catch(() => ({ data: [] })),
+        axios.get(`/api/v1/competitors/platform/google/${competitorId}`).catch(() => ({ data: null })),
+        axios.get(`/api/v1/competitors/platform/techstack/${competitorId}`).catch(() => ({ data: [] })),
       ]);
 
       setSummary(summaryRes.data);
       setAmazonProducts(amazonRes.data?.slice(0, 20) || []);
       setGoogleBusiness(googleRes.data);
-      setTechStack(techRes.data);
+      setTechStack(techRes.data || []);
     } catch (error) {
       console.error('Error fetching platform data:', error);
     } finally {
@@ -59,382 +59,282 @@ export default function PlatformOverview() {
     }
   };
 
-  const amazonColumns = [
-    {
-      title: t('competitors.product'),
-      dataIndex: 'productTitle',
-      key: 'productTitle',
-      render: (text, record) => (
-        <div className="flex items-center gap-2">
-          {record.imageUrl && (
-            <img src={record.imageUrl} alt="" className="w-10 h-10 object-contain" />
-          )}
-          <span className="line-clamp-2">{text}</span>
-        </div>
-      ),
-    },
-    {
-      title: t('competitors.price'),
-      dataIndex: 'price',
-      key: 'price',
-      render: (price, record) => (
-        <span className="font-medium">
-          {record.currency} {price ? Number(price).toFixed(2) : t('competitors.notAvailable')}
-        </span>
-      ),
-    },
-    {
-      title: t('competitors.bsr'),
-      dataIndex: 'bsrRank',
-      key: 'bsrRank',
-      render: (rank) => (rank ? `#${rank.toLocaleString()}` : t('competitors.notAvailable')),
-    },
-    {
-      title: t('competitors.reviews'),
-      dataIndex: 'reviewCount',
-      key: 'reviewCount',
-      render: (count) => count?.toLocaleString() || '0',
-    },
-    {
-      title: t('competitors.rating'),
-      dataIndex: 'reviewRating',
-      key: 'reviewRating',
-      render: (rating) => (
-        <span className="flex items-center gap-1">
-          <Star className="size-4 text-yellow-500" />
-          {rating ? Number(rating).toFixed(1) : t('competitors.notAvailable')}
-        </span>
-      ),
-    },
-    {
-      title: t('competitors.prime'),
-      dataIndex: 'isPrime',
-      key: 'isPrime',
-      render: (isPrime) =>
-        isPrime ? (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{t('competitors.primeLabel')}</Badge>
-        ) : (
-          <Badge variant="outline">{t('competitors.standardLabel')}</Badge>
-        ),
-    },
-    {
-      title: t('competitors.status'),
-      dataIndex: 'isAvailable',
-      key: 'isAvailable',
-      render: (isAvailable) => (
-        <span className="flex items-center gap-1 text-xs">
-          <span className={`h-2 w-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
-          {isAvailable ? t('competitors.inStock') : t('competitors.outOfStock')}
-        </span>
-      ),
-    },
-  ];
-
-  const techColumns = [
-    {
-      title: t('competitors.category'),
-      dataIndex: 'category',
-      key: 'category',
-      render: (cat) => <Badge variant="outline" className="border-blue-500 text-blue-500">{cat}</Badge>,
-    },
-    {
-      title: t('competitors.technology'),
-      dataIndex: 'name',
-      key: 'name',
-      render: (name) => <span className="font-medium">{name}</span>,
-    },
-    {
-      title: t('competitors.version'),
-      dataIndex: 'version',
-      key: 'version',
-    },
-    {
-      title: t('competitors.confidence'),
-      dataIndex: 'confidence',
-      key: 'confidence',
-      render: (conf) => {
-        if (conf === 'high') return <Badge variant="secondary" className="bg-green-500/10 text-green-600">{t('competitors.high')}</Badge>;
-        if (conf === 'medium') return <Badge variant="secondary" className="bg-orange-500/10 text-orange-600">{t('competitors.medium')}</Badge>;
-        return <Badge variant="destructive">{t('competitors.low')}</Badge>;
-      },
-    },
-  ];
-
-  if (loading) return <Loader2 className="animate-spin mx-auto mt-10 size-8" />;
+  if (loading) {
+    return (
+      <div className="py-20 text-center space-y-2 bg-card border border-border/70 rounded-2xl p-8">
+        <Loader2 className="animate-spin mx-auto size-7 text-primary" />
+        <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
+      </div>
+    );
+  }
 
   if (!summary) {
     return (
-      <div className="flex flex-col items-center mt-10 text-muted-foreground">
-        <Inbox className="size-12 mb-2" />
-        <p>{t('competitors.platforms.noPlatformData')}</p>
-        <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
+      <div className="flex flex-col items-center py-16 text-muted-foreground bg-card border border-border/70 rounded-2xl p-8 space-y-2">
+        <Inbox className="size-10 text-muted-foreground/50 mb-1" />
+        <p className="text-xs sm:text-sm font-semibold text-foreground">{t('competitors.platforms.noPlatformData')}</p>
+        <Badge variant="outline" className="border-border/70 text-xs">
           {t('competitors.platforms.addPlatformData')}
         </Badge>
       </div>
     );
   }
 
-  const renderAmazonProductsTable = () => {
-    if (!amazonProducts.length) return null;
-    return (
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {amazonColumns.map((col) => (
-                <TableHead key={col.key}>{col.title}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {amazonProducts.slice(0, 10).map((row) => (
-              <TableRow key={row.asin}>
-                {amazonColumns.map((col) => (
-                  <TableCell key={col.key}>{col.render ? col.render(row[col.dataIndex], row) : row[col.dataIndex]}</TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
-  const renderTechTable = () => {
-    if (!techStack.length) return null;
-    return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {techColumns.map((col) => (
-                <TableHead key={col.key}>{col.title}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {techStack.slice(0, 20).map((row) => (
-              <TableRow key={row.id}>
-                {techColumns.map((col) => (
-                  <TableCell key={col.key}>{col.render ? col.render(row[col.dataIndex], row) : row[col.dataIndex]}</TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:border-blue-500 data-[active=true]:border-blue-500" data-active={activeTab === 'amazon'} onClick={() => setActiveTab('amazon')}>
-          <CardContent className="text-center py-4">
+    <div className="space-y-5 text-foreground">
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div
+          onClick={() => setActiveTab('amazon')}
+          className={`p-3.5 sm:p-4 rounded-xl border transition-colors cursor-pointer shadow-xs ${
+            activeTab === 'amazon' ? 'bg-card border-primary/40' : 'bg-card border-border/70 hover:border-border'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground font-medium">{t('competitors.amazonProducts')}</span>
             {platformIcons.amazon}
-            <div className="text-xl font-bold mt-2">
-              {summary.amazon?.totalProducts || 0}
-            </div>
-            <div className="text-muted-foreground text-sm">{t('competitors.amazonProducts')}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:border-blue-500 data-[active=true]:border-blue-500" data-active={activeTab === 'google'} onClick={() => setActiveTab('google')}>
-          <CardContent className="text-center py-4">
+          </div>
+          <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+            {summary.amazon?.totalProducts || 0}
+          </div>
+        </div>
+
+        <div
+          onClick={() => setActiveTab('google')}
+          className={`p-3.5 sm:p-4 rounded-xl border transition-colors cursor-pointer shadow-xs ${
+            activeTab === 'google' ? 'bg-card border-primary/40' : 'bg-card border-border/70 hover:border-border'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground font-medium">{t('competitors.googleRating')}</span>
             {platformIcons.google}
-            <div className="text-xl font-bold mt-2">
-              {summary.googleBusiness?.rating || t('competitors.notAvailable')}
-            </div>
-            <div className="text-muted-foreground text-sm">{t('competitors.googleRating')}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:border-blue-500 data-[active=true]:border-blue-500" data-active={activeTab === 'tech'} onClick={() => setActiveTab('tech')}>
-          <CardContent className="text-center py-4">
+          </div>
+          <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+            {summary.googleBusiness?.rating || '—'}
+          </div>
+        </div>
+
+        <div
+          onClick={() => setActiveTab('tech')}
+          className={`p-3.5 sm:p-4 rounded-xl border transition-colors cursor-pointer shadow-xs ${
+            activeTab === 'tech' ? 'bg-card border-primary/40' : 'bg-card border-border/70 hover:border-border'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground font-medium">{t('competitors.technologies')}</span>
             {platformIcons.tech}
-            <div className="text-xl font-bold mt-2">{summary.techStack || 0}</div>
-            <div className="text-muted-foreground text-sm">{t('competitors.technologies')}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="text-center py-4">
+          </div>
+          <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+            {summary.techStack || 0}
+          </div>
+        </div>
+
+        <div className="p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground font-medium">{t('competitors.shopifyProducts')}</span>
             {platformIcons.shopify}
-            <div className="text-xl font-bold mt-2">
-              {summary.shopify?.productsCount || 0}
-            </div>
-            <div className="text-muted-foreground text-sm">{t('competitors.shopifyProducts')}</div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+            {summary.shopify?.productsCount || 0}
+          </div>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="amazon" className="flex items-center gap-1">
-            {platformIcons.amazon} {t('competitors.platforms.amazonTab')}
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-muted/30 border border-border/70 p-1 rounded-xl">
+          <TabsTrigger value="amazon" className="flex items-center gap-1.5 text-xs rounded-lg font-semibold">
+            {platformIcons.amazon} <span>{t('competitors.platforms.amazonTab')}</span>
           </TabsTrigger>
-          <TabsTrigger value="google" className="flex items-center gap-1">
-            {platformIcons.google} {t('competitors.platforms.googleTab')}
+          <TabsTrigger value="google" className="flex items-center gap-1.5 text-xs rounded-lg font-semibold">
+            {platformIcons.google} <span>{t('competitors.platforms.googleTab')}</span>
           </TabsTrigger>
-          <TabsTrigger value="tech" className="flex items-center gap-1">
-            {platformIcons.tech} {t('competitors.platforms.techStackTab')}
+          <TabsTrigger value="tech" className="flex items-center gap-1.5 text-xs rounded-lg font-semibold">
+            {platformIcons.tech} <span>{t('competitors.platforms.techStackTab')}</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="amazon">
-          <div className="space-y-4">
-            {summary.amazon && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card size="sm">
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">{t('competitors.totalProducts')}</div>
-                    <div className="text-2xl font-bold">{summary.amazon.totalProducts}</div>
-                  </CardContent>
-                </Card>
-                <Card size="sm">
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">{t('competitors.avgPrice')}</div>
-                    <div className="text-2xl font-bold">{t('competitors.currency')}{Number(summary.amazon.avgPrice).toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card size="sm">
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">{t('competitors.avgRating')}</div>
-                    <div className="text-2xl font-bold">{Number(summary.amazon.avgRating).toFixed(1)} <span className="text-sm text-muted-foreground">/ 5</span></div>
-                  </CardContent>
-                </Card>
-                <Card size="sm">
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">{t('competitors.primePercentage')}</div>
-                    <div className="text-2xl font-bold">{Number(summary.amazon.primePercentage).toFixed(1)}%</div>
-                  </CardContent>
-                </Card>
+        {/* Amazon Tab Content */}
+        <TabsContent value="amazon" className="space-y-4">
+          {summary.amazon && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 bg-card border border-border/70 rounded-xl shadow-xs">
+                <div className="text-[11px] text-muted-foreground">{t('competitors.totalProducts')}</div>
+                <div className="text-lg font-bold font-mono tabular-nums mt-0.5">{summary.amazon.totalProducts}</div>
+              </div>
+              <div className="p-3 bg-card border border-border/70 rounded-xl shadow-xs">
+                <div className="text-[11px] text-muted-foreground">{t('competitors.avgPrice')}</div>
+                <div className="text-lg font-bold font-mono tabular-nums mt-0.5">{Number(summary.amazon.avgPrice || 0).toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-card border border-border/70 rounded-xl shadow-xs">
+                <div className="text-[11px] text-muted-foreground">{t('competitors.avgRating')}</div>
+                <div className="text-lg font-bold font-mono tabular-nums mt-0.5">{Number(summary.amazon.avgRating || 0).toFixed(1)} / 5</div>
+              </div>
+              <div className="p-3 bg-card border border-border/70 rounded-xl shadow-xs">
+                <div className="text-[11px] text-muted-foreground">{t('competitors.primePercentage')}</div>
+                <div className="text-lg font-bold font-mono tabular-nums mt-0.5">{Number(summary.amazon.primePercentage || 0).toFixed(1)}%</div>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-2xl bg-card border border-border/70 overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-border/60">
+              <h3 className="font-bold text-xs sm:text-sm text-foreground">{t('competitors.amazonProducts')}</h3>
+            </div>
+            {amazonProducts.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-xs">{t('competitors.noResults')}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table className="text-xs">
+                  <TableHeader className="bg-muted/30 border-b border-border/60">
+                    <TableRow>
+                      <TableHead>{t('competitors.product')}</TableHead>
+                      <TableHead>{t('competitors.price')}</TableHead>
+                      <TableHead>{t('competitors.bsr')}</TableHead>
+                      <TableHead>{t('competitors.reviews')}</TableHead>
+                      <TableHead>{t('competitors.rating')}</TableHead>
+                      <TableHead>{t('competitors.status')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border/60">
+                    {amazonProducts.slice(0, 10).map((row) => (
+                      <TableRow key={row.asin || row.productTitle} className="hover:bg-muted/15 transition-colors">
+                        <TableCell className="font-medium max-w-xs truncate">
+                          <div className="flex items-center gap-2">
+                            {row.imageUrl && <img src={row.imageUrl} alt="" className="w-8 h-8 object-contain rounded shrink-0" />}
+                            <span className="truncate">{row.productTitle}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono tabular-nums">{row.currency} {row.price ? Number(row.price).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="font-mono tabular-nums">{row.bsrRank ? `#${row.bsrRank.toLocaleString()}` : '—'}</TableCell>
+                        <TableCell className="font-mono tabular-nums">{row.reviewCount?.toLocaleString() || '0'}</TableCell>
+                        <TableCell className="font-mono tabular-nums flex items-center gap-1">
+                          <Star className="size-3 text-amber-500 fill-amber-500" />
+                          <span>{row.reviewRating ? Number(row.reviewRating).toFixed(1) : '—'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                            row.isAvailable ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-destructive/10 text-destructive border-destructive/20'
+                          }`}>
+                            {row.isAvailable ? t('competitors.inStock') : t('competitors.outOfStock')}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('competitors.amazonProducts')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderAmazonProductsTable()}
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 
+        {/* Google Tab Content */}
         <TabsContent value="google">
           {summary.googleBusiness ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('competitors.businessInfo')}</CardTitle>
+              <Card className="rounded-2xl border-border/70 shadow-xs bg-card">
+                <CardHeader className="pb-3 border-b border-border/60">
+                  <CardTitle className="text-xs sm:text-sm font-bold">{t('competitors.businessInfo')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 pt-3 text-xs">
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.address')}:</span>
-                    <span>{summary.googleBusiness.address || t('competitors.notAvailable')}</span>
+                    <span className="font-medium">{summary.googleBusiness.address || t('competitors.notAvailable')}</span>
                   </div>
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.phone')}:</span>
-                    <span>{summary.googleBusiness.phone || t('competitors.notAvailable')}</span>
+                    <span className="font-mono tabular-nums">{summary.googleBusiness.phone || t('competitors.notAvailable')}</span>
                   </div>
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.website')}:</span>
-                    <a href={summary.googleBusiness.website} target="_blank" rel="noopener">
+                    <a href={summary.googleBusiness.website} target="_blank" rel="noopener" className="text-primary hover:underline font-mono truncate">
                       {summary.googleBusiness.website || t('competitors.notAvailable')}
                     </a>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('competitors.ratings')}</CardTitle>
+
+              <Card className="rounded-2xl border-border/70 shadow-xs bg-card">
+                <CardHeader className="pb-3 border-b border-border/60">
+                  <CardTitle className="text-xs sm:text-sm font-bold">{t('competitors.ratings')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <div className="flex justify-center">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`size-5 ${star <= Math.round(Number(summary.googleBusiness.rating) || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-2xl font-bold mt-2">
-                        {summary.googleBusiness.rating}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        {summary.googleBusiness.reviewsCount?.toLocaleString()}{' '}
-                        {t('competitors.reviews')}
-                      </div>
-                    </div>
-                    <div className="text-center p-4">
-                      <div
-                        className="text-4xl mb-2"
-                        style={{
-                          color:
-                            summary.googleBusiness.rating >= 4
-                              ? '#52c41a'
-                              : summary.googleBusiness.rating >= 3
-                              ? '#faad14'
-                              : '#f5222d',
-                        }}
-                      >
-                        {summary.googleBusiness.rating >= 4
-                          ? t('competitors.great')
-                          : summary.googleBusiness.rating >= 3
-                          ? t('competitors.good')
-                          : t('competitors.poor')}
-                      </div>
-                    </div>
+                <CardContent className="pt-3 text-center space-y-2">
+                  <div className="flex justify-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`size-4 ${star <= Math.round(Number(summary.googleBusiness.rating) || 0) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{summary.googleBusiness.rating}</div>
+                  <div className="text-muted-foreground text-xs font-mono tabular-nums">
+                    {summary.googleBusiness.reviewsCount?.toLocaleString()} {t('competitors.reviews')}
                   </div>
                 </CardContent>
               </Card>
             </div>
           ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <Inbox className="size-12 mx-auto mb-2" />
-              <p>{t('competitors.noGoogleData')}</p>
+            <div className="text-center text-muted-foreground py-12 rounded-2xl bg-card border border-border/70 p-8 space-y-2">
+              <Inbox className="size-8 mx-auto text-muted-foreground/50" />
+              <p className="text-xs">{t('competitors.noGoogleData')}</p>
             </div>
           )}
         </TabsContent>
 
+        {/* Tech Stack Tab Content */}
         <TabsContent value="tech">
           {techStack.length > 0 ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card size="sm">
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">{t('competitors.totalTechnologies')}</div>
-                    <div className="text-2xl font-bold">{summary.techStack}</div>
-                  </CardContent>
-                </Card>
-                <Card className="md:col-span-2">
-                  <CardHeader>
-                    <CardTitle>{t('competitors.categories')}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {summary.techCategories?.map((cat) => (
-                        <Badge key={cat} variant="outline" className="border-blue-500 text-blue-500">
-                          {cat}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="p-4 rounded-2xl bg-card border border-border/70 shadow-xs space-y-2">
+                <div className="text-xs font-bold text-foreground">{t('competitors.categories')}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {summary.techCategories?.map((cat: string) => (
+                    <Badge key={cat} variant="outline" className="border-border/70 text-xs rounded-md">
+                      {cat}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('competitors.technologies')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {renderTechTable()}
-                </CardContent>
-              </Card>
+
+              <div className="rounded-2xl bg-card border border-border/70 overflow-hidden shadow-xs">
+                <div className="p-4 border-b border-border/60">
+                  <h3 className="font-bold text-xs sm:text-sm text-foreground">{t('competitors.technologies')}</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table className="text-xs">
+                    <TableHeader className="bg-muted/30 border-b border-border/60">
+                      <TableRow>
+                        <TableHead>{t('competitors.category')}</TableHead>
+                        <TableHead>{t('competitors.technology')}</TableHead>
+                        <TableHead>{t('competitors.version')}</TableHead>
+                        <TableHead>{t('competitors.confidence')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-border/60">
+                      {techStack.slice(0, 20).map((row) => (
+                        <TableRow key={row.id || row.name} className="hover:bg-muted/15 transition-colors">
+                          <TableCell><Badge variant="outline" className="border-border/70 text-[10px] rounded-md">{row.category}</Badge></TableCell>
+                          <TableCell className="font-bold text-foreground">{row.name}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-muted-foreground">{row.version || '—'}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                              row.confidence === 'high' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border/60'
+                            }`}>
+                              {row.confidence || 'normal'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <Inbox className="size-12 mx-auto mb-2" />
-              <p>{t('competitors.noTechData')}</p>
+            <div className="text-center text-muted-foreground py-12 rounded-2xl bg-card border border-border/70 p-8 space-y-2">
+              <Inbox className="size-8 mx-auto text-muted-foreground/50" />
+              <p className="text-xs">{t('competitors.noTechData')}</p>
             </div>
           )}
         </TabsContent>
