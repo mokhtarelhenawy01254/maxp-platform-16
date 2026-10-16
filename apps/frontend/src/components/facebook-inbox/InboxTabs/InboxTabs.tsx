@@ -1,5 +1,5 @@
 import React from "react";
-import { Search } from "lucide-react";
+import { Search, Star, MessageSquare, CheckCircle2, Clock, Inbox, MailWarning, Sparkles } from "lucide-react";
 import { InboxTab } from "../../../types/inbox.types";
 import { useTranslation } from "react-i18next";
 
@@ -29,85 +29,99 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
   onTabChange,
   counts,
   onSearch,
-  isPriorityOnly = false,
-  onTogglePriority,
-  priorityCount = 0,
 }) => {
   const { t } = useTranslation();
 
-  const tabs = [
+  const tabs: { id: InboxTab; label: string; count: number; icon?: React.ReactNode }[] = [
     {
-      id: "all" as InboxTab,
-      label: t("inbox.tabs.all"),
+      id: "all",
+      label: String(t("inbox.tabs.all", "الكل")),
       count: counts.all,
     },
     {
-      id: "unreplied" as InboxTab,
-      label: t("inbox.tabs.unreplied"),
+      id: "unreplied",
+      label: String(t("inbox.tabs.unreplied", "لم يتم الرد")),
       count: counts.unreplied,
     },
     {
-      id: "done" as InboxTab,
-      label: t("inbox.tabs.done"),
+      id: "done",
+      label: String(t("inbox.tabs.done", "مكتملة")),
       count: counts.done,
     },
     {
-      id: "main" as InboxTab,
-      label: t("inbox.tabs.main"),
+      id: "main",
+      label: String(t("inbox.tabs.main", "الرئيسية")),
       count: counts.main,
     },
     {
-      id: "general" as InboxTab,
-      label: t("inbox.tabs.general"),
+      id: "general",
+      label: String(t("inbox.tabs.general", "عامة")),
       count: counts.general,
     },
     {
-      id: "requests" as InboxTab,
-      label: t("inbox.tabs.requests"),
+      id: "requests",
+      label: String(t("inbox.tabs.requests", "طلبات")),
       count: counts.requests,
     },
     {
-      id: "spam" as InboxTab,
-      label: t("inbox.tabs.spam"),
+      id: "spam",
+      label: String(t("inbox.tabs.spam", "غير مرغوب")),
       count: counts.spam,
     },
     {
-      id: "priority" as InboxTab,
-      label: t("inbox.tabs.priority", "الأولوية ⭐"),
+      id: "priority",
+      label: String(t("inbox.tabs.priority", "الأولوية")),
       count: counts.priority || 0,
     },
   ];
 
   return (
-    <div className="business-inbox-header">
-      <div className="business-inbox-header-row business-inbox-header-row--tabs">
-        <div className="business-inbox-tabs business-inbox-tabs--scroll flex-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className="business-inbox-tab"
-              data-active={activeTab === tab.id ? "true" : "false"}
-            >
-              <span>{tab.label}</span>
-              {(tab.count > 0 || tab.id === "all") && (
-                <span className="business-inbox-tab-count">{tab.count}</span>
-              )}
-            </button>
-          ))}
+    <div className="border-b border-border/70 bg-card/60 px-4 py-2 text-foreground">
+      <div className="flex items-center justify-between gap-3">
+        {/* Scrollable Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar flex-1">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all active:scale-[0.98] ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+              >
+                {tab.id === "priority" && (
+                  <Star className={`w-3.5 h-3.5 ${isActive ? "fill-primary-foreground" : "text-amber-500"}`} />
+                )}
+                <span>{tab.label}</span>
+                {(tab.count > 0 || tab.id === "all") && (
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-mono tabular-nums ${
+                      isActive
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Search */}
-        <div className="business-inbox-toolbar">
-          <div className="business-inbox-search-wrap">
-            <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5 dark:text-slate-400" />
-            <input
-              type="text"
-              placeholder={String(t("inbox.searchPlaceholder"))}
-              onChange={(e) => onSearch(e.target.value)}
-              className="business-inbox-search w-full pr-10 pl-4 md:w-64 dark:bg-white/5 dark:text-white dark:border-white/15 dark:placeholder-slate-400"
-            />
-          </div>
+        {/* Inline Quick Search if needed */}
+        <div className="hidden sm:flex items-center relative w-48 shrink-0">
+          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder={String(t("inbox.searchPlaceholder", "بحث..."))}
+            onChange={(e) => onSearch(e.target.value)}
+            className="w-full bg-background border border-border/70 rounded-md pr-8 pl-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+          />
         </div>
       </div>
     </div>

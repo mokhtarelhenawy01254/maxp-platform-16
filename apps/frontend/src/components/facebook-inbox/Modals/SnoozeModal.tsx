@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Clock, Calendar } from "lucide-react";
+import { X, Clock, Calendar, Sun, Check, ArrowRight } from "lucide-react";
 
 interface SnoozeModalProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ const SnoozeModal: React.FC<SnoozeModalProps> = ({
   const handleTomorrow = () => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
-    date.setHours(9, 0, 0, 0); // 9:00 AM
+    date.setHours(9, 0, 0, 0);
     onSnooze(date);
   };
 
@@ -39,101 +39,125 @@ const SnoozeModal: React.FC<SnoozeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="business-modal-surface w-full max-w-md overflow-hidden">
-        <div
-          className="flex items-center justify-between p-4"
-          style={{ borderBottom: "1px solid var(--business-muted-line)" }}
-        >
-          <h3
-            className="flex items-center gap-2 text-lg font-semibold"
-            style={{ color: "var(--color-foreground)" }}
-          >
-            <Clock
-              className="h-5 w-5"
-              style={{ color: "var(--color-muted-foreground)" }}
-            />
-            تأجيل المحادثة
-          </h3>
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-card border border-border/70 rounded-xl shadow-xl max-w-md w-full overflow-hidden text-foreground animate-in fade-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                تأجيل المحادثة
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                إخفاء المحادثة مؤقتاً والتذكير بها في وقت لاحق
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="business-icon-button business-icon-button--sm"
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors active:scale-95"
+            aria-label="إغلاق"
           >
-            <X size={20} style={{ color: "var(--color-muted-foreground)" }} />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
-          <p
-            className="mb-2 text-sm"
-            style={{ color: "var(--color-muted-foreground)" }}
-          >
-            اختر متى تريد تذكيرك بهذه المحادثة:
+        {/* Presets & Custom */}
+        <div className="p-5 space-y-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            اختر توقيت التذكير المفضل:
           </p>
 
-          <button
-            type="button"
-            onClick={() => handlePresets(1)}
-            className="business-dropdown-option rounded-2xl border"
-            style={{ borderColor: "var(--business-card-border)" }}
-          >
-            <Clock size={16} />
-            <span>لاحقاً اليوم (خلال 1 ساعة)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handlePresets(4)}
-            className="business-dropdown-option rounded-2xl border"
-            style={{ borderColor: "var(--business-card-border)" }}
-          >
-            <Clock size={16} />
-            <span>بعد الظهيرة (خلال 4 ساعات)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTomorrow}
-            className="business-dropdown-option rounded-2xl border"
-            style={{ borderColor: "var(--business-card-border)" }}
-          >
-            <Calendar size={16} />
-            <span>غداً صباحاً (9:00 ص)</span>
-          </button>
-
-          <div
-            className="mt-3 border-t pt-3"
-            style={{ borderColor: "var(--business-muted-line)" }}
-          >
-            <p
-              className="mb-2 text-xs font-medium"
-              style={{ color: "var(--color-muted-foreground)" }}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handlePresets(1)}
+              className="w-full flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all active:scale-[0.99] text-start group"
             >
-              اختار وقت محدد
-            </p>
-            <form onSubmit={handleCustomSubmit} className="flex gap-2">
+              <div className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-primary" />
+                <div>
+                  <span className="text-xs font-medium text-foreground block">
+                    لاحقاً اليوم
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    خلال ساعة واحدة من الآن
+                  </span>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-all" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handlePresets(4)}
+              className="w-full flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all active:scale-[0.99] text-start group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Sun className="w-4 h-4 text-amber-500" />
+                <div>
+                  <span className="text-xs font-medium text-foreground block">
+                    بعد الظهيرة
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    خلال 4 ساعات من الآن
+                  </span>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-all" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTomorrow}
+              className="w-full flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all active:scale-[0.99] text-start group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Calendar className="w-4 h-4 text-indigo-500" />
+                <div>
+                  <span className="text-xs font-medium text-foreground block">
+                    صباح الغد
+                  </span>
+                  <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                    في تمام الساعة 9:00 صباحاً
+                  </span>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-all" />
+            </button>
+          </div>
+
+          {/* Custom Date/Time */}
+          <div className="pt-3 border-t border-border/60 space-y-2">
+            <span className="text-xs font-medium text-foreground block">
+              تحديد موعد وتاريخ مخصص
+            </span>
+            <form onSubmit={handleCustomSubmit} className="flex flex-wrap sm:flex-nowrap gap-2">
               <input
                 type="date"
-                className="business-control-input flex-1 p-2 text-sm"
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
+                className="flex-1 px-3 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 required
               />
               <input
                 type="time"
-                className="business-control-input w-24 p-2 text-sm"
                 value={customTime}
                 onChange={(e) => setCustomTime(e.target.value)}
+                className="w-28 px-3 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
                 required
               />
               <button
                 type="submit"
-                className="business-chip-button px-4 py-2 text-sm"
-                data-active={customDate && customTime}
                 disabled={!customDate || !customTime}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 shrink-0"
               >
-                تأكيد
+                <Check className="w-3.5 h-3.5" />
+                <span>تأكيد</span>
               </button>
             </form>
           </div>
