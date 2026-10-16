@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronUp, MessageSquareQuote } from "lucide-react";
 
 export const FAQ_ITEMS = [
   {
@@ -12,7 +12,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "أنا مش تقني، والإعلانات دي حاجة معقدة.",
-    a: "الكورس مكتوب بالعربي المصري من غير جارجون، والأبواب ماشية بنفس ترتيب شغلك: تعرف عميلك → عرضك → سعرك → محتواك → إعلانك → رقمك. كل خطوة على الخطوة اللي قبلها.",
+    a: "الكورس مكتوب بالعربي المصري من غير جارجون، والأبواب ماشية بنفس ترتيب شغلك: تعرف عميلك ← عرضك ← سعرك ← محتواك ← إعلانك ← رقمك. كل خطوة على الخطوة اللي قبلها.",
   },
   {
     q: "جربت كورسات قبل كده وكلها كلام نظري فاضي.",
@@ -40,31 +40,34 @@ export const CourseFaqSection: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
-      <div className="space-y-1 border-b border-slate-100 pb-4">
-        <span className="text-xs font-bold text-indigo-600">إجابات واضحة</span>
-        <h2 className="text-xl font-bold text-slate-900">الأسئلة اللي بتتسأل قبل ما تشترك</h2>
+    <section className="bg-card rounded-2xl border border-border/70 p-6 sm:p-7 space-y-5 text-right shadow-xs" dir="rtl">
+      <div className="space-y-1.5 border-b border-border/60 pb-4">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+          <MessageSquareQuote className="w-3.5 h-3.5" />
+          <span>إجابات واضحة ومباشرة</span>
+        </div>
+        <h2 className="text-lg sm:text-xl font-bold text-foreground">الأسئلة الشائعة قبل الاشتراك</h2>
       </div>
 
-      <div className="divide-y divide-slate-100 space-y-2">
+      <div className="divide-y divide-border/50 space-y-2">
         {FAQ_ITEMS.map((faq, idx) => {
           const isOpen = openFaq === idx;
 
           return (
-            <div key={idx} className="pt-3">
+            <div key={idx} className="pt-2.5">
               <button
                 type="button"
                 onClick={() => setOpenFaq(isOpen ? null : idx)}
-                className="w-full flex items-center justify-between gap-3 text-right py-2 text-xs font-bold text-slate-800 hover:text-indigo-600 transition-colors"
+                className="w-full flex items-center justify-between gap-3 text-right py-2 text-xs font-bold text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg"
               >
                 <span className="flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                  <HelpCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span>{faq.q}</span>
                 </span>
-                {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
               </button>
               {isOpen && (
-                <p className="p-3 text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-xl mt-1">
+                <p className="p-3.5 text-xs text-muted-foreground leading-relaxed bg-muted/20 border border-border/40 rounded-xl mt-1.5 transition-all">
                   {faq.a}
                 </p>
               )}

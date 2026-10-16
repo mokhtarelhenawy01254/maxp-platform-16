@@ -34,6 +34,7 @@ const AcademyCoursePublicPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
   const [paymentBanner, setPaymentBanner] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -130,8 +131,6 @@ const AcademyCoursePublicPage: React.FC = () => {
       </div>
     );
   }
-
-  const [copiedShare, setCopiedShare] = useState(false);
 
   const handleShareCourse = () => {
     const targetId = outline?.course?.id || courseId;

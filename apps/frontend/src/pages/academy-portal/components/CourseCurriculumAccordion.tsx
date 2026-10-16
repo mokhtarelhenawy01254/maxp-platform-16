@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { PlayCircle, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { PlayCircle, Lock, ChevronDown, ChevronUp, Clock } from "lucide-react";
 
 export interface LessonItem {
   id: string;
@@ -33,58 +33,59 @@ export const CourseCurriculumAccordion: React.FC<Props> = ({ courseId, modules }
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 text-right" dir="rtl">
       {modules.map((module, mIdx) => {
         const isExp = expanded[module.id] ?? false;
 
         return (
-          <div key={module.id} className="border border-slate-200 rounded-2xl overflow-hidden">
+          <div key={module.id} className="border border-border/70 rounded-2xl overflow-hidden bg-card shadow-xs transition-colors">
             <button
               type="button"
               onClick={() => toggle(module.id)}
-              className="w-full p-4 sm:p-5 bg-slate-50/70 hover:bg-slate-100/80 transition-colors flex items-center justify-between gap-4 text-right"
+              className="w-full p-4 sm:p-4.5 bg-card hover:bg-muted/30 transition-colors flex items-center justify-between gap-4 text-right"
             >
               <div className="flex items-center gap-3">
-                <span className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-mono font-bold border border-primary/20 shrink-0">
                   {mIdx + 1}
                 </span>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">{module.title}</span>
-                  <span className="text-[11px] text-slate-500">{module.lessons?.length || 0} دروس</span>
+                  <span className="text-xs font-bold text-foreground block">{module.title}</span>
+                  <span className="text-[11px] text-muted-foreground font-mono tabular-nums">{module.lessons?.length || 0} دروس</span>
                 </div>
               </div>
-              {isExp ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+              {isExp ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
             </button>
 
             {isExp && (
-              <div className="p-3 sm:p-4 bg-white divide-y divide-slate-100 space-y-1">
+              <div className="p-2 sm:p-3 bg-muted/10 divide-y divide-border/40 border-t border-border/60">
                 {module.lessons?.map((lesson, lIdx) => {
                   const isFree = lesson.isFreePreview || lIdx < 2;
 
                   return (
-                    <div key={lesson.id} className="pt-2.5 pb-2.5 flex items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-2.5">
+                    <div key={lesson.id} className="py-2.5 px-2 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         {isFree ? (
-                          <PlayCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <PlayCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         ) : (
-                          <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                          <Lock className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                         )}
-                        <span className="text-slate-800 font-medium">{lesson.title}</span>
+                        <span className="text-foreground font-medium truncate">{lesson.title}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {isFree ? (
                           <Link
                             to={`/portal/course/${courseId}/lesson/${lesson.id}`}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+                            className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                           >
                             معاينة مجانية
                           </Link>
                         ) : (
-                          <span className="text-[11px] text-slate-400">متاح بعد الاشتراك</span>
+                          <span className="text-[11px] text-muted-foreground">متاح بعد الاشتراك</span>
                         )}
-                        <span className="text-[11px] text-slate-400 font-mono tabular-nums">
-                          {lesson.durationMin} د
+                        <span className="text-[11px] text-muted-foreground font-mono tabular-nums inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-muted-foreground/70" />
+                          <span>{lesson.durationMin} د</span>
                         </span>
                       </div>
                     </div>

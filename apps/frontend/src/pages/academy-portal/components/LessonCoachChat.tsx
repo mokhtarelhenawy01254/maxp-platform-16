@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Bot, User } from "lucide-react";
 
 interface Props {
   lessonId: string;
@@ -54,29 +54,43 @@ export const LessonCoachChat: React.FC<Props> = ({ lessonId }) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="h-64 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex flex-col ${msg.sender === "user" ? "items-start" : "items-end"}`}
-          >
-            <span className="text-[10px] text-slate-400 mb-0.5">
-              {msg.sender === "user" ? "أنت" : "الكوتش الذكي"}
-            </span>
+    <div className="space-y-3.5 text-right" dir="rtl">
+      <div className="h-64 sm:h-72 overflow-y-auto space-y-3 p-3.5 bg-muted/20 rounded-2xl border border-border/60 text-xs">
+        {messages.map((msg, i) => {
+          const isUser = msg.sender === "user";
+
+          return (
             <div
-              className={`p-3 rounded-2xl max-w-sm leading-relaxed ${
-                msg.sender === "user"
-                  ? "bg-slate-900 text-white"
-                  : "bg-white border border-slate-200 text-slate-800 shadow-sm"
-              }`}
+              key={i}
+              className={`flex flex-col ${isUser ? "items-start" : "items-end"}`}
             >
-              {msg.text}
+              <span className="text-[10px] text-muted-foreground mb-1 inline-flex items-center gap-1">
+                {isUser ? (
+                  <>
+                    <User className="w-3 h-3 text-muted-foreground/80" />
+                    <span>أنت</span>
+                  </>
+                ) : (
+                  <>
+                    <Bot className="w-3 h-3 text-primary" />
+                    <span>الكوتش الذكي</span>
+                  </>
+                )}
+              </span>
+              <div
+                className={`p-3 rounded-2xl max-w-sm leading-relaxed transition-all shadow-2xs ${
+                  isUser
+                    ? "bg-primary text-primary-foreground rounded-tr-xs"
+                    : "bg-card border border-border/70 text-foreground rounded-tl-xs"
+                }`}
+              >
+                {msg.text}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {loading && (
-          <div className="flex items-center gap-2 text-indigo-600 text-xs py-2">
+          <div className="flex items-center gap-2 text-primary text-xs py-2">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             <span>الكوتش يراجع سكريبت الدرس ليجيبك...</span>
           </div>
@@ -89,15 +103,16 @@ export const LessonCoachChat: React.FC<Props> = ({ lessonId }) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="اسأل الكوتش عن أي خطوة في هذا الدرس..."
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          className="flex-1 px-3.5 py-2.5 rounded-xl border border-input bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors disabled:opacity-40"
+          className="p-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+          aria-label="إرسال السؤال"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-4 h-4 rtl:-scale-x-100" />
         </button>
       </form>
     </div>
