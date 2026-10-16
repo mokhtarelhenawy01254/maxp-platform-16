@@ -1,31 +1,33 @@
 import React from "react";
 
+export interface SelectFilterProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+}
+
 export default function SelectFilter({
   icon: Icon,
   label,
   value,
   onChange,
   options,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-}) {
+}: SelectFilterProps) {
   return (
-    <label className="block">
-      <span className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-400">
-        <Icon className="h-3 w-3 text-slate-400" />
+    <label className="block select-none">
+      <span className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+        <Icon className="size-3 text-muted-foreground" />
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+        className="h-8.5 w-full rounded-lg border border-border/70 bg-card px-2.5 text-xs font-medium text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary/20 shadow-2xs outline-none cursor-pointer"
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} className="bg-card text-foreground">
             {option.label}
           </option>
         ))}

@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "@/lib/utils";
 
 export interface Tab {
   id: string;
@@ -28,41 +29,51 @@ export const Tabs: React.FC<TabsProps> = ({
   const getTabClasses = (tab: Tab) => {
     const isActive = activeTab === tab.id;
     const baseClasses =
-      "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200";
+      "flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium transition-all duration-150 select-none active:scale-[0.98]";
 
     if (tab.disabled) {
-      return `${baseClasses} opacity-50 cursor-not-allowed text-gray-400`;
+      return `${baseClasses} opacity-40 cursor-not-allowed text-muted-foreground`;
     }
 
     switch (variant) {
       case "pills":
-        return `${baseClasses} rounded-lg ${
+        return cn(
+          baseClasses,
+          "rounded-lg",
           isActive
-            ? "bg-indigo-600 text-white shadow-sm"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-        }`;
+            ? "bg-primary text-primary-foreground shadow-2xs"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        );
 
       case "underline":
-        return `${baseClasses} border-b-2 ${
+        return cn(
+          baseClasses,
+          "border-b-2 -mb-px",
           isActive
-            ? "border-indigo-600 text-indigo-600"
-            : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-        }`;
+            ? "border-primary text-primary font-semibold"
+            : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/80",
+        );
 
       default:
-        return `${baseClasses} rounded-t-lg border-t border-x ${
+        return cn(
+          baseClasses,
+          "rounded-lg",
           isActive
-            ? "bg-white text-indigo-600 border-gray-300 -mb-px"
-            : "bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100"
-        }`;
+            ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+        );
     }
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={cn("w-full space-y-3", className)}>
       {/* Tabs Navigation */}
       <div
-        className={`flex gap-1 ${variant === "underline" ? "border-b border-gray-200" : ""}`}
+        className={cn(
+          "flex items-center gap-1 overflow-x-auto no-scrollbar",
+          variant === "underline" && "border-b border-border/60",
+          variant === "default" && "bg-muted/40 p-1 rounded-xl border border-border/60 max-w-fit",
+        )}
       >
         {tabs.map((tab) => (
           <button
@@ -72,15 +83,18 @@ export const Tabs: React.FC<TabsProps> = ({
             className={getTabClasses(tab)}
             type="button"
           >
-            {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
-            <span>{tab.label}</span>
-            {tab.badge && (
+            {tab.icon && <span className="shrink-0 size-4 flex items-center justify-center">{tab.icon}</span>}
+            <span className="truncate">{tab.label}</span>
+            {tab.badge !== undefined && tab.badge !== "" && (
               <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
+                className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] sm:text-xs font-mono tabular-nums leading-none",
                   activeTab === tab.id
-                    ? "bg-white/20 text-white"
-                    : "bg-gray-200 text-gray-700"
-                }`}
+                    ? variant === "pills"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground",
+                )}
               >
                 {tab.badge}
               </span>
@@ -91,7 +105,11 @@ export const Tabs: React.FC<TabsProps> = ({
 
       {/* Tab Content */}
       <div
-        className={`${variant === "default" ? "bg-white border border-gray-300 rounded-b-lg rounded-tr-lg" : "mt-4"}`}
+        className={cn(
+          variant === "default"
+            ? "rounded-xl border border-border/60 bg-card p-4 sm:p-5 text-foreground shadow-2xs"
+            : "text-foreground",
+        )}
       >
         {children}
       </div>
@@ -114,5 +132,7 @@ export const TabPanel: React.FC<TabPanelProps> = ({
 }) => {
   if (activeTab !== id) return null;
 
-  return <div className={`p-6 ${className}`}>{children}</div>;
+  return <div className={cn("space-y-4", className)}>{children}</div>;
 };
+
+export default Tabs;

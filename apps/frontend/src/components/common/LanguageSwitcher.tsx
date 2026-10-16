@@ -1,23 +1,24 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Check, Globe } from "lucide-react";
 import { changeLanguage } from "../../i18n";
 
 interface LanguageSwitcherProps {
   className?: string;
 }
 
-const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
+const LANGUAGES = [
+  { code: "ar", name: "العربية", tag: "AR" },
+  { code: "en", name: "English", tag: "EN" },
+];
+
+export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   className = "",
 }) => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentLanguage = i18n.language || "ar";
-
-  const languages = [
-    { code: "ar", name: "العربية", flag: "🇸🇦" },
-    { code: "en", name: "English", flag: "🇬🇧" },
-  ];
 
   const handleLanguageChange = (languageCode: string) => {
     changeLanguage(languageCode);
@@ -29,11 +30,12 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="business-icon-button business-shell-utility-button relative"
+        className="business-icon-button business-shell-utility-button relative inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors shadow-2xs active:scale-95"
         title="تغيير اللغة / Change language"
         aria-label="Change language"
       >
-        <span className="text-xs font-bold font-mono tracking-wider text-gray-700 dark:text-gray-300 uppercase">
+        <Globe className="size-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-bold font-mono tracking-wider text-foreground uppercase tabular-nums">
           {currentLanguage}
         </span>
       </button>
@@ -47,28 +49,34 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           />
 
           {/* Dropdown Menu */}
-          <div className="absolute ltr:right-0 rtl:left-0 z-50 mt-2 w-48 rounded-2xl bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-            <div className="py-1">
-              {languages.map((language) => (
-                <button
-                  key={language.code}
-                  onClick={() => handleLanguageChange(language.code)}
-                  className={`
-                    w-full text-start px-4 py-2 text-sm flex items-center space-x-2 space-x-reverse
-                    ${currentLanguage === language.code
-                      ? "bg-indigo-50 text-indigo-700 font-medium"
-                      : "text-gray-700 hover:bg-gray-100"
-                    }
-                    transition-colors duration-150
-                  `}
-                >
-                  <span className="text-lg">{language.flag}</span>
-                  <span>{language.name}</span>
-                  {currentLanguage === language.code && (
-                    <span className="mr-auto">✓</span>
-                  )}
-                </button>
-              ))}
+          <div className="absolute ltr:right-0 rtl:left-0 z-50 mt-1.5 w-44 rounded-xl border border-border/70 bg-card p-1 shadow-lg divide-y divide-border/40">
+            <div className="py-0.5 space-y-0.5">
+              {LANGUAGES.map((language) => {
+                const isActive = currentLanguage === language.code;
+                return (
+                  <button
+                    key={language.code}
+                    onClick={() => handleLanguageChange(language.code)}
+                    className={`
+                      w-full text-start px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between gap-2 transition-colors
+                      ${isActive
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground hover:bg-muted/50"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="inline-flex items-center justify-center size-5 rounded-md bg-muted text-[10px] font-mono font-bold text-muted-foreground">
+                        {language.tag}
+                      </span>
+                      <span className="truncate">{language.name}</span>
+                    </div>
+                    {isActive && (
+                      <Check className="size-3.5 text-primary shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>

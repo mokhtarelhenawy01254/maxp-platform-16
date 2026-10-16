@@ -13,41 +13,47 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({
   const isRtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
 
   return (
-    <div className="min-h-screen flex bg-white" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="min-h-screen flex bg-background text-foreground" dir={isRtl ? "rtl" : "ltr"}>
       {sidebar && (
-        <div className="w-64 border-r rtl:border-l rtl:border-r-0 border-gray-200 p-4 space-y-3 shrink-0">
-          <Skeleton className="h-8 w-32" />
-          <div className="space-y-2 pt-4">
+        <div className="hidden md:flex w-60 border-r rtl:border-l rtl:border-r-0 border-border/60 p-4 flex-col gap-3 shrink-0 bg-card/50">
+          <Skeleton className="h-7 w-28 rounded-lg" />
+          <div className="space-y-2 pt-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
+              <Skeleton key={i} className="h-9 w-full rounded-lg" />
             ))}
           </div>
         </div>
       )}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {header && (
-          <div className="h-16 border-b border-gray-200 flex items-center px-6 gap-4">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-4 w-48" />
+          <div className="h-14 border-b border-border/60 flex items-center px-4 sm:px-6 gap-3 bg-card/30">
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="h-4 w-40 rounded-md" />
             <div className="flex-1" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="h-8 w-20 rounded-lg" />
           </div>
         )}
-        <div className="flex-1 p-6 space-y-6">
+        <div className="flex-1 p-4 sm:p-6 space-y-5">
           <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+            <Skeleton className="h-7 w-52 rounded-lg" />
+            <Skeleton className="h-4 w-80 rounded-md" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
+              <div key={i} className="rounded-xl border border-border/60 p-4 space-y-3 bg-card/40">
+                <Skeleton className="h-4 w-24 rounded-md" />
+                <Skeleton className="h-8 w-32 rounded-lg" />
+                <Skeleton className="h-3 w-40 rounded-md" />
+              </div>
             ))}
           </div>
-          <Skeleton className="h-64 w-full rounded-xl" />
-          <div className="space-y-3">
+          <div className="rounded-xl border border-border/60 p-4 bg-card/40">
+            <Skeleton className="h-56 w-full rounded-lg" />
+          </div>
+          <div className="space-y-2.5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
+              <Skeleton key={i} className="h-11 w-full rounded-lg" />
             ))}
           </div>
         </div>
@@ -55,3 +61,5 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({
     </div>
   );
 };
+
+export default PageSkeleton;
