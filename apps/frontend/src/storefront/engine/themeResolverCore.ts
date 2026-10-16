@@ -407,13 +407,13 @@ const normalizeThemeOverrides = (
   };
 
   const header = (input.header ||
-    designTokens.header ||
-    settingsDesignTokens.header ||
+    (isRecord(input.designTokens) ? (input.designTokens['header'] as StorefrontHeaderConfig | undefined) : undefined) ||
+    (isRecord(settings?.['designTokens']) ? (settings?.['designTokens']['header'] as StorefrontHeaderConfig | undefined) : undefined) ||
     settings?.["header"]) as StorefrontHeaderConfig | undefined;
 
   const footer = (input.footer ||
-    designTokens.footer ||
-    settingsDesignTokens.footer ||
+    (isRecord(input.designTokens) ? (input.designTokens['footer'] as StorefrontFooterConfig | undefined) : undefined) ||
+    (isRecord(settings?.['designTokens']) ? (settings?.['designTokens']['footer'] as StorefrontFooterConfig | undefined) : undefined) ||
     settings?.["footer"]) as StorefrontFooterConfig | undefined;
 
   const seo = extractSEOConfig(input);
