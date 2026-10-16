@@ -992,8 +992,14 @@ class ManufacturingService {
       const costWarnings = [];
 
       for (const item of data.items) {
-        const qty = round4(item.quantity);
-        if (qty <= 0) throw new Error('كمية الخامة المصروفة يجب أن تكون أكبر من الصفر');
+        const rawQty = round4(item.quantity);
+        if (rawQty <= 0) throw new Error('كمية الخامة المصروفة يجب أن تكون أكبر من الصفر');
+
+        // Unify rounding between inventory deduction, stock movement, item voucher, and cost:
+        // Since Inventory.quantity and StockMovement.quantity in the database schema are integer (Int),
+        // we use Math.round(rawQty) across all 4 touchpoints to prevent cumulative drift between ledger and inventory.
+        const issuedQty = Math.round(rawQty);
+        if (issuedQty <= 0) throw new Error('كمية الخامة المصروفة بعد التقريب يجب أن تكون أكبر من الصفر');
 
         // Lookup inventory for cost valuation & deduction
         let unitCost = round2(item.unitCost || 0);
@@ -1038,17 +1044,16 @@ class ManufacturingService {
           });
         }
 
-        const itemTotal = round2(qty * unitCost);
+        const itemTotal = round2(issuedQty * unitCost);
         totalCost += itemTotal;
 
         // Deduct inventory stock if record exists
         if (inv && tx.inventory?.update) {
-          const deductUnits = Math.round(qty);
           await tx.inventory.update({
             where: { id: inv.id },
             data: {
-              quantity: { decrement: deductUnits },
-              available: { decrement: deductUnits },
+              quantity: { decrement: issuedQty },
+              available: { decrement: issuedQty },
             },
           });
         }
@@ -1062,7 +1067,7 @@ class ManufacturingService {
                 warehouseId,
                 type: 'OUT',
                 reason: 'ADJUSTMENT',
-                quantity: Math.round(qty),
+                quantity: issuedQty,
                 cost: unitCost,
                 reference: order.orderNumber,
                 notes: `صرف خامات تصنيع أمر: ${order.orderNumber}`,
@@ -1078,7 +1083,7 @@ class ManufacturingService {
         preparedItems.push({
           rawMaterialId: item.rawMaterialId,
           rawMaterialName: item.rawMaterialName || null,
-          quantity: qty,
+          quantity: issuedQty,
           unit: item.unit || 'PIECE',
           unitCost,
           totalCost: itemTotal,
