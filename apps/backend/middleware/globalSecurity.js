@@ -758,6 +758,7 @@ function needsCompanyIsolation(path) {
     '/api/v1/whatsapp/meta/webhook',
     '/api/v1/whatsapp-meta',
     '/api/v1/hr/recruitment/forms/public',
+    '/api/v1/hr/employee-invitations', // Public token-based self-onboarding (verify/accept) — No user token or companyId yet
     '/api/v1/external/hr',
     '/api/v1/admin-api'
   ];
