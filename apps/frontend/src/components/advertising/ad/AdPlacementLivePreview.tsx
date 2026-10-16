@@ -9,6 +9,7 @@ import {
   Bookmark,
   Heart,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AdFormData, FacebookPage } from "./types";
 
 interface AdPlacementLivePreviewProps {
@@ -30,32 +31,34 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
   const ctaLabel = formData.callToAction || "ORDER_NOW";
 
   return (
-    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-xs space-y-4">
-      <div className="flex items-center justify-between border-b border-border/60 pb-3">
+    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-2xs space-y-4 text-foreground">
+      <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <Smartphone className="h-4 w-4 text-primary" />
-          <h4 className="text-xs font-bold text-foreground">
+          <Smartphone className="size-4 text-primary" />
+          <h4 className="text-xs font-semibold text-foreground">
             {isEn ? "Live Mobile Ad Preview" : "معاينة الإعلان الحية على الموبايل"}
           </h4>
         </div>
 
         {/* Placement tabs */}
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/50">
           <button
             type="button"
             onClick={() => setPlacement("FEED")}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
-              placement === "FEED" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={cn(
+              "px-2.5 py-1 text-[11px] font-semibold rounded-md transition active:scale-95",
+              placement === "FEED" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground",
+            )}
           >
             {isEn ? "FB Feed" : "فيسبوك فيد"}
           </button>
           <button
             type="button"
             onClick={() => setPlacement("REELS")}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
-              placement === "REELS" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={cn(
+              "px-2.5 py-1 text-[11px] font-semibold rounded-md transition active:scale-95",
+              placement === "REELS" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground",
+            )}
           >
             {isEn ? "Reels & Stories" : "ريلز وقصص (9:16)"}
           </button>
@@ -66,34 +69,34 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
       <div className="flex justify-center">
         {placement === "FEED" ? (
           /* Facebook Feed Mockup */
-          <div className="w-full max-w-sm rounded-xl border border-border/70 bg-card shadow-xs overflow-hidden text-right">
+          <div className="w-full max-w-sm rounded-xl border border-border/70 bg-card shadow-2xs overflow-hidden text-right">
             {/* Post Header */}
             <div className="flex items-center justify-between p-3 border-b border-border/40">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-xs">
+                <div className="size-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-2xs">
                   {pageName.substring(0, 1).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-foreground leading-tight">{pageName}</p>
+                  <p className="text-xs font-semibold text-foreground leading-tight">{pageName}</p>
                   <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                     <span>{isEn ? "Sponsored" : "مُموَّل"}</span>
                     <span>·</span>
-                    <Globe className="h-3 w-3" />
+                    <Globe className="size-3" />
                   </p>
                 </div>
               </div>
-              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+              <MoreHorizontal className="size-4 text-muted-foreground" />
             </div>
 
             {/* Post Text */}
             <div className="px-3 py-2.5">
-              <p className="text-xs text-foreground font-normal whitespace-pre-line line-clamp-3">
+              <p className="text-xs text-foreground font-normal whitespace-pre-line line-clamp-3 leading-relaxed">
                 {primaryText}
               </p>
             </div>
 
             {/* Post Media */}
-            <div className="w-full h-56 bg-muted/80 flex items-center justify-center overflow-hidden">
+            <div className="w-full h-56 bg-muted/60 flex items-center justify-center overflow-hidden border-y border-border/40">
               {formData.imagePreview ? (
                 <img src={formData.imagePreview} alt="Preview" className="w-full h-full object-cover" />
               ) : formData.videoPreview ? (
@@ -104,33 +107,33 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
             </div>
 
             {/* Post CTA Bar */}
-            <div className="flex items-center justify-between bg-muted/30 px-3 py-2.5 border-t border-border/60">
+            <div className="flex items-center justify-between bg-muted/30 px-3 py-2.5 border-b border-border/40">
               <div className="min-w-0 pr-2">
-                <p className="text-[10px] text-muted-foreground font-mono uppercase truncate">
+                <p className="text-[10px] text-muted-foreground font-mono uppercase truncate tabular-nums">
                   {formData.displayLink || "SWAN.MAXP.ONLINE"}
                 </p>
-                <p className="text-xs font-bold text-foreground truncate">{headline}</p>
+                <p className="text-xs font-semibold text-foreground truncate">{headline}</p>
               </div>
               <button
                 type="button"
-                className="shrink-0 rounded-md bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 text-xs font-bold"
+                className="shrink-0 rounded-lg bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 text-xs font-bold font-mono uppercase tabular-nums shadow-2xs"
               >
                 {ctaLabel.replace(/_/g, " ")}
               </button>
             </div>
 
             {/* Social Engagement */}
-            <div className="flex items-center justify-around border-t border-border/40 py-2 text-muted-foreground text-xs">
+            <div className="flex items-center justify-around py-2 text-muted-foreground text-xs select-none">
               <div className="flex items-center gap-1 font-medium hover:text-foreground cursor-pointer transition">
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="size-3.5" />
                 <span>إعجاب</span>
               </div>
               <div className="flex items-center gap-1 font-medium hover:text-foreground cursor-pointer transition">
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="size-3.5" />
                 <span>تعليق</span>
               </div>
               <div className="flex items-center gap-1 font-medium hover:text-foreground cursor-pointer transition">
-                <Share2 className="h-3.5 w-3.5" />
+                <Share2 className="size-3.5" />
                 <span>مشاركة</span>
               </div>
             </div>
@@ -151,7 +154,7 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
             {/* Top header */}
             <div className="relative z-10 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px]">
+                <div className="size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px]">
                   {pageName.substring(0, 1)}
                 </div>
                 <div>
@@ -159,15 +162,15 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
                   <p className="text-[9px] text-zinc-300">{isEn ? "Sponsored" : "مُموَّل"}</p>
                 </div>
               </div>
-              <MoreHorizontal className="h-4 w-4 text-zinc-300" />
+              <MoreHorizontal className="size-4 text-zinc-300" />
             </div>
 
             {/* Right side interaction icons */}
             <div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 z-10 text-white/90">
-              <Heart className="h-5 w-5 hover:text-rose-500 transition cursor-pointer" />
-              <MessageCircle className="h-5 w-5 hover:text-primary transition cursor-pointer" />
-              <Share2 className="h-5 w-5 hover:text-primary transition cursor-pointer" />
-              <Bookmark className="h-5 w-5 hover:text-amber-400 transition cursor-pointer" />
+              <Heart className="size-5 hover:text-rose-500 transition cursor-pointer" />
+              <MessageCircle className="size-5 hover:text-primary transition cursor-pointer" />
+              <Share2 className="size-5 hover:text-primary transition cursor-pointer" />
+              <Bookmark className="size-5 hover:text-amber-400 transition cursor-pointer" />
             </div>
 
             {/* Bottom Content & CTA */}
@@ -175,9 +178,9 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
               <p className="text-xs font-semibold text-white line-clamp-2 drop-shadow-md">
                 {primaryText}
               </p>
-              <div className="rounded-lg bg-white/95 text-zinc-900 p-2.5 flex items-center justify-between shadow-sm">
+              <div className="rounded-xl bg-white/95 text-zinc-900 p-2.5 flex items-center justify-between shadow-2xs">
                 <span className="text-xs font-bold truncate pr-1 text-zinc-900">{headline}</span>
-                <span className="shrink-0 rounded-md bg-primary text-primary-foreground px-2.5 py-1 text-[11px] font-bold">
+                <span className="shrink-0 rounded-lg bg-primary text-primary-foreground px-2.5 py-1 text-[11px] font-bold font-mono tabular-nums">
                   {ctaLabel.replace(/_/g, " ")}
                 </span>
               </div>
@@ -188,3 +191,5 @@ export const AdPlacementLivePreview: React.FC<AdPlacementLivePreviewProps> = ({
     </div>
   );
 };
+
+export default AdPlacementLivePreview;
