@@ -1,11 +1,6 @@
-/**
- * 📭 Empty State Component
- * مكون Empty State محسّن لصفحات الموارد البشرية
- */
-
-import React from 'react';
-import { LucideIcon } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import React from "react";
+import { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -29,26 +24,35 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   secondaryIcon: SecondaryIcon,
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-96 text-center px-4">
-      <div className="w-32 h-32 mb-6 text-gray-300">
-        <Icon className="w-full h-full" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-card/40 p-8 sm:p-12 text-center text-foreground select-none">
+      <div className="size-12 mb-4 rounded-xl bg-muted/60 text-muted-foreground flex items-center justify-center shadow-2xs">
+        <Icon className="size-6 text-muted-foreground" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1.5">
         {title}
       </h3>
-      <p className="text-gray-500 mb-6 max-w-md">
+      <p className="text-xs sm:text-sm text-muted-foreground mb-5 max-w-md leading-relaxed">
         {description}
       </p>
       {(actionLabel || secondaryActionLabel) && (
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap justify-center">
           {actionLabel && onAction && (
-            <Button onClick={onAction} size="lg">
+            <Button
+              onClick={onAction}
+              size="sm"
+              className="rounded-lg h-9 px-4 text-xs font-semibold shadow-2xs active:scale-[0.98]"
+            >
               {actionLabel}
             </Button>
           )}
           {secondaryActionLabel && onSecondaryAction && (
-            <Button variant="outline" size="lg" onClick={onSecondaryAction}>
-              {SecondaryIcon && <SecondaryIcon className="h-5 w-5 ml-2" />}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSecondaryAction}
+              className="rounded-lg h-9 px-4 text-xs border-border/70 text-foreground hover:bg-muted active:scale-[0.98]"
+            >
+              {SecondaryIcon && <SecondaryIcon className="size-3.5 ml-1.5" />}
               {secondaryActionLabel}
             </Button>
           )}
