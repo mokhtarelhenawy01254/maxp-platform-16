@@ -105,16 +105,16 @@ const StudentLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto my-12 p-6 sm:p-8 bg-white rounded-3xl border border-slate-200/80 shadow-sm space-y-6 text-right" dir="rtl">
+    <div className="max-w-md mx-auto my-12 p-6 sm:p-7 bg-card rounded-2xl border border-border/70 shadow-lg space-y-5 text-right" dir="rtl">
       {/* Icon & Title */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-sm">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto shadow-xs">
           {step === "phone" ? <GraduationCap className="w-6 h-6" /> : <KeyRound className="w-6 h-6" />}
         </div>
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-lg sm:text-xl font-extrabold text-foreground tracking-tight">
           {step === "phone" ? "تسجيل دخول الطالب" : "أدخل كود التحقق"}
         </h1>
-        <p className="text-xs text-slate-500 max-w-xs mx-auto">
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
           {step === "phone"
             ? "أدخل رقم الموبايل المسجل لإرسال كود الدخول والوصول لكورساتك."
             : `أدخل الكود المكون من 6 أرقام المرسل إلى الرقم ${phone}`}
@@ -122,14 +122,14 @@ const StudentLoginPage: React.FC = () => {
       </div>
 
       {infoMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold leading-relaxed flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold leading-relaxed flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{infoMsg}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold leading-relaxed">
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold leading-relaxed">
           {error}
         </div>
       )}
@@ -137,8 +137,8 @@ const StudentLoginPage: React.FC = () => {
       {step === "phone" ? (
         <form onSubmit={handleSendCode} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              رقم الموبايل المسجل
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              رقم الموبايل المسجل <span className="text-destructive">*</span>
             </label>
             <div className="relative">
               <input
@@ -147,112 +147,108 @@ const StudentLoginPage: React.FC = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="010xxxxxxxx"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs text-slate-800 font-mono dir-ltr text-right pl-10"
-                disabled={loading}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs text-foreground placeholder:text-muted-foreground font-mono tabular-nums dir-ltr text-right transition-all"
               />
-              <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
             </div>
+            <span className="text-[11px] text-muted-foreground mt-1.5 block">
+              سيتم إرسال كود التحقق في رسالة فورية للتأكيد والدخول.
+            </span>
           </div>
 
           <button
             type="submit"
             disabled={loading || !phone.trim()}
-            className="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>جاري إرسال كود التحقق...</span>
+                <span>جاري إرسال الكود...</span>
               </>
             ) : (
               <>
-                <span>إرسال كود التحقق (واتساب)</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>إرسال كود التحقق</span>
+                <ArrowLeft className="w-4 h-4" />
               </>
             )}
           </button>
+
+          <div className="pt-3 border-t border-border/50 text-center">
+            <Link
+              to="/portal/catalog"
+              className="text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+            >
+              العودة لتصفح كتالوج الكورسات
+            </Link>
+          </div>
         </form>
       ) : (
         <form onSubmit={handleVerifyLogin} className="space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700">كود التحقق (6 أرقام)</label>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("phone");
-                  setCode("");
-                  setError(null);
-                  setInfoMsg(null);
-                }}
-                className="text-[11px] font-bold text-indigo-600 hover:underline"
-              >
-                تعديل الرقم
-              </button>
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="123456"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-center font-mono text-base tracking-[0.4em] text-slate-900"
-                disabled={loading}
-                autoFocus
-              />
-            </div>
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              كود التحقق (6 أرقام) <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-mono tracking-widest text-center text-foreground placeholder:text-muted-foreground transition-all"
+            />
           </div>
 
           <button
             type="submit"
-            disabled={loading || code.trim().length !== 6}
-            className="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+            disabled={loading || code.trim().length < 4}
+            className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>جاري التحقق من الكود...</span>
+                <span>جاري التحقق والدخول...</span>
               </>
             ) : (
               <>
-                <span>تأكيد الكود والدخول</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>تأكيد الكود والدخول للمنصة</span>
+                <ArrowLeft className="w-4 h-4" />
               </>
             )}
           </button>
 
-          <div className="pt-2 text-center">
+          <div className="pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => {
+                setStep("phone");
+                setCode("");
+                setError(null);
+                setInfoMsg(null);
+              }}
+              className="hover:text-foreground underline transition-colors"
+            >
+              تعديل رقم الهاتف
+            </button>
+
             {countdown > 0 ? (
-              <span className="text-[11px] text-slate-400 font-medium">
-                إعادة إرسال الكود خلال {countdown} ثانية
+              <span className="font-mono tabular-nums text-[11px]">
+                إعادة الإرسال بعد ({countdown} ثانية)
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => handleSendCode()}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                className="text-primary hover:underline font-semibold flex items-center gap-1 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>إعادة إرسال كود التحقق</span>
+                <span>إعادة إرسال الكود</span>
               </button>
             )}
           </div>
         </form>
       )}
-
-      {/* Alternative actions */}
-      <div className="pt-4 border-t border-slate-100 flex flex-col gap-2 text-center text-xs">
-        <Link
-          to="/portal/catalog"
-          className="inline-flex items-center justify-center gap-1.5 font-bold text-slate-700 hover:text-indigo-600 transition-colors"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-          <span>لست مشتركاً بعد؟ تصفح كتالوج الكورسات وشاهد المعاينة مجاناً</span>
-        </Link>
-      </div>
     </div>
   );
 };
