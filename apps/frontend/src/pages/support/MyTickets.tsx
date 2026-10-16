@@ -8,7 +8,6 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import {
   LifeBuoy,
   Plus,
-  Layers,
   CheckCircle2,
   Clock,
   PanelRightClose,
@@ -149,25 +148,25 @@ export const MyTickets: React.FC = () => {
   const closedTicketsCount = tickets.filter((t) => t.status === "closed").length;
 
   return (
-    <div dir="rtl" className="h-[calc(100vh-5rem)] flex flex-col space-y-3">
+    <div dir="rtl" className="h-[calc(100vh-5rem)] flex flex-col space-y-3 select-none">
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-3.5 shadow-sm shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-3.5 shadow-2xs shrink-0">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
               الدعم الفني
             </span>
             <span className="text-xs text-muted-foreground">/</span>
-            <span className="text-xs font-semibold text-foreground">تذاكر الدعم</span>
+            <span className="text-xs font-semibold text-foreground">قائمة التذاكر والمتابعة</span>
           </div>
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-2">
             <LifeBuoy className="w-4 h-4 text-primary" />
-            منصة تذاكر الدعم الفني والمتابعة (Ticket Console)
+            منصة تذاكر الدعم الفني والمتابعة
           </h2>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <div className="hidden sm:flex items-center gap-3 px-3 py-1 bg-muted/40 rounded-lg border border-border/60 text-xs">
+          <div className="hidden sm:flex items-center gap-3 px-3 py-1 bg-muted/30 rounded-lg border border-border/60 text-xs">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-500" />
               <span className="text-muted-foreground">مفتوحة:</span>
@@ -184,7 +183,7 @@ export const MyTickets: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowDetailsPanel((prev) => !prev)}
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             title="تبديل عرض اللوحة الجانبية"
           >
             {showDetailsPanel ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
@@ -193,7 +192,7 @@ export const MyTickets: React.FC = () => {
           <button
             type="button"
             onClick={handleNewTicket}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-2xs transition-colors active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>تذكرة جديدة</span>

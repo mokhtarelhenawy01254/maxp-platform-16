@@ -13,7 +13,7 @@ import {
   Loader2,
   FileQuestion,
   Layers,
-  Sparkles,
+  LifeBuoy,
 } from "lucide-react";
 import supportService, { FAQ as FAQType } from "../../services/supportService";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -104,17 +104,17 @@ export const FAQ: React.FC = () => {
 
   if (loading && Object.keys(faqs).length === 0) {
     return (
-      <div className="flex items-center justify-center p-12 text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        <span className="mr-2 text-xs font-medium">جاري تحميل قاعدة المعرفة والأسئلة الشائعة...</span>
+      <div className="flex flex-col items-center justify-center p-12 text-muted-foreground gap-2">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <span className="text-xs font-medium">جاري تحميل قاعدة المعرفة والأسئلة الشائعة...</span>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="space-y-3.5 select-none max-w-5xl mx-auto py-2">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-2xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -125,7 +125,7 @@ export const FAQ: React.FC = () => {
           </div>
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-primary" />
-            الأسئلة الشائعة وقاعدة المعرفة (FAQ & Knowledge Base)
+            الأسئلة الشائعة وقاعدة المعرفة
           </h2>
           <p className="text-xs text-muted-foreground">
             إجابات فورية وحلول موثقة لأكثر المشاكل والاستفسارات شيوعاً في المنصة
@@ -136,7 +136,7 @@ export const FAQ: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate(supportTicketPath)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-2xs transition-colors active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>فتح تذكرة دعم</span>
@@ -149,7 +149,7 @@ export const FAQ: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>الأسئلة المتاحة</span>
-            <FileQuestion className="w-3.5 h-3.5" />
+            <FileQuestion className="w-3.5 h-3.5 text-primary" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-base font-bold font-mono text-foreground tabular-nums">
@@ -162,7 +162,7 @@ export const FAQ: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>التصنيفات المغطاة</span>
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-blue-500" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-base font-bold font-mono text-foreground tabular-nums">
@@ -175,17 +175,17 @@ export const FAQ: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>حل المشكلات الفوري</span>
-            <Sparkles className="w-3.5 h-3.5" />
+            <LifeBuoy className="w-3.5 h-3.5 text-amber-500" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-base font-bold text-foreground">إجابات فورية 24/7</span>
-            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">Instant</span>
+            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">Knowledge SLA</span>
           </div>
         </div>
       </div>
 
       {/* Search Bar & Category Filters Strip */}
-      <div className="bg-card border border-border/70 rounded-xl p-3.5 space-y-3">
+      <div className="bg-card border border-border/70 rounded-xl p-3.5 space-y-3 shadow-2xs">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
@@ -194,7 +194,7 @@ export const FAQ: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void fetchFAQs()}
-            className="w-full h-9 pr-9 pl-3 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+            className="w-full h-9 pr-9 pl-3 text-xs rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -203,10 +203,10 @@ export const FAQ: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCategory("")}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               !selectedCategory
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-2xs"
+                : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             جميع الفئات ({totalQuestions})
@@ -216,10 +216,10 @@ export const FAQ: React.FC = () => {
               key={cat.category}
               type="button"
               onClick={() => setSelectedCategory(cat.category)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 selectedCategory === cat.category
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-2xs"
+                  : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <span>{CATEGORY_LABELS[cat.category] || cat.category}</span>
@@ -231,14 +231,14 @@ export const FAQ: React.FC = () => {
 
       {/* FAQs Accordion Cards */}
       {Object.keys(faqs).length === 0 ? (
-        <div className="bg-card border border-border/70 rounded-xl p-10 text-center space-y-2">
-          <HelpCircle className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+        <div className="bg-card border border-border/70 rounded-xl p-10 text-center space-y-2 shadow-2xs">
+          <HelpCircle className="w-8 h-8 text-muted-foreground/30 mx-auto stroke-[1.5]" />
           <h3 className="text-xs font-semibold text-foreground">لم يتم العثور على نتائج</h3>
           <p className="text-xs text-muted-foreground">جرب البحث بكلمات أخرى أو تواصل مع الدعم الفني مباشرة</p>
           <button
             type="button"
             onClick={() => navigate(supportTicketPath)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium mt-2"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium mt-2 shadow-2xs cursor-pointer active:scale-[0.98]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>فتح تذكرة دعم</span>
@@ -247,13 +247,13 @@ export const FAQ: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {Object.entries(faqs).map(([category, categoryFaqs]) => (
-            <div key={category} className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
-              <div className="px-4 py-2.5 bg-muted/20 flex items-center justify-between">
+            <div key={category} className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60 shadow-2xs">
+              <div className="px-4 py-2.5 bg-muted/20 flex items-center justify-between border-b border-border/60">
                 <span className="text-xs font-bold text-foreground">
                   {CATEGORY_LABELS[category] || category}
                 </span>
                 <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-                  {categoryFaqs.length} أسئلة
+                  {categoryFaqs.length} مقال
                 </span>
               </div>
 
@@ -264,7 +264,7 @@ export const FAQ: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => toggleFAQ(faq.id)}
-                      className="w-full text-right flex items-center justify-between gap-3 text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                      className="w-full text-right flex items-center justify-between gap-3 text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
                     >
                       <span className="leading-relaxed flex-1">{faq.question}</span>
                       {isExpanded ? (
@@ -290,7 +290,7 @@ export const FAQ: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => void rateFAQ(faq.id, true)}
-                              className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+                              className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium transition-colors cursor-pointer"
                             >
                               <ThumbsUp className="w-3.5 h-3.5" />
                               <span className="font-mono tabular-nums">({faq.helpful})</span>
@@ -298,7 +298,7 @@ export const FAQ: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => void rateFAQ(faq.id, false)}
-                              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium transition-colors"
+                              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
                             >
                               <ThumbsDown className="w-3.5 h-3.5" />
                               <span className="font-mono tabular-nums">({faq.notHelpful})</span>
@@ -308,7 +308,7 @@ export const FAQ: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => navigate(supportTicketPath)}
-                            className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                            className="inline-flex items-center gap-1 text-primary hover:underline font-medium cursor-pointer"
                           >
                             <MessageSquare className="w-3 h-3" />
                             <span>تحتاج مساعدة إضافية في هذا السؤال؟</span>
