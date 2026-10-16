@@ -5,10 +5,12 @@ import {
   X,
   Download,
   User,
-  Shield,
+  ShieldCheck,
   Clock,
-  CheckCircle,
+  CheckCircle2,
   AlertCircle,
+  FileText,
+  LifeBuoy,
 } from "lucide-react";
 import { Ticket } from "../../../services/supportService";
 import LinkifiedText from "../../../components/common/LinkifiedText";
@@ -21,7 +23,7 @@ interface ChatAreaProps {
   loading: boolean;
 }
 
-const ChatArea: React.FC<ChatAreaProps> = ({
+export const ChatArea: React.FC<ChatAreaProps> = ({
   ticket,
   onSendMessage,
   onStatusChange,
@@ -70,96 +72,116 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "open":
-        return <Clock className="w-4 h-4 text-orange-500" />;
+        return <Clock className="w-3.5 h-3.5 text-amber-500" />;
       case "in_progress":
-        return <AlertCircle className="w-4 h-4 text-blue-500" />;
+        return <AlertCircle className="w-3.5 h-3.5 text-blue-500" />;
       case "closed":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+        return <Clock className="w-3.5 h-3.5 text-muted-foreground" />;
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+        return "bg-destructive/10 text-destructive border-destructive/20";
       case "high":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
       case "low":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
+        return "bg-muted text-muted-foreground border-border/60";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
+        return "bg-muted text-muted-foreground border-border/60";
     }
   };
 
   if (!ticket) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center text-gray-500 dark:text-gray-400">
-          <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">اختر تذكرة لعرض المحادثة</p>
+      <div className="h-full flex items-center justify-center bg-card/40 p-6 text-center select-none">
+        <div className="flex flex-col items-center max-w-xs space-y-3">
+          <div className="w-12 h-12 rounded-xl bg-muted/60 border border-border/60 flex items-center justify-center text-muted-foreground">
+            <LifeBuoy className="w-6 h-6 stroke-[1.6]" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">عرض محادثة التذكرة</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              اختر تذكرة من القائمة الجانبية لقراءة الرسائل ومتابعة الحل مع فريق الدعم الفني.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-800">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-              {ticket.subject}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+    <div className="h-full flex flex-col bg-background">
+      {/* Header Bar */}
+      <div className="flex-shrink-0 border-b border-border/60 bg-card p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold text-primary tabular-nums">
               #{ticket.ticketId}
-            </p>
+            </span>
+            <span className="text-xs text-muted-foreground">•</span>
+            <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              {new Date(ticket.createdAt).toLocaleDateString("ar-EG", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
           </div>
+          <h2 className="text-sm font-semibold text-foreground truncate mt-0.5">
+            {ticket.subject}
+          </h2>
         </div>
 
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Status */}
-          <div className="flex items-center gap-2">
+        {/* Quick Actions (Status and Priority Dropdowns) */}
+        <div className="flex items-center gap-2">
+          {/* Status Selector */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border/80 bg-background">
             {getStatusIcon(ticket.status)}
             <select
               value={ticket.status}
               onChange={(e) => onStatusChange(e.target.value)}
-              className="text-sm px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-2 focus:ring-blue-500"
+              className="text-xs font-medium bg-transparent text-foreground focus:outline-hidden cursor-pointer"
             >
-              <option value="open">مفتوح</option>
-              <option value="in_progress">قيد المعالجة</option>
-              <option value="closed">مغلق</option>
+              <option value="open">مفتوحة</option>
+              <option value="in_progress">قيد المتابعة</option>
+              <option value="closed">مغلقة</option>
             </select>
           </div>
 
-          {/* Priority */}
+          {/* Priority Selector */}
           <select
             value={ticket.priority}
             onChange={(e) => onPriorityChange(e.target.value)}
-            className={`text-xs px-2 py-1 rounded font-medium ${getPriorityColor(ticket.priority)}`}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-medium cursor-pointer focus:outline-hidden ${getPriorityBadge(
+              ticket.priority
+            )}`}
           >
-            <option value="low">منخفضة</option>
-            <option value="medium">متوسطة</option>
-            <option value="high">عالية</option>
-            <option value="critical">حرجة</option>
+            <option value="low">أولوية منخفضة</option>
+            <option value="medium">أولوية متوسطة</option>
+            <option value="high">أولوية عالية</option>
+            <option value="critical">أولوية عاجلة</option>
           </select>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+      {/* Messages Stream */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-muted/10">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-xs">جارٍ تحديث المحادثة...</span>
           </div>
         ) : ticket.messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            <p>لا توجد رسائل بعد</p>
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+            <LifeBuoy className="w-8 h-8 opacity-40 mb-2 stroke-[1.5]" />
+            <p className="text-xs font-medium text-foreground">لا توجد رسائل مسجلة في هذه التذكرة</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">اكتب استفسارك أدناه للبدء بالتواصل مع المهندس المختص</p>
           </div>
         ) : (
           ticket.messages.map((message, index) => {
@@ -172,70 +194,77 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[78%] sm:max-w-[65%] rounded-xl p-3 shadow-2xs space-y-1.5 ${
                     isInternal
-                      ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-200"
+                      ? "bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200"
                       : isCurrentUser
-                        ? "bg-blue-600 dark:bg-blue-500 text-white rounded-br-none"
-                        : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-none"
+                      ? "bg-primary text-primary-foreground rounded-br-xs"
+                      : "bg-card border border-border/70 text-foreground rounded-bl-xs"
                   }`}
                 >
-                  {/* Sender Info */}
-                  {!isCurrentUser && (
-                    <div className="flex items-center gap-2 mb-2">
-                      {message.senderType === "admin" ? (
-                        <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  {/* Sender Header */}
+                  <div className="flex items-center justify-between gap-3 text-[11px] border-b border-border/40 pb-1">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      {isCurrentUser ? (
+                        <User className="w-3 h-3 opacity-80" />
                       ) : (
-                        <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                       )}
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        {message.sender?.name || "مجهول"}
+                      <span>
+                        {isCurrentUser
+                          ? "أنت"
+                          : message.sender?.name || "فريق الدعم الفني"}
                       </span>
                       {isInternal && (
-                        <span className="text-xs bg-yellow-200 dark:bg-yellow-800 px-2 py-0.5 rounded">
+                        <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 rounded font-mono">
                           ملاحظة داخلية
                         </span>
                       )}
                     </div>
-                  )}
+                    <span
+                      className={`font-mono text-[10px] tabular-nums ${
+                        isCurrentUser ? "opacity-80" : "text-muted-foreground"
+                      }`}
+                    >
+                      {new Date(message.createdAt).toLocaleTimeString("ar-EG", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
 
-                  {/* Message Content */}
+                  {/* Message Body */}
                   <LinkifiedText
                     text={message.content}
-                    className="block text-sm whitespace-pre-wrap break-words"
+                    className={`block text-xs leading-relaxed whitespace-pre-wrap break-words ${
+                      isCurrentUser ? "text-primary-foreground" : "text-foreground"
+                    }`}
                   />
 
-                  {/* Attachments */}
+                  {/* Attachments List */}
                   {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-2 space-y-1">
+                    <div className="pt-1.5 space-y-1 border-t border-border/40">
                       {message.attachments.map((att, i) => (
                         <a
                           key={i}
                           href={att.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-xs hover:underline"
+                          className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border transition-colors ${
+                            isCurrentUser
+                              ? "bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/20"
+                              : "bg-muted/40 border-border/60 text-foreground hover:bg-muted"
+                          }`}
                         >
-                          <Download className="w-3 h-3" />
-                          {att.originalName}
+                          <FileText className="w-3 h-3" />
+                          <span className="truncate max-w-[180px] font-mono text-[11px]">
+                            {att.originalName}
+                          </span>
+                          <Download className="w-3 h-3 opacity-70 ml-1" />
                         </a>
                       ))}
                     </div>
                   )}
-
-                  {/* Timestamp */}
-                  <div
-                    className={`text-[10px] mt-1 ${
-                      isCurrentUser
-                        ? "text-blue-100"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    {new Date(message.createdAt).toLocaleTimeString("ar-EG", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
                 </div>
               </div>
             );
@@ -244,31 +273,33 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
-        {/* Attachments Preview */}
+      {/* Input Composer Footer */}
+      <div className="flex-shrink-0 border-t border-border/60 p-3 bg-card space-y-2">
+        {/* Attachments Pending Preview */}
         {attachments.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 pb-1">
             {attachments.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg text-sm"
+                className="flex items-center gap-1.5 bg-muted/60 border border-border/70 px-2 py-1 rounded-md text-xs text-foreground"
               >
-                <span className="text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
+                <FileText className="w-3 h-3 text-muted-foreground" />
+                <span className="truncate max-w-[140px] font-mono text-[11px]">
                   {file.name}
                 </span>
                 <button
+                  type="button"
                   onClick={() => removeAttachment(index)}
-                  className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                  className="text-muted-foreground hover:text-destructive transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Input Box */}
+        {/* Input Bar */}
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}
@@ -278,11 +309,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             className="hidden"
           />
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="إرفاق ملف"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg border border-border/60 transition-colors"
+            title="إرفاق ملف أو سكرين شوت"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip className="w-4 h-4" />
           </button>
 
           <textarea
@@ -291,26 +323,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSend();
+                void handleSend();
               }
             }}
-            placeholder="اكتب رسالتك..."
+            placeholder="اكتب ردك هنا... (اضغط Enter للإرسال، و Shift+Enter لسطر جديد)"
             rows={1}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="flex-1 min-h-[38px] max-h-32 px-3 py-2 text-xs rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-transparent resize-y leading-relaxed"
           />
 
           <button
-            onClick={handleSend}
+            type="button"
+            onClick={() => void handleSend()}
             disabled={
               sending || (!messageContent.trim() && attachments.length === 0)
             }
-            className="p-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="إرسال"
+            className="inline-flex items-center justify-center p-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-2xs active:scale-[0.98]"
+            title="إرسال الرد"
           >
             {sending ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
             ) : (
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4" />
             )}
           </button>
         </div>

@@ -8,6 +8,8 @@ import {
   Lightbulb,
   Send,
   Loader2,
+  CheckCircle2,
+  FileText,
 } from "lucide-react";
 import supportService from "../../services/supportService";
 
@@ -89,7 +91,7 @@ export const SuggestionFeedbackPage: React.FC = () => {
         setError(data.message || "حدث خطأ أثناء إرسال الاقتراح");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "فشل إرسال الاقتراح");
+      setError(err.response?.data?.message || "فشل إرسال الاقتراح، يرجى المحاولة لاحقاً");
     } finally {
       setLoading(false);
     }
@@ -97,24 +99,24 @@ export const SuggestionFeedbackPage: React.FC = () => {
 
   if (success) {
     return (
-      <div dir="rtl" className="h-[calc(100vh-6rem)] flex items-center justify-center p-4">
-        <div className="bg-card border border-border/70 rounded-2xl p-8 text-center max-w-md w-full shadow-lg space-y-4">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
-            <Lightbulb className="w-7 h-7 stroke-[2.2]" />
+      <div dir="rtl" className="h-[calc(100vh-6rem)] flex items-center justify-center p-4 select-none">
+        <div className="bg-card border border-border/70 rounded-xl p-8 text-center max-w-md w-full shadow-lg space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/20">
+            <CheckCircle2 className="w-6 h-6 stroke-[2]" />
           </div>
           <div className="space-y-1.5">
-            <h2 className="text-lg font-bold text-foreground">وصلنا اقتراحك — شكرًا!</h2>
+            <h2 className="text-base font-bold text-foreground">تم إرسال اقتراحك بنجاح</h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              تم تسجيل اقتراحك بنجاح وسيقوم فريق التطوير بمراجعته بعناية.
+              شكرًا لمشاركتك القيّمة. يقوم فريق هندسة المنتج بمراجعة المقترحات بصفة دورية لدمجها في التحديثات القادمة.
             </p>
           </div>
           <div className="pt-2">
             <button
               type="button"
               onClick={() => navigate("/dashboard")}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs cursor-pointer active:scale-[0.98]"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-2xs cursor-pointer active:scale-[0.98]"
             >
-              العودة للوحة التحكم
+              العودة إلى لوحة التحكم
             </button>
           </div>
         </div>
@@ -123,9 +125,9 @@ export const SuggestionFeedbackPage: React.FC = () => {
   }
 
   return (
-    <div dir="rtl" className="max-w-2xl mx-auto space-y-4 py-2 sm:py-4">
+    <div dir="rtl" className="max-w-2xl mx-auto space-y-3.5 py-3 select-none">
       {/* Header Bar */}
-      <div className="bg-card border border-border/70 rounded-xl p-4 sm:p-5 shadow-xs space-y-2">
+      <div className="bg-card border border-border/70 rounded-xl p-4 shadow-2xs space-y-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -136,25 +138,25 @@ export const SuggestionFeedbackPage: React.FC = () => {
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <span className="text-xs text-muted-foreground">/</span>
-          <span className="text-xs font-semibold text-foreground">اقتراحك يهمنا</span>
+          <span className="text-xs font-semibold text-foreground">صندوق المقترحات والأفكار</span>
         </div>
         <div className="flex items-start gap-3">
-          <div className="size-9 rounded-lg border border-amber-500/20 bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Lightbulb className="size-5 text-amber-500" />
+          <div className="w-9 h-9 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+            <Lightbulb className="w-4 h-4" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground">شاركنا اقتراحك لتطوير المنصة</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              كل ميزة في MaxP بدأت باقتراح من تاجر. اكتب فكرتك أو الميزة التي تحتاجها وسندرسها بجدية.
+            <h1 className="text-sm font-bold text-foreground">شاركنا مقترحاتك لتطوير المنصة</h1>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              نطور MaxP بناءً على احتياجات التجار الحقيقية. اكتب فكرتك أو الأداة التي تحتاجها وسندرس تنفيذها.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Single-Field Form Chassis */}
-      <div className="bg-card border border-border/70 rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+      {/* Main Single-Surface Form Chassis */}
+      <div className="bg-card border border-border/70 rounded-xl p-5 shadow-2xs space-y-4">
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
+          <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -163,15 +165,15 @@ export const SuggestionFeedbackPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="suggestion-content" className="block text-xs font-semibold text-foreground">
-              اكتب اقتراحك بالتفصيل *
+              تفاصيل الاقتراح أو الميزة المطلوبة *
             </label>
             <textarea
               id="suggestion-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="صف فكرتك، الميزة المطلوبة، أو كيف يمكن تحسين المنصة لتخدم أعمالك بشكل أفضل..."
+              placeholder="صف فكرتك بدقة، كيف ستساعدك في تجارتك اليومية، وما هي المخرجات المتوقعة منها..."
               rows={6}
-              className="w-full p-3 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary leading-relaxed resize-y"
+              className="w-full p-3 text-xs rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary leading-relaxed resize-y"
               required
             />
           </div>
@@ -179,10 +181,12 @@ export const SuggestionFeedbackPage: React.FC = () => {
           {/* Optional Attachments Dropzone */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-foreground">
-                مرفقات توضيحية (اختياري)
+              <label className="text-xs font-medium text-foreground">
+                لقطات شاشة أو رسومات توضيحية (اختياري)
               </label>
-              <span className="text-[11px] text-muted-foreground">صورة أو سكرين شوت (حتى 3 ملفات)</span>
+              <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+                حد أقصى 3 ملفات (10MB لكل ملف)
+              </span>
             </div>
 
             <div className="border border-dashed border-border/80 rounded-lg p-3 text-center bg-muted/10 hover:bg-muted/20 transition-colors">
@@ -200,24 +204,27 @@ export const SuggestionFeedbackPage: React.FC = () => {
                 className="cursor-pointer flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground"
               >
                 <Upload className="w-4 h-4 text-primary" />
-                <span>اضغط لإرفاق سكرين شوت أو ملف توضيحي</span>
+                <span>اضغط هنا لاختيار الملفات من جهازك</span>
               </label>
             </div>
 
             {attachments.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                 {attachments.map((att, idx) => (
                   <div
                     key={idx}
-                    className="relative group border border-border/70 rounded-lg p-1.5 bg-background flex items-center justify-between text-xs"
+                    className="border border-border/70 rounded-lg p-2 bg-background flex items-center justify-between text-xs"
                   >
-                    <span className="truncate text-[11px] text-muted-foreground max-w-[80%]">
-                      {att.file.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate text-[11px] font-mono text-foreground">
+                        {att.file.name}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeAttachment(idx)}
-                      className="text-muted-foreground hover:text-destructive cursor-pointer"
+                      className="text-muted-foreground hover:text-destructive cursor-pointer p-0.5"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -227,19 +234,19 @@ export const SuggestionFeedbackPage: React.FC = () => {
             )}
           </div>
 
-          {/* Submit Action Bar */}
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border/60">
+          {/* Action Bar */}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-4 py-2 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground text-xs font-medium transition-colors cursor-pointer"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={loading || !content.trim()}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-2xs transition-colors disabled:opacity-50 cursor-pointer active:scale-[0.98]"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
