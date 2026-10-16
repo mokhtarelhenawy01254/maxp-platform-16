@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import {
-  ChartBarIcon,
-  ClockIcon,
-  UserGroupIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowTrendingUpIcon,
-  ArrowDownIcon,
-  EyeIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  BarChart3,
+  Clock,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  CheckCircle2,
+  RotateCw,
+  AlertCircle,
+  Download,
+  Calendar,
+} from "lucide-react";
 
 interface ConversationStats {
   totalConversations: number;
@@ -30,7 +34,7 @@ interface AnalyticsCardProps {
     value: number;
     isPositive: boolean;
   };
-  color: string;
+  accentColor?: string;
 }
 
 const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -38,30 +42,35 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   value,
   icon,
   trend,
-  color,
 }) => {
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${color}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {trend && (
-            <div
-              className={`flex items-center mt-2 text-sm ${
-                trend.isPositive ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {trend.isPositive ? (
-                <ArrowTrendingUpIcon className="w-4 h-4 ml-1" />
-              ) : (
-                <ArrowDownIcon className="w-4 h-4 ml-1" />
-              )}
-              <span>{Math.abs(trend.value)}%</span>
-            </div>
-          )}
+    <div className="bg-card border border-border/70 rounded-xl p-4 transition-all duration-160 hover:border-border hover:shadow-xs">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <span className="text-xs font-medium text-muted-foreground">{title}</span>
+        <div className="p-1.5 rounded-lg bg-muted/40 text-muted-foreground shrink-0">
+          {icon}
         </div>
-        <div className="text-gray-400">{icon}</div>
+      </div>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-2xl font-semibold tracking-tight text-foreground font-mono tabular-nums">
+          {value}
+        </div>
+        {trend && (
+          <div
+            className={`inline-flex items-center gap-0.5 text-xs font-medium font-mono tabular-nums px-1.5 py-0.5 rounded-md ${
+              trend.isPositive
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+            }`}
+          >
+            {trend.isPositive ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
+            <span>{Math.abs(trend.value)}%</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -97,7 +106,6 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
       setLoading(true);
       setError(null);
 
-      // محاكاة جلب البيانات من API
       const response = await fetch("/api/v1/conversations/analytics");
 
       if (!response.ok) {
@@ -106,7 +114,6 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
 
       const data = await response.json();
 
-      // إذا لم يكن هناك API حقيقي، استخدم بيانات تجريبية
       const mockStats: ConversationStats = {
         totalConversations: Math.floor(Math.random() * 100) + 50,
         activeConversations: Math.floor(Math.random() * 20) + 10,
@@ -124,7 +131,6 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
       console.error("Error fetching analytics:", err);
       setError("فشل في تحميل الإحصائيات");
 
-      // استخدام بيانات تجريبية في حالة الخطأ
       setStats({
         totalConversations: 75,
         activeConversations: 15,
@@ -141,7 +147,6 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
     }
   };
 
-  // تحديث الإحصائيات دورياً
   useEffect(() => {
     fetchStats();
 
@@ -153,21 +158,20 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
     return undefined;
   }, [refreshInterval, showRealTimeUpdates]);
 
-  // تنسيق الوقت
   const formatResponseTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}ث`;
+    if (seconds < 60) return `${seconds} ثانية`;
     const minutes = Math.floor(seconds / 60);
-    return `${minutes}د`;
+    return `${minutes} دقيقة`;
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-card border border-border/70 rounded-xl p-5">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 w-48 bg-muted rounded-md" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted/60 rounded-xl" />
             ))}
           </div>
         </div>
@@ -176,130 +180,134 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3 space-x-reverse">
-          <ChartBarIcon className="w-8 h-8 text-indigo-600" />
-          <h2 className="text-xl font-bold text-gray-900">
-            إحصائيات المحادثات
-          </h2>
+    <div className="bg-card border border-border/70 rounded-xl p-5 text-foreground space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">
+              إحصائيات المحادثات
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              مؤشرات الأداء اللحظية ونشاط التواصل مع العملاء
+            </p>
+          </div>
         </div>
-        <div className="flex items-center space-x-2 space-x-reverse text-sm text-gray-500">
-          <ClockIcon className="w-4 h-4" />
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono tabular-nums">
+          <Clock className="w-3.5 h-3.5" />
           <span>
-            آخر تحديث: {stats.lastUpdated.toLocaleTimeString("ar-SA")}
+            آخر تحديث: {stats.lastUpdated.toLocaleTimeString("ar-EG")}
           </span>
           {showRealTimeUpdates && (
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <div className="text-red-400 ml-3">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm text-red-800">{error}</p>
-              <button
-                onClick={fetchStats}
-                className="text-sm text-red-600 hover:text-red-500 font-medium mt-1"
-              >
-                إعادة المحاولة
-              </button>
-            </div>
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
+          <button
+            onClick={fetchStats}
+            className="font-medium underline hover:no-underline transition-all"
+          >
+            إعادة المحاولة
+          </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <AnalyticsCard
           title="إجمالي المحادثات"
           value={stats.totalConversations}
-          icon={<ChatBubbleLeftRightIcon className="w-8 h-8" />}
+          icon={<MessageSquare className="w-4 h-4" />}
           trend={{ value: 12, isPositive: true }}
-          color="border-blue-500"
         />
 
         <AnalyticsCard
           title="المحادثات النشطة"
           value={stats.activeConversations}
-          icon={<UserGroupIcon className="w-8 h-8" />}
+          icon={<Users className="w-4 h-4" />}
           trend={{ value: 8, isPositive: true }}
-          color="border-green-500"
         />
 
         <AnalyticsCard
           title="إجمالي الرسائل"
-          value={stats.totalMessages.toLocaleString("ar-SA")}
-          icon={<ChatBubbleLeftRightIcon className="w-8 h-8" />}
+          value={stats.totalMessages.toLocaleString("ar-EG")}
+          icon={<MessageSquare className="w-4 h-4" />}
           trend={{ value: 15, isPositive: true }}
-          color="border-purple-500"
         />
 
         <AnalyticsCard
           title="الرسائل غير المقروءة"
           value={stats.unreadMessages}
-          icon={<EyeIcon className="w-8 h-8" />}
+          icon={<Eye className="w-4 h-4" />}
           trend={{ value: 5, isPositive: false }}
-          color="border-red-500"
         />
 
         <AnalyticsCard
           title="متوسط وقت الرد"
           value={formatResponseTime(stats.averageResponseTime)}
-          icon={<ClockIcon className="w-8 h-8" />}
+          icon={<Clock className="w-4 h-4" />}
           trend={{ value: 10, isPositive: false }}
-          color="border-yellow-500"
         />
 
         <AnalyticsCard
           title="المستخدمون المتصلون"
           value={stats.onlineUsers}
-          icon={<UserGroupIcon className="w-8 h-8" />}
-          color="border-green-500"
+          icon={<Users className="w-4 h-4" />}
         />
 
         <AnalyticsCard
-          title="الرسائل/الساعة"
+          title="الرسائل في الساعة"
           value={stats.messagesPerHour}
-          icon={<ArrowTrendingUpIcon className="w-8 h-8" />}
+          icon={<TrendingUp className="w-4 h-4" />}
           trend={{ value: 20, isPositive: true }}
-          color="border-indigo-500"
         />
 
         <AnalyticsCard
           title="معدل الاستجابة"
           value={`${stats.responseRate}%`}
-          icon={<CheckCircleIcon className="w-8 h-8" />}
+          icon={<CheckCircle2 className="w-4 h-4" />}
           trend={{ value: 3, isPositive: true }}
-          color="border-teal-500"
         />
       </div>
 
-      {/* رسم بياني بسيط */}
-      <div className="mt-8 bg-white rounded-lg p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          نشاط الرسائل اليومي
-        </h3>
-        <div className="flex items-end justify-between h-32 space-x-2 space-x-reverse">
+      {/* Daily Activity Chart */}
+      <div className="p-4 bg-muted/20 border border-border/60 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              نشاط الرسائل اليومي
+            </h3>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            آخر 7 أيام
+          </span>
+        </div>
+
+        <div className="flex items-end justify-between h-28 pt-2 gap-2">
           {[...Array(7)].map((_, i) => {
-            const height = Math.random() * 80 + 20;
+            const height = Math.random() * 75 + 25;
             return (
-              <div key={i} className="flex flex-col items-center">
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                 <div
-                  className="bg-gradient-to-t from-indigo-500 to-indigo-300 rounded-t w-8 transition-all duration-500 hover:from-indigo-600 hover:to-indigo-400"
+                  className="w-full max-w-[36px] bg-primary/75 hover:bg-primary rounded-t-sm transition-all duration-200 group-hover:scale-y-105"
                   style={{ height: `${height}%` }}
-                ></div>
-                <span className="text-xs text-gray-500 mt-2">
+                />
+                <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
                   {new Date(
                     Date.now() - (6 - i) * 24 * 60 * 60 * 1000,
                   ).toLocaleDateString("ar-EG", {
@@ -313,34 +321,21 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
         </div>
       </div>
 
-      {/* أزرار الإجراءات */}
-      <div className="mt-6 flex justify-between items-center">
+      {/* Footer Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <button
           onClick={fetchStats}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span>تحديث</span>
+          <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          <span>تحديث الإحصائيات</span>
         </button>
 
-        <div className="flex space-x-2 space-x-reverse">
-          <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors duration-200">
-            تصدير
-          </button>
-          <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors duration-200">
-            تفاصيل
+        <div className="flex items-center gap-2">
+          <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-muted text-foreground border border-border/60 rounded-lg transition-all active:scale-[0.98]">
+            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>تصدير البيانات</span>
           </button>
         </div>
       </div>

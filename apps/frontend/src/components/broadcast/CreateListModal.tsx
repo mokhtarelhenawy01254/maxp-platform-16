@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { X, ListPlus, Tag, Clock, Users, Loader2, Check } from "lucide-react";
 import { broadcastService } from "../../services/broadcastService";
 import { customerService } from "../../services/customerService";
 
@@ -23,7 +23,6 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // تحميل الوسوم المتاحة
   useEffect(() => {
     customerService.getDistinctTags()
       .then(setAvailableTags)
@@ -74,36 +73,47 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-card border border-border/70 rounded-xl shadow-xl max-w-md w-full overflow-hidden text-foreground animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            إنشاء قائمة جديدة
-          </h3>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <ListPlus className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                إنشاء قائمة عملاء جديدة
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                تحديد معايير الجمهور المستهدف لحملات البث
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors active:scale-95"
+            aria-label="إغلاق"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Body */}
+        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs">
+              {error}
             </div>
           )}
 
-          {/* Name */}
-          <div>
+          {/* List Name */}
+          <div className="space-y-1.5">
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-xs font-medium text-foreground"
             >
-              اسم القائمة <span className="text-red-500">*</span>
+              اسم القائمة <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -112,17 +122,17 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="مثال: عملاء VIP"
+              className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              placeholder="مثال: عملاء VIP المتميزين"
               required
             />
           </div>
 
           {/* Description */}
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-xs font-medium text-foreground"
             >
               الوصف
             </label>
@@ -132,17 +142,17 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              rows={3}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="وصف مختصر للقائمة..."
+              rows={2}
+              className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+              placeholder="وصف اختياري لتوضيح شريحة القائمة..."
             />
           </div>
 
           {/* Criteria Type */}
-          <div>
+          <div className="space-y-1.5">
             <label
               htmlFor="criteriaType"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-xs font-medium text-foreground"
             >
               نوع المعايير
             </label>
@@ -152,23 +162,24 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, criteriaType: e.target.value })
               }
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             >
-              <option value="all">جميع العملاء</option>
-              <option value="active">نشطين في فترة محددة</option>
-              <option value="inactive">غير نشطين لفترة محددة</option>
-              <option value="tag">وسوم العملاء (Tags)</option>
+              <option value="all">جميع العملاء في النظام</option>
+              <option value="active">العملاء النشطون خلال فترة محددة</option>
+              <option value="inactive">العملاء غير النشطين لفترة محددة</option>
+              <option value="tag">وسوم وتصنيفات العملاء (Tags)</option>
             </select>
           </div>
 
           {/* Tag Criteria Selector */}
           {formData.criteriaType === "tag" && (
-            <div>
+            <div className="space-y-1.5 p-3 rounded-lg bg-muted/20 border border-border/60">
               <label
                 htmlFor="tag"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="flex items-center gap-1.5 text-xs font-medium text-foreground"
               >
-                اسم الوسم (Tag) <span className="text-red-500">*</span>
+                <Tag className="w-3.5 h-3.5 text-primary" />
+                <span>الوسم المحدد</span> <span className="text-rose-500">*</span>
               </label>
               {availableTags.length > 0 ? (
                 <select
@@ -177,13 +188,13 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, tag: e.target.value })
                   }
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono tabular-nums"
                   required
                 >
-                  <option value="">-- اختر وسم --</option>
+                  <option value="">-- اختر وسم من الوسوم المسجلة --</option>
                   {availableTags.map((t) => (
                     <option key={t.name} value={t.name}>
-                      {t.name} ({t.count} عملاء)
+                      {t.name} ({t.count} عميل)
                     </option>
                   ))}
                 </select>
@@ -195,28 +206,31 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, tag: e.target.value })
                   }
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="اكتب اسم الوسم (مثال: vip)"
                   required
                 />
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                سيتم تصفية القائمة لتشمل العملاء الذين يحملون هذا الوسم فقط.
+              <p className="text-[11px] text-muted-foreground">
+                سيتم تضمين العملاء الحاملين لهذا الوسم في القائمة تلقائياً.
               </p>
             </div>
           )}
 
-          {/* Last Activity (only for active/inactive) */}
+          {/* Last Activity */}
           {(formData.criteriaType === "active" ||
             formData.criteriaType === "inactive") && (
-            <div>
+            <div className="space-y-1.5 p-3 rounded-lg bg-muted/20 border border-border/60">
               <label
                 htmlFor="lastActivity"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="flex items-center gap-1.5 text-xs font-medium text-foreground"
               >
-                {formData.criteriaType === "active"
-                  ? "نشطين خلال (ساعات)"
-                  : "غير نشطين لأكثر من (أيام)"}
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>
+                  {formData.criteriaType === "active"
+                    ? "النشاط خلال (ساعات)"
+                    : "عدم النشاط لأكثر من (أيام)"}
+                </span>
               </label>
               <input
                 type="number"
@@ -225,59 +239,43 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, lastActivity: e.target.value })
                 }
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="w-full px-3 py-2 text-sm bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 min="1"
                 placeholder={formData.criteriaType === "active" ? "24" : "30"}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
                 {formData.criteriaType === "active"
-                  ? "العملاء الذين تواصلوا معك في آخر X ساعة"
-                  : "العملاء الذين لم يتواصلوا معك منذ X يوم"}
+                  ? "تصفية العملاء الذين تواصلوا خلال آخر ساعات محددة"
+                  : "تصفية العملاء المنقطعين منذ أكثر من عدد الأيام المحددة"}
               </p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end space-x-3 space-x-reverse pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               disabled={loading}
+              className="px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-all active:scale-[0.98]"
             >
               إلغاء
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  جاري الإنشاء...
-                </span>
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>جاري الإنشاء...</span>
+                </>
               ) : (
-                "إنشاء القائمة"
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>إنشاء القائمة</span>
+                </>
               )}
             </button>
           </div>

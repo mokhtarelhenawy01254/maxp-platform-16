@@ -1,7 +1,7 @@
 import React from "react";
-import { ArrowPathIcon, CalendarIcon } from "@heroicons/react/24/outline";
+import { Repeat, Calendar, Check, Clock } from "lucide-react";
 
-interface RecurringConfig {
+export interface RecurringConfig {
   enabled: boolean;
   frequency: "daily" | "weekly" | "monthly" | "yearly";
   interval: number;
@@ -62,23 +62,34 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
   const getEndText = () => {
     switch (value.endType) {
       case "never":
-        return "بدون نهاية";
+        return "بدون نهاية زمنية";
       case "date":
-        return `حتى ${value.endDate}`;
+        return `حتى تاريخ ${value.endDate}`;
       case "count":
-        return `${value.endCount} مرات`;
+        return `بعد ${value.endCount} مرات`;
       default:
         return "";
     }
   };
 
   return (
-    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <ArrowPathIcon className="h-5 w-5 text-indigo-600 ml-2" />
-          <h4 className="font-medium text-gray-900">مهمة متكررة</h4>
+    <div className="bg-card border border-border/70 rounded-xl p-4 text-foreground space-y-4">
+      {/* Header with Switch */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+            <Repeat className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-foreground">
+              تكرار المهمة تلقائياً
+            </h4>
+            <p className="text-[11px] text-muted-foreground">
+              جدولة إعادة توليد هذه المهمة بجدول زمني منتظم
+            </p>
+          </div>
         </div>
+
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
@@ -86,16 +97,16 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
             onChange={(e) => handleChange("enabled", e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
         </label>
       </div>
 
       {value.enabled && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-3 border-t border-border/60">
           {/* Frequency Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              التكرار
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              دورة التكرار
             </label>
             <div className="grid grid-cols-4 gap-2">
               {[
@@ -108,10 +119,10 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   key={option.value}
                   type="button"
                   onClick={() => handleChange("frequency", option.value)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md border ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all active:scale-[0.98] ${
                     value.frequency === option.value
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                      : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
                   }`}
                 >
                   {option.label}
@@ -121,11 +132,12 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
           </div>
 
           {/* Interval */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              كل
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-foreground">
+              معدل التكرار
             </label>
-            <div className="flex items-center space-x-2 space-x-reverse">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">كل</span>
               <input
                 type="number"
                 min="1"
@@ -134,9 +146,9 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                 onChange={(e) =>
                   handleChange("interval", parseInt(e.target.value) || 1)
                 }
-                className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-20 px-2.5 py-1 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
               />
-              <span className="text-gray-600">
+              <span className="text-xs text-muted-foreground">
                 {value.frequency === "daily" && "يوم"}
                 {value.frequency === "weekly" && "أسبوع"}
                 {value.frequency === "monthly" && "شهر"}
@@ -147,102 +159,105 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
 
           {/* Days of Week (for weekly) */}
           {value.frequency === "weekly" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                أيام الأسبوع
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-foreground">
+                أيام التكرار الأسبوعية
               </label>
-              <div className="flex flex-wrap gap-2">
-                {dayNames.map((day, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => toggleDayOfWeek(index)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-full ${
-                      value.daysOfWeek.includes(index)
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {day}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-1.5">
+                {dayNames.map((day, index) => {
+                  const isSelected = value.daysOfWeek.includes(index);
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => toggleDayOfWeek(index)}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all active:scale-95 ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* Day of Month (for monthly) */}
           {value.frequency === "monthly" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                يوم الشهر
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-foreground">
+                يوم تنفيذ المهمة
               </label>
               <select
                 value={value.dayOfMonth}
                 onChange={(e) =>
                   handleChange("dayOfMonth", parseInt(e.target.value))
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-2.5 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
-                    {day}
+                    اليوم {day} من الشهر
                   </option>
                 ))}
-                <option value={-1}>آخر يوم في الشهر</option>
+                <option value={-1}>اليوم الأخير في الشهر</option>
               </select>
             </div>
           )}
 
           {/* End Options */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ينتهي
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-foreground">
+              نهاية التكرار
             </label>
-            <div className="space-y-2">
-              <label className="flex items-center">
+            <div className="space-y-2 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   name="endType"
                   value="never"
                   checked={value.endType === "never"}
                   onChange={() => handleChange("endType", "never")}
-                  className="ml-2"
+                  className="text-primary focus:ring-primary/20"
                 />
-                <span className="text-sm text-gray-700">أبداً</span>
+                <span>بدون حد نهائي (مستمر دائماً)</span>
               </label>
 
-              <label className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer flex-wrap">
                 <input
                   type="radio"
                   name="endType"
                   value="date"
                   checked={value.endType === "date"}
                   onChange={() => handleChange("endType", "date")}
-                  className="ml-2"
+                  className="text-primary focus:ring-primary/20"
                 />
-                <span className="text-sm text-gray-700 ml-2">في تاريخ</span>
+                <span>حتى تاريخ محدد:</span>
                 {value.endType === "date" && (
                   <input
                     type="date"
                     value={value.endDate}
                     onChange={(e) => handleChange("endDate", e.target.value)}
-                    className="mr-2 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="px-2 py-0.5 text-xs bg-background border border-border/70 rounded-md font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 )}
               </label>
 
-              <label className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer flex-wrap">
                 <input
                   type="radio"
                   name="endType"
                   value="count"
                   checked={value.endType === "count"}
                   onChange={() => handleChange("endType", "count")}
-                  className="ml-2"
+                  className="text-primary focus:ring-primary/20"
                 />
-                <span className="text-sm text-gray-700 ml-2">بعد</span>
+                <span>تكرار لعدد محدد:</span>
                 {value.endType === "count" && (
-                  <>
+                  <div className="flex items-center gap-1">
                     <input
                       type="number"
                       min="1"
@@ -251,41 +266,29 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                       onChange={(e) =>
                         handleChange("endCount", parseInt(e.target.value) || 1)
                       }
-                      className="mr-2 w-16 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-16 px-2 py-0.5 text-xs bg-background border border-border/70 rounded-md text-center font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
-                    <span className="text-sm text-gray-700">مرة</span>
-                  </>
+                    <span>مرات</span>
+                  </div>
                 )}
               </label>
             </div>
           </div>
 
           {/* Summary */}
-          <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-            <div className="flex items-center text-indigo-800">
-              <CalendarIcon className="h-5 w-5 ml-2" />
-              <span className="text-sm font-medium">
-                ستتكرر هذه المهمة {getFrequencyText()}
-                {value.frequency === "weekly" &&
-                  value.daysOfWeek.length > 0 && (
-                    <>
-                      {" "}
-                      في أيام:{" "}
-                      {value.daysOfWeek.map((d) => dayNames[d]).join("، ")}
-                    </>
-                  )}
-                {value.frequency === "monthly" && (
-                  <>
-                    {" "}
-                    في اليوم{" "}
-                    {value.dayOfMonth === -1 ? "الأخير" : value.dayOfMonth} من
-                    الشهر
-                  </>
-                )}
-                {" - "}
-                {getEndText()}
-              </span>
-            </div>
+          <div className="p-3 bg-muted/20 border border-border/60 rounded-lg flex items-center gap-2 text-xs text-foreground font-mono tabular-nums">
+            <Calendar className="w-4 h-4 text-primary shrink-0" />
+            <span>
+              الجدول: {getFrequencyText()}
+              {value.frequency === "weekly" && value.daysOfWeek.length > 0 && (
+                <> ({value.daysOfWeek.map((d) => dayNames[d]).join("، ")})</>
+              )}
+              {value.frequency === "monthly" && (
+                <> (يوم {value.dayOfMonth === -1 ? "الأخير" : value.dayOfMonth})</>
+              )}
+              {" — "}
+              {getEndText()}
+            </span>
           </div>
         </div>
       )}
@@ -295,12 +298,11 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
 
 export default RecurringTaskForm;
 
-// Default recurring config
 export const defaultRecurringConfig: RecurringConfig = {
   enabled: false,
   frequency: "weekly",
   interval: 1,
-  daysOfWeek: [0], // Sunday
+  daysOfWeek: [0],
   dayOfMonth: 1,
   endType: "never",
   endDate: "",
