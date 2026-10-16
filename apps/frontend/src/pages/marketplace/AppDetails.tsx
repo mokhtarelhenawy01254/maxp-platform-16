@@ -629,13 +629,15 @@ export default function AppDetails() {
 
         <div className="mt-5 space-y-5">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start gap-0 rounded-xl border bg-card p-1 overflow-x-auto">
-              <TabsTrigger value="features" className="rounded-lg text-xs font-bold">الميزات</TabsTrigger>
-              {screenshots.length > 0 && <TabsTrigger value="screenshots" className="rounded-lg text-xs font-bold">لقطات الشاشة</TabsTrigger>}
-              {faq.length > 0 && <TabsTrigger value="faq" className="rounded-lg text-xs font-bold">الأسئلة الشائعة</TabsTrigger>}
-              {reviews.length > 0 && <TabsTrigger value="reviews" className="rounded-lg text-xs font-bold">التقييمات</TabsTrigger>}
-              {changelog.length > 0 && <TabsTrigger value="changelog" className="rounded-lg text-xs font-bold">سجل التحديثات</TabsTrigger>}
-            </TabsList>
+            {(screenshots.length > 0 || faq.length > 0 || reviews.length > 0 || changelog.length > 0) && (
+              <TabsList className="w-full justify-start gap-0 rounded-xl border bg-card p-1 overflow-x-auto">
+                <TabsTrigger value="features" className="rounded-lg text-xs font-bold">الميزات</TabsTrigger>
+                {screenshots.length > 0 && <TabsTrigger value="screenshots" className="rounded-lg text-xs font-bold">لقطات الشاشة</TabsTrigger>}
+                {faq.length > 0 && <TabsTrigger value="faq" className="rounded-lg text-xs font-bold">الأسئلة الشائعة</TabsTrigger>}
+                {reviews.length > 0 && <TabsTrigger value="reviews" className="rounded-lg text-xs font-bold">التقييمات</TabsTrigger>}
+                {changelog.length > 0 && <TabsTrigger value="changelog" className="rounded-lg text-xs font-bold">سجل التحديثات</TabsTrigger>}
+              </TabsList>
+            )}
 
             <TabsContent value="features" className="mt-4">
               <div className="rounded-2xl border bg-card p-5 text-right">
@@ -1040,7 +1042,7 @@ export default function AppDetails() {
           without scrolling to the sidebar column. */}
       {!loading && app && (
         <div
-          className="fixed bottom-0 inset-x-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur px-4 pt-3 lg:hidden"
+          className="fixed inset-x-0 bottom-[66px] z-40 border-t border-border/40 bg-background/95 backdrop-blur px-4 pt-3 lg:hidden"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
           <div className="flex items-center gap-3">

@@ -148,9 +148,11 @@ export function AppCard({
           </div>
 
           {app.description && (
-            <p className="hidden sm:block text-[11px] text-muted-foreground/90 line-clamp-1 mt-0.5" dir="auto">
-              {app.description.replace(/\s+/g, " ").trim()}
-            </p>
+            <div className="hidden sm:block mt-0.5">
+              <p className="text-[11px] text-muted-foreground/90 line-clamp-1" dir="auto">
+                {app.description.replace(/\s+/g, " ").trim()}
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -378,10 +378,10 @@ export default function MarketplaceV2() {
               })}
             </div>
 
-            {/* Row 1: Search, Status Segmented Controls, Category Picker, and View Switcher */}
+            {/* Row 1: Status Segmented Controls, Category Picker, and View Switcher (search joins inline on sm+) */}
             <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-              {/* Search Bar — sticky on mobile so search stays reachable while browsing apps */}
-              <div className="flex-1 min-w-[240px] sticky top-14 z-30 bg-background py-1.5 sm:py-0 sm:static sm:z-auto">
+              {/* Search Bar (inline on sm+) */}
+              <div className="flex-1 min-w-[240px] hidden sm:block">
                 <SearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -486,7 +486,7 @@ export default function MarketplaceV2() {
               {/* All Categories Drawer Sheet Trigger (mobile only) */}
               <CategorySidebar
                 isMobile
-                categories={categoryDisplay}
+                categories={availableCategories}
                 selectedCategory={selectedCategory}
                 onSelect={handleCategorySelect}
                 className="sm:hidden h-10 px-3 rounded-xl border-border/40 font-bold shrink-0"
@@ -570,6 +570,16 @@ export default function MarketplaceV2() {
             )}
           </div>
 
+          {/* Search — sibling of the page-height container (NOT inside the short
+              header block) so position:sticky can actually stick on mobile. */}
+          <div className="sticky top-14 z-30 bg-background pb-2 sm:hidden">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder={t('marketplace.searchPlaceholder', 'ابحث عن التطبيقات، المميزات، أو الفئات...')}
+            />
+          </div>
+
           {/* ── Apps Content Area ── */}
           <div className="mt-4">
             {displayedApps.length === 0 ? (
@@ -604,7 +614,7 @@ export default function MarketplaceV2() {
               /* Flat layout when a specific category is selected */
               <div className="mt-4">
                 {viewMode === "grid" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                     {displayedApps.map((app) => (
                       <AppCard
                         key={app.id}
@@ -641,7 +651,7 @@ export default function MarketplaceV2() {
                     </div>
 
                     {viewMode === "grid" ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                         {section.apps.map((app) => (
                           <AppCard
                             key={app.id}
