@@ -34,7 +34,6 @@ interface AnalyticsCardProps {
     value: number;
     isPositive: boolean;
   };
-  accentColor?: string;
 }
 
 const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -44,23 +43,23 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   trend,
 }) => {
   return (
-    <div className="bg-card border border-border/70 rounded-xl p-4 transition-all duration-160 hover:border-border hover:shadow-xs">
+    <div className="bg-card border border-border/70 rounded-2xl p-4 transition-colors hover:border-border shadow-2xs">
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
-        <div className="p-1.5 rounded-lg bg-muted/40 text-muted-foreground shrink-0">
+        <div className="p-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
           {icon}
         </div>
       </div>
       <div className="flex items-baseline justify-between gap-2">
-        <div className="text-2xl font-semibold tracking-tight text-foreground font-mono tabular-nums">
+        <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
           {value}
         </div>
         {trend && (
           <div
-            className={`inline-flex items-center gap-0.5 text-xs font-medium font-mono tabular-nums px-1.5 py-0.5 rounded-md ${
+            className={`inline-flex items-center gap-0.5 text-xs font-semibold font-mono tabular-nums px-2 py-0.5 rounded-lg border ${
               trend.isPositive
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
             }`}
           >
             {trend.isPositive ? (
@@ -100,7 +99,6 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // جلب الإحصائيات
   const fetchStats = async () => {
     try {
       setLoading(true);
@@ -166,12 +164,12 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-card border border-border/70 rounded-xl p-5">
+      <div className="bg-card border border-border/70 rounded-2xl p-5" dir="rtl">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 w-48 bg-muted rounded-md" />
+          <div className="h-6 w-48 bg-muted rounded-xl" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-24 bg-muted/60 rounded-xl" />
+              <div key={i} className="h-24 bg-muted/60 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -180,15 +178,15 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
   }
 
   return (
-    <div className="bg-card border border-border/70 rounded-xl p-5 text-foreground space-y-6">
+    <div className="bg-card border border-border/70 rounded-2xl p-5 text-foreground space-y-6 shadow-2xs" dir="rtl">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/60">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
               إحصائيات المحادثات
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -212,14 +210,14 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
       </div>
 
       {error && (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs">
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
           <button
             onClick={fetchStats}
-            className="font-medium underline hover:no-underline transition-all"
+            className="font-semibold underline hover:no-underline transition-all cursor-pointer"
           >
             إعادة المحاولة
           </button>
@@ -285,10 +283,10 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
       </div>
 
       {/* Daily Activity Chart */}
-      <div className="p-4 bg-muted/20 border border-border/60 rounded-xl space-y-3">
+      <div className="p-4 bg-muted/20 border border-border/60 rounded-2xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <Calendar className="w-4 h-4 text-primary" />
             <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
               نشاط الرسائل اليومي
             </h3>
@@ -304,7 +302,7 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                 <div
-                  className="w-full max-w-[36px] bg-primary/75 hover:bg-primary rounded-t-sm transition-all duration-200 group-hover:scale-y-105"
+                  className="w-full max-w-[36px] bg-primary/75 hover:bg-primary rounded-t-md transition-all duration-200 group-hover:scale-y-105"
                   style={{ height: `${height}%` }}
                 />
                 <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
@@ -322,18 +320,18 @@ const ConversationAnalytics: React.FC<ConversationAnalyticsProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60">
         <button
           onClick={fetchStats}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all active:scale-97 disabled:opacity-50 cursor-pointer shadow-xs"
         >
           <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           <span>تحديث الإحصائيات</span>
         </button>
 
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-muted text-foreground border border-border/60 rounded-lg transition-all active:scale-[0.98]">
+          <button className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/70 rounded-xl transition-all active:scale-97 cursor-pointer shadow-2xs">
             <Download className="w-3.5 h-3.5 text-muted-foreground" />
             <span>تصدير البيانات</span>
           </button>

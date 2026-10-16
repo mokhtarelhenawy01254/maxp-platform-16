@@ -69,9 +69,9 @@ const SortableProductPageElements: React.FC<SortableProductPageElementsProps> = 
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" dir="rtl">
       <div className="flex items-center gap-2">
-        <Layers className="size-4 text-primary" />
+        <Layers className="size-4 text-primary shrink-0" />
         <p className="text-xs font-medium text-muted-foreground">
           اسحب العناصر لأعلى أو لأسفل لترتيبها في صفحة المنتج، وفعل العناصر المطلوبة
         </p>
@@ -88,13 +88,13 @@ const SortableProductPageElements: React.FC<SortableProductPageElementsProps> = 
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
             className={`
-              flex items-center justify-between p-3 rounded-lg border transition-all duration-150
+              flex items-center justify-between p-3 rounded-xl border transition-all duration-150 shadow-2xs
               ${
                 draggedIndex === index
-                  ? "border-primary bg-primary/5 opacity-60 cursor-grabbing shadow-sm"
+                  ? "border-primary bg-primary/10 opacity-60 cursor-grabbing shadow-sm"
                   : dragOverIndex === index
-                    ? "border-primary border-dashed bg-primary/10"
-                    : "border-border/70 bg-card hover:border-border hover:bg-muted/40"
+                    ? "border-primary border-dashed bg-primary/15"
+                    : "border-border/70 bg-card hover:border-border hover:bg-muted/30"
               }
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-move"}
             `}
@@ -102,7 +102,7 @@ const SortableProductPageElements: React.FC<SortableProductPageElementsProps> = 
             <div className="flex items-center gap-3 flex-1">
               {/* Drag Handle */}
               <div
-                className={`text-muted-foreground transition-colors ${
+                className={`text-muted-foreground transition-colors p-1 rounded-lg hover:bg-muted ${
                   disabled
                     ? ""
                     : "hover:text-primary cursor-grab active:cursor-grabbing"
@@ -134,7 +134,7 @@ const SortableProductPageElements: React.FC<SortableProductPageElementsProps> = 
                   disabled={disabled}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-2xs"></div>
               </label>
             </div>
           </div>
@@ -142,7 +142,7 @@ const SortableProductPageElements: React.FC<SortableProductPageElementsProps> = 
       </div>
 
       {elements.length === 0 && (
-        <div className="text-xs text-muted-foreground text-center py-6 bg-muted/20 rounded-lg border border-dashed border-border/70">
+        <div className="text-xs text-muted-foreground text-center py-8 bg-muted/20 rounded-xl border border-dashed border-border/70">
           لا توجد عناصر متاحة للترتيب
         </div>
       )}

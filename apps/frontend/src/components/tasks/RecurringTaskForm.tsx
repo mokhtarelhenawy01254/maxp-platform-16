@@ -1,5 +1,5 @@
 import React from "react";
-import { Repeat, Calendar, Check, Clock } from "lucide-react";
+import { Repeat, Calendar } from "lucide-react";
 
 export interface RecurringConfig {
   enabled: boolean;
@@ -73,15 +73,15 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border/70 rounded-xl p-4 text-foreground space-y-4">
+    <div className="bg-card border border-border/70 rounded-2xl p-5 text-foreground space-y-4 shadow-2xs" dir="rtl">
       {/* Header with Switch */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0 shadow-2xs">
             <Repeat className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-foreground">
+            <h4 className="text-xs sm:text-sm font-semibold text-foreground tracking-tight">
               تكرار المهمة تلقائياً
             </h4>
             <p className="text-[11px] text-muted-foreground">
@@ -97,15 +97,15 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
             onChange={(e) => handleChange("enabled", e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+          <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-2xs"></div>
         </label>
       </div>
 
       {value.enabled && (
-        <div className="space-y-4 pt-3 border-t border-border/60">
+        <div className="space-y-4 pt-3.5 border-t border-border/60">
           {/* Frequency Selection */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-foreground">
+            <label className="block text-xs font-semibold text-foreground">
               دورة التكرار
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -119,10 +119,10 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   key={option.value}
                   type="button"
                   onClick={() => handleChange("frequency", option.value)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all active:scale-[0.98] ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all active:scale-97 cursor-pointer ${
                     value.frequency === option.value
                       ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                      : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+                      : "bg-muted/20 text-muted-foreground border-border/70 hover:bg-muted"
                   }`}
                 >
                   {option.label}
@@ -133,7 +133,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
 
           {/* Interval */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-foreground">
+            <label className="block text-xs font-semibold text-foreground">
               معدل التكرار
             </label>
             <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                 onChange={(e) =>
                   handleChange("interval", parseInt(e.target.value) || 1)
                 }
-                className="w-20 px-2.5 py-1 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
+                className="w-20 px-2.5 py-1 text-xs bg-card border border-border/70 rounded-xl text-foreground font-mono tabular-nums focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all text-center shadow-2xs"
               />
               <span className="text-xs text-muted-foreground">
                 {value.frequency === "daily" && "يوم"}
@@ -160,7 +160,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
           {/* Days of Week (for weekly) */}
           {value.frequency === "weekly" && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-foreground">
+              <label className="block text-xs font-semibold text-foreground">
                 أيام التكرار الأسبوعية
               </label>
               <div className="flex flex-wrap gap-1.5">
@@ -171,10 +171,10 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                       key={index}
                       type="button"
                       onClick={() => toggleDayOfWeek(index)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all active:scale-95 ${
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all active:scale-95 cursor-pointer ${
                         isSelected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+                          ? "bg-primary text-primary-foreground border-primary shadow-2xs"
+                          : "bg-muted/20 text-muted-foreground border-border/70 hover:bg-muted"
                       }`}
                     >
                       {day}
@@ -188,7 +188,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
           {/* Day of Month (for monthly) */}
           {value.frequency === "monthly" && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-foreground">
+              <label className="block text-xs font-semibold text-foreground">
                 يوم تنفيذ المهمة
               </label>
               <select
@@ -196,7 +196,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                 onChange={(e) =>
                   handleChange("dayOfMonth", parseInt(e.target.value))
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full px-3 py-2 text-xs bg-card border border-border/70 rounded-xl text-foreground font-mono tabular-nums focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
@@ -210,7 +210,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
 
           {/* End Options */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-foreground">
+            <label className="block text-xs font-semibold text-foreground">
               نهاية التكرار
             </label>
             <div className="space-y-2 text-xs">
@@ -223,7 +223,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   onChange={() => handleChange("endType", "never")}
                   className="text-primary focus:ring-primary/20"
                 />
-                <span>بدون حد نهائي (مستمر دائماً)</span>
+                <span className="text-foreground">بدون حد نهائي (مستمر دائماً)</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer flex-wrap">
@@ -235,13 +235,13 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   onChange={() => handleChange("endType", "date")}
                   className="text-primary focus:ring-primary/20"
                 />
-                <span>حتى تاريخ محدد:</span>
+                <span className="text-foreground">حتى تاريخ محدد:</span>
                 {value.endType === "date" && (
                   <input
                     type="date"
                     value={value.endDate}
                     onChange={(e) => handleChange("endDate", e.target.value)}
-                    className="px-2 py-0.5 text-xs bg-background border border-border/70 rounded-md font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="px-2 py-0.5 text-xs bg-card border border-border/70 rounded-lg font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary shadow-2xs"
                   />
                 )}
               </label>
@@ -255,9 +255,9 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                   onChange={() => handleChange("endType", "count")}
                   className="text-primary focus:ring-primary/20"
                 />
-                <span>تكرار لعدد محدد:</span>
+                <span className="text-foreground">تكرار لعدد محدد:</span>
                 {value.endType === "count" && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <input
                       type="number"
                       min="1"
@@ -266,9 +266,9 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                       onChange={(e) =>
                         handleChange("endCount", parseInt(e.target.value) || 1)
                       }
-                      className="w-16 px-2 py-0.5 text-xs bg-background border border-border/70 rounded-md text-center font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-16 px-2 py-0.5 text-xs bg-card border border-border/70 rounded-lg text-center font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary shadow-2xs"
                     />
-                    <span>مرات</span>
+                    <span className="text-muted-foreground">مرات</span>
                   </div>
                 )}
               </label>
@@ -276,7 +276,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
           </div>
 
           {/* Summary */}
-          <div className="p-3 bg-muted/20 border border-border/60 rounded-lg flex items-center gap-2 text-xs text-foreground font-mono tabular-nums">
+          <div className="p-3.5 bg-muted/20 border border-border/60 rounded-xl flex items-center gap-2.5 text-xs text-foreground font-mono tabular-nums">
             <Calendar className="w-4 h-4 text-primary shrink-0" />
             <span>
               الجدول: {getFrequencyText()}

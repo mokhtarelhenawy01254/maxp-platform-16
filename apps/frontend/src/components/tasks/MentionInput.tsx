@@ -147,7 +147,7 @@ const MentionInput: React.FC<MentionInputProps> = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative" dir="rtl">
       <textarea
         ref={textareaRef}
         value={value}
@@ -155,23 +155,23 @@ const MentionInput: React.FC<MentionInputProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={rows}
-        className={`w-full px-3 py-2 text-xs bg-background border border-border/70 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none ${className}`}
+        className={`w-full px-3.5 py-2.5 text-xs bg-card border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all resize-none shadow-2xs ${className}`}
       />
 
       {/* Suggestions Dropdown */}
       {showSuggestions && filteredUsers.length > 0 && (
         <div
           ref={suggestionsRef}
-          className="absolute z-50 w-64 mt-1 bg-card border border-border/70 rounded-xl shadow-xl max-h-48 overflow-y-auto text-foreground animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-50 w-64 mt-1 bg-card border border-border/80 rounded-2xl shadow-2xl max-h-48 overflow-y-auto text-foreground p-1 animate-in fade-in zoom-in-95 duration-100"
         >
           {filteredUsers.map((user, index) => (
             <button
               key={user.id}
               onClick={() => insertMention(user)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-start transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-start rounded-xl transition-all active:scale-98 cursor-pointer ${
                 index === selectedIndex
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/40 text-foreground"
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "hover:bg-muted text-foreground"
               }`}
             >
               {user.avatar ? (
@@ -196,9 +196,9 @@ const MentionInput: React.FC<MentionInputProps> = ({
       )}
 
       {/* Helper text */}
-      <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-        <AtSign className="w-3 h-3" />
-        <span>اكتب @ لفتح قائمة الإشارة لأحد الزملاء</span>
+      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <AtSign className="w-3 h-3 text-primary" />
+        <span>اكتب @ لفتح قائمة الإشارة لأحد الزملاء في الفريق</span>
       </div>
     </div>
   );
