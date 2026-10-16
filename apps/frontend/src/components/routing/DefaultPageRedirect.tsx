@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import { resolvePostAuthDestination, saveDefaultPagePreference } from "../../utils/postAuthRouting";
@@ -34,13 +35,12 @@ export function DefaultPageRedirect() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0f172a]">
-        <div className="text-center">
-          <div className="relative mx-auto mb-6 w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-2 border-violet-500/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-violet-500 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+            <Loader2 className="size-5 animate-spin" />
           </div>
-          <p className="text-sm text-slate-500 font-medium">جاري التوجيه...</p>
+          <p className="text-xs font-medium text-muted-foreground">جاري التوجيه...</p>
         </div>
       </div>
     );
@@ -50,3 +50,5 @@ export function DefaultPageRedirect() {
   const search = typeof window !== "undefined" ? window.location.search : "";
   return <Navigate to={`${destination}${search}`} replace />;
 }
+
+export default DefaultPageRedirect;

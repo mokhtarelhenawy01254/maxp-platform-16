@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Plus, RefreshCw, Tag, Trash2 } from "lucide-react";
+import { Check, Plus, RefreshCw, Tag, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
@@ -49,7 +49,7 @@ const COLORS = [
   "#FF9800",
 ];
 
-const LabelsDialog: React.FC<LabelsDialogProps> = ({
+export const LabelsDialog: React.FC<LabelsDialogProps> = ({
   open,
   onClose,
   sessionId,
@@ -168,60 +168,89 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-2xl gap-0 rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0"
+        className="max-w-xl gap-0 rounded-2xl border border-border/70 bg-card p-0 shadow-xl overflow-hidden"
       >
-        <DialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
-          <DialogTitle className="text-lg text-[color:var(--color-foreground)]">
-            {contactJid ? "إدارة تصنيفات المحادثة" : "إدارة التصنيفات"}
-          </DialogTitle>
+        <DialogHeader className="border-b border-border/60 px-6 py-4 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Tag className="size-4" />
+            </span>
+            <div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                {contactJid ? "إدارة تصنيفات المحادثة" : "إدارة التصنيفات"}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {contactJid ? "تحديد أو إنشاء تصنيفات ملونة للمحادثة الحالية" : "تصنيفات واتساب للأعمال المتاحة"}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-4" />
+          </Button>
         </DialogHeader>
 
-        <div className="space-y-5 px-6 py-6">
-          <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-              <div className="space-y-3">
-                <Input
-                  value={newLabelName}
-                  onChange={(event) => setNewLabelName(event.target.value)}
-                  placeholder="اسم التصنيف الجديد"
-                  className="h-11 rounded-[18px] bg-white/80"
-                />
-                <div className="flex flex-wrap gap-2">
-                  {COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setSelectedColor(color)}
-                      className={cn(
-                        "size-7 rounded-full border-2 transition-transform hover:scale-105",
-                        selectedColor === color
-                          ? "border-[color:var(--color-foreground)]"
-                          : "border-transparent",
-                      )}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
+        <div className="space-y-4 px-6 py-5">
+          {/* Create new label card */}
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-3">
+            <div className="flex gap-2">
+              <Input
+                value={newLabelName}
+                onChange={(event) => setNewLabelName(event.target.value)}
+                placeholder="اسم التصنيف الجديد..."
+                className="h-9 rounded-lg bg-background border-border/70 text-sm focus-visible:ring-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleCreateLabel();
+                  }
+                }}
+              />
               <Button
                 onClick={handleCreateLabel}
                 disabled={!newLabelName.trim()}
-                className="self-start"
+                size="sm"
+                className="shrink-0 h-9 rounded-lg px-3.5 gap-1.5"
               >
-                <Plus className="size-4" />
-                إضافة
+                <Plus className="size-3.5" />
+                <span>إضافة</span>
               </Button>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[11px] text-muted-foreground ml-1">اللون:</span>
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setSelectedColor(color)}
+                  className={cn(
+                    "size-5 rounded-full transition-transform active:scale-95 border",
+                    selectedColor === color
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent scale-110"
+                      : "border-black/10 dark:border-white/10 hover:scale-105",
+                  )}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
             </div>
           </div>
 
-          <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/65 p-3">
+          {/* Labels list */}
+          <div className="max-h-[20rem] space-y-1.5 overflow-y-auto rounded-xl border border-border/60 bg-background/50 p-2 divide-y divide-border/30">
             {loading ? (
-              <div className="px-4 py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                جاري تحميل التصنيفات...
+              <div className="flex items-center justify-center gap-2 py-8 text-center text-xs text-muted-foreground">
+                <RefreshCw className="size-3.5 animate-spin" />
+                <span>جاري تحميل التصنيفات...</span>
               </div>
             ) : labels.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                لا توجد تصنيفات
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                لا توجد تصنيفات معرفة حتى الآن
               </div>
             ) : (
               labels.map((label) => {
@@ -230,46 +259,46 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
                   <div
                     key={label.id}
                     className={cn(
-                      "flex items-center gap-3 rounded-[20px] border px-3 py-3",
+                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors pt-2",
                       contactJid && isAssigned
-                        ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)]"
-                        : "border-[color:var(--shell-control-border)] bg-white/75",
+                        ? "bg-primary/5 text-foreground"
+                        : "hover:bg-muted/40",
                     )}
                   >
                     <button
                       type="button"
                       onClick={() => contactJid && toggleLabelAssignment(label.id)}
                       className={cn(
-                        "flex flex-1 items-center gap-3 text-start",
+                        "flex flex-1 items-center gap-2.5 text-start min-w-0",
                         !contactJid && "cursor-default",
                       )}
                     >
                       <span
-                        className="flex size-10 items-center justify-center rounded-2xl text-white"
+                        className="flex size-6 shrink-0 items-center justify-center rounded-md text-white shadow-2xs"
                         style={{ backgroundColor: label.color }}
                       >
-                        <Tag className="size-4" />
+                        <Tag className="size-3" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                        <p className="text-xs font-medium text-foreground truncate">
                           {label.name}
-                        </p>
-                        <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                          {label.color}
                         </p>
                       </div>
                       {contactJid && isAssigned ? (
-                        <Check className="size-4 text-[color:var(--color-primary)]" />
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="size-3" />
+                        </span>
                       ) : null}
                     </button>
 
                     <Button
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon"
                       onClick={() => handleDeleteLabel(label.id)}
-                      className="rounded-full text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                      className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="حذف التصنيف"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3.5" />
                     </Button>
                   </div>
                 );
@@ -278,13 +307,25 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
-          <Button variant="outline" onClick={onClose}>
-            إغلاق
+        <DialogFooter className="border-t border-border/60 bg-muted/20 px-6 py-3 flex items-center justify-between sm:justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncing}
+            className="h-8 gap-1.5 rounded-lg border-border/70 text-xs font-mono tabular-nums"
+          >
+            <RefreshCw className={cn("size-3.5", syncing && "animate-spin")} />
+            <span>{syncing ? "جاري المزامنة..." : "مزامنة التصنيفات"}</span>
           </Button>
-          <Button variant="secondary" onClick={handleSync} disabled={syncing}>
-            <RefreshCw className={cn("size-4", syncing && "animate-spin")} />
-            {syncing ? "جاري المزامنة..." : "مزامنة"}
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onClose}
+            className="h-8 rounded-lg px-4 text-xs"
+          >
+            إغلاق
           </Button>
         </DialogFooter>
       </DialogContent>
