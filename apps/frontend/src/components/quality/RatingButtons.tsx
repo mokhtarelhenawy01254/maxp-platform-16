@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import i18n from "../../i18n";
 import { ThumbsUp, ThumbsDown, Check, Loader2 } from "lucide-react";
 import { getApiUrl } from "../../config/environment";
 
@@ -64,7 +63,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
 
       const data = await response.json();
 
-      if (data.success) {
+      if (data && data.success) {
         setIsSubmitted(true);
         setShowCommentBox(false);
 
@@ -72,7 +71,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
           onRatingSubmit(rating, userComment || comment);
         }
       } else {
-        throw new Error(data.message || "Failed to submit rating");
+        throw new Error(data?.message || "Failed to submit rating");
       }
     } catch (error) {
       console.error("Error submitting rating:", error);
@@ -99,15 +98,15 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
   if (isSubmitted) {
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ${className}`}
+        className={`inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 ${className}`}
         dir="rtl"
       >
-        <Check className="w-3.5 h-3.5" />
+        <Check className="size-3.5" />
         <span>شكراً لتقييمك!</span>
         {selectedRating === "positive" ? (
-          <ThumbsUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400 mr-1" />
+          <ThumbsUp className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
         ) : (
-          <ThumbsDown className="w-3 h-3 text-rose-500 mr-1" />
+          <ThumbsDown className="mr-1 size-3 text-rose-500" />
         )}
       </div>
     );
@@ -120,36 +119,38 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
         <span className="text-xs text-muted-foreground">هل كان هذا الرد مفيداً؟</span>
 
         <button
+          type="button"
           onClick={() => handleRatingClick("positive")}
           disabled={isSubmitting || isSubmitted}
-          className={`p-1.5 rounded-lg border transition-all ${
+          className={`flex size-7 items-center justify-center rounded-lg border transition-all ${
             selectedRating === "positive"
-              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-              : "border-border/60 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20"
-          } ${isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "border-border/70 bg-card text-muted-foreground hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600"
+          } ${isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer active:scale-[0.96]"}`}
           title="مفيد"
           aria-label="مفيد"
         >
-          <ThumbsUp className="w-3.5 h-3.5" />
+          <ThumbsUp className="size-3.5" />
         </button>
 
         <button
+          type="button"
           onClick={() => handleRatingClick("negative")}
           disabled={isSubmitting || isSubmitted}
-          className={`p-1.5 rounded-lg border transition-all ${
+          className={`flex size-7 items-center justify-center rounded-lg border transition-all ${
             selectedRating === "negative"
-              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-              : "border-border/60 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 hover:border-rose-500/20"
-          } ${isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+              : "border-border/70 bg-card text-muted-foreground hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-600"
+          } ${isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer active:scale-[0.96]"}`}
           title="غير مفيد"
           aria-label="غير مفيد"
         >
-          <ThumbsDown className="w-3.5 h-3.5" />
+          <ThumbsDown className="size-3.5" />
         </button>
 
         {isSubmitting && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Loader2 className="w-3 h-3 animate-spin text-primary" />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin text-primary" />
             <span>جاري الإرسال...</span>
           </div>
         )}
@@ -157,7 +158,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
 
       {/* Negative Feedback Drawer */}
       {showCommentBox && (
-        <div className="bg-muted/20 rounded-xl p-3 border border-border/70 space-y-2">
+        <div className="space-y-2 rounded-xl border border-border/70 bg-card/60 p-3 shadow-none">
           <label className="block text-xs font-medium text-foreground">
             ما الذي يمكن تحسينه في هذا الرد؟ (اختياري)
           </label>
@@ -165,19 +166,19 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="اكتب ملاحظاتك لمساعدة النظام في التحسين..."
-            className="w-full px-3 py-2 text-xs bg-background border border-border/70 rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary resize-none"
+            className="w-full resize-none rounded-lg border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             rows={2}
             maxLength={200}
           />
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+            <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
               {comment.length}/200
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={handleCommentCancel}
-                className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg hover:bg-muted/40 transition-colors"
+                className="rounded-lg border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
               >
                 إلغاء
               </button>
@@ -185,7 +186,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
                 type="button"
                 onClick={handleCommentSubmit}
                 disabled={isSubmitting}
-                className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 {isSubmitting ? "جاري الإرسال..." : "إرسال"}
               </button>

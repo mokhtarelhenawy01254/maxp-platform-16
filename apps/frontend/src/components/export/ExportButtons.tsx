@@ -43,40 +43,44 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1 shadow-none">
       <button
         type="button"
         onClick={handleExportCSV}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        title="تصدير بصيغة CSV"
       >
-        <Download className="w-3.5 h-3.5 text-primary" />
+        <Download className="size-3.5 text-primary" />
         <span>تصدير CSV</span>
       </button>
 
       <button
         type="button"
         onClick={handleExportExcel}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        title="تصدير بصيغة Excel"
       >
-        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        <FileSpreadsheet className="size-3.5 text-emerald-500" />
         <span>تصدير Excel</span>
       </button>
 
       <button
         type="button"
         onClick={handleExportPDF}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 active:scale-[0.98]"
+        title="تصدير بصيغة PDF"
       >
-        <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+        <FileText className="size-3.5 text-rose-500" />
         <span>تصدير PDF</span>
       </button>
 
       <button
         type="button"
         onClick={handlePrint}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 text-foreground text-xs font-semibold rounded-lg hover:bg-muted/50 transition shadow-2xs"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.98]"
+        title="طباعة التقرير"
       >
-        <Printer className="w-3.5 h-3.5 text-muted-foreground" />
+        <Printer className="size-3.5 text-muted-foreground" />
         <span>طباعة</span>
       </button>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { MessageSquare, CheckCircle2, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import CommentService from "../../services/commentService";
 
 const CommentStatsWidget = () => {
@@ -14,8 +15,8 @@ const CommentStatsWidget = () => {
   const fetchStats = async () => {
     try {
       const response = await CommentService.getCommentStats();
-      if (response.success) {
-        setStats(response.data);
+      if (response && response.success) {
+        setStats(response.data || {});
       }
     } catch (error) {
       console.error("Error fetching comment statistics:", error);
@@ -30,86 +31,93 @@ const CommentStatsWidget = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            Facebook Comments
-          </h3>
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none sm:p-5">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <MessageSquare className="size-3.5" />
+            </div>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              تعليقات فيسبوك
+            </h3>
+          </div>
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
         </div>
-        <div className="space-y-3">
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded"></div>
-          <div className="h-4 bg-gray-200 rounded"></div>
+        <div className="space-y-2.5">
+          <div className="h-4 w-3/4 animate-pulse rounded bg-muted/60" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-muted/60" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Facebook Comments</h3>
+    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none transition-colors hover:border-border sm:p-5">
+      <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <MessageSquare className="size-3.5" />
+          </div>
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">
+            تعليقات فيسبوك
+          </h3>
+        </div>
         <Link
           to="/comments"
-          className="text-sm text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:underline"
         >
-          View All
+          <span>عرض الكل</span>
+          <ArrowLeft className="size-3" />
         </Link>
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm text-gray-500">Total Comments</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {stats.total}
+            <p className="text-xs font-medium text-muted-foreground">إجمالي التعليقات</p>
+            <p className="mt-0.5 font-mono text-2xl font-bold tracking-tight text-foreground tabular-nums">
+              {stats.total.toLocaleString()}
             </p>
           </div>
-          <div className="bg-blue-100 p-3 rounded-full">
-            <svg
-              className="w-6 h-6 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+          <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+            <MessageSquare className="size-4" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-green-50 p-3 rounded-lg">
-            <p className="text-sm text-green-800">Responded</p>
-            <p className="text-lg font-semibold text-green-900">
-              {stats.responded}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-3.5" />
+              <span>تم الرد</span>
+            </div>
+            <p className="mt-1 font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {stats.responded.toLocaleString()}
             </p>
           </div>
-          <div className="bg-yellow-50 p-3 rounded-lg">
-            <p className="text-sm text-yellow-800">Pending</p>
-            <p className="text-lg font-semibold text-yellow-900">
-              {stats.pending}
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5">
+            <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <Clock className="size-3.5" />
+              <span>قيد الانتظار</span>
+            </div>
+            <p className="mt-1 font-mono text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+              {stats.pending.toLocaleString()}
             </p>
           </div>
         </div>
 
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-500">Response Rate</span>
-            <span className="font-medium text-gray-900">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">معدل الاستجابة</span>
+            <span className="font-mono font-semibold text-foreground tabular-nums">
               {stats.responseRate}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="bg-blue-600 h-2 rounded-full"
-              style={{ width: `${stats.responseRate}%` }}
-            ></div>
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${Math.min(stats.responseRate, 100)}%` }}
+            />
           </div>
         </div>
       </div>
