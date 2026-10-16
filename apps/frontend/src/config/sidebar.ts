@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -1480,6 +1480,21 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.6️⃣.6️⃣.c نظام إدارة وتكاليف التصنيع والتشغيل MES
+        {
+            id: 'manufacturing',
+            title: isEn ? 'Manufacturing (MES)' : t('sidebar.manufacturingSection', 'التصنيع والتشغيل'),
+            icon: Factory,
+            hidden: !isAppInstalled('manufacturing') && !isAppInstalled('manufacturing-app') && !isAppInstalled('cat-app-manufacturing'),
+            items: [
+                { to: '/manufacturing', icon: BarChart3, label: isEn ? 'Overview' : t('sidebar.manufacturingOverview', 'لوحة المؤشرات') },
+                { to: '/manufacturing/orders', icon: ClipboardList, label: isEn ? 'Production Orders' : t('sidebar.manufacturingOrders', 'أوامر الإنتاج') },
+                { to: '/manufacturing/boms', icon: Layers, label: isEn ? 'Bill of Materials (BOM)' : t('sidebar.manufacturingBoms', 'أنماط التشغيل BOM') },
+                { to: '/manufacturing/reports', icon: FileBarChart, label: isEn ? 'Cost & Scrap Reports' : t('sidebar.manufacturingReports', 'تقارير التكاليف والهدر') },
+                { to: '/manufacturing/settings', icon: Settings, label: isEn ? 'Factory Settings' : t('sidebar.manufacturingSettings', 'إعدادات المصنع والحسابات') },
+            ]
+        },
+
         // 7️⃣.6️⃣.7️⃣ أكاديمية ماكس بي
         {
             id: 'academy',
@@ -1735,6 +1750,7 @@ export const getSidebarConfig = (
  */
 const SECTION_APP_FALLBACKS: Record<string, string[]> = {
     'accounting': ['accounting', 'accounting-app'],
+    'manufacturing': ['manufacturing', 'manufacturing-app', 'cat-app-manufacturing'],
     'dental-lab': ['dental-lab-app'],
     'lab': ['lab-app'],
     'radiology': ['radiology-app'],

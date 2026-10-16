@@ -103,6 +103,7 @@ const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
   { prefix: "/treasury-expenses", title: "الخزينة والنفقات ورأس المال" },
   { prefix: "/finance", title: "الحسابات والمالية" },
   { prefix: "/accounting", title: "النظام المحاسبي" },
+  { prefix: "/manufacturing", title: "التصنيع والتشغيل" },
   { prefix: "/hr", title: "الموارد البشرية والموظفين" },
   { prefix: "/settings/storefront", title: "تصميم وتنسيق المتجر" },
   { prefix: "/settings/store", title: "إدارة المتجر" },

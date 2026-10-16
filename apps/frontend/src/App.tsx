@@ -1144,6 +1144,9 @@ const TreasuryExpensesPage = React.lazy(
 const AccountingRoutes = React.lazy(
   () => import("./pages/accounting/AccountingRoutes"),
 );
+const ManufacturingRoutes = React.lazy(
+  () => import("./pages/manufacturing/ManufacturingRoutes"),
+);
 const DentalCaseDetailPage = React.lazy(
   () => import("./pages/dental-lab/DentalCaseDetailPage"),
 );
@@ -8694,6 +8697,78 @@ const AppContent = () => {
                     <Layout fullWidth>
                       <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
                         <AccountingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+
+                {/* Manufacturing Execution System (MES) Cockpit Routes */}
+                <Route
+                  path="/manufacturing"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/orders"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/orders/:id"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/boms"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/reports"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/settings"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/manufacturing/*"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                        <ManufacturingRoutes />
                       </AppAccessRoute>
                     </Layout>
                   }
