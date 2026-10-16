@@ -42,17 +42,35 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   }, [safeValue, height, width]);
 
   return (
-    <div className="flex flex-col items-center gap-0.5" style={{ textAlign: "center", lineHeight: 1 }}>
-      <div style={{ fontSize: compact ? "12px" : "15px", fontWeight: 800, textAlign: "center", marginBottom: "2px", color: "#000" }}>
+    <div className="flex flex-col items-center justify-center gap-1 text-center select-none">
+      <div
+        className={
+          compact
+            ? "text-xs font-bold text-foreground print:text-black"
+            : "text-sm font-extrabold tracking-tight text-foreground print:text-black"
+        }
+      >
         {label}
       </div>
-      <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
+      <div className="rounded-md border border-border/40 bg-white p-1 shadow-2xs print:border-0 print:p-0 print:shadow-none">
+        <svg
+          ref={svgRef}
+          className="mx-auto block max-w-full"
+          style={{ height: `${height}px` }}
+        />
+      </div>
       {value !== safeValue && (
-        <span style={{ fontSize: "7px", color: "#ef4444", fontFamily: "monospace", marginTop: "1px" }}>
+        <span className="font-mono text-[8px] text-destructive tabular-nums print:text-black">
           {value}
         </span>
       )}
-      <span style={{ fontSize: compact ? "9px" : "10px", color: "#000", fontFamily: "monospace", marginTop: value !== safeValue ? "1px" : "2px", fontWeight: 900 }}>
+      <span
+        className={
+          compact
+            ? "font-mono text-[10px] font-bold tracking-wider text-foreground tabular-nums print:text-black"
+            : "font-mono text-xs font-bold tracking-wider text-foreground tabular-nums print:text-black"
+        }
+      >
         {safeValue}
       </span>
     </div>

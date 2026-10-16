@@ -38,7 +38,13 @@ export const BusinessPageShell: React.FC<BusinessPageShellProps> = ({
   ...props
 }) => {
   return (
-    <section className={cn("business-page-shell", className)} {...props}>
+    <section
+      className={cn(
+        "business-page-shell flex w-full flex-col gap-4 pb-8 md:gap-5",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </section>
   );
@@ -53,17 +59,33 @@ export const BusinessPageHero: React.FC<BusinessPageHeroProps> = ({
   ...props
 }) => {
   return (
-    <header className={cn("business-page-hero", className)} {...props}>
-      <div className="business-page-hero-copy">
+    <header
+      className={cn(
+        "business-page-hero flex flex-col justify-between gap-3 border-b border-border/60 pb-4 md:flex-row md:items-end md:gap-4 md:pb-5",
+        className,
+      )}
+      {...props}
+    >
+      <div className="business-page-hero-copy min-w-0 space-y-1">
         {eyebrow ? (
-          <span className="business-page-kicker">{eyebrow}</span>
+          <span className="business-page-kicker inline-block rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-primary uppercase tabular-nums">
+            {eyebrow}
+          </span>
         ) : null}
-        <h1 className="business-page-title">{title}</h1>
+        <h1 className="business-page-title text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          {title}
+        </h1>
         {description ? (
-          <p className="business-page-description">{description}</p>
+          <p className="business-page-description text-xs text-muted-foreground sm:text-sm">
+            {description}
+          </p>
         ) : null}
       </div>
-      {actions ? <div className="business-page-actions">{actions}</div> : null}
+      {actions ? (
+        <div className="business-page-actions flex shrink-0 flex-wrap items-center gap-2">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 };
@@ -80,32 +102,45 @@ export const BusinessSectionPanel: React.FC<BusinessSectionPanelProps> = ({
 }) => {
   return (
     <Card
-      className={cn("business-page-panel border-0 shadow-none", className)}
+      className={cn(
+        "business-page-panel rounded-xl border border-border/70 bg-card shadow-none transition-colors",
+        className,
+      )}
       {...props}
     >
       {title || description || headerAside ? (
         <CardHeader
           className={cn(
-            "space-y-2",
+            "p-3.5 sm:p-4",
             headerAside
-              ? "flex flex-col gap-3 border-b border-border/60 md:flex-row md:items-center md:justify-between"
-              : undefined,
+              ? "flex flex-col gap-2.5 border-b border-border/60 md:flex-row md:items-center md:justify-between"
+              : title || description
+                ? "border-b border-border/60"
+                : undefined,
             headerClassName,
           )}
         >
           {title || description ? (
-            <div className="space-y-1">
-              {title ? <CardTitle>{title}</CardTitle> : null}
+            <div className="min-w-0 space-y-0.5">
+              {title ? (
+                <CardTitle className="text-sm font-semibold tracking-tight text-foreground">
+                  {title}
+                </CardTitle>
+              ) : null}
               {description ? (
-                <CardDescription>{description}</CardDescription>
+                <CardDescription className="text-xs text-muted-foreground">
+                  {description}
+                </CardDescription>
               ) : null}
             </div>
           ) : null}
-          {headerAside ? headerAside : null}
+          {headerAside ? <div className="shrink-0">{headerAside}</div> : null}
         </CardHeader>
       ) : null}
 
-      <CardContent className={contentClassName}>{children}</CardContent>
+      <CardContent className={cn("p-3.5 sm:p-4", contentClassName)}>
+        {children}
+      </CardContent>
     </Card>
   );
 };

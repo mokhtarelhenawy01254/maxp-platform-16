@@ -25,21 +25,38 @@ const InvoiceQR: React.FC<InvoiceQRProps> = ({
   if (!value) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", lineHeight: 1 }}>
-      <QRCodeSVG
-        value={value}
-        size={size}
-        bgColor="#ffffff"
-        fgColor="#000000"
-        level="M"
-        includeMargin={false}
-      />
+    <div className="flex flex-col items-center justify-center gap-1 text-center select-none">
+      <div className="rounded-md border border-border/40 bg-white p-1 shadow-2xs print:border-0 print:p-0 print:shadow-none">
+        <QRCodeSVG
+          value={value}
+          size={size}
+          bgColor="#ffffff"
+          fgColor="#000000"
+          level="M"
+          includeMargin={false}
+          className="block"
+        />
+      </div>
       {label && (
-        <span style={{ fontSize: compact ? "7px" : "9px", fontWeight: "bold", color: "#374151" }}>
+        <span
+          className={
+            compact
+              ? "text-[9px] font-semibold text-foreground print:text-black"
+              : "text-[10px] font-semibold tracking-tight text-foreground print:text-black"
+          }
+        >
           {label}
         </span>
       )}
-      <span style={{ fontSize: compact ? "7px" : "8px", color: "#6B7280", fontFamily: "monospace", textAlign: "center", maxWidth: `${size}px`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span
+        style={{ maxWidth: `${Math.max(size + 12, 64)}px` }}
+        className={
+          compact
+            ? "truncate font-mono text-[8px] text-muted-foreground tabular-nums print:text-black"
+            : "truncate font-mono text-[9px] text-muted-foreground tabular-nums print:text-black"
+        }
+        title={value}
+      >
         {value}
       </span>
     </div>
