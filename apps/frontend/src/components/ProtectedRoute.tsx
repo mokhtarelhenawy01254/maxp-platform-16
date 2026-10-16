@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { Lock, Loader2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuthSimple";
 import tokenManager from "../utils/tokenManager";
 import LoadingSpinner from "./LoadingSpinner";
@@ -30,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     setShowRedirectMessage(true);
     const timer = setTimeout(() => {
-      console.log("⏱️ [ProtectedRoute] Redirecting now...");
+      console.log("[ProtectedRoute] Redirecting now...");
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -38,20 +39,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Debug logging
   if (isReviewRoute) {
-    console.log("🔍 [ProtectedRoute] /products/reviews accessed");
-    console.log("🔍 [ProtectedRoute] isLoading:", isLoading);
-    console.log("🔍 [ProtectedRoute] isAuthenticated:", isAuthenticated);
-    console.log("🔍 [ProtectedRoute] user:", user ? "exists" : "null");
-    console.log("🔍 [ProtectedRoute] token:", hasAccessToken ? "exists" : "missing");
+    console.log("[ProtectedRoute] /products/reviews accessed");
+    console.log("[ProtectedRoute] isLoading:", isLoading);
+    console.log("[ProtectedRoute] isAuthenticated:", isAuthenticated);
+    console.log("[ProtectedRoute] user:", user ? "exists" : "null");
+    console.log("[ProtectedRoute] token:", hasAccessToken ? "exists" : "missing");
   }
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     if (isReviewRoute) {
-      console.log("⏳ [ProtectedRoute] Still loading, showing spinner...");
+      console.log("[ProtectedRoute] Still loading, showing spinner...");
     }
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -61,24 +62,30 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthenticated) {
     if (isReviewRoute) {
       console.error(
-        "❌ [ProtectedRoute] Not authenticated, redirecting to login",
+        "[ProtectedRoute] Not authenticated, redirecting to login",
       );
-      console.error("❌ [ProtectedRoute] User:", user);
-      console.error("❌ [ProtectedRoute] Token:", hasAccessToken ? "exists" : "missing");
+      console.error("[ProtectedRoute] User:", user);
+      console.error("[ProtectedRoute] Token:", hasAccessToken ? "exists" : "missing");
 
       if (showRedirectMessage) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-yellow-50">
-            <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-              <h2 className="text-2xl font-bold text-yellow-800 mb-4">
-                ⚠️ مطلوب تسجيل الدخول
-              </h2>
-              <p className="text-gray-700 mb-4">
-                سيتم تحويلك إلى صفحة تسجيل الدخول...
-              </p>
-              <p className="text-sm text-gray-500">
-                تحقق من Console (F12) لمعرفة التفاصيل
-              </p>
+          <div className="min-h-screen flex items-center justify-center bg-background/95 p-4" dir="rtl">
+            <div className="text-center p-6 bg-card border border-border/80 rounded-2xl shadow-xl max-w-md w-full space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-bold text-foreground">
+                  مطلوب تسجيل الدخول
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  جاري تحويلك إلى صفحة تسجيل الدخول تلقائياً...
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70 font-mono">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>يرجى الانتظار</span>
+              </div>
             </div>
           </div>
         );

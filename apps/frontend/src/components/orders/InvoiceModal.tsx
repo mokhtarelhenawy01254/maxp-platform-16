@@ -25,7 +25,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
       aria-label={`فاتورة ${invoice.invoiceNumber}`}
     >
       <div
-        className="max-h-[calc(100vh-0.5rem)] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-card text-foreground shadow-xl sm:max-h-[90vh] sm:max-w-2xl sm:rounded-xl print:max-h-none print:max-w-none print:rounded-none print:border-0 print:bg-white print:text-black print:shadow-none"
+        className="max-h-[calc(100vh-0.5rem)] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-card text-foreground shadow-2xl sm:max-h-[90vh] sm:max-w-2xl sm:rounded-2xl print:max-h-none print:max-w-none print:rounded-none print:border-0 print:bg-white print:text-black print:shadow-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -41,7 +41,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all active:scale-97 shadow-xs cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>طباعة</span>
@@ -49,7 +49,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
             <button
               onClick={onClose}
               aria-label="إغلاق الفاتورة"
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors active:scale-95"
+              className="p-1.5 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors active:scale-95 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

@@ -13,24 +13,58 @@ interface Props {
   icon?: React.ReactNode;
 }
 
-export default function SliderInput({ label, value, min, max, step = 1, onChange, currencySymbol = "", isPercent, suffix, icon }: Props) {
+export default function SliderInput({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  currencySymbol = "",
+  isPercent,
+  suffix,
+  icon,
+}: Props) {
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-          {icon}{label}
+    <div className="space-y-1.5" dir="rtl">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <span className="text-foreground font-medium flex items-center gap-1.5">
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          {label}
         </span>
-        <span className="flex items-center gap-1">
-          <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-            className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-          <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs">{isPercent ? "%" : suffix || currencySymbol}</span>
+        <span className="flex items-center gap-1.5 font-mono tabular-nums">
+          <input
+            type="number"
+            value={value}
+            onChange={onChange}
+            min={min}
+            max={max}
+            step={step}
+            className="w-20 sm:w-24 text-right font-semibold text-foreground bg-muted/30 border border-border/70 rounded-lg px-2 py-0.5 text-xs sm:text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition-colors"
+          />
+          <span className="font-semibold text-muted-foreground text-xs">
+            {isPercent ? "%" : suffix || currencySymbol}
+          </span>
         </span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{Math.round(min).toLocaleString()}{isPercent ? "%" : currencySymbol ? ` ${currencySymbol}` : ""}</span>
-        <span>{Math.round(max).toLocaleString()}{isPercent ? "%" : currencySymbol ? ` ${currencySymbol}` : ""}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={onChange}
+        className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none transition-all"
+      />
+      <div className="flex justify-between text-[11px] font-mono tabular-nums text-muted-foreground/70">
+        <span>
+          {Math.round(min).toLocaleString()}
+          {isPercent ? "%" : currencySymbol ? ` ${currencySymbol}` : ""}
+        </span>
+        <span>
+          {Math.round(max).toLocaleString()}
+          {isPercent ? "%" : currencySymbol ? ` ${currencySymbol}` : ""}
+        </span>
       </div>
     </div>
   );

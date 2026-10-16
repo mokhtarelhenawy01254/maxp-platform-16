@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   X,
-  Download,
   Trash2,
   Search,
   FileJson,
@@ -133,7 +132,7 @@ const ErrorDashboard: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overscroll-contain animate-in fade-in duration-150"
       dir="rtl"
     >
       <div className="bg-card rounded-2xl shadow-2xl border border-border/80 w-full max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
@@ -163,7 +162,7 @@ const ErrorDashboard: React.FC = () => {
         </div>
 
         {/* Filters & Actions */}
-        <div className="bg-muted/30 border-b border-border/60 p-3.5">
+        <div className="bg-muted/20 border-b border-border/60 p-3.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="flex-1 min-w-56">
               <div className="relative">

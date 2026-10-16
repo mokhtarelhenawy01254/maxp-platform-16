@@ -7,7 +7,7 @@ interface LinkifiedTextProps {
 }
 
 const LINK_CLASSES =
-  'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 decoration-blue-400/40 dark:decoration-blue-500/40 hover:decoration-blue-600/60 dark:hover:decoration-blue-300/60 transition-colors duration-150 cursor-pointer break-all';
+  'text-primary hover:text-primary/85 underline underline-offset-2 decoration-primary/35 hover:decoration-primary transition-colors duration-150 cursor-pointer break-all font-medium';
 
 const LinkifiedText: React.FC<LinkifiedTextProps> = React.memo(({ text, className }) => {
   if (!text) return null;
