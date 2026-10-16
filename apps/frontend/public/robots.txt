@@ -1,0 +1,32 @@
+# MaxP platform — https://maxp.online
+# Served for the apex domain. Tenant storefronts (swan.maxp.online, …) get their
+# own robots.txt from the backend (storefrontRobotsController).
+
+User-agent: *
+Allow: /
+
+# Private application areas
+Disallow: /admin/
+Disallow: /super-admin/
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /account
+Disallow: /settings
+Disallow: /orders
+Disallow: /products
+Disallow: /conversations
+Disallow: /inbox
+Disallow: /analytics
+Disallow: /advertising
+Disallow: /accounting
+Disallow: /hr
+Disallow: /inventory
+Disallow: /affiliates/dashboard
+
+# Paid-ad landing pages + review drafts — intentionally kept out of search
+Disallow: /lp/clothing-store-bundle
+Disallow: /lp/clothing-taste
+Disallow: /lp/fashion-os
+Disallow: /lp/clothing-bundle-
+
+Sitemap: https://maxp.online/sitemap.xml

@@ -301,12 +301,26 @@ const upsertMeta = (html, attribute, key, value) => {
 const upsertTitle = (html, title) =>
   html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`);
 
+// Self-referencing canonical: the static index.html ships
+// `<link rel="canonical" href="https://maxp.online">`, which tells Google that
+// EVERY route is a copy of the homepage. Replace it with the requested URL.
+const upsertCanonical = (html, url) => {
+  if (!url) return html;
+  const clean = String(url).split("?")[0].split("#")[0];
+  const tag = `<link rel="canonical" href="${escapeHtml(clean)}" />`;
+  const pattern = /<link[^>]+rel=["']canonical["'][^>]*>/i;
+  return pattern.test(html)
+    ? html.replace(pattern, tag)
+    : html.replace("</head>", `  ${tag}\n</head>`);
+};
+
 const injectSeoTags = (html, { title, description, image, url, noIndex, price, currency, type, jsonLd }) => {
   let h = upsertTitle(html, title);
   h = upsertMeta(h, "name", "description", description);
   h = upsertMeta(h, "property", "og:title", title);
   h = upsertMeta(h, "property", "og:description", description);
   h = upsertMeta(h, "property", "og:url", url);
+  h = upsertCanonical(h, url);
   h = upsertMeta(h, "property", "og:image", image);
   h = upsertMeta(h, "property", "og:image:width", "1200");
   h = upsertMeta(h, "property", "og:image:height", "630");

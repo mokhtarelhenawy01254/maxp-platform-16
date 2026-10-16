@@ -12,6 +12,7 @@ import { pushNotificationService } from "./services/pushNotificationService";
 import { isCapacitorNative } from "./config/environment";
 import { telephonyClientService } from "./services/telephonyService";
 import { recoverFromChunkLoadError } from "./utils/chunkLoadRecovery";
+import RouteSeoManager from "./components/seo/RouteSeoManager";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
@@ -2155,6 +2156,8 @@ const AppContent = () => {
       <div className="App w-full min-w-full">
         {/* <EnvironmentIndicator position="bottom-right" /> */}
         <Suspense fallback={<LoadingFallback />}>
+          {/* Public-route SEO (title/description/canonical) — apex domain only */}
+          <RouteSeoManager />
           <Routes>
             {/* Public Routes */}
             <Route

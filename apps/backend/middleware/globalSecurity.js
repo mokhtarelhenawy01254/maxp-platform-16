@@ -388,6 +388,14 @@ const PUBLIC_ROUTES = [
   'POST /api/v1/auth/refresh',
   'POST /api/v1/auth/logout',
   'GET /',
+
+  // SEO crawler files — Googlebot/BingBot fetch these WITHOUT a token.
+  // Without the whitelist every tenant storefront answered 401 for
+  // /robots.txt and /sitemap.xml (verified live on swan/fiore, 2026-10-16).
+  'GET /robots.txt',
+  'HEAD /robots.txt',
+  'GET /sitemap.xml',
+  'HEAD /sitemap.xml',
   'OPTIONS *',
 
   // Internal deployment and cache purge routes (secured via x-deploy-secret header)
