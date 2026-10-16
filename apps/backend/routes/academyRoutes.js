@@ -16,6 +16,14 @@ const studentAuthLimiter = rateLimit({
   message: { success: false, message: 'تجاوزت الحد المسموح لمحاولات الدخول. حاول بعد عدة دقائق.' },
 });
 
+const studentVerifyLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'تجاوزت الحد المسموح لمحاولات التحقق من الدفع. حاول بعد عدة دقائق.' },
+});
+
 const studentContentLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 120,
@@ -61,8 +69,8 @@ router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent)
 router.post('/student/send-code', studentAuthLimiter, controller.sendStudentLoginCode);
 router.post('/student/login', studentAuthLimiter, controller.studentLogin);
 router.get('/student/me', authenticateToken, controller.getStudentProfile);
-router.post('/courses/:courseId/checkout', studentAuthLimiter, controller.checkoutCourse);
-router.post('/courses/:courseId/verify-payment', studentAuthLimiter, controller.verifyCoursePayment);
+router.post('/courses/:courseId/checkout', controller.checkoutCourse);
+router.post('/courses/:courseId/verify-payment', studentVerifyLimiter, controller.verifyCoursePayment);
 
 // Student Actions (Protected by Student JWT Token)
 router.post('/lessons/:id/complete', authenticateToken, controller.completeLesson);
