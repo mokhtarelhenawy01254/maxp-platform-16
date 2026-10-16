@@ -32,7 +32,12 @@ const AcademyCoursePublicPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [paymentBanner, setPaymentBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [paymentBanner, setPaymentBanner] = useState<{
+    type: 'success' | 'error';
+    message: string;
+    actionUrl?: string;
+    actionText?: string;
+  } | null>(null);
 
   const fetchOutline = async () => {
     try {
@@ -73,13 +78,16 @@ const AcademyCoursePublicPage: React.FC = () => {
           });
           const data = await res.json();
           if (data.success && data.verified) {
-            if (data.token) localStorage.setItem("studentToken", data.token);
+            // 🔒 Security (Round 3): NO token issued upon payment verification. Access is gated by OTP.
             if (data.student?.phone) localStorage.setItem("studentPhone", data.student.phone);
             if (data.student?.name) localStorage.setItem("studentName", data.student.name);
 
+            const phoneParam = data.student?.phone ? encodeURIComponent(data.student.phone) : "";
             setPaymentBanner({
               type: 'success',
-              message: 'تم تأكيد الدفع بنجاح! تم فتح جميع الدروس الـ25 وتفعيل حسابك تلقائياً.',
+              message: 'تم تأكيد الدفع وتفعيل اشتراكك بنجاح! سجّل دخولك الآن لمتابعة الكورس.',
+              actionUrl: phoneParam ? `/portal/login?phone=${phoneParam}` : '/portal/login',
+              actionText: 'تسجيل الدخول الآن',
             });
             await fetchOutline();
           } else {
@@ -129,18 +137,29 @@ const AcademyCoursePublicPage: React.FC = () => {
       {/* Payment Feedback Banner */}
       {paymentBanner && (
         <div
-          className={`p-4 rounded-2xl border flex items-center gap-3 text-sm font-bold ${
+          className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm font-bold ${
             paymentBanner.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-rose-50 border-rose-200 text-rose-800'
           }`}
         >
-          {paymentBanner.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-3">
+            {paymentBanner.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            )}
+            <span>{paymentBanner.message}</span>
+          </div>
+          {paymentBanner.actionUrl && (
+            <Link
+              to={paymentBanner.actionUrl}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all self-start sm:self-auto shrink-0 shadow-sm"
+            >
+              <span>{paymentBanner.actionText || 'تسجيل الدخول'}</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
           )}
-          <span>{paymentBanner.message}</span>
         </div>
       )}
 

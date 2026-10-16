@@ -61,8 +61,8 @@ router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent)
 router.post('/student/send-code', studentAuthLimiter, controller.sendStudentLoginCode);
 router.post('/student/login', studentAuthLimiter, controller.studentLogin);
 router.get('/student/me', authenticateToken, controller.getStudentProfile);
-router.post('/courses/:courseId/checkout', controller.checkoutCourse);
-router.post('/courses/:courseId/verify-payment', controller.verifyCoursePayment);
+router.post('/courses/:courseId/checkout', studentAuthLimiter, controller.checkoutCourse);
+router.post('/courses/:courseId/verify-payment', studentAuthLimiter, controller.verifyCoursePayment);
 
 // Student Actions (Protected by Student JWT Token)
 router.post('/lessons/:id/complete', authenticateToken, controller.completeLesson);

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { GraduationCap, Phone, ArrowLeft, Loader2, Sparkles, KeyRound, RefreshCw, CheckCircle2 } from "lucide-react";
 
 const StudentLoginPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -11,6 +12,14 @@ const StudentLoginPage: React.FC = () => {
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number>(0);
   const navigate = useNavigate();
+
+  // Prefill phone from URL query param if provided (e.g. from checkout or payment redirect)
+  useEffect(() => {
+    const phoneParam = searchParams.get("phone");
+    if (phoneParam && phoneParam.trim()) {
+      setPhone(phoneParam.trim());
+    }
+  }, [searchParams]);
 
   // Handle Resend Countdown
   useEffect(() => {

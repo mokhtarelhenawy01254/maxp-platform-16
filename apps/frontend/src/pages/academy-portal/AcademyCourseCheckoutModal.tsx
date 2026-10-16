@@ -57,8 +57,14 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
         throw new Error(data.message || data.error || "فشل إتمام العملية");
       }
 
-      // If already enrolled or test token returned immediately
-      if (data.token) localStorage.setItem("studentToken", data.token);
+      // 🔒 Security (Round 3): If already enrolled, redirect to login with phone prefilled
+      if (data.alreadyEnrolled) {
+        onClose();
+        const phoneParam = encodeURIComponent(studentPhone.trim());
+        navigate(`/portal/login?phone=${phoneParam}`);
+        return;
+      }
+
       if (data.student?.phone) localStorage.setItem("studentPhone", data.student.phone);
       if (data.student?.name) localStorage.setItem("studentName", data.student.name);
 

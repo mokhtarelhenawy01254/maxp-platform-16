@@ -90,6 +90,16 @@ async function runUnitTests() {
             companyId: 'cmopgxu3a07i4jujj6f1oh32h',
           };
         }
+        if (phone === '01088887777') {
+          return {
+            id: 'enr-test-88',
+            courseId,
+            studentPhone: '01088887777',
+            studentName: 'طالب حقيقي للتجربة',
+            status: 'ACTIVE',
+            companyId: 'cmopgxu3a07i4jujj6f1oh32h',
+          };
+        }
         return null;
       },
       findMany: async ({ where }) => {
@@ -101,6 +111,18 @@ async function runUnitTests() {
               courseId,
               studentPhone: testPhone,
               studentName: 'أحمد محمود',
+              status: 'ACTIVE',
+              course: { id: courseId, title: 'من أول إعلان… لأول نظام', price: 500 },
+            },
+          ];
+        }
+        if (phone === '01088887777') {
+          return [
+            {
+              id: 'enr-test-88',
+              courseId,
+              studentPhone: '01088887777',
+              studentName: 'طالب حقيقي للتجربة',
               status: 'ACTIVE',
               course: { id: courseId, title: 'من أول إعلان… لأول نظام', price: 500 },
             },
@@ -123,6 +145,33 @@ async function runUnitTests() {
         id: `ord-${Date.now()}`,
         ...data,
       }),
+      findFirst: async ({ where }) => {
+        if (where.orderNumber === 'ORD-PAID-123') {
+          return {
+            id: 'ord-123',
+            orderNumber: 'ORD-PAID-123',
+            customerPhone: testPhone,
+            customerName: 'أحمد محمود',
+            status: 'CONFIRMED',
+            paymentStatus: 'COMPLETED',
+            companyId: 'cmopgxu3a07i4jujj6f1oh32h',
+            metadata: JSON.stringify({ courseId }),
+          };
+        }
+        if (where.orderNumber === 'ORD-PENDING-456') {
+          return {
+            id: 'ord-456',
+            orderNumber: 'ORD-PENDING-456',
+            customerPhone: '01011112222',
+            customerName: 'طالب تحت السداد',
+            status: 'PENDING',
+            paymentStatus: 'PENDING',
+            companyId: 'cmopgxu3a07i4jujj6f1oh32h',
+            metadata: JSON.stringify({ courseId, kashierSessionId: 'sess-pending-456' }),
+          };
+        }
+        return null;
+      },
       findUnique: async ({ where }) => {
         if (where.orderNumber === 'ORD-PAID-123') {
           return {
@@ -273,7 +322,7 @@ async function runUnitTests() {
     await academyController.studentLogin(req, res);
     assert(statusCode === 400 && body?.code === 'OTP_REQUIRED', 'Login without verification code fails with OTP_REQUIRED');
 
-    // B: Send code
+    // B1: Send code to test account (01000000099)
     const sendReq = { body: { phone: testPhone } };
     let sendStatus = 200;
     let sendBody = null;
@@ -282,8 +331,19 @@ async function runUnitTests() {
       json(b) { sendBody = b; return this; },
     };
     await academyController.sendStudentLoginCode(sendReq, sendRes);
-    assert(sendStatus === 200 && sendBody?.success === true, 'Verification code sent successfully');
+    assert(sendStatus === 200 && sendBody?.success === true, 'Verification code sent successfully to test account');
     assert(sendBody?.testCode === '123456', 'Test account 01000000099 has predictable code 123456');
+
+    // B2: Send code to real student account without active WhatsApp session
+    const realSendReq = { body: { phone: '01088887777' } };
+    let realSendStatus = 200;
+    let realSendBody = null;
+    const realSendRes = {
+      status(c) { realSendStatus = c; return this; },
+      json(b) { realSendBody = b; return this; },
+    };
+    await academyController.sendStudentLoginCode(realSendReq, realSendRes);
+    assert(realSendStatus === 502 && realSendBody?.code === 'OTP_DISPATCH_FAILED', '🔒 Real student returns 502 OTP_DISPATCH_FAILED when WhatsApp is offline (no false success)');
 
     // C: Login with wrong code
     const wrongReq = { body: { phone: testPhone, code: '000000' } };
@@ -306,13 +366,13 @@ async function runUnitTests() {
     };
     await academyController.studentLogin(okReq, okRes);
     assert(okStatus === 200 && okBody?.success === true, 'Login with valid code succeeds');
-    assert(typeof okBody?.token === 'string', 'Student JWT token generated and returned');
+    assert(typeof okBody?.token === 'string', 'Student JWT token generated ONLY at studentLogin endpoint');
   }
 
   // -------------------------------------------------------------
-  // Test 5: Real Checkout & verifyCoursePayment (P0-1)
+  // Test 5: Real Checkout & verifyCoursePayment (P0-1 & Round 3)
   // -------------------------------------------------------------
-  console.log('\n--- Test 5: Real Payment Session Creation & Gate ---');
+  console.log('\n--- Test 5: Real Payment Session Creation & Gate (Round 3 Token Lock) ---');
   {
     // A: Public checkout creates PENDING order and returns Kashier session URL
     const req = {
@@ -337,7 +397,26 @@ async function runUnitTests() {
     assert(typeof body?.sessionUrl === 'string' && body.sessionUrl.includes('kashier.io'), 'Kashier payment session URL returned');
     assert(!body?.token, '🔒 CRITICAL SECURITY CHECK: NO student token issued prior to payment!');
 
-    // B: verifyCoursePayment for confirmed order
+    // B: Public checkout for ALREADY ENROLLED student
+    const enrolledReq = {
+      params: { courseId },
+      body: {
+        studentPhone: testPhone, // already enrolled in mockDb
+        studentName: 'أحمد محمود',
+      },
+      get() { return 'https://maxp.online'; },
+    };
+    let enrolledStatus = 200;
+    let enrolledBody = null;
+    const enrolledRes = {
+      status(c) { enrolledStatus = c; return this; },
+      json(b) { enrolledBody = b; return this; },
+    };
+    await academyController.checkoutCourse(enrolledReq, enrolledRes);
+    assert(enrolledStatus === 200 && enrolledBody?.alreadyEnrolled === true, 'checkoutCourse for already-enrolled returns alreadyEnrolled: true');
+    assert(!enrolledBody?.token, '🔒 CRITICAL SECURITY CHECK (Round 3 Item A): checkoutCourse MUST NOT issue student token for already enrolled!');
+
+    // C: verifyCoursePayment for confirmed order
     const verifyReq1 = {
       params: { courseId },
       body: { orderNumber: 'ORD-PAID-123' },
@@ -350,9 +429,9 @@ async function runUnitTests() {
     };
     await academyController.verifyCoursePayment(verifyReq1, v1Res);
     assert(v1Status === 200 && v1Body?.verified === true, 'verifyCoursePayment confirms already-paid order');
-    assert(typeof v1Body?.token === 'string', 'Student token issued upon confirmed payment');
+    assert(!v1Body?.token, '🔒 CRITICAL SECURITY CHECK (Round 3 Item B): verifyCoursePayment MUST NOT issue student token!');
 
-    // C: verifyCoursePayment for unpaid pending order
+    // D: verifyCoursePayment for unpaid pending order
     const verifyReq2 = {
       params: { courseId },
       body: { orderNumber: 'ORD-PENDING-456' },

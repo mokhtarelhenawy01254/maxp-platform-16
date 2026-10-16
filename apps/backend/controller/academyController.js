@@ -611,6 +611,69 @@ exports.syncOrderEnrollment = async (req, res) => {
   }
 };
 
+// Helper to resolve an active connected WhatsApp session for a company (Baileys in-memory or Meta Cloud)
+async function resolveActiveWhatsAppSession(companyId, db) {
+  try {
+    const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+
+    // 1. Check in-memory Baileys sessions for companyId
+    if (typeof WhatsAppManager.getCompanySessions === 'function') {
+      const memorySessions = (WhatsAppManager.getCompanySessions(companyId) || []).filter(
+        (s) => s.status === 'connected' && s.sock
+      );
+      if (memorySessions.length > 0) {
+        return { id: memorySessions[0].id || memorySessions[0].sessionId, provider: memorySessions[0].provider || 'BAILEYS' };
+      }
+    }
+
+    // 2. Query DB for CONNECTED session for target company
+    if (db?.whatsAppSession) {
+      const connectedSession = await db.whatsAppSession.findFirst({
+        where: { companyId, status: 'CONNECTED' },
+        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+        select: { id: true, provider: true, status: true },
+      });
+
+      if (connectedSession?.id) {
+        if (connectedSession.provider === 'META_CLOUD') {
+          return { id: connectedSession.id, provider: 'META_CLOUD' };
+        }
+        if (typeof WhatsAppManager.getSession === 'function') {
+          const mem = WhatsAppManager.getSession(connectedSession.id);
+          if (mem && mem.status === 'connected') {
+            return { id: connectedSession.id, provider: 'BAILEYS' };
+          }
+        }
+      }
+
+      // 3. Fallback: Central max-p platform session
+      const fallbackCompanyId = 'cmopgxu3a07i4jujj6f1oh32h';
+      if (companyId !== fallbackCompanyId) {
+        const fallbackDbSession = await db.whatsAppSession.findFirst({
+          where: { companyId: fallbackCompanyId, status: 'CONNECTED' },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+          select: { id: true, provider: true, status: true },
+        });
+
+        if (fallbackDbSession?.id) {
+          if (fallbackDbSession.provider === 'META_CLOUD') {
+            return { id: fallbackDbSession.id, provider: 'META_CLOUD' };
+          }
+          if (typeof WhatsAppManager.getSession === 'function') {
+            const mem = WhatsAppManager.getSession(fallbackDbSession.id);
+            if (mem && mem.status === 'connected') {
+              return { id: fallbackDbSession.id, provider: 'BAILEYS' };
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[student-otp] Error resolving WhatsApp session:', err.message);
+  }
+  return null;
+}
+
 // -------------------------------------------------------------
 // Student Authentication & Profile
 // -------------------------------------------------------------
@@ -678,31 +741,72 @@ exports.sendStudentLoginCode = async (req, res) => {
       lastSentAt: now,
     });
 
-    // 5. Dispatch via WhatsApp if available
-    try {
-      const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
-      const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+    // 5. Dispatch via WhatsApp
+    let dispatchSuccess = false;
+    let dispatchError = null;
+
+    if (isTestAccount) {
+      // 🧹 Test account 01000000099 has fixed predictable code 123456 for automation tests
+      // (To be removed before public launch)
+      dispatchSuccess = true;
+    } else {
       const companyId = enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
-      const session = await WhatsAppManager.getActiveSessionForCompany(companyId);
-      if (session) {
-        await WhatsAppMessageHandler.sendTextMessage(
-          session.id,
+      try {
+        const activeSession = await resolveActiveWhatsAppSession(companyId, db);
+        if (!activeSession) {
+          throw new Error('لا توجد جلسة واتساب نشطة متصلة في النظام لإرسال الكود');
+        }
+
+        const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+        if (typeof WhatsAppMessageHandler.sendText !== 'function') {
+          throw new Error('خدمة إرسال رسائل واتساب غير متاحة حالياً');
+        }
+
+        await WhatsAppMessageHandler.sendText(
+          activeSession.id,
           cleanPhone,
           `كود التحقق لدخول أكاديمية ماكس بي: ${code}\nصلاحية الكود 10 دقائق.`
         );
+        dispatchSuccess = true;
+      } catch (waErr) {
+        dispatchError = waErr;
+        console.error(`🚨 [STUDENT_OTP_FAILED] WhatsApp dispatch failed for ${cleanPhone}:`, waErr.message);
       }
-    } catch (waErr) {
-      console.warn('[student-otp] WhatsApp dispatch skipped/failed:', waErr.message);
     }
 
-    // 6. Record notification
+    // 🔒 Reliability: If dispatch failed for a real student phone, DO NOT falsely claim success!
+    if (!dispatchSuccess) {
+      studentOtpStore.delete(cleanPhone); // Remove OTP so student isn't stuck with an undelivered code
+
+      // Operational notification to the team
+      try {
+        const notificationService = require('../services/notificationService');
+        if (notificationService?.createNotification) {
+          await notificationService.createNotification({
+            companyId: enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+            title: '⚠️ تعذر إرسال كود تحقق دخول الطالب عبر واتساب',
+            body: `فشل إرسال كود التحقق للرقم ${cleanPhone}. السبب: ${dispatchError?.message || 'تعذر الإرسال'}`,
+            type: 'STUDENT_AUTH_OTP_FAILED',
+            metadata: { phone: cleanPhone, error: dispatchError?.message },
+          });
+        }
+      } catch (_) {}
+
+      return res.status(502).json({
+        success: false,
+        code: 'OTP_DISPATCH_FAILED',
+        message: 'تعذر إرسال كود التحقق عبر واتساب حالياً. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.',
+      });
+    }
+
+    // 6. Record notification on success
     try {
       const notificationService = require('../services/notificationService');
       if (notificationService?.createNotification) {
         await notificationService.createNotification({
           companyId: enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
           title: 'كود تحقق دخول الطالب',
-          body: `تم إصدار كود تحقق للطالب ${cleanPhone}`,
+          body: `تم إصدار وإرسال كود تحقق للطالب ${cleanPhone}`,
           type: 'STUDENT_AUTH_OTP',
           metadata: { phone: cleanPhone },
         });
@@ -711,7 +815,7 @@ exports.sendStudentLoginCode = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'تم إرسال كود التحقق بنجاح إلى هاتفك',
+      message: 'تم إرسال كود التحقق بنجاح إلى هاتفك عبر واتساب',
       expiresInSeconds: 600,
       ...(isTestAccount ? { testCode: '123456' } : {}),
     });
@@ -995,24 +1099,12 @@ exports.checkoutCourse = async (req, res) => {
     });
 
     if (existingEnrollment) {
-      const token = jwt.sign(
-        {
-          id: `student_${cleanPhone}`,
-          userId: `student_${cleanPhone}`,
-          studentPhone: cleanPhone,
-          studentName: existingEnrollment.studentName || cleanName,
-          role: 'STUDENT',
-          companyId: existingEnrollment.companyId || targetCompanyId,
-        },
-        getJwtSecret(),
-        { expiresIn: '30d' }
-      );
+      // 🔒 Security (Round 3): DO NOT issue token on checkout. Student must authenticate via OTP.
       return res.json({
         success: true,
         alreadyEnrolled: true,
-        message: 'أنت مسجل بالفعل في هذا الكورس! تم فتح المحتوى لك.',
+        message: 'أنت مسجل بالفعل في هذا الكورس! يرجى تسجيل الدخول لمتابعة الدروس.',
         enrollment: existingEnrollment,
-        token,
         student: { phone: cleanPhone, name: existingEnrollment.studentName || cleanName },
       });
     }
@@ -1195,20 +1287,6 @@ exports.checkoutCourse = async (req, res) => {
       },
     });
 
-    const token = jwt.sign(
-      {
-        id: `student_${cleanPhone}`,
-        userId: `student_${cleanPhone}`,
-        studentPhone: cleanPhone,
-        customerId: customer?.id,
-        studentName: cleanName,
-        role: 'STUDENT',
-        companyId: course.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
-      },
-      getJwtSecret(),
-      { expiresIn: '30d' }
-    );
-
     res.status(201).json({
       success: true,
       order: {
@@ -1219,12 +1297,11 @@ exports.checkoutCourse = async (req, res) => {
         totalAmount: order.totalAmount,
       },
       enrollment,
-      token,
       student: {
         phone: cleanPhone,
         name: cleanName,
       },
-      message: 'تم تفعيل الاشتراك التجريبي بنجاح.',
+      message: 'تم تفعيل الاشتراك التجريبي بنجاح. يرجى تسجيل الدخول للوصول إلى المحتوى.',
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1277,20 +1354,7 @@ exports.verifyCoursePayment = async (req, res) => {
         },
       });
 
-      const token = jwt.sign(
-        {
-          id: `student_${cleanPhone}`,
-          userId: `student_${cleanPhone}`,
-          studentPhone: cleanPhone,
-          customerId: order.customerId,
-          studentName: cleanName,
-          role: 'STUDENT',
-          companyId: order.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
-        },
-        getJwtSecret(),
-        { expiresIn: '30d' }
-      );
-
+      // 🔒 Security (Round 3): DO NOT issue token on payment verification. Access is gated by OTP login.
       return res.json({
         success: true,
         verified: true,
@@ -1301,9 +1365,8 @@ exports.verifyCoursePayment = async (req, res) => {
           paymentStatus: order.paymentStatus,
         },
         enrollment,
-        token,
         student: { phone: cleanPhone, name: cleanName },
-        message: 'تم تأكيد الدفع وتفعيل الاشتراك بنجاح!',
+        message: 'تم تأكيد الدفع وتفعيل الاشتراك بنجاح! يرجى تسجيل الدخول لمتابعة الكورس.',
       });
     }
 
@@ -1362,20 +1425,7 @@ exports.verifyCoursePayment = async (req, res) => {
         },
       });
 
-      const token = jwt.sign(
-        {
-          id: `student_${cleanPhone}`,
-          userId: `student_${cleanPhone}`,
-          studentPhone: cleanPhone,
-          customerId: order.customerId,
-          studentName: cleanName,
-          role: 'STUDENT',
-          companyId: order.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
-        },
-        getJwtSecret(),
-        { expiresIn: '30d' }
-      );
-
+      // 🔒 Security (Round 3): DO NOT issue token on payment verification. Access is gated by OTP login.
       return res.json({
         success: true,
         verified: true,
@@ -1386,9 +1436,8 @@ exports.verifyCoursePayment = async (req, res) => {
           paymentStatus: 'COMPLETED',
         },
         enrollment,
-        token,
         student: { phone: cleanPhone, name: cleanName },
-        message: 'تم التحقق من نجاح الدفع وتفعيل الكورس بنجاح!',
+        message: 'تم التحقق من نجاح الدفع وتفعيل الكورس بنجاح! يرجى تسجيل الدخول لمتابعة الكورس.',
       });
     }
 
