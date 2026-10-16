@@ -27,7 +27,7 @@ export const PerformanceOptimizer: React.FC<PerformanceOptimizerProps> = ({
       return;
     }
 
-    // ✅ Non-blocking background health check (fire-and-forget)
+    // Non-blocking background health check (fire-and-forget)
     const timer = setTimeout(async () => {
       try {
         await fetch(buildApiUrl("health"), {
@@ -42,7 +42,7 @@ export const PerformanceOptimizer: React.FC<PerformanceOptimizerProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ No wrapper div/Box, just render children directly
+  // No wrapper div/Box, just render children directly
   return <>{children}</>;
 };
 

@@ -15,28 +15,28 @@ const colorStyles: Record<
   { text: string; bg: string; border: string }
 > = {
   blue: {
-    text: "text-sky-500",
+    text: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-500/10",
     border: "border-sky-500/20",
   },
   green: {
-    text: "text-emerald-500",
+    text: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/20",
   },
   yellow: {
-    text: "text-amber-500",
+    text: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-500/10",
     border: "border-amber-500/20",
   },
   red: {
-    text: "text-rose-500",
+    text: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-500/10",
     border: "border-rose-500/20",
   },
   gray: {
     text: "text-muted-foreground",
-    bg: "bg-muted/50",
+    bg: "bg-muted/40",
     border: "border-border/60",
   },
 };
@@ -54,18 +54,18 @@ const StatsCard: React.FC<StatsCardProps> = ({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/70 bg-card p-4 shadow-none transition-colors hover:border-border sm:p-4.5",
+        "rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-colors hover:border-border text-foreground space-y-3",
         className,
       )}
     >
-      <div className="mb-3 flex items-center justify-between border-b border-border/60 pb-2.5">
+      <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
         <h4 className="text-xs font-semibold tracking-tight text-muted-foreground">
           {title}
         </h4>
         {icon && (
           <div
             className={cn(
-              "flex size-7 items-center justify-center rounded-lg border",
+              "flex size-7 items-center justify-center rounded-xl border shadow-2xs",
               currentTone.bg,
               currentTone.border,
               currentTone.text,

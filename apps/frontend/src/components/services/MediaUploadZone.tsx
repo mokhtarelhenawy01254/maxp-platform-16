@@ -128,25 +128,25 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
     <div className="space-y-3" dir="rtl">
       {label && (
         <div className="flex flex-wrap items-center justify-between gap-1">
-          <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">{label}</label>
-          <span className="text-xs text-gray-400">
+          <label className="text-xs sm:text-sm font-semibold text-foreground">{label}</label>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
             {files.length} من {maxFiles} مرفقات
           </span>
         </div>
       )}
 
       {/* Type Selector Buttons & Upload Trigger */}
-      <div className="p-3.5 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+      <div className="p-3.5 bg-muted/20 rounded-2xl border border-dashed border-border/80">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1">نوع المرفق:</span>
+            <span className="text-xs font-medium text-muted-foreground ml-1">نوع المرفق:</span>
             <button
               type="button"
               onClick={() => setActiveTypeFilter("all")}
-              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all ${
+              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all active:scale-97 cursor-pointer ${
                 activeTypeFilter === "all"
-                  ? "bg-primary-600 text-white shadow-xs"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100"
+                  ? "bg-primary text-primary-foreground shadow-2xs font-semibold"
+                  : "bg-card text-muted-foreground hover:text-foreground border border-border/70 hover:bg-muted"
               }`}
             >
               الكل
@@ -154,38 +154,38 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
             <button
               type="button"
               onClick={() => setActiveTypeFilter("audio")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all active:scale-97 cursor-pointer ${
                 activeTypeFilter === "audio"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 border border-gray-200 dark:border-gray-600 hover:bg-purple-50"
+                  ? "bg-purple-600 text-white shadow-2xs font-semibold"
+                  : "bg-card text-purple-600 dark:text-purple-400 border border-border/70 hover:bg-purple-500/10"
               }`}
             >
               <Music className="w-3.5 h-3.5" />
-              موسيقى / صوت
+              <span>موسيقى / صوت</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTypeFilter("video")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all active:scale-97 cursor-pointer ${
                 activeTypeFilter === "video"
-                  ? "bg-rose-600 text-white shadow-xs"
-                  : "bg-white dark:bg-gray-700 text-rose-700 dark:text-rose-300 border border-gray-200 dark:border-gray-600 hover:bg-rose-50"
+                  ? "bg-rose-600 text-white shadow-2xs font-semibold"
+                  : "bg-card text-rose-600 dark:text-rose-400 border border-border/70 hover:bg-rose-500/10"
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              فيديو
+              <span>فيديو</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTypeFilter("image")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-medium transition-all active:scale-97 cursor-pointer ${
                 activeTypeFilter === "image"
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-gray-200 dark:border-gray-600 hover:bg-blue-50"
+                  ? "bg-blue-600 text-white shadow-2xs font-semibold"
+                  : "bg-card text-blue-600 dark:text-blue-400 border border-border/70 hover:bg-blue-500/10"
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              صور
+              <span>صور</span>
             </button>
           </div>
 
@@ -193,7 +193,7 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
             type="button"
             disabled={disabled || uploading || files.length >= maxFiles}
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs font-semibold rounded-xl shadow-xs transition-all active:scale-97 cursor-pointer"
           >
             {uploading ? (
               <>
@@ -220,7 +220,7 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
         />
 
         {helperText && (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
             {helperText}
           </p>
         )}
@@ -237,28 +237,28 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
             return (
               <div
                 key={index}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 bg-card rounded-xl border border-border/70 shadow-2xs text-foreground"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Icon / Thumbnail */}
                   <div className="shrink-0">
                     {isAudio && (
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center">
                         <Music className="w-5 h-5" />
                       </div>
                     )}
                     {isVideo && (
-                      <div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center">
                         <Video className="w-5 h-5" />
                       </div>
                     )}
                     {isImage && (
-                      <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100">
+                      <div className="w-10 h-10 rounded-xl overflow-hidden border border-border/70 bg-muted">
                         <img src={file.url} alt={file.originalName} className="w-full h-full object-cover" />
                       </div>
                     )}
                     {!isAudio && !isVideo && !isImage && (
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
                         <FileText className="w-5 h-5" />
                       </div>
                     )}
@@ -266,10 +266,10 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
 
                   {/* Info */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate" title={file.originalName}>
+                    <p className="text-xs font-semibold text-foreground truncate" title={file.originalName}>
                       {file.originalName}
                     </p>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
                       <span className="capitalize">
                         {isAudio ? "ملف صوتي / موسيقى" : isVideo ? "فيديو" : isImage ? "صورة" : "مستند"}
                       </span>
@@ -291,17 +291,17 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
                       <button
                         type="button"
                         onClick={() => toggleAudio(file.url)}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300"
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 active:scale-95 transition-all cursor-pointer"
                         title={currentlyPlayingAudio === file.url ? "إيقاف مؤقت" : "تشغيل الصوت"}
                       >
                         {currentlyPlayingAudio === file.url ? (
                           <>
-                            <Pause className="w-3.5 h-3.5 text-purple-600" />
+                            <Pause className="w-3.5 h-3.5" />
                             <span>إيقاف</span>
                           </>
                         ) : (
                           <>
-                            <Play className="w-3.5 h-3.5 text-purple-600" />
+                            <Play className="w-3.5 h-3.5" />
                             <span>تشغيل</span>
                           </>
                         )}
@@ -314,7 +314,7 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
                       href={file.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300"
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
                     >
                       <Video className="w-3.5 h-3.5" />
                       <span>مشاهدة</span>
@@ -325,7 +325,7 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg border border-border/70 transition-colors active:scale-95"
                     title="فتح الرابط"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -335,7 +335,7 @@ export const MediaUploadZone: React.FC<MediaUploadZoneProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemove(index)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                      className="p-1.5 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 rounded-lg border border-border/70 transition-colors active:scale-95 cursor-pointer"
                       title="حذف الملف"
                     >
                       <Trash2 className="w-4 h-4" />
