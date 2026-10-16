@@ -1541,6 +1541,55 @@ class ManufacturingService {
         console.warn('[MES] WIP completion GL auto-posting deferred:', err.message);
       }
 
+      // Settle and synchronize FinishedGoodsReceipt (FGR) records with final absorbed cost
+      // At receipt time, FGR records provisional cost (materials only).
+      // Upon completion/closure, all absorbed costs (Direct Materials + Labor + MOH) are finalized,
+      // and FGR vouchers & inventory cost are retroactively settled to match Entry 4 GL posting.
+      if (produced > 0 && tx.finishedGoodsReceipt?.updateMany) {
+        try {
+          const receipts = await tx.finishedGoodsReceipt.findMany({
+            where: { orderId, companyId, status: 'RECEIVED' },
+            include: { items: true },
+          });
+
+          for (const rc of receipts) {
+            const finalReceiptTotal = round2(Number(rc.totalQuantity) * unitCost);
+            await tx.finishedGoodsReceipt.update({
+              where: { id: rc.id },
+              data: {
+                unitCost,
+                totalCost: finalReceiptTotal,
+              },
+            });
+
+            if (tx.finishedGoodsReceiptItem?.updateMany) {
+              await tx.finishedGoodsReceiptItem.updateMany({
+                where: { receiptId: rc.id },
+                data: {
+                  unitCost,
+                },
+              });
+            }
+          }
+
+          // Adjust target warehouse inventory valuation to match finalized unitCost
+          const targetWh = order.targetWarehouseId || settings.defaultTargetWarehouseId;
+          if (order.productId && targetWh && tx.inventory?.findFirst && tx.inventory?.update) {
+            const inv = await tx.inventory.findFirst({
+              where: { productId: order.productId, warehouseId: targetWh },
+            });
+            if (inv) {
+              await tx.inventory.update({
+                where: { id: inv.id },
+                data: { cost: unitCost },
+              });
+            }
+          }
+        } catch (settleErr) {
+          console.warn('[MES] FGR settlement update deferred:', settleErr.message);
+        }
+      }
+
       return updatedOrder;
     });
   }
