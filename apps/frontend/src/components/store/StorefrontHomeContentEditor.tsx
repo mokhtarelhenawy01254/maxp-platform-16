@@ -1,4 +1,5 @@
 import React, { useId } from "react";
+import { Sliders, RotateCcw, Image, Trash2, CheckCircle2 } from "lucide-react";
 
 export interface StorefrontHomeContent {
   hero: {
@@ -47,74 +48,80 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
   const getFieldId = (field: string) => `${fieldIdPrefix}-${field}`;
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/40 p-6 space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div>
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-            تخصيص محتوى الصفحة الرئيسية
-          </h4>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-3xl">
-            هذه المرحلة تعطي الشركة تحكمًا مباشرًا في نصوص الـ hero والبانرات الثابتة بدون الحاجة إلى استوديو منفصل. أي حقل فارغ سيعود تلقائيًا للنص الافتراضي داخل القالب.
-          </p>
+    <div className="rounded-2xl border border-border/70 bg-card p-5 text-foreground shadow-none space-y-5">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 border-b border-border/60 pb-4">
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shrink-0 mt-0.5">
+            <Sliders className="size-4.5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-foreground">
+              تخصيص نصوص وأقسام الواجهة الرئيسية
+            </h4>
+            <p className="mt-0.5 text-xs text-muted-foreground max-w-3xl leading-relaxed">
+              تحكم مباشر في نصوص الواجهة والبانرات الترويجية. أي حقل تتركه فارغاً سيعود تلقائياً للنص الافتراضي داخل القالب.
+            </p>
+          </div>
         </div>
         <button
           type="button"
           onClick={onClear}
           disabled={!hasOverrides}
-          className={`px-4 py-2 rounded-md text-sm font-semibold ${
+          className={`inline-flex h-9 items-center gap-1.5 px-3.5 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] ${
             hasOverrides
-              ? "border border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950/30"
-              : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
+              ? "border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15"
+              : "border border-border/70 bg-muted/40 text-muted-foreground opacity-50 cursor-not-allowed"
           }`}
         >
-          تفريغ تخصيصات المحتوى
+          <RotateCcw className="size-3.5" />
+          <span>تفريغ التخصيصات</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-        <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3 text-gray-500 dark:text-gray-400">
-          <div>الأقسام القابلة للتخصيص الآن</div>
-          <div className="mt-1 font-semibold text-gray-900 dark:text-white">
-            الواجهة الرئيسية / المنتجات المميزة / النشرة الإخبارية
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+          <div className="text-muted-foreground text-[11px]">الأقسام القابلة للتخصيص</div>
+          <div className="mt-1 font-bold text-foreground">
+            بانر الواجهة / المنتجات / النشرة
           </div>
         </div>
-        <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3 text-gray-500 dark:text-gray-400">
-          <div>حالة محتوى الصفحة الرئيسية</div>
-          <div className="mt-1 font-semibold text-gray-900 dark:text-white">
-            {hasOverrides ? "مخصص للشركة الحالية" : "النسخة الافتراضية من القالب"}
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+          <div className="text-muted-foreground text-[11px]">حالة المحتوى</div>
+          <div className="mt-1 font-bold text-foreground flex items-center gap-1.5">
+            <span className={`size-2 rounded-full ${hasOverrides ? "bg-primary" : "bg-muted-foreground/40"}`} />
+            <span>{hasOverrides ? "مخصص للشركة الحالية" : "النسخة الافتراضية للقالب"}</span>
           </div>
         </div>
-        <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3 text-gray-500 dark:text-gray-400">
-          <div>طريقة العرض</div>
-          <div className="mt-1 font-semibold text-gray-900 dark:text-white">
-            معاينة من رابط المتجر الحالي
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+          <div className="text-muted-foreground text-[11px]">طريقة الحفظ</div>
+          <div className="mt-1 font-bold text-foreground">
+            تحديث فوري مع المعاينة الحية
           </div>
         </div>
       </div>
 
       {editableSections.has("hero-banner") && (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-950/20 p-5 space-y-4">
-          <div>
-            <h5 className="text-base font-semibold text-gray-900 dark:text-white"> بانر الواجهة (Hero Banner)</h5>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              غيّر العنوان الرئيسي، النص التسويقي، والأزرار. ويمكنك أيضًا إضافة صورة خلفية كبانر ثابت للقالب.
-            </p>
+        <div className="rounded-xl border border-border/70 bg-card p-4.5 space-y-4">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div>
+              <h5 className="text-xs font-bold text-foreground">بانر الواجهة (Hero Banner)</h5>
+              <p className="text-[11px] text-muted-foreground">العنوان الرئيسي والنص التسويقي وأزرار التفاعل</p>
+            </div>
+            <label htmlFor={getFieldId("hero-visible")} className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <input
+                id={getFieldId("hero-visible")}
+                type="checkbox"
+                checked={draft.hero.visible}
+                onChange={(e) => onUpdate("hero", "visible", e.target.checked)}
+                className="size-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span>إظهار القسم</span>
+            </label>
           </div>
 
-          <label htmlFor={getFieldId("hero-visible")} className="inline-flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <input
-              id={getFieldId("hero-visible")}
-              type="checkbox"
-              checked={draft.hero.visible}
-              onChange={(e) => onUpdate("hero", "visible", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>إظهار قسم الـ Hero داخل الصفحة الرئيسية</span>
-          </label>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor={getFieldId("hero-title")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("hero-title")} className="text-xs font-semibold text-foreground">
                 العنوان الرئيسي
               </label>
               <input
@@ -122,12 +129,12 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
                 type="text"
                 value={draft.hero.title}
                 onChange={(e) => onUpdate("hero", "title", e.target.value)}
-                placeholder="مثال: مجموعة رمضان الجديدة"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="مثال: مجموعة الموسم الجديدة"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label htmlFor={getFieldId("hero-cta-text")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("hero-cta-text")} className="text-xs font-semibold text-foreground">
                 نص الزر الأساسي
               </label>
               <input
@@ -136,11 +143,11 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
                 value={draft.hero.ctaText}
                 onChange={(e) => onUpdate("hero", "ctaText", e.target.value)}
                 placeholder="مثال: تسوق الآن"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label htmlFor={getFieldId("hero-cta-link")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("hero-cta-link")} className="text-xs font-semibold text-foreground">
                 رابط الزر الأساسي
               </label>
               <input
@@ -149,24 +156,11 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
                 value={draft.hero.ctaLink}
                 onChange={(e) => onUpdate("hero", "ctaLink", e.target.value)}
                 placeholder="/shop أو https://..."
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div className="lg:col-span-2">
-              <label htmlFor={getFieldId("hero-subtitle")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                الوصف المختصر
-              </label>
-              <textarea
-                id={getFieldId("hero-subtitle")}
-                rows={3}
-                value={draft.hero.subtitle}
-                onChange={(e) => onUpdate("hero", "subtitle", e.target.value)}
-                placeholder="وصف مختصر يظهر أسفل العنوان"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label htmlFor={getFieldId("hero-secondary-cta-text")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("hero-secondary-cta-text")} className="text-xs font-semibold text-foreground">
                 نص الزر الثانوي
               </label>
               <input
@@ -175,76 +169,61 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
                 value={draft.hero.secondaryCtaText}
                 onChange={(e) => onUpdate("hero", "secondaryCtaText", e.target.value)}
                 placeholder="مثال: اعرف المزيد"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label htmlFor={getFieldId("hero-secondary-cta-link")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                رابط الزر الثانوي
+            <div className="lg:col-span-2 space-y-1">
+              <label htmlFor={getFieldId("hero-subtitle")} className="text-xs font-semibold text-foreground">
+                الوصف التسويقي المختصر
               </label>
-              <input
-                id={getFieldId("hero-secondary-cta-link")}
-                type="text"
-                value={draft.hero.secondaryCtaLink}
-                onChange={(e) => onUpdate("hero", "secondaryCtaLink", e.target.value)}
-                placeholder="/pages/about أو https://..."
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              <textarea
+                id={getFieldId("hero-subtitle")}
+                rows={2}
+                value={draft.hero.subtitle}
+                onChange={(e) => onUpdate("hero", "subtitle", e.target.value)}
+                placeholder="نص تسويقي يظهر أسفل العنوان الرئيسي..."
+                className="w-full rounded-xl border border-border/70 bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label htmlFor={getFieldId("hero-background-image")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                رابط صورة البانر
-              </label>
-              <input
-                id={getFieldId("hero-background-image")}
-                type="url"
-                value={draft.hero.backgroundImage}
-                onChange={(e) => onUpdate("hero", "backgroundImage", e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">يفضل استخدام رابط صورة مباشر ثابت. لو تركته فارغًا سيعود التصميم الافتراضي للقالب.</p>
-            </div>
-            <div className="lg:col-span-2 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white/70 dark:bg-gray-900/40 p-4">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white">صورة البانر الحالية</div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">يمكنك رفع صورة جديدة أو اختيار صورة محفوظة من الحافظة، وسيتم ربطها مباشرة بحقل الخلفية.</p>
+
+            <div className="lg:col-span-2 rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="text-xs font-bold text-foreground">صورة البانر المخصصة</div>
+                  <p className="text-[11px] text-muted-foreground">ارفع صورة عالية الجودة أو اختر من الحافظة</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={onShowImagePicker}
-                    className="px-4 py-2 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
+                    className="inline-flex h-8.5 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all active:scale-[0.98]"
                   >
-                    اختيار أو رفع صورة
+                    <Image className="size-3.5" />
+                    <span>اختيار أو رفع صورة</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => onUpdate("hero", "backgroundImage", "")}
                     disabled={!draft.hero.backgroundImage}
-                    className={`px-4 py-2 rounded-md text-sm font-semibold ${
-                      draft.hero.backgroundImage
-                        ? "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
-                        : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-                    }`}
+                    className="inline-flex h-8.5 items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 text-xs font-semibold text-destructive transition-all hover:bg-destructive/10 active:scale-[0.98] disabled:opacity-50"
                   >
-                    إزالة الصورة
+                    <Trash2 className="size-3.5" />
+                    <span>إزالة</span>
                   </button>
                 </div>
               </div>
 
               {draft.hero.backgroundImage ? (
-                <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                <div className="overflow-hidden rounded-xl border border-border/70 bg-background max-h-56">
                   <img
                     src={draft.hero.backgroundImage}
                     alt="Hero background preview"
-                    className="w-full max-h-72 object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               ) : (
-                <div className="mt-4 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 py-10 px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  لا توجد صورة بانر مخصصة حاليًا. سيتم استخدام الخلفية الافتراضية للقالب.
+                <div className="rounded-xl border border-dashed border-border/70 py-6 px-4 text-center text-xs text-muted-foreground">
+                  لا توجد صورة بانر مخصصة حالياً — سيتم استخدام الخلفية الأصلية للقالب
                 </div>
               )}
             </div>
@@ -253,25 +232,26 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
       )}
 
       {editableSections.has("featured-products") && (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-950/20 p-5 space-y-4">
-          <div>
-            <h5 className="text-base font-semibold text-gray-900 dark:text-white">المنتجات المميزة (Featured Products)</h5>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">تحكم في عنوان قسم المنتجات الرئيسية داخل الصفحة الأولى.</p>
+        <div className="rounded-xl border border-border/70 bg-card p-4.5 space-y-3.5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div>
+              <h5 className="text-xs font-bold text-foreground">قسم المنتجات المميزة (Featured Products)</h5>
+              <p className="text-[11px] text-muted-foreground">التحكم في عنوان وشريط عرض أبرز المنتجات</p>
+            </div>
+            <label htmlFor={getFieldId("featured-products-visible")} className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <input
+                id={getFieldId("featured-products-visible")}
+                type="checkbox"
+                checked={draft.featuredProducts.visible}
+                onChange={(e) => onUpdate("featuredProducts", "visible", e.target.checked)}
+                className="size-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span>إظهار القسم</span>
+            </label>
           </div>
 
-          <label htmlFor={getFieldId("featured-products-visible")} className="inline-flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <input
-              id={getFieldId("featured-products-visible")}
-              type="checkbox"
-              checked={draft.featuredProducts.visible}
-              onChange={(e) => onUpdate("featuredProducts", "visible", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>إظهار قسم المنتجات المميزة</span>
-          </label>
-
-          <div>
-            <label htmlFor={getFieldId("featured-products-title")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="space-y-1">
+            <label htmlFor={getFieldId("featured-products-title")} className="text-xs font-semibold text-foreground">
               عنوان القسم
             </label>
             <input
@@ -279,56 +259,57 @@ const StorefrontHomeContentEditor: React.FC<StorefrontHomeContentEditorProps> = 
               type="text"
               value={draft.featuredProducts.title}
               onChange={(e) => onUpdate("featuredProducts", "title", e.target.value)}
-              placeholder="مثال: المنتجات الأكثر طلبًا"
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="مثال: المنتجات الأكثر طلباً"
+              className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
       )}
 
       {editableSections.has("newsletter") && (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-950/20 p-5 space-y-4">
-          <div>
-            <h5 className="text-base font-semibold text-gray-900 dark:text-white">النشرة الإخبارية / قسم الدعوة لاتخاذ إجراء (Newsletter / CTA)</h5>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">مناسب لرسائل الاشتراك، جمع العملاء المحتملين، أو CTA ختامي داخل الصفحة الرئيسية.</p>
+        <div className="rounded-xl border border-border/70 bg-card p-4.5 space-y-3.5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div>
+              <h5 className="text-xs font-bold text-foreground">النشرة الإخبارية / دعوة التفاعل (Newsletter / CTA)</h5>
+              <p className="text-[11px] text-muted-foreground">قسم لجمع المشتركين أو رسائل دعوة اتخاذ الإجراء</p>
+            </div>
+            <label htmlFor={getFieldId("newsletter-visible")} className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <input
+                id={getFieldId("newsletter-visible")}
+                type="checkbox"
+                checked={draft.newsletter.visible}
+                onChange={(e) => onUpdate("newsletter", "visible", e.target.checked)}
+                className="size-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span>إظهار القسم</span>
+            </label>
           </div>
 
-          <label htmlFor={getFieldId("newsletter-visible")} className="inline-flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <input
-              id={getFieldId("newsletter-visible")}
-              type="checkbox"
-              checked={draft.newsletter.visible}
-              onChange={(e) => onUpdate("newsletter", "visible", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>إظهار قسم النشرة الإخبارية / CTA</span>
-          </label>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor={getFieldId("newsletter-title")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                عنوان القسم
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("newsletter-title")} className="text-xs font-semibold text-foreground">
+                عنوان النشرة
               </label>
               <input
                 id={getFieldId("newsletter-title")}
                 type="text"
                 value={draft.newsletter.title}
                 onChange={(e) => onUpdate("newsletter", "title", e.target.value)}
-                placeholder="مثال: اشترك وخليك أول من يعرف"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="مثال: انضم لنادي عملائنا المميزين"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label htmlFor={getFieldId("newsletter-subtitle")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                النص المساعد
+            <div className="space-y-1">
+              <label htmlFor={getFieldId("newsletter-subtitle")} className="text-xs font-semibold text-foreground">
+                الوصف التوضيحي
               </label>
-              <textarea
+              <input
                 id={getFieldId("newsletter-subtitle")}
-                rows={3}
+                type="text"
                 value={draft.newsletter.subtitle}
                 onChange={(e) => onUpdate("newsletter", "subtitle", e.target.value)}
-                placeholder="نص قصير يشرح الفائدة من الاشتراك أو الإجراء"
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="نص توضيحي لمزايا الاشتراك..."
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>

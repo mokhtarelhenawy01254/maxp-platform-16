@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Activity, Plus, X, Play, Trash2, Power, Check, Loader2 } from "lucide-react";
 import {
   createTiktokConfig,
   deleteTiktokConfig,
@@ -99,13 +100,13 @@ const TikTokEventsSettingsCard: React.FC = () => {
       if (form.apiEndpoint.trim()) payload.apiEndpoint = form.apiEndpoint.trim();
       if (form.testEventCode.trim()) payload.testEventCode = form.testEventCode.trim();
 
-      const created = await createTiktokConfig(payload);
-      setConfigs((prev) => [created, ...prev]);
+      await createTiktokConfig(payload);
+      toast.success("تم إنشاء إعداد بيكسل TikTok بنجاح");
       setShowForm(false);
       setForm(EMPTY_FORM);
-      toast.success("تم إنشاء بيكسل TikTok بنجاح");
+      await loadConfigs();
     } catch {
-      toast.error("فشل في إنشاء البيكسل");
+      toast.error("فشل إنشاء بيكسل TikTok");
     } finally {
       setSubmitting(false);
     }
@@ -113,93 +114,86 @@ const TikTokEventsSettingsCard: React.FC = () => {
 
   const handleToggle = async (config: TikTokPixelConfig) => {
     try {
-      const updated = await updateTiktokConfig(config.id, {
-        isActive: !config.isActive,
-      });
-      setConfigs((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item)),
-      );
-      toast.success(updated.isActive ? "تم تفعيل البيكسل" : "تم إيقاف البيكسل");
+      await updateTiktokConfig(config.id, { isActive: !config.isActive });
+      toast.success(config.isActive ? "تم إيقاف البيكسل" : "تم تفعيل البيكسل");
+      await loadConfigs();
     } catch {
-      toast.error("فشل في تحديث حالة البيكسل");
+      toast.error("فشل تعديل حالة البيكسل");
     }
   };
 
   const handleTest = async (config: TikTokPixelConfig) => {
     try {
-      const { result, config: updatedConfig } = await testTiktokConfig(config.id);
-      if (updatedConfig?.id) {
-        setConfigs((prev) =>
-          prev.map((item) =>
-            item.id === updatedConfig.id ? updatedConfig : item,
-          ),
-        );
-      }
+      const result = await testTiktokConfig(config.id);
       if (result.success) {
-        toast.success(testFailureMessage(result));
+        toast.success("تم إرسال حدث الاختبار بنجاح");
       } else {
         toast.error(testFailureMessage(result));
       }
+      await loadConfigs();
     } catch {
-      toast.error("فشل في اختبار البيكسل");
+      toast.error("حدث خطأ أثناء فحص البيكسل");
     }
   };
 
-  const handleDelete = (config: TikTokPixelConfig) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا البيكسل؟")) return;
-    void (async () => {
-      try {
-        const updated = await deleteTiktokConfig(config.id);
-        setConfigs((prev) =>
-          prev.map((item) => (item.id === updated.id ? updated : item)),
-        );
-        toast.success("تم حذف البيكسل بنجاح");
-      } catch {
-        toast.error("فشل في حذف البيكسل");
-      }
-    })();
+  const handleDelete = async (config: TikTokPixelConfig) => {
+    if (!confirm(`هل أنت متأكد من حذف البيكسل ${config.pixelName || config.pixelId}؟`)) {
+      return;
+    }
+    try {
+      await deleteTiktokConfig(config.id);
+      toast.success("تم حذف البيكسل بنجاح");
+      await loadConfigs();
+    } catch {
+      toast.error("فشل حذف البيكسل");
+    }
   };
 
   return (
-    <div
-      dir="rtl"
-      className="w-full rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-    >
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            أحداث TikTok (Pixel)
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            تتبع أحداث الإعلانات وتحويلات المتجر عبر TikTok Events API
-          </p>
+    <div className="rounded-2xl border border-border/70 bg-card p-5 text-foreground shadow-none space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+            <Activity className="size-4.5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              TikTok Events API & Pixel
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              ربط وتتبع أحداث الشراء والتحويلات عبر واجهة TikTok Events API
+            </p>
+          </div>
         </div>
         <button
           type="button"
           onClick={() => setShowForm((prev) => !prev)}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.98]"
         >
-          {showForm ? "إغلاق" : "إضافة بيكسل"}
+          {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
+          <span>{showForm ? "إلغاء النموذج" : "إضافة بيكسل"}</span>
         </button>
       </div>
 
+      {/* Form Drawer */}
       {showForm && (
-        <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/30">
+        <div className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3.5 animate-in fade-in-0 duration-150">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Pixel ID <span className="text-red-500">*</span>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
+                Pixel ID <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={form.pixelId}
                 onChange={updateField("pixelId")}
                 placeholder="7xxxxxxxxxxxxxxxx"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
                 اسم البيكسل
               </label>
               <input
@@ -207,23 +201,23 @@ const TikTokEventsSettingsCard: React.FC = () => {
                 value={form.pixelName}
                 onChange={updateField("pixelName")}
                 placeholder="مثال: متجر MaxP الرئيسي"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
                 Access Token
               </label>
               <input
                 type="password"
                 value={form.accessToken}
                 onChange={updateField("accessToken")}
-                placeholder="اختياري"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="اختياري للـ Events API"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
                 API Endpoint
               </label>
               <input
@@ -231,39 +225,39 @@ const TikTokEventsSettingsCard: React.FC = () => {
                 value={form.apiEndpoint}
                 onChange={updateField("apiEndpoint")}
                 placeholder="https://business-api.tiktok.com/open_api/v1.3/event/track/"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
                 Test Event Code
               </label>
               <input
                 type="text"
                 value={form.testEventCode}
                 onChange={updateField("testEventCode")}
-                placeholder="اختياري"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="رمز فحص الأحداث (اختياري)"
+                className="h-9.5 w-full rounded-xl border border-border/70 bg-background px-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <label className="flex cursor-pointer items-center gap-3 self-end pb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="flex cursor-pointer items-center gap-2 self-end pb-2 text-xs font-medium text-foreground">
               <input
                 type="checkbox"
                 checked={form.isActive}
                 onChange={updateField("isActive")}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="size-4 rounded border-border text-primary focus:ring-primary"
               />
-              مفعل عند الإنشاء
+              <span>تفعيل البيكسل فور الإنشاء</span>
             </label>
           </div>
-          <div className="mt-4 flex justify-end gap-3">
+          <div className="flex justify-end gap-2 pt-1 border-t border-border/50">
             <button
               type="button"
               onClick={() => {
                 setShowForm(false);
                 setForm(EMPTY_FORM);
               }}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="h-8.5 rounded-xl border border-border/70 bg-card px-3.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.98]"
             >
               إلغاء
             </button>
@@ -271,76 +265,79 @@ const TikTokEventsSettingsCard: React.FC = () => {
               type="button"
               onClick={() => void handleCreate()}
               disabled={submitting}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
             >
-              {submitting ? "جارٍ الإنشاء..." : "إنشاء"}
+              {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+              <span>{submitting ? "جارٍ الإنشاء..." : "حفظ البيكسل"}</span>
             </button>
           </div>
         </div>
       )}
 
+      {/* Configs List */}
       {loading ? (
-        <div className="flex items-center justify-center py-10 text-sm text-gray-500 dark:text-gray-400">
-          جارٍ التحميل...
+        <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+          <Loader2 className="size-4 animate-spin text-primary me-2" />
+          <span>جارٍ تحميل إعدادات البيكسل...</span>
         </div>
       ) : configs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
-          لا توجد بيكسلات مضافة بعد — أضف أول بيكسل من زر "إضافة بيكسل"
+        <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-xs text-muted-foreground">
+          لا توجد بيكسلات مضافة بعد — انقر على زر "إضافة بيكسل" للبدء
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {configs.map((config) => (
             <div
               key={config.id}
-              className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700"
+              className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between transition-colors hover:border-border"
             >
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                  <span className="text-xs font-bold text-foreground">
                     {config.pixelName || "بيكسل بدون اسم"}
                   </span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
                       config.isActive
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                        : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                        ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "border border-border/70 bg-muted text-muted-foreground"
                     }`}
                   >
-                    {config.isActive ? "مفعل" : "معطل"}
+                    {config.isActive ? "نشط" : "معطل"}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-mono text-xs text-muted-foreground tabular-nums">
                   Pixel ID: {config.pixelId}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  آخر اختبار: {formatDate(config.lastTestAt)}
+                <p className="font-mono text-[11px] text-muted-foreground/80 tabular-nums">
+                  آخر فحص: {formatDate(config.lastTestAt)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => void handleToggle(config)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    config.isActive
-                      ? "border border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/30"
-                      : "border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/30"
-                  }`}
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.97]"
                 >
-                  {config.isActive ? "إيقاف" : "تفعيل"}
+                  <Power className="size-3 text-muted-foreground" />
+                  <span>{config.isActive ? "إيقاف" : "تفعيل"}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleTest(config)}
-                  className="rounded-lg border border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.97]"
                 >
-                  اختبار
+                  <Play className="size-3 text-primary" />
+                  <span>فحص</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(config)}
-                  className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/10 active:scale-[0.97]"
+                  aria-label="حذف"
                 >
-                  حذف
+                  <Trash2 className="size-3" />
+                  <span>حذف</span>
                 </button>
               </div>
             </div>

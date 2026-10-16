@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, Search, Shield } from "lucide-react";
+import { Ban, Search, Shield, X } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { apiClient as api } from "../../services/apiClient";
 import {
   getBestContactDisplayName,
@@ -92,7 +89,7 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
       const response = await api.get("/whatsapp/privacy/blocklist", {
         params: { sessionId },
       });
-      setBlocklist(response.data.blocklist || []);
+      setBlocklist(response.data?.blocklist || []);
     } catch (error) {
       console.error("Error fetching blocklist:", error);
       tToast.error("PrivacySettingsDialog.failed_fetch_6cd1");
@@ -102,49 +99,56 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
   }, [sessionId]);
 
   const fetchPrivacySettings = useCallback(async () => {
-    setLoading(true);
     try {
       const response = await api.get("/whatsapp/privacy/settings", {
         params: { sessionId },
       });
-      if (response.data.settings) {
-        setSettings(response.data.settings);
+      if (response.data?.settings) {
+        setSettings((prev) => ({
+          ...prev,
+          ...response.data.settings,
+        }));
       }
     } catch (error) {
       console.error("Error fetching privacy settings:", error);
-    } finally {
-      setLoading(false);
     }
   }, [sessionId]);
 
   useEffect(() => {
     if (open && sessionId) {
-      if (tabValue === "blocked") {
-        void fetchBlocklist();
-      } else {
-        void fetchPrivacySettings();
-      }
+      void fetchBlocklist();
+      void fetchPrivacySettings();
     }
-  }, [fetchBlocklist, fetchPrivacySettings, open, sessionId, tabValue]);
-
-  const handleUnblock = async (jid: string) => {
-    try {
-      await api.post("/whatsapp/contacts/unblock", { sessionId, jid });
-      tToast.success("PrivacySettingsDialog.msg_0f47");
-      await fetchBlocklist();
-    } catch {
-      tToast.error("PrivacySettingsDialog.msg_4588");
-    }
-  };
+  }, [fetchBlocklist, fetchPrivacySettings, open, sessionId]);
 
   const handleBlock = async (jid: string) => {
     try {
-      await api.post("/whatsapp/contacts/block", { sessionId, jid });
-      tToast.success("PrivacySettingsDialog.msg_7f33");
+      await api.post("/whatsapp/privacy/block", {
+        sessionId,
+        jid,
+        action: "block",
+      });
+      toast.success("تم حظر جهة الاتصال بنجاح");
+      setBlocklist((prev) => [...prev, jid]);
       setBlockSearchQuery("");
-      await fetchBlocklist();
-    } catch {
-      tToast.error("PrivacySettingsDialog.msg_b631");
+    } catch (error) {
+      console.error("Error blocking contact:", error);
+      toast.error("فشل حظر جهة الاتصال");
+    }
+  };
+
+  const handleUnblock = async (jid: string) => {
+    try {
+      await api.post("/whatsapp/privacy/block", {
+        sessionId,
+        jid,
+        action: "unblock",
+      });
+      toast.success("تم إلغاء الحظر بنجاح");
+      setBlocklist((prev) => prev.filter((item) => item !== jid));
+    } catch (error) {
+      console.error("Error unblocking contact:", error);
+      toast.error("فشل إلغاء الحظر");
     }
   };
 
@@ -152,31 +156,32 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
     key: keyof PrivacySettings,
     value: PrivacySettings[keyof PrivacySettings],
   ) => {
-    const nextSettings = { ...settings, [key]: value };
-    setSettings(nextSettings);
     try {
       await api.post("/whatsapp/privacy/settings", {
         sessionId,
         setting: key,
         value,
       });
-      tToast.success("PrivacySettingsDialog.success_update_8d4d");
-    } catch {
-      tToast.error("PrivacySettingsDialog.failed_update_bf9a");
-      await fetchPrivacySettings();
+      setSettings((prev) => ({ ...prev, [key]: value }));
+      toast.success("تم تحديث إعدادات الخصوصية");
+    } catch (error) {
+      console.error("Error updating privacy setting:", error);
+      toast.error("فشل تحديث الإعداد");
     }
   };
 
   const blockedContacts = useMemo(
     () =>
-      contacts.filter(
-        (contact) =>
-          !blocklist.includes(contact.jid) &&
-          (contact.name?.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-            contact.pushName?.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-            contact.phoneNumber?.includes(blockSearchQuery)),
-      ),
-    [blockSearchQuery, blocklist, contacts],
+      contacts
+        .filter((c) => !blocklist.includes(c.jid))
+        .filter(
+          (c) =>
+            c.name?.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
+            c.pushName?.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
+            c.phoneNumber?.includes(blockSearchQuery) ||
+            c.jid.includes(blockSearchQuery),
+        ),
+    [contacts, blocklist, blockSearchQuery],
   );
 
   const getBlockedContactLabel = (jid: string) => {
@@ -192,114 +197,152 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-3xl gap-0 rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0"
+        className="max-w-2xl gap-0 rounded-2xl border border-border/70 bg-card p-0 text-foreground shadow-2xl overflow-hidden"
       >
-        <DialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
-          <DialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
-            <Shield className="size-5 text-[color:var(--color-primary)]" />
-            الخصوصية والأمان
-          </DialogTitle>
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-border/60 bg-card px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <Shield className="size-4.5" />
+            </div>
+            <div>
+              <DialogTitle className="text-sm font-bold text-foreground">
+                الخصوصية والأمان لواتساب
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                إدارة قائمة الحظر وإعدادات الظهور ومؤشرات القراءة
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.97]"
+            aria-label="إغلاق"
+          >
+            <X className="size-4" />
+          </button>
         </DialogHeader>
 
-        <div className="px-6 py-5">
+        <div className="p-5 max-h-[70vh] overflow-y-auto">
           <Tabs value={tabValue} onValueChange={setTabValue}>
-            <TabsList variant="line" className="mb-4 w-full justify-start rounded-none p-0">
-              <TabsTrigger value="blocked">قائمة المحظورين</TabsTrigger>
-              <TabsTrigger value="settings">إعدادات الخصوصية</TabsTrigger>
+            <TabsList className="mb-4 h-9 rounded-xl border border-border/70 bg-muted/30 p-1">
+              <TabsTrigger
+                value="blocked"
+                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              >
+                قائمة المحظورين ({blocklist.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              >
+                خيارات الظهور والخصوصية
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="blocked" className="space-y-4">
-              <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
-                <p className="mb-3 text-sm font-semibold text-[color:var(--color-foreground)]">
+            <TabsContent value="blocked" className="space-y-3.5">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2.5">
+                <p className="text-xs font-semibold text-foreground">
                   حظر جهة اتصال جديدة
                 </p>
                 <div className="relative">
-                  <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+                  <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={blockSearchQuery}
                     onChange={(event) => setBlockSearchQuery(event.target.value)}
-                    placeholder="بحث عن جهة اتصال لحظرها..."
-                    className="h-10 rounded-[18px] bg-white/80 ps-10"
+                    placeholder="ابحث بالاسم أو الرقم لحظر جهة اتصال..."
+                    className="h-9.5 rounded-xl border-border/70 bg-background ps-9 text-xs placeholder:text-muted-foreground/60"
                   />
                 </div>
 
                 {blockSearchQuery ? (
-                  <div className="mt-3 max-h-48 space-y-2 overflow-y-auto">
-                    {blockedContacts.map((contact) => (
-                      <button
-                        key={contact.jid}
-                        type="button"
-                        onClick={() => handleBlock(contact.jid)}
-                        className="flex w-full items-center gap-3 rounded-[18px] border border-[color:var(--shell-control-border)] bg-white px-3 py-2 text-start transition-colors hover:bg-[color:var(--shell-control-hover)]"
-                      >
-                        <Avatar className="size-9">
-                          <AvatarImage src={contact.profilePicUrl || undefined} />
-                          <AvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_8%,white)] font-semibold text-[color:var(--color-primary)]">
-                            {getBestContactDisplayName(contact).slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-[color:var(--color-foreground)]">
-                            {getBestContactDisplayName(contact)}
-                          </p>
-                          <p className="truncate text-xs text-[color:var(--color-muted-foreground)]">
-                            {getContactDisplayPhone(contact)}
-                          </p>
-                        </div>
-                        <Ban className="size-4 text-rose-600" />
-                      </button>
-                    ))}
+                  <div className="mt-2 max-h-44 space-y-1.5 overflow-y-auto pt-1">
+                    {blockedContacts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2 text-center">لا توجد جهات اتصال مطابقة</p>
+                    ) : (
+                      blockedContacts.map((contact) => (
+                        <button
+                          key={contact.jid}
+                          type="button"
+                          onClick={() => handleBlock(contact.jid)}
+                          className="flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card p-2 text-start transition-colors hover:bg-muted/40"
+                        >
+                          <Avatar className="size-8 rounded-lg">
+                            <AvatarImage src={contact.profilePicUrl || undefined} />
+                            <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                              {getBestContactDisplayName(contact).slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-foreground">
+                              {getBestContactDisplayName(contact)}
+                            </p>
+                            <p className="truncate font-mono text-[11px] text-muted-foreground tabular-nums">
+                              {getContactDisplayPhone(contact)}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive">
+                            <Ban className="size-3.5" />
+                            <span>حظر</span>
+                          </span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 ) : null}
               </div>
 
-              <div className="max-h-[22rem] space-y-2 overflow-y-auto rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/65 p-3">
+              <div className="max-h-[18rem] space-y-1.5 overflow-y-auto rounded-xl border border-border/70 bg-muted/20 p-2">
                 {loading ? (
-                  <div className="px-4 py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
+                  <div className="px-4 py-8 text-center text-xs text-muted-foreground">
                     جاري تحميل قائمة المحظورين...
                   </div>
                 ) : blocklist.length > 0 ? (
                   blocklist.map((jid) => (
                     <div
                       key={jid}
-                      className="flex items-center justify-between gap-3 rounded-[18px] border border-[color:var(--shell-control-border)] bg-white/75 px-3 py-3"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-2.5 transition-colors hover:border-border"
                     >
                       <div>
-                        <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                        <p className="text-xs font-bold text-foreground">
                           {getBlockedContactLabel(jid)}
                         </p>
-                        <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                        <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
                           {getContactDisplayPhone({ jid })}
                         </p>
                       </div>
-                      <Button variant="outline" onClick={() => handleUnblock(jid)}>
+                      <button
+                        type="button"
+                        onClick={() => handleUnblock(jid)}
+                        className="h-8 rounded-lg border border-border/70 bg-card px-3 text-xs font-semibold text-foreground transition-all hover:bg-muted/60 active:scale-[0.98]"
+                      >
                         إلغاء الحظر
-                      </Button>
+                      </button>
                     </div>
                   ))
                 ) : (
-                  <div className="px-4 py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                    لا توجد جهات اتصال محظورة
+                  <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                    لا توجد جهات اتصال محظورة حالياً
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <TabsContent value="settings" className="space-y-3.5">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {(
                   [
                     ["lastSeen", "آخر ظهور", privacyOptions],
                     ["profilePic", "الصورة الشخصية", privacyOptions],
-                    ["status", "الأخبار", privacyOptions],
-                    ["groupAdd", "المجموعات", groupOptions],
+                    ["status", "الأخبار / الحالة", privacyOptions],
+                    ["groupAdd", "إضافة للمجموعات", groupOptions],
                   ] as const
                 ).map(([key, label, options]) => (
                   <div
                     key={key}
-                    className="space-y-2 rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 p-4"
+                    className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5"
                   >
-                    <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+                    <label className="text-xs font-semibold text-foreground">
                       {label}
                     </label>
                     <Select
@@ -311,12 +354,12 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
                         )
                       }
                     >
-                      <SelectTrigger className="bg-white/75">
+                      <SelectTrigger className="h-9 rounded-xl border-border/70 bg-background text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl border-border/70 bg-card">
                         {options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                          <SelectItem key={option.value} value={option.value} className="text-xs">
                             {option.label}
                           </SelectItem>
                         ))}
@@ -326,14 +369,14 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
                 ))}
               </div>
 
-              <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+              <div className="rounded-xl border border-border/70 bg-card p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                      مؤشرات قراءة الرسائل
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-foreground">
+                      مؤشرات قراءة الرسائل (Read Receipts)
                     </p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      فعّل أو عطّل إيصالات القراءة للمحادثات الفردية.
+                    <p className="text-[11px] text-muted-foreground">
+                      إظهار علامة الصح الزرقاء المزدوجة عند قراءة الرسائل
                     </p>
                   </div>
                   <Switch
@@ -348,10 +391,14 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
           </Tabs>
         </div>
 
-        <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="flex items-center justify-end border-t border-border/60 bg-muted/20 px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 rounded-xl border border-border/70 bg-card px-4 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.98]"
+          >
             إغلاق
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -22,7 +22,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Normalize media URL: clean any legacy /webhooks/uploads/ to /uploads/ and ensure proxy has media=audio
+  // Normalize media URL
   const cleanSrc = React.useMemo(() => {
     if (!src) return "";
     let normalized = src.replace(/\/webhooks\/uploads\//g, "/uploads/").trim();
@@ -99,67 +99,45 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   }, []);
 
   const handlePlayPause = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || !cleanSrc) return;
+    if (!audioRef.current || !cleanSrc) return;
 
     if (isPlaying) {
-      audio.pause();
+      audioRef.current.pause();
       setIsPlaying(false);
-      return;
-    }
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("maxp:stop-other-audios", { detail: { id: messageId } })
+      );
 
-    setHasError(false);
-
-    // Broadcast event to stop any other playing audio in the inbox
-    window.dispatchEvent(
-      new CustomEvent("maxp:stop-other-audios", {
-        detail: { id: messageId },
-      }),
-    );
-
-    // If audio reached the end or is within 0.3s of the end, restart from 0:00
-    if (
-      audio.ended ||
-      (audio.duration > 0 && audio.currentTime >= audio.duration - 0.3)
-    ) {
-      audio.currentTime = 0;
-      setCurrentTime(0);
-    }
-
-    setIsLoading(true);
-
-    // Execute play synchronously within the user gesture callback for iOS Safari & Android Chrome
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise
+      setIsLoading(true);
+      setHasError(false);
+      audioRef.current
+        .play()
         .then(() => {
-          setIsPlaying(true);
           setIsLoading(false);
+          setIsPlaying(true);
         })
-        .catch((err) => {
-          console.warn("Audio play rejected:", err);
+        .catch(() => {
           setIsLoading(false);
           setIsPlaying(false);
-          if (err.name === "NotAllowedError") {
-            // Autoplay / user gesture policy prevented play; do not flag permanent error
-            return;
-          }
           setHasError(true);
         });
     }
-  }, [isPlaying, messageId, cleanSrc]);
+  }, [isPlaying, cleanSrc, messageId]);
 
   const handleTimeUpdate = () => {
-    if (!audioRef.current) return;
-    setCurrentTime(audioRef.current.currentTime);
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
   };
 
   const handleLoadedMetadata = () => {
-    if (!audioRef.current) return;
-    if (audioRef.current.duration && isFinite(audioRef.current.duration)) {
-      setDuration(audioRef.current.duration);
+    if (audioRef.current) {
+      const d = audioRef.current.duration;
+      if (!isNaN(d) && isFinite(d) && d > 0) {
+        setDuration(d);
+      }
     }
-    setHasError(false);
   };
 
   const handleEnded = () => {
@@ -171,32 +149,28 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    const bar = progressBarRef.current;
-    const audio = audioRef.current;
-    if (!bar || !audio) return;
+    if (!audioRef.current || !progressBarRef.current || duration <= 0) return;
 
-    const rect = bar.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clickPosition = clientX - rect.left;
+    const width = rect.width;
 
-    let clickRatio = (clientX - rect.left) / rect.width;
+    let percentage = clickPosition / width;
     if (isRtl) {
-      clickRatio = 1 - clickRatio;
+      percentage = 1 - percentage;
     }
-    clickRatio = Math.max(0, Math.min(1, clickRatio));
+    percentage = Math.max(0, Math.min(1, percentage));
 
-    if (duration > 0 && isFinite(duration)) {
-      const newTime = clickRatio * duration;
-      audio.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
+    const newTime = percentage * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
   };
 
   const cyclePlaybackRate = () => {
-    setPlaybackRate((prev) => {
-      if (prev === 1) return 1.5;
-      if (prev === 1.5) return 2;
-      return 1;
-    });
+    const rates = [1, 1.5, 2];
+    const nextIdx = (rates.indexOf(playbackRate) + 1) % rates.length;
+    setPlaybackRate(rates[nextIdx]);
   };
 
   const handleRetry = () => {
@@ -211,16 +185,11 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
 
   return (
     <div
-      className="my-1.5 w-full min-w-[210px] max-w-[320px] rounded-xl p-2.5 transition-all select-none"
-      style={{
-        background: isCustomer
-          ? "color-mix(in srgb, var(--color-foreground) 7%, transparent)"
-          : "rgba(0, 0, 0, 0.18)",
-        border: "1px solid",
-        borderColor: isCustomer
-          ? "var(--business-card-border, rgba(203, 213, 225, 0.4))"
-          : "rgba(255, 255, 255, 0.15)",
-      }}
+      className={`my-1.5 w-full min-w-[210px] max-w-[320px] rounded-xl border p-2.5 transition-all select-none ${
+        isCustomer
+          ? "border-border/70 bg-card text-foreground shadow-2xs"
+          : "border-primary-foreground/20 bg-primary/90 text-primary-foreground shadow-xs"
+      }`}
     >
       {cleanSrc && (
         <audio
@@ -255,20 +224,18 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
           onClick={handlePlayPause}
           disabled={(isLoading && !isPlaying) || !cleanSrc}
           aria-label={isPlaying ? "إيقاف مؤقت" : "تشغيل الصوت"}
-          className="relative flex size-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm transition-transform active:scale-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
-          style={{
-            background: isCustomer
-              ? "var(--color-primary, #3b82f6)"
-              : "rgba(255, 255, 255, 0.95)",
-            color: isCustomer ? "#ffffff" : "#1e293b",
-          }}
+          className={`relative flex size-9 shrink-0 items-center justify-center rounded-full shadow-xs transition-transform active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 ${
+            isCustomer
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-background text-foreground hover:bg-muted"
+          }`}
         >
           {isLoading ? (
-            <Loader2 className="size-5 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
           ) : isPlaying ? (
-            <Pause className="size-5 fill-current" />
+            <Pause className="size-4 fill-current" />
           ) : (
-            <Play className="size-5 fill-current translate-x-[-1px] rtl:translate-x-[1px]" />
+            <Play className="size-4 fill-current translate-x-[-1px] rtl:translate-x-[1px]" />
           )}
         </button>
 
@@ -280,27 +247,22 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
             onClick={handleSeek}
             onTouchStart={handleSeek}
             onTouchMove={handleSeek}
-            className="group relative h-2.5 w-full cursor-pointer rounded-full bg-black/15 dark:bg-white/20 transition-all hover:h-3"
+            className="group relative h-2 w-full cursor-pointer rounded-full bg-muted/60 transition-all hover:h-2.5"
             title="انقر للتمرير"
           >
             <div
-              className="absolute inset-y-0 start-0 rounded-full transition-all duration-75"
-              style={{
-                width: `${progressPercentage}%`,
-                background: isCustomer
-                  ? "var(--color-primary, #3b82f6)"
-                  : "rgba(255, 255, 255, 0.95)",
-              }}
+              className={`absolute inset-y-0 start-0 rounded-full transition-all duration-75 ${
+                isCustomer ? "bg-primary" : "bg-primary-foreground"
+              }`}
+              style={{ width: `${progressPercentage}%` }}
             />
             {/* Scrubber thumb handle */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 size-3.5 rounded-full shadow-md transition-transform scale-90 group-hover:scale-125"
+              className={`absolute top-1/2 -translate-y-1/2 size-3 rounded-full shadow-xs transition-transform scale-90 group-hover:scale-125 ${
+                isCustomer ? "bg-primary" : "bg-background"
+              }`}
               style={{
                 [isRtl ? "right" : "left"]: `calc(${progressPercentage}% - 6px)`,
-                background: isCustomer
-                  ? "var(--color-primary, #2563eb)"
-                  : "#ffffff",
-                border: "2px solid rgba(0, 0, 0, 0.1)",
               }}
             />
           </div>
@@ -309,19 +271,18 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
           <div className="flex items-center justify-between text-[11px] font-mono leading-none opacity-90 tabular-nums">
             <span>
               {formatTime(currentTime)}
-              <span className="opacity-60 mx-1">/</span>
+              <span className="opacity-50 mx-1">/</span>
               {duration > 0 ? formatTime(duration) : "--:--"}
             </span>
 
             <button
               type="button"
               onClick={cyclePlaybackRate}
-              className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors hover:bg-black/10 dark:hover:bg-white/10 active:scale-95"
-              style={{
-                borderColor: isCustomer
-                  ? "var(--business-card-border, rgba(0, 0, 0, 0.2))"
-                  : "rgba(255, 255, 255, 0.3)",
-              }}
+              className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold font-mono border transition-all hover:opacity-100 active:scale-95 ${
+                isCustomer
+                  ? "border-border/80 text-foreground bg-card hover:bg-muted"
+                  : "border-primary-foreground/30 text-primary-foreground bg-primary/40 hover:bg-primary/60"
+              }`}
               title="تغيير سرعة التشغيل"
             >
               {playbackRate}x
@@ -332,17 +293,17 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
 
       {/* Error / Fallback State */}
       {hasError && (
-        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-600 dark:text-red-400">
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
           <div className="flex items-center gap-1.5 min-w-0">
-            <AlertCircle className="size-3.5 flex-shrink-0" />
+            <AlertCircle className="size-3.5 shrink-0" />
             <span className="truncate">تعذر تشغيل الصوت</span>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={handleRetry}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium hover:bg-destructive/20 transition-colors"
             >
               <RotateCcw className="size-3" />
               <span>إعادة</span>
@@ -354,7 +315,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 download
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium hover:bg-destructive/20 transition-colors"
                 title="تحميل الملف الصوتي مباشرة"
               >
                 <Download className="size-3" />
@@ -367,3 +328,5 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
     </div>
   );
 };
+
+export default VoiceNotePlayer;
