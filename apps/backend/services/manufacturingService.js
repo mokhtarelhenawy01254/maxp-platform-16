@@ -797,9 +797,9 @@ class ManufacturingService {
     });
   }
 
-  static async getOrderById(companyId, orderId) {
-    const prisma = getSharedPrismaClient();
-    const order = await prisma.productionOrder.findFirst({
+  static async getOrderById(companyId, orderId, tx = null) {
+    const client = tx || getSharedPrismaClient();
+    const order = await client.productionOrder.findFirst({
       where: { id: orderId, companyId },
       include: {
         bom: { include: { components: true, standardStages: true } },
@@ -910,7 +910,8 @@ class ManufacturingService {
             items: issueItems,
             notes: 'صرف خامات تلقائي عند بدء التشغيل',
           },
-          userId
+          userId,
+          tx
         );
       }
 
@@ -922,9 +923,9 @@ class ManufacturingService {
   // 4. Material Issue (صرف الخامات وخصم المخزون والربط المحاسبي)
   // ==========================================================================
 
-  static async issueMaterials(companyId, orderId, data, userId = null) {
+  static async issueMaterials(companyId, orderId, data, userId = null, existingTx = null) {
     const prisma = getSharedPrismaClient();
-    const order = await this.getOrderById(companyId, orderId);
+    const order = await this.getOrderById(companyId, orderId, existingTx);
 
     if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
       throw new Error(`لا يمكن صرف خامات لأمر في حالة "${order.status}"`);
@@ -939,7 +940,7 @@ class ManufacturingService {
       throw new Error('بنود الخامات المصروفة مطلوبة');
     }
 
-    return await prisma.$transaction(async (tx) => {
+    const runInTx = async (tx) => {
       let totalCost = 0;
       const preparedItems = [];
 
@@ -1067,7 +1068,15 @@ class ManufacturingService {
         where: { id: issue.id },
         include: { items: true },
       });
-    });
+    };
+
+    if (existingTx) {
+      return await runInTx(existingTx);
+    } else {
+      return await prisma.$transaction(async (tx) => {
+        return await runInTx(tx);
+      });
+    }
   }
 
   // ==========================================================================
