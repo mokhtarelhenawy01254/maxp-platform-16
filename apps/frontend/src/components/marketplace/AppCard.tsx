@@ -169,7 +169,7 @@ export function AppCard({
             <CheckCircle2 size={10} />
             {app.isIncludedInPlan ? "مشمول بالباقة" : t('marketplace.installedBadge', 'مثبت')}
           </span>
-        ) : showBadges && badges.length > 0 && badgeConfig[badges[0]] ? (
+        ) : showBadges && badges[0] && badgeConfig[badges[0]] ? (
           <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border", badgeConfig[badges[0]].className)}>
             {badgeConfig[badges[0]].label}
           </span>

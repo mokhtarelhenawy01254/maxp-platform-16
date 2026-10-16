@@ -12,7 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { Category } from "@/types/marketplace";
-import { categoryIcons, groupCategories } from "@/utils/marketplace";
+import { categoryIcons } from "@/utils/marketplace";
+import { groupCategoriesByHub } from "@/utils/marketplaceSystems";
 
 interface CategorySidebarProps {
   categories: Category[];
@@ -33,7 +34,7 @@ export function CategorySidebar({
   const [isOpen, setIsOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  const groups = groupCategories(categories);
+  const groups = groupCategoriesByHub(categories);
   const totalCount = categories.reduce((sum, cat) => sum + (cat.count || 0), 0);
 
   const toggleGroup = (groupId: string) => {

@@ -43,12 +43,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters, SortOption, ToolCollectionId } from "@/types/marketplace";
 import {
-  categoryGroups,
-  OTHER_CATEGORY_GROUP_ID,
-} from "@/utils/marketplace";
-import {
   SYSTEM_HUBS,
   resolveRecommendedSystemHub,
+  groupAppsByHub,
+  type HubAppSection,
 } from "@/utils/marketplaceSystems";
 
 interface ApiEnvelope<T> {
@@ -105,35 +103,6 @@ function matchesSearch(app: MarketplaceApp, query: string) {
     .join(" ")
     .toLowerCase();
   return haystack.includes(q);
-}
-
-interface AppGroupSection {
-  id: string;
-  labelKey: string;
-  apps: MarketplaceApp[];
-}
-
-function groupAppsBySidebarSections(apps: MarketplaceApp[]): AppGroupSection[] {
-  const byGroup = new Map<string, MarketplaceApp[]>();
-  const other: MarketplaceApp[] = [];
-  for (const app of apps) {
-    if (app.isPublic === false || app.isActive === false || app.slug === 'multi-warehouse-pro') continue;
-    const group = categoryGroups.find((g) => g.categories.includes(app.category));
-    if (group) {
-      const list = byGroup.get(group.id) || [];
-      list.push(app);
-      byGroup.set(group.id, list);
-    } else {
-      other.push(app);
-    }
-  }
-  const result: AppGroupSection[] = [];
-  for (const g of categoryGroups) {
-    const items = byGroup.get(g.id);
-    if (items && items.length) result.push({ id: g.id, labelKey: g.labelKey, apps: items });
-  }
-  if (other.length) result.push({ id: OTHER_CATEGORY_GROUP_ID, labelKey: "marketplace.categories.groups.other", apps: other });
-  return result;
 }
 
 function getCategoryDisplayCategories(categories: Category[], categoryCounts: Record<string, number> = {}) {
@@ -636,14 +605,16 @@ export default function MarketplaceV2() {
                 )}
               </div>
             ) : (
-              /* Grouped layout when viewing all categories */
+              /* Grouped layout when viewing all categories — sections = system hubs */
               <div className="space-y-7 mt-4">
-                {groupAppsBySidebarSections(displayedApps).map((section) => (
+                {groupAppsByHub(displayedApps).map((section: HubAppSection) => {
+                  const HubIcon = section.icon;
+                  return (
                   <div key={section.id}>
                     <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/25">
                       <div className="flex items-center gap-2">
-                        <Layers3 size={15} className="text-primary" />
-                        <h3 className="text-sm font-bold text-foreground">{t(section.labelKey)}</h3>
+                        <HubIcon size={15} className="text-primary" />
+                        <h3 className="text-sm font-bold text-foreground">{section.nameAr}</h3>
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground tabular-nums">
                           {section.apps.length}
                         </span>
@@ -672,7 +643,8 @@ export default function MarketplaceV2() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

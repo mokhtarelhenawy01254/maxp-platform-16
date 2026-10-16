@@ -7,7 +7,7 @@
   LayoutGrid,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { MarketplaceApp } from "@/types/marketplace";
+import type { MarketplaceApp, Category } from "@/types/marketplace";
 
 export interface SystemHub {
   id: string;
@@ -111,4 +111,47 @@ export function resolveRecommendedSystemHub(specialtySlug?: string | null): Syst
     }
   }
   return null;
+}
+
+// ── Unified grouping: sections and drawer groups both derive from the system
+// hubs, so the storefront speaks ONE taxonomy (hub → category → app). ──
+
+export interface HubAppSection {
+  id: string;
+  nameAr: string;
+  icon: LucideIcon;
+  apps: MarketplaceApp[];
+}
+
+export function groupAppsByHub(apps: MarketplaceApp[]): HubAppSection[] {
+  const byHub = new Map<string, MarketplaceApp[]>();
+  for (const app of apps) {
+    const hub = getAppSystemHub(app);
+    const list = byHub.get(hub.id) || [];
+    list.push(app);
+    byHub.set(hub.id, list);
+  }
+  return SYSTEM_HUBS
+    .filter(h => h.id !== "ALL" && byHub.has(h.id))
+    .map(h => ({ id: h.id, nameAr: h.nameAr, icon: h.icon, apps: byHub.get(h.id)! }));
+}
+
+export interface HubCategoryGroup {
+  id: string;
+  labelKey: string;
+  items: Category[];
+}
+
+export function groupCategoriesByHub(categories: Category[]): HubCategoryGroup[] {
+  const byHub = new Map<string, Category[]>();
+  for (const cat of categories) {
+    const upper = (cat.category || "").toUpperCase();
+    const hub = SYSTEM_HUBS.find(h => h.id !== "ALL" && h.categories.includes(upper)) || SYSTEM_HUBS[1];
+    const list = byHub.get(hub.id) || [];
+    list.push(cat);
+    byHub.set(hub.id, list);
+  }
+  return SYSTEM_HUBS
+    .filter(h => h.id !== "ALL" && byHub.has(h.id))
+    .map(h => ({ id: h.id, labelKey: h.nameAr, items: byHub.get(h.id)! }));
 }

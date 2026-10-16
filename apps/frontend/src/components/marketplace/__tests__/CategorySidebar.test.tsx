@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CategorySidebar } from "../CategorySidebar";
-import { groupCategories, categoryGroups, OTHER_CATEGORY_GROUP_ID } from "@/utils/marketplace";
+import { groupCategoriesByHub } from "@/utils/marketplaceSystems";
 import type { Category } from "@/types/marketplace";
 
 jest.mock("react-i18next", () => ({
@@ -15,43 +15,40 @@ const sampleCategories: Category[] = [
   { category: "CRM", name: "إدارة العملاء", nameEn: "CRM", icon: "📊", count: 4 },
   { category: "MARKETING", name: "التسويق", nameEn: "Marketing", icon: "📣", count: 11 },
   { category: "ANALYTICS", name: "التحليلات", nameEn: "Analytics", icon: "📈", count: 5 },
-  { category: "AI", name: "الأتمتة", nameEn: "Automation", icon: "⚙️", count: 4 },
+  { category: "AI", name: "الذكاء الاصطناعي", nameEn: "AI", icon: "🧠", count: 4 },
   { category: "MEDICAL", name: "النظام الطبي", nameEn: "Medical", icon: "🏥", count: 1 },
   { category: "UNKNOWN", name: "تصنيف جديد", nameEn: "Unknown", icon: "📦", count: 2 },
 ];
 
-describe("groupCategories", () => {
-  it("groups categories into defined sections plus an other bucket", () => {
-    const groups = groupCategories(sampleCategories);
+describe("groupCategoriesByHub", () => {
+  it("groups categories under their system hubs in hub order", () => {
+    const groups = groupCategoriesByHub(sampleCategories);
     const ids = groups.map((g) => g.id);
-    expect(ids).toEqual(["commerce", "data", "specialized", OTHER_CATEGORY_GROUP_ID]);
+    expect(ids).toEqual(["COMMERCE", "MEDICAL", "AI_COMMUNICATION", "OPERATIONS_FINANCE", "MARKETING_GROWTH"]);
 
-    const commerce = groups.find((g) => g.id === "commerce");
-    expect(commerce?.items.map((c) => c.category)).toEqual(["ECOMMERCE", "CRM", "MARKETING"]);
+    const commerce = groups.find((g) => g.id === "COMMERCE");
+    expect(commerce?.items.map((c) => c.category)).toEqual(["ECOMMERCE", "UNKNOWN"]);
+    expect(commerce?.labelKey).toBe("التجارة والتجزئة");
 
-    const data = groups.find((g) => g.id === "data");
-    expect(data?.items.map((c) => c.category)).toEqual(["ANALYTICS", "AI"]);
-
-    const other = groups.find((g) => g.id === OTHER_CATEGORY_GROUP_ID);
-    expect(other?.items.map((c) => c.category)).toEqual(["UNKNOWN"]);
+    const marketing = groups.find((g) => g.id === "MARKETING_GROWTH");
+    expect(marketing?.items.map((c) => c.category)).toEqual(["CRM", "MARKETING"]);
   });
 
-  it("skips empty groups", () => {
-    const groups = groupCategories([{ category: "ECOMMERCE", name: "E", nameEn: "E", icon: "🛒", count: 1 }]);
+  it("skips hubs with no categories", () => {
+    const groups = groupCategoriesByHub([{ category: "ECOMMERCE", name: "E", nameEn: "E", icon: "🛒", count: 1 }]);
     expect(groups).toHaveLength(1);
-    expect(groups[0].id).toBe("commerce");
+    expect(groups[0].id).toBe("COMMERCE");
   });
 
-  it("keeps group definitions stable for known catalog categories", () => {
-    const known = categoryGroups.flatMap((g) => g.categories);
-    expect(known).toContain("ECOMMERCE");
-    expect(known).toContain("MEDICAL");
-    expect(known).toContain("PRODUCTIVITY");
+  it("maps unknown categories to the commerce fallback hub", () => {
+    const groups = groupCategoriesByHub([{ category: "SOMETHING_NEW", name: "N", nameEn: "N", icon: "📦", count: 1 }]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe("COMMERCE");
   });
 });
 
 describe("CategorySidebar", () => {
-  it("renders grouped category sections with counts", () => {
+  it("renders hub-grouped category sections with counts", () => {
     render(
       <CategorySidebar
         categories={sampleCategories}
@@ -61,8 +58,8 @@ describe("CategorySidebar", () => {
     );
 
     expect(screen.getByText("marketplace.categories.all")).toBeInTheDocument();
-    expect(screen.getByText("marketplace.categories.groups.commerce")).toBeInTheDocument();
-    expect(screen.getByText("marketplace.categories.groups.data")).toBeInTheDocument();
+    expect(screen.getByText("التجارة والتجزئة")).toBeInTheDocument();
+    expect(screen.getByText("الذكاء الاصطناعي والمراسلات")).toBeInTheDocument();
     expect(screen.getByText("التجارة الإلكترونية")).toBeInTheDocument();
     expect(screen.getByText("التحليلات")).toBeInTheDocument();
     expect(screen.getByText("النظام الطبي")).toBeInTheDocument();
@@ -106,7 +103,7 @@ describe("CategorySidebar", () => {
     expect(onSelect).toHaveBeenCalledWith("ANALYTICS");
   });
 
-  it("collapses a group when its header is clicked", () => {
+  it("collapses a hub group when its header is clicked", () => {
     render(
       <CategorySidebar
         categories={sampleCategories}
@@ -114,8 +111,8 @@ describe("CategorySidebar", () => {
         onSelect={jest.fn()}
       />,
     );
-    fireEvent.click(screen.getByText("marketplace.categories.groups.data"));
+    fireEvent.click(screen.getByText("العمليات والـ HR والمالية"));
     expect(screen.queryByText("التحليلات")).not.toBeInTheDocument();
-    expect(screen.queryByText("الأتمتة")).not.toBeInTheDocument();
+    expect(screen.queryByText("الذكاء الاصطناعي")).toBeInTheDocument();
   });
 });
