@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { XMarkIcon, ArrowTopRightOnSquareIcon, ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon } from "@heroicons/react/24/outline";
+import { X, ExternalLink, Monitor, Smartphone, Tablet } from "lucide-react";
 
 export interface StorefrontPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   previewUrl: string;
-  draftTokens: any; // Using any for brevity, since it's a dynamic partial payload
+  draftTokens: any;
   draftHomeSections?: any;
 }
 
@@ -18,14 +18,17 @@ const StorefrontPreviewModal: React.FC<StorefrontPreviewModalProps> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const previewOrigin = useMemo(() => { try { return new URL(previewUrl).origin; } catch { return window.location.origin; } }, [previewUrl]);
+  const previewOrigin = useMemo(() => {
+    try {
+      return new URL(previewUrl).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }, [previewUrl]);
 
   useEffect(() => {
     if (!isOpen || !iframeRef.current) return;
 
-    // We send a postMessage on every draftTokens/draftHomeSections change
-    // when the modal is open. We also debounce it slightly to avoid spamming the iframe
-    // while the user drags a slider.
     const handler = setTimeout(() => {
       if (iframeRef.current?.contentWindow) {
         iframeRef.current.contentWindow.postMessage(
@@ -42,98 +45,123 @@ const StorefrontPreviewModal: React.FC<StorefrontPreviewModalProps> = ({
     }, 150);
 
     return () => clearTimeout(handler);
-  }, [isOpen, draftTokens, draftHomeSections]);
+  }, [isOpen, draftTokens, draftHomeSections, previewOrigin]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 lg:p-6">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+      <div
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal Container */}
-      <div className="relative flex h-full w-full max-w-6xl 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-white/10">
-        
+      <div className="relative flex h-full w-full max-w-6xl 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-foreground shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-950 sm:px-6">
+        <div className="flex items-center justify-between border-b border-border/60 bg-card px-4 py-3 sm:px-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-current" />
+            <div className="flex size-8 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <span className="size-2 animate-pulse rounded-full bg-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-                المعاينة الحية (Live Preview)
+              <h2 className="text-sm font-bold text-foreground">
+                المعاينة الحية للمتجر (Live Preview)
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                أنت الآن تشاهد تأثير التعديلات المبدئية قبل الحفظ
+              <p className="text-xs text-muted-foreground">
+                معاينة مباشرة للتخصيص والألوان في الوقت الفعلي قبل الحفظ
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-gray-200/50 dark:bg-gray-800/50 rounded-lg p-1 mr-2">
+            {/* Viewport switch segmented bar */}
+            <div className="flex items-center gap-0.5 rounded-xl border border-border/70 bg-muted/40 p-1">
               <button
+                type="button"
                 onClick={() => setPreviewMode("desktop")}
-                className={`p-1.5 rounded-md transition-colors ${previewMode === "desktop" ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"}`}
+                className={`flex size-7 items-center justify-center rounded-lg transition-all active:scale-[0.97] ${
+                  previewMode === "desktop"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
                 title="شاشة كمبيوتر"
+                aria-label="شاشة كمبيوتر"
               >
-                <ComputerDesktopIcon className="h-4 w-4" />
+                <Monitor className="size-3.5" />
               </button>
               <button
+                type="button"
                 onClick={() => setPreviewMode("tablet")}
-                className={`p-1.5 rounded-md transition-colors ${previewMode === "tablet" ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"}`}
+                className={`flex size-7 items-center justify-center rounded-lg transition-all active:scale-[0.97] ${
+                  previewMode === "tablet"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
                 title="جهاز لوحي"
+                aria-label="جهاز لوحي"
               >
-                <DeviceTabletIcon className="h-4 w-4" />
+                <Tablet className="size-3.5" />
               </button>
               <button
+                type="button"
                 onClick={() => setPreviewMode("mobile")}
-                className={`p-1.5 rounded-md transition-colors ${previewMode === "mobile" ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"}`}
+                className={`flex size-7 items-center justify-center rounded-lg transition-all active:scale-[0.97] ${
+                  previewMode === "mobile"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
                 title="هاتف محمول"
+                aria-label="هاتف محمول"
               >
-                <DevicePhoneMobileIcon className="h-4 w-4" />
+                <Smartphone className="size-3.5" />
               </button>
             </div>
+
             <button
+              type="button"
               onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-border/70 bg-card px-2.5 text-xs font-medium text-foreground transition-all hover:bg-muted/50 active:scale-[0.97]"
             >
-              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">فتح في نافذة جديدة</span>
+              <ExternalLink className="size-3.5 text-muted-foreground" />
+              <span className="hidden sm:inline">نافذة جديدة</span>
             </button>
-            
-            <div className="h-4 w-px bg-gray-300 dark:bg-gray-700" />
-            
+
+            <div className="h-4 w-px bg-border/60" />
+
             <button
+              type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+              className="flex size-8 items-center justify-center rounded-xl border border-border/70 bg-card text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground active:scale-[0.97]"
+              aria-label="إغلاق المعاينة"
             >
-              <XMarkIcon className="h-5 w-5" />
-              <span className="hidden sm:inline">إغلاق المعاينة</span>
+              <X className="size-4" />
             </button>
           </div>
         </div>
 
         {/* Browser Chrome Simulator */}
-        <div className="flex items-center border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-center border-b border-border/60 bg-muted/20 px-4 py-2">
           <div className="flex gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-red-400/80" />
-            <div className="h-3 w-3 rounded-full bg-amber-400/80" />
-            <div className="h-3 w-3 rounded-full bg-green-400/80" />
+            <div className="size-2.5 rounded-full bg-rose-500/80" />
+            <div className="size-2.5 rounded-full bg-amber-500/80" />
+            <div className="size-2.5 rounded-full bg-emerald-500/80" />
           </div>
-          <div className="mx-4 flex-1 truncate rounded-md bg-gray-100 px-3 py-1.5 text-center text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+          <div className="mx-4 flex-1 truncate rounded-lg border border-border/60 bg-card px-3 py-1 text-center font-mono text-xs text-muted-foreground tabular-nums">
             {previewUrl}
           </div>
         </div>
 
-        {/* Iframe */}
-        <div className="flex-1 bg-gray-100 dark:bg-black overflow-hidden flex justify-center items-start pt-4 sm:pt-6 pb-0">
-          <div 
-            className={`h-full bg-white transition-all duration-300 ease-in-out origin-top border-t border-x border-gray-200 dark:border-gray-800 rounded-t-xl overflow-hidden shadow-2xl ${
-              previewMode === "mobile" ? "w-[375px]" : previewMode === "tablet" ? "w-[768px]" : "w-full rounded-t-none border-0"
+        {/* Iframe Container */}
+        <div className="flex-1 bg-muted/30 overflow-hidden flex justify-center items-start pt-3 sm:pt-4 pb-0">
+          <div
+            className={`h-full bg-background transition-all duration-300 ease-in-out origin-top border-t border-x border-border/70 rounded-t-xl overflow-hidden shadow-2xl ${
+              previewMode === "mobile"
+                ? "w-[375px]"
+                : previewMode === "tablet"
+                ? "w-[768px]"
+                : "w-full rounded-t-none border-0"
             }`}
           >
             <iframe

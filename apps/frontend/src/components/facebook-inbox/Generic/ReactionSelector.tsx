@@ -94,9 +94,9 @@ const ReactionSelector: React.FC<ReactionSelectorProps> = ({
 
   const content = (
     <>
-      {/* Semi-transparent backdrop to dismiss on outside tap */}
+      {/* Backdrop to dismiss on outside tap */}
       <div
-        className="fixed inset-0 z-[9998] bg-black/10 dark:bg-black/30 backdrop-blur-[1px] transition-opacity"
+        className="fixed inset-0 z-[9998] bg-background/50 backdrop-blur-xs transition-opacity"
         onClick={(e) => {
           e.stopPropagation();
           onClose?.();
@@ -104,21 +104,17 @@ const ReactionSelector: React.FC<ReactionSelectorProps> = ({
         aria-hidden="true"
       />
 
-      {/* Floating Reactions Bar - Always clamped inside mobile viewport */}
+      {/* Floating Reactions Bar */}
       <div
         ref={popupRef}
         data-reaction-selector="true"
         role="dialog"
         aria-label="اختر تفاعلاً"
-        className="business-dropdown-surface fixed z-[9999] flex items-center gap-1 sm:gap-1.5 rounded-full p-1.5 shadow-2xl backdrop-blur-xl border border-white/20 dark:border-white/15 animate-in fade-in-0 zoom-in-95 duration-150 touch-manipulation select-none"
+        className="fixed z-[9999] flex items-center gap-1 sm:gap-1.5 rounded-full border border-border/80 bg-card/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95 duration-150 touch-manipulation select-none"
         style={{
           top: coords ? `${coords.top}px` : "-9999px",
           left: coords ? `${coords.left}px` : "-9999px",
           visibility: coords ? "visible" : "hidden",
-          background:
-            "var(--business-floating-surface, rgba(15, 23, 42, 0.97))",
-          boxShadow:
-            "0 12px 36px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -133,9 +129,9 @@ const ReactionSelector: React.FC<ReactionSelectorProps> = ({
                 e.stopPropagation();
                 onSelect(reaction);
               }}
-              className={`group relative flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-transform duration-150 active:scale-130 hover:scale-120 hover:bg-white/10 dark:hover:bg-white/15 focus:outline-none ${
+              className={`group relative flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-transform duration-150 active:scale-125 hover:scale-120 hover:bg-muted/80 focus:outline-none ${
                 isSelected
-                  ? "bg-primary/25 ring-2 ring-primary scale-110 shadow-sm"
+                  ? "bg-primary/20 ring-2 ring-primary scale-110 shadow-xs"
                   : ""
               }`}
               title={reaction}
