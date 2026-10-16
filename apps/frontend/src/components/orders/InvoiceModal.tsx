@@ -1,5 +1,5 @@
 import React from "react";
-import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
+import { X, Printer } from "lucide-react";
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { printClean } from "../../utils/printClean";
@@ -18,38 +18,40 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 backdrop-blur-md p-0 sm:items-center sm:p-4 overscroll-contain"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-xs p-0 sm:items-center sm:p-4 overscroll-contain animate-in fade-in duration-150"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`فاتورة ${invoice.invoiceNumber}`}
     >
       <div
-        className="max-h-[calc(100vh-0.5rem)] w-full overflow-y-auto rounded-t-[30px] border border-slate-200/70 bg-white text-slate-900 shadow-xl dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-100 sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[28px] print:max-h-none print:max-w-none print:rounded-none print:border-0 print:bg-white print:text-black print:shadow-none"
+        className="max-h-[calc(100vh-0.5rem)] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-card text-foreground shadow-xl sm:max-h-[90vh] sm:max-w-2xl sm:rounded-xl print:max-h-none print:max-w-none print:rounded-none print:border-0 print:bg-white print:text-black print:shadow-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
-        <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden print:hidden" />
+        <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted sm:hidden print:hidden" />
 
         {/* Header bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur print:hidden dark:border-slate-700 dark:bg-slate-900/95 sm:px-6">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">
-            فاتورة #{invoice.invoiceNumber as string}
-          </h2>
-          <div className="flex gap-2">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-card/95 px-4 py-3 backdrop-blur-xs print:hidden sm:px-5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground tracking-tight font-mono tabular-nums">
+              فاتورة #{invoice.invoiceNumber as string}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs"
             >
-              <PrinterIcon className="w-5 h-5" />
-              طباعة
+              <Printer className="w-3.5 h-3.5" />
+              <span>طباعة</span>
             </button>
             <button
               onClick={onClose}
               aria-label="إغلاق الفاتورة"
-              className="rounded-2xl p-2 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors active:scale-95"
             >
-              <XMarkIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

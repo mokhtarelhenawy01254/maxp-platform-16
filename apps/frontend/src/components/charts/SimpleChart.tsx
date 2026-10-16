@@ -15,17 +15,19 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
   title,
   type = "bar",
 }) => {
-  const maxValue = Math.max(...data.map((item) => item.value));
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
 
   if (type === "donut") {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     let cumulativePercentage = 0;
 
     return (
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">{title}</h3>
+      <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
+        <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+          {title}
+        </h3>
         <div className="flex items-center justify-center">
-          <div className="relative w-48 h-48">
+          <div className="relative w-44 h-44">
             <svg
               className="w-full h-full transform -rotate-90"
               viewBox="0 0 100 100"
@@ -35,11 +37,12 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
                 cy="50"
                 r="40"
                 fill="none"
-                stroke="#f3f4f6"
+                stroke="currentColor"
+                className="text-muted/40"
                 strokeWidth="8"
               />
               {data.map((item, index) => {
-                const percentage = (item.value / total) * 100;
+                const percentage = total > 0 ? (item.value / total) * 100 : 0;
                 const strokeDasharray = `${percentage * 2.51} ${251 - percentage * 2.51}`;
                 const strokeDashoffset = -cumulativePercentage * 2.51;
                 cumulativePercentage += percentage;
@@ -55,40 +58,37 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
                     strokeWidth="8"
                     strokeDasharray={strokeDasharray}
                     strokeDashoffset={strokeDashoffset}
-                    className="transition-all duration-1000 ease-out"
-                    style={{
-                      animationDelay: `${index * 0.2}s`,
-                    }}
+                    className="transition-all duration-700 ease-out"
                   />
                 );
               })}
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{total}</div>
-                <div className="text-sm text-gray-500">المجموع</div>
+              <div className="text-center space-y-0.5">
+                <div className="text-xl font-bold text-foreground font-mono tabular-nums">{total.toLocaleString()}</div>
+                <div className="text-[11px] text-muted-foreground font-medium">المجموع</div>
               </div>
             </div>
           </div>
         </div>
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-2.5">
           {data.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center">
+            <div key={index} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-full mr-3"
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-sm font-medium text-gray-700">
+                />
+                <span className="font-medium text-foreground">
                   {item.label}
                 </span>
               </div>
-              <div className="text-right">
-                <span className="text-sm font-bold text-gray-900">
-                  {item.value}
+              <div className="text-end font-mono tabular-nums">
+                <span className="font-semibold text-foreground">
+                  {item.value.toLocaleString()}
                 </span>
-                <span className="text-xs text-gray-500 ml-1">
-                  ({((item.value / total) * 100).toFixed(1)}%)
+                <span className="text-[11px] text-muted-foreground ms-1">
+                  ({total > 0 ? ((item.value / total) * 100).toFixed(1) : "0.0"}%)
                 </span>
               </div>
             </div>
@@ -101,17 +101,19 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
   if (type === "line") {
     const points = data
       .map((item, index) => {
-        const x = (index / (data.length - 1)) * 300;
+        const x = data.length > 1 ? (index / (data.length - 1)) * 300 : 150;
         const y = 150 - (item.value / maxValue) * 120;
         return `${x},${y}`;
       })
       .join(" ");
 
     return (
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">{title}</h3>
+      <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
+        <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+          {title}
+        </h3>
         <div className="relative">
-          <svg className="w-full h-40" viewBox="0 0 300 150">
+          <svg className="w-full h-36" viewBox="0 0 300 150">
             {/* Grid lines */}
             {[0, 1, 2, 3, 4].map((i) => (
               <line
@@ -120,8 +122,10 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
                 y1={30 + i * 30}
                 x2="300"
                 y2={30 + i * 30}
-                stroke="#f3f4f6"
+                stroke="currentColor"
+                className="text-border/40"
                 strokeWidth="1"
+                strokeDasharray="2 2"
               />
             ))}
 
@@ -129,44 +133,32 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
             <polyline
               points={points}
               fill="none"
-              stroke="url(#lineGradient)"
-              strokeWidth="3"
+              stroke="var(--color-primary, #6366f1)"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="animate-pulse"
             />
 
             {/* Points */}
             {data.map((item, index) => {
-              const x = (index / (data.length - 1)) * 300;
+              const x = data.length > 1 ? (index / (data.length - 1)) * 300 : 150;
               const y = 150 - (item.value / maxValue) * 120;
               return (
                 <circle
                   key={index}
                   cx={x}
                   cy={y}
-                  r="4"
-                  fill={item.color}
-                  className="hover:r-6 transition-all duration-200"
+                  r="3.5"
+                  fill={item.color || "var(--color-primary, #6366f1)"}
+                  stroke="var(--color-card, #ffffff)"
+                  strokeWidth="1.5"
+                  className="hover:r-5 transition-all duration-150"
                 />
               );
             })}
-
-            <defs>
-              <linearGradient
-                id="lineGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#8b5cf6" />
-              </linearGradient>
-            </defs>
           </svg>
         </div>
-        <div className="flex justify-between mt-4 text-xs text-gray-500">
+        <div className="flex justify-between mt-3 text-[11px] text-muted-foreground font-mono">
           {data.map((item, index) => (
             <span key={index}>{item.label}</span>
           ))}
@@ -177,28 +169,29 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
 
   // Default bar chart
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-6">{title}</h3>
-      <div className="space-y-4">
+    <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
+      <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+        {title}
+      </h3>
+      <div className="space-y-3">
         {data.map((item, index) => (
-          <div key={index} className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
+          <div key={index} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-foreground">
                 {item.label}
               </span>
-              <span className="text-sm font-bold text-gray-900">
-                {item.value}
+              <span className="font-semibold text-foreground font-mono tabular-nums">
+                {item.value.toLocaleString()}
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-muted/40 rounded-full h-2 overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-1000 ease-out"
+                className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${(item.value / maxValue) * 100}%`,
                   backgroundColor: item.color,
-                  animationDelay: `${index * 0.1}s`,
                 }}
-              ></div>
+              />
             </div>
           </div>
         ))}
