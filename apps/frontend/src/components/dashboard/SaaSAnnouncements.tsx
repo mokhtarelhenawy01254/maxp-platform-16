@@ -62,9 +62,9 @@ const SaaSAnnouncements: React.FC<SaaSAnnouncementsProps> = ({
         return {
           icon: Bell,
           label: "تحديث",
-          badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-          iconColor: "text-blue-600 dark:text-blue-400",
-          cardBorder: "border-blue-500/20 hover:border-blue-500/40",
+          badgeClass: "bg-primary/10 text-primary border-primary/20",
+          iconColor: "text-primary",
+          cardBorder: "border-border/70 hover:border-primary/40",
         };
     }
   };
@@ -110,7 +110,7 @@ const SaaSAnnouncements: React.FC<SaaSAnnouncementsProps> = ({
                           window.location.href = item.actionUrl;
                         }
                       }}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors duration-150 active:scale-95"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors duration-150 active:scale-95 cursor-pointer"
                     >
                       <span>{item.actionLabel}</span>
                       <ArrowLeft className="w-3 h-3 rtl:rotate-0 ltr:rotate-180" />
@@ -123,7 +123,7 @@ const SaaSAnnouncements: React.FC<SaaSAnnouncementsProps> = ({
                 <button
                   type="button"
                   onClick={() => onDismiss(item.id)}
-                  className="shrink-0 p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-md transition-colors active:scale-95"
+                  className="shrink-0 p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-md transition-colors active:scale-95 cursor-pointer"
                   aria-label="إغلاق التنبيه"
                 >
                   <X className="w-3.5 h-3.5" />

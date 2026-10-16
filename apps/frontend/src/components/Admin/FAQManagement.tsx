@@ -4,11 +4,9 @@ import {
   Pencil,
   Trash2,
   ThumbsUp,
-  ThumbsDown,
   X,
   HelpCircle,
   CheckCircle2,
-  Layers,
   Search,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -75,6 +73,11 @@ export default function FAQManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
 
+  // Form state
+  const [formQuestion, setFormQuestion] = useState("");
+  const [formAnswer, setFormAnswer] = useState("");
+  const [formCategory, setFormCategory] = useState("general");
+
   useEffect(() => {
     let active = true;
     const fetchFaqs = async () => {
@@ -91,8 +94,24 @@ export default function FAQManagement() {
     return () => { active = false; };
   }, []);
 
+  const openAddModal = () => {
+    setEditingFaq(null);
+    setFormQuestion("");
+    setFormAnswer("");
+    setFormCategory("general");
+    setModalOpen(true);
+  };
+
+  const openEditModal = (faq: FAQ) => {
+    setEditingFaq(faq);
+    setFormQuestion(faq.question);
+    setFormAnswer(faq.answer);
+    setFormCategory(faq.category);
+    setModalOpen(true);
+  };
+
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا السؤال؟")) return;
+    if (!window.confirm("هل أنت متأكد من حذف هذا السؤال؟")) return;
     try {
       await apiClient.delete(`/faqs/${id}`).catch(() => null);
       setFaqs((prev) => prev.filter((f) => f.id !== id));
@@ -111,6 +130,31 @@ export default function FAQManagement() {
     } catch {
       toast.error("فشل تغيير الحالة");
     }
+  };
+
+  const handleSave = () => {
+    if (!formQuestion.trim() || !formAnswer.trim()) {
+      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+
+    const item: FAQ = {
+      id: editingFaq?.id || `faq-${Date.now()}`,
+      question: formQuestion.trim(),
+      answer: formAnswer.trim(),
+      category: formCategory || "general",
+      isActive: true,
+      helpful: editingFaq?.helpful || 0,
+    };
+
+    if (editingFaq) {
+      setFaqs((prev) => prev.map((f) => (f.id === editingFaq.id ? item : f)));
+      toast.success("تم تحديث السؤال");
+    } else {
+      setFaqs((prev) => [item, ...prev]);
+      toast.success("تمت إضافة السؤال");
+    }
+    setModalOpen(false);
   };
 
   const filtered = useMemo(() => {
@@ -138,8 +182,9 @@ export default function FAQManagement() {
             </p>
           </div>
           <button
-            onClick={() => { setEditingFaq(null); setModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-xs"
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             إضافة سؤال جديد
@@ -173,9 +218,9 @@ export default function FAQManagement() {
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>تقييمات الفائدة الإيجابية</span>
-              <ThumbsUp className="w-4 h-4 text-blue-500" />
+              <ThumbsUp className="w-4 h-4 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">
+            <div className="text-2xl font-bold font-mono tabular-nums text-primary">
               {totalHelpful}
             </div>
             <div className="text-[11px] text-muted-foreground">تفاعل إيجابي من الزوار</div>
@@ -191,7 +236,7 @@ export default function FAQManagement() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="بحث في نصوص الأسئلة والإجابات..."
-                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -199,8 +244,9 @@ export default function FAQManagement() {
               {CATEGORIES.map((c) => (
                 <button
                   key={c.value}
+                  type="button"
                   onClick={() => setSelectedCat(c.value)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg text-xs transition-colors whitespace-nowrap cursor-pointer ${
                     selectedCat === c.value
                       ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                       : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -244,8 +290,9 @@ export default function FAQManagement() {
                       </td>
                       <td className="py-3 px-3 text-center">
                         <button
+                          type="button"
                           onClick={() => toggleActive(faq)}
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors cursor-pointer ${
                             faq.isActive
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                               : "bg-muted text-muted-foreground border-border"
@@ -257,16 +304,20 @@ export default function FAQManagement() {
                       <td className="py-3 px-4 text-left">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => { setEditingFaq(faq); setModalOpen(true); }}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            type="button"
+                            onClick={() => openEditModal(faq)}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                             title="تعديل"
+                            aria-label="تعديل السؤال"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDelete(faq.id)}
-                            className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10"
+                            className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 cursor-pointer"
                             title="حذف"
+                            aria-label="حذف السؤال"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -290,24 +341,54 @@ export default function FAQManagement() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-lg space-y-4 p-5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-border/70">
-              <h2 className="text-sm font-bold text-foreground">{editingFaq ? "تعديل السؤال" : "إضافة سؤال جديد"}</h2>
-              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground p-1"><X className="w-4 h-4" /></button>
+              <h2 className="text-sm font-bold text-foreground">
+                {editingFaq ? "تعديل السؤال" : "إضافة سؤال جديد"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted cursor-pointer"
+                aria-label="إغلاق النافذة"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block font-medium text-foreground mb-1">السؤال *</label>
-                <input defaultValue={editingFaq?.question || ""} placeholder="اكتب صيغة السؤال بوضوح..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-q" />
+                <label className="block font-semibold text-foreground mb-1">السؤال *</label>
+                <input
+                  value={formQuestion}
+                  onChange={(e) => setFormQuestion(e.target.value)}
+                  placeholder="اكتب صيغة السؤال بوضوح..."
+                  className="w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
               <div>
-                <label className="block font-medium text-foreground mb-1">الإجابة المعتمدة *</label>
-                <textarea rows={3} defaultValue={editingFaq?.answer || ""} placeholder="اكتب الإجابة المفصلة..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-a" />
+                <label className="block font-semibold text-foreground mb-1">الإجابة المعتمدة *</label>
+                <textarea
+                  rows={3}
+                  value={formAnswer}
+                  onChange={(e) => setFormAnswer(e.target.value)}
+                  placeholder="اكتب الإجابة المفصلة..."
+                  className="w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
               </div>
               <div>
-                <label className="block font-medium text-foreground mb-1">التصنيف</label>
-                <select defaultValue={editingFaq?.category || "general"} className="w-full bg-background border border-border/80 rounded-lg p-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-c">
+                <label className="block font-semibold text-foreground mb-1">التصنيف</label>
+                <select
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="w-full bg-background border border-border/80 rounded-xl p-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
                   <option value="shipping">الشحن والتوصيل</option>
                   <option value="payment">المدفوعات والفواتير</option>
                   <option value="returns">الاستبدال والاسترجاع</option>
@@ -316,31 +397,17 @@ export default function FAQManagement() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
-              <button onClick={() => setModalOpen(false)} className="px-3.5 py-1.5 text-xs rounded-lg border border-border/80 text-foreground hover:bg-muted/50">إلغاء</button>
               <button
-                onClick={() => {
-                  const q = (document.getElementById("faq-q") as HTMLInputElement)?.value;
-                  const a = (document.getElementById("faq-a") as HTMLTextAreaElement)?.value;
-                  const c = (document.getElementById("faq-c") as HTMLSelectElement)?.value;
-                  if (!q || !a) return toast.error("يرجى ملء جميع الحقول المطلوبة");
-                  const item: FAQ = {
-                    id: editingFaq?.id || `faq-${Date.now()}`,
-                    question: q,
-                    answer: a,
-                    category: c || "general",
-                    isActive: true,
-                    helpful: editingFaq?.helpful || 0,
-                  };
-                  if (editingFaq) {
-                    setFaqs((prev) => prev.map((f) => (f.id === editingFaq.id ? item : f)));
-                    toast.success("تم تحديث السؤال");
-                  } else {
-                    setFaqs((prev) => [item, ...prev]);
-                    toast.success("تمت إضافة السؤال");
-                  }
-                  setModalOpen(false);
-                }}
-                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90"
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="px-3.5 py-1.5 text-xs rounded-xl border border-border/80 text-foreground hover:bg-muted/50 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition shadow-xs cursor-pointer"
               >
                 {editingFaq ? "حفظ التعديلات" : "إضافة السؤال"}
               </button>

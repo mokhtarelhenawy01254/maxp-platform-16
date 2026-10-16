@@ -1,3 +1,5 @@
+import React from "react";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Sparkline } from "./Sparkline";
 
@@ -37,8 +39,8 @@ type MetricCardProps = MetricWithSparkline | MetricWithTrend | MetricWithBar | M
 
 const accentColors: Record<string, { bg: string; text: string; sparkline: string }> = {
   emerald: { bg: "from-emerald-500 to-emerald-400", text: "text-emerald-600 dark:text-emerald-400", sparkline: "var(--color-success)" },
-  blue: { bg: "from-blue-500 to-blue-400", text: "text-blue-600 dark:text-blue-400", sparkline: "var(--color-primary)" },
-  violet: { bg: "from-violet-500 to-violet-400", text: "text-violet-600 dark:text-violet-400", sparkline: "var(--color-primary)" },
+  blue: { bg: "from-primary to-primary/80", text: "text-primary", sparkline: "var(--color-primary)" },
+  violet: { bg: "from-purple-500 to-purple-400", text: "text-purple-600 dark:text-purple-400", sparkline: "var(--color-primary)" },
   amber: { bg: "from-amber-500 to-amber-400", text: "text-amber-600 dark:text-amber-400", sparkline: "var(--color-warning)" },
   cyan: { bg: "from-cyan-500 to-cyan-400", text: "text-cyan-600 dark:text-cyan-400", sparkline: "var(--color-primary)" },
   rose: { bg: "from-rose-500 to-rose-400", text: "text-rose-600 dark:text-rose-400", sparkline: "var(--color-destructive)" },
@@ -55,25 +57,25 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right col-span-1 row-span-1 h-full",
+          "relative flex flex-col p-4 rounded-xl text-right col-span-1 row-span-1 h-full cursor-pointer",
           "bg-card text-card-foreground",
-          "border border-border/50",
-          "shadow-sm hover:shadow-md",
-          "transition-all duration-500 ease-out hover:-translate-y-0.5",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "border border-border/70",
+          "shadow-xs hover:border-border hover:shadow-sm",
+          "transition-all duration-200 ease-out hover:-translate-y-0.5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           "group",
         )}
       >
-        <span className="text-[13px] font-medium text-muted-foreground mb-0.5">
+        <span className="text-xs font-medium text-muted-foreground mb-1">
           {label}
         </span>
         <span className={cn(
-          "text-2xl sm:text-[28px] font-bold tabular-nums tracking-tight",
+          "text-2xl font-mono tabular-nums font-bold tracking-tight",
           palette.text,
         )}>
           {value}
         </span>
-        <div className="mt-2 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
+        <div className="mt-2.5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
           <Sparkline
             data={p.sparklineData}
             stroke={palette.sparkline}
@@ -92,26 +94,26 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right h-full",
+          "relative flex flex-col p-4 rounded-xl text-right h-full cursor-pointer",
           "bg-card text-card-foreground",
-          "border border-border/50",
-          "shadow-sm hover:shadow-md",
-          "transition-all duration-500 ease-out hover:-translate-y-0.5",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "border border-border/70",
+          "shadow-xs hover:border-border hover:shadow-sm",
+          "transition-all duration-200 ease-out hover:-translate-y-0.5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         )}
       >
-        <span className="text-[13px] font-medium text-muted-foreground mb-0.5">
+        <span className="text-xs font-medium text-muted-foreground mb-1">
           {label}
         </span>
         <span className={cn(
-          "text-2xl sm:text-[28px] font-bold tabular-nums tracking-tight",
+          "text-2xl font-mono tabular-nums font-bold tracking-tight",
           palette.text,
         )}>
           {value}
         </span>
-        <div className="mt-3 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+        <div className="mt-3.5 h-1.5 rounded-full bg-muted/60 overflow-hidden">
           <div
-            className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out", palette.bg)}
+            className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500 ease-out", palette.bg)}
             style={{ width: `${Math.min(p.progress, 100)}%` }}
           />
         </div>
@@ -127,44 +129,42 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right h-full",
+          "relative flex flex-col p-4 rounded-xl text-right h-full cursor-pointer",
           "bg-card text-card-foreground",
-          "border border-border/50",
-          "shadow-sm hover:shadow-md",
-          "transition-all duration-500 ease-out hover:-translate-y-0.5",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "border border-border/70",
+          "shadow-xs hover:border-border hover:shadow-sm",
+          "transition-all duration-200 ease-out hover:-translate-y-0.5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           "group",
         )}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="p-2.5 rounded-xl bg-muted/20 group-hover:bg-muted/40 transition-colors duration-300">
-            {Icon && <Icon className="w-5 h-5 text-muted-foreground" />}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="p-2 rounded-lg bg-muted/50 group-hover:bg-muted transition-colors">
+            {Icon && <Icon className="w-4 h-4 text-muted-foreground" />}
           </div>
           {p.trend && (
             <span
               className={cn(
-                "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold",
+                "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-mono tabular-nums font-semibold border",
                 p.trend.positive
-                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
               )}
               dir={isRtl ? "rtl" : "ltr"}
             >
-              <svg
-                className={cn("w-3 h-3", p.trend.positive ? "" : "rotate-180")}
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path d="M6 2L10 7H2L6 2Z" fill="currentColor" />
-              </svg>
+              {p.trend.positive ? (
+                <ArrowUpRight className="w-3 h-3" />
+              ) : (
+                <ArrowDownRight className="w-3 h-3" />
+              )}
               {p.trend.value}
             </span>
           )}
         </div>
-        <span className="text-[13px] font-medium text-muted-foreground mb-0.5">
+        <span className="text-xs font-medium text-muted-foreground mb-1">
           {label}
         </span>
-        <span className="text-2xl sm:text-[28px] font-bold tabular-nums tracking-tight text-foreground">
+        <span className="text-2xl font-mono tabular-nums font-bold tracking-tight text-foreground">
           {value}
         </span>
       </button>
@@ -177,42 +177,40 @@ export function MetricCard(props: MetricCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "relative flex flex-row items-center gap-4 p-4 rounded-2xl text-right h-full",
+        "relative flex flex-row items-center gap-3.5 p-3.5 rounded-xl text-right h-full cursor-pointer",
         "bg-card text-card-foreground",
-        "border border-border/50",
-        "shadow-sm hover:shadow-md",
-        "transition-all duration-500 ease-out hover:-translate-y-0.5",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "border border-border/70",
+        "shadow-xs hover:border-border hover:shadow-sm",
+        "transition-all duration-200 ease-out hover:-translate-y-0.5",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
       )}
     >
       {p.icon && (
-        <div className="p-2.5 rounded-xl bg-muted/20 shrink-0">
-          <p.icon className="w-5 h-5 text-muted-foreground" />
+        <div className="p-2 rounded-lg bg-muted/50 shrink-0">
+          <p.icon className="w-4 h-4 text-muted-foreground" />
         </div>
       )}
       <div className="flex-1 min-w-0">
         <span className="text-xs text-muted-foreground block">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tabular-nums tracking-tight text-foreground">
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-lg font-mono tabular-nums font-bold tracking-tight text-foreground">
             {value}
           </span>
           {p.trend && (
             <span
               className={cn(
-                "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold",
+                "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums font-semibold border",
                 p.trend.positive
-                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
               )}
               dir={isRtl ? "rtl" : "ltr"}
             >
-              <svg
-                className={cn("w-2.5 h-2.5", p.trend.positive ? "" : "rotate-180")}
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path d="M6 2L10 7H2L6 2Z" fill="currentColor" />
-              </svg>
+              {p.trend.positive ? (
+                <ArrowUpRight className="w-2.5 h-2.5" />
+              ) : (
+                <ArrowDownRight className="w-2.5 h-2.5" />
+              )}
               {p.trend.value}
             </span>
           )}

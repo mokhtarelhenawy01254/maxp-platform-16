@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   Package,
   Search,
@@ -71,11 +70,11 @@ const APP_ROUTE_MAP: Record<string, string> = {
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   COMMUNICATION: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-  ECOMMERCE: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' },
+  ECOMMERCE: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' },
   MARKETING: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
   ORDER_OPS: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
   MEDICAL: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
-  AI: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
+  AI: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' },
   ANALYTICS: { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/20' },
   HR: { bg: 'bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-500/20' },
 };
@@ -86,7 +85,6 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
   onRefresh,
   isRefreshing = false,
 }) => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -193,7 +191,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
           <button
             type="button"
             onClick={() => navigate('/marketplace')}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs shrink-0 cursor-pointer"
           >
             <Plus className="size-3.5" />
             متجر التطبيقات
@@ -210,7 +208,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="بحث بين التطبيقات..."
-            className="w-full pl-3 pr-9 py-1.5 text-xs rounded-lg bg-background border border-border/70 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors placeholder:text-muted-foreground"
+            className="w-full pl-3 pr-9 py-1.5 text-xs rounded-lg bg-background border border-border/70 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors placeholder:text-muted-foreground text-foreground"
           />
         </div>
 
@@ -220,7 +218,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 selectedCategory === cat
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -235,7 +233,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
               onClick={onRefresh}
               disabled={isRefreshing}
               title="تحديث البيانات"
-              className="p-1.5 rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+              className="p-1.5 rounded-lg border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
               aria-label="تحديث البيانات"
             >
               <RotateCw className={`size-3.5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
@@ -261,7 +259,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
           <button
             type="button"
             onClick={() => navigate('/marketplace')}
-            className="mt-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs"
+            className="mt-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="size-3.5" />
             متجر التطبيقات
@@ -295,7 +293,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
                         </h4>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[10px] font-medium border ${catColor.bg} ${catColor.text} ${catColor.border}`}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${catColor.bg} ${catColor.text} ${catColor.border}`}
                           >
                             {app.category || 'أداة'}
                           </span>
@@ -329,7 +327,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => navigate(`/marketplace/apps/${app.slug}/settings`)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-medium transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-medium transition-colors cursor-pointer"
                   >
                     <Settings className="size-3" />
                     الإعدادات
@@ -338,7 +336,7 @@ export const InstalledAppsDashboard: React.FC<InstalledAppsDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => navigate(route)}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium transition-colors shadow-xs cursor-pointer"
                   >
                     <span>فتح التطبيق</span>
                     <ExternalLink className="size-3 rtl:rotate-180" />
