@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/pages/settings/developer/**/*.ts",
+    "src/pages/settings/developer/**/*.tsx",
+    "src/pages/settings/Settings.tsx"
+  ]
+}

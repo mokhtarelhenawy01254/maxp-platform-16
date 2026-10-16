@@ -7,7 +7,9 @@ import structlog
 from mcp.types import CallToolResult, TextContent
 from pydantic import Field
 
+from maxp_mcp_catalog.auth_context import get_inbound_value, is_merchant_value
 from maxp_mcp_catalog.backend_client import BackendError, MaxPBackendClient, get_backend_client
+from maxp_mcp_catalog.merchant_bridge import execute_merchant_tool
 
 logger = structlog.get_logger(__name__)
 
@@ -37,8 +39,18 @@ async def _call(
     params: dict[str, object],
     company_id: str,
 ) -> CallToolResult:
+    presented = get_inbound_value()
     try:
-        result = await client.execute_tool(tool=tool, params=params, company_id=company_id)
+        if is_merchant_value(presented):
+            # Merchant key path: the tenant scope is derived server-side from the
+            # verified credential — tool parameters never select the tenant.
+            result = await execute_merchant_tool(
+                tool=tool,
+                params=params,
+                presented_value=presented,
+            )
+        else:
+            result = await client.execute_tool(tool=tool, params=params, company_id=company_id)
     except BackendError as exc:
         logger.warning("tool_call_failed", tool=tool, error=str(exc), status=exc.status_code)
         return _err(str(exc), status_code=exc.status_code)

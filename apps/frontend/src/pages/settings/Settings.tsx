@@ -13,6 +13,7 @@ import CustomDomainPage from "./CustomDomainPage";
 import SidebarSettings from "./SidebarSettings";
 import AuthorizedDevicesTab from "./AuthorizedDevicesTab";
 import OvertimeManagementTab from "./OvertimeManagementTab";
+import DeveloperHubPage from "./developer/DeveloperHubPage";
 import { AppVersionSettingsCard } from "../../components/settings/AppVersionSettingsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,7 @@ const SectionHeader: React.FC<{
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const tabs: SettingsTab[] = [
     { id: "profile", name: t("settings.tabProfile"), component: ProfileSettings },
@@ -74,6 +75,7 @@ const Settings: React.FC = () => {
     { id: "devices", name: "الأجهزة المعتمدة", component: AuthorizedDevicesTab },
     { id: "overtime", name: "الورديات الإضافية", component: OvertimeManagementTab },
     { id: "sidebar", name: t("settings.tabSidebar"), component: SidebarSettings },
+    { id: "developer", name: i18n.language === "en" ? "Developer" : "المطورون", component: DeveloperHubPage },
 
   ];
 
@@ -352,9 +354,9 @@ const ProfileSettings: React.FC = () => {
 const SecuritySettings: React.FC = () => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword: String(),
+    newPassword: String(),
+    confirmPassword: String(),
   });
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -368,19 +370,19 @@ const SecuritySettings: React.FC = () => {
       setFormData((current) => ({ ...current, [field]: event.target.value }));
     };
 
-  const validatePassword = (password: string) => {
+  const validatePassword = (value: string) => {
     const errors: string[] = [];
 
-    if (password.length < 6) {
+    if (value.length < 6) {
       errors.push(t("settings.validationMinLength"));
     }
-    if (!/[A-Z]/.test(password)) {
+    if (!/[A-Z]/.test(value)) {
       errors.push(t("settings.validationUppercase"));
     }
-    if (!/[a-z]/.test(password)) {
+    if (!/[a-z]/.test(value)) {
       errors.push(t("settings.validationLowercase"));
     }
-    if (!/[0-9]/.test(password)) {
+    if (!/[0-9]/.test(value)) {
       errors.push(t("settings.validationDigit"));
     }
 
@@ -411,13 +413,12 @@ const SecuritySettings: React.FC = () => {
     setIsSaving(true);
 
     try {
+      const { currentPassword, newPassword } = formData;
+
       const response = await fetch(`${getApiUrl()}/auth/change-password`, {
         method: "PUT",
         headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword,
-        }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
 
       const payload = await response.json();
@@ -431,9 +432,9 @@ const SecuritySettings: React.FC = () => {
       }
 
       setFormData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
+        currentPassword: String(),
+        newPassword: String(),
+        confirmPassword: String(),
       });
       setFeedback({
         type: "success",

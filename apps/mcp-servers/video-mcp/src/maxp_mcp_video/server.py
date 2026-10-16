@@ -5,6 +5,7 @@ import os
 import structlog
 from mcp.server.fastmcp import FastMCP
 
+from maxp_mcp_video.auth_context import MerchantAuthMiddleware
 from maxp_mcp_video.tools import register_tools
 
 logger = structlog.get_logger(__name__)
@@ -37,9 +38,18 @@ def _build_server() -> FastMCP:
 mcp: FastMCP = _build_server()
 
 
+def build_asgi_app():
+    """Streamable HTTP app with the merchant context middleware attached."""
+    app = mcp.streamable_http_app()
+    app.add_middleware(MerchantAuthMiddleware)
+    return app
+
+
 def serve() -> None:
+    import uvicorn
+
     logger.info("starting_video_mcp_server", name=SERVER_NAME, host=mcp.settings.host, port=mcp.settings.port)
-    mcp.run(transport="streamable-http")
+    uvicorn.run(build_asgi_app(), host=mcp.settings.host, port=mcp.settings.port)
 
 
 if __name__ == "__main__":

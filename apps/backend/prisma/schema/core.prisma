@@ -302,6 +302,7 @@ model Company {
   shippingCompanies               ShippingCompany[]
   providedConnections             CompanyConnection[]              @relation("ProvidedConnections")
   consumedConnections             CompanyConnection[]              @relation("ConsumedConnections")
+  merchantApiCredentials          MerchantApiCredential[]
   sentIntegrationRequests         CompanyConnectionRequest[]       @relation("SentRequests")
   receivedIntegrationRequests     CompanyConnectionRequest[]       @relation("ReceivedRequests")
   sentMessageDailySummaries       SentMessageDailySummary[]

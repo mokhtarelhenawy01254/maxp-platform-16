@@ -8,6 +8,8 @@ import structlog
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from maxp_mcp_video.auth_context import get_inbound_value, is_merchant_value
+
 logger = structlog.get_logger(__name__)
 
 DEFAULT_BACKEND_URL = os.environ.get("MAXP_BACKEND_URL", "http://127.0.0.1:3007")
@@ -26,6 +28,27 @@ class CheckVideoStatusInput(BaseModel):
     company_id: str | None = Field(default="default", description="Company / tenant ID")
 
 
+def _call_target(
+    backend_url: str,
+    presented: str,
+    suffix: str,
+    company_id: str,
+) -> tuple[str, Any]:
+    """Resolve the request target and headers for this call.
+
+    Merchant-presented requests hit the /ext/video bridge — the tenant is
+    derived server-side from the verified credential. Everything else keeps
+    the legacy internal path byte-for-byte unchanged.
+    """
+    base = backend_url.rstrip("/")
+    if is_merchant_value(presented):
+        return (
+            f"{base}/api/v1/public/ext/video{suffix}",
+            httpx.Headers([("Authorization", f"Bearer {presented}")]),
+        )
+    return f"{base}/api/v1/ai-video{suffix}", {"x-company-id": company_id}
+
+
 def register_tools(mcp: FastMCP, backend_url: str = DEFAULT_BACKEND_URL) -> None:
     @mcp.tool(
         name="create_video_task",
@@ -38,14 +61,13 @@ def register_tools(mcp: FastMCP, backend_url: str = DEFAULT_BACKEND_URL) -> None
         reference_image_url: str | None = None,
         company_id: str = "default",
     ) -> dict[str, Any]:
-        url = f"{backend_url.rstrip('/')}/api/v1/ai-video/generate"
+        url, headers = _call_target(backend_url, get_inbound_value(), "/generate", company_id)
         payload = {
             "prompt": prompt,
             "aspectRatio": aspect_ratio,
             "durationSeconds": duration_seconds,
             "referenceImageUrl": reference_image_url,
         }
-        headers = {"x-company-id": company_id}
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -63,8 +85,7 @@ def register_tools(mcp: FastMCP, backend_url: str = DEFAULT_BACKEND_URL) -> None
         task_id: str,
         company_id: str = "default",
     ) -> dict[str, Any]:
-        url = f"{backend_url.rstrip('/')}/api/v1/ai-video/status/{task_id}"
-        headers = {"x-company-id": company_id}
+        url, headers = _call_target(backend_url, get_inbound_value(), f"/status/{task_id}", company_id)
 
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -79,8 +100,7 @@ def register_tools(mcp: FastMCP, backend_url: str = DEFAULT_BACKEND_URL) -> None
         description="List recent video generation tasks and their completion URLs for a company.",
     )
     async def list_recent_videos(company_id: str = "default") -> dict[str, Any]:
-        url = f"{backend_url.rstrip('/')}/api/v1/ai-video/history"
-        headers = {"x-company-id": company_id}
+        url, headers = _call_target(backend_url, get_inbound_value(), "/history", company_id)
 
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:

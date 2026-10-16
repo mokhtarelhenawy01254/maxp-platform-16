@@ -1,0 +1,51 @@
+// Location: backend/prisma/schema/developer_api.prisma
+// Merchant Developer Hub: per-tenant API keys + MCP tokens + usage audit logs.
+
+enum MerchantCredentialType {
+  API
+  MCP
+}
+
+model MerchantApiCredential {
+  id              String                 @id @default(cuid())
+  companyId       String
+  name            String
+  keyPrefix       String // e.g. mxp_live_ab12 — the only part ever shown again in the UI
+  keyHash         String                 @unique // SHA-256 hex of the full raw key
+  credentialType  MerchantCredentialType @default(API)
+  scopes          String[]               @default([])
+  rateLimitPerMin Int                    @default(60)
+  isActive        Boolean                @default(true)
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  createdByUserId String? // plain reference (no FK relation) to keep User model untouched
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  company   Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  usageLogs ApiUsageLog[]
+
+  @@index([companyId])
+  @@index([companyId, credentialType])
+  @@map("merchant_api_credentials")
+}
+
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  credentialId String
+  companyId    String
+  source       String // "API" | "MCP"
+  method       String?
+  path         String?
+  tool         String? // MCP tool name (when source = MCP)
+  statusCode   Int?
+  durationMs   Int?
+  ip           String?
+  createdAt    DateTime @default(now())
+
+  credential MerchantApiCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@index([credentialId, createdAt])
+  @@index([companyId, createdAt])
+  @@map("api_usage_logs")
+}

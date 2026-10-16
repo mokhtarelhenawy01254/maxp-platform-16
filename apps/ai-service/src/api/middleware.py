@@ -26,6 +26,14 @@ class TenantMiddleware(BaseHTTPMiddleware):
         if any(request.url.path.startswith(p) for p in self.TENANT_EXEMPT_PREFIXES):
             return await call_next(request)
 
+        # Merchant MCP keys (`mxp_mcp_…`) on the /mcp bridge carry their tenant
+        # inside the verified credential — resolved by the handler itself.
+        presented = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        if request.url.path.startswith("/mcp") and presented.startswith("mxp_mcp_"):
+            request.state.company_id = ""
+            request.state.customer_id = ""
+            return await call_next(request)
+
         company_id = request.headers.get("X-Company-Id")
         if not company_id:
             return JSONResponse(
@@ -49,6 +57,12 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
 
         auth = request.headers.get("Authorization", "")
         token = auth.removeprefix("Bearer ").strip()
+
+        # Merchant MCP keys on the /mcp bridge are verified (hash + activity +
+        # rate limit + audit) inside the bridge handler via the Developer Hub
+        # internal endpoint — every other route still requires the service token.
+        if request.url.path.startswith("/mcp") and token.startswith("mxp_mcp_"):
+            return await call_next(request)
 
         settings = get_settings()
         logger.debug("Service auth check", token_present=bool(token))
