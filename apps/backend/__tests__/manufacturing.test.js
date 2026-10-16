@@ -689,6 +689,8 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     const bom = await ManufacturingService.createBom(companyA, {
       code: 'BOM-POLO-SHIRT',
       name: 'قميص بولو رجالي',
+      laborCostPerUnit: 20.0,
+      overheadCostPerUnit: 10.0,
       components: [
         {
           rawMaterialId: 'raw_cotton_pique',
@@ -700,6 +702,15 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
         { name: 'القص', sequence: 1, ratePerPiece: 5.0 },
         { name: 'الخياطة والتجميع', sequence: 2, ratePerPiece: 15.0 },
       ],
+    });
+
+    // Seed raw material product with standard cost = 110.0 EGP
+    await currentPrisma.product.create({
+      data: {
+        id: 'raw_cotton_pique',
+        name: 'قماش بيكيه قطن',
+        cost: 110.0,
+      },
     });
 
     const order = await ManufacturingService.createOrder(companyA, {
@@ -749,12 +760,30 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     const analysis = await ManufacturingService.calculateOrderCost(companyA, order.id);
     expect(analysis.actualCost.total).toBe(15000.0);
     expect(analysis.actualCost.unitCost).toBe(150.0);
+
+    // Verify standard planned cost computed from BOM using raw material Product.cost (110.0 EGP/meter)
+    // Materials: 100 planned pcs * 1.0 m * 110.0 EGP = 11,000 EGP
+    // Labor: 100 pcs * (5 + 15) = 2,000 EGP
+    // MOH: 100 pcs * 10 EGP = 1,000 EGP
+    // Total Standard Cost: 11,000 + 2,000 + 1,000 = 14,000 EGP
+    expect(analysis.standardCost.materials).toBe(11000.0);
+    expect(analysis.standardCost.total).toBe(14000.0);
+    expect(analysis.standardCost.unitCost).toBe(140.0);
+    expect(analysis.variance.totalVariance).toBe(1000.0); // 15,000 - 14,000 overrun
+    expect(analysis.variance.isFavorable).toBe(false);
   });
 
   test('6. WIP Double-Entry Postings: verifies 4 GL entries, dual gates, and idempotency', async () => {
-    // Enable auto-posting on accounting settings
+    // Resolve Finished Goods account 110403 to set as accounting.defaultInventoryAccountId
+    // This replicates the exact real-world condition where defaultInventoryAccountId points to 110403 (commercial merchandise)
+    const account110403 = await currentPrisma.account.findFirst({
+      where: { companyId: companyA, code: '110403' },
+    });
+
+    // Enable auto-posting on accounting settings with defaultInventoryAccountId = 110403
     await AccountingService.updateSettings(companyA, {
       autoPostingEnabled: true,
+      defaultInventoryAccountId: account110403?.id,
     });
 
     // Create an active company app subscription for accounting
@@ -766,7 +795,7 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
       },
     });
 
-    // Set up manufacturing settings with standard Egyptian COA accounts
+    // Set up manufacturing settings with standard Egyptian COA accounts (rawMaterialsAccountId left null to test fallback)
     await ManufacturingService.updateSettings(companyA, {
       autoPostingEnabled: true,
       defaultOverheadRatePerPiece: 5.0,
@@ -799,6 +828,14 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     expect(issueDebit).toBeDefined();
     expect(issueCredit).toBeDefined();
 
+    // Verify exact account codes: Dr 110402 (WIP) / Cr 110401 (Raw Materials)
+    // Regression check: 110403 (Finished Goods) must NEVER be credited in issue entry!
+    const debitAccount = await currentPrisma.account.findFirst({ where: { id: issueDebit.accountId } });
+    const creditAccount = await currentPrisma.account.findFirst({ where: { id: issueCredit.accountId } });
+    expect(debitAccount.code).toBe('110402');
+    expect(creditAccount.code).toBe('110401');
+    expect(creditAccount.code).not.toBe('110403');
+
     // Idempotency check: Calling again with same issueId creates ZERO extra entries
     const duplicateIssue = await ManufacturingService.postWipMaterialIssue(companyA, 'issue_test_01', {
       orderNumber: order.orderNumber,
@@ -818,6 +855,13 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     });
     expect(laborEntry.id).toBeDefined();
     expect(laborEntry.sourceType).toBe('MANUFACTURING_LABOR');
+    const laborLines = await currentPrisma.journalLine.findMany({ where: { entryId: laborEntry.id } });
+    const laborDebit = laborLines.find((l) => Number(l.debit) === 1500.0);
+    const laborCredit = laborLines.find((l) => Number(l.credit) === 1500.0);
+    const laborDebitAcc = await currentPrisma.account.findFirst({ where: { id: laborDebit.accountId } });
+    const laborCreditAcc = await currentPrisma.account.findFirst({ where: { id: laborCredit.accountId } });
+    expect(laborDebitAcc.code).toBe('110402');
+    expect(laborCreditAcc.code).toBe('210201');
 
     // 3. Post MOH Cost GL Entry (WIP 110402 Debit / Applied MOH 5103 Credit)
     const mohEntry = await ManufacturingService.postWipOverheadCost(companyA, order.id, {
@@ -826,6 +870,13 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     });
     expect(mohEntry.id).toBeDefined();
     expect(mohEntry.sourceType).toBe('MANUFACTURING_OVERHEAD');
+    const mohLines = await currentPrisma.journalLine.findMany({ where: { entryId: mohEntry.id } });
+    const mohDebit = mohLines.find((l) => Number(l.debit) === 250.0);
+    const mohCredit = mohLines.find((l) => Number(l.credit) === 250.0);
+    const mohDebitAcc = await currentPrisma.account.findFirst({ where: { id: mohDebit.accountId } });
+    const mohCreditAcc = await currentPrisma.account.findFirst({ where: { id: mohCredit.accountId } });
+    expect(mohDebitAcc.code).toBe('110402');
+    expect(mohCreditAcc.code).toBe('5103');
 
     // 4. Post Finished Goods Receipt GL Entry (Finished Goods 110403 Debit / WIP 110402 Credit)
     const totalOrderCost = 5000.0 + 1500.0 + 250.0; // 6750.0
@@ -835,6 +886,13 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     });
     expect(receiptEntry.id).toBeDefined();
     expect(receiptEntry.sourceType).toBe('MANUFACTURING_RECEIPT');
+    const receiptLines = await currentPrisma.journalLine.findMany({ where: { entryId: receiptEntry.id } });
+    const receiptDebit = receiptLines.find((l) => Number(l.debit) === totalOrderCost);
+    const receiptCredit = receiptLines.find((l) => Number(l.credit) === totalOrderCost);
+    const receiptDebitAcc = await currentPrisma.account.findFirst({ where: { id: receiptDebit.accountId } });
+    const receiptCreditAcc = await currentPrisma.account.findFirst({ where: { id: receiptCredit.accountId } });
+    expect(receiptDebitAcc.code).toBe('110403');
+    expect(receiptCreditAcc.code).toBe('110402');
 
     // Verify all 4 entries are posted and balanced
     const allEntries = await currentPrisma.journalEntry.findMany({

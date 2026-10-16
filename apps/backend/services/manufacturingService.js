@@ -1679,10 +1679,30 @@ class ManufacturingService {
     // Standard Planned Costs from BOM
     let stdMaterialCost = 0;
     if (bom && Array.isArray(bom.components)) {
+      const prisma = getSharedPrismaClient();
+      const rawIds = bom.components.map((c) => c.rawMaterialId).filter(Boolean);
+      let costMap = {};
+      if (rawIds.length > 0 && prisma?.product?.findMany) {
+        try {
+          const prods = await prisma.product.findMany({
+            where: { id: { in: rawIds } },
+            select: { id: true, cost: true },
+          });
+          costMap = Object.fromEntries(
+            prods.map((p) => [p.id, Number(p.cost || 0)])
+          );
+        } catch {
+          // ignore if product table not available
+        }
+      }
+
       for (const c of bom.components) {
-        stdMaterialCost += plannedQty * Number(c.consumptionPerUnit) * 1.0; // standard base rate
+        const prodCost = costMap[c.rawMaterialId];
+        const unitCost = prodCost && prodCost > 0 ? prodCost : 1.0;
+        stdMaterialCost += plannedQty * Number(c.consumptionPerUnit) * unitCost;
       }
     }
+    stdMaterialCost = round2(stdMaterialCost);
     const stdLaborCost = round2(plannedQty * Number(bom?.laborCostPerUnit || 0));
     const stdOverheadCost = round2(plannedQty * Number(bom?.overheadCostPerUnit || 0));
     const stdTotalCost = round2(stdMaterialCost + stdLaborCost + stdOverheadCost);
@@ -1739,7 +1759,7 @@ class ManufacturingService {
     const prisma = getSharedPrismaClient();
 
     // 1. Dual-gate check via AccountingAutoPostingService
-    const { canPost, settings: accSettings } = await AccountingAutoPostingService.checkGates(companyId);
+    const { canPost } = await AccountingAutoPostingService.checkGates(companyId);
     if (!canPost) return { canPost: false };
 
     const mfgSettings = await this.getSettings(companyId);
@@ -1756,7 +1776,7 @@ class ManufacturingService {
     // 110401: Raw Materials (مخزون الخامات ومستلزمات الإنتاج)
     const rawMaterialsAccountId = await AccountingAutoPostingService.resolveAccount(
       companyId,
-      mfgSettings.rawMaterialsAccountId || accSettings.defaultInventoryAccountId,
+      mfgSettings.rawMaterialsAccountId,
       '110401',
       'ASSET'
     );
