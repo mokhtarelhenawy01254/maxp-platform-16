@@ -25,22 +25,28 @@ const EnvironmentStatus: React.FC = () => {
   });
 
   useEffect(() => {
+    let active = true;
     const checkApiConnection = async () => {
       try {
         const result = await testApiConnection();
-        setStatus((prev) => ({
-          ...prev,
-          apiConnection: result ? "success" : "error",
-        }));
+        if (active) {
+          setStatus((prev) => ({
+            ...prev,
+            apiConnection: result ? "success" : "error",
+          }));
+        }
       } catch {
-        setStatus((prev) => ({
-          ...prev,
-          apiConnection: "error",
-        }));
+        if (active) {
+          setStatus((prev) => ({
+            ...prev,
+            apiConnection: "error",
+          }));
+        }
       }
     };
 
     void checkApiConnection();
+    return () => { active = false; };
   }, []);
 
   const getStatusIcon = (st: "loading" | "success" | "error") => {
@@ -50,7 +56,7 @@ const EnvironmentStatus: React.FC = () => {
       case "success":
         return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
       case "error":
-        return <XCircle className="h-4 w-4 text-rose-500 shrink-0" />;
+        return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
     }
   };
 
@@ -66,7 +72,7 @@ const EnvironmentStatus: React.FC = () => {
   };
 
   return (
-    <div className="bg-card border border-border/70 rounded-2xl p-5 shadow-2xs space-y-4">
+    <div className="bg-card border border-border/70 rounded-xl p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-border/60">
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-primary" />
@@ -77,7 +83,7 @@ const EnvironmentStatus: React.FC = () => {
         <span
           className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${
             status.environment === "development"
-              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              ? "bg-primary/10 text-primary border-primary/20"
               : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
           }`}
         >
@@ -85,7 +91,7 @@ const EnvironmentStatus: React.FC = () => {
         </span>
       </div>
 
-      <div className="space-y-2.5 text-xs">
+      <div className="space-y-2 text-xs">
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/60">
           <span className="font-medium text-muted-foreground">رابط الواجهة الخلفية (API):</span>
           <span className="font-mono tabular-nums text-foreground text-[11px] truncate max-w-xs">
@@ -99,9 +105,9 @@ const EnvironmentStatus: React.FC = () => {
             {status.configValid ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             ) : (
-              <XCircle className="h-4 w-4 text-rose-500" />
+              <XCircle className="h-4 w-4 text-destructive" />
             )}
-            <span className={status.configValid ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+            <span className={status.configValid ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}>
               {status.configValid ? "سليمة ومطابقة" : "غير مطابقة"}
             </span>
           </div>
@@ -116,7 +122,7 @@ const EnvironmentStatus: React.FC = () => {
                 status.apiConnection === "success"
                   ? "text-emerald-600 dark:text-emerald-400"
                   : status.apiConnection === "error"
-                  ? "text-rose-600 dark:text-rose-400"
+                  ? "text-destructive"
                   : "text-amber-600 dark:text-amber-400"
               }
             >
@@ -148,7 +154,7 @@ const EnvironmentStatus: React.FC = () => {
               <span className="text-[10px] text-muted-foreground block">تطابق الرابط</span>
               <span className="text-foreground block">{environmentInfo.configTest.apiUrlMatch ? "متطابق" : "مختلف"}</span>
             </div>
-            <div className={`p-1 rounded-full ${environmentInfo.configTest.apiUrlMatch ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+            <div className={`p-1 rounded-full ${environmentInfo.configTest.apiUrlMatch ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"}`}>
               {environmentInfo.configTest.apiUrlMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
             </div>
           </div>
@@ -156,11 +162,11 @@ const EnvironmentStatus: React.FC = () => {
       </div>
 
       {status.apiConnection === "error" && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl space-y-1">
-          <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400">
+        <div className="p-3 bg-destructive/10 border border-destructive/25 rounded-xl space-y-1">
+          <h4 className="text-xs font-semibold text-destructive">
             تنبيه في الاتصال بالخادم الخلفي
           </h4>
-          <p className="text-xs text-rose-600/90 dark:text-rose-400/90 leading-relaxed font-mono">
+          <p className="text-xs text-destructive/90 leading-relaxed font-mono">
             يرجى التأكد من تشغيل خادم الـ API على: {status.apiUrl}
           </p>
         </div>

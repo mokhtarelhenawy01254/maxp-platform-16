@@ -46,14 +46,14 @@ const GlobalToast: React.FC = () => {
       badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     },
     error: {
-      border: "border-rose-500/30",
-      icon: <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />,
-      badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+      border: "border-destructive/30",
+      icon: <AlertCircle className="w-4 h-4 text-destructive shrink-0" />,
+      badge: "bg-destructive/10 text-destructive",
     },
     info: {
-      border: "border-blue-500/30",
-      icon: <Info className="w-4 h-4 text-blue-500 shrink-0" />,
-      badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      border: "border-primary/30",
+      icon: <Info className="w-4 h-4 text-primary shrink-0" />,
+      badge: "bg-primary/10 text-primary",
     },
   }[toast.type] || {
     border: "border-border/70",
@@ -68,7 +68,7 @@ const GlobalToast: React.FC = () => {
       }`}
     >
       <div
-        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border bg-card/95 backdrop-blur-md shadow-xl ${typeConfig.border} min-w-[300px] max-w-md`}
+        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border bg-card/98 backdrop-blur-md shadow-xl ${typeConfig.border} min-w-[300px] max-w-md`}
       >
         <div className="shrink-0">{typeConfig.icon}</div>
         <p className="flex-1 text-xs font-semibold text-foreground leading-normal select-none">
@@ -77,7 +77,7 @@ const GlobalToast: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsVisible(false)}
-          className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors active:scale-95"
+          className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors active:scale-95 cursor-pointer"
           aria-label="إغلاق الإشعار"
         >
           <X className="w-3.5 h-3.5" />
