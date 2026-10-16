@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, RefreshCw } from "lucide-react";
+import { Camera, Loader2, RefreshCw, X, User } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInboxExternalImageUrl } from "@/utils/imageUrl";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
+import { cn } from "@/lib/utils";
 import { apiClient as api } from "../../services/apiClient";
 
 interface ProfileDialogProps {
@@ -80,9 +78,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         formData.append("picture", pictureFile);
       }
 
-      await api.post("/whatsapp/profile/update", formData, {
-        // boundary set by browser
-      });
+      await api.post("/whatsapp/profile/update", formData);
 
       tToast.success("ProfileDialog.success_update_7fa9");
       onClose();
@@ -98,7 +94,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
     setLoading(true);
     try {
       const response = await api.post("/whatsapp/profile/sync", { sessionId });
-      const { profile } = response.data;
+      const { profile } = response.data || {};
 
       if (profile) {
         setName(profile.name || "");
@@ -118,32 +114,49 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-2xl gap-0 rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0"
+        className="max-w-xl gap-0 rounded-2xl border border-border/70 bg-card p-0 text-foreground shadow-2xl overflow-hidden"
       >
-        <DialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
-          <DialogTitle className="text-lg text-[color:var(--color-foreground)]">
-            تحديث الملف الشخصي
-          </DialogTitle>
-          <DialogDescription>
-            عدّل الاسم والحالة والصورة الظاهرة في حساب واتساب المتصل.
-          </DialogDescription>
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-border/60 bg-card px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <User className="size-4.5" />
+            </div>
+            <div>
+              <DialogTitle className="text-sm font-bold text-foreground">
+                تحديث الملف الشخصي لواتساب
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                تعديل الاسم والحالة والصورة الشخصية لحساب واتساب المتصل
+              </DialogDescription>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.97]"
+            aria-label="إغلاق"
+          >
+            <X className="size-4" />
+          </button>
         </DialogHeader>
 
-        <div className="grid gap-6 px-6 py-6 md:grid-cols-[220px_1fr]">
-          <div className="flex flex-col items-center gap-4 rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70 px-5 py-6">
+        <div className="grid gap-5 p-5 sm:grid-cols-[180px_1fr]">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/70 bg-muted/20 p-4">
             <div className="relative">
-              <Avatar className="size-32 shadow-[0_18px_40px_rgba(15,27,45,0.12)]">
+              <Avatar className="size-28 rounded-2xl border border-border/60 shadow-md">
                 <AvatarImage src={getInboxExternalImageUrl(picturePreview) || undefined} />
-                <AvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-2xl font-semibold text-[color:var(--color-primary)]">
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-xl font-bold text-primary">
                   {(name || currentName || "WA").slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-1 end-1 flex size-10 items-center justify-center rounded-full border border-[color:var(--shell-control-border)] bg-white text-[color:var(--color-foreground)] shadow-[0_12px_24px_rgba(15,27,45,0.12)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
+                className="absolute -bottom-1.5 -end-1.5 flex size-8 items-center justify-center rounded-xl border border-border/70 bg-card text-foreground shadow-md transition-all hover:bg-muted active:scale-95"
+                title="تغيير الصورة"
+                aria-label="تغيير الصورة"
               >
-                <Camera className="size-4" />
+                <Camera className="size-3.5 text-primary" />
               </button>
               <input
                 ref={fileInputRef}
@@ -153,52 +166,72 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
                 onChange={handleFileChange}
               />
             </div>
-            <p className="text-center text-xs leading-6 text-[color:var(--color-muted-foreground)]">
-              اضغط على الكاميرا لتغيير الصورة الظاهرة للحساب.
+            <p className="text-center text-[11px] text-muted-foreground">
+              انقر على أيقونة الكاميرا لرفع صورة شخصية جديدة
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-                الاسم
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                الاسم الظاهر
               </label>
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="h-11 rounded-[18px] bg-white/75"
+                placeholder="اسم الحساب..."
+                className="h-9.5 rounded-xl border-border/70 bg-background text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary"
               />
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                الاسم الذي يظهر للآخرين في واتساب.
+              <p className="text-[11px] text-muted-foreground">
+                الاسم الذي يظهر للعملاء وجهات الاتصال في محادثات واتساب
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-                الحالة
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                الحالة (About / Bio)
               </label>
               <Textarea
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
-                rows={4}
-                className="rounded-[18px] border-[color:var(--shell-control-border)] bg-white/75"
+                rows={3}
+                placeholder="حالة الحساب..."
+                className="rounded-xl border-border/70 bg-background text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary"
               />
             </div>
           </div>
         </div>
 
-        <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
-          <Button variant="outline" onClick={handleSync} disabled={loading}>
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-            مزامنة من واتساب
-          </Button>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
-            إلغاء
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-            حفظ
-          </Button>
+        <DialogFooter className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-5 py-3">
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={loading}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+            <span>مزامنة من واتساب</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="h-9 rounded-xl border border-border/70 bg-card px-4 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.98]"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              <span>حفظ البيانات</span>
+            </button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

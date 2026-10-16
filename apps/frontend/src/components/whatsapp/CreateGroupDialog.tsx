@@ -1,10 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Group, Loader2, Search, Users } from "lucide-react";
+import { Users, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -16,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
 import { apiClient as api } from "../../services/apiClient";
 import {
   getBestContactDisplayName,
@@ -99,12 +96,12 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
         participants: selectedParticipants,
       });
 
-      if (response.data.success) {
+      if (response.data?.success) {
         tToast.success("CreateGroupDialog.success_create_6766");
         onGroupCreated(response.data.group);
         reset();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating group:", error);
       toast.error(
         error.response?.data?.error || "حدث خطأ أثناء إنشاء المجموعة",
@@ -118,44 +115,57 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && reset()}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-3xl gap-0 rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0"
+        className="max-w-3xl gap-0 rounded-2xl border border-border/70 bg-card p-0 text-foreground shadow-2xl overflow-hidden"
       >
-        <DialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
-          <DialogTitle className="text-lg text-[color:var(--color-foreground)]">
-            إنشاء مجموعة جديدة
-          </DialogTitle>
-          <DialogDescription>
-            حدّد اسم المجموعة واختر المشاركين الذين تريد إضافتهم من المحادثات الحالية.
-          </DialogDescription>
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-border/60 bg-card px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <Users className="size-4.5" />
+            </div>
+            <div>
+              <DialogTitle className="text-sm font-bold text-foreground">
+                إنشاء مجموعة واتساب جديدة
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                تحديد اسم المجموعة واختيار جهات الاتصال المراد إضافتها
+              </DialogDescription>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={reset}
+            className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.97]"
+            aria-label="إغلاق"
+          >
+            <X className="size-4" />
+          </button>
         </DialogHeader>
 
-        <div className="grid gap-4 px-6 py-6 lg:grid-cols-[0.95fr_1.25fr]">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+        <div className="grid gap-4 p-5 lg:grid-cols-[1fr_1.2fr] max-h-[70vh] overflow-y-auto">
+          {/* Group details */}
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
                 اسم المجموعة
               </label>
-              <div className="relative">
-                <Group className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-                <Input
-                  value={subject}
-                  onChange={(event) => setSubject(event.target.value)}
-                  placeholder="أدخل اسم المجموعة..."
-                  className="h-11 rounded-[18px] bg-white/75 ps-10"
-                />
-              </div>
+              <Input
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                placeholder="أدخل اسم المجموعة الجديد..."
+                className="h-9.5 rounded-xl border-border/70 bg-background text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary"
+              />
             </div>
 
-            <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/65 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                <p className="text-xs font-semibold text-foreground">
                   المشاركون المختارون
                 </p>
-                <span className="rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-primary)]">
+                <span className="font-mono rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary tabular-nums">
                   {selectedParticipants.length}
                 </span>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1">
                 {selectedParticipants.length > 0 ? (
                   selectedParticipants.map((jid) => {
                     const contact = contacts.find((item) => item.jid === jid);
@@ -164,42 +174,44 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
                         key={jid}
                         type="button"
                         onClick={() => handleToggleParticipant(jid)}
-                        className="rounded-full border border-[color:var(--shell-control-border)] bg-white px-3 py-1.5 text-xs text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
+                        className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary shadow-2xs hover:bg-primary/15 transition-colors"
                       >
-                        {contact ? getBestContactDisplayName(contact) : getContactDisplayPhone({ jid })}
+                        <span>{contact ? getBestContactDisplayName(contact) : getContactDisplayPhone({ jid })}</span>
+                        <X className="size-3" />
                       </button>
                     );
                   })
                 ) : (
-                  <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                    اختر أشخاصًا من القائمة لإضافتهم إلى المجموعة.
+                  <p className="text-xs text-muted-foreground py-2">
+                    اختر أعضاء من القائمة المقابلة لإضافتهم للمجموعة
                   </p>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="space-y-3">
+          {/* Contacts selection */}
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+              <p className="text-xs font-semibold text-foreground">
                 جهات الاتصال
               </p>
-              <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                {filteredContacts.length} نتيجة
+              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                {filteredContacts.length} جهة اتصال
               </span>
             </div>
 
             <div className="relative">
-              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="بحث عن جهات اتصال..."
-                className="h-10 rounded-[18px] bg-white/75 ps-10"
+                placeholder="بحث بالاسم أو الرقم..."
+                className="h-9.5 rounded-xl border-border/70 bg-background ps-9 text-xs placeholder:text-muted-foreground/60"
               />
             </div>
 
-            <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/65 p-3">
+            <div className="max-h-[22rem] space-y-1.5 overflow-y-auto rounded-xl border border-border/70 bg-muted/20 p-2">
               {filteredContacts.length > 0 ? (
                 filteredContacts.map((contact) => {
                   const isSelected = selectedParticipants.includes(contact.jid);
@@ -211,24 +223,24 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
                       type="button"
                       onClick={() => handleToggleParticipant(contact.jid)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-[20px] border px-3 py-3 text-start transition-all",
+                        "flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-2 text-start transition-all duration-150 active:scale-[0.99]",
                         isSelected
-                          ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)]"
-                          : "border-[color:var(--shell-control-border)] bg-white/75 hover:bg-white",
+                          ? "border-primary/40 bg-primary/10"
+                          : "border-border/60 bg-card hover:bg-muted/40",
                       )}
                     >
                       <Checkbox checked={isSelected} />
-                      <Avatar className="size-10">
+                      <Avatar className="size-8.5 rounded-lg">
                         <AvatarImage src={contact.profilePicUrl || undefined} />
-                        <AvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_8%,white)] font-semibold text-[color:var(--color-primary)]">
+                        <AvatarFallback className="rounded-lg bg-primary/10 font-mono text-xs font-semibold text-primary">
                           {contactName.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-[color:var(--color-foreground)]">
+                        <p className="truncate text-xs font-medium text-foreground">
                           {contactName}
                         </p>
-                        <p className="truncate text-xs text-[color:var(--color-muted-foreground)]">
+                        <p className="truncate font-mono text-[11px] text-muted-foreground tabular-nums">
                           {getContactDisplayPhone(contact)}
                         </p>
                       </div>
@@ -236,31 +248,33 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
                   );
                 })
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[color:var(--shell-control-border)] bg-white/40 px-4 py-10 text-center">
-                  <Users className="mb-3 size-6 text-[color:var(--color-muted-foreground)]" />
-                  <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                    لا توجد جهات اتصال
-                  </p>
-                  <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
-                    جرّب بحثًا مختلفًا أو اختر من الجلسة الحالية.
-                  </p>
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-card/40 p-6 text-center">
+                  <Users className="mb-2 size-5 text-muted-foreground" />
+                  <p className="text-xs font-medium text-foreground">لا توجد جهات اتصال مطابقة</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
-          <Button variant="outline" onClick={reset} disabled={creating}>
+        <DialogFooter className="flex items-center justify-end gap-2 border-t border-border/60 bg-muted/20 px-5 py-3">
+          <button
+            type="button"
+            onClick={reset}
+            disabled={creating}
+            className="h-9 rounded-xl border border-border/70 bg-card px-4 text-xs font-medium text-foreground transition-all hover:bg-muted/60 active:scale-[0.98]"
+          >
             إلغاء
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleCreate}
             disabled={creating || !subject.trim() || selectedParticipants.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
           >
-            {creating ? <Loader2 className="size-4 animate-spin" /> : null}
-            إنشاء
-          </Button>
+            {creating ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            <span>إنشاء المجموعة ({selectedParticipants.length})</span>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

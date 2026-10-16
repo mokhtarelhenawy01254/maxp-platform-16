@@ -1,12 +1,6 @@
 import React from "react";
-import i18n from "../../i18n";
 import { clsx } from "clsx";
-
-/**
- * Loading Spinner Component
- *
- * A customizable loading spinner with different sizes and colors
- */
+import { Loader2 } from "lucide-react";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -20,58 +14,38 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   color = "primary",
   className,
   label = "Loading...",
-  // Note: i18n.t() should be used in the calling component for localized labels
 }) => {
   const sizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-6 w-6",
-    lg: "h-8 w-8",
-    xl: "h-12 w-12",
+    sm: "size-4",
+    md: "size-6",
+    lg: "size-8",
+    xl: "size-10",
   };
 
   const colorClasses = {
-    primary: "text-primary-600",
-    secondary: "text-secondary-600",
+    primary: "text-primary",
+    secondary: "text-muted-foreground",
     white: "text-white",
-    gray: "text-gray-600",
+    gray: "text-muted-foreground/80",
   };
 
   return (
     <div className={clsx("flex items-center justify-center", className)}>
-      <div className="flex flex-col items-center space-y-2">
-        <svg
+      <div className="flex flex-col items-center gap-2">
+        <Loader2
           className={clsx(
-            "animate-spin",
+            "animate-spin transition-colors",
             sizeClasses[size],
-            colorClasses[color],
+            colorClasses[color]
           )}
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
           aria-hidden="true"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
+        />
 
         {label && (
           <span
             className={clsx(
-              "text-sm font-medium",
-              color === "white"
-                ? "text-white"
-                : "text-gray-600 dark:text-gray-400",
+              "text-xs font-medium",
+              color === "white" ? "text-white" : "text-muted-foreground"
             )}
           >
             {label}
