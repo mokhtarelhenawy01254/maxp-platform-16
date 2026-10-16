@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import { AtSign, User as UserIcon } from "lucide-react";
 
 interface User {
   id: string;
@@ -25,7 +26,7 @@ const MentionInput: React.FC<MentionInputProps> = ({
   value,
   onChange,
   onMention,
-  placeholder = "اكتب تعليقك... استخدم @ للإشارة لشخص",
+  placeholder = "اكتب تعليقك... استخدم @ للإشارة لزميل في الفريق",
   rows = 3,
   className = "",
 }) => {
@@ -62,20 +63,14 @@ const MentionInput: React.FC<MentionInputProps> = ({
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        console.error("Error fetching users:", {
-          status: response.status,
-          code: errData?.code,
-          message: errData?.message || response.statusText,
-        });
         return;
       }
       const data = await response.json();
       if (data.success) {
         setUsers(data.data || []);
       }
-    } catch (error) {
-      console.error("Error fetching users:", error);
+    } catch {
+      // Silent error fallback
     }
   };
 
@@ -86,7 +81,6 @@ const MentionInput: React.FC<MentionInputProps> = ({
     onChange(newValue);
     setCursorPosition(cursorPos);
 
-    // Check for @ mention
     const textBeforeCursor = newValue.substring(0, cursorPos);
     const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
 
@@ -131,11 +125,9 @@ const MentionInput: React.FC<MentionInputProps> = ({
     const textBeforeCursor = value.substring(0, cursorPosition);
     const textAfterCursor = value.substring(cursorPosition);
 
-    // Find the @ position
     const mentionStart = textBeforeCursor.lastIndexOf("@");
     const beforeMention = value.substring(0, mentionStart);
 
-    // Create the mention text
     const mentionText = `@${user.firstName}_${user.lastName}`;
     const newValue = beforeMention + mentionText + " " + textAfterCursor;
 
@@ -143,10 +135,8 @@ const MentionInput: React.FC<MentionInputProps> = ({
     setShowSuggestions(false);
     setMentionQuery("");
 
-    // Notify parent about the mention
     onMention?.(user.id);
 
-    // Focus back on textarea
     setTimeout(() => {
       if (textareaRef.current) {
         const newCursorPos = mentionStart + mentionText.length + 1;
@@ -165,36 +155,38 @@ const MentionInput: React.FC<MentionInputProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={rows}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${className}`}
+        className={`w-full px-3 py-2 text-xs bg-background border border-border/70 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none ${className}`}
       />
 
       {/* Suggestions Dropdown */}
       {showSuggestions && filteredUsers.length > 0 && (
         <div
           ref={suggestionsRef}
-          className="absolute z-50 w-64 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-48 overflow-y-auto"
+          className="absolute z-50 w-64 mt-1 bg-card border border-border/70 rounded-xl shadow-xl max-h-48 overflow-y-auto text-foreground animate-in fade-in zoom-in-95 duration-100"
         >
           {filteredUsers.map((user, index) => (
             <button
               key={user.id}
               onClick={() => insertMention(user)}
-              className={`w-full flex items-center px-3 py-2 text-right hover:bg-gray-50 ${
-                index === selectedIndex ? "bg-indigo-50" : ""
+              className={`w-full flex items-center gap-2 px-3 py-2 text-start transition-colors ${
+                index === selectedIndex
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-muted/40 text-foreground"
               }`}
             >
               {user.avatar ? (
                 <img
                   src={user.avatar}
                   alt=""
-                  className="w-8 h-8 rounded-full ml-2"
+                  className="w-6 h-6 rounded-full object-cover shrink-0 border border-border/50"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center ml-2 text-sm font-medium">
-                  {user.firstName.charAt(0)}
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-semibold">
+                  {user.firstName.charAt(0) || <UserIcon className="w-3 h-3" />}
                 </div>
               )}
-              <div>
-                <div className="text-sm font-medium text-gray-900">
+              <div className="min-w-0">
+                <div className="text-xs truncate">
                   {user.firstName} {user.lastName}
                 </div>
               </div>
@@ -203,8 +195,11 @@ const MentionInput: React.FC<MentionInputProps> = ({
         </div>
       )}
 
-      {/* Helper Text */}
-      <div className="mt-1 text-xs text-gray-400">اكتب @ للإشارة لشخص</div>
+      {/* Helper text */}
+      <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+        <AtSign className="w-3 h-3" />
+        <span>اكتب @ لفتح قائمة الإشارة لأحد الزملاء</span>
+      </div>
     </div>
   );
 };

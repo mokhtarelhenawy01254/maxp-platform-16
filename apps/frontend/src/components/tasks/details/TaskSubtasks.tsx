@@ -1,9 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ClipboardDocumentListIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { Plus, ListTodo, CheckCircle2 } from "lucide-react";
 import { Task } from "../../../types/tasks";
 import { TASK_STATUSES } from "../../../constants/taskConstants";
 
@@ -32,62 +29,71 @@ const TaskSubtasks: React.FC<TaskSubtasksProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-6">
-        <h4 className="text-lg font-bold text-gray-900 dark:text-white">
-          المهام الفرعية
-        </h4>
-        <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground">
+            المهام الفرعية
+          </h4>
+          {task.subtasks && task.subtasks.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono tabular-nums bg-muted/60 text-muted-foreground border border-border/50">
+              {task.subtasks.length}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
           {onRequestTesting && (
             <button
               onClick={onRequestTesting}
-              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-semibold shadow-md transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-all active:scale-[0.98]"
             >
-              <PlusIcon className="h-5 w-5" />
-              طلب اختبار
+              <Plus className="w-3.5 h-3.5" />
+              <span>طلب اختبار</span>
             </button>
           )}
           <button
             onClick={onAddSubtask}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-md transition-all active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98]"
           >
-            <PlusIcon className="h-5 w-5" />
-            إضافة مهمة
+            <Plus className="w-3.5 h-3.5" />
+            <span>إضافة مهمة</span>
           </button>
         </div>
       </div>
+
       {task.subtasks?.map((subtask) => {
         const statusInfo = getStatusInfo(subtask.status);
-        const bgClass = statusInfo?.bg || "bg-gray-400";
-        const textClass = statusInfo?.text || "text-gray-700";
+        const bgClass = statusInfo?.bg || "bg-muted";
+        const textClass = statusInfo?.text || "text-muted-foreground";
         const label = statusInfo?.label || subtask.status;
 
         return (
           <div
             key={subtask.id}
-            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+            className="flex items-center justify-between gap-3 p-3 bg-muted/20 hover:bg-muted/40 border border-border/60 hover:border-border rounded-xl transition-all"
           >
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${bgClass}`}></div>
-
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`w-2 h-2 rounded-full ${bgClass} shrink-0`} />
               <button
                 onClick={() => navigate(`/super-admin/dev-tasks/${subtask.id}`)}
-                className="font-medium text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
+                className="text-xs font-medium text-foreground hover:text-primary transition-colors text-start truncate"
               >
                 {subtask.title}
               </button>
             </div>
             <span
-              className={`text-sm px-3 py-1 rounded-full shadow-sm ${bgClass} ${textClass}`}
+              className={`text-[11px] font-medium px-2.5 py-0.5 rounded-md shrink-0 border border-border/50 ${bgClass} ${textClass}`}
             >
               {label}
             </span>
           </div>
         );
       })}
+
       {(!task.subtasks || task.subtasks.length === 0) && (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-          <ClipboardDocumentListIcon className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <p>لا توجد مهام فرعية</p>
+        <div className="text-center py-10 text-xs text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/60 space-y-2">
+          <ListTodo className="w-8 h-8 mx-auto text-muted-foreground/40" />
+          <p>لا توجد مهام فرعية مضافة بعد</p>
         </div>
       )}
     </div>

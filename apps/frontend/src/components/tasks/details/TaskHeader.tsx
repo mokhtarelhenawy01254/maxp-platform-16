@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlayIcon,
-  StopIcon,
-  PauseIcon,
-  PencilIcon,
-  TrashIcon,
-  DocumentDuplicateIcon,
-  ShareIcon,
-  CheckIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Square,
+  Pause,
+  Pencil,
+  Trash2,
+  Copy,
+  Share2,
+  Check,
+  Calendar,
+} from "lucide-react";
 import { Task } from "../../../types/tasks";
 
 interface TaskHeaderProps {
@@ -54,7 +54,6 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
   const navigate = useNavigate();
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Format seconds to HH:MM:SS
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -70,56 +69,60 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between mb-8">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-border/70 text-foreground">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={() => navigate("/super-admin/dev-tasks")}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+          className="p-2 rounded-lg border border-border/60 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all active:scale-95 shrink-0"
+          title="العودة للمهام"
+          aria-label="العودة"
         >
-          <ArrowRightIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+          <ArrowRight className="w-5 h-5 rtl:rotate-180" />
         </button>
 
-        {/* Navigation Buttons */}
-        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 border border-gray-200 dark:border-gray-700">
+        {/* Stepper Navigation */}
+        <div className="flex items-center rounded-lg border border-border/60 bg-muted/20 p-0.5 shrink-0">
           <button
             onClick={() =>
               task.nextTaskId &&
               navigate(`/super-admin/dev-tasks/${task.nextTaskId}`)
             }
             disabled={!task.nextTaskId}
-            className="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 hover:bg-muted/50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title="المهمة التالية"
+            aria-label="المهمة التالية"
           >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
-          <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
+          <div className="w-px h-3.5 bg-border/60 mx-0.5" />
           <button
             onClick={() =>
               task.previousTaskId &&
               navigate(`/super-admin/dev-tasks/${task.previousTaskId}`)
             }
             disabled={!task.previousTaskId}
-            className="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 hover:bg-muted/50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title="المهمة السابقة"
+            aria-label="المهمة السابقة"
           >
-            <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
-        <div>
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-1">
-            <span className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs font-mono">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-0.5">
+            <span className="bg-muted/60 px-1.5 py-0.5 rounded text-[11px] font-mono border border-border/50">
               #{task.id.slice(0, 8)}
             </span>
             <span>/</span>
-            <span>{task.projectName || "General"}</span>
+            <span className="font-medium text-foreground">{task.projectName || "General"}</span>
             {(settings?.taskDetailsVisibility?.showCreatedAt ?? true) && (
-              <div className="flex items-center gap-1.5 mr-2 pr-2 border-r border-gray-200 dark:border-gray-700">
-                <CalendarIcon className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1.5 ms-2 ps-2 border-s border-border/60 font-mono tabular-nums">
+                <Calendar className="w-3 h-3 text-muted-foreground" />
                 <span>
                   {new Date(task.createdAt).toLocaleString("ar-EG", {
                     year: "numeric",
-                    month: "long",
+                    month: "short",
                     day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
@@ -128,59 +131,59 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
               </div>
             )}
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white line-clamp-1 max-w-3xl">
+          <h1 className="text-xl font-bold text-foreground line-clamp-1">
             {task.title}
           </h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Smart Time Tracking Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Smart Time Tracking */}
         {isSmartTimeTrackingEnabled && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {!isTimerRunning ? (
               <button
                 onClick={handleStartTimer}
-                className="flex items-center gap-3 px-5 py-3 rounded-xl font-bold shadow-md transition-all transform active:scale-95 bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs"
               >
-                <PlayIcon className="h-5 w-5" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 <span>ابدأ العمل</span>
               </button>
             ) : (
               <>
-                <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-indigo-500 dark:border-indigo-400">
-                  <span className="font-mono text-lg font-bold text-gray-900 dark:text-white">
+                <div className="flex items-center gap-2 px-3 py-1 bg-card border border-primary/50 rounded-lg text-foreground">
+                  <span className="font-mono text-xs font-semibold tabular-nums">
                     {formatTime(elapsedSeconds)}
                   </span>
                   <span
-                    className={`w-2 h-2 rounded-full ${isTimerPaused ? "bg-yellow-500" : "bg-green-500 animate-pulse"}`}
-                  ></span>
+                    className={`w-2 h-2 rounded-full ${isTimerPaused ? "bg-amber-500" : "bg-emerald-500 animate-pulse"}`}
+                  />
                 </div>
                 {isTimerPaused ? (
                   <button
                     onClick={handleResumeTimer}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold shadow-md transition-all transform active:scale-95 bg-green-600 text-white hover:bg-green-700"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all active:scale-[0.98]"
                     title="استئناف"
                   >
-                    <PlayIcon className="h-5 w-5" />
+                    <Play className="w-3.5 h-3.5 fill-current" />
                     <span>استئناف</span>
                   </button>
                 ) : (
                   <button
                     onClick={handlePauseTimer}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold shadow-md transition-all transform active:scale-95 bg-yellow-600 text-white hover:bg-yellow-700"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all active:scale-[0.98]"
                     title="إيقاف مؤقت"
                   >
-                    <PauseIcon className="h-5 w-5" />
+                    <Pause className="w-3.5 h-3.5 fill-current" />
                     <span>إيقاف مؤقت</span>
                   </button>
                 )}
                 <button
                   onClick={handleStopTimer}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold shadow-md transition-all transform active:scale-95 bg-red-600 text-white hover:bg-red-700"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all active:scale-[0.98]"
                   title="إيقاف نهائي"
                 >
-                  <StopIcon className="h-5 w-5" />
+                  <Square className="w-3.5 h-3.5 fill-current" />
                   <span>إيقاف</span>
                 </button>
               </>
@@ -188,45 +191,49 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
           </div>
         )}
 
-        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+        <div className="h-5 w-px bg-border/60 mx-1" />
 
         <button
           onClick={copyLink}
-          className="p-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors relative group"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-colors active:scale-95 border border-border/50"
           title="نسخ الرابط"
+          aria-label="نسخ الرابط"
         >
           {copiedLink ? (
-            <CheckIcon className="h-5 w-5 text-green-500" />
+            <Check className="w-4 h-4 text-emerald-500" />
           ) : (
-            <ShareIcon className="h-5 w-5" />
+            <Share2 className="w-4 h-4" />
           )}
         </button>
 
         <button
           onClick={onDuplicate}
-          className="p-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-colors active:scale-95 border border-border/50"
           title="تكرار المهمة"
+          aria-label="تكرار"
         >
-          <DocumentDuplicateIcon className="h-5 w-5" />
+          <Copy className="w-4 h-4" />
         </button>
 
         {canEdit && (
           <button
             onClick={onEdit}
-            className="p-3 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
-            title="تعديل"
+            className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors active:scale-95 border border-border/50"
+            title="تعديل المهمة"
+            aria-label="تعديل"
           >
-            <PencilIcon className="h-5 w-5" />
+            <Pencil className="w-4 h-4" />
           </button>
         )}
 
         {canDelete && (
           <button
             onClick={onDelete}
-            className="p-3 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-            title="حذف"
+            className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors active:scale-95 border border-border/50"
+            title="حذف المهمة"
+            aria-label="حذف"
           >
-            <TrashIcon className="h-5 w-5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>

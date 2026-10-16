@@ -1,5 +1,15 @@
 import React, { memo } from "react";
-import { Bot } from "lucide-react";
+import {
+  Bot,
+  Mic,
+  Image as ImageIcon,
+  Video,
+  Paperclip,
+  Star,
+  UserCheck,
+  Clock,
+  Tag,
+} from "lucide-react";
 import { InboxConversation } from "../../../types/inbox.types";
 import { getInboxCustomerAvatarUrl } from "../../../utils/imageUrl";
 
@@ -24,47 +34,64 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       conversation.customerAvatar,
     );
 
-    const formatConversationPreview = (raw?: string | null): string => {
+    const getConversationPreviewContent = (raw?: string | null) => {
       if (!raw || !raw.trim() || raw.trim().toLowerCase() === "no messages") {
-        return "لا توجد رسائل";
+        return <span>لا توجد رسائل</span>;
       }
       const text = raw.trim();
 
-      // Voice note / Audio clip
+      // Voice note
       if (
         /audioclip|\.mp4|\.m4a|\.mp3|\.aac|\.opus|\.oga|\.ogg/i.test(text) &&
         (/fbsbx\.com|uploads\/chat-media|chat-media|https?:\/\//i.test(text) || text.endsWith(".mp4"))
       ) {
-        return "🎤 رسالة صوتية";
+        return (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Mic className="w-3 h-3" />
+            <span>رسالة صوتية</span>
+          </span>
+        );
       }
 
-      // Image URL / proxy-image
+      // Image
       if (
         /proxy-image|\/uploads\/chat-media.*?\.(jpg|jpeg|png|webp|gif)/i.test(text) ||
         /scontent.*?\.fbcdn\.net/i.test(text)
       ) {
-        return "📷 صورة";
+        return (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <ImageIcon className="w-3 h-3" />
+            <span>صورة</span>
+          </span>
+        );
       }
 
-      // Video URL
+      // Video
       if (/^https?:\/\/.*?\.(mp4|mov|webm)/i.test(text) && !/audioclip/i.test(text)) {
-        return "🎥 فيديو";
+        return (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Video className="w-3 h-3" />
+            <span>فيديو</span>
+          </span>
+        );
       }
 
-      // Generic upload attachment
+      // Attachment
       if (/^https?:\/\/.*\/uploads\//i.test(text) || text.startsWith("/uploads/")) {
-        return "📎 مرفق";
+        return (
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Paperclip className="w-3 h-3" />
+            <span>مرفق</span>
+          </span>
+        );
       }
 
-      // Strip leading internal Meta template slugs (e.g. swan_confirmed_msbtz1ov... or Template: ...)
+      // Strip leading internal Meta template slugs
       const cleanedTemplate = text
         .replace(/^(?:Template:\s*)?[a-z0-9_]{10,}(?:\r?\n)+/i, "")
         .trim();
-      if (cleanedTemplate) {
-        return cleanedTemplate;
-      }
 
-      return text;
+      return <span>{cleanedTemplate || text}</span>;
     };
 
     const formatTime = (date: Date) => {
@@ -89,22 +116,18 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
     return (
       <div
         onClick={onClick}
-        className="business-conversation-card group"
-        data-state={
+        className={`p-3 border-b border-border/50 transition-all cursor-pointer group text-start relative select-none ${
           isSelected
-            ? "selected"
-            : conversation.unreadCount > 0
-              ? "attention"
-              : "idle"
-        }
+            ? "bg-primary/10 border-s-2 border-s-primary text-foreground"
+            : "hover:bg-muted/40 text-foreground"
+        }`}
       >
         <div className="flex items-start gap-2.5">
-          {/* Avatar / Checkbox Container */}
-          <div className="relative flex-shrink-0">
-            {/* Checkbox overlay - visible on hover or when selected */}
-            {onToggleSelection && (isMultiSelected || true) && (
+          {/* Avatar Container */}
+          <div className="relative shrink-0">
+            {onToggleSelection && (
               <div
-                className={`business-conversation-checkbox-overlay absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-200 bg-white/80 dark:bg-slate-900/80 backdrop-blur-[2px] ${
+                className={`absolute inset-0 z-10 flex items-center justify-center rounded-full bg-background/80 backdrop-blur-xs transition-opacity duration-150 ${
                   isMultiSelected
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100"
@@ -114,9 +137,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 <input
                   type="checkbox"
                   checked={isMultiSelected}
-                  onChange={() => {}} // Handled by div click
-                  className="w-5 h-5 rounded cursor-pointer"
-                  style={{ accentColor: "var(--color-primary)" }}
+                  onChange={() => {}}
+                  className="w-4 h-4 rounded text-primary focus:ring-primary/20 cursor-pointer"
                 />
               </div>
             )}
@@ -126,7 +148,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 src={customerAvatarUrl}
                 alt={conversation.customerName}
                 loading="lazy"
-                className="business-conversation-avatar"
+                className="w-9 h-9 rounded-full object-cover border border-border/60"
                 onError={(e) => {
                   (e.currentTarget as HTMLElement).style.display = "none";
                   const fallback = e.currentTarget.nextElementSibling;
@@ -135,104 +157,96 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
               />
             ) : null}
             <div
-              className="business-conversation-fallback"
+              className="w-9 h-9 rounded-full bg-muted/60 border border-border/60 items-center justify-center text-xs font-semibold text-muted-foreground uppercase"
               style={{ display: customerAvatarUrl ? "none" : "flex" }}
             >
-              {conversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
+              {conversation.customerName?.charAt(0) || "؟"}
             </div>
 
-            {/* Online indicator */}
             {conversation.platform === "facebook" && (
-              <div className="relative -mt-2.5 -mr-0.5 float-left">
-                <div
-                  className="h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500"
-                />
-              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card bg-emerald-500" />
             )}
           </div>
 
           <div className="flex-1 min-w-0">
-            {/* Unread indicator - similar to unreplied messages */}
             {conversation.unreadCount > 0 && (
               <div className="mb-0.5 flex items-center gap-1">
-                <span
-                  className="business-conversation-unread-dot h-1.5 w-1.5 rounded-full animate-pulse bg-red-500"
-                ></span>
-                <span
-                  className="business-conversation-unread-badge text-[11px] font-semibold text-red-600 dark:text-rose-400"
-                >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] font-semibold text-primary">
                   رسائل جديدة
                 </span>
               </div>
             )}
 
             <div className="mb-0.5 flex items-center justify-between gap-2">
-              <h4
-                className="truncate text-sm font-bold text-gray-900 dark:text-white"
-              >
+              <h4 className="truncate text-xs font-semibold text-foreground">
                 {conversation.customerName}
               </h4>
-              <span
-                className="ms-2 me-1 flex-shrink-0 text-[11px] text-gray-500 dark:text-slate-400"
-              >
+              <span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">
                 {formatTime(conversation.lastMessageTime)}
               </span>
             </div>
 
-            {/* Last message */}
+            {/* Last message preview */}
             <p
-              className={`truncate text-[12px] ${conversation.unreadCount > 0 ? "font-medium text-gray-800 dark:text-slate-200" : "font-normal text-gray-500 dark:text-slate-400"}`}
+              className={`truncate text-[11px] leading-relaxed ${
+                conversation.unreadCount > 0
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground"
+              }`}
             >
               {conversation.lastMessageIsFromCustomer ? "" : "أنت: "}
-              {formatConversationPreview(conversation.lastMessage)}
+              {getConversationPreviewContent(conversation.lastMessage)}
             </p>
 
-            {/* Badges */}
-            <div className="mt-1.5 flex items-center gap-1.5">
+            {/* Badges Strip */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {conversation.unreadCount > 0 && (
-                <span
-                  className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white bg-blue-600 dark:bg-blue-500"
-                >
+                <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold font-mono tabular-nums bg-primary text-primary-foreground">
                   {conversation.unreadCount}
                 </span>
               )}
 
               {conversation.priority && (
-                <span className="text-amber-500 dark:text-amber-400">⭐</span>
-              )}
-
-              {conversation.assignedTo && (
-                <span
-                  className="business-conversation-assigned-badge rounded px-1.5 py-0.5 text-[11px] font-medium bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 dark:border dark:border-teal-500/25"
-                >
-                  👤 معين
+                <span className="inline-flex items-center p-0.5 rounded text-amber-500">
+                  <Star className="w-3 h-3 fill-current" />
                 </span>
               )}
 
-              {(conversation.aiEnabled === false || (conversation.aiPausedUntil && new Date(conversation.aiPausedUntil).getTime() > Date.now())) && (
+              {conversation.assignedTo && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+                  <UserCheck className="w-2.5 h-2.5" />
+                  <span>معين</span>
+                </span>
+              )}
+
+              {(conversation.aiEnabled === false ||
+                (conversation.aiPausedUntil &&
+                  new Date(conversation.aiPausedUntil).getTime() > Date.now())) && (
                 <span
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-500/25"
-                  title="الذكاء الاصطناعي متوقف عن هذه المحادثة (تدخل بشري)"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                  title="الذكاء الاصطناعي متوقف (تدخل بشري)"
                 >
-                  <Bot className="w-3 h-3 opacity-80" />
+                  <Bot className="w-2.5 h-2.5" />
                   <span>تدخل بشري</span>
                 </span>
               )}
 
-              {conversation.snoozedUntil && new Date(conversation.snoozedUntil).getTime() > Date.now() && (
-                <span
-                  className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-500/25"
-                  title="محادثة مؤجلة"
-                >
-                  ⏰ مؤجلة
-                </span>
-              )}
+              {conversation.snoozedUntil &&
+                new Date(conversation.snoozedUntil).getTime() > Date.now() && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                    title="محادثة مؤجلة"
+                  >
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>مؤجلة</span>
+                  </span>
+                )}
 
               {conversation.tags.length > 0 && (
-                <span
-                  className="rounded px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                >
-                  🏷️ {conversation.tags.length}
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono tabular-nums bg-muted text-muted-foreground border border-border/50">
+                  <Tag className="w-2.5 h-2.5" />
+                  <span>{conversation.tags.length}</span>
                 </span>
               )}
             </div>
@@ -242,30 +256,23 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Custom comparison function for better performance
     return (
       prevProps.conversation.id === nextProps.conversation.id &&
-      prevProps.conversation.lastMessage ===
-        nextProps.conversation.lastMessage &&
+      prevProps.conversation.lastMessage === nextProps.conversation.lastMessage &&
       prevProps.conversation.lastMessageTime.getTime() ===
         nextProps.conversation.lastMessageTime.getTime() &&
       prevProps.conversation.unreadCount ===
         nextProps.conversation.unreadCount &&
-      prevProps.conversation.status === nextProps.conversation.status &&
-      prevProps.conversation.assignedTo === nextProps.conversation.assignedTo &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isMultiSelected === nextProps.isMultiSelected &&
       prevProps.conversation.priority === nextProps.conversation.priority &&
+      prevProps.conversation.assignedTo === nextProps.conversation.assignedTo &&
       prevProps.conversation.aiEnabled === nextProps.conversation.aiEnabled &&
       prevProps.conversation.aiPausedUntil === nextProps.conversation.aiPausedUntil &&
-      (prevProps.conversation.snoozedUntil?.getTime() || 0) ===
-        (nextProps.conversation.snoozedUntil?.getTime() || 0) &&
-      prevProps.conversation.tags.length ===
-        nextProps.conversation.tags.length &&
-      prevProps.isSelected === nextProps.isSelected &&
-      prevProps.isMultiSelected === nextProps.isMultiSelected
+      prevProps.conversation.snoozedUntil === nextProps.conversation.snoozedUntil &&
+      prevProps.conversation.tags.length === nextProps.conversation.tags.length
     );
   },
 );
-
-ConversationItem.displayName = "ConversationItem";
 
 export default ConversationItem;
