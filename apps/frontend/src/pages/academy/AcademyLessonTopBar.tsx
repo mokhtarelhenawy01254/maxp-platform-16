@@ -4,7 +4,7 @@ import {
   Award,
   Maximize2,
   Minimize2,
-  Sparkles,
+  Bot,
 } from "lucide-react";
 
 interface AcademyLessonTopBarProps {
@@ -29,17 +29,18 @@ export function AcademyLessonTopBar({
   onToggleCoach,
 }: AcademyLessonTopBarProps) {
   return (
-    <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/70">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/60 text-right" dir="rtl">
+      <div className="flex items-center gap-2.5 min-w-0">
         <Link
           to="/academy/catalog"
-          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition"
+          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
           title="العودة للكتالوج"
+          aria-label="العودة للكتالوج"
         >
-          <ArrowRight className="w-5 h-5" />
+          <ArrowRight className="w-4 h-4" />
         </Link>
-        <div>
-          <h1 className="text-sm sm:text-base font-bold text-foreground line-clamp-1">
+        <div className="min-w-0">
+          <h1 className="text-sm sm:text-base font-bold text-foreground truncate">
             {courseTitle}
           </h1>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-mono tabular-nums">
@@ -56,10 +57,10 @@ export function AcademyLessonTopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={onToggleTheaterMode}
-          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/70 transition flex items-center gap-1.5 shadow-xs"
+          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/60 transition-all active:scale-[0.98] flex items-center gap-1.5 shadow-2xs"
         >
           {isTheaterMode ? (
             <Minimize2 className="w-3.5 h-3.5 text-primary" />
@@ -73,9 +74,13 @@ export function AcademyLessonTopBar({
 
         <button
           onClick={onToggleCoach}
-          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition flex items-center gap-1.5 shadow-xs"
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5 shadow-2xs ${
+            isCoachOpen
+              ? "bg-primary text-primary-foreground border border-primary shadow-xs"
+              : "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+          }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Bot className="w-3.5 h-3.5" />
           <span>الكوتش الذكي</span>
         </button>
       </div>
