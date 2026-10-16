@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run i18n:merge && npm run i18n:types && vite",
-    "build": "npm run i18n:merge && npm run i18n:types && node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build",
+    "build": "npm run i18n:merge && npm run i18n:types && node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build && node scripts/prerender-public-routes.mjs",
     "build:safe": "npm run build",
     "build:clean": "if exist dist rd /s /q dist && if exist \"node_modules/.vite\" rd /s /q \"node_modules/.vite\" && npm run build",
     "preview": "vite preview",

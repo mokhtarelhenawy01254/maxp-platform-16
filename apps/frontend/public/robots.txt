@@ -23,10 +23,8 @@ Disallow: /hr
 Disallow: /inventory
 Disallow: /affiliates/dashboard
 
-# Paid-ad landing pages + review drafts — intentionally kept out of search
-Disallow: /lp/clothing-store-bundle
-Disallow: /lp/clothing-taste
-Disallow: /lp/fashion-os
+# Paid-ad landing pages are NOT disallowed on purpose: their static shells
+# carry <meta name="robots" content="noindex"> so the tag stays readable.
 Disallow: /lp/clothing-bundle-
 
 Sitemap: https://maxp.online/sitemap.xml

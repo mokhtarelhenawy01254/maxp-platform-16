@@ -1,23 +1,30 @@
 /**
  * Per-route SEO for the public marketing pages on the MaxP apex domain.
  *
- * Why this lives in the client: nginx serves ONE static index.html for every
- * apex path (maxp.online / www.maxp.online) and never proxies HTML to the
- * backend, so the server-side route map
- * (apps/backend/middleware/platformSeoMiddleware.js) never runs there. Google
- * executes JS, so this module fixes the rendered tags:
- *   - per-route <title> + description (+ og/twitter),
- *   - a SELF-referencing canonical. The static file ships
- *     `<link rel="canonical" href="https://maxp.online">` for EVERY route, which
- *     told Google every marketing page was a duplicate of the homepage.
+ * Why this lives in the client: nginx serves a static shell for every apex path
+ * (maxp.online / www.maxp.online), so the server-side route map
+ * (apps/backend/middleware/platformSeoMiddleware.js) never runs there. The
+ * build-time shells written by scripts/prerender-public-routes.mjs carry the
+ * correct tags for non-JS crawlers; this module keeps them correct once the SPA
+ * mounts (and fixes the canonical, which the static file pinned to the homepage
+ * for EVERY route — that is what kept the marketing pages out of the index).
  *
- * Tenant storefronts (swan.maxp.online, …) receive their tags server-side
- * (storefrontHtmlController) — this module is a no-op on any other host, so it
- * can never canonicalize a store page to the platform domain.
+ * Route data lives in ./public-routes.json — one source of truth shared with the
+ * prerender script (no second map to keep in sync). Tenant storefronts
+ * (swan.maxp.online, …) receive their tags server-side and this module is a
+ * no-op on any other host, so it can never canonicalize a store page to the
+ * platform domain.
  */
 
-const APEX_HOSTS = ["maxp.online", "www.maxp.online"];
-export const SITE_ORIGIN = "https://maxp.online";
+import routeSeoData from "./public-routes.json";
+
+interface RawRoute {
+  path: string;
+  title: string;
+  description: string;
+  canonicalPath?: string;
+  noindex?: boolean;
+}
 
 export interface RouteSeo {
   title: string;
@@ -26,103 +33,30 @@ export interface RouteSeo {
   canonicalPath?: string;
 }
 
-/**
- * Ad-only landing pages (/lp/clothing-store-bundle, /lp/clothing-taste,
- * /lp/fashion-os) and review drafts (/lp/clothing-bundle-*) are intentionally
- * NOT listed here: those components set their own tags + noindex.
- */
-export const ROUTE_SEO: Record<string, RouteSeo> = {
-  "/": {
-    title: "MaxP — منصة إدارة التواصل والتجارة الإلكترونية",
-    description:
-      "المنصة المتكاملة للشركات والتجار: إدارة المحادثات، أعوان الذكاء الاصطناعي، المتاجر الرقمية السريعة، وتأكيد طلبات الدفع عند الاستلام.",
-  },
-  "/for-merchants": {
-    title: "Max P للتجارة الإلكترونية — حوّل زوارك ومحادثاتك إلى مبيعات مؤكدة",
-    description:
-      "حلول متطورة للتجار وأصحاب المتاجر: تأكيد أوردرات الدفع عند الاستلام عبر واتساب، شحن أسرع، وتقليل المرتجعات.",
-  },
-  "/lp/ai-inbox": {
-    title: "Max P AI + Inbox | الذكاء الاصطناعي وصندوق الوارد الموحد",
-    description:
-      "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات (واتساب، انستجرام، فيسبوك، تلجرام). AI Agent يرد فورًا وينشئ الطلبات تلقائيًا.",
-  },
-  "/lp/messaging": {
-    title: "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد",
-    description:
-      "صندوق وارد موحّد للرد على كل المنصات · توزيع المحادثات على الفريق · ردود سريعة وحجوزات تلقائية.",
-  },
-  "/lp/medical": {
-    title: "Max P الباقة الطبية | النظام الطبي + واتساب + AI Agents",
-    description:
-      "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى الإلكترونية، تأكيد الحجوزات عبر واتساب، وأعوان الذكاء الاصطناعي للعيادات.",
-  },
-  "/lp/mg": {
-    title: "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
-    description:
-      "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
-  },
-  "/lp/mg-agency": {
-    title: "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
-    description:
-      "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
-  },
-  "/lp/store-complete-bundle": {
-    title: "باقة المتجر الكاملة — 17 أداة في باقة واحدة | MaxP",
-    description:
-      "متجر إلكتروني، كاشير فروع، مخزون، شحن، واتساب، وذكاء اصطناعي — كل أدوات تشغيل المتجر في باقة واحدة بسعر واحد.",
-  },
-  "/register/merchant": {
-    title: "سجّل متجرك على MaxP — ابدأ مجانًا وبدون بطاقة بنكية",
-    description:
-      "أنشئ حساب تاجر في دقائق: متجر إلكتروني، صندوق محادثات موحّد، وتأكيد أوردرات الدفع عند الاستلام.",
-  },
-  "/register/affiliate": {
-    title: "برنامج المسوّقين بالعمولة | MaxP Affiliate",
-    description:
-      "شارك رابطك واكسب عمولة متكررة على كل تاجر يشترك في MaxP.",
-  },
-  "/faq": {
-    title: "الأسئلة الشائعة | MaxP",
-    description:
-      "أجوبة عن الاشتراك والأسعار، ربط واتساب، تأكيد الطلبات، والشحن في منصة MaxP.",
-  },
-  "/support/faq": {
-    title: "الأسئلة الشائعة | MaxP",
-    description:
-      "أجوبة عن الاشتراك والأسعار، ربط واتساب، تأكيد الطلبات، والشحن في منصة MaxP.",
-    canonicalPath: "/faq",
-  },
-  "/privacy": {
-    title: "سياسة الخصوصية | MaxP",
-    description: "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
-  },
-  "/privacy-policy": {
-    title: "سياسة الخصوصية | MaxP",
-    description: "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
-    canonicalPath: "/privacy",
-  },
-  "/policies": {
-    title: "سياسة الخصوصية | MaxP",
-    description: "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
-    canonicalPath: "/privacy",
-  },
-  "/terms": {
-    title: "الشروط والأحكام | MaxP",
-    description: "شروط استخدام منصة MaxP، الاشتراكات، والمسؤوليات.",
-  },
-  "/terms-of-service": {
-    title: "الشروط والأحكام | MaxP",
-    description: "شروط استخدام منصة MaxP، الاشتراكات، والمسؤوليات.",
-    canonicalPath: "/terms",
-  },
-  "/data-deletion": {
-    title: "حذف البيانات | MaxP",
-    description: "طلب حذف بيانات حسابك من منصة MaxP — الخطوات ومدة التنفيذ.",
-  },
-};
+const ROUTES: RawRoute[] = (routeSeoData.routes || []) as RawRoute[];
 
-/** Thin auth pages — keep them out of the index (they used to rank with the generic title). */
+const APEX_HOSTS = ["maxp.online", "www.maxp.online"];
+export const SITE_ORIGIN: string = routeSeoData._origin;
+
+/** path -> SEO entry (aliases included; canonicalPath resolves the alias target). */
+export const ROUTE_SEO: Record<string, RouteSeo> = ROUTES.reduce(
+  (acc, route) => {
+    acc[route.path] = {
+      title: route.title,
+      description: route.description,
+      ...(route.canonicalPath ? { canonicalPath: route.canonicalPath } : {}),
+    };
+    return acc;
+  },
+  {} as Record<string, RouteSeo>,
+);
+
+/** Routes that must carry `<meta name="robots" content="noindex, follow">`. */
+export const NOINDEX_PATHS: string[] = ROUTES.filter(
+  (route) => route.noindex === true,
+).map((route) => route.path);
+
+/** Thin auth pages — kept out of the index even if a path is missing from the JSON. */
 export const NOINDEX_PREFIXES = ["/auth/"];
 
 const normalizePath = (pathname: string): string => {
@@ -191,7 +125,11 @@ export function applyPublicRouteSeo(pathname: string): void {
     upsertMeta("property", "og:url", canonicalUrl);
   }
 
-  if (NOINDEX_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+  const shouldNoindex =
+    NOINDEX_PATHS.includes(path) ||
+    NOINDEX_PREFIXES.some((prefix) => path.startsWith(prefix));
+
+  if (shouldNoindex) {
     upsertMeta("name", "robots", "noindex, follow");
   }
 }

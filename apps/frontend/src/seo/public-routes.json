@@ -1,0 +1,160 @@
+{
+  "_comment": "Single source of truth for the MaxP apex public routes (SEO). Consumed by src/seo/publicRouteSeo.ts (client) and scripts/prerender-public-routes.mjs (build-time static shells + sitemap.xml). Add a route here once — nothing else to keep in sync.",
+  "_origin": "https://maxp.online",
+  "_notes": [
+    "prerender=false keeps the route out of the static shells (only the root, whose tags the built index.html already carries).",
+    "sitemap.include=false keeps the URL out of sitemap.xml (aliases, auth pages, ad-only landings).",
+    "noindex=true emits <meta name=\"robots\" content=\"noindex, follow\"> in the static shell (ad landings use noindex, nofollow client-side).",
+    "Ad-only landings are deliberately NOT in robots.txt Disallow: a disallowed URL can never be crawled, so its noindex tag would be unreadable."
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "title": "MaxP — منصة إدارة التواصل والتجارة الإلكترونية",
+      "description": "المنصة المتكاملة للشركات والتجار: إدارة المحادثات، أعوان الذكاء الاصطناعي، المتاجر الرقمية السريعة، وتأكيد طلبات الدفع عند الاستلام.",
+      "prerender": false,
+      "sitemap": { "include": true, "changefreq": "weekly", "priority": "1.0" }
+    },
+    {
+      "path": "/for-merchants",
+      "title": "Max P للتجارة الإلكترونية — حوّل زوارك ومحادثاتك إلى مبيعات مؤكدة",
+      "description": "حلول متطورة للتجار وأصحاب المتاجر: تأكيد أوردرات الدفع عند الاستلام عبر واتساب، شحن أسرع، وتقليل المرتجعات.",
+      "sitemap": { "include": true, "changefreq": "weekly", "priority": "0.9" }
+    },
+    {
+      "path": "/lp/ai-inbox",
+      "title": "Max P AI + Inbox | الذكاء الاصطناعي وصندوق الوارد الموحد",
+      "description": "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات (واتساب، انستجرام، فيسبوك، تلجرام). AI Agent يرد فورًا وينشئ الطلبات تلقائيًا.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
+    },
+    {
+      "path": "/lp/messaging",
+      "title": "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد",
+      "description": "صندوق وارد موحّد للرد على كل المنصات · توزيع المحادثات على الفريق · ردود سريعة وحجوزات تلقائية.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
+    },
+    {
+      "path": "/lp/medical",
+      "title": "Max P الباقة الطبية | النظام الطبي + واتساب + AI Agents",
+      "description": "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى الإلكترونية، تأكيد الحجوزات عبر واتساب، وأعوان الذكاء الاصطناعي للعيادات.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
+    },
+    {
+      "path": "/lp/mg",
+      "title": "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
+      "description": "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.7" }
+    },
+    {
+      "path": "/lp/mg-agency",
+      "title": "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
+      "description": "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.7" }
+    },
+    {
+      "path": "/lp/store-complete-bundle",
+      "title": "باقة المتجر الكاملة — 17 أداة في باقة واحدة | MaxP",
+      "description": "متجر إلكتروني، كاشير فروع، مخزون، شحن، واتساب، وذكاء اصطناعي — كل أدوات تشغيل المتجر في باقة واحدة بسعر واحد.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
+    },
+    {
+      "path": "/register/merchant",
+      "title": "سجّل متجرك على MaxP — ابدأ مجانًا وبدون بطاقة بنكية",
+      "description": "أنشئ حساب تاجر في دقائق: متجر إلكتروني، صندوق محادثات موحّد، وتأكيد أوردرات الدفع عند الاستلام.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
+    },
+    {
+      "path": "/register/affiliate",
+      "title": "برنامج المسوّقين بالعمولة | MaxP Affiliate",
+      "description": "شارك رابطك واكسب عمولة متكررة على كل تاجر يشترك في MaxP.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.6" }
+    },
+    {
+      "path": "/faq",
+      "title": "الأسئلة الشائعة | MaxP",
+      "description": "أجوبة عن الاشتراك والأسعار، ربط واتساب، تأكيد الطلبات، والشحن في منصة MaxP.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.6" }
+    },
+    {
+      "path": "/support/faq",
+      "title": "الأسئلة الشائعة | MaxP",
+      "description": "أجوبة عن الاشتراك والأسعار، ربط واتساب، تأكيد الطلبات، والشحن في منصة MaxP.",
+      "canonicalPath": "/faq",
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/privacy",
+      "title": "سياسة الخصوصية | MaxP",
+      "description": "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
+      "sitemap": { "include": true, "changefreq": "yearly", "priority": "0.3" }
+    },
+    {
+      "path": "/privacy-policy",
+      "title": "سياسة الخصوصية | MaxP",
+      "description": "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
+      "canonicalPath": "/privacy",
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/policies",
+      "title": "سياسة الخصوصية | MaxP",
+      "description": "كيف تجمع MaxP البيانات وتستخدمها وتحميها.",
+      "canonicalPath": "/privacy",
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/terms",
+      "title": "الشروط والأحكام | MaxP",
+      "description": "شروط استخدام منصة MaxP، الاشتراكات، والمسؤوليات.",
+      "sitemap": { "include": true, "changefreq": "yearly", "priority": "0.3" }
+    },
+    {
+      "path": "/terms-of-service",
+      "title": "الشروط والأحكام | MaxP",
+      "description": "شروط استخدام منصة MaxP، الاشتراكات، والمسؤوليات.",
+      "canonicalPath": "/terms",
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/data-deletion",
+      "title": "حذف البيانات | MaxP",
+      "description": "طلب حذف بيانات حسابك من منصة MaxP — الخطوات ومدة التنفيذ.",
+      "sitemap": { "include": true, "changefreq": "yearly", "priority": "0.3" }
+    },
+    {
+      "path": "/auth/login",
+      "title": "تسجيل الدخول | MaxP",
+      "description": "سجّل دخولك إلى لوحة تحكم MaxP لمتابعة رسائلك ومبيعاتك ومتجرك.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/auth/register",
+      "title": "إنشاء حساب جديد | MaxP",
+      "description": "ابدأ رحلتك مع MaxP — أنشئ حسابك الآن وابدأ في أتمتة مبيعاتك وتواصلك.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/lp/clothing-store-bundle",
+      "title": "MaxP لمتاجر الملابس — متجر مجاني 0 ج.م وباقة 999 في الشهر",
+      "description": "باقة متجر الملابس الكاملة: متجر إلكتروني فاخر، كاشير فروع سحابي، مصفوفة مقاسات، ربط شحن بوسطة، ومستشار مقاسات ذكي — 999 ج.م/شهر شامل 17 أداة.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/lp/clothing-taste",
+      "title": "MaxP للأزياء والملابس — 17 أداة لإدارة المتجر والفروع والشحن",
+      "description": "منظومة متاجر وبراندات الملابس في مصر: 17 أداة في باقة واحدة تشمل متجر أونلاين، كاشير فروع بالباركود، ربط شحن بوسطة وتوربو، تأكيد واتساب، وتشخيص أسباب المرتجعات.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/lp/fashion-os",
+      "title": "MaxP للأزياء والملابس — 17 أداة لإدارة المتجر والفروع والشحن",
+      "description": "منظومة متاجر وبراندات الملابس في مصر: 17 أداة في باقة واحدة تشمل متجر أونلاين، كاشير فروع بالباركود، ربط شحن بوسطة وتوربو، تأكيد واتساب، وتشخيص أسباب المرتجعات.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    }
+  ]
+}
