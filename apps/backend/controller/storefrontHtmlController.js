@@ -440,6 +440,9 @@ exports.handleStorefrontShell = async (req, res, next) => {
     } else if (landingMeta) {
       const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
       semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p><span>${metadata.price ? `${metadata.price} ${metadata.currency || "EGP"}` : ""}</span></div>`;
+    } else if (metadata.title) {
+      const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
+      semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description || "")}</p></div>`;
     }
 
     if (semanticSnippet && html.includes('<div id="root"></div>')) {

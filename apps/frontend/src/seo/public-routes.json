@@ -58,6 +58,13 @@
       "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.8" }
     },
     {
+      "path": "/bundle/store-complete-bundle",
+      "title": "باقة المتجر الكاملة — 17 أداة في باقة واحدة | MaxP",
+      "description": "متجر إلكتروني، كاشير فروع، مخزون، شحن، واتساب، وذكاء اصطناعي — كل أدوات تشغيل المتجر في باقة واحدة بسعر واحد.",
+      "canonicalPath": "/lp/store-complete-bundle",
+      "sitemap": { "include": false }
+    },
+    {
       "path": "/register/merchant",
       "title": "سجّل متجرك على MaxP — ابدأ مجانًا وبدون بطاقة بنكية",
       "description": "أنشئ حساب تاجر في دقائق: متجر إلكتروني، صندوق محادثات موحّد، وتأكيد أوردرات الدفع عند الاستلام.",
@@ -68,6 +75,13 @@
       "title": "برنامج المسوّقين بالعمولة | MaxP Affiliate",
       "description": "شارك رابطك واكسب عمولة متكررة على كل تاجر يشترك في MaxP.",
       "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.6" }
+    },
+    {
+      "path": "/affiliate-register",
+      "title": "برنامج المسوّقين بالعمولة | MaxP Affiliate",
+      "description": "شارك رابطك واكسب عمولة متكررة على كل تاجر يشترك في MaxP.",
+      "canonicalPath": "/register/affiliate",
+      "sitemap": { "include": false }
     },
     {
       "path": "/faq",
@@ -81,6 +95,12 @@
       "description": "أجوبة عن الاشتراك والأسعار، ربط واتساب، تأكيد الطلبات، والشحن في منصة MaxP.",
       "canonicalPath": "/faq",
       "sitemap": { "include": false }
+    },
+    {
+      "path": "/app-explanations",
+      "title": "شرح المنصة والأدوات | MaxP",
+      "description": "دليل وشروحات فيديو لاستخدام كافة أدوات ومميزات منصة MaxP للتجارة الإلكترونية وإدارة المحادثات.",
+      "sitemap": { "include": true, "changefreq": "monthly", "priority": "0.7" }
     },
     {
       "path": "/privacy",

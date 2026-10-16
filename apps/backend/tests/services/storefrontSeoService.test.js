@@ -364,5 +364,54 @@ describe("storefrontSeoService", () => {
     const updatedRtl = injectStorefrontSeoTags(html, metadataRtl);
     expect(updatedRtl).toContain('<html lang="ar" dir="rtl">');
   });
+
+  test("builds tailored SEO descriptions for store pages /shop, /collections, and /sale", () => {
+    const shopMeta = buildStorefrontSeoMetadata({
+      pathname: "/shop",
+      currentUrl: "https://swan.maxp.online/shop",
+      company: { name: "Swan" },
+    });
+    expect(shopMeta.title).toBe("المتجر | Swan");
+    expect(shopMeta.description).toContain("Swan");
+    expect(shopMeta.description).not.toContain("تعطيل JavaScript");
+
+    const collMeta = buildStorefrontSeoMetadata({
+      pathname: "/collections",
+      currentUrl: "https://swan.maxp.online/collections",
+      company: { name: "Swan" },
+    });
+    expect(collMeta.title).toBe("التصنيفات | Swan");
+    expect(collMeta.description).toContain("Swan");
+
+    const saleMeta = buildStorefrontSeoMetadata({
+      pathname: "/sale",
+      currentUrl: "https://swan.maxp.online/sale?page=2",
+      company: { name: "Swan" },
+    });
+    expect(saleMeta.title).toBe("التخفيضات | Swan");
+    expect(saleMeta.description).toContain("Swan");
+  });
+
+  test("uses product slug or category fallback instead of generic 'المنتج' title", () => {
+    // When product is null on /product/three-line route
+    const fallbackMeta = buildStorefrontSeoMetadata({
+      pathname: "/product/three-line",
+      currentUrl: "https://swan.maxp.online/product/three-line",
+      company: { name: "Swan" },
+    });
+    expect(fallbackMeta.title).toBe("three line | Swan");
+    expect(fallbackMeta.description).toContain("three line");
+
+    // When product exists but has no name or metaTitle
+    const productWithCategory = buildStorefrontSeoMetadata({
+      pathname: "/product/prod-123",
+      currentUrl: "https://swan.maxp.online/product/prod-123",
+      company: { name: "Swan" },
+      product: {
+        category: { name: "أحذية رياضية" },
+      },
+    });
+    expect(productWithCategory.title).toBe("منتج أحذية رياضية | Swan");
+  });
 });
 

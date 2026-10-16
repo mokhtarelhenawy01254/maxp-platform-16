@@ -1,6 +1,16 @@
 /**
  * platformSeoMiddleware.js
  *
+ * ⚠️ ملاحظة معمارية هامة (Source of Truth):
+ * خريطة المسارات العامة الثابتة (ROUTE_SEO_MAP) أدناه أصبحت طبقة قديمة ومكررة للدومين الرئيسي؛
+ * فالدومين الرئيسي (maxp.online / www.maxp.online) يعتمد الآن كلياً على:
+ * `apps/frontend/src/seo/public-routes.json`
+ * كمصدر الحقيقة الوحيد لجميع المسارات العامة، حيث يتم توليد أغلفة SEO ثابتة (.seo.html)
+ * وسجلات sitemap.xml أثناء الـ build وتُخدم مباشرة عبر Nginx (try_files).
+ *
+ * تم الإبقاء على هذا الملف لدعم مسارات الفانل الديناميكية (/funnel/:slug و /funnels/:slug)
+ * وتجاوز المتاجر والشركات دون تغيير أي سلوك شغال أو مسارات فانل تجارية.
+ *
  * Server-side Open Graph / Twitter Card meta injector for MaxP platform routes.
  *
  * Runs BEFORE the catch-all storefrontHtmlController so that requests made

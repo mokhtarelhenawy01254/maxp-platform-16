@@ -352,8 +352,10 @@ const buildStorefrontSeoMetadata = ({
     templateSettings,
     templateContent,
   });
+  const companyDescription =
+    resolveCompanyDescription({ company, storefrontSettings, templateSettings });
   const fallbackDescription =
-    resolveCompanyDescription({ company, storefrontSettings, templateSettings }) ||
+    companyDescription ||
     `${storeName} — تسوق أونلاين واكتشف أحدث المنتجات والعروض المتاحة الآن.`;
   const titleTemplate = trimToNull(templateSeo.titleTemplate) || "%s | {{store}}";
   const direction =
@@ -467,17 +469,22 @@ const buildStorefrontSeoMetadata = ({
 
   if (product) {
     const productWithSeoOverrides = resolveProductSeoOverrides(product);
-    const productTitle =
+    const candidateTitle =
       trimToNull(productWithSeoOverrides.metaTitle) ||
       trimToNull(productWithSeoOverrides.name) ||
+      (product.category?.name ? `منتج ${product.category.name}` : null) ||
+      (routeContext.productKey ? titleizeSegment(routeContext.productKey) : null) ||
       storeName;
+    const productTitle = candidateTitle;
     title = trimToNull(productWithSeoOverrides.metaTitle)
       ? productTitle
       : applyTitleTemplate(titleTemplate, productTitle, storeName);
     description =
       trimToNull(productWithSeoOverrides.metaDescription) ||
       trimToNull(stripHtml(productWithSeoOverrides.description)) ||
-      fallbackDescription;
+      (companyDescription
+        ? `${productTitle} من ${storeName} — تسوق أونلاين. ${companyDescription}`
+        : `${productTitle} من ${storeName} — تسوق أونلاين بأفضل جودة وسعر.`);
     image = resolveProductImage(productWithSeoOverrides, currentUrl) || defaultImage;
     type = "product";
     sku = trimToNull(product.sku);
@@ -595,6 +602,7 @@ const buildStorefrontSeoMetadata = ({
     const categoryTitle =
       trimToNull(category.metaTitle) ||
       trimToNull(category.name) ||
+      (routeContext.categorySlug ? titleizeSegment(routeContext.categorySlug) : null) ||
       storeName;
     title = trimToNull(category.metaTitle)
       ? categoryTitle
@@ -602,7 +610,9 @@ const buildStorefrontSeoMetadata = ({
     description =
       trimToNull(category.metaDescription) ||
       trimToNull(category.description) ||
-      fallbackDescription;
+      (companyDescription
+        ? `تصفح منتجات قسم ${categoryTitle} من ${storeName}. ${companyDescription}`
+        : `تصفح منتجات قسم ${categoryTitle} من ${storeName} واكتشف أحدث التشكيلات والأسعار.`);
     image = resolveAbsoluteUrl(category.image, currentUrl) || defaultImage;
     type = "website";
 
@@ -810,11 +820,65 @@ const buildStorefrontSeoMetadata = ({
       facebookDomainVerification,
     };
   } else {
-    const pageTitle =
-      PAGE_NAME_MAP[routeContext.pageSegment] ||
-      titleizeSegment(routeContext.pageSegment) ||
-      storeName;
+    let pageTitle;
+    let pageDescription = fallbackDescription;
+    const storeDesc = companyDescription;
+
+    if (routeContext.pageSegment === "product" || routeContext.pageSegment === "products") {
+      const slugTitle = routeContext.productKey ? titleizeSegment(routeContext.productKey) : null;
+      pageTitle = slugTitle || "المنتجات";
+      pageDescription = slugTitle
+        ? (storeDesc
+            ? `تفاصيل ومواصفات ${slugTitle} من ${storeName}. ${storeDesc}`
+            : `اكتشف مواصفات وتفاصيل ${slugTitle} من ${storeName} وتسوق أونلاين بأفضل الأسعار.`)
+        : (storeDesc
+            ? `تصفح تشكيلة منتجات ${storeName}. ${storeDesc}`
+            : `تصفح أحدث منتجات ${storeName} وتسوق أونلاين بأفضل الأسعار والعروض.`);
+    } else if (routeContext.pageSegment === "shop" || routeContext.pageSegment === "store") {
+      pageTitle = "المتجر";
+      pageDescription = storeDesc
+        ? `تسوق جميع منتجات ${storeName} أونلاين. ${storeDesc}`
+        : `تسوق جميع منتجات ${storeName} أونلاين — اكتشف أحدث المنتجات والعروض الحصرية بأفضل الأسعار.`;
+    } else if (routeContext.pageSegment === "collections" || routeContext.pageSegment === "category") {
+      const slugTitle = routeContext.categorySlug ? titleizeSegment(routeContext.categorySlug) : null;
+      pageTitle = slugTitle || "التصنيفات";
+      pageDescription = slugTitle
+        ? (storeDesc
+            ? `تصفح منتجات قسم ${slugTitle} من ${storeName}. ${storeDesc}`
+            : `تصفح منتجات وتشكيلة قسم ${slugTitle} من ${storeName} وتسوق أونلاين بأفضل جودة.`)
+        : (storeDesc
+            ? `تصفح أقسام وتصنيفات منتجات ${storeName}. ${storeDesc}`
+            : `تصفح أقسام وتصنيفات منتجات ${storeName} واكتشف كل التشكيلات المتاحة أونلاين.`);
+    } else if (routeContext.pageSegment === "sale") {
+      pageTitle = "التخفيضات";
+      pageDescription = storeDesc
+        ? `عروض وتخفيضات ${storeName} الحصرية. ${storeDesc}`
+        : `أحدث عروض وتخفيضات ${storeName} — تسوق الآن واستمتع بخصومات حصرية على أفضل المنتجات.`;
+    } else if (routeContext.pageSegment === "lookbook") {
+      pageTitle = "اللوك بوك";
+      pageDescription = storeDesc
+        ? `تنسيقات وإطلالات ${storeName}. ${storeDesc}`
+        : `شاهد أحدث التنسيقات وإطلالات المنتجات من ${storeName}.`;
+    } else if (routeContext.pageSegment === "size-guide") {
+      pageTitle = "دليل المقاسات";
+      pageDescription = `دليل مقاسات ${storeName} لمساعدتك في اختيار المقاس المناسب بكل دقة.`;
+    } else if (routeContext.pageSegment === "articles" || routeContext.pageSegment === "blog") {
+      pageTitle = "المقالات";
+      pageDescription = storeDesc
+        ? `أحدث مقالات وأخبار ${storeName}. ${storeDesc}`
+        : `أحدث المقالات والنصائح من ${storeName}.`;
+    } else {
+      pageTitle =
+        PAGE_NAME_MAP[routeContext.pageSegment] ||
+        titleizeSegment(routeContext.pageSegment) ||
+        storeName;
+      pageDescription = storeDesc
+        ? `${pageTitle} — ${storeName}. ${storeDesc}`
+        : `${pageTitle} — تسوق أونلاين من ${storeName} واكتشف أحدث العروض والمنتجات.`;
+    }
+
     title = applyTitleTemplate(titleTemplate, pageTitle, storeName);
+    description = pageDescription;
   }
 
   return {
