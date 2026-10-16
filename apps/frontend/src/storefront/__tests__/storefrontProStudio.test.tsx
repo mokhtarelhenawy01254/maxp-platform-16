@@ -131,13 +131,51 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
         />
       );
 
-      expect(screen.getByText("1280")).toBeDefined();
+      expect(screen.getByText("1200")).toBeDefined();
       expect(screen.getByText("768")).toBeDefined();
       expect(screen.getByText("375")).toBeDefined();
       expect(screen.getByText("نشر")).toBeDefined();
 
       fireEvent.click(screen.getByTitle("هاتف جوال (375px)"));
       expect(onDeviceChange).toHaveBeenCalledWith("mobile");
+    });
+
+    it("renders zoom controls with minus, percentage dropdown, and plus", () => {
+      const onZoomChange = vi.fn();
+      const onFitWidth = vi.fn();
+      render(
+        <StudioTopBar
+          themeName="Modern Minimal"
+          activePageKey="home"
+          deviceMode="desktop"
+          hasPendingChanges={false}
+          canUndo={true}
+          canRedo={false}
+          saving={false}
+          zoomLevel={1}
+          onZoomChange={onZoomChange}
+          onFitWidth={onFitWidth}
+          onBack={vi.fn()}
+          onPageChange={vi.fn()}
+          onDeviceChange={vi.fn()}
+          onUndo={vi.fn()}
+          onRedo={vi.fn()}
+          onSave={vi.fn()}
+          onOpenPreview={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText("100%")).toBeDefined();
+      expect(screen.getByTitle("تصغير الزوم (Ctrl+-)")).toBeDefined();
+      expect(screen.getByTitle("تكبير الزوم (Ctrl+=)")).toBeDefined();
+
+      // Click Zoom In
+      fireEvent.click(screen.getByTitle("تكبير الزوم (Ctrl+=)"));
+      expect(onZoomChange).toHaveBeenCalledWith(1.1);
+
+      // Click Zoom Out
+      fireEvent.click(screen.getByTitle("تصغير الزوم (Ctrl+-)"));
+      expect(onZoomChange).toHaveBeenCalledWith(0.9);
     });
   });
 

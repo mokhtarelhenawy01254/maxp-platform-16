@@ -14,7 +14,7 @@ export type StudioLeftPanelTab = "layers" | "theme" | "pages" | "elements";
 
 export type StudioInspectorTab = "design" | "layout" | "content" | "interactions" | "style" | "visibility";
 
-export type StudioZoomLevel = 0.5 | 0.75 | 1 | 1.25;
+export type StudioZoomLevel = number;
 
 export interface StudioDimensions {
   x: number;

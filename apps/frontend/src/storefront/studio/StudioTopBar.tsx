@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ArrowLeftIcon,
   ArrowUturnLeftIcon,
@@ -11,6 +11,10 @@ import {
   ArrowPathIcon,
   AdjustmentsHorizontalIcon,
   SparklesIcon,
+  MinusIcon,
+  PlusIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import type { StudioDeviceMode, StudioZoomLevel } from "./StudioTypes";
 import { StudioPageSelector } from "./StudioPageSelector";
@@ -27,6 +31,7 @@ interface StudioTopBarProps {
   previewUrl?: string;
   zoomLevel?: StudioZoomLevel;
   onZoomChange?: (zoom: StudioZoomLevel) => void;
+  onFitWidth?: () => void;
   showSpacingOverlay?: boolean;
   onToggleSpacingOverlay?: () => void;
   isInspectorOpen?: boolean;
@@ -55,9 +60,10 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   previewUrl,
   zoomLevel = 1,
   onZoomChange,
+  onFitWidth,
   showSpacingOverlay = true,
   onToggleSpacingOverlay,
-  isInspectorOpen = true,
+  isInspectorOpen = false,
   onToggleInspector,
   isLeftDrawerOpen = false,
   onToggleLeftDrawer,
@@ -70,6 +76,8 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onSave,
   onOpenPreview,
 }) => {
+  const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-50 flex h-[50px] sm:h-[52px] w-full items-center justify-between border-b border-[#0c0d0f] bg-[#17181c] px-2 sm:px-3 text-[#e8eaee] select-none gap-1 sm:gap-2">
       {/* 1. Left Section (RTL Start): Back, Mark, Site, Autosave */}
@@ -144,7 +152,7 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
 
       {/* 2. Center: Responsive Breakpoints with Pixel Badges */}
       <div className="flex items-center rounded-xl bg-[#1d1f24] p-0.5 sm:p-1 gap-0.5 sm:gap-1 border border-[#2a2d33] shrink-0">
-        {/* Desktop 1280 */}
+        {/* Desktop 1200 */}
         <button
           type="button"
           onClick={() => onDeviceChange("desktop")}
@@ -153,14 +161,14 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
               ? "bg-[#34383f] text-white shadow-xs"
               : "text-[#9ba0a8] hover:text-[#e8eaee]"
           }`}
-          title="سطح المكتب (1280px)"
+          title="سطح المكتب (1200px)"
         >
           <ComputerDesktopIcon className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">سطح المكتب</span>
           <span className={`hidden sm:inline rounded px-1.5 py-0.5 text-[9.5px] font-mono ${
             deviceMode === "desktop" ? "bg-[#464b54] text-[#d5d9df]" : "bg-[#2a2d33] text-[#808791]"
           }`}>
-            1280
+            1200
           </span>
         </button>
 
@@ -205,15 +213,103 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
 
       {/* 3. Right: Zoom, Spacing Guides, Undo/Redo, Preview, Save */}
       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-        {/* Zoom Selector */}
+        {/* Zoom Controls (25% - 200%) */}
         {onZoomChange && (
-          <div className="hidden xl:flex items-center gap-1 text-[11px] text-[#9ba0a8] px-1">
+          <div className="relative hidden lg:flex items-center gap-0.5 rounded-lg bg-[#202226] p-0.5 border border-[#2c2f35]">
+            {/* Minus 10% */}
             <button
               type="button"
-              onClick={() => onZoomChange(zoomLevel === 1 ? 0.75 : zoomLevel === 0.75 ? 0.5 : 1)}
-              className="rounded-md bg-[#202226] px-2 py-1 text-[10.5px] hover:text-white"
+              onClick={() => onZoomChange(Math.max(0.25, Math.round((zoomLevel - 0.1) * 10) / 10))}
+              disabled={zoomLevel <= 0.25}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[#9ba0a8] hover:bg-[#2a2d33] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              title="تصغير الزوم (Ctrl+-)"
             >
-              {Math.round(zoomLevel * 100)}% ▾
+              <MinusIcon className="h-3 w-3" />
+            </button>
+
+            {/* Percentage Display & Menu Trigger */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsZoomMenuOpen((prev) => !prev)}
+                onDoubleClick={() => onZoomChange(1)}
+                className="flex h-6 items-center gap-1 rounded-md px-1.5 text-[10.5px] font-mono text-[#c3c7cd] hover:bg-[#2a2d33] hover:text-white transition-colors"
+                title="خيارات الزوم (اضغط لعرض القائمة، أو انقر مزدوجاً لإعادة 100%)"
+              >
+                <span>{Math.round(zoomLevel * 100)}%</span>
+                <ChevronDownIcon className="h-2.5 w-2.5 text-[#7e848d]" />
+              </button>
+
+              {/* Presets Popover Menu */}
+              {isZoomMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-50"
+                    onClick={() => setIsZoomMenuOpen(false)}
+                  />
+                  <div
+                    className="absolute top-full start-0 mt-1 z-50 w-36 rounded-lg border border-[#32353b] bg-[#1d1f24] p-1 shadow-xl text-[11px]"
+                    dir="rtl"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onZoomChange(1);
+                        setIsZoomMenuOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between rounded-md px-2 py-1 text-start text-[#e8eaee] hover:bg-[#2b6cf6] hover:text-white transition-colors font-medium"
+                    >
+                      <span>إعادة 100%</span>
+                      <span className="text-[9.5px] text-[#7e848d] font-mono">Ctrl+0</span>
+                    </button>
+                    {onFitWidth && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onFitWidth();
+                          setIsZoomMenuOpen(false);
+                        }}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1 text-start text-[#e8eaee] hover:bg-[#2b6cf6] hover:text-white transition-colors"
+                      >
+                        <span>ملاءمة العرض</span>
+                        <span className="text-[9.5px] text-[#7e848d]">Fit</span>
+                      </button>
+                    )}
+                    <div className="my-1 border-t border-[#2a2d33]" />
+                    {[2, 1.5, 1.25, 1, 0.75, 0.5, 0.25].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          onZoomChange(preset);
+                          setIsZoomMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-start transition-colors ${
+                          Math.round(zoomLevel * 100) === Math.round(preset * 100)
+                            ? "bg-[#2b6cf6]/20 text-[#60a5fa] font-bold"
+                            : "text-[#c3c7cd] hover:bg-[#2a2d33] hover:text-white"
+                        }`}
+                      >
+                        <span className="font-mono">{Math.round(preset * 100)}%</span>
+                        {Math.round(zoomLevel * 100) === Math.round(preset * 100) && (
+                          <CheckIcon className="h-3 w-3 text-[#60a5fa]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Plus 10% */}
+            <button
+              type="button"
+              onClick={() => onZoomChange(Math.min(2.0, Math.round((zoomLevel + 0.1) * 10) / 10))}
+              disabled={zoomLevel >= 2.0}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[#9ba0a8] hover:bg-[#2a2d33] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              title="تكبير الزوم (Ctrl+=)"
+            >
+              <PlusIcon className="h-3 w-3" />
             </button>
           </div>
         )}

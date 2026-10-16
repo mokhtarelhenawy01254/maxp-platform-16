@@ -57,14 +57,36 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showSpacingOverlay, setShowSpacingOverlay] = useState<boolean>(true);
   const [leftRailTab, setLeftRailTab] = useState<StudioLeftRailTab>("elements");
   const [layersPanelTab, setLayersPanelTab] = useState<StudioLeftPanelTab>("layers");
-  const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState<boolean>(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 1024 : true
-  );
-  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 1024 : true
-  );
+  const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState<boolean>(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(false);
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(2.0, Math.round((prev + 0.1) * 10) / 10));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(0.25, Math.round((prev - 0.1) * 10) / 10));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+  };
+
+  const handleZoomFit = () => {
+    if (typeof window === "undefined") return;
+    const leftPanelWidth = isLeftDrawerOpen ? (leftRailTab === "elements" ? 260 : 288) : 0;
+    const inspectorWidth = isInspectorOpen ? 320 : 0;
+    const railWidth = 54;
+    const availableWidth = window.innerWidth - railWidth - leftPanelWidth - inspectorWidth - 64;
+    const targetWidth = deviceMode === "mobile" ? 375 : deviceMode === "tablet" ? 768 : 1200;
+    if (availableWidth > 0 && targetWidth > 0) {
+      const fitRatio = Math.round((availableWidth / targetWidth) * 100) / 100;
+      const clampedFit = Math.max(0.25, Math.min(2.0, fitRatio));
+      setZoomLevel(clampedFit);
+    }
+  };
 
   const handleOpenCatalogModal = () => {
     setShowImagePickerModal(false);
@@ -85,10 +107,30 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           setShowCatalogModal(false);
         }
       }
+
+      // Studio Zoom keyboard shortcuts: Ctrl+= / Ctrl+- / Ctrl+0 (Cmd on Mac)
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if ((e.ctrlKey || e.metaKey) && !isInput) {
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          handleZoomIn();
+        } else if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          handleZoomOut();
+        } else if (e.key === "0" || e.code === "Digit0" || e.code === "Numpad0") {
+          e.preventDefault();
+          handleZoomReset();
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showImagePickerModal, showCatalogModal]);
+  }, [showImagePickerModal, showCatalogModal, isLeftDrawerOpen, isInspectorOpen, leftRailTab, deviceMode]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -182,6 +224,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         previewUrl={previewUrl}
         zoomLevel={zoomLevel}
         onZoomChange={setZoomLevel}
+        onFitWidth={handleZoomFit}
         showSpacingOverlay={showSpacingOverlay}
         onToggleSpacingOverlay={() => setShowSpacingOverlay((prev) => !prev)}
         isInspectorOpen={isInspectorOpen}
@@ -215,8 +258,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                 return;
               }
               if (tab === "ai") {
-                setInspectorTab("interactions");
-                setIsInspectorOpen(true);
+                if (isInspectorOpen && inspectorTab === "interactions") {
+                  setIsInspectorOpen(false);
+                } else {
+                  setInspectorTab("interactions");
+                  setIsInspectorOpen(true);
+                }
                 return;
               }
               if (tab === "settings") {
