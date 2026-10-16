@@ -68,14 +68,11 @@ export const HeaderWalletShortcut: React.FC<HeaderWalletShortcutProps> = ({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className={`business-icon-button relative group ${className}`}
+        className={`relative inline-flex h-9 items-center justify-center rounded-xl border border-border/70 bg-card p-2 text-muted-foreground transition-all duration-150 hover:bg-muted/60 hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
         title={buttonTitle}
         aria-label={buttonTitle}
       >
-        <Wallet
-          className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-105"
-          strokeWidth={1.8}
-        />
+        <Wallet className="size-4.5 transition-transform group-hover:scale-105" strokeWidth={1.8} />
       </button>
 
       <QuickWalletRechargeModal

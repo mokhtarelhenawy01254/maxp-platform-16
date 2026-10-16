@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Wallet, X, ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 
@@ -23,6 +24,8 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
   const [internalBalance, setInternalBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const presets = [100, 250, 500, 1000];
 
   useEffect(() => {
     if (isOpen) {
@@ -77,7 +80,11 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
         toast.error(res.data?.message || t("billing.payments.sessionFailed") || "تعذر بدء جلسة الدفع");
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("billing.payments.gatewayError") || "حدث خطأ أثناء الاتصال ببوابة الدفع");
+      toast.error(
+        err?.response?.data?.message ||
+          t("billing.payments.gatewayError") ||
+          "حدث خطأ أثناء الاتصال ببوابة الدفع"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -85,81 +92,119 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
 
   if (!isOpen) return null;
 
+  const bal = currentBalance !== undefined ? currentBalance : internalBalance;
+
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 overflow-y-auto transition-opacity"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm overflow-y-auto transition-opacity"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="wallet-recharge-title"
     >
       <div
-        className="relative w-full max-w-sm my-auto bg-white dark:bg-[#18181b] rounded-2xl p-6 shadow-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-gray-100"
+        className="relative w-full max-w-sm my-auto rounded-2xl border border-border/70 bg-card p-6 shadow-2xl text-foreground"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 id="wallet-recharge-title" className="text-lg font-bold">
-            {t("billing.payments.rechargeWallet") || "شحن المحفظة"}
-          </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-border/60">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <Wallet className="size-4.5" />
+            </div>
+            <div>
+              <h2 id="wallet-recharge-title" className="text-base font-bold text-foreground">
+                {t("billing.payments.rechargeWallet") || "شحن المحفظة"}
+              </h2>
+              <p className="text-xs text-muted-foreground">شحن الرصيد الفوري عبر بوابة الدفع</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="إغلاق"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none font-normal cursor-pointer"
+            className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground active:scale-[0.97]"
           >
-            &times;
+            <X className="size-4" />
           </button>
         </div>
 
-        {(() => {
-          const bal = currentBalance !== undefined ? currentBalance : internalBalance;
-          return (
-            <div className="flex items-center justify-between px-3.5 py-2.5 mb-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-xs">
-              <span className="text-gray-500 dark:text-gray-400">
-                {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
-              </span>
-              <span className="font-bold text-gray-900 dark:text-white tabular-nums text-sm">
-                {loadingBalance ? (
-                  <span className="inline-block w-12 h-3.5 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-                ) : bal !== null ? (
-                  `${Number(bal).toLocaleString("ar-EG", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2,
-                  })} ${currency === "EGP" ? "ج.م" : currency}`
-                ) : (
-                  "—"
-                )}
-              </span>
-            </div>
-          );
-        })()}
+        {/* Current Balance Bar */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 mb-4 rounded-xl border border-border/70 bg-muted/30 text-xs">
+          <span className="text-muted-foreground">
+            {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
+          </span>
+          <span className="font-mono text-sm font-bold text-foreground tabular-nums">
+            {loadingBalance ? (
+              <span className="inline-block w-12 h-3.5 bg-muted animate-pulse rounded" />
+            ) : bal !== null ? (
+              `${Number(bal).toLocaleString("ar-EG", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })} ${currency === "EGP" ? "ج.م" : currency}`
+            ) : (
+              "—"
+            )}
+          </span>
+        </div>
 
+        {/* Quick Amount Presets */}
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">مبالغ شائعة</label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {presets.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setAmount(preset.toString())}
+                className={`h-8 rounded-lg border text-xs font-mono font-medium tabular-nums transition-all active:scale-[0.97] ${
+                  amount === preset.toString()
+                    ? "border-primary bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "border-border/70 bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }`}
+              >
+                +{preset}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Form */}
         <form onSubmit={handleRecharge} className="space-y-4">
-          <input
-            ref={inputRef}
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder={t("billing.payments.amountPlaceholder") || "المبلغ (جنيه)"}
-            min="1"
-            step="any"
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121214] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-white/30 text-base"
-            disabled={submitting}
-          />
+          <div className="relative">
+            <input
+              ref={inputRef}
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder={t("billing.payments.amountPlaceholder") || "أدخل المبلغ (جنيه)"}
+              min="1"
+              step="any"
+              className="h-11 w-full rounded-xl border border-border/70 bg-background px-3.5 font-mono text-sm text-foreground tabular-nums placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled={submitting}
+            />
+            <span className="absolute end-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+              {currency === "EGP" ? "ج.م" : currency}
+            </span>
+          </div>
 
           <button
             type="submit"
             disabled={submitting || !amount || parseFloat(amount) <= 0}
-            className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 dark:disabled:bg-stone-800 text-white px-4 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
           >
             {submitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 <span>{t("billing.payments.recharging") || "جاري التحويل لكاشير..."}</span>
               </>
             ) : (
-              <span>{t("billing.payments.confirmRecharge") || "تأكيد الشحن"}</span>
+              <>
+                <CreditCard className="size-4" />
+                <span>{t("billing.payments.confirmRecharge") || "تأكيد ومتابعة الدفع"}</span>
+                <ArrowLeft className="size-3.5 opacity-80" />
+              </>
             )}
           </button>
         </form>

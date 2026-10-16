@@ -15,7 +15,7 @@ interface InvoiceBarcodeProps {
 const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   value,
   label,
-  height = 50,
+  height = 46,
   width = 2,
   compact = false,
 }) => {
@@ -42,17 +42,17 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   }, [safeValue, height, width]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1 text-center select-none">
+    <div className="flex flex-col items-center justify-center gap-1.5 text-center select-none rounded-xl border border-border/70 bg-card p-2.5 shadow-none print:border-0 print:p-0 print:shadow-none">
       <div
         className={
           compact
             ? "text-xs font-bold text-foreground print:text-black"
-            : "text-sm font-extrabold tracking-tight text-foreground print:text-black"
+            : "text-xs font-bold tracking-tight text-foreground print:text-black"
         }
       >
         {label}
       </div>
-      <div className="rounded-md border border-border/40 bg-white p-1 shadow-2xs print:border-0 print:p-0 print:shadow-none">
+      <div className="rounded-lg border border-border/50 bg-white p-1.5 shadow-2xs print:border-0 print:p-0 print:shadow-none">
         <svg
           ref={svgRef}
           className="mx-auto block max-w-full"
@@ -67,7 +67,7 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
       <span
         className={
           compact
-            ? "font-mono text-[10px] font-bold tracking-wider text-foreground tabular-nums print:text-black"
+            ? "font-mono text-[11px] font-bold tracking-wider text-foreground tabular-nums print:text-black"
             : "font-mono text-xs font-bold tracking-wider text-foreground tabular-nums print:text-black"
         }
       >
