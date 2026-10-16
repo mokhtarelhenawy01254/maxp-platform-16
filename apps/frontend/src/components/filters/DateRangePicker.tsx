@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, ArrowLeft } from 'lucide-react';
 
 interface DateRangePickerProps {
   onDateChange: (startDate: Date | null, endDate: Date | null, period: string) => void;
@@ -55,47 +55,56 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Quick Filters */}
-      <div className="flex flex-wrap gap-1.5">
-        {quickFilters.map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            onClick={() => handleQuickFilter(filter.value)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
-              selectedPeriod === filter.value
-                ? 'bg-primary/10 text-primary border-primary ring-1 ring-primary'
-                : 'bg-card text-foreground border-border/70 hover:bg-muted/50'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+    <div className="space-y-2.5">
+      {/* Quick Filters Single-Surface Segmented Row */}
+      <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-card p-1 shadow-none">
+        {quickFilters.map((filter) => {
+          const isSelected = selectedPeriod === filter.value;
+          return (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => handleQuickFilter(filter.value)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                isSelected
+                  ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              }`}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Custom Date Range Picker */}
       {showCustom && (
-        <div className="flex items-center flex-wrap gap-2 p-3 border border-border/70 rounded-xl bg-card shadow-xs">
-          <Calendar className="w-4 h-4 text-primary shrink-0" />
-          <input
-            type="date"
-            value={startDate ? startDate.toISOString().split('T')[0] : ''}
-            onChange={handleStartDateChange}
-            max={new Date().toISOString().split('T')[0]}
-            className="px-3 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-mono text-foreground focus:ring-1 focus:ring-primary focus:border-primary"
-            placeholder="من"
-          />
-          <span className="text-muted-foreground text-xs font-medium">إلى</span>
-          <input
-            type="date"
-            value={endDate ? endDate.toISOString().split('T')[0] : ''}
-            onChange={handleEndDateChange}
-            min={startDate ? startDate.toISOString().split('T')[0] : undefined}
-            max={new Date().toISOString().split('T')[0]}
-            className="px-3 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-mono text-foreground focus:ring-1 focus:ring-primary focus:border-primary"
-            placeholder="إلى"
-          />
+        <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-border/70 bg-card p-3 shadow-none">
+          <div className="flex size-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <Calendar className="size-3.5" />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate ? startDate.toISOString().split('T')[0] : ''}
+              onChange={handleStartDateChange}
+              max={new Date().toISOString().split('T')[0]}
+              className="h-8 rounded-lg border border-border/70 bg-background px-2.5 font-mono text-xs text-foreground tabular-nums focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="من"
+              aria-label="من تاريخ"
+            />
+            <ArrowLeft className="size-3.5 text-muted-foreground/60" />
+            <input
+              type="date"
+              value={endDate ? endDate.toISOString().split('T')[0] : ''}
+              onChange={handleEndDateChange}
+              min={startDate ? startDate.toISOString().split('T')[0] : undefined}
+              max={new Date().toISOString().split('T')[0]}
+              className="h-8 rounded-lg border border-border/70 bg-background px-2.5 font-mono text-xs text-foreground tabular-nums focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="إلى"
+              aria-label="إلى تاريخ"
+            />
+          </div>
         </div>
       )}
     </div>

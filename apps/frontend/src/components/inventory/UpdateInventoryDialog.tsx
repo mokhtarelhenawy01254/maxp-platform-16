@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { X } from "lucide-react";
+import { X, Boxes, AlertCircle, Loader2 } from "lucide-react";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
 
@@ -47,34 +47,21 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
     try {
       setLoading(true);
       const apiUrl = getApiUrl();
-
-      console.log("🔍 Fetching products from:", `${apiUrl}/products`);
-      console.log("🔑 Token exists:", !!tokenManager.getAccessToken());
-
       const response = await fetch(`${apiUrl}/products`, {
         headers: tokenManager.createAuthHeaders(),
       });
 
-      console.log("📡 Response status:", response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Response error:", errorText);
         throw new Error("فشل في جلب المنتجات");
       }
 
       const data = await response.json();
-      console.log("📦 Products data:", data);
-
       if (data.success) {
-        console.log("✅ Products count:", data.data?.length || 0);
         setProducts(data.data || []);
       } else {
-        console.error("❌ API returned success: false");
         setError(data.message || "فشل في جلب المنتجات");
       }
     } catch (err) {
-      console.error("❌ Error fetching products:", err);
       setError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
       setLoading(false);
@@ -84,42 +71,28 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
   const fetchWarehouses = useCallback(async () => {
     try {
       const apiUrl = getApiUrl();
-
-      console.log("🏢 Fetching warehouses from:", `${apiUrl}/warehouses`);
-
       const response = await fetch(`${apiUrl}/warehouses`, {
         headers: tokenManager.createAuthHeaders(),
       });
 
-      console.log("📡 Warehouses response status:", response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log("🏢 Warehouses data:", data);
-
         if (data.success && data.data) {
-          console.log("✅ Warehouses count:", data.data.length);
           setWarehouses(data.data);
           if (data.data.length > 0) {
             setFormData((prev) =>
-              prev.warehouseId
-                ? prev
-                : { ...prev, warehouseId: data.data[0].id },
+              prev.warehouseId ? prev : { ...prev, warehouseId: data.data[0].id },
             );
-          } else if (data.data.length === 0) {
+          } else {
             setError("لا توجد مخازن متاحة. يرجى إنشاء مخزن أولاً.");
           }
         } else {
-          console.error("❌ Warehouses API returned success: false or no data");
           setError("فشل في جلب المخازن");
         }
       } else {
-        const errorText = await response.text();
-        console.error("❌ Warehouses response error:", errorText);
         setError("فشل في الاتصال بالخادم لجلب المخازن");
       }
     } catch (err) {
-      console.error("❌ Error fetching warehouses:", err);
       setError("خطأ في الاتصال بالخادم");
     }
   }, []);
@@ -149,9 +122,6 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
       setError(null);
       const apiUrl = getApiUrl();
 
-      console.log("📤 Sending update stock request:", formData);
-      console.log("🔗 API URL:", `${apiUrl}/inventory/update-stock`);
-
       const response = await fetch(`${apiUrl}/inventory/update-stock`, {
         method: "POST",
         headers: tokenManager.createAuthHeaders({
@@ -162,18 +132,13 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
 
       const data = await response.json();
 
-      console.log("📥 Response status:", response.status);
-      console.log("📥 Response data:", data);
-
       if (!response.ok || !data.success) {
-        console.error("❌ Update failed:", data);
         throw new Error(data.message || "فشل في تحديث المخزون");
       }
 
       onSuccess();
       handleClose();
     } catch (err) {
-      console.error("Error updating inventory:", err);
       setError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
       setSubmitting(false);
@@ -183,8 +148,7 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
   const handleClose = () => {
     setFormData({
       productId: "",
-      warehouseId:
-        warehouses.length > 0 && warehouses[0] ? warehouses[0].id : "",
+      warehouseId: warehouses.length > 0 && warehouses[0] ? warehouses[0].id : "",
       quantity: 0,
       type: "IN",
       reason: "إضافة",
@@ -196,30 +160,35 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl" dir="rtl">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
+      <DialogContent className="max-w-xl rounded-2xl border border-border/70 bg-card p-0 shadow-2xl text-foreground" dir="rtl">
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-border/60 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <Boxes className="size-4" />
+            </div>
+            <DialogTitle className="text-base font-bold tracking-tight text-foreground">
               تحديث المخزون
             </DialogTitle>
-            <button
-              onClick={handleClose}
-              className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex size-7 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-600 dark:text-red-300 text-sm">
-              {error}
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs font-medium text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
               المنتج
             </label>
             <select
@@ -227,7 +196,7 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, productId: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="h-9 w-full rounded-lg border border-border/70 bg-background/80 px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               required
               disabled={loading}
             >
@@ -240,9 +209,9 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
                 نوع الحركة
               </label>
               <select
@@ -250,7 +219,7 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, type: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="h-9 w-full rounded-lg border border-border/70 bg-background/80 px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="IN">إدخال</option>
                 <option value="OUT">إخراج</option>
@@ -263,8 +232,8 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
                 المستودع
               </label>
               <select
@@ -272,7 +241,7 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, warehouseId: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="h-9 w-full rounded-lg border border-border/70 bg-background/80 px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 required
                 disabled={loading || warehouses.length === 0}
               >
@@ -290,42 +259,44 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              السبب
-            </label>
-            <input
-              type="text"
-              value={formData.reason}
-              onChange={(e) =>
-                setFormData({ ...formData, reason: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="سبب التحديث"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                السبب
+              </label>
+              <input
+                type="text"
+                value={formData.reason}
+                onChange={(e) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
+                className="h-9 w-full rounded-lg border border-border/70 bg-background/80 px-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="سبب التحديث"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                الكمية
+              </label>
+              <input
+                type="number"
+                value={formData.quantity}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    quantity: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="h-9 w-full rounded-lg border border-border/70 bg-background/80 px-3 font-mono text-xs text-foreground tabular-nums focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                min="0"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              الكمية
-            </label>
-            <input
-              type="number"
-              value={formData.quantity}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  quantity: parseInt(e.target.value) || 0,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              min="0"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
               الملاحظات
             </label>
             <textarea
@@ -333,27 +304,35 @@ const UpdateInventoryDialog: React.FC<UpdateInventoryDialogProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full rounded-lg border border-border/70 bg-background/80 p-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               rows={3}
               placeholder="ملاحظات إضافية..."
             />
           </div>
 
-          <div className="flex gap-3 justify-end pt-4">
+          <div className="flex items-center justify-end gap-2.5 border-t border-border/60 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
               disabled={submitting}
+              className="h-9 rounded-lg border-border/70 text-xs font-medium hover:bg-muted/50"
             >
               إلغاء
             </Button>
             <Button
               type="submit"
               disabled={submitting || loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="h-9 gap-1.5 rounded-lg text-xs font-semibold shadow-xs"
             >
-              {submitting ? "جاري التحديث..." : "تحديث المخزون"}
+              {submitting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  جاري التحديث...
+                </>
+              ) : (
+                "تحديث المخزون"
+              )}
             </Button>
           </div>
         </form>
