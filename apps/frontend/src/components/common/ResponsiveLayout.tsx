@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X, Bell, User, Search, Settings } from "lucide-react";
+import {
+  Menu,
+  X,
+  Bell,
+  User,
+  Search,
+  Settings,
+  BarChart3,
+  MessageSquare,
+  Users,
+  ShoppingBag,
+  Package,
+  TrendingUp,
+  HelpCircle,
+  FileText,
+  Layers,
+} from "lucide-react";
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -29,41 +45,51 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   }, []);
 
   const navigationItems = [
-    { name: "لوحة التحكم", href: "/company-dashboard", icon: "📊" },
-    { name: "المحادثات", href: "/conversations", icon: "💬" },
-    { name: "العملاء", href: "/customers", icon: "👥" },
-    { name: "المنتجات", href: "/products", icon: "🛍️" },
-    { name: "الطلبات", href: "/orders", icon: "📦" },
-    { name: "التقارير", href: "/analytics/orders", icon: "📈" },
-    { name: "الأسئلة الشائعة", href: "/admin/faqs", icon: "❓" },
-    { name: "السياسات", href: "/admin/policies", icon: "📋" },
-    { name: "الإعدادات", href: "/settings", icon: "⚙️" },
+    { name: "لوحة التحكم", href: "/company-dashboard", icon: BarChart3 },
+    { name: "المحادثات", href: "/conversations", icon: MessageSquare },
+    { name: "العملاء", href: "/customers", icon: Users },
+    { name: "المنتجات", href: "/products", icon: ShoppingBag },
+    { name: "الطلبات", href: "/orders", icon: Package },
+    { name: "التقارير", href: "/analytics/orders", icon: TrendingUp },
+    { name: "الأسئلة الشائعة", href: "/admin/faqs", icon: HelpCircle },
+    { name: "السياسات", href: "/admin/policies", icon: FileText },
+    { name: "الإعدادات", href: "/settings", icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div dir="rtl" className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Mobile Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
+      <header className="bg-card/95 backdrop-blur-md border-b border-border/70 lg:hidden sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center space-x-3 space-x-reverse">
+          <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+              aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+            <h1 className="text-base font-bold text-foreground">{title}</h1>
           </div>
 
-          <div className="flex items-center space-x-2 space-x-reverse">
+          <div className="flex items-center gap-2">
             {showNotifications && (
-              <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <button
+                type="button"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted relative transition cursor-pointer"
+                aria-label="الإشعارات"
+              >
+                <Bell size={18} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
               </button>
             )}
-            <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-              <User size={20} />
+            <button
+              type="button"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+              aria-label="الملف الشخصي"
+            >
+              <User size={18} />
             </button>
           </div>
         </div>
@@ -73,13 +99,13 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
           <div className="px-4 pb-3">
             <div className="relative">
               <Search
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                size={16}
               />
               <input
                 type="text"
                 placeholder="البحث..."
-                className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-3 pr-9 py-2 border border-border/70 rounded-xl bg-muted/40 text-xs focus:ring-2 focus:ring-primary/40 focus:border-transparent text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -88,38 +114,42 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:bg-white lg:border-r lg:border-gray-200">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:bg-card lg:border-l lg:border-border/70 z-30">
           <div className="flex flex-col flex-1 min-h-0">
             {/* Logo */}
-            <div className="flex items-center h-16 px-6 bg-blue-600">
-              <h1 className="text-xl font-bold text-white">منصة التواصل</h1>
+            <div className="flex items-center gap-2.5 h-16 px-6 border-b border-border/60">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <Layers size={20} />
+              </div>
+              <h1 className="text-base font-bold text-foreground tracking-tight">منصة التواصل</h1>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-2">
-              {navigationItems.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
-                >
-                  <span className="ml-3 text-lg">{item.icon}</span>
-                  {item.name}
-                </a>
-              ))}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold text-muted-foreground rounded-xl hover:bg-muted/60 hover:text-foreground transition-colors group"
+                  >
+                    <Icon size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span>{item.name}</span>
+                  </a>
+                );
+              })}
             </nav>
 
             {/* User Profile */}
-            <div className="flex-shrink-0 p-4 border-t border-gray-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <User size={16} className="text-white" />
-                  </div>
+            <div className="flex-shrink-0 p-4 border-t border-border/60">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-xs">
+                  <User size={16} />
                 </div>
-                <div className="mr-3">
-                  <p className="text-sm font-medium text-gray-700">أحمد محمد</p>
-                  <p className="text-xs text-gray-500">مدير النظام</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">أحمد محمد</p>
+                  <p className="text-[11px] text-muted-foreground truncate">مدير النظام</p>
                 </div>
               </div>
             </div>
@@ -128,30 +158,37 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
         {/* Mobile Sidebar Overlay */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <div
-              className="fixed inset-0 bg-gray-600 bg-opacity-75"
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
               onClick={() => setIsMobileMenuOpen(false)}
+              aria-hidden="true"
             />
-            <div className="relative flex flex-col w-64 h-full bg-white shadow-xl">
+            <div className="relative flex flex-col w-64 h-full bg-card border-l border-border/70 shadow-2xl">
               {/* Logo */}
-              <div className="flex items-center h-16 px-6 bg-blue-600">
-                <h1 className="text-xl font-bold text-white">منصة التواصل</h1>
+              <div className="flex items-center gap-2.5 h-16 px-6 border-b border-border/60">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                  <Layers size={20} />
+                </div>
+                <h1 className="text-base font-bold text-foreground">منصة التواصل</h1>
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 px-4 py-6 space-y-2">
-                {navigationItems.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span className="ml-3 text-lg">{item.icon}</span>
-                    {item.name}
-                  </a>
-                ))}
+              <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold text-muted-foreground rounded-xl hover:bg-muted/60 hover:text-foreground transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Icon size={16} />
+                      <span>{item.name}</span>
+                    </a>
+                  );
+                })}
               </nav>
             </div>
           </div>
@@ -160,42 +197,50 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
         {/* Main Content */}
         <main className="flex-1 lg:mr-64">
           {/* Desktop Header */}
-          <header className="hidden lg:flex lg:items-center lg:justify-between lg:px-6 lg:py-4 lg:bg-white lg:border-b lg:border-gray-200">
+          <header className="hidden lg:flex lg:items-center lg:justify-between lg:px-6 lg:py-4 lg:bg-card/95 lg:backdrop-blur-md lg:border-b lg:border-border/70 sticky top-0 z-20">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+              <h1 className="text-xl font-bold text-foreground tracking-tight">{title}</h1>
             </div>
 
-            <div className="flex items-center space-x-4 space-x-reverse">
+            <div className="flex items-center gap-4">
               {showSearch && (
                 <div className="relative">
                   <Search
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    size={20}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                    size={16}
                   />
                   <input
                     type="text"
                     placeholder="البحث..."
-                    className="w-80 pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-72 pl-3 pr-9 py-2 border border-border/70 rounded-xl bg-muted/40 text-xs focus:ring-2 focus:ring-primary/40 focus:border-transparent text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
               )}
 
               {showNotifications && (
-                <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
-                  <Bell size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <button
+                  type="button"
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted relative transition cursor-pointer"
+                  aria-label="الإشعارات"
+                >
+                  <Bell size={18} />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
                 </button>
               )}
 
-              <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-                <Settings size={20} />
+              <button
+                type="button"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                aria-label="الإعدادات"
+              >
+                <Settings size={18} />
               </button>
 
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <User size={16} className="text-white" />
+              <div className="flex items-center gap-2.5 ps-3 border-s border-border/60">
+                <div className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-xs">
+                  <User size={16} />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-xs font-semibold text-foreground">
                   أحمد محمد
                 </span>
               </div>
