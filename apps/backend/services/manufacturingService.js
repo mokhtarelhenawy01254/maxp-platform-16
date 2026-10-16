@@ -871,6 +871,22 @@ class ManufacturingService {
     const prisma = getSharedPrismaClient();
     const order = await this.getOrderById(companyId, orderId);
 
+    if (order.status === 'IN_PROGRESS') {
+      // Idempotency: order is already in progress. Ensure no duplicate issue is performed.
+      const existingIssue = await prisma.materialIssue.findFirst({
+        where: { orderId, companyId, status: 'ISSUED' },
+        include: { items: true },
+      });
+      return {
+        ...order,
+        idempotent: true,
+        autoIssueSkipped: !!existingIssue,
+        message: existingIssue
+          ? `أمر الإنتاج قيد التشغيل بالفعل ويوجد إشعار صرف خامات سابق (${existingIssue.issueNumber})`
+          : 'أمر الإنتاج قيد التشغيل بالفعل',
+      };
+    }
+
     if (order.status !== 'RELEASED' && order.status !== 'PLANNED') {
       throw new Error(`لا يمكن بدء تشغيل أمر في حالة "${order.status}"`);
     }
@@ -887,32 +903,46 @@ class ManufacturingService {
         include: { variants: true, stages: true },
       });
 
-      // Optionally auto-issue materials if requested
+      // Optionally auto-issue materials if requested (Idempotent Guard)
       if (autoIssue) {
-        const warehouseId = sourceWarehouseId || order.sourceWarehouseId;
-        if (!warehouseId) {
-          throw new Error('مستودع صرف الخامات مطلوب للصرف التلقائي');
-        }
-        const resolved = await this.resolveVariantRequirements(companyId, order.bomId, order.variants);
-        const issueItems = resolved.aggregatedMaterials.map((m) => ({
-          rawMaterialId: m.rawMaterialId,
-          rawMaterialName: m.rawMaterialName,
-          quantity: m.totalRequiredQuantity,
-          unit: m.unit,
-          unitCost: 0.0,
-        }));
+        const existingIssue = await tx.materialIssue.findFirst({
+          where: { orderId, companyId, status: 'ISSUED' },
+        });
 
-        await this.issueMaterials(
-          companyId,
-          orderId,
-          {
-            sourceWarehouseId: warehouseId,
-            items: issueItems,
-            notes: 'صرف خامات تلقائي عند بدء التشغيل',
-          },
-          userId,
-          tx
-        );
+        if (existingIssue) {
+          console.warn(`[MES] Order ${order.orderNumber} already has an ISSUED material issue (${existingIssue.issueNumber}). Skipping duplicate auto-issue.`);
+          updated.autoIssueSkipped = true;
+          updated.autoIssueMessage = `تم تخطي الصرف التلقائي: يوجد إشعار صرف خامات قائم بالفعل برقم ${existingIssue.issueNumber}`;
+        } else {
+          const warehouseId = sourceWarehouseId || order.sourceWarehouseId;
+          if (!warehouseId) {
+            throw new Error('مستودع صرف الخامات مطلوب للصرف التلقائي');
+          }
+          const resolved = await this.resolveVariantRequirements(companyId, order.bomId, order.variants);
+          const issueItems = resolved.aggregatedMaterials.map((m) => ({
+            rawMaterialId: m.rawMaterialId,
+            rawMaterialName: m.rawMaterialName,
+            quantity: m.totalRequiredQuantity,
+            unit: m.unit,
+            unitCost: 0.0,
+          }));
+
+          const autoIssueResult = await this.issueMaterials(
+            companyId,
+            orderId,
+            {
+              sourceWarehouseId: warehouseId,
+              items: issueItems,
+              notes: 'صرف خامات تلقائي عند بدء التشغيل',
+              isAutoIssue: true,
+            },
+            userId,
+            tx
+          );
+          if (autoIssueResult?.costWarnings?.length) {
+            updated.costWarnings = autoIssueResult.costWarnings;
+          }
+        }
       }
 
       return updated;
@@ -938,6 +968,22 @@ class ManufacturingService {
 
     if (!Array.isArray(data.items) || data.items.length === 0) {
       throw new Error('بنود الخامات المصروفة مطلوبة');
+    }
+
+    if (data.preventDuplicate || data.isAutoIssue) {
+      const client = existingTx || prisma;
+      const existing = await client.materialIssue.findFirst({
+        where: { orderId, companyId, status: 'ISSUED' },
+        include: { items: true },
+      });
+      if (existing) {
+        return {
+          ...existing,
+          idempotent: true,
+          alreadyIssued: true,
+          message: `يوجد إشعار صرف خامات قائم بالفعل برقم ${existing.issueNumber}`,
+        };
+      }
     }
 
     const runInTx = async (tx) => {
