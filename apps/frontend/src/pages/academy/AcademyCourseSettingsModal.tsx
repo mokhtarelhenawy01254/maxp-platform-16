@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { Settings, Globe, Shield, X } from "lucide-react";
+import { Settings, Globe, Shield, X, Loader2 } from "lucide-react";
 import { Course, AcademyStoreProduct } from "./academyApi";
 
 interface AcademyCourseSettingsModalProps {
@@ -94,15 +94,23 @@ export function AcademyCourseSettingsModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
       dir="rtl"
     >
-      <div className="bg-card border border-border/80 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-border/70">
-          <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-            <Settings className="w-4 h-4 text-primary" />
-            <span>إعدادات الدورة والخصوصية والعلامة المائية</span>
-          </h2>
+      <div className="bg-card border border-border/70 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-xl text-foreground text-right">
+        <div className="flex items-center justify-between pb-3 border-b border-border/60">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+              <Settings className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-foreground">
+                إعدادات الدورة والخصوصية والعلامة المائية
+              </h2>
+              <p className="text-[11px] text-muted-foreground">تخصيص الوصول، الأسعار، وحماية الملكية الفكرية</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted text-sm transition"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground text-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="إغلاق"
           >
             <X className="w-4 h-4" />
           </button>
@@ -110,52 +118,52 @@ export function AcademyCourseSettingsModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              اسم الدورة *
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              اسم الدورة <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               required
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              وصف الدورة
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              وصف الدورة <span className="text-muted-foreground font-normal">(اختياري)</span>
             </label>
             <textarea
               rows={3}
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 سعر البيع (ج.م)
               </label>
               <input
                 type="number"
                 value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 الدروس المجانية (معاينة)
               </label>
               <input
                 type="number"
                 value={editFreePreviewCount}
                 onChange={(e) => setEditFreePreviewCount(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
           </div>
@@ -175,7 +183,7 @@ export function AcademyCourseSettingsModal({
                     setEditPrice(String(prod.price));
                   }
                 }}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 <option value="">-- بدون ربط بمنتج متجر --</option>
                 {storeProducts.map((p) => (
@@ -190,21 +198,21 @@ export function AcademyCourseSettingsModal({
                 value={editStoreProductId}
                 onChange={(e) => setEditStoreProductId(e.target.value)}
                 placeholder="ID المنتج في المتجر"
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono transition-all"
               />
             )}
           </div>
 
           {/* Privacy & Visibility Settings */}
-          <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-3">
+          <div className="p-4 rounded-xl bg-muted/20 border border-border/60 space-y-3.5">
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 نطاق ظهور الدورة (الخصوصية والتحكم في الوصول)
               </label>
               <select
                 value={editVisibility}
                 onChange={(e: any) => setEditVisibility(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-card border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 <option value="PUBLIC">عام (معروض للجميع في كتالوج الأكاديمية)</option>
                 <option value="UNLISTED">غير مدرج (مخفي من الكتالوج ومتاح برابط مباشر فقط)</option>
@@ -215,7 +223,7 @@ export function AcademyCourseSettingsModal({
 
             {editVisibility === "TAG_GATED" && (
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
                   الوسوم المصرح لها برؤية الكورس (مفصولة بفواصل)
                 </label>
                 <input
@@ -223,7 +231,7 @@ export function AcademyCourseSettingsModal({
                   value={editAllowedTags}
                   onChange={(e) => setEditAllowedTags(e.target.value)}
                   placeholder="مثال: vip, agency, media_buyer"
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono transition-all"
                 />
               </div>
             )}
@@ -233,14 +241,14 @@ export function AcademyCourseSettingsModal({
                 type="checkbox"
                 checked={editEnableWatermark}
                 onChange={(e) => setEditEnableWatermark(e.target.checked)}
-                className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input"
+                className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input accent-primary"
               />
               <div className="text-xs">
-                <span className="font-semibold text-foreground flex items-center gap-1">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-primary" />
                   <span>تفعيل العلامة المائية ضد التسريب (Anti-Leak Watermark)</span>
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                   تعرض اسم ورقم هاتف وتوقيت دخول الطالب متحركاً على الفيديو لمنع تصوير الشاشة.
                 </p>
               </div>
@@ -251,34 +259,35 @@ export function AcademyCourseSettingsModal({
                 type="checkbox"
                 checked={editIsGlobal}
                 onChange={(e) => setEditIsGlobal(e.target.checked)}
-                className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input"
+                className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input accent-primary"
               />
               <div className="text-xs">
                 <span className="font-semibold text-foreground flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-amber-500" />
                   <span>كورس عام على مستوى المنصة (Global)</span>
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                   عند التفعيل، يظهر هذا الكورس تلقائياً في كتالوج جميع التجار على المنصة.
                 </p>
               </div>
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50 transition"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50 transition-all active:scale-[0.98] flex items-center gap-1.5"
             >
-              {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{saving ? "جاري الحفظ..." : "حفظ التعديلات"}</span>
             </button>
           </div>
         </form>

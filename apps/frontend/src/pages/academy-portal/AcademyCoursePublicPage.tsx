@@ -142,11 +142,13 @@ const AcademyCoursePublicPage: React.FC = () => {
     }
   };
 
-  const { course, modules, isEnrolled } = outline;
-  const firstLesson = modules[0]?.lessons[0];
+  const course = outline?.course;
+  const modules = Array.isArray(outline?.modules) ? outline.modules : [];
+  const isEnrolled = outline?.isEnrolled ?? false;
+  const firstLesson = modules[0]?.lessons?.[0];
   const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
-  const freeLessons = course.freePreviewLessons ?? 2;
-  const isDefaultCourse = course.id === "cmuzmwaxs07r2juml2v04xon5";
+  const freeLessons = course?.freePreviewLessons ?? 2;
+  const isDefaultCourse = course?.id === "cmuzmwaxs07r2juml2v04xon5";
 
   return (
     <div className="space-y-12">

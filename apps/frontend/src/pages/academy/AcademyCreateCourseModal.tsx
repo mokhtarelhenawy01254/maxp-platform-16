@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import { BookOpen, X } from 'lucide-react';
+import { BookOpen, X, Loader2 } from 'lucide-react';
 import { AcademyStoreProduct } from './academyApi';
 
 interface AcademyCreateCourseModalProps {
@@ -62,22 +62,23 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-200" dir="rtl">
-      <div className="bg-card border border-border/70 rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto text-foreground">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs" dir="rtl">
+      <div className="bg-card border border-border/70 rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto text-foreground text-right">
         <div className="flex items-center justify-between pb-3 border-b border-border/60">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">إنشاء دورة تدريبية جديدة</h2>
-              <p className="text-xs text-muted-foreground">أضف بيانات الدورة وابدأ في بناء وحداتها ودروسها</p>
+              <h2 className="text-sm sm:text-base font-bold text-foreground">إنشاء دورة تدريبية جديدة</h2>
+              <p className="text-[11px] text-muted-foreground">أضف بيانات الدورة وابدأ في بناء وحداتها ودروسها</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition text-sm"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground text-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="إغلاق"
           >
             <X className="w-4 h-4" />
           </button>
@@ -85,8 +86,8 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              اسم الدورة التدريبية *
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              اسم الدورة التدريبية <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
@@ -94,51 +95,51 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="مثال: دبلومة الميديا باير الاحترافية"
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              وصف الدورة (الأهداف والنتائج المتوقعة)
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              وصف الدورة (الأهداف والنتائج المتوقعة) <span className="text-muted-foreground font-normal">(اختياري)</span>
             </label>
             <textarea
               rows={3}
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="اكتب نبذة مختصرة عن الكورس وما سيتعلمه المتدرب..."
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 سعر البيع (ج.م)
               </label>
               <input
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                عدد الدروس المجانية (معاينة)
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                الدروس المجانية (معاينة)
               </label>
               <input
                 type="number"
                 value={previewCount}
                 onChange={(e) => setPreviewCount(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
               ربط بمنتج المتجر (للاشتراك التلقائي فور الشراء)
             </label>
             {storeProducts.length > 0 ? (
@@ -152,7 +153,7 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
                     setPrice(String(prod.price));
                   }
                 }}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 <option value="">-- بدون ربط بمنتج متجر --</option>
                 {storeProducts.map((p) => (
@@ -167,19 +168,19 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
                 value={storeProductId}
                 onChange={(e) => setStoreProductId(e.target.value)}
                 placeholder="ID المنتج في المتجر"
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
               نطاق ظهور الدورة (الخصوصية)
             </label>
             <select
               value={visibility}
               onChange={(e: any) => setVisibility(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             >
               <option value="PUBLIC">عام (معروض للجميع في كتالوج الأكاديمية)</option>
               <option value="UNLISTED">غير مدرج (متاح فقط برابط مباشر)</option>
@@ -190,7 +191,7 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
 
           {visibility === 'TAG_GATED' && (
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 الوسوم المصرح لها بالرؤية (مفصولة بفواصل)
               </label>
               <input
@@ -198,20 +199,20 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
                 value={allowedTags}
                 onChange={(e) => setAllowedTags(e.target.value)}
                 placeholder="vip, media_buyer, agency"
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2.5 pt-1">
             <input
               type="checkbox"
               id="watermarkToggle"
               checked={enableWatermark}
               onChange={(e) => setEnableWatermark(e.target.checked)}
-              className="w-4 h-4 rounded text-primary focus:ring-primary border-border/70"
+              className="w-4 h-4 rounded text-primary focus:ring-primary border-input accent-primary"
             />
-            <label htmlFor="watermarkToggle" className="text-xs text-foreground cursor-pointer font-medium">
+            <label htmlFor="watermarkToggle" className="text-xs text-foreground cursor-pointer font-medium leading-relaxed">
               تفعيل العلامة المائية الديناميكية لحماية الفيديوهات من التسريب
             </label>
           </div>
@@ -220,16 +221,17 @@ export const AcademyCreateCourseModal: React.FC<AcademyCreateCourseModalProps> =
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50 transition"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50 transition-all active:scale-[0.98] flex items-center gap-1.5"
             >
-              {submitting ? 'جاري الإنشاء...' : 'إنشاء الدورة'}
+              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{submitting ? 'جاري الإنشاء...' : 'إنشاء الدورة'}</span>
             </button>
           </div>
         </form>
