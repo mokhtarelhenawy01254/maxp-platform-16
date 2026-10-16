@@ -600,6 +600,7 @@ class OrderService {
 
       // جلب بيانات المحادثة وتوريث attribution إذا كان الطلب من محادثة
       let conversationAttribution = null;
+      let existingConversationId = null;
       if (conversationId) {
         try {
           const conv = await this.getPrisma().conversation.findUnique({
@@ -607,6 +608,7 @@ class OrderService {
             select: { id: true, channel: true, metadata: true }
           });
           if (conv) {
+            existingConversationId = conv.id;
             let convMeta = {};
             try { convMeta = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : (conv.metadata || {}); } catch (_) {}
             const convPlatform = (conv.channel || convMeta.platform || 'facebook').toLowerCase();
@@ -640,7 +642,7 @@ class OrderService {
             orderNumber,
             company: { connect: { id: companyId } },
             customer: { connect: { id: resolvedCustomerId } },
-            conversationId: conversationId || null,
+            ...(existingConversationId ? { conversation: { connect: { id: existingConversationId } } } : {}),
             subtotal: parseFloat(subtotal.toFixed(2)),
             tax: 0,
             shipping: parseFloat(shipping.toFixed(2)),
