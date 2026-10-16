@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GraduationCap, BookOpen, LogIn, LogOut, User, Compass } from "lucide-react";
+import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 
 interface StudentPortalLayoutProps {
   children: React.ReactNode;
@@ -9,8 +10,11 @@ interface StudentPortalLayoutProps {
 const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const branding = useCompanyBranding();
   const [studentPhone, setStudentPhone] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string | null>(null);
+
+  const portalTitle = branding.name ? `أكاديمية ${branding.name}` : "أكاديمية MaxP";
 
   useEffect(() => {
     // Enforce noindex on production for student portal until official rollout
@@ -47,11 +51,19 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
           {/* Logo & Portal Identity */}
           <div className="flex items-center gap-6">
             <Link to="/portal/catalog" className="flex items-center gap-2.5 text-slate-900 hover:opacity-90 transition-opacity">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
-                <GraduationCap className="w-5 h-5" />
-              </div>
+              {branding.logo ? (
+                <img
+                  src={branding.logo}
+                  alt={portalTitle}
+                  className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 p-0.5 shadow-sm"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+              )}
               <div className="flex flex-col">
-                <span className="font-bold text-base tracking-tight leading-tight">أكاديمية MaxP</span>
+                <span className="font-bold text-base tracking-tight leading-tight">{portalTitle}</span>
                 <span className="text-[11px] text-slate-500 font-medium">بوابة الطالب الذكية</span>
               </div>
             </Link>
@@ -125,12 +137,12 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-indigo-600" />
-            <span className="font-semibold text-slate-700">أكاديمية MaxP</span>
+            <span className="font-semibold text-slate-700">{portalTitle}</span>
             <span>—</span>
-            <span>بوابة تعليمية مخصصة لأصحاب المشاريع</span>
+            <span>بوابة تعليمية مخصصة لأصحاب المشاريع والطلاب</span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
-            <span>جميع الحقوق محفوظة لمنصة MaxP © {new Date().getFullYear()}</span>
+            <span>جميع الحقوق محفوظة {branding.name ? `لشركة ${branding.name} ومنصة MaxP` : "لمنصة MaxP"} © {new Date().getFullYear()}</span>
           </div>
         </div>
       </footer>

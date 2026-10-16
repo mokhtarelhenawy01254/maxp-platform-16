@@ -2064,6 +2064,11 @@ const AppContent = () => {
 
   // Check if current path is a public route
   const isPublicRoute =
+    currentPath.startsWith("/portal") ||
+    currentPath.startsWith("/academy/portal") ||
+    currentPath.startsWith("/academy/course") ||
+    currentPath.startsWith("/academy/my-courses") ||
+    currentPath.startsWith("/academy/student/") ||
     currentPath.startsWith("/test-public") ||
     currentPath.startsWith("/company-links/") ||
     currentPath.startsWith("/auth/") ||

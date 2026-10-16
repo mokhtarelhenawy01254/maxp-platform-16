@@ -408,6 +408,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
     }
 
     const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const isPortalRoute = req.path.startsWith("/portal") || req.path.startsWith("/academy");
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
       currentUrl,
@@ -420,7 +421,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
       storePage,
       landing: landingMeta,
       reviews,
-      noIndex: isNotFound || landingMissing,
+      noIndex: isNotFound || landingMissing || isPortalRoute,
     });
 
     let html = injectStorefrontSeoTags(indexHtml, metadata);

@@ -22,9 +22,12 @@ const PAGE_NAME_MAP = {
   "order-offer": "العرض الخاص",
   articles: "المقالات",
   blog: "المدونة",
+  portal: "بوابة الطالب",
+  academy: "أكاديمية MaxP",
 };
 
 const RESERVED_PAGE_SEGMENTS = new Set([
+  "store",
   "shop",
   "cart",
   "checkout",
@@ -39,6 +42,8 @@ const RESERVED_PAGE_SEGMENTS = new Set([
   "order-offer",
   "articles",
   "blog",
+  "portal",
+  "academy",
 ]);
 
 const isRecord = (value) =>
@@ -1027,6 +1032,9 @@ const isHtmlRouteRequest = (req) => {
   return !accept || accept.includes("text/html") || accept.includes("*/*");
 };
 
+const isReservedPageSegment = (segment) =>
+  RESERVED_PAGE_SEGMENTS.has(String(segment || '').toLowerCase());
+
 module.exports = {
   PAGE_NAME_MAP,
   applyTitleTemplate,
@@ -1035,6 +1043,7 @@ module.exports = {
   hasStaticFileExtension,
   injectStorefrontSeoTags,
   isHtmlRouteRequest,
+  isReservedPageSegment,
   parseJsonObject,
   resolveRouteContext,
   resolveProductSeoOverrides,

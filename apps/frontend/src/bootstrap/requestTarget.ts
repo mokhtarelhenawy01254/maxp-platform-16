@@ -1,6 +1,8 @@
 const PUBLIC_SUBDOMAIN_BYPASS_PREFIXES = [
   "/affiliate-register",
   "/dental-portal",
+  "/portal",
+  "/academy",
 ];
 
 const PUBLIC_SUBDOMAIN_BYPASS_PATHS = new Set([
@@ -57,13 +59,16 @@ export const shouldBootstrapStorefront = (
     return false;
   }
 
-  // بوابة العميل (حسابي / تسجيل دخول العملاء) تُعرض من تطبيق المنصة حتى على
-  // subdomain المتجر — حتى لا تُستورد مكونات البوابة جوه محرك المتجر (اعتماد دائري)
+  // بوابة العميل وبوابة الطالب تُعرض من تطبيق المنصة حتى على subdomain المتجر
   if (
     pathname === "/account" ||
     pathname.startsWith("/account/") ||
     pathname === "/auth/customer-register" ||
-    pathname.startsWith("/auth/customer-register/")
+    pathname.startsWith("/auth/customer-register/") ||
+    pathname === "/portal" ||
+    pathname.startsWith("/portal/") ||
+    pathname === "/academy" ||
+    pathname.startsWith("/academy/")
   ) {
     return false;
   }

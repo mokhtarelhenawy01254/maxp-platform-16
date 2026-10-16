@@ -3,7 +3,11 @@ const router = express.Router();
 const controller = require('../controller/academyController');
 const { authenticateToken, optionalAuth } = require('../utils/verifyToken');
 const checkAppAccess = require('../middleware/checkAppAccess');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const rateLimit = require('express-rate-limit');
+
+// 🌐 Multi-tenant Subdomain Resolution
+router.use(extractSubdomainMiddleware);
 
 const instructorAuth = [authenticateToken, checkAppAccess('academy-app')];
 

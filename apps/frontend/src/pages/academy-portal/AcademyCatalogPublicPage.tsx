@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Sparkles, CheckCircle2, ArrowLeft, Loader2, PlayCircle } from "lucide-react";
+import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 
 interface Lesson {
   id: string;
@@ -27,6 +28,7 @@ interface Course {
 }
 
 const AcademyCatalogPublicPage: React.FC = () => {
+  const branding = useCompanyBranding();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ const AcademyCatalogPublicPage: React.FC = () => {
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100/80 text-indigo-700 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>كتالوج الكورسات التطبيقية</span>
+            <span>كتالوج الكورسات — {branding.name ? `أكاديمية ${branding.name}` : "أكاديمية MaxP"}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
             تعلّم إدارة إعلاناتك ونظام بيعك — من الواقع المصري

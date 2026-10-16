@@ -4,14 +4,28 @@ const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/jwtSecret');
 
 function getCompanyId(req) {
-  return (
-    req.user?.companyId ||
+  const explicit =
     req.headers['x-company-id'] ||
+    req.headers['X-Company-Id'] ||
     req.query.companyId ||
-    req.body?.companyId ||
-    req.company?.id ||
-    null
-  );
+    req.body?.companyId;
+  if (explicit) return String(explicit).trim();
+
+  // If instructor or admin is managing courses, use their companyId
+  if (req.user && req.user.role !== 'STUDENT' && req.user.companyId) {
+    return req.user.companyId;
+  }
+
+  // Multi-tenant subdomain resolution from request host (e.g. swan.maxp.online)
+  if (req.company?.id) {
+    return req.company.id;
+  }
+
+  if (req.user?.companyId) {
+    return req.user.companyId;
+  }
+
+  return null;
 }
 
 function resolveAcademyCompanyId(req) {
@@ -729,8 +743,8 @@ exports.sendStudentLoginCode = async (req, res) => {
     }
 
     // 3. Generate 6-digit code
-    // Internal test account 01000000099 has fixed predictable code 123456
-    const isTestAccount = cleanPhone === '01000000099';
+    // Internal test accounts 01000000099 and 01000000088 have fixed predictable code 123456
+    const isTestAccount = cleanPhone === '01000000099' || cleanPhone === '01000000088';
     const code = isTestAccount ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
 
     // 4. Save in OTP store (valid for 10 minutes)
@@ -746,8 +760,7 @@ exports.sendStudentLoginCode = async (req, res) => {
     let dispatchError = null;
 
     if (isTestAccount) {
-      // 🧹 Test account 01000000099 has fixed predictable code 123456 for automation tests
-      // (To be removed before public launch)
+      // 🧹 Test accounts (01000000099 / 01000000088) have fixed predictable code 123456 for automation tests
       dispatchSuccess = true;
     } else {
       const companyId = enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
@@ -843,7 +856,7 @@ exports.studentLogin = async (req, res) => {
     }
 
     const cleanCode = String(code).trim();
-    const isTestAccount = cleanPhone === '01000000099';
+    const isTestAccount = cleanPhone === '01000000099' || cleanPhone === '01000000088';
 
     // Verify OTP
     let isCodeValid = false;
@@ -1149,7 +1162,7 @@ exports.checkoutCourse = async (req, res) => {
 
     if (!isTestCheckout) {
       // 🔒 Real Payment via Kashier Payment Gateway
-      const origin = req.get('origin') || 'https://maxp.online';
+      const origin = req.get('origin') || (req.get('host') ? `${req.protocol || 'https'}://${req.get('host')}` : 'https://maxp.online');
       const redirectUrl = `${origin}/portal/course/${course.id}?orderNumber=${encodeURIComponent(orderNumber)}&paymentSuccess=1`;
       const webhookUrl = process.env.WEBHOOK_BASE_URL
         ? `${process.env.WEBHOOK_BASE_URL}/api/v1/payment/kashier/webhook`

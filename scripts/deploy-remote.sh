@@ -744,6 +744,10 @@ if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" delete chat-backend || true
 
   cd /var/www/backend2
+  if [ -f "scripts/seed-swan-test-course.js" ]; then
+    echo "🎓 Seeding Swan Academy Test Course & Demo Student..."
+    NODE_ENV=production timeout 60 node scripts/seed-swan-test-course.js || echo "⚠️ seed-swan-test-course skipped, continuing..."
+  fi
   echo "🚀 Starting/reloading ecosystem (backend + worker)..."
   NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env || "$PM2_BIN" reload ecosystem.config.js --env production --update-env || true
   "$PM2_BIN" save

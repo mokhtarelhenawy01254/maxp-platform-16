@@ -8,6 +8,8 @@ import {
   Loader2,
   Video,
   AlertCircle,
+  Share2,
+  Check,
 } from "lucide-react";
 import AcademyCourseCheckoutModal from "./AcademyCourseCheckoutModal";
 import { CourseCurriculumAccordion, ModuleItem } from "./components/CourseCurriculumAccordion";
@@ -129,8 +131,23 @@ const AcademyCoursePublicPage: React.FC = () => {
     );
   }
 
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShareCourse = () => {
+    const targetId = outline?.course?.id || courseId;
+    const shareUrl = `${window.location.origin}/portal/course/${targetId}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    }
+  };
+
   const { course, modules, isEnrolled } = outline;
   const firstLesson = modules[0]?.lessons[0];
+  const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+  const freeLessons = course.freePreviewLessons ?? 2;
+  const isDefaultCourse = course.id === "cmuzmwaxs07r2juml2v04xon5";
 
   return (
     <div className="space-y-12">
@@ -168,15 +185,17 @@ const AcademyCoursePublicPage: React.FC = () => {
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>25 درس · على أكاديمية MaxP · أول درسين معاينة مجانًا</span>
+            <span>{totalLessons} درس · أول {freeLessons} دروس معاينة مجانًا</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            من أول إعلان… لأول نظام — كورس صاحب المحل، مش للوكالة
+            {course.title || (isDefaultCourse ? "من أول إعلان… لأول نظام — كورس صاحب المحل، مش للوكالة" : "تفاصيل الكورس التدريبي")}
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-            سايب الإعلانات للتجربة عشان محدش ورّاك الطريق كامل؟ الكورس ده ماشي معاك من أول خطوة: تفهم عميلك مين، تظبّط عرضك وسعرك، تكتب محتوى بيبيع، تشغّل إعلانك، وتقرا رقمك آخر الشهر. مسار واحد من أوله لآخره — 25 درس، كل درس فكرة واحدة بالعربي المصري، من غير كلام كبير.
+            {course.description || (isDefaultCourse
+              ? "سايب الإعلانات للتجربة عشان محدش ورّاك الطريق كامل؟ الكورس ده ماشي معاك من أول خطوة: تفهم عميلك مين، تظبّط عرضك وسعرك، تكتب محتوى بيبيع، تشغّل إعلانك، وتقرا رقمك آخر الشهر. مسار واحد من أوله لآخره — 25 درس، كل درس فكرة واحدة بالعربي المصري، من غير كلام كبير."
+              : "منهج عملي مكثف خطوة بخطوة يبدأ معك من الصفر وحتى إتقان المهارات وتحقيق النتائج المطلوبة.")}
           </p>
 
           {/* Action Row */}
@@ -208,18 +227,37 @@ const AcademyCoursePublicPage: React.FC = () => {
                 <span>شاهد أول درس مجانًا</span>
               </Link>
             )}
+
+            <button
+              type="button"
+              onClick={handleShareCourse}
+              title="مشاركة رابط الكورس"
+              className="px-4 py-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5 active:scale-95 shadow-sm"
+            >
+              {copiedShare ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-700 font-extrabold">تم نسخ الرابط!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 text-slate-500" />
+                  <span>مشاركة الكورس</span>
+                </>
+              )}
+            </button>
           </div>
 
           <p className="text-[11px] text-slate-500">
-            أول درسين مفتوحين من غير ما تدفع — اتفرج على الأسلوب قبل أي قرار.
+            أول {freeLessons} دروس مفتوحة من غير ما تدفع — اتفرج على الأسلوب قبل أي قرار.
           </p>
 
           {/* Feature Chips */}
           <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
-            <span className="px-3 py-1 rounded-lg bg-slate-100/80">4 وحدات · 25 درس</span>
-            <span className="px-3 py-1 rounded-lg bg-slate-100/80">أول درسين معاينة مجانًا</span>
+            <span className="px-3 py-1 rounded-lg bg-slate-100/80">{modules.length} وحدات · {totalLessons} درس</span>
+            <span className="px-3 py-1 rounded-lg bg-slate-100/80">أول {freeLessons} دروس معاينة مجانًا</span>
             <span className="px-3 py-1 rounded-lg bg-slate-100/80">كوتش ذكي لكل درس مقيّد بالسكريبت</span>
-            <span className="px-3 py-1 rounded-lg bg-slate-100/80">تمارين عملية على شاشات MaxP</span>
+            <span className="px-3 py-1 rounded-lg bg-slate-100/80">تمارين عملية على شاشات المنصة</span>
             <span className="px-3 py-1 rounded-lg bg-slate-100/80">بلا ظهور لأي حد — كروت وشاشات فقط</span>
           </div>
         </div>
