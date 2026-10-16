@@ -69,7 +69,7 @@ export const AppVersionSettingsCard: React.FC = () => {
 
   return (
     <>
-      <div className="rounded-xl border border-border/70 bg-card p-5 shadow-xs text-foreground">
+      <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-2xs text-foreground">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/60">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
@@ -101,7 +101,7 @@ export const AppVersionSettingsCard: React.FC = () => {
               type="button"
               onClick={() => loadVersionData(true)}
               disabled={checking}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/70 bg-background hover:bg-muted/40 text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border/70 bg-card hover:bg-muted text-foreground transition-all active:scale-97 disabled:opacity-50 cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${checking ? "animate-spin text-primary" : ""}`} />
               <span>{checking ? "جاري الفحص…" : "فحص التحديثات"}</span>
@@ -110,7 +110,7 @@ export const AppVersionSettingsCard: React.FC = () => {
             <button
               type="button"
               onClick={() => openUpdateDownload(latestInfo?.directApkUrl || latestInfo?.downloadUrl)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs active:scale-97 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>تحميل ملف APK</span>
@@ -122,11 +122,11 @@ export const AppVersionSettingsCard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
           <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 flex flex-col justify-between">
             <span className="text-[11px] text-muted-foreground font-medium">الإصدار المثبت حالياً</span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-base font-semibold font-mono text-foreground tabular-nums">
+            <div className="flex items-baseline gap-1.5 mt-1 font-mono tabular-nums">
+              <span className="text-base font-semibold text-foreground">
                 v{currentVersion.version}
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              <span className="text-[11px] text-muted-foreground">
                 (بناء {currentVersion.build})
               </span>
             </div>
@@ -134,11 +134,11 @@ export const AppVersionSettingsCard: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 flex flex-col justify-between">
             <span className="text-[11px] text-muted-foreground font-medium">أحدث إصدار على السيرفر</span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-base font-semibold font-mono text-foreground tabular-nums">
+            <div className="flex items-baseline gap-1.5 mt-1 font-mono tabular-nums">
+              <span className="text-base font-semibold text-foreground">
                 v{latestInfo?.latestVersion || "1.0.9"}
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              <span className="text-[11px] text-muted-foreground">
                 (بناء {latestInfo?.latestVersionCode || 9})
               </span>
             </div>

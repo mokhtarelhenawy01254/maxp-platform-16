@@ -9,7 +9,7 @@ const WhatsAppIcon = () => (
 const FloatingWhatsAppSupport: React.FC = () => {
   const envPhone = import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER || "";
   const [phone, setPhone] = useState(envPhone);
-  const isRTL = document.dir === "rtl" || document.documentElement.dir === "rtl";
+  const isRTL = typeof document !== "undefined" && (document.dir === "rtl" || document.documentElement.dir === "rtl");
 
   useEffect(() => {
     fetch("/api/v1/public/support-settings")
@@ -30,7 +30,7 @@ const FloatingWhatsAppSupport: React.FC = () => {
       href={waLink}
       target="_blank"
       rel="noopener noreferrer"
-      className={`fixed bottom-6 z-50 flex size-12 items-center justify-center rounded-2xl bg-[#25D366] text-white shadow-lg transition-all duration-200 hover:bg-[#20BD5A] hover:shadow-xl hover:scale-105 active:scale-95 ${
+      className={`fixed bottom-6 z-50 flex size-12 items-center justify-center rounded-2xl bg-[#25D366] text-white shadow-xl transition-all duration-200 hover:bg-[#20BD5A] hover:shadow-2xl hover:scale-105 active:scale-95 border border-emerald-400/25 cursor-pointer ${
         isRTL ? "left-6" : "right-6"
       }`}
       title="التواصل مع الدعم الفني عبر واتساب"

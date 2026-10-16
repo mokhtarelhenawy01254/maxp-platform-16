@@ -38,7 +38,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   return (
     <div
       className={joinClasses(
-        "rounded-xl border border-border/70 bg-card p-5 shadow-xs transition-all text-foreground",
+        "rounded-2xl border border-border/70 bg-card p-5 shadow-2xs transition-all text-foreground",
         className,
       )}
     >
@@ -48,8 +48,8 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
           headerClassName,
         )}
       >
-        <div className="flex items-start gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0 mt-0.5 shadow-2xs">
             <Icon
               className={joinClasses(
                 "w-4 h-4",
@@ -89,7 +89,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
               onChange={(e) => onToggle(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-2xs"></div>
           </label>
         )}
       </div>

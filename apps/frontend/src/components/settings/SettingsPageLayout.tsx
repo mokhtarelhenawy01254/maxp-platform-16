@@ -32,11 +32,11 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
   }
 
   return (
-    <div className="space-y-6 text-foreground">
+    <div className="space-y-6 text-foreground" dir="rtl">
       {/* Top Header & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground tracking-tight">
+          <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
             {title}
           </h2>
           {description && (
@@ -51,7 +51,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
             type="button"
             onClick={onReset}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border/70 text-xs font-medium rounded-lg text-muted-foreground bg-card hover:bg-muted/40 hover:text-foreground active:scale-[0.98] transition-all disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border/70 text-xs font-semibold rounded-xl text-muted-foreground bg-card hover:bg-muted hover:text-foreground active:scale-97 transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>إعادة تعيين</span>
@@ -61,7 +61,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-xl text-primary-foreground bg-primary hover:bg-primary/90 active:scale-97 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
           >
             {saving ? (
               <>

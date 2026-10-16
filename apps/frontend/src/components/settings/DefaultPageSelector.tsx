@@ -64,10 +64,10 @@ export function DefaultPageSelector({
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" dir="rtl">
       <div className="flex items-center gap-2">
         {selectedOption && (
-          <selectedOption.icon className="w-4 h-4 text-primary" />
+          <selectedOption.icon className="w-4 h-4 text-primary shrink-0" />
         )}
         <span className="text-xs font-semibold text-foreground">
           {t("settings.defaultPage", "الصفحة الرئيسية الافتراضية")}
@@ -77,22 +77,22 @@ export function DefaultPageSelector({
         {t("settings.defaultPageHint", "الصفحة التي يتم فتحها مباشرة بعد تسجيل الدخول")}
       </p>
       <Select value={value || "/apps"} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="h-9 rounded-lg border border-border/70 bg-card hover:bg-muted/40 transition-colors text-xs text-foreground">
+        <SelectTrigger className="h-9.5 rounded-xl border border-border/70 bg-card hover:bg-muted/40 transition-all text-xs text-foreground cursor-pointer shadow-2xs">
           <SelectValue placeholder={t("settings.selectDefaultPage", "اختر الصفحة الافتراضية")}>
             {selectedOption && (
               <span className="flex items-center gap-2 text-xs font-medium">
-                <selectedOption.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                {t(selectedOption.labelKey)}
+                <selectedOption.icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span>{t(selectedOption.labelKey)}</span>
               </span>
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent align="end" className="border border-border/70 bg-card rounded-xl shadow-xl">
+        <SelectContent align="end" className="border border-border/70 bg-card rounded-2xl shadow-2xl p-1">
           {DEFAULT_PAGE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value} className="text-xs focus:bg-muted/60">
+            <SelectItem key={option.value} value={option.value} className="text-xs rounded-lg focus:bg-muted/70 cursor-pointer py-1.5">
               <span className="flex items-center gap-2">
-                <option.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                {t(option.labelKey)}
+                <option.icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span>{t(option.labelKey)}</span>
               </span>
             </SelectItem>
           ))}
