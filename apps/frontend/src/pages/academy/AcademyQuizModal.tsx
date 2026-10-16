@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { HelpCircle, Plus, Trash2, X } from "lucide-react";
+import { HelpCircle, Plus, Trash2, X, CheckCircle2 } from "lucide-react";
 import { Lesson, Question } from "./academyApi";
 
 interface AcademyQuizModalProps {
@@ -61,28 +61,37 @@ export function AcademyQuizModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-200"
       dir="rtl"
     >
-      <div className="bg-card border border-border/80 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between pb-2 border-b border-border/70">
-          <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-purple-500" />
-            <span>إعداد اختبار الدرس (Quiz)</span>
-          </h2>
+      <div className="bg-card border border-border/70 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl text-foreground">
+        <div className="flex items-center justify-between pb-3 border-b border-border/60">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <HelpCircle className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-foreground">
+                إعداد اختبار الدرس (Quiz)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                حدد الأسئلة والخيارات والإجابة الصحيحة ونسبة النجاح
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted text-sm transition"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground text-sm transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block font-medium text-foreground mb-1">
                 عنوان الاختبار
               </label>
               <input
@@ -90,11 +99,11 @@ export function AcademyQuizModal({
                 required
                 value={quizTitle}
                 onChange={(e) => setQuizTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block font-medium text-foreground mb-1">
                 نسبة النجاح المطلوبة (%)
               </label>
               <input
@@ -103,29 +112,38 @@ export function AcademyQuizModal({
                 max={100}
                 value={quizPassScore}
                 onChange={(e) => setQuizPassScore(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Questions */}
           <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground text-xs">أسئلة الاختبار</span>
+              <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                {questions.length} سؤال
+              </span>
+            </div>
+
             {questions.map((q, qIdx) => (
               <div
                 key={qIdx}
-                className="p-3.5 rounded-xl bg-muted/20 border border-border/70 space-y-2.5"
+                className="p-3.5 sm:p-4 rounded-xl bg-muted/15 border border-border/60 space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                    السؤال {qIdx + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-xs font-mono tabular-nums">
+                      السؤال {qIdx + 1}
+                    </span>
+                  </div>
                   {questions.length > 1 && (
                     <button
                       type="button"
                       onClick={() => setQuestions(questions.filter((_, i) => i !== qIdx))}
-                      className="text-xs text-rose-500 hover:text-rose-600 transition font-medium flex items-center gap-1"
+                      className="text-xs text-destructive hover:text-destructive/80 transition font-medium flex items-center gap-1"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                       <span>حذف السؤال</span>
                     </button>
                   )}
@@ -141,45 +159,60 @@ export function AcademyQuizModal({
                     next[qIdx].q = e.target.value;
                     setQuestions(next);
                   }}
-                  className="w-full px-3 py-1.5 rounded-lg bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="block text-[11px] text-muted-foreground font-medium">
-                    الاختيارات (حدد الإجابة الصحيحة):
+                    الاختيارات (اختر الإجابة الصحيحة بالضغط على الدائرة):
                   </label>
-                  {q.options.map((opt, optIdx) => (
-                    <div key={optIdx} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={`correct_${qIdx}`}
-                        checked={q.correctIndex === optIdx}
-                        onChange={() => {
-                          const next = [...questions];
-                          next[qIdx].correctIndex = optIdx;
-                          setQuestions(next);
-                        }}
-                        className="text-purple-600 focus:ring-purple-500 w-4 h-4"
-                      />
-                      <input
-                        type="text"
-                        required
-                        placeholder={`خيار ${optIdx + 1}`}
-                        value={opt}
-                        onChange={(e) => {
-                          const next = [...questions];
-                          next[qIdx].options[optIdx] = e.target.value;
-                          setQuestions(next);
-                        }}
-                        className="flex-1 px-3 py-1 rounded-lg bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                      />
-                    </div>
-                  ))}
+                  <div className="space-y-1.5">
+                    {q.options.map((opt, optIdx) => (
+                      <div
+                        key={optIdx}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-colors ${
+                          q.correctIndex === optIdx
+                            ? "bg-primary/5 border-primary/30"
+                            : "bg-background border-border/60"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`correct_${qIdx}`}
+                          checked={q.correctIndex === optIdx}
+                          onChange={() => {
+                            const next = [...questions];
+                            next[qIdx].correctIndex = optIdx;
+                            setQuestions(next);
+                          }}
+                          className="accent-primary w-4 h-4 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          required
+                          placeholder={`خيار ${optIdx + 1}`}
+                          value={opt}
+                          onChange={(e) => {
+                            const next = [...questions];
+                            next[qIdx].options[optIdx] = e.target.value;
+                            setQuestions(next);
+                          }}
+                          className="flex-1 px-2 py-1 bg-transparent border-0 text-xs text-foreground focus:outline-none"
+                        />
+                        {q.correctIndex === optIdx && (
+                          <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 shrink-0">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>صحيح</span>
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] text-muted-foreground mb-1">
-                    شرح توضيحي للإجابة الصحيحة (اختياري):
+                    شرح توضيحي للإجابة الصحيحة (اختياري يظهر للطالب بعد الحل):
                   </label>
                   <input
                     type="text"
@@ -190,7 +223,7 @@ export function AcademyQuizModal({
                       next[qIdx].explanation = e.target.value;
                       setQuestions(next);
                     }}
-                    className="w-full px-3 py-1.5 rounded-lg bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    className="w-full px-3 py-1.5 rounded-lg bg-background border border-border/70 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -204,25 +237,25 @@ export function AcademyQuizModal({
                   { q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" },
                 ])
               }
-              className="w-full py-2 rounded-lg text-xs font-semibold bg-muted/40 border border-dashed border-border/80 text-purple-600 dark:text-purple-400 hover:bg-muted transition flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl text-xs font-semibold bg-muted/20 border border-dashed border-border/80 text-primary hover:bg-muted/40 transition flex items-center justify-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>إضافة سؤال آخر</span>
             </button>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+              className="px-3.5 py-1.5 rounded-lg border border-border/70 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white shadow-xs disabled:opacity-50 transition"
+              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50 transition active:scale-[0.98]"
             >
               {saving ? "جاري الحفظ..." : "حفظ الاختبار"}
             </button>

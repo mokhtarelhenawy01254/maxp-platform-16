@@ -24,10 +24,10 @@ export const AcademySyncOrderModal: React.FC<AcademySyncOrderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-card border border-border/70 rounded-xl p-5 sm:p-6 shadow-2xl space-y-4 text-foreground" dir="rtl">
+      <div className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 text-foreground" dir="rtl">
         <div className="flex items-center justify-between pb-3 border-b border-border/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <RefreshCw className="w-4 h-4" />
             </div>
             <div>
@@ -37,7 +37,7 @@ export const AcademySyncOrderModal: React.FC<AcademySyncOrderModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground text-sm transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -45,7 +45,7 @@ export const AcademySyncOrderModal: React.FC<AcademySyncOrderModalProps> = ({
 
         <form onSubmit={onSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-medium mb-1.5">
+            <label className="block font-medium mb-1.5 text-foreground">
               رقم الطلب (Order Number أو ID)
             </label>
             <input
@@ -56,14 +56,14 @@ export const AcademySyncOrderModal: React.FC<AcademySyncOrderModalProps> = ({
               className="w-full px-3 py-2 rounded-lg bg-background border border-border/70 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               required
             />
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
               يقوم النظام بالبحث في بنود الطلب عن أي كورس مرتبط بمنتجات الطلب، وتسجيل الطالب فوراً دون تكرار.
             </p>
           </div>
 
           {syncResult && (
             <div
-              className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+              className={`p-3 rounded-xl text-xs flex items-start gap-2.5 ${
                 syncResult.success
                   ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                   : 'bg-destructive/10 text-destructive border border-destructive/20'
@@ -74,17 +74,17 @@ export const AcademySyncOrderModal: React.FC<AcademySyncOrderModalProps> = ({
               ) : (
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
               )}
-              <span>{syncResult.message}</span>
+              <span className="leading-relaxed">{syncResult.message}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border/60">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-lg border border-border/70 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+              className="px-3.5 py-1.5 rounded-lg border border-border/70 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition font-medium"
             >
-              إغلاق
+              إلغاء
             </button>
             <button
               type="submit"
