@@ -23,11 +23,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const entry = payload[0];
     return (
-      <div className="bg-card border border-border/70 rounded-lg p-2.5 shadow-xl text-xs font-mono tabular-nums text-foreground space-y-1">
-        <div className="flex items-center gap-1.5 font-sans">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.payload?.fill || entry.color }} />
-          <span className="font-semibold text-foreground">{entry.name}:</span>
-          <span className="font-bold text-foreground font-mono">{entry.value?.toLocaleString()}</span>
+      <div className="rounded-xl border border-border/80 bg-card/95 p-3 shadow-xl backdrop-blur-md text-xs font-mono tabular-nums text-foreground space-y-1">
+        <div className="flex items-center gap-2 font-sans">
+          <span
+            className="size-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: entry.payload?.fill || entry.color }}
+          />
+          <span className="font-medium text-foreground">{entry.name}:</span>
+          <span className="font-mono font-bold text-foreground tabular-nums">
+            {entry.value?.toLocaleString()}
+          </span>
         </div>
       </div>
     );

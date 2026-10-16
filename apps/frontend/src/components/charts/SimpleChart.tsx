@@ -22,12 +22,12 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
     let cumulativePercentage = 0;
 
     return (
-      <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
-        <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+      <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-none text-foreground">
+        <h3 className="text-sm font-bold text-foreground tracking-tight mb-4 pb-3 border-b border-border/60">
           {title}
         </h3>
         <div className="flex items-center justify-center">
-          <div className="relative w-44 h-44">
+          <div className="relative size-44">
             <svg
               className="w-full h-full transform -rotate-90"
               viewBox="0 0 100 100"
@@ -38,7 +38,7 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
                 r="40"
                 fill="none"
                 stroke="currentColor"
-                className="text-muted/40"
+                className="text-muted/30"
                 strokeWidth="8"
               />
               {data.map((item, index) => {
@@ -65,7 +65,9 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center space-y-0.5">
-                <div className="text-xl font-bold text-foreground font-mono tabular-nums">{total.toLocaleString()}</div>
+                <div className="text-xl font-bold text-foreground font-mono tabular-nums">
+                  {total.toLocaleString()}
+                </div>
                 <div className="text-[11px] text-muted-foreground font-medium">المجموع</div>
               </div>
             </div>
@@ -76,7 +78,7 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
             <div key={index} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  className="size-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="font-medium text-foreground">
@@ -108,8 +110,8 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
       .join(" ");
 
     return (
-      <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
-        <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+      <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-none text-foreground">
+        <h3 className="text-sm font-bold text-foreground tracking-tight mb-4 pb-3 border-b border-border/60">
           {title}
         </h3>
         <div className="relative">
@@ -123,7 +125,7 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
                 x2="300"
                 y2={30 + i * 30}
                 stroke="currentColor"
-                className="text-border/40"
+                className="text-border/30"
                 strokeWidth="1"
                 strokeDasharray="2 2"
               />
@@ -169,13 +171,13 @@ const SimpleChart: React.FC<SimpleChartProps> = ({
 
   // Default bar chart
   return (
-    <div className="bg-card rounded-xl border border-border/70 p-5 shadow-xs text-foreground">
-      <h3 className="text-sm font-semibold text-foreground tracking-tight mb-4 pb-2 border-b border-border/50">
+    <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-none text-foreground">
+      <h3 className="text-sm font-bold text-foreground tracking-tight mb-4 pb-3 border-b border-border/60">
         {title}
       </h3>
       <div className="space-y-3">
         {data.map((item, index) => (
-          <div key={index} className="space-y-1">
+          <div key={index} className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-foreground">
                 {item.label}

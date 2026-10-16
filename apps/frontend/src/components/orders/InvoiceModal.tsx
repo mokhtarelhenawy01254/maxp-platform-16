@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Printer } from "lucide-react";
+import { X, Printer, FileText } from "lucide-react";
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { printClean } from "../../utils/printClean";
@@ -18,7 +18,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-xs p-0 sm:items-center sm:p-4 overscroll-contain animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-sm p-0 sm:items-center sm:p-4 overscroll-contain animate-in fade-in duration-150"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -32,26 +32,33 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
         <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted sm:hidden print:hidden" />
 
         {/* Header bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-card/95 px-4 py-3 backdrop-blur-xs print:hidden sm:px-5">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight font-mono tabular-nums">
-              فاتورة #{invoice.invoiceNumber as string}
-            </h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-card px-4 py-3 backdrop-blur-md print:hidden sm:px-5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <FileText className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground font-mono tabular-nums">
+                فاتورة #{invoice.invoiceNumber as string}
+              </h2>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all active:scale-97 shadow-xs cursor-pointer"
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.97] shadow-xs cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>طباعة</span>
+              <Printer className="size-3.5" />
+              <span>طباعة الفاتورة</span>
             </button>
             <button
+              type="button"
               onClick={onClose}
               aria-label="إغلاق الفاتورة"
-              className="p-1.5 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors active:scale-95 cursor-pointer"
+              className="flex size-8 items-center justify-center rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-[0.97] cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="size-4" />
             </button>
           </div>
         </div>
@@ -67,7 +74,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
           }
         `}</style>
 
-        <div className="p-3 print:p-2">
+        <div className="p-4 print:p-2">
           <InvoiceContent
             invoice={{
               ...invoice,
