@@ -263,6 +263,23 @@ export const academyApi = {
     return (res.data as any)?.enrollment;
   },
 
+  async enrollStudentManually(
+    courseId: string,
+    payload: {
+      studentName: string;
+      studentPhone: string;
+      studentEmail?: string;
+      accessDurationDays?: number;
+    }
+  ): Promise<any> {
+    return academyApi.enrollStudent(courseId, {
+      studentName: payload.studentName,
+      studentPhone: payload.studentPhone,
+      studentEmail: payload.studentEmail,
+      subscriptionDays: payload.accessDurationDays || undefined,
+    });
+  },
+
   async completeLesson(lessonId: string, enrollmentId: string): Promise<any> {
     const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/complete`, { enrollmentId });
     return (res.data as any)?.progress;
@@ -326,6 +343,13 @@ export const academyApi = {
     return (res.data as any)?.submission;
   },
 
+  async reviewExerciseSubmission(
+    submissionId: string,
+    data: { status: "ACCEPTED" | "REJECTED" | "NEEDS_MORE" | "PENDING"; instructorNote?: string }
+  ): Promise<ExerciseSubmission> {
+    return academyApi.reviewSubmission(submissionId, data);
+  },
+
   // Analytics
   async getStudentsProgress(courseId: string): Promise<StudentProgressRow[]> {
     const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/students`);
@@ -343,6 +367,14 @@ export const academyApi = {
     return (res.data as any)?.enrollment;
   },
 
+  async suspendStudent(studentId: string): Promise<any> {
+    return academyApi.suspendEnrollment(studentId);
+  },
+
+  async activateStudent(studentId: string): Promise<any> {
+    return academyApi.reactivateEnrollment(studentId);
+  },
+
   // Store Products linking & Manual order sync
   async getStoreProducts(): Promise<AcademyStoreProduct[]> {
     const res = await apiClient.get<any>("/api/v1/academy/store-products");
@@ -350,7 +382,7 @@ export const academyApi = {
   },
 
   async syncOrderEnrollment(orderNumber: string): Promise<{ success: boolean; enrolled: number; message?: string; courses?: any[] }> {
-    const res = await apiClient.post<any>("/api/v1/academy/sync-order-enrollment", { orderNumber });
+    const res = await apiClient.post<any>(`/api/v1/academy/sync-order-enrollment`, { orderNumber });
     return res.data;
   },
 };

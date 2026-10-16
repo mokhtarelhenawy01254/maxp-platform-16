@@ -63,10 +63,14 @@ export default function AcademyStudentsPage() {
           loadStudents(firstCourse.id),
           loadSubmissions(firstCourse.id),
         ]);
+      } else {
+        setSelectedCourseId("");
+        setStudents([]);
+        setSubmissions([]);
       }
       setError(null);
     } catch (err: any) {
-      const msg = err?.response?.data?.error || "فشل تحميل بيانات الكورسات والطلاب";
+      const msg = err?.response?.data?.error || err?.response?.data?.message || "فشل تحميل بيانات الكورسات والطلاب";
       setError(msg);
       toast.error(msg);
     } finally {
