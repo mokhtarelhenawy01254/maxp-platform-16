@@ -61,6 +61,7 @@ const createInMemoryStore = () => {
     manufacturingSettings: [],
     inventory: [],
     stockMovements: [],
+    products: [],
   };
 
   const createTableHandlers = (tableName, stateArray, idPrefix) => ({
@@ -346,12 +347,28 @@ const createInMemoryStore = () => {
     manufacturingSettings: createTableHandlers('manufacturingSettings', state.manufacturingSettings, 'ms'),
     inventory: createTableHandlers('inventory', state.inventory, 'inv'),
     stockMovement: createTableHandlers('stockMovements', state.stockMovements, 'sm'),
+    product: createTableHandlers('products', state.products, 'prod'),
 
     $transaction: async (fn) => {
       if (typeof fn !== 'function') {
         throw new Error('Interactive $transaction requires a callback function: $transaction(async (tx) => ...)');
       }
-      return await fn(prisma);
+      // Snapshot state to accurately simulate PostgreSQL atomic transaction rollback
+      const snapshot = {};
+      for (const k of Object.keys(state)) {
+        snapshot[k] = state[k].map((item) => ({ ...item }));
+      }
+      try {
+        return await fn(prisma);
+      } catch (err) {
+        for (const k of Object.keys(state)) {
+          state[k].length = 0;
+          if (snapshot[k]) {
+            state[k].push(...snapshot[k].map((item) => ({ ...item })));
+          }
+        }
+        throw err;
+      }
     },
   };
 
@@ -882,5 +899,304 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
       threwIssue = true;
     }
     expect(threwIssue).toBe(true);
+  });
+
+  test('8. Full Atomic Rollback on Issue Failure: zero side-effects on order status, stock, and vouchers', async () => {
+    // Setup warehouse with inventory (100 units)
+    await currentPrisma.inventory.create({
+      data: {
+        productId: 'raw_test_atomicity',
+        warehouseId: 'wh_atomic_test',
+        quantity: 100,
+        available: 100,
+        cost: 50.0,
+      },
+    });
+
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-ATOMIC-FAIL',
+      name: 'اختبار الذرية والـ Rollback',
+      components: [
+        {
+          rawMaterialId: 'raw_test_atomicity',
+          consumptionPerUnit: 1.0,
+          unit: 'PIECE',
+          scrapRate: 0.0,
+        },
+      ],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      sourceWarehouseId: 'wh_atomic_test',
+      variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 20 }],
+    });
+
+    await ManufacturingService.releaseOrder(companyA, order.id);
+
+    // Verify state before attempt: status is RELEASED, inventory is 100
+    const beforeOrder = await currentPrisma.productionOrder.findFirst({ where: { id: order.id } });
+    expect(beforeOrder.status).toBe('RELEASED');
+    const beforeInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'raw_test_atomicity', warehouseId: 'wh_atomic_test' },
+    });
+    expect(beforeInv.quantity).toBe(100);
+
+    // Inject simulated error in materialIssueItem.create inside transaction
+    const originalCreate = currentPrisma.materialIssueItem.create;
+    currentPrisma.materialIssueItem.create = async () => {
+      throw new Error('SIMULATED_DB_ERROR_INSIDE_ISSUE_ITEMS');
+    };
+
+    let threw = false;
+    try {
+      await ManufacturingService.startOrder(companyA, order.id, {
+        autoIssue: true,
+        sourceWarehouseId: 'wh_atomic_test',
+      });
+    } catch (err) {
+      threw = true;
+      expect(err.message.includes('SIMULATED_DB_ERROR_INSIDE_ISSUE_ITEMS')).toBe(true);
+    } finally {
+      currentPrisma.materialIssueItem.create = originalCreate;
+    }
+    expect(threw).toBe(true);
+
+    // Verify ZERO side-effects:
+    // 1. Order status was rolled back to RELEASED (not left as IN_PROGRESS)
+    const afterOrder = await currentPrisma.productionOrder.findFirst({ where: { id: order.id } });
+    expect(afterOrder.status).toBe('RELEASED');
+
+    // 2. No MaterialIssue voucher was persisted
+    const issues = await currentPrisma.materialIssue.findMany({ where: { orderId: order.id } });
+    expect(issues).toHaveLength(0);
+
+    // 3. Inventory was NOT decremented (remains 100)
+    const afterInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'raw_test_atomicity', warehouseId: 'wh_atomic_test' },
+    });
+    expect(afterInv.quantity).toBe(100);
+    expect(afterInv.available).toBe(100);
+
+    // 4. No stock movements were created
+    const sm = await currentPrisma.stockMovement.findMany({
+      where: { productId: 'raw_test_atomicity', warehouseId: 'wh_atomic_test' },
+    });
+    expect(sm).toHaveLength(0);
+  });
+
+  test('9. Idempotency Guard: retrying start with autoIssue creates only one material issue', async () => {
+    // Setup warehouse with inventory (200 units)
+    await currentPrisma.inventory.create({
+      data: {
+        productId: 'raw_idemp_fabric',
+        warehouseId: 'wh_idemp_store',
+        quantity: 200,
+        available: 200,
+        cost: 30.0,
+      },
+    });
+
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-IDEMP-TEST',
+      name: 'اختبار منع التكرار',
+      components: [
+        {
+          rawMaterialId: 'raw_idemp_fabric',
+          consumptionPerUnit: 2.0,
+          unit: 'METER',
+          scrapRate: 0.0,
+        },
+      ],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      sourceWarehouseId: 'wh_idemp_store',
+      variantMatrix: [{ size: 'L', color: 'WHITE', plannedQuantity: 10 }],
+    });
+    await ManufacturingService.releaseOrder(companyA, order.id);
+
+    // 1st start call with autoIssue: should succeed and create 1 issue
+    const started1 = await ManufacturingService.startOrder(companyA, order.id, {
+      autoIssue: true,
+      sourceWarehouseId: 'wh_idemp_store',
+    });
+    expect(started1.status).toBe('IN_PROGRESS');
+
+    const issuesAfterFirst = await currentPrisma.materialIssue.findMany({ where: { orderId: order.id } });
+    expect(issuesAfterFirst).toHaveLength(1);
+
+    const invAfterFirst = await currentPrisma.inventory.findFirst({
+      where: { productId: 'raw_idemp_fabric', warehouseId: 'wh_idemp_store' },
+    });
+    // 200 - (10 * 2) = 180
+    expect(invAfterFirst.quantity).toBe(180);
+
+    // 2nd start call on the same order with autoIssue: should be idempotent and NOT create another issue
+    const started2 = await ManufacturingService.startOrder(companyA, order.id, {
+      autoIssue: true,
+      sourceWarehouseId: 'wh_idemp_store',
+    });
+    expect(started2.status).toBe('IN_PROGRESS');
+    expect(started2.idempotent).toBe(true);
+    expect(started2.autoIssueSkipped).toBe(true);
+
+    const issuesAfterSecond = await currentPrisma.materialIssue.findMany({ where: { orderId: order.id } });
+    expect(issuesAfterSecond).toHaveLength(1);
+
+    const invAfterSecond = await currentPrisma.inventory.findFirst({
+      where: { productId: 'raw_idemp_fabric', warehouseId: 'wh_idemp_store' },
+    });
+    // Stock remained 180, was NOT deducted a second time!
+    expect(invAfterSecond.quantity).toBe(180);
+  });
+
+  test('10. Finished Goods Receipt Upsert: creates Inventory row when receiving into empty warehouse', async () => {
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-VIRGIN-RECEIPT',
+      name: 'استلام لمخزن غير مسجل سابقاً',
+      productId: 'prod_virgin_tshirt',
+      components: [],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      productId: 'prod_virgin_tshirt',
+      targetWarehouseId: 'wh_new_unstocked',
+      variantMatrix: [
+        { size: 'M', color: 'WHITE', plannedQuantity: 10 },
+        { size: 'L', color: 'WHITE', plannedQuantity: 10 },
+      ],
+    });
+    await ManufacturingService.releaseOrder(companyA, order.id);
+    await ManufacturingService.startOrder(companyA, order.id);
+
+    // Verify BEFORE receipt: no inventory row exists in wh_new_unstocked
+    const beforeInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'prod_virgin_tshirt', warehouseId: 'wh_new_unstocked' },
+    });
+    expect(beforeInv).toBe(null);
+
+    // Receive 10 of size M and 10 of size L (total 20 pieces) at unitCost 75 EGP
+    const receipt = await ManufacturingService.receiveFinishedGoods(companyA, order.id, {
+      targetWarehouseId: 'wh_new_unstocked',
+      items: [
+        { size: 'M', color: 'WHITE', goodQuantity: 10, scrapQuantity: 0, unitCost: 75.0 },
+        { size: 'L', color: 'WHITE', goodQuantity: 10, scrapQuantity: 0, unitCost: 75.0 },
+      ],
+    });
+
+    expect(receipt.totalQuantity).toBe(20);
+
+    // Verify AFTER receipt: inventory row was created by upsert and incremented to 20!
+    const afterInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'prod_virgin_tshirt', warehouseId: 'wh_new_unstocked' },
+    });
+    expect(afterInv).toBeDefined();
+    expect(afterInv.quantity).toBe(20);
+    expect(afterInv.available).toBe(20);
+    expect(afterInv.cost).toBe(75.0);
+
+    // Verify stock movements were recorded with type IN
+    const movements = await currentPrisma.stockMovement.findMany({
+      where: { productId: 'prod_virgin_tshirt', warehouseId: 'wh_new_unstocked' },
+    });
+    expect(movements).toHaveLength(2);
+    expect(movements[0].type).toBe('IN');
+    expect(movements[1].type).toBe('IN');
+  });
+
+  test('11. Full Lifecycle & Cost Settlement: FGR record and inventory valuation settle to final absorbed cost', async () => {
+    await AccountingService.updateSettings(companyA, { autoPostingEnabled: true });
+    await currentPrisma.companyApp.create({
+      data: { companyId: companyA, slug: 'accounting', status: 'ACTIVE' },
+    });
+    await ManufacturingService.updateSettings(companyA, {
+      autoPostingEnabled: true,
+      defaultOverheadRatePerPiece: 5.0,
+    });
+
+    // Seed raw material in warehouse
+    await currentPrisma.inventory.create({
+      data: {
+        productId: 'raw_lifecycle_yarn',
+        warehouseId: 'wh_yarn',
+        quantity: 100,
+        available: 100,
+        cost: 25.0,
+      },
+    });
+
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-LIFECYCLE-FULL',
+      name: 'دورة تصنيع كاملة مع التسوية',
+      productId: 'prod_sweater_final',
+      laborCostPerUnit: 10.0,
+      overheadCostPerUnit: 5.0,
+      components: [
+        {
+          rawMaterialId: 'raw_lifecycle_yarn',
+          consumptionPerUnit: 2.0,
+          unit: 'KG',
+          scrapRate: 0.0,
+        },
+      ],
+      standardStages: [
+        { name: 'حياكة الصوف', sequence: 1, ratePerPiece: 10.0 },
+      ],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      productId: 'prod_sweater_final',
+      sourceWarehouseId: 'wh_yarn',
+      targetWarehouseId: 'wh_knit_finish',
+      variantMatrix: [{ size: 'XL', color: 'GREY', plannedQuantity: 20 }],
+    });
+    await ManufacturingService.releaseOrder(companyA, order.id);
+
+    // 1. Start order with autoIssue: issues 40 KG @ 25 = 1000 EGP
+    const started = await ManufacturingService.startOrder(companyA, order.id, {
+      autoIssue: true,
+      sourceWarehouseId: 'wh_yarn',
+    });
+    expect(started.status).toBe('IN_PROGRESS');
+
+    // 2. Stage progress: 20 pcs * 10 = 200 EGP labor
+    const stage = order.stages[0];
+    await ManufacturingService.updateStageProgress(companyA, order.id, stage.id, {
+      completedQuantity: 20,
+    });
+
+    // 3. Receive 20 finished goods: provisional cost before completion is based on incurred so far
+    const receipt = await ManufacturingService.receiveFinishedGoods(companyA, order.id, {
+      targetWarehouseId: 'wh_knit_finish',
+      items: [{ size: 'XL', color: 'GREY', goodQuantity: 20, scrapQuantity: 0 }],
+    });
+    expect(receipt.totalQuantity).toBe(20);
+
+    // 4. Complete order:
+    // Materials = 1,000 EGP
+    // Labor = 200 EGP
+    // MOH = 20 * 5 = 100 EGP
+    // Total = 1,300 EGP -> Unit cost = 1,300 / 20 = 65.00 EGP
+    const completed = await ManufacturingService.completeOrder(companyA, order.id);
+    expect(completed.totalCost).toBe(1300.0);
+    expect(completed.unitCost).toBe(65.0);
+
+    // 5. Verify FGR was settled to 65.00 unitCost and 1300.0 totalCost
+    const settledReceipt = await currentPrisma.finishedGoodsReceipt.findFirst({
+      where: { id: receipt.id },
+    });
+    expect(settledReceipt.unitCost).toBe(65.0);
+    expect(settledReceipt.totalCost).toBe(1300.0);
+
+    // 6. Verify target warehouse inventory cost was settled to 65.00
+    const finishInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'prod_sweater_final', warehouseId: 'wh_knit_finish' },
+    });
+    expect(finishInv.quantity).toBe(20);
+    expect(finishInv.cost).toBe(65.0);
   });
 });
