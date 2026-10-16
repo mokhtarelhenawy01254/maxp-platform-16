@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
 import { academyApi, Course, AcademyStoreProduct } from "./academyApi";
 import { AcademyCreateCourseModal } from "./AcademyCreateCourseModal";
@@ -119,7 +120,7 @@ export default function AcademyCoursesPage() {
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] bg-background text-foreground p-3.5 sm:p-6 space-y-6" dir="rtl">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div>
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-primary" />
@@ -153,7 +154,7 @@ export default function AcademyCoursesPage() {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all active:scale-[0.98]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>إنشاء دورة جديدة</span>
@@ -162,7 +163,7 @@ export default function AcademyCoursesPage() {
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs sm:text-sm flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs sm:text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -177,7 +178,7 @@ export default function AcademyCoursesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="ابحث في الدورات التدريبية..."
-            className="w-full pr-9 pl-3 py-1.5 rounded-lg bg-card border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+            className="w-full pr-9 pl-3 py-1.5 rounded-lg bg-card border border-border/70 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
           />
           {searchQuery && (
             <button
@@ -196,12 +197,12 @@ export default function AcademyCoursesPage() {
       {/* Content Area */}
       <div>
         {loading ? (
-          <div className="py-24 text-center space-y-2">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="py-24 text-center space-y-2 bg-card border border-border/70 rounded-2xl p-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
             <p className="text-xs sm:text-sm text-muted-foreground">جاري تحميل الدورات التدريبية...</p>
           </div>
         ) : filteredCourses.length === 0 ? (
-          <div className="p-8 sm:p-14 rounded-xl bg-card border border-dashed border-border/80 text-center max-w-xl mx-auto space-y-3 shadow-xs">
+          <div className="p-8 sm:p-14 rounded-2xl bg-card border border-dashed border-border/80 text-center max-w-xl mx-auto space-y-3 shadow-xs">
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
               <BookOpen className="w-6 h-6" />
             </div>
@@ -217,7 +218,7 @@ export default function AcademyCoursesPage() {
               <div className="pt-1">
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition shadow-xs active:scale-[0.98]"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>إنشاء أول دورة الآن</span>
@@ -230,12 +231,12 @@ export default function AcademyCoursesPage() {
             {filteredCourses.map((course) => (
               <div
                 key={course.id}
-                className="group rounded-xl bg-card border border-border/70 hover:border-border transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md flex flex-col justify-between"
+                className="group rounded-2xl bg-card border border-border/70 hover:border-border transition-colors overflow-hidden shadow-xs flex flex-col justify-between"
               >
-                <div className="p-4 space-y-3">
+                <div className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
                         course.isPublished
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                           : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
@@ -260,7 +261,7 @@ export default function AcademyCoursesPage() {
                     </div>
                   </div>
 
-                  <h3 className="text-base font-bold text-foreground group-hover:text-primary transition line-clamp-1">
+                  <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                     {course.title}
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
@@ -269,28 +270,28 @@ export default function AcademyCoursesPage() {
 
                   <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono tabular-nums">
                     <span className="flex items-center gap-1">
-                      <PlayCircle className="w-3.5 h-3.5" />
+                      <PlayCircle className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>{course.lessonsCount || 0} درساً</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>{course.enrolledCount || 0} طالباً</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3 bg-muted/20 border-t border-border/70 flex items-center justify-between gap-2">
+                <div className="p-3.5 bg-muted/20 border-t border-border/60 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <Link
                       to={`/academy/courses/${course.id}`}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition active:scale-[0.98] flex items-center gap-1"
                     >
                       <Edit3 className="w-3 h-3" />
                       <span>إدارة المنهج</span>
                     </Link>
                     <button
                       onClick={() => handleTogglePublish(course)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition active:scale-[0.98] ${
                         course.isPublished
                           ? "border-border/70 hover:bg-muted text-muted-foreground"
                           : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
@@ -302,7 +303,7 @@ export default function AcademyCoursesPage() {
 
                   <button
                     onClick={() => handleDelete(course.id)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition active:scale-[0.98]"
                     title="حذف"
                   >
                     <Trash2 className="w-4 h-4" />

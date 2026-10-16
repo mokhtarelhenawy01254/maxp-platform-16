@@ -14,15 +14,17 @@ export const AcademyMyCoursesTab: React.FC<AcademyMyCoursesTabProps> = ({
 }) => {
   if (myEnrollments.length === 0) {
     return (
-      <div className="p-8 sm:p-12 rounded-xl bg-card border border-dashed border-border/80 text-center space-y-2.5 shadow-xs">
-        <BookOpen className="w-8 h-8 text-muted-foreground/50 mx-auto" />
+      <div className="p-8 sm:p-12 rounded-2xl bg-card border border-dashed border-border/80 text-center space-y-3 shadow-xs" dir="rtl">
+        <div className="w-10 h-10 rounded-xl bg-muted/30 text-muted-foreground flex items-center justify-center mx-auto">
+          <BookOpen className="w-5 h-5" />
+        </div>
         <h3 className="text-xs sm:text-sm font-bold text-foreground">لم تشترك في أي دورة بعد</h3>
-        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+        <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
           تصفح كتالوج الدورات واختر الدورة المناسبة لبدء رحلتك التعليمية مع كوتش الذكاء الاصطناعي.
         </p>
         <button
           onClick={onBrowseCatalog}
-          className="mt-1 px-4 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition"
+          className="mt-1 px-4 py-2 rounded-lg text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition active:scale-[0.98]"
         >
           تصفح الكتالوج الآن
         </button>
@@ -31,15 +33,15 @@ export const AcademyMyCoursesTab: React.FC<AcademyMyCoursesTabProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5" dir="rtl">
       {myEnrollments.map((enr) => (
         <div
           key={enr.enrollmentId}
-          className="rounded-xl bg-card border border-border/70 p-4 sm:p-5 space-y-4 flex flex-col justify-between shadow-xs"
+          className="rounded-2xl bg-card border border-border/70 p-4 sm:p-5 space-y-4 flex flex-col justify-between shadow-xs hover:border-border transition-colors"
         >
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 {enr.status === 'COMPLETED' ? 'مكتملة بنجاح' : 'قيد التعلم'}
               </span>
               {enr.certificate && (
@@ -59,12 +61,12 @@ export const AcademyMyCoursesTab: React.FC<AcademyMyCoursesTabProps> = ({
             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{enr.course.description}</p>
 
             {/* Progress Bar */}
-            <div className="space-y-1 pt-1">
+            <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>نسبة الإنجاز</span>
+                <span className="text-[11px] font-medium">نسبة الإنجاز</span>
                 <span className="font-mono text-primary font-bold tabular-nums">{enr.progressPercent}%</span>
               </div>
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-muted/60 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-500"
                   style={{ width: `${Math.max(enr.progressPercent, 4)}%` }}
@@ -76,10 +78,10 @@ export const AcademyMyCoursesTab: React.FC<AcademyMyCoursesTabProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-border/60">
+          <div className="pt-3 border-t border-border/60">
             <Link
               to={`/academy/catalog/${enr.course.id}`}
-              className="w-full py-2 rounded-lg text-center text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              className="w-full py-2 rounded-lg text-center text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition flex items-center justify-center gap-1.5 active:scale-[0.98]"
             >
               <span>متابعة الكورس الآن</span>
               <ArrowLeft className="w-3.5 h-3.5" />

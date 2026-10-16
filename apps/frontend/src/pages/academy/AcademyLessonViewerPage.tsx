@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ArrowRight,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 import { academyApi, Module, Lesson, Quiz, ExerciseSubmission } from "./academyApi";
 import { AcademyLessonSidebar } from "./AcademyLessonSidebar";
@@ -234,8 +235,8 @@ export default function AcademyLessonViewerPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="text-center space-y-2 bg-card border border-border/70 rounded-2xl p-8 shadow-xs">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
           <p className="text-sm text-muted-foreground">جاري تجهيز مشغل الدروس...</p>
         </div>
       </div>
@@ -245,10 +246,10 @@ export default function AcademyLessonViewerPage() {
   if (error || !courseOutline) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8" dir="rtl">
-        <div className="text-center space-y-3">
-          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-          <p className="text-sm text-rose-500 font-medium">{error || "تعذر العثور على الدورة"}</p>
-          <Link to="/academy/catalog" className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline">
+        <div className="text-center space-y-3 p-8 rounded-2xl bg-card border border-border/70 max-w-md shadow-xs">
+          <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
+          <p className="text-sm text-destructive font-medium">{error || "تعذر العثور على الدورة"}</p>
+          <Link to="/academy/catalog" className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline">
             <ArrowRight className="w-3.5 h-3.5" />
             <span>العودة لكتالوج الدورات</span>
           </Link>
@@ -291,10 +292,10 @@ export default function AcademyLessonViewerPage() {
           />
 
           {/* Under-Player Tabs Switcher */}
-          <div className="flex items-center gap-2 border-b border-border/70 pb-2">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2">
             <button
               onClick={() => setActiveTab("script")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-[0.98] ${
                 activeTab === "script"
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:bg-muted"
@@ -306,7 +307,7 @@ export default function AcademyLessonViewerPage() {
 
             <button
               onClick={() => setActiveTab("exercise")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-[0.98] ${
                 activeTab === "exercise"
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:bg-muted"
@@ -319,7 +320,7 @@ export default function AcademyLessonViewerPage() {
             {currentQuiz && (
               <button
                 onClick={() => setActiveTab("quiz")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-[0.98] ${
                   activeTab === "quiz"
                     ? "bg-purple-600 text-white shadow-xs"
                     : "text-muted-foreground hover:bg-muted"
