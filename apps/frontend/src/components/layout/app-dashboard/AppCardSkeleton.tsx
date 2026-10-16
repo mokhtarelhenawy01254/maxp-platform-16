@@ -1,13 +1,14 @@
 import React from 'react';
+import { Skeleton } from '../../common/Skeleton';
 
-const AppCardSkeleton: React.FC = () => {
+export const AppCardSkeleton: React.FC = () => {
   return (
-    <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 animate-pulse">
+    <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-2xs">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-700 shrink-0" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-          <div className="h-3 bg-gray-100 dark:bg-gray-700/50 rounded w-5/6" />
+        <Skeleton className="size-9 rounded-lg shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+          <Skeleton className="h-4 rounded-md w-2/3" />
+          <Skeleton className="h-3 rounded-md w-5/6" />
         </div>
       </div>
     </div>

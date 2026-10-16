@@ -15,13 +15,13 @@ interface FloatingSidebarProps {
   setSearchQuery: (query: string) => void;
 }
 
-const FloatingSidebar: React.FC<FloatingSidebarProps> = (props) => {
+export const FloatingSidebar: React.FC<FloatingSidebarProps> = (props) => {
   if (props.mobileMode) {
     return <ClassicSidebar {...props} />;
   }
   return (
-    <div className="h-full py-6 px-4 bg-transparent">
-      <div className="h-full rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div className="h-full py-3 px-2 bg-transparent">
+      <div className="h-full rounded-2xl shadow-2xs overflow-hidden border border-border/70 bg-card text-foreground">
         <ClassicSidebar {...props} />
       </div>
     </div>
