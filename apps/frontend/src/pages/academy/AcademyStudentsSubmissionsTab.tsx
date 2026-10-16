@@ -58,7 +58,7 @@ export function AcademyStudentsSubmissionsTab({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" dir="rtl">
       {/* Submissions Filter Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pb-1">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -77,10 +77,10 @@ export function AcademyStudentsSubmissionsTab({
               <button
                 key={f.id}
                 onClick={() => setSubmissionFilter(f.id)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition active:scale-[0.98] ${
                   submissionFilter === f.id
                     ? "bg-primary text-primary-foreground shadow-xs"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 }`}
               >
                 {f.label}
@@ -94,13 +94,15 @@ export function AcademyStudentsSubmissionsTab({
       </div>
 
       {loading ? (
-        <div className="py-16 text-center space-y-2">
-          <Loader2 className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto text-primary" />
+        <div className="py-16 text-center space-y-2 bg-card border border-border/70 rounded-2xl p-8">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
           <p className="text-xs text-muted-foreground">جاري تحميل تسليمات التمارين...</p>
         </div>
       ) : filteredSubmissions.length === 0 ? (
-        <div className="p-8 sm:p-12 rounded-xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
-          <FileText className="w-8 h-8 text-muted-foreground/50 mx-auto" />
+        <div className="p-8 sm:p-12 rounded-2xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-muted/30 text-muted-foreground flex items-center justify-center mx-auto">
+            <FileText className="w-5 h-5" />
+          </div>
           <h3 className="text-xs sm:text-sm font-bold text-foreground">
             لا توجد تسليمات تطابق الفلتر المحدد
           </h3>
@@ -109,10 +111,10 @@ export function AcademyStudentsSubmissionsTab({
           </p>
         </div>
       ) : (
-        <div className="rounded-xl bg-card border border-border/70 overflow-hidden shadow-xs">
+        <div className="rounded-2xl bg-card border border-border/70 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs text-foreground">
-              <thead className="bg-muted/40 border-b border-border/70 text-muted-foreground font-semibold">
+              <thead className="bg-muted/30 border-b border-border/60 text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 sm:p-3.5">الطالب</th>
                   <th className="p-3 sm:p-3.5">الدرس</th>
@@ -128,7 +130,7 @@ export function AcademyStudentsSubmissionsTab({
                   const ai = sub.aiVerdictJson;
 
                   return (
-                    <tr key={sub.id} className="hover:bg-muted/20 transition">
+                    <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-3 sm:p-3.5 font-bold text-foreground">
                         <div>{sub.studentName || "طالب"}</div>
                         {sub.studentPhone && (
@@ -142,14 +144,14 @@ export function AcademyStudentsSubmissionsTab({
                       </td>
                       <td className="p-3 sm:p-3.5">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold inline-flex items-center gap-1 ${
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold inline-flex items-center gap-1 ${
                             verdict === "ACCEPTED"
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                               : verdict === "REJECTED"
-                              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                              ? "bg-destructive/10 text-destructive border border-destructive/30"
                               : verdict === "NEEDS_MORE"
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                              : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30"
+                              : "bg-primary/10 text-primary border border-primary/30"
                           }`}
                         >
                           {verdict === "ACCEPTED" && <Check className="w-2.5 h-2.5" />}
@@ -177,7 +179,7 @@ export function AcademyStudentsSubmissionsTab({
                       <td className="p-3 sm:p-3.5 text-center">
                         <button
                           onClick={() => handleOpenReview(sub)}
-                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25 transition shadow-xs"
+                          className="px-3 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25 transition active:scale-[0.98] shadow-xs"
                         >
                           فحص واعتماد
                         </button>
@@ -194,11 +196,11 @@ export function AcademyStudentsSubmissionsTab({
       {/* Review Modal for Instructor */}
       {selectedSubmission && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
           dir="rtl"
         >
-          <div className="bg-card border border-border/80 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+          <div className="bg-card border border-border/70 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl text-foreground">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
@@ -217,18 +219,18 @@ export function AcademyStudentsSubmissionsTab({
               </button>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-semibold text-foreground block">
                 إجابة وتطبيق الطالب:
               </span>
-              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/70 text-xs text-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 text-xs text-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">
                 {selectedSubmission.submissionText ||
                   "لم يكتب الطالب نصاً، واعتمد على رابط المرفق."}
               </div>
             </div>
 
             {selectedSubmission.submissionUrl && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <span className="text-xs font-semibold text-foreground block">
                   رابط المرفقات / اللقطة:
                 </span>
@@ -236,16 +238,16 @@ export function AcademyStudentsSubmissionsTab({
                   href={selectedSubmission.submissionUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20"
+                  className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition active:scale-[0.98]"
                 >
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                   <span>فتح الرابط المرفق للمعاينة</span>
                 </a>
               </div>
             )}
 
             {selectedSubmission.aiVerdictJson && (
-              <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2">
+              <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-primary" />
@@ -257,14 +259,14 @@ export function AcademyStudentsSubmissionsTab({
                 </div>
 
                 {selectedSubmission.aiVerdictJson.coachLine && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {selectedSubmission.aiVerdictJson.coachLine}
                   </p>
                 )}
               </div>
             )}
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground block">
                 ملاحظة المدرب البشري (تظهر للطالب في واجهة الدرس):
               </label>
@@ -273,15 +275,15 @@ export function AcademyStudentsSubmissionsTab({
                 onChange={(e) => setReviewNote(e.target.value)}
                 placeholder="اكتب توجيهاتك أو ملاحظاتك للطالب..."
                 rows={3}
-                className="w-full p-2.5 rounded-lg bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs leading-relaxed"
+                className="w-full p-2.5 rounded-lg bg-background border border-border/70 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs leading-relaxed"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70 flex-wrap">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60 flex-wrap">
               <button
                 type="button"
                 onClick={() => setSelectedSubmission(null)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-border/70 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
               >
                 إلغاء
               </button>
@@ -290,7 +292,7 @@ export function AcademyStudentsSubmissionsTab({
                 type="button"
                 disabled={reviewingAction !== null}
                 onClick={() => handleExecuteReview("REJECTED")}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-xs transition active:scale-[0.98] disabled:opacity-50 flex items-center gap-1"
               >
                 {reviewingAction === "REJECTED" ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -304,7 +306,7 @@ export function AcademyStudentsSubmissionsTab({
                 type="button"
                 disabled={reviewingAction !== null}
                 onClick={() => handleExecuteReview("NEEDS_MORE")}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition active:scale-[0.98] disabled:opacity-50 flex items-center gap-1"
               >
                 {reviewingAction === "NEEDS_MORE" ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -318,7 +320,7 @@ export function AcademyStudentsSubmissionsTab({
                 type="button"
                 disabled={reviewingAction !== null}
                 onClick={() => handleExecuteReview("ACCEPTED")}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition active:scale-[0.98] disabled:opacity-50 flex items-center gap-1"
               >
                 {reviewingAction === "ACCEPTED" ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

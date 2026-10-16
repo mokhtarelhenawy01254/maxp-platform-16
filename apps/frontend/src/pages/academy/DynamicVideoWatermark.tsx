@@ -38,12 +38,12 @@ export function DynamicVideoWatermark({ name, phone }: DynamicVideoWatermarkProp
       <div
         className={`absolute ${pos} pointer-events-none z-30 transition-all duration-1000 ease-in-out select-none`}
       >
-        <div className="bg-black/60 backdrop-blur-[4px] border border-white/20 px-3 py-1.5 rounded-xl text-white/80 font-mono text-[11px] leading-tight shadow-lg space-y-0.5">
+        <div className="bg-black/70 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-xl text-white/90 font-mono text-[11px] leading-tight shadow-xl space-y-0.5">
           <div className="font-bold tracking-wider flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
-            <span className="text-white/90">{name || "متدرب المنصة"}</span>
+            <span className="text-white/95">{name || "متدرب المنصة"}</span>
           </div>
-          {phone && <div className="text-[10px] text-white/60 font-mono">{phone}</div>}
+          {phone && <div className="text-[10px] text-white/70 font-mono">{phone}</div>}
           <div className="text-[9px] text-white/40 font-mono">MaxP Academy • {currentTime}</div>
         </div>
       </div>

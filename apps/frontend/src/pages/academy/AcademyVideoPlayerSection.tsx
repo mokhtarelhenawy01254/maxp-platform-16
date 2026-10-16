@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, Play } from "lucide-react";
 import { Lesson, Quiz } from "./academyApi";
 import { DynamicVideoWatermark } from "./DynamicVideoWatermark";
 
@@ -32,9 +32,9 @@ export function AcademyVideoPlayerSection({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       {/* Video Player Box */}
-      <div className="relative aspect-video rounded-2xl sm:rounded-3xl overflow-hidden bg-black border border-border/70 shadow-lg">
+      <div className="relative aspect-video rounded-2xl overflow-hidden bg-black/95 border border-border/70 shadow-lg">
         {currentLesson?.videoUrl ? (
           <iframe
             src={getEmbedUrl(currentLesson.videoUrl) || ""}
@@ -44,9 +44,15 @@ export function AcademyVideoPlayerSection({
             allowFullScreen
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-center p-8 text-white/70">
-            <p className="text-xs sm:text-sm">
-              هذا الدرس يعتمد على المحتوى النصي والتطبيق العملي أدناه.
+          <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground/80 space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40">
+              <Play className="w-5 h-5 ml-0.5" />
+            </div>
+            <p className="text-xs sm:text-sm text-white/80 font-medium">
+              هذا الدرس يعتمد على المحتوى النصي والتطبيق العملي
+            </p>
+            <p className="text-[11px] text-white/50 max-w-sm">
+              راجع السكريبت والتمرين في الأسفل لإكمال مهام الدرس
             </p>
           </div>
         )}
@@ -60,29 +66,34 @@ export function AcademyVideoPlayerSection({
       </div>
 
       {/* Lesson Header & Complete Action */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/70 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+      <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/70 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        <div className="space-y-1">
           <h2 className="text-base sm:text-lg font-bold text-foreground">
             {currentLesson?.title}
           </h2>
-          <p className="text-xs text-muted-foreground font-mono tabular-nums mt-0.5">
-            المدة التقديرية: {currentLesson?.durationMin || 15} دقيقة
-          </p>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono tabular-nums">
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>المدة التقديرية: {currentLesson?.durationMin || 15} دقيقة</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           {!currentQuiz && (
             <button
               disabled={completing || isLessonDone}
               onClick={onCompleteManual}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs active:scale-[0.98] ${
                 isLessonDone
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
               }`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{isLessonDone ? "مكتمل" : "تأكيد الإتمام"}</span>
+              {completing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              <span>{isLessonDone ? "مكتمل" : completing ? "جاري الإتمام..." : "تأكيد الإتمام"}</span>
             </button>
           )}
         </div>
