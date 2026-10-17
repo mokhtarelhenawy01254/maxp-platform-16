@@ -130,23 +130,23 @@ const TurboCaptains: React.FC = () => {
       {/* Telemetry Ribbon */}
       {totalStats && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">إجمالي المناديب</span>
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">{totalStats.totalCaptains}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">إجمالي الشحنات</span>
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">{totalStats.totalShipments}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">تم التسليم</span>
             <span className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{totalStats.totalDelivered}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">المرتجعات</span>
             <span className="text-xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">{totalStats.totalReturned}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">متوسط نسبة التسليم</span>
             <span className="text-xl font-bold font-mono tabular-nums text-primary">{totalStats.avgDeliveryRate}%</span>
           </div>
@@ -154,7 +154,7 @@ const TurboCaptains: React.FC = () => {
       )}
 
       {/* Table & Filter Surface */}
-      <div className="bg-card border border-border/70 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-card border border-border/70 rounded-xl shadow-xs overflow-hidden">
         <div className="p-3.5 border-b border-border/70 bg-muted/20 flex flex-wrap gap-2 items-center justify-between">
           <div className="relative flex-1 max-w-sm">
             <input

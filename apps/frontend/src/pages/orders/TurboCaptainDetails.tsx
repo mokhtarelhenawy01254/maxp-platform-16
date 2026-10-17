@@ -169,23 +169,23 @@ const TurboCaptainDetails: React.FC = () => {
       {/* Telemetry Ribbon */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">إجمالي الشحنات</span>
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.total}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">تم التسليم والتحصيل</span>
             <span className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{stats.delivered + stats.remitted}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">المرتجعات</span>
             <span className="text-xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">{stats.returned}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">شحنات نشطة</span>
             <span className="text-xl font-bold font-mono tabular-nums text-primary">{stats.active}</span>
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <span className="text-[11px] font-medium text-muted-foreground block">نسبة التسليم</span>
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.deliveryRate}%</span>
           </div>
@@ -196,7 +196,7 @@ const TurboCaptainDetails: React.FC = () => {
       {stats && (Object.keys(stats.delayReasons).length > 0 || Object.keys(stats.returnReasons).length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.keys(stats.delayReasons).length > 0 && (
-            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-sm space-y-2">
+            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-xs space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
                 <Clock className="w-4 h-4 text-amber-500" />
                 <span>أسباب التأخير المسجلة</span>
@@ -213,7 +213,7 @@ const TurboCaptainDetails: React.FC = () => {
           )}
 
           {Object.keys(stats.returnReasons).length > 0 && (
-            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-sm space-y-2">
+            <div className="bg-card border border-border/70 rounded-xl p-4 shadow-xs space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-foreground border-b border-border/40 pb-2">
                 <RotateCcw className="w-4 h-4 text-rose-500" />
                 <span>أسباب الارتجاع المسجلة</span>
@@ -232,7 +232,7 @@ const TurboCaptainDetails: React.FC = () => {
       )}
 
       {/* Table Surface */}
-      <div className="bg-card border border-border/70 rounded-xl shadow-sm overflow-hidden space-y-0">
+      <div className="bg-card border border-border/70 rounded-xl shadow-xs overflow-hidden space-y-0">
         <div className="p-3 border-b border-border/70 bg-muted/20 flex gap-1.5 flex-wrap">
           {[
             { key: '', label: 'كافة الشحنات' },
