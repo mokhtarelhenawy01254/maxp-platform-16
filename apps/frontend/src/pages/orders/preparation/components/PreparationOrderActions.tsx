@@ -84,9 +84,9 @@ const PreparationOrderActions = ({
         disabled={!preparationSettings.enabled}
         className="flex-1 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary/40 sm:max-w-[180px] max-sm:min-h-[40px]"
       >
-        {statusOptions.map((status) => (
-          <option key={status.code} value={status.code}>
-            {statusLabelMap.get(status.code) || status.fallbackName}
+        {statusOptions.map((status, idx) => (
+          <option key={status.code || (status as any).value || idx} value={status.code || (status as any).value}>
+            {statusLabelMap.get(status.code) || status.fallbackName || (status as any).label}
           </option>
         ))}
       </select>

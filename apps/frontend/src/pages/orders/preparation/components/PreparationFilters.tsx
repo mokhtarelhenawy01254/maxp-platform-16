@@ -88,7 +88,7 @@ interface ProductSuggestion {
 }
 
 const selectClass =
-  "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:bg-gray-700 dark:focus:border-amber-500";
+  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:bg-slate-800 dark:focus:border-blue-500";
 
 const PreparationFilters = ({
   activeFilter,
@@ -285,24 +285,24 @@ const PreparationFilters = ({
   }, [statusCounts, tabCodes]);
 
   return (
-    <div className="sticky top-0 z-10 rounded-xl border border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95">
+    <div className="sticky top-0 z-10 rounded-xl border border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
       {/* Top bar: Tabs & Search Controls */}
-      <div className="flex flex-col gap-2 border-b border-slate-100 p-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+      <div className="flex flex-col gap-2 border-b border-slate-100 p-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
         
         {/* Horizontal Scrollable Tabs */}
         {visibleFilterSections.includes("tabs") && (
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-0.5 sm:pb-0 no-scrollbar">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5 sm:pb-0 no-scrollbar">
             <button
               onClick={() => onFilterChange("ALL")}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition active:scale-[0.98] ${
                 activeFilter === "ALL"
-                  ? "bg-slate-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
-                  : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  ? "bg-slate-900 text-white shadow-xs dark:bg-blue-600 dark:text-white dark:border-blue-500 font-semibold"
+                  : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white border border-transparent dark:border-slate-700/60"
               }`}
             >
               <span>{t("preparation.filters.allStages", { count: "" }).replace(/\(\s*\)/, "").trim()}</span>
               <span className={`inline-flex items-center justify-center rounded px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums ${
-                activeFilter === "ALL" ? "bg-white/20 text-white dark:bg-zinc-900/20 dark:text-zinc-900" : "bg-slate-200/80 text-slate-700 dark:bg-zinc-700 dark:text-zinc-300"
+                activeFilter === "ALL" ? "bg-white/20 text-white dark:bg-white/20 dark:text-white" : "bg-slate-200/80 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
               }`}>
                 {visibleOrdersCount}
               </span>
@@ -329,20 +329,20 @@ const PreparationFilters = ({
                   onClick={() => onFilterChange(tab.statusCode)}
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition active:scale-[0.98] ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
-                      : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      ? "bg-slate-900 text-white shadow-xs dark:bg-blue-600 dark:text-white dark:border-blue-500 font-semibold"
+                      : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white border border-transparent dark:border-slate-700/60"
                   }`}
                   title={tab.name}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-400/60 dark:bg-zinc-500'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-400/60 dark:bg-slate-400'}`} />
                   <span>{tab.name}</span>
                   <span
                     className={`inline-flex items-center justify-center rounded px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums ${
                       isActive
-                        ? "bg-white/20 text-white dark:bg-zinc-900/20 dark:text-zinc-900"
+                        ? "bg-white/20 text-white dark:bg-white/20 dark:text-white"
                         : count > 0
-                        ? "bg-slate-200/90 text-slate-800 dark:bg-zinc-700 dark:text-zinc-200"
-                        : "bg-slate-200/50 text-slate-400 dark:bg-zinc-800 dark:text-zinc-500"
+                        ? "bg-slate-200/90 text-slate-800 dark:bg-slate-700 dark:text-slate-100 font-bold"
+                        : "bg-slate-200/50 text-slate-400 dark:bg-slate-800 dark:text-slate-400"
                     }`}
                   >
                     {count}
@@ -357,12 +357,12 @@ const PreparationFilters = ({
         {visibleFilterSections.includes("search") && (
           <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
             <div className="relative flex-1 sm:w-52">
-              <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
               <input
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder={t("preparation.filters.quickSearchPlaceholder")}
-                className="h-8 w-full rounded-lg border border-slate-200/90 bg-slate-50/70 pl-2 pr-7 text-xs text-slate-800 outline-none transition focus:border-slate-900 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200 dark:focus:border-zinc-400 font-sans"
+                className="h-8 w-full rounded-lg border border-slate-200/90 bg-slate-50/70 pl-2 pr-7 text-xs text-slate-800 outline-none transition focus:border-slate-900 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-blue-500 font-sans"
               />
             </div>
 
@@ -371,8 +371,8 @@ const PreparationFilters = ({
               onClick={() => setShowAdvanced((v) => !v)}
               className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition active:scale-[0.98] ${
                 showAdvanced || hasAdvancedFilters
-                  ? "border border-slate-900 bg-slate-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "border border-slate-900 bg-slate-900 text-white dark:border-blue-500 dark:bg-blue-600 dark:text-white"
+                  : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               }`}
             >
               <FunnelIcon className="h-3.5 w-3.5" />
@@ -384,7 +384,7 @@ const PreparationFilters = ({
               <button
                 onClick={resetAll}
                 title={t("common.reset")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 hover:text-slate-700 transition dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 hover:text-slate-700 transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
               >
                 <XMarkIcon className="h-4 w-4" />
               </button>
@@ -395,7 +395,7 @@ const PreparationFilters = ({
 
       {/* Toggle filter buttons + Product filter */}
       {visibleFilterSections.includes("toggleButtons") && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-3 py-2 sm:px-3 sm:py-2 dark:border-zinc-800">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-3 py-2 sm:px-3 sm:py-2 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
             <button
               onClick={() =>
@@ -403,8 +403,8 @@ const PreparationFilters = ({
               }
               className={`rounded-md px-2.5 py-1 text-xs font-mono font-medium transition max-sm:flex-1 border active:scale-[0.98] ${
                 notPrintedFilter === "not_printed"
-                  ? "border-slate-900 bg-slate-900 text-white shadow-xs dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "border-slate-900 bg-slate-900 text-white shadow-xs dark:border-blue-500 dark:bg-blue-600/30 dark:text-blue-300 font-semibold"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               }`}
             >
               {t("preparation.filters.notPrinted")}
@@ -415,8 +415,8 @@ const PreparationFilters = ({
               }
               className={`rounded-md px-2.5 py-1 text-xs font-mono font-medium transition max-sm:flex-1 border active:scale-[0.98] ${
                 noShippingCodeFilter === "no_shipping_code"
-                  ? "border-slate-900 bg-slate-900 text-white shadow-xs dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "border-slate-900 bg-slate-900 text-white shadow-xs dark:border-blue-500 dark:bg-blue-600/30 dark:text-blue-300 font-semibold"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               }`}
             >
               {t("preparation.filters.noShippingCode")}
@@ -439,9 +439,9 @@ const PreparationFilters = ({
               }}
               onFocus={() => setShowProductSuggestions(true)}
               placeholder={t("preparation.filters.productPlaceholder")}
-              className="h-8 w-full rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 pr-7 text-xs text-slate-800 outline-none transition focus:border-slate-900 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:focus:border-zinc-400"
+              className="h-8 w-full rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 pr-7 text-xs text-slate-800 outline-none transition focus:border-slate-900 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-blue-500"
             />
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             {showProductSuggestions && (
               <div
                 ref={productSuggestionsRef}

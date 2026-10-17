@@ -2159,20 +2159,20 @@ const PreparationQueue: React.FC = () => {
         />
       )}
 
-      <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-2 sm:px-3 sm:py-2 dark:border-zinc-800">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-mono text-slate-700 transition hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+      <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-2 sm:px-3 sm:py-2 dark:border-slate-800">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-mono text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
             <input
               type="checkbox"
               checked={allVisibleSelected}
               onChange={toggleSelectAllVisible}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              className="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-500"
             />
             {t('preparation.selectAllCheckbox')}
           </label>
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">{t('preparation.k_4')}</span>
-            <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-mono font-bold tabular-nums text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">{t('preparation.k_4')}</span>
+            <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-mono font-bold tabular-nums text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               {pagination.total}
             </span>
           </div>
@@ -2192,8 +2192,8 @@ const PreparationQueue: React.FC = () => {
               onClick={() => setShowFilters((prev) => !prev)}
               className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition active:scale-[0.98] ${
                 showFilters
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "border-slate-900 bg-slate-900 text-white dark:border-blue-500 dark:bg-blue-600 dark:text-white"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               }`}
               title={showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
             >
@@ -2204,7 +2204,7 @@ const PreparationQueue: React.FC = () => {
             <button
               type="button"
               onClick={() => setColumnSettingsOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 active:scale-[0.97] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 active:scale-[0.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               title={t("preparation.table.columnSettings")}
             >
               <Cog6ToothIcon className="h-3.5 w-3.5" />

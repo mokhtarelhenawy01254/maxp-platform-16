@@ -24,6 +24,7 @@ const PreparationOrderItemsList = ({
 }: PreparationOrderItemsListProps) => {
   const { t } = useTranslation();
   const canPrepare = order.merchantFulfillment?.canPrepare !== false;
+  const itemInsights = order.itemInsights || [];
 
   return (
     <>
@@ -33,13 +34,13 @@ const PreparationOrderItemsList = ({
           {t("preparation.itemsList.title")}
         </h3>
         <span className="font-mono text-xs tabular-nums text-muted-foreground">
-          {t("preparation.itemsList.itemsCount", { count: order.itemInsights.length })}
+          {t("preparation.itemsList.itemsCount", { count: itemInsights.length })}
         </span>
       </div>
 
       {/* Items */}
       <div className="space-y-2">
-        {order.itemInsights.map((item) => {
+        {itemInsights.map((item) => {
           const quantityOffer = getOrderDocumentQuantityOffer(item);
           const slotIndex = Number(quantityOffer?.slotIndex);
           const resolvedSlotIndex =
