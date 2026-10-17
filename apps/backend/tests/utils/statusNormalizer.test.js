@@ -15,8 +15,9 @@ const {
 describe('statusNormalizer utility', () => {
   describe('normalizeTurboStatus', () => {
     test('normalizes raw numbers and status_ codes 1-20', () => {
-      expect(normalizeTurboStatus('1')).toBe('turbo_saved');
-      expect(normalizeTurboStatus('status_1')).toBe('turbo_saved');
+      // turbo-code1-unify: كود 1 في تربو = "قيد الانتظار" → turbo_sent (وليس turbo_saved)
+      expect(normalizeTurboStatus('1')).toBe('turbo_sent');
+      expect(normalizeTurboStatus('status_1')).toBe('turbo_sent');
       expect(normalizeTurboStatus('4')).toBe('out_for_delivery');
       expect(normalizeTurboStatus('status_4')).toBe('out_for_delivery');
       expect(normalizeTurboStatus('13')).toBe('delayed');

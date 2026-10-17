@@ -751,6 +751,15 @@ app.use("/api/v1/webhook", webhookRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
+// 🚨 PRODUCTION-FIX (turbo-webhook-alias): تربو بيبعت الويب هوك على مسارات محفوظة
+// في لوحة التاجر: /api/v1/shipments/webhook (لوحة تربو الجديدة business.turbo.info)
+// و /api/v1/turbo/webhook (المعروض قديمًا في واجهة إعداداتنا). المسار الرسمي الوحيد
+// المفتوح كان /api/v1/turbo-webhook/webhook — والحارس العام كان بيرد 401 على الباقي
+// قبل ما أي router يشتغل (مثبت في nginx: طلبات GuzzleHttp من تربو → 401 متكررة).
+// نفس router يتعمّل mount على المسارات دي هنا قبل globalSecurity؛ المسارات التانية
+// بتعدّي من الراوتر بلا مطابقة (next) وتكمل مسارها الطبيعي.
+app.use("/api/v1/turbo", turboWebhookRoutes);
+app.use("/api/v1/shipments", turboWebhookRoutes);
 app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
 app.use("/api/v1/app/version", appVersionRoutes);
@@ -1292,6 +1301,21 @@ app.use("/api/v1/platform-subscription", platformSubscriptionRoutes);
 
 // Start Background Schedulers & Crons (singleton owner only)
 if (shouldOwnSingletonWork()) {
+  // Start Turbo tracking scheduler — 🚨 PRODUCTION-FIX (turbo-scheduler-autostart):
+  // كان ناقص استدعاء start() هنا فالمزامنة الدورية (كل 30 دقيقة) عمرها ما كانت
+  // بتشتغل إلا يدويًا من شاشة الأدمن، وpm2 cron_restart اليومي (04:00) بيقتلها
+  // لو اتشغلت يدويًا. نفس نمط Amazon Affiliate اللي فوق.
+  try {
+    const turboTrackingScheduler = require("./services/turboTrackingScheduler");
+    turboTrackingScheduler.start();
+    console.log("✅ [TURBO-TRACKING] Tracking scheduler started (every 30 min)");
+  } catch (error) {
+    console.error(
+      "❌ [TURBO-TRACKING] Failed to start tracking scheduler:",
+      error,
+    );
+  }
+
   // Start Billing Cron Service
   try {
     billingCronService.start();

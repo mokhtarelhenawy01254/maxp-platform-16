@@ -96,6 +96,10 @@ class TrackingService {
                   turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
                 },
                 select: { turboShipmentId: true, turboTrackingNumber: true },
+                // 🚨 PRODUCTION-FIX (turbo-sync-rotation): الأقدم تحديثًا أولى — كده
+                // كل جولة (كل 30 دقيقة) بتغطي دفعة مختلفة من العالق بدل ما نفس
+                // الأحدث بيتفحص كل مرة والقديم يفضل محبوس (172 أوردر created).
+                orderBy: { updatedAt: 'asc' },
                 take: 150
               }), 3
             ).catch(() => []),
@@ -107,29 +111,45 @@ class TrackingService {
                   turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
                 },
                 select: { turboShipmentId: true, turboTrackingNumber: true },
+                orderBy: { updatedAt: 'asc' },
                 take: 150
               }), 3
             ).catch(() => [])
           ]);
 
           const allDbCandidates = [...(dbOrders || []), ...(dbGuestOrders || [])];
+          // ☁️ Cloudflare WAF على backoffice.turbo-eg.com بيحظر بـ 429 عند الطلبات
+          // المتلاحقة — قللنا حجم الجولة (60 بدل 100) والتزامن (2 بدل 5) مع
+          // pacing بين الدفعات وbackoff عند 429. 60/30 دقيقة = ~2,880 كود/يوم.
           const codesToFetch = allDbCandidates
             .map(o => o.turboShipmentId || o.turboTrackingNumber)
             .filter(c => c && !batchCodes.has(c))
-            .slice(0, 100);
+            .slice(0, 60);
 
           if (codesToFetch.length > 0) {
-            const CONCURRENCY = 5;
+            const CONCURRENCY = 2;
+            const is429 = (s) => s.status === 'rejected' && (s.reason?.response?.status === 429 || s.reason?.response?.data?.message?.includes('Too Many'));
+            const searchOne = (code) => axios.post(`${this._client.baseUrl}/search-order`, {
+              authentication_key: apiKey,
+              main_client_code: mainClientCode || 37321,
+              search_key: String(code)
+            }, { headers, timeout: this._client.timeout });
             const results = [];
+            let aborted429 = false;
             for (let i = 0; i < codesToFetch.length; i += CONCURRENCY) {
               const batch = codesToFetch.slice(i, i + CONCURRENCY);
-              const settled = await Promise.allSettled(batch.map(code =>
-                axios.post(`${this._client.baseUrl}/search-order`, {
-                  authentication_key: apiKey,
-                  main_client_code: mainClientCode || 37321,
-                  search_key: String(code)
-                }, { headers, timeout: this._client.timeout })
-              ));
+              if (i > 0) await new Promise(r => setTimeout(r, 300)); // pacing بين الدفعات
+              let settled = await Promise.allSettled(batch.map(searchOne));
+              if (settled.some(is429)) {
+                // Backoff: مهلة 3 ثوان ومحاولة واحدة إضافية للدفعة
+                await new Promise(r => setTimeout(r, 3000));
+                settled = await Promise.allSettled(batch.map(searchOne));
+                if (settled.some(is429)) {
+                  console.warn(`☁️ [TURBO-GETSTATUS] Cloudflare 429 persists — stopping this run early (${i}/${codesToFetch.length} fetched). Next run continues from oldest.`);
+                  aborted429 = true;
+                }
+              }
+              if (aborted429) break;
               for (let j = 0; j < settled.length; j++) {
                 const s = settled[j];
                 if (s.status === 'fulfilled') {
@@ -142,7 +162,7 @@ class TrackingService {
               }
             }
             if (results.length > 0) {
-              console.log(`📊 [TURBO-GETSTATUS] Fetched ${results.length} additional orders concurrently via /search-order. Total: ${shipments.length}`);
+              console.log(`📊 [TURBO-GETSTATUS] Fetched ${results.length} additional orders concurrently via /search-order. Total: ${shipments.length}${aborted429 ? ' (aborted early on 429)' : ''}`);
             }
           }
         } catch (_) { /* DB fallback: continue with batch results only */ }

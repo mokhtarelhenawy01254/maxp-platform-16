@@ -5,11 +5,16 @@
  */
 
 const CANONICAL_TURBO_MAP = {
-  // Code 1: Saved / Created (تجهيز التاجر)
+  // Saved locally / Created (تجهيز التاجر) — لم يُسلَّم لتربو بعد
   'created': 'turbo_saved',
   'turbo_saved': 'turbo_saved',
-  'status_1': 'turbo_saved',
-  '1': 'turbo_saved',
+
+  // Turbo status_code 1 = "قيد الانتظار" (البوليصة حُجِزت وبانتظار استلام المندوب).
+  // PRODUCTION-FIX (turbo-code1-unify): كان بين,map لـ turbo_saved بينما النص العربي
+  // "قيد الانتظار" بين,map لـ turbo_sent — نفس الحالة بقع في تصنيفين مختلفين حسب
+  // مصدر التحديث (رقم من الويب هوك / نص من الـ API). وحّدناها على turbo_sent.
+  'status_1': 'turbo_sent',
+  '1': 'turbo_sent',
 
   // Code 2: Sent / Waiting Pickup (قيد الانتظار / مرسلة لتربو)
   'turbo_sent': 'turbo_sent',

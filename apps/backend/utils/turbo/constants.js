@@ -171,7 +171,10 @@ const CITY_TO_GOVERNMENT_MAP = {
 };
 
 const TURBO_STATUS_CODE_MAP = {
-  '1': 'turbo_saved',
+  // PRODUCTION-FIX (turbo-code1-unify): كود 1 في تربو = "قيد الانتظار" (بانتظار
+  // استلام المندوب) — نفس دلالة النص العربي تحت. كان 'turbo_saved' فيتعارض مع
+  // تصنيف النص ('turbo_sent') حسب مصدر التحديث.
+  '1': 'turbo_sent',
   '2': 'turbo_sent',
   '3': 'processing',
   '4': 'out_for_delivery',
@@ -237,7 +240,7 @@ const TURBO_STATUS_CODE_MAP = {
 };
 
 const STATUS_ALIAS_MAP = {
-  'status_1': 'turbo_saved',
+  'status_1': 'turbo_sent', // turbo-code1-unify: كود 1 = قيد الانتظار
   'status_2': 'turbo_sent',
   'status_3': 'processing',
   'created': 'turbo_saved',

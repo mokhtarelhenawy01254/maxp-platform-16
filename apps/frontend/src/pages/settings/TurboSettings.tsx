@@ -406,14 +406,14 @@ const TurboSettings: React.FC = () => {
               onChange={(e) =>
                 setSettings({ ...settings, turboWebhookUrl: e.target.value })
               }
-              placeholder="https://yourdomain.com/api/v1/turbo/webhook"
+              placeholder="https://maxp.online/api/v1/turbo-webhook/webhook"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {t('turbo.k_36')}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500">
-              {t('turbo.k_37')} {window.location.origin}/api/v1/turbo/webhook
+              {t('turbo.k_37')} {window.location.origin}/api/v1/turbo-webhook/webhook
             </p>
           </div>
         </div>
