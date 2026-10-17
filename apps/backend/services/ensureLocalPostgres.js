@@ -98,6 +98,11 @@ async function ensureLocalPostgres(options = {}) {
   const host = parsedUrl.hostname || 'localhost';
   const port = Number(parsedUrl.port || 5432);
 
+  // Prefer IPv4 loopback for the reachability probe: `localhost` can resolve to
+  // ::1 where PostgreSQL is not listening (Windows IPv6 stack flakiness), which
+  // made the 1s probe fail even though the server was up on 127.0.0.1.
+  const probeHost = host === 'localhost' ? '127.0.0.1' : host;
+
   if (!['postgresql', 'postgres'].includes(protocol)) {
     logger.log(prefixed(`Skipping auto-start for ${protocol} database.`));
     return { status: 'skipped', reason: 'protocol', protocol, host, port };
@@ -108,7 +113,7 @@ async function ensureLocalPostgres(options = {}) {
     return { status: 'skipped', reason: 'remote-host', protocol, host, port };
   }
 
-  if (await canConnect(host, port)) {
+  if (await canConnect(probeHost, port)) {
     logger.log(prefixed(`PostgreSQL is already reachable at ${host}:${port}.`));
     return { status: 'ready', protocol, host, port };
   }
@@ -140,7 +145,7 @@ async function ensureLocalPostgres(options = {}) {
       continue;
     }
 
-    if (await waitForPort(host, port, 10000)) {
+    if (await waitForPort(probeHost, port, 10000)) {
       logger.log(prefixed(`PostgreSQL is now reachable at ${host}:${port}.`));
       return { status: 'started', protocol, host, port, version: candidate.version };
     }
