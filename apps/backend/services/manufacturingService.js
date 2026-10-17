@@ -25,6 +25,9 @@ class ManufacturingService {
    */
   static async ensureSchema() {
     try {
+      const ManufacturingContractService = require('./manufacturingContractService');
+      await ManufacturingContractService.ensureSchema();
+
       const prisma = getSharedPrismaClient();
       if (!prisma.$executeRawUnsafe) return;
 
@@ -719,6 +722,21 @@ class ManufacturingService {
     const orderNumber = data.orderNumber || (await this.generateOrderNumber(companyId));
     const settings = await this.getSettings(companyId);
 
+    if (data.salePricePerUnit !== undefined && data.salePricePerUnit !== null) {
+      const price = Number(data.salePricePerUnit);
+      if (isNaN(price) || price < 0) {
+        throw new Error('سعر البيع للقطعة يجب أن يكون رقماً موجباً أو صفراً');
+      }
+    }
+    if (data.customerOrderId) {
+      const parentCo = await prisma.customerOrder.findFirst({
+        where: { id: data.customerOrderId, companyId },
+      });
+      if (!parentCo) {
+        throw new Error('أمر العميل المراد الربط معه غير موجود أو لا ينتمي لنفس الشركة');
+      }
+    }
+
     const sourceWarehouseId = data.sourceWarehouseId || settings.defaultSourceWarehouseId || null;
     const targetWarehouseId = data.targetWarehouseId || settings.defaultTargetWarehouseId || null;
 
@@ -744,6 +762,17 @@ class ManufacturingService {
           unitCost: 0.0,
           notes: data.notes || null,
           createdById: userId ? String(userId) : null,
+          customerOrderId: data.customerOrderId || null,
+          orderType: data.orderType || 'FULL_PACKAGE',
+          customerId: data.customerId || null,
+          brandName: data.brandName ? String(data.brandName).trim() : null,
+          customerCountry: data.customerCountry ? String(data.customerCountry).trim() : null,
+          salePricePerUnit: data.salePricePerUnit !== undefined && data.salePricePerUnit !== null
+            ? round2(data.salePricePerUnit)
+            : null,
+          deliveryAddress: data.deliveryAddress ? String(data.deliveryAddress).trim() : null,
+          deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod).trim() : null,
+          responsibleUserId: data.responsibleUserId ? String(data.responsibleUserId) : null,
         },
       });
 
@@ -792,6 +821,8 @@ class ManufacturingService {
           bom: true,
           variants: true,
           stages: { orderBy: { sequence: 'asc' } },
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
         },
       });
     });
@@ -808,10 +839,51 @@ class ManufacturingService {
         materialIssues: { include: { items: true }, orderBy: { createdAt: 'asc' } },
         goodsReceipts: { include: { items: true }, orderBy: { createdAt: 'asc' } },
         scrapRecords: { orderBy: { createdAt: 'asc' } },
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        customerOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            brandName: true,
+            payments: true,
+            orders: { select: { plannedQuantity: true, salePricePerUnit: true } },
+          },
+        },
       },
     });
     if (!order) throw new Error('أمر الإنتاج غير موجود');
-    return order;
+
+    const contractValue = order.salePricePerUnit !== null && order.salePricePerUnit !== undefined
+      ? round2(Number(order.plannedQuantity || 0) * Number(order.salePricePerUnit || 0))
+      : null;
+
+    let parentTotals = null;
+    if (order.customerOrder) {
+      const coPayments = order.customerOrder.payments || [];
+      const coOrders = order.customerOrder.orders || [];
+      let coTotalAmount = 0;
+      for (const coOrd of coOrders) {
+        coTotalAmount += Number(coOrd.plannedQuantity || 0) * Number(coOrd.salePricePerUnit || 0);
+      }
+      let coPaidAmount = 0;
+      for (const p of coPayments) {
+        if (p.status === 'PAID') {
+          coPaidAmount += p.paidAmount !== null && p.paidAmount !== undefined ? Number(p.paidAmount) : Number(p.amount || 0);
+        }
+      }
+      parentTotals = {
+        totalAmount: round2(coTotalAmount),
+        paidAmount: round2(coPaidAmount),
+        remainingAmount: round2(Math.max(0, coTotalAmount - coPaidAmount)),
+      };
+    }
+
+    return {
+      ...order,
+      contractValue,
+      parentTotals,
+    };
   }
 
   static async listOrders(companyId, filters = {}) {
@@ -825,21 +897,28 @@ class ManufacturingService {
         where.status = filters.status;
       }
     }
+    if (filters.orderType) where.orderType = filters.orderType;
+    if (filters.customerId) where.customerId = filters.customerId;
+    if (filters.customerOrderId) where.customerOrderId = filters.customerOrderId;
+
     if (filters.search) {
       where.OR = [
         { orderNumber: { contains: filters.search, mode: 'insensitive' } },
+        { brandName: { contains: filters.search, mode: 'insensitive' } },
         { notes: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
     if (filters.bomId) where.bomId = filters.bomId;
     if (filters.productId) where.productId = filters.productId;
 
-    return await prisma.productionOrder.findMany({
+    const orders = await prisma.productionOrder.findMany({
       where,
       include: {
         bom: { select: { id: true, code: true, name: true } },
         variants: true,
         stages: { orderBy: { sequence: 'asc' } },
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
         _count: {
           select: {
             materialIssues: true,
@@ -850,6 +929,13 @@ class ManufacturingService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return orders.map((o) => ({
+      ...o,
+      contractValue: o.salePricePerUnit !== null && o.salePricePerUnit !== undefined
+        ? round2(Number(o.plannedQuantity || 0) * Number(o.salePricePerUnit || 0))
+        : null,
+    }));
   }
 
   static async releaseOrder(companyId, orderId, userId = null) {

@@ -5,6 +5,7 @@
  */
 
 const ManufacturingService = require('../services/manufacturingService');
+const ManufacturingContractService = require('../services/manufacturingContractService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -270,6 +271,122 @@ class ManufacturingController {
       const companyId = ManufacturingController.getCompanyId(req);
       const analysis = await ManufacturingService.calculateOrderCost(companyId, req.params.id);
       res.json({ success: true, data: analysis });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Contract Manufacturing (Customer Orders & Payments)
+  // ==========================================================================
+
+  static async listCustomerOrders(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingContractService.listCustomerOrders(companyId, req.query);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getCustomerOrderById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const order = await ManufacturingContractService.getCustomerOrderById(companyId, req.params.id);
+      res.json({ success: true, data: order });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createCustomerOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const userId = req.user?.id || null;
+      const order = await ManufacturingContractService.createCustomerOrder(companyId, req.body, userId);
+      res.status(201).json({ success: true, data: order, message: 'تم إنشاء أمر العميل بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateCustomerOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const order = await ManufacturingContractService.updateCustomerOrder(companyId, req.params.id, req.body);
+      res.json({ success: true, data: order, message: 'تم تحديث أمر العميل بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async linkOrCreateChildOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const userId = req.user?.id || null;
+      const order = await ManufacturingContractService.linkOrCreateChildOrder(
+        companyId,
+        req.params.id,
+        req.body,
+        userId
+      );
+      res.status(201).json({ success: true, data: order, message: 'تم ربط أمر التشغيل بأمر العميل بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async listCustomerOrderPayments(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const payments = await ManufacturingContractService.listCustomerOrderPayments(companyId, req.params.id);
+      res.json({ success: true, data: payments });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async generateDefaultPayments(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const payments = await ManufacturingContractService.generateDefaultPayments(
+        companyId,
+        req.params.id,
+        req.user
+      );
+      res.status(201).json({ success: true, data: payments, message: 'تم توليد خطة الدفعات الافتراضية (70/20/10) بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createCustomerOrderPayment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const payment = await ManufacturingContractService.createCustomerOrderPayment(
+        companyId,
+        req.params.id,
+        req.body,
+        req.user
+      );
+      res.status(201).json({ success: true, data: payment, message: 'تمت إضافة الدفعة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateCustomerOrderPayment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingContractService.updateCustomerOrderPayment(
+        companyId,
+        req.params.id,
+        req.params.paymentId,
+        req.body,
+        req.user
+      );
+      res.json({ success: true, data: result, message: 'تم تحديث الدفعة بنجاح' });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }

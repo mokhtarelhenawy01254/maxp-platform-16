@@ -41,4 +41,18 @@ router.post('/orders/:id/cancel', controller.cancelOrder);
 router.get('/settings', controller.getSettings);
 router.put('/settings', controller.updateSettings);
 
+// ============================================================================
+// 4. Contract Manufacturing (Customer Orders & Payments) Routes
+// ============================================================================
+router.get('/customer-orders', controller.listCustomerOrders);
+router.post('/customer-orders', controller.createCustomerOrder);
+router.get('/customer-orders/:id', controller.getCustomerOrderById);
+router.patch('/customer-orders/:id', controller.updateCustomerOrder);
+router.post('/customer-orders/:id/children', controller.linkOrCreateChildOrder);
+
+router.get('/customer-orders/:id/payments', controller.listCustomerOrderPayments);
+router.post('/customer-orders/:id/payments/generate', controller.generateDefaultPayments);
+router.post('/customer-orders/:id/payments', controller.createCustomerOrderPayment);
+router.patch('/customer-orders/:id/payments/:paymentId', controller.updateCustomerOrderPayment);
+
 module.exports = router;
