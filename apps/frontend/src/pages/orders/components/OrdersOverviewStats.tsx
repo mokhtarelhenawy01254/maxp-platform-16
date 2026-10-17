@@ -1,57 +1,27 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ShoppingCartIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  CheckBadgeIcon,
-  CalendarDaysIcon,
-} from "@heroicons/react/24/outline";
+  ShoppingCart,
+  Banknote,
+  BarChart3,
+  CheckCircle2,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { Sparkline } from "../../../components/common/Sparkline";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
-
-interface DailyAnalytic {
-  date: string;
-  totalPurchases: number;
-  totalRevenue: number;
-  totalVisits?: number;
-  conversionRate?: number;
-  averageOrderValue?: number;
-  validPurchases?: number;
-  invalidPurchases?: number;
-}
-
-const PRESET_PERIODS = [
-  { value: "7", labelKey: "overviewP7" },
-  { value: "14", labelKey: "overviewP14" },
-  { value: "30", labelKey: "overviewP30" },
-  { value: "90", labelKey: "overviewP90" },
-  { value: "365", labelKey: "overviewP365" },
-  { value: "custom", labelKey: "overviewCustom" },
-];
-
-const PERIOD_STORAGE_KEY = "orders-overview-period";
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const daysAgo = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-};
-const addDays = (dateStr: string, n: number) => {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-};
-
-const sumBy = (rows: DailyAnalytic[], pick: (r: DailyAnalytic) => number) =>
-  rows.reduce((sum, r) => sum + pick(r), 0);
-
-const pctDelta = (current: number, previous: number): number | null => {
-  if (previous <= 0) return null;
-  return Math.round(((current - previous) / previous) * 100);
-};
+import {
+  DailyAnalytic,
+  PRESET_PERIODS,
+  PERIOD_STORAGE_KEY,
+  todayStr,
+  daysAgo,
+  addDays,
+  sumBy,
+  pctDelta,
+} from "../utils/overviewStatsHelpers";
 
 const DeltaPill: React.FC<{ delta: number | null; title: string }> = ({
   delta,
@@ -62,13 +32,14 @@ const DeltaPill: React.FC<{ delta: number | null; title: string }> = ({
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-bold leading-none ${
+      className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums leading-none ${
         up
-          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-          : "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400"
+          ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          : "border border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400"
       }`}
     >
-      {up ? "▲" : "▼"} {Math.abs(delta)}%
+      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {Math.abs(delta)}%
     </span>
   );
 };
@@ -248,22 +219,22 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     return (
       <section
         aria-hidden="true"
-        className="mb-3 rounded-2xl border border-slate-200/60 bg-white/60 p-3 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60"
+        className="mb-3 rounded-xl border border-border/60 bg-card/60 p-3 shadow-xs"
       >
-        <div className="skeleton-shimmer h-[56px] rounded-xl" />
+        <div className="skeleton-shimmer h-[56px] rounded-lg" />
       </section>
     );
   }
 
   const segmentedBtn = (active: boolean) =>
-    `min-h-[36px] flex-shrink-0 whitespace-nowrap rounded-lg px-3 text-xs font-bold transition-all ${
+    `min-h-[32px] flex-shrink-0 whitespace-nowrap rounded-md px-2.5 text-xs font-semibold transition-all ${
       active
-        ? "bg-blue-600 text-white shadow-sm"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        ? "bg-primary text-primary-foreground shadow-xs"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground"
     }`;
 
   const dateInputClass =
-    "rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+    "rounded-md border border-border/70 bg-background px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-hidden";
 
   const vsPrevTitle = t("orders.overviewVsPrevPeriod");
 
@@ -283,7 +254,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
       label: t("orders.overviewTotalOrders"),
       value: summary.curOrders.toLocaleString("ar-EG"),
       delta: summary.ordersDelta,
-      icon: <ShoppingCartIcon className="h-4 w-4" />,
+      icon: <ShoppingCart className="h-4 w-4" />,
       spark: summary.ordersTrend,
       tone: "info",
       aria: t("orders.overviewOrdersTrendAria"),
@@ -293,7 +264,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
       label: t("orders.overviewTotalRevenue"),
       value: formatPrice(summary.curRevenue),
       delta: summary.revenueDelta,
-      icon: <BanknotesIcon className="h-4 w-4" />,
+      icon: <Banknote className="h-4 w-4" />,
       spark: summary.revenueTrend,
       tone: "success",
       aria: t("orders.overviewRevenueTrendAria"),
@@ -303,7 +274,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
       label: t("orders.overviewAvgOrderValue"),
       value: formatPrice(summary.curAov),
       delta: summary.aovDelta,
-      icon: <ChartBarIcon className="h-4 w-4" />,
+      icon: <BarChart3 className="h-4 w-4" />,
       spark: summary.aovTrend,
       tone: "muted",
       aria: t("orders.overviewAovTrendAria"),
@@ -317,7 +288,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
       value: `${summary.validRate}%`,
       delta: summary.validRateDelta,
       deltaIsPoints: true,
-      icon: <CheckBadgeIcon className="h-4 w-4" />,
+      icon: <CheckCircle2 className="h-4 w-4" />,
       tone: "primary",
       aria: t("orders.overviewValidTrendAria"),
     });
@@ -325,21 +296,21 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
 
   return (
     <section aria-label={t("orders.overviewAriaLabel")} className="mb-3">
-      <div className="rounded-2xl border border-slate-200/70 bg-white/85 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-        <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
+      <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-4 sm:gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
             {kpis.map((kpi) => (
               <div key={kpi.key} className="flex min-w-0 items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 sm:h-8 sm:w-8 sm:rounded-xl dark:bg-slate-800 dark:text-slate-400">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground">
                     {kpi.icon}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs dark:text-slate-400">
+                    <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {kpi.label}
                     </p>
-                    <div className="flex items-center gap-1">
-                      <p className="truncate text-sm font-black leading-tight text-slate-950 sm:text-base dark:text-white">
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-sm font-bold font-mono tabular-nums leading-tight text-foreground">
                         {kpi.value}
                       </p>
                       <DeltaPill
@@ -367,10 +338,10 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-2.5 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-3 dark:border-slate-700/70">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-2.5 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-3">
             {period === "custom" && (
               <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto">
-                <CalendarDaysIcon className="h-3.5 w-3.5 text-slate-400" />
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   type="date"
                   value={customStart}
@@ -379,7 +350,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
                   className={dateInputClass}
                   aria-label={t("orders.overviewFrom")}
                 />
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   {t("orders.overviewTo")}
                 </span>
                 <input
@@ -393,7 +364,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
               </div>
             )}
             <div
-              className="no-scrollbar flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/70 bg-slate-50/80 p-0.5 sm:w-auto dark:border-slate-700/70 dark:bg-slate-800/60"
+              className="no-scrollbar flex w-full items-center gap-1 overflow-x-auto rounded-lg border border-border/70 bg-muted/20 p-0.5 sm:w-auto"
               role="tablist"
               aria-label={periodLabel}
             >

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { ChevronDown, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
 import { Checkbox } from "../../../components/ui/checkbox";
 
@@ -84,54 +84,54 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         className={`${fieldClassName} flex items-center justify-between gap-1.5 text-start`}
       >
         <span
-          className={`truncate ${value.length === 0 ? "text-slate-400 dark:text-slate-500" : ""}`}
+          className={`truncate ${value.length === 0 ? "text-muted-foreground" : "text-foreground"}`}
         >
           {triggerText}
         </span>
         <span className="flex shrink-0 items-center gap-1">
           {value.length > 0 && (
-            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-primary-foreground">
               {value.length}
             </span>
           )}
-          <ChevronDownIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </span>
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="z-50 w-72 border border-slate-200/80 bg-white p-2 shadow-lg dark:border-slate-700/80 dark:bg-slate-900"
+        className="z-50 w-72 border border-border/70 bg-card p-2 text-card-foreground shadow-lg rounded-xl"
       >
         <div className="flex flex-col gap-2">
           <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               aria-label={searchPlaceholder}
               placeholder={searchPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="theme-native-control w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-1.5 pr-8 text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100"
+              className="theme-native-control w-full rounded-lg border border-border/70 bg-background px-3 py-1.5 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-1">
             <button
               type="button"
               onClick={() => onChange(normalized.map((option) => option.code))}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-500/10"
+              className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-primary transition hover:bg-primary/10"
             >
               {selectAllLabel}
             </button>
             <button
               type="button"
               onClick={() => onChange([])}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+              className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-destructive transition hover:bg-destructive/10"
             >
               {clearAllLabel}
             </button>
           </div>
           <div className="max-h-64 overflow-y-auto">
             {visible.length === 0 ? (
-              <div className="px-2 py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+              <div className="px-2 py-4 text-center text-xs text-muted-foreground">
                 {noResultsLabel}
               </div>
             ) : (
@@ -140,7 +140,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                 return (
                   <label
                     key={option.code}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/50"
                   >
                     <Checkbox
                       checked={isChecked}
@@ -153,7 +153,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                         style={{ backgroundColor: option.color }}
                       />
                     )}
-                    <span className="truncate text-xs font-medium text-slate-700 dark:text-slate-200">
+                    <span className="truncate text-xs font-medium text-foreground">
                       {option.name}
                     </span>
                   </label>

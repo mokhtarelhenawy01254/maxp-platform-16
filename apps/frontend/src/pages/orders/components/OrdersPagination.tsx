@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 interface OrdersPaginationProps {
   variant: "desktop" | "mobile";
@@ -43,17 +43,17 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
 
   if (variant === "mobile") {
     return (
-      <div className="mt-2.5 mb-24 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xs backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden relative z-20">
+      <div className="mt-2.5 mb-24 rounded-xl border border-border/70 bg-card/95 p-2 shadow-xs backdrop-blur-md lg:hidden relative z-20">
         {isJumping ? (
           <form onSubmit={handleJumpSubmit} className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setIsJumping(false)}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white px-3 text-xs font-bold text-slate-600 transition active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-border/70 bg-background px-3 text-xs font-semibold text-foreground transition active:scale-[0.97]"
             >
               {t("common.cancel", { defaultValue: "إلغاء" })}
             </button>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
               <span>{t("orders.pageLabel", { defaultValue: "صفحة" })}</span>
               <input
                 type="number"
@@ -62,15 +62,15 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
                 autoFocus
                 value={jumpPageInput}
                 onChange={(e) => setJumpPageInput(e.target.value)}
-                className="h-9 w-16 rounded-xl border border-blue-500 bg-white px-1 text-center text-sm font-bold tabular-nums text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-slate-800 dark:text-white"
+                className="h-9 w-16 rounded-lg border border-primary bg-background px-1 text-center text-sm font-bold font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20"
               />
-              <span className="text-slate-400 dark:text-slate-500 font-mono">
+              <span className="text-muted-foreground font-mono tabular-nums">
                 / {Math.max(totalPages, 1)}
               </span>
             </div>
             <button
               type="submit"
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-95 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-[0.97]"
             >
               {t("common.go", { defaultValue: "انتقال" })}
             </button>
@@ -83,9 +83,9 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
               aria-label={String(t("orders.previous"))}
-              className="inline-flex h-9 min-w-[70px] items-center justify-center gap-1 rounded-xl border border-slate-200/80 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs transition active:scale-95 disabled:pointer-events-none disabled:opacity-35 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              className="inline-flex h-9 min-w-[70px] items-center justify-center gap-1 rounded-lg border border-border/70 bg-background px-2.5 text-xs font-semibold text-foreground shadow-2xs transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35"
             >
-              <ChevronRightIcon className="h-3.5 w-3.5 rtl:rotate-0 ltr:rotate-180" />
+              <ChevronRight className="h-3.5 w-3.5 rtl:rotate-0 ltr:rotate-180" />
               <span>{t("orders.previous")}</span>
             </button>
 
@@ -98,14 +98,14 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
                   setJumpPageInput(String(page));
                 }}
                 title={t("orders.jumpToPage", { defaultValue: "انقر للانتقال السريع لصفحة" })}
-                className="flex flex-col items-center justify-center rounded-lg px-2 py-0.5 transition hover:bg-slate-100/80 active:scale-95 dark:hover:bg-slate-800/60"
+                className="flex flex-col items-center justify-center rounded-lg px-2 py-0.5 transition hover:bg-muted/60 active:scale-[0.97]"
               >
-                <div className="flex items-center gap-1 text-xs font-black font-mono tabular-nums text-slate-800 dark:text-slate-100">
+                <div className="flex items-center gap-1 text-xs font-bold font-mono tabular-nums text-foreground">
                   <span>{page}</span>
-                  <span className="text-slate-400 dark:text-slate-500">/</span>
+                  <span className="text-muted-foreground">/</span>
                   <span>{Math.max(totalPages, 1)}</span>
                 </div>
-                <div className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tabular-nums">
+                <div className="text-[10px] font-medium text-muted-foreground font-mono tabular-nums">
                   {totalOrders.toLocaleString()} {t("orders.ordersCountLabel", { defaultValue: "طلب" })}
                 </div>
               </button>
@@ -117,7 +117,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
                 aria-label={String(t("orders.ordersPerPage"))}
                 value={limit}
                 onChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
-                className="h-9 appearance-none rounded-xl border border-slate-200/80 bg-white pr-2.5 pl-5 text-xs font-semibold tabular-nums text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                className="h-9 appearance-none rounded-lg border border-border/70 bg-background pr-2.5 pl-6 text-xs font-semibold font-mono tabular-nums text-foreground shadow-2xs focus:border-primary focus:outline-hidden"
               >
                 {LIMIT_OPTIONS.map((value) => (
                   <option key={value} value={value}>
@@ -125,9 +125,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">
-                ▾
-              </span>
+              <ChevronDown className="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             </div>
 
             {/* Next Button (Left in RTL, primary action!) */}
@@ -136,10 +134,10 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
               aria-label={String(t("orders.next"))}
-              className="inline-flex h-9 min-w-[70px] items-center justify-center gap-1 rounded-xl bg-blue-600 px-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-95 disabled:pointer-events-none disabled:opacity-35 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="inline-flex h-9 min-w-[70px] items-center justify-center gap-1 rounded-lg bg-primary px-2.5 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35"
             >
               <span>{t("orders.next")}</span>
-              <ChevronLeftIcon className="h-3.5 w-3.5 rtl:rotate-0 ltr:rotate-180" />
+              <ChevronLeft className="h-3.5 w-3.5 rtl:rotate-0 ltr:rotate-180" />
             </button>
           </div>
         )}
@@ -148,22 +146,22 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 px-3 py-2.5 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4 relative z-20">
+    <div className="bg-card/90 px-3 py-2.5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4 relative z-20">
       <div className="flex items-center gap-4">
-        <div className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="text-xs sm:text-sm text-muted-foreground font-mono tabular-nums">
           {t("orders.showing")} {(page - 1) * limit + 1} {t("orders.to")}{" "}
           {Math.min(page * limit, totalOrders)} {t("orders.of")}{" "}
           {totalOrders} {t("orders.orders2")}
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-600 dark:text-slate-400">
+          <label className="text-xs sm:text-sm text-muted-foreground">
             {t("orders.show")}
           </label>
           <select
             aria-label={String(t("orders.ordersPerPage"))}
             value={limit}
             onChange={(e) => onLimitChange(parseInt(e.target.value))}
-            className="theme-native-control px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 dark:text-slate-100 text-sm transition-colors"
+            className="theme-native-control px-2.5 py-1.5 border border-border/70 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-foreground text-xs sm:text-sm font-mono tabular-nums transition-colors"
           >
             {LIMIT_OPTIONS.map((value) => (
               <option key={value} value={value}>
@@ -175,17 +173,18 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
         <div
           role="group"
           aria-label={String(t("orders.tableDensity"))}
-          className="flex items-center gap-0.5 rounded-lg border border-slate-300 dark:border-slate-600 p-0.5"
+          className="flex items-center gap-0.5 rounded-lg border border-border/70 bg-muted/20 p-0.5"
         >
           <button
             type="button"
             onClick={() => onDensityChange("compact")}
             aria-pressed={density === "compact"}
             title={t("orders.compactDensity")}
-            className={`rounded-md px-2 py-1 text-xs font-semibold transition ${density === "compact"
-              ? "bg-blue-600 text-white"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-              }`}
+            className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
+              density === "compact"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
             {t("orders.compactDensity")}
           </button>
@@ -194,22 +193,23 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
             onClick={() => onDensityChange("comfortable")}
             aria-pressed={density === "comfortable"}
             title={t("orders.comfortableDensity")}
-            className={`rounded-md px-2 py-1 text-xs font-semibold transition ${density === "comfortable"
-              ? "bg-blue-600 text-white"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-              }`}
+            className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
+              density === "comfortable"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
             {t("orders.comfortableDensity")}
           </button>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
-          className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-300"
+          className="p-1.5 sm:p-2 border border-border/70 bg-background rounded-lg hover:bg-muted disabled:opacity-35 disabled:cursor-not-allowed transition-colors text-foreground"
         >
-          <ChevronRightIcon className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-1">
@@ -224,10 +224,11 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
               <button
                 key={p}
                 onClick={() => onPageChange(p)}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${page === p
-                  ? "bg-blue-600 dark:bg-blue-500 text-white"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                  }`}
+                className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-semibold font-mono tabular-nums transition-colors ${
+                  page === p
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
               >
                 {p}
               </button>
@@ -238,9 +239,9 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page === totalPages}
-          className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-300"
+          className="p-1.5 sm:p-2 border border-border/70 bg-background rounded-lg hover:bg-muted disabled:opacity-35 disabled:cursor-not-allowed transition-colors text-foreground"
         >
-          <ChevronLeftIcon className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
       </div>
     </div>
