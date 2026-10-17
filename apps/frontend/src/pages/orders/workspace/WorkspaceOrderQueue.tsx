@@ -1,17 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import {
-  PhoneIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
-} from '@heroicons/react/24/outline';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useCurrency } from '../../../hooks/useCurrency';
 import { WorkspaceOrder, WorkspacePagination } from './types';
-import { isOrderOverdue } from './useAgentWorkspace';
+import { WorkspaceQueueHeader } from './components/queue/WorkspaceQueueHeader';
+import { WorkspaceQueueEmptyState } from './components/queue/WorkspaceQueueEmptyState';
+import { WorkspaceOrderQueueItem } from './components/queue/WorkspaceOrderQueueItem';
 
-interface WorkspaceOrderQueueProps {
+export interface WorkspaceOrderQueueProps {
   orders: WorkspaceOrder[];
   selectedOrderId: string | null;
   onSelectOrder: (orderId: string) => void;
@@ -49,9 +45,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   const suppressFocusRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
 
-  // j/k والأسهم يغيّران التحديد داخل الهوك — النقل الفعلي للتركيز هنا حتى يعلن
-  // قارئ الشاشة عن الصف الجديد (focus + aria-label) ويتمرر إليه بصريًا.
-  // نقرة الفأرة تُلغي النقل كي لا يسرق التركيز من حيث كان المستخدم.
+  // j/k navigation focus management
   useEffect(() => {
     const prev = prevSelectedRef.current;
     prevSelectedRef.current = selectedOrderId;
@@ -63,12 +57,11 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     const el = rowRefs.current.get(selectedOrderId);
     if (el) {
       el.focus({ preventScroll: true });
-      // jsdom لا ينفذ scrollIntoView — الاستدعاء الاختياري يحمي بيئة الاختبار
       el.scrollIntoView?.({ block: 'nearest' });
     }
   }, [selectedOrderId]);
 
-  // Auto-load next page on scroll to bottom
+  // Infinite scroll observer
   useEffect(() => {
     if (!sentinelRef.current || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
@@ -83,88 +76,19 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     return () => observer.disconnect();
   }, [pagination.pages, page, loadingMore, onLoadMore]);
 
-  // دقة الدقائق أساسية في الكول-سنتر: «منذ 7 د» معلومة تشغيلية، «الآن» لما كان
-  // أقل من دقيقة فقط — والقفز من «الآن» للساعات كان يمحو عمر الطلب في أول ساعة كاملة
-  const formatTimeAgo = (dateStr: string) => {
-    const diffMinutes = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60));
-    if (diffMinutes < 1) return isArabic ? 'الآن' : 'Just now';
-    if (diffMinutes < 60) return isArabic ? `منذ ${diffMinutes} د` : `${diffMinutes}m ago`;
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return isArabic ? `منذ ${diffHours} س` : `${diffHours}h ago`;
-    const days = Math.floor(diffHours / 24);
-    return isArabic ? `منذ ${days} ي` : `${days}d ago`;
-  };
-
-  const exactTimestamp = (dateStr: string) =>
-    new Date(dateStr).toLocaleString(isArabic ? 'ar-EG' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   if (loading && orders.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-primary" />
-        <p className="mt-2 text-xs font-medium text-muted-foreground">
-          {t('orders.loadingWorkspace')}
-        </p>
-      </div>
-    );
+    return <WorkspaceQueueEmptyState loading isArabic={isArabic} />;
   }
 
   if (orders.length === 0) {
-    if (confirmationDisabled && (activeTab === 'pending' || activeTab === 'all' || activeTab === 'confirmation')) {
-      return (
-        <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-            <ExclamationTriangleIcon className="h-6 w-6" />
-          </div>
-          <h4 className="mt-3 text-sm font-bold text-foreground">
-            {isArabic ? 'المركز مقفول من الإعدادات' : 'Confirmation Center Disabled'}
-          </h4>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed max-w-xs">
-            {isArabic
-              ? 'تم إيقاف مركز التأكيد من الإعدادات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.'
-              : 'Order confirmation center is disabled in settings. No orders will appear until enabled.'}
-          </p>
-          <Link
-            to="/settings/orders?tab=confirmation"
-            className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
-          >
-            <span>{isArabic ? 'الانتقال لإعدادات التأكيد ←' : 'Go to Settings →'}</span>
-          </Link>
-        </div>
-      );
-    }
-
     return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 text-muted-foreground">
-          {fetchError ? (
-            <ExclamationTriangleIcon className="h-6 w-6 text-destructive" />
-          ) : (
-            <CheckCircleIcon className="h-6 w-6 text-emerald-500" />
-          )}
-        </div>
-        <p className="mt-3 text-sm font-semibold text-foreground text-balance">
-          {fetchError
-            ? fetchError
-            : activeTab === 'incomplete'
-            ? (isArabic ? 'لا توجد سلات متروكة' : 'No abandoned carts')
-            : (isArabic ? 'لا توجد طلبات قيد الانتظار' : 'No pending orders')}
-        </p>
-        {fetchError && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-3 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            {isArabic ? 'إعادة المحاولة' : 'Try again'}
-          </button>
-        )}
-      </div>
+      <WorkspaceQueueEmptyState
+        confirmationDisabled={confirmationDisabled}
+        activeTab={activeTab}
+        fetchError={fetchError}
+        onRetry={onRetry}
+        isArabic={isArabic}
+      />
     );
   }
 
@@ -173,215 +97,46 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     : orders;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-card/50">
-      {/* Queue Counter Header */}
-      {/* [risk-filter] «خطر عالي» — client-side فلتر فوق بيانات السكور المحفوظة */}
-      <div className="flex items-center justify-between border-b border-border/30 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground shrink-0">
-        <span className="font-mono tabular-nums">
-          {isArabic
-            ? `معروض ${orders.length} من ${pagination.total || orders.length} ${activeTab === 'incomplete' ? 'سلة' : 'طلب'}`
-            : `Showing ${orders.length} of ${pagination.total || orders.length}`}
-        </span>
-        <button
-          type="button"
-          data-risk-filter-toggle="1"
-          onClick={() => setRiskOnly((v) => !v)}
-          aria-pressed={riskOnly}
-          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors ${
-            riskOnly
-              ? 'border-destructive/40 bg-destructive/15 text-destructive'
-              : 'border-border/60 bg-background/60 text-muted-foreground hover:border-destructive/30'
-          }`}
-          title={isArabic ? 'عرض الطلبات عالية الخطورة فقط' : 'Show high-risk orders only'}
-        >
-          {isArabic ? 'خطر عالي' : 'High risk'}
-        </button>
-        <span
-          className="hidden items-center gap-1 sm:inline-flex"
-          title={isArabic ? 'تنقل بالكيبورد: j أو ↓ للطلب التالي، k أو ↑ للسابق، Enter لاختيار الصف' : 'Keyboard: j/↓ next, k/↑ previous, Enter to select'}
-        >
-          <kbd className="rounded border border-border/60 bg-background px-1 font-mono text-[9px]">j</kbd>
-          <kbd className="rounded border border-border/60 bg-background px-1 font-mono text-[9px]">k</kbd>
-        </span>
-        {loadingMore && (
-          <span className="flex items-center gap-1 text-primary">
-            <ArrowPathIcon className="h-3 w-3 animate-spin" />
-            <span className="text-[10px]">{isArabic ? 'تحميل المزيد…' : 'Loading…'}</span>
-          </span>
-        )}
-      </div>
+    <div className="flex h-full flex-col overflow-hidden bg-card/50 dark:bg-slate-900/40">
+      <WorkspaceQueueHeader
+        ordersCount={orders.length}
+        totalCount={pagination.total}
+        activeTab={activeTab}
+        riskOnly={riskOnly}
+        onToggleRiskOnly={() => setRiskOnly((v) => !v)}
+        loadingMore={loadingMore}
+        isArabic={isArabic}
+      />
 
       {/* Stream list */}
-      <div className="flex-1 divide-y divide-border/30 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border">
+      <div className="flex-1 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border dark:scrollbar-thumb-slate-700">
         {displayOrders.length === 0 ? (
-          confirmationDisabled && (activeTab === 'pending' || activeTab === 'all' || activeTab === 'confirmation') ? (
-            <div className="m-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-center dark:border-amber-500/20 dark:bg-amber-500/5">
-              <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                <ExclamationTriangleIcon className="h-5 w-5" />
-              </div>
-              <h4 className="mt-2 text-xs font-bold text-amber-900 dark:text-amber-200">
-                {isArabic ? 'المركز مقفول من الإعدادات' : 'Confirmation Center Disabled'}
-              </h4>
-              <p className="mt-1 text-[11px] leading-relaxed text-amber-800/90 dark:text-amber-300/80">
-                {isArabic
-                  ? 'تم إيقاف مركز التأكيد من الإعدادات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.'
-                  : 'Order confirmation center is disabled in settings. No orders will appear until enabled.'}
-              </p>
-              <Link
-                to="/settings/orders?tab=confirmation"
-                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 dark:bg-amber-500 dark:hover:bg-amber-600"
-              >
-                <span>{isArabic ? 'الانتقال لإعدادات التأكيد ←' : 'Go to Settings →'}</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="flex h-32 flex-col items-center justify-center p-4 text-center text-muted-foreground">
-              <p className="text-xs font-medium">
-                {riskOnly
-                  ? (isArabic ? 'لا توجد طلبات عالية الخطورة' : 'No high-risk orders')
-                  : (isArabic ? 'لا توجد طلبات مطابقة' : 'No matching orders')}
-              </p>
-            </div>
-          )
+          <WorkspaceQueueEmptyState
+            confirmationDisabled={confirmationDisabled}
+            activeTab={activeTab}
+            isArabic={isArabic}
+            riskOnly={riskOnly}
+            inStream
+          />
         ) : (
-          displayOrders.map((order) => {
-          const isSelected = order.id === selectedOrderId;
-          const overdue = isOrderOverdue(order);
-          const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
-          const followUpDue = order.followUpDate ? new Date(order.followUpDate).getTime() <= Date.now() : false;
-
-          return (
-            <article
+          displayOrders.map((order) => (
+            <WorkspaceOrderQueueItem
               key={order.id || order.cartId || order.orderNumber}
-              ref={(el) => {
+              order={order}
+              isSelected={order.id === selectedOrderId}
+              onSelectOrder={onSelectOrder}
+              formatPrice={formatPrice}
+              isArabic={isArabic}
+              rowRef={(el) => {
                 if (el) rowRefs.current.set(order.id, el);
                 else rowRefs.current.delete(order.id);
               }}
-              tabIndex={0}
-              role="button"
-              aria-current={isSelected ? 'true' : undefined}
-              aria-label={`${isArabic ? 'طلب' : 'Order'} #${order.orderNumber} — ${order.customerName || ''} ${formatPrice(order.total)}`}
-              onClick={() => {
+              onSuppressFocus={() => {
                 suppressFocusRef.current = true;
-                onSelectOrder(order.id);
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  suppressFocusRef.current = true;
-                  onSelectOrder(order.id);
-                }
-              }}
-              className={`group relative cursor-pointer p-3 outline-none transition-colors focus-visible:bg-accent/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
-                isSelected
-                  ? 'bg-accent/40 text-accent-foreground'
-                  : 'hover:bg-muted/40'
-              }`}
-            >
-              {/* Active selection bar */}
-              {isSelected && (
-                <div
-                  className="absolute inset-y-0 start-0 w-1 bg-primary"
-                  aria-hidden="true"
-                />
-              )}
-
-              {/* Header row: Order number, SLA urgency badge, Time */}
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="font-mono text-xs font-black text-primary"
-                    dir="ltr"
-                  >
-                    #{order.orderNumber}
-                  </span>
-                  {order.isIncomplete ? (
-                    <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                      {isArabic ? 'سلة متروكة' : 'Abandoned Cart'}
-                    </span>
-                  ) : order.type === 'GUEST' ? (
-                    <span className="rounded bg-muted px-1 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                      {t('orders.guest')}
-                    </span>
-                  ) : null}
-                  {overdue && (
-                    <span className="inline-flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
-                      <ExclamationTriangleIcon className="h-3 w-3" />
-                      {t('orders.urgent')}
-                    </span>
-                  )}
-                  {order.riskData && order.riskData.level !== 'low' && (
-                    <span
-                      title={
-                        order.riskData.reasons?.length
-                          ? order.riskData.reasons.map((r) => r.label).join(' · ')
-                          : undefined
-                      }
-                      className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                        order.riskData.level === 'high'
-                          ? 'bg-destructive/15 text-destructive'
-                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                      }`}
-                      dir="ltr"
-                    >
-                      ⚠ {order.riskData.score}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="text-[11px] font-mono text-muted-foreground"
-                  title={exactTimestamp(order.createdAt)}
-                >
-                  {formatTimeAgo(order.createdAt)}
-                </span>
-              </div>
-
-              {/* Customer info & location */}
-              <div className="mt-1 flex items-baseline justify-between gap-2">
-                <p className="truncate text-xs font-bold text-foreground">
-                  {order.customerName || '—'}
-                </p>
-                <span className="shrink-0 font-mono text-xs font-black tabular-nums text-foreground">
-                  {formatPrice(order.total)}
-                </span>
-              </div>
-
-              {/* Sub-row: Location & Follow-up & Call attempts badge */}
-              <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                <span className="truncate">{location}</span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  {order.followUpDate && (
-                    <span
-                      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                        followUpDue
-                          ? 'bg-destructive/15 text-destructive'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      }`}
-                    >
-                      {followUpDue
-                        ? (isArabic ? 'مستحق الآن' : 'Due now')
-                        : new Date(order.followUpDate).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                    </span>
-                  )}
-                  <span
-                    className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${
-                      order.callAttempts >= 3
-                        ? 'text-amber-500 dark:text-amber-400'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <PhoneIcon className="h-3 w-3" />
-                    {order.callAttempts} / 5
-                  </span>
-                </span>
-              </div>
-            </article>
-          );
-        })
-      )}
+            />
+          ))
+        )}
 
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />
@@ -393,7 +148,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
               type="button"
               onClick={onLoadMore}
               disabled={loadingMore}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border/60 bg-background py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/40 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border/60 bg-background py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/40 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200"
             >
               {loadingMore && <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />}
               {loadingMore
@@ -406,3 +161,5 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     </div>
   );
 };
+
+export default WorkspaceOrderQueue;
