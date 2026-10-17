@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BookmarkIcon,
-  TrashIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+  Bookmark,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
 import type { OrdersFilters } from "../Orders";
 
@@ -111,12 +111,12 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
         type="button"
         aria-expanded={open}
         title={String(t("orders.savedViews"))}
-        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-blue-700 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-blue-200"
+        className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted active:scale-[0.97]"
       >
-        <BookmarkIcon className="h-4 w-4" />
+        <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="hidden sm:inline">{t("orders.savedViews")}</span>
         {views.length > 0 && (
-          <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-blue-100 px-1.5 text-[11px] font-bold text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
+          <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] font-bold font-mono tabular-nums text-primary">
             {views.length}
           </span>
         )}
@@ -125,15 +125,15 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="z-50 w-72 border border-slate-200/80 bg-white p-2 shadow-lg dark:border-slate-700/80 dark:bg-slate-900"
+        className="z-50 w-72 border border-border/70 bg-card p-2 text-card-foreground shadow-lg rounded-xl"
       >
-        <div className="max-h-[360px] overflow-y-auto p-2">
-          <div className="mb-1 px-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+        <div className="max-h-[360px] overflow-y-auto p-1.5">
+          <div className="mb-1.5 px-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {t("orders.savedViews")}
           </div>
 
           {views.length === 0 && (
-            <p className="px-1.5 py-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="px-1.5 py-2 text-xs text-muted-foreground">
               {t("orders.noSavedViews")}
             </p>
           )}
@@ -141,12 +141,12 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
           {views.map((view) => (
             <div
               key={view.id}
-              className="group flex items-center gap-1 rounded-lg px-1.5 py-1 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+              className="group flex items-center gap-1 rounded-md px-1.5 py-1 hover:bg-muted/50 transition-colors"
             >
               <button
                 type="button"
                 onClick={() => apply(view)}
-                className="min-w-0 flex-1 truncate rounded-md px-1 py-1.5 text-left text-sm font-medium text-slate-700 hover:text-blue-700 dark:text-slate-200 dark:hover:text-blue-200"
+                className="min-w-0 flex-1 truncate text-start text-xs font-semibold text-foreground hover:text-primary transition-colors"
               >
                 {view.name}
               </button>
@@ -154,14 +154,14 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
                 type="button"
                 title={String(t("orders.deleteSavedView"))}
                 onClick={() => remove(view.id)}
-                className="rounded-md p-1.5 text-slate-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                className="rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
               >
-                <TrashIcon className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           ))}
 
-          <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+          <div className="mt-2 border-t border-border/60 pt-2">
             <div className="flex items-center gap-1.5">
               <input
                 type="text"
@@ -171,16 +171,16 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
                   if (e.key === "Enter") save();
                 }}
                 placeholder={String(t("orders.savedViewNamePlaceholder"))}
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:border-blue-500"
+                className="min-w-0 flex-1 rounded-md border border-border/70 bg-background px-2.5 py-1 text-xs text-foreground outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground"
               />
               <button
                 type="button"
                 onClick={save}
                 disabled={!name.trim() || !hasActiveFilters}
                 title={String(t("orders.saveCurrentView"))}
-                className="inline-flex h-8 items-center gap-1 rounded-lg bg-blue-600 px-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <PlusIcon className="h-3.5 w-3.5" />
+                <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
@@ -189,3 +189,5 @@ export const SavedViews: React.FC<SavedViewsProps> = ({ filters, onApplyFilters 
     </Popover>
   );
 };
+
+export default SavedViews;

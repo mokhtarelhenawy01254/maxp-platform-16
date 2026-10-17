@@ -1,14 +1,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CheckCircleIcon,
-  XMarkIcon,
-  PrinterIcon,
-  RocketLaunchIcon,
-  TrashIcon,
-  ArrowPathIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+  CheckCircle2,
+  X,
+  Printer,
+  Rocket,
+  Trash2,
+  RefreshCw,
+  Truck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface BulkStatusOption {
@@ -65,18 +65,18 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
     <div
       role="region"
       aria-label={String(t("orders.bulkActionsBar"))}
-      className="data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=open]:fade-in-0 sticky top-2 z-20 mb-3 flex flex-col gap-2.5 rounded-2xl border border-primary/30 bg-white/95 p-2.5 shadow-[0_18px_50px_-32px_rgba(37,99,235,0.4)] backdrop-blur-md duration-200 sm:flex-row sm:items-center sm:justify-between sm:p-3 dark:border-primary/30 dark:bg-slate-900/95"
+      className="data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=open]:fade-in-0 sticky top-2 z-20 mb-3 flex flex-col gap-2.5 rounded-xl border border-primary/30 bg-card/95 p-2.5 text-card-foreground shadow-lg backdrop-blur-md duration-200 sm:flex-row sm:items-center sm:justify-between sm:p-3"
     >
       <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30 sm:h-9 sm:w-9">
-            <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 sm:h-9 sm:w-9">
+            <CheckCircle2 className="h-4 w-4 sm:h-4.5 sm:w-4.5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground sm:text-sm">
+            <p className="text-xs font-bold text-foreground sm:text-sm font-mono tabular-nums">
               {t("orders.ordersSelected", { count })}
             </p>
-            <p className="hidden text-[11px] text-muted-foreground sm:block">
+            <p className="hidden text-[11px] text-muted-foreground sm:block font-mono tabular-nums">
               {t("orders.bulkActionsHint", { count })}
             </p>
           </div>
@@ -85,14 +85,14 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           type="button"
           onClick={onClearSelection}
           disabled={busy}
-          className="inline-flex min-h-[32px] items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
+          className="inline-flex min-h-[30px] items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground active:scale-[0.97] disabled:opacity-50"
         >
-          <XMarkIcon className="h-3.5 w-3.5" />
-          {t("orders.deselect", { defaultValue: "إلغاء التحديد" })}
+          <X className="h-3.5 w-3.5" />
+          <span>{t("orders.deselect", { defaultValue: "إلغاء التحديد" })}</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+      <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
         <div className="col-span-2 relative min-w-[140px] sm:col-span-1 sm:flex-none">
           <select
             aria-label={String(t("orders.updateStatus"))}
@@ -105,7 +105,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                 e.target.value = "";
               }
             }}
-            className="h-9 w-full appearance-none rounded-xl border border-border bg-background px-3 pe-8 text-xs font-medium text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:opacity-50 sm:text-sm"
+            className="h-9 w-full appearance-none rounded-lg border border-border/70 bg-background px-3 pe-8 text-xs font-medium text-foreground shadow-xs outline-hidden transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 sm:text-sm"
           >
             <option value="">{t("orders.updateStatus")}</option>
             {statuses.map((status) => (
@@ -126,10 +126,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           size="sm"
           onClick={onPrintInvoices}
           disabled={printing}
-          className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold"
+          className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold rounded-lg"
         >
-          <PrinterIcon className="h-4 w-4" />
-          {printing ? t("orders.printing") : t("orders.printInvoices")}
+          <Printer className="h-3.5 w-3.5" />
+          <span>{printing ? t("orders.printing") : t("orders.printInvoices")}</span>
         </Button>
 
         {!isTrashView && onCreateTurboShipments && (
@@ -139,10 +139,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
             size="sm"
             onClick={onCreateTurboShipments}
             disabled={busy}
-            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold"
+            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold rounded-lg"
           >
-            <RocketLaunchIcon className="h-4 w-4" />
-            {busy ? t("orders.creating") : t("orders.createTurboShipments")}
+            <Rocket className="h-3.5 w-3.5" />
+            <span>{busy ? t("orders.creating") : t("orders.createTurboShipments")}</span>
           </Button>
         )}
 
@@ -153,10 +153,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
             size="sm"
             onClick={onCreateQpExpressShipments}
             disabled={busy}
-            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold rounded-lg border-primary/30 text-primary hover:bg-primary/10"
           >
-            <TruckIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            {busy ? "جاري الشحن..." : "شحن QP Express"}
+            <Truck className="h-3.5 w-3.5" />
+            <span>{busy ? "جاري الشحن..." : "شحن QP Express"}</span>
           </Button>
         )}
 
@@ -167,10 +167,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
             size="sm"
             onClick={onCreateBostaShipments}
             disabled={busy}
-            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/40"
+            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold rounded-lg border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
           >
-            <TruckIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-            {busy ? "جاري الشحن..." : "شحن بوستا (Bosta)"}
+            <Truck className="h-3.5 w-3.5" />
+            <span>{busy ? "جاري الشحن..." : "شحن بوستا (Bosta)"}</span>
           </Button>
         )}
 
@@ -180,22 +180,24 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           size="sm"
           onClick={onDelete}
           disabled={busy}
-          className={`min-h-[36px] justify-center gap-1.5 text-xs font-semibold ${
+          className={`min-h-[36px] justify-center gap-1.5 text-xs font-semibold rounded-lg ${
             isTrashView ? "col-span-2 sm:col-span-1" : ""
           }`}
         >
           {isTrashView ? (
-            <TrashIcon className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           ) : (
-            <ArrowPathIcon className="h-4 w-4" />
+            <RefreshCw className="h-3.5 w-3.5" />
           )}
-          {busy
-            ? t("orders.processing2")
-            : t(
-                isTrashView
-                  ? "orders.deleteSelectedPermanently"
-                  : "orders.deleteSelected",
-              )}
+          <span>
+            {busy
+              ? t("orders.processing2")
+              : t(
+                  isTrashView
+                    ? "orders.deleteSelectedPermanently"
+                    : "orders.deleteSelected",
+                )}
+          </span>
         </Button>
       </div>
     </div>

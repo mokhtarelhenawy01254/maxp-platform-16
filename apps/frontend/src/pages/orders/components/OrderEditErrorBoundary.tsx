@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from "react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -37,41 +37,44 @@ class OrderEditErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full">
-              <ExclamationTriangleIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
+        <div className="min-h-[50vh] flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-xl border border-border/70 bg-card text-card-foreground shadow-xl p-6 text-center">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-destructive/10 text-destructive rounded-xl border border-destructive/20 mb-3">
+              <AlertTriangle className="w-6 h-6" />
             </div>
 
-            <h2 className="mt-4 text-xl font-bold text-center text-gray-900 dark:text-gray-100">
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
               حدث خطأ غير متوقع
             </h2>
 
-            <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
-              عذراً، حدث خطأ أثناء تحميل صفحة تعديل الطلب. يرجى المحاولة مرة
-              أخرى.
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              عذراً، حدث خطأ أثناء تحميل بيانات الطلب. يرجى المحاولة مرة أخرى.
             </p>
 
             {import.meta.env.DEV && this.state.error && (
-              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/10 rounded-md">
-                <p className="text-xs font-mono text-red-800 dark:text-red-400 break-all">
+              <div className="mt-3 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg text-start">
+                <p className="text-[11px] font-mono tabular-nums text-destructive break-all">
                   {this.state.error.message}
                 </p>
               </div>
             )}
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-5 flex gap-2">
               <button
+                type="button"
                 onClick={this.handleReset}
-                className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 font-medium"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-xs font-semibold shadow-xs transition active:scale-[0.97]"
               >
-                إعادة المحاولة
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>إعادة المحاولة</span>
               </button>
               <button
+                type="button"
                 onClick={() => window.history.back()}
-                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-medium"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-border/70 bg-background text-foreground rounded-lg hover:bg-muted text-xs font-semibold transition active:scale-[0.97]"
               >
-                رجوع
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>رجوع</span>
               </button>
             </div>
           </div>

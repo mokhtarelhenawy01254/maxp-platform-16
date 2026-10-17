@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ArchiveBoxIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { Archive, X, Download, UploadCloud } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import OrderModal from "../../../components/common/OrderModal";
 import { Button } from "@/components/ui/button";
@@ -44,9 +44,7 @@ interface BulkOrderModalProps {
 const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderItem[]> => {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await apiClient.post(`/api/v1/bulk-orders/${bulkOrderId}/import`, formData, {
-    // boundary set by browser
-  });
+  const res = await apiClient.post(`/api/v1/bulk-orders/${bulkOrderId}/import`, formData);
   return res.data?.items || [];
 };
 
@@ -60,7 +58,7 @@ const downloadTemplate = () => {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30";
+  "w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-xs sm:text-sm text-foreground outline-hidden transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
   const { t } = useTranslation();
@@ -160,28 +158,32 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
       flushBody
       hideClose
       footer={
-        <div className="flex justify-end gap-3 border-t border-border/60 bg-muted/30 px-5 py-3">
+        <div className="flex justify-end gap-2.5 border-t border-border/60 bg-muted/20 px-5 py-3">
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onClick={onClose}
             disabled={saving}
+            className="rounded-lg text-xs"
           >
             {t("orders.bulkCancel")}
           </Button>
           <Button
             type="button"
+            size="sm"
             onClick={handleSave}
             disabled={saving}
+            className="rounded-lg text-xs"
           >
             {saving ? t("orders.processing2") : t("orders.bulkSave")}
           </Button>
         </div>
       }
     >
-      <div className="space-y-5 p-6">
+      <div className="space-y-4 p-5">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
+          <label className="mb-1.5 block text-xs font-semibold text-foreground">
             {t("orders.bulkNameLabel")}
           </label>
           <input
@@ -194,20 +196,20 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
+          <label className="mb-1.5 block text-xs font-semibold text-foreground">
             {t("orders.bulkDescriptionLabel")}
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t("orders.bulkDescriptionPlaceholder")}
-            rows={3}
+            rows={2}
             className={`${inputClass} resize-none`}
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
+          <label className="mb-1.5 block text-xs font-semibold text-foreground">
             {t("orders.bulkDefaultStatus")}
           </label>
           <select
@@ -223,16 +225,16 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="block text-sm font-medium text-foreground">
+            <label className="block text-xs font-semibold text-foreground">
               {t("orders.bulkUploadFile")}
             </label>
             <button
               type="button"
               onClick={downloadTemplate}
-              className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary/80"
+              className="flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:underline"
             >
-              <ArrowDownTrayIcon className="h-3.5 w-3.5" />
-              {t("orders.bulkDownloadTemplate") || "Download Template"}
+              <Download className="h-3.5 w-3.5" />
+              <span>{t("orders.bulkDownloadTemplate") || "تحميل النموذج"}</span>
             </button>
           </div>
           <div
@@ -240,12 +242,12 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
               dragOver
                 ? "border-primary bg-primary/5"
                 : pendingFile
-                ? "border-success bg-success/5"
-                : "border-border bg-muted/30 hover:border-foreground/20"
+                ? "border-emerald-500/40 bg-emerald-500/5"
+                : "border-border/70 bg-muted/20 hover:border-primary/40 hover:bg-muted/30"
             }`}
           >
             <input
@@ -257,16 +259,16 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
             />
             {pendingFile ? (
               <div className="text-center">
-                <ArchiveBoxIcon className="mx-auto mb-3 h-10 w-10 text-success" />
-                <p className="text-sm font-medium text-success">{pendingFile.name}</p>
-                <p className="mt-1 text-xs text-success/80">
-                  {t("orders.bulkFileWillUploadAfterSave") || "Will be uploaded after save"}
+                <Archive className="mx-auto mb-2 h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{pendingFile.name}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {t("orders.bulkFileWillUploadAfterSave") || "سيتم رفع الملف بعد الحفظ"}
                 </p>
               </div>
             ) : (
               <>
-                <ArrowDownTrayIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{t("orders.bulkUploadHint")}</p>
+                <UploadCloud className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{t("orders.bulkUploadHint")}</p>
               </>
             )}
           </div>
@@ -274,36 +276,36 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
 
         {importedItems.length > 0 && (
           <div>
-            <h4 className="mb-2 text-sm font-medium text-foreground">
+            <h4 className="mb-2 text-xs font-semibold text-foreground font-mono tabular-nums">
               {t("orders.bulkItems")} ({importedItems.length})
             </h4>
-            <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-border/70">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40">
                   <tr>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemCustomer")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemPhone")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemCity")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemArea") || "Area"}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemGovernorate")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemProduct")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">COD</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemQuantity")}</th>
-                    <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("orders.bulkItemNotes")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemCustomer")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemPhone")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemCity")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemArea") || "Area"}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemGovernorate")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemProduct")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">COD</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemQuantity")}</th>
+                    <th className="px-2.5 py-2 text-start text-[11px] font-semibold text-muted-foreground">{t("orders.bulkItemNotes")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-border/60">
                   {importedItems.slice(0, 50).map((i, idx) => (
-                    <tr key={idx} className="hover:bg-muted/30">
-                      <td className="px-3 py-1.5 text-foreground">{i.customerName || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.customerPhone || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.city || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.area || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.governorate || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.productName || "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{Number(i.collectAmount || 0) > 0 ? Number(i.collectAmount).toFixed(2) : "-"}</td>
-                      <td className="px-3 py-1.5 text-foreground">{i.quantity}</td>
-                      <td className="max-w-[80px] truncate px-3 py-1.5 text-foreground">{i.notes || "-"}</td>
+                    <tr key={idx} className="hover:bg-muted/20">
+                      <td className="px-2.5 py-1.5 text-foreground">{i.customerName || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground font-mono tabular-nums">{i.customerPhone || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground">{i.city || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground">{i.area || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground">{i.governorate || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground">{i.productName || "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground font-mono tabular-nums">{Number(i.collectAmount || 0) > 0 ? Number(i.collectAmount).toFixed(2) : "-"}</td>
+                      <td className="px-2.5 py-1.5 text-foreground font-mono tabular-nums">{i.quantity}</td>
+                      <td className="max-w-[80px] truncate px-2.5 py-1.5 text-foreground">{i.notes || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -313,7 +315,7 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
         )}
 
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
             {error}
           </div>
         )}
