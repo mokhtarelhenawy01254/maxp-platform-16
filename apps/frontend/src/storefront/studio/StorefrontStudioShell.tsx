@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
@@ -10,7 +10,7 @@ import {
 import { StudioTopBar } from "./StudioTopBar";
 import { StudioLeftRail } from "./StudioLeftRail";
 import { StudioElementsPanel } from "./StudioElementsPanel";
-import { StudioLayersDrawer } from "./StudioLayersDrawer";
+import { StudioLayersDrawer, GripDotsIcon } from "./StudioLayersDrawer";
 import { StudioPropertyInspector } from "./StudioPropertyInspector";
 import { StudioCanvasStage } from "./StudioCanvasStage";
 import { StudioSortableSection } from "./StudioSortableSection";
@@ -61,6 +61,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(false);
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(2.0, Math.round((prev + 0.1) * 10) / 10));
@@ -206,6 +207,20 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       )
     : "";
 
+  const draggedSectionEntry = useMemo(() => {
+    if (!activeDragId) return null;
+    const foundIndex = activeSections.findIndex(
+      (s: any, idx: number) => getSectionKey(s, idx) === activeDragId
+    );
+    if (foundIndex === -1) return null;
+    const entry = activeSections[foundIndex];
+    const label =
+      getStorefrontSectionManifest(typeof entry === "string" ? entry : entry?.type)?.label ||
+      getStorefrontSectionLabel(typeof entry === "string" ? entry : entry?.type || "section");
+    const type = typeof entry === "string" ? entry : entry?.type || "section";
+    return { entry, label, type, index: foundIndex };
+  }, [activeDragId, activeSections]);
+
   const studioContent = (
     <div
       className="fixed inset-0 z-[100] flex h-screen w-full flex-col overflow-hidden bg-[#17181c] text-[#e8eaee]"
@@ -245,7 +260,20 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       />
 
       {/* 2. Main Studio Workspace Chassis with unified DnD */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={(event) => {
+          setActiveDragId(String(event.active.id));
+        }}
+        onDragEnd={(event) => {
+          setActiveDragId(null);
+          handleDragEnd(event);
+        }}
+        onDragCancel={() => {
+          setActiveDragId(null);
+        }}
+      >
         <div className="relative flex flex-1 h-[calc(100vh-52px-30px)] w-full overflow-hidden">
           {/* Leftmost Iconic Rail */}
           <StudioLeftRail
@@ -430,6 +458,40 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             </>
           )}
         </div>
+
+        {/* DragOverlay ghost preview for fluid WYSIWYG reordering feedback */}
+        <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+          {activeDragId && draggedSectionEntry ? (
+            <div
+              className="pointer-events-none select-none rounded-xl border-2 border-[#2b6cf6] bg-white p-4 shadow-[0_25px_50px_rgba(0,0,0,0.3)] ring-1 ring-black/5 opacity-95 transition-shadow"
+              style={{
+                width: deviceMode === "mobile" ? "375px" : deviceMode === "tablet" ? "768px" : "1100px",
+                maxWidth: "92vw",
+              }}
+              dir="rtl"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#2b6cf6]/10 text-[#2b6cf6]">
+                    <GripDotsIcon className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {draggedSectionEntry.label}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ({draggedSectionEntry.type})
+                  </span>
+                </div>
+                <span className="rounded-full bg-[#2b6cf6] px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
+                  جاري النقل...
+                </span>
+              </div>
+              <div className="mt-2.5 flex h-12 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 text-xs text-slate-400">
+                اسحب إلى الموضع المطلوب ثم أفلت للتثبيت
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {/* 3. Pro Studio Status Bar */}

@@ -5,6 +5,8 @@ import { render, screen, fireEvent, renderHook, act } from "@testing-library/rea
 
 import { generateResponsiveSectionRules } from "../studio/StudioResponsiveAIGenerator";
 import { StudioCanvasRuler } from "../studio/StudioCanvasRuler";
+import { StudioCanvasStage } from "../studio/StudioCanvasStage";
+import { StudioSortableSection } from "../studio/StudioSortableSection";
 import { StudioLeftRail } from "../studio/StudioLeftRail";
 import { StudioElementsPanel } from "../studio/StudioElementsPanel";
 import { StudioStatusBar } from "../studio/StudioStatusBar";
@@ -323,6 +325,155 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       expect(undoOverrides).toHaveLength(7);
       expect(undoPages[6].type).toBe("newsletter");
       expect(undoOverrides[6].type).toBe("newsletter");
+    });
+  });
+
+  describe("StudioCanvasStage WYSIWYG Scene (Ticket 1B)", () => {
+    it("renders with the neutral light desk workspace #e9ebf0", () => {
+      const { container } = render(
+        <StudioCanvasStage deviceMode="desktop" zoomLevel={1}>
+          <div data-testid="page-content">محتوى المتجر</div>
+        </StudioCanvasStage>
+      );
+
+      const stageRoot = container.firstElementChild as HTMLElement;
+      expect(stageRoot.className).toContain("bg-[#e9ebf0]");
+      expect(screen.getByTestId("page-content")).toBeDefined();
+    });
+
+    it("renders desktop viewport with border-[#d6dae2] and soft shadow", () => {
+      const { container } = render(
+        <StudioCanvasStage deviceMode="desktop" zoomLevel={1}>
+          <div data-testid="desktop-child">محتوى الديسكتوب</div>
+        </StudioCanvasStage>
+      );
+
+      const desktopFrame = container.querySelector(".max-w-\\[1200px\\] > div") as HTMLElement;
+      expect(desktopFrame).toBeDefined();
+      expect(desktopFrame.className).toContain("border-[#d6dae2]");
+      expect(desktopFrame.className).toContain("bg-white");
+    });
+
+    it("renders smartphone viewport with device frame and notch", () => {
+      const { container } = render(
+        <StudioCanvasStage deviceMode="mobile" zoomLevel={1}>
+          <div data-testid="mobile-child">محتوى الموبايل</div>
+        </StudioCanvasStage>
+      );
+
+      const mobileFrame = container.querySelector(".max-w-\\[375px\\] > div") as HTMLElement;
+      expect(mobileFrame).toBeDefined();
+      expect(mobileFrame.className).toContain("border-[#101114]");
+      expect(screen.getByTestId("mobile-child")).toBeDefined();
+    });
+  });
+
+  describe("StudioSortableSection Resting Borders & Drag Feedback (Ticket 1B)", () => {
+    it("renders resting hairline inset border and hover section label pill when unselected", () => {
+      render(
+        <StudioSortableSection
+          id="section-1"
+          index={0}
+          sectionKey="section-1"
+          sectionLabel="قسم البطل الرئيسي"
+          sectionType="hero-banner"
+          selected={false}
+          totalSections={3}
+          onSelect={vi.fn()}
+          onMoveUp={vi.fn()}
+          onMoveDown={vi.fn()}
+          onDuplicate={vi.fn()}
+          onDelete={vi.fn()}
+        >
+          <div data-testid="section-content">محتوى القسم</div>
+        </StudioSortableSection>
+      );
+
+      // Resting border container with zero layout shift inset shadow
+      const restingBorder = document.querySelector(".shadow-\\[inset_0_0_0_1px_rgba\\(15\\,23\\,42\\,0\\.08\\)\\]");
+      expect(restingBorder).toBeDefined();
+
+      // Section hover label pill with Arabic text
+      expect(screen.getByText("قسم البطل الرئيسي")).toBeDefined();
+      expect(screen.getByTestId("section-content")).toBeDefined();
+    });
+
+    it("renders drag handle with tooltip and accessibility attributes when selected", () => {
+      render(
+        <StudioSortableSection
+          id="section-1"
+          index={0}
+          sectionKey="section-1"
+          sectionLabel="قسم البطل الرئيسي"
+          sectionType="hero-banner"
+          selected={true}
+          totalSections={3}
+          onSelect={vi.fn()}
+          onMoveUp={vi.fn()}
+          onMoveDown={vi.fn()}
+          onDuplicate={vi.fn()}
+          onDelete={vi.fn()}
+        >
+          <div>محتوى القسم المحدد</div>
+        </StudioSortableSection>
+      );
+
+      const dragHandle = screen.getByTitle("اسحب لإعادة الترتيب");
+      expect(dragHandle).toBeDefined();
+      expect(dragHandle.getAttribute("aria-label")).toBe("اسحب لإعادة ترتيب قسم البطل الرئيسي");
+      expect(dragHandle.getAttribute("tabindex")).toBe("0");
+    });
+
+    it("reorders sections cleanly through handleMoveSection and supports undo without data loss", () => {
+      let currentTokens: Record<string, unknown> = {
+        pages: {
+          home: {
+            sections: [
+              { type: "hero-banner", key: "s-hero" },
+              { type: "featured-products", key: "s-products" },
+              { type: "newsletter", key: "s-news" },
+            ],
+          },
+        },
+      };
+
+      const onChange = vi.fn((next: Record<string, unknown>) => {
+        currentTokens = next;
+      });
+
+      const { result } = renderHook(() =>
+        useStorefrontStudioState({
+          themeId: "modern-minimal",
+          designTokens: currentTokens,
+          onSave: vi.fn(),
+          onChange,
+        })
+      );
+
+      expect(result.current.activeSections[0].type).toBe("hero-banner");
+      expect(result.current.activeSections[1].type).toBe("featured-products");
+
+      // Move section 0 down -> [featured-products, hero-banner, newsletter]
+      act(() => {
+        result.current.handleMoveSection(0, "down");
+      });
+
+      const movedPages = (currentTokens.pages as any).home.sections;
+      const movedOverrides = (currentTokens.pageOverrides as any).home.sections;
+
+      expect(movedPages[0].type).toBe("featured-products");
+      expect(movedPages[1].type).toBe("hero-banner");
+      expect(movedOverrides[0].type).toBe("featured-products");
+      expect(movedOverrides[1].type).toBe("hero-banner");
+
+      // Undo -> restores original order [hero-banner, featured-products, newsletter]
+      act(() => {
+        result.current.undo();
+      });
+
+      const undoPages = (currentTokens.pages as any).home.sections;
+      expect(undoPages[0].type).toBe("hero-banner");
+      expect(undoPages[1].type).toBe("featured-products");
     });
   });
 });
