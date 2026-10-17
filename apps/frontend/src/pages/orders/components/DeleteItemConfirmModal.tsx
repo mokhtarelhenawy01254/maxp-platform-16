@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { AlertTriangle } from "lucide-react";
 import OrderModal from "../../../components/common/OrderModal";
 
 interface DeleteItemConfirmModalProps {
@@ -28,7 +28,7 @@ const DeleteItemConfirmModal: React.FC<DeleteItemConfirmModalProps> = ({
       }}
       title={t("orders.deleteItemConfirmTitle")}
       description={t("orders.deleteItemConfirmDescription")}
-      icon={ExclamationTriangleIcon}
+      icon={AlertTriangle}
       tone="danger"
       size="sm"
       cancelLabel={t("orders.cancel", { defaultValue: "إلغاء" })}
@@ -42,12 +42,12 @@ const DeleteItemConfirmModal: React.FC<DeleteItemConfirmModalProps> = ({
         autoFocus: true,
       }}
     >
-      <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">{itemName}</p>
+      <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3.5 py-3">
+        <p className="text-xs sm:text-sm font-semibold text-foreground">{itemName}</p>
         {itemDetails && (
           <p className="mt-1 text-xs text-muted-foreground">{itemDetails}</p>
         )}
-        <p className="mt-3 text-xs font-medium text-destructive">
+        <p className="mt-2.5 text-xs font-medium text-destructive">
           {t("orders.deleteItemConfirmWarning")}
         </p>
       </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { AlertTriangle } from "lucide-react";
 import OrderModal from "../../../components/common/OrderModal";
 
 interface ConfirmationModalProps {
@@ -36,7 +36,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       }}
       title={title}
       description={message}
-      icon={ExclamationTriangleIcon}
+      icon={AlertTriangle}
       tone={isDangerous ? "danger" : "info"}
       size="md"
       busy={isLoading}

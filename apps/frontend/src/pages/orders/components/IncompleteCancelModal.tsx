@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  XMarkIcon,
-  ArrowPathIcon,
-  NoSymbolIcon,
-  LightBulbIcon,
-  UserIcon,
-  PhoneIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/24/outline";
+  X,
+  RefreshCw,
+  Ban,
+  Lightbulb,
+  User,
+  Phone,
+  Banknote,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { cancellationService } from "../../../services/cancellationService";
@@ -139,23 +139,23 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm transition-opacity"
       onClick={(e) => {
         if (e.target === e.currentTarget && !saving) onClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg rounded-xl bg-card text-card-foreground shadow-2xl border border-border/70 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">
-              <NoSymbolIcon className="h-5 w-5" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <Ban className="h-4.5 w-4.5" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white leading-tight">
+              <h3 className="text-sm font-semibold text-foreground leading-tight">
                 {t("orders.incompleteCancelModalTitle")}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 {t("orders.incompleteCancelModalDesc")}
               </p>
             </div>
@@ -164,33 +164,33 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label={t("orders.incompleteCancelDiscardBtn")}
           >
-            <XMarkIcon className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-3.5">
           {/* Customer / Cart summary chip row */}
           {(customerName || customerPhone || cartTotal != null) && (
-            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-900/60 dark:text-gray-300 border border-gray-100 dark:border-gray-800">
+            <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/20 p-2.5 text-xs text-foreground border border-border/60">
               {customerName && (
                 <span className="inline-flex items-center gap-1 font-medium">
-                  <UserIcon className="h-3.5 w-3.5 text-gray-400" />
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
                   {customerName}
                 </span>
               )}
               {customerPhone && (
-                <span className="inline-flex items-center gap-1 font-mono text-gray-600 dark:text-gray-400">
-                  <PhoneIcon className="h-3.5 w-3.5 text-gray-400" />
+                <span className="inline-flex items-center gap-1 font-mono tabular-nums text-muted-foreground">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                   <span dir="ltr">{customerPhone}</span>
                 </span>
               )}
               {cartTotal != null && (
-                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 ms-auto">
-                  <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                <span className="inline-flex items-center gap-1 font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 ms-auto">
+                  <Banknote className="h-3.5 w-3.5" />
                   {formatPrice(cartTotal)}
                 </span>
               )}
@@ -198,14 +198,14 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
           )}
 
           {/* Save-the-sale incentive tip callout box */}
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs leading-relaxed text-amber-900 dark:border-amber-800/60 dark:bg-amber-900/15 dark:text-amber-200 flex items-start gap-2.5">
-            <LightBulbIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
+            <Lightbulb className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <span>{t("orders.incompleteCancelSaveOfferNotice")}</span>
           </div>
 
           {/* Quick cancellation reasons chips */}
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-foreground">
               {t("orders.incompleteCancelReasonPrompt")}
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -216,10 +216,10 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
                     key={reason}
                     type="button"
                     onClick={() => setSelectedReason(isSelected ? "" : reason)}
-                    className={`inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium transition-all active:scale-[0.97] ${
                       isSelected
-                        ? "border border-red-500 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/30 dark:text-red-300 shadow-sm"
-                        : "border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        ? "border border-destructive/40 bg-destructive/15 text-destructive shadow-2xs"
+                        : "border border-border/70 bg-background text-foreground hover:border-destructive/30 hover:bg-muted"
                     }`}
                   >
                     {reason}
@@ -230,10 +230,10 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
           </div>
 
           {/* Detailed note */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label
               htmlFor="cancel-note"
-              className="block text-xs font-medium text-gray-700 dark:text-gray-300"
+              className="block text-xs font-semibold text-foreground"
             >
               {t("orders.incompleteContactNote")}
             </label>
@@ -243,31 +243,31 @@ const IncompleteCancelModal: React.FC<IncompleteCancelModalProps> = ({
               onChange={(e) => setNote(e.target.value)}
               placeholder={t("orders.incompleteContactNote")}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 outline-none transition-all resize-none text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border border-border/70 rounded-lg bg-background text-xs sm:text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/15 outline-hidden transition-all resize-none"
             />
           </div>
 
           {/* Footer actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="px-3.5 py-1.5 rounded-lg border border-border/70 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-[0.97]"
             >
               {t("orders.incompleteCancelDiscardBtn")}
             </button>
             <button
               type="submit"
               disabled={saving || (!selectedReason.trim() && !note.trim())}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs active:scale-[0.97]"
             >
               {saving ? (
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <NoSymbolIcon className="h-4 w-4" />
+                <Ban className="h-3.5 w-3.5" />
               )}
-              {t("orders.incompleteCancelConfirmBtn")}
+              <span>{t("orders.incompleteCancelConfirmBtn")}</span>
             </button>
           </div>
         </form>

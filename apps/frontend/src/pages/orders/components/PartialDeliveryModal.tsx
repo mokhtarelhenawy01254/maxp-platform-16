@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircleIcon, ShoppingBagIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { CheckCircle2, ShoppingBag, AlertTriangle, Minus, Plus } from "lucide-react";
 import OrderModal from "../../../components/common/OrderModal";
 import { useCurrency } from "../../../hooks/useCurrency";
 
@@ -98,7 +98,7 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
       }}
       title={t("orders.partialDeliveryTitle")}
       description={t("orders.partialDeliveryDescription")}
-      icon={CheckCircleIcon}
+      icon={CheckCircle2}
       tone="primary"
       size="xl"
       busy={loading}
@@ -111,7 +111,7 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
         loading,
       }}
     >
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {order?.items?.map((item: any, index: number) => {
           const maxQty = item.quantity || 1;
           const deliveredQty = deliveredQuantities[index] ?? maxQty;
@@ -130,9 +130,9 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
           return (
             <div
               key={index}
-              className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3"
+              className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3"
             >
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-card">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/70 bg-card">
                 {itemImage ? (
                   <img
                     src={itemImage}
@@ -140,15 +140,15 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <ShoppingBagIcon className="h-7 w-7 text-muted-foreground" />
+                  <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
-                <h4 className="truncate text-sm font-semibold text-foreground">
+                <h4 className="truncate text-xs sm:text-sm font-semibold text-foreground">
                   {itemName}
                 </h4>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground font-mono tabular-nums">
                   {formatPrice(
                     parseFloat(item.price) || 0,
                     order?.currency || "EGP",
@@ -156,7 +156,7 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
                   × {maxQty} {t("orders.partialDeliveryPieces")}
                 </p>
                 {(item.productColor || item.productSize) && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {item.productColor && (
                       <span>
                         {t("orders.partialDeliveryColor")}: {item.productColor}
@@ -174,19 +174,19 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
                 )}
               </div>
 
-              <div className="flex shrink-0 flex-col items-center gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   {t("orders.partialDeliveryDelivered")}
                 </label>
-                <div className="flex items-center overflow-hidden rounded-lg border border-border">
+                <div className="flex items-center overflow-hidden rounded-md border border-border/70 bg-background">
                   <button
                     type="button"
                     onClick={() =>
                       handleQuantityChange(index, deliveredQty - 1, maxQty)
                     }
-                    className="bg-muted px-2.5 py-1.5 text-base font-bold leading-none text-foreground transition hover:bg-muted/70"
+                    className="flex h-7 w-7 items-center justify-center bg-muted/40 text-foreground transition hover:bg-muted active:scale-[0.97]"
                   >
-                    −
+                    <Minus className="h-3 w-3" />
                   </button>
                   <input
                     type="number"
@@ -200,24 +200,24 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
                         maxQty,
                       )
                     }
-                    className="w-12 border-x border-border bg-card px-1 py-1.5 text-center text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-10 border-x border-border/70 bg-transparent px-1 py-1 text-center text-xs font-bold font-mono tabular-nums text-foreground focus:outline-hidden"
                   />
                   <button
                     type="button"
                     onClick={() =>
                       handleQuantityChange(index, deliveredQty + 1, maxQty)
                     }
-                    className="bg-muted px-2.5 py-1.5 text-base font-bold leading-none text-foreground transition hover:bg-muted/70"
+                    className="flex h-7 w-7 items-center justify-center bg-muted/40 text-foreground transition hover:bg-muted active:scale-[0.97]"
                   >
-                    +
+                    <Plus className="h-3 w-3" />
                   </button>
                 </div>
                 {returnedQty > 0 ? (
-                  <span className="text-xs font-medium text-destructive">
+                  <span className="text-[11px] font-medium font-mono tabular-nums text-destructive">
                     {t("orders.partialDeliveryReturned", { count: returnedQty })}
                   </span>
                 ) : (
-                  <span className="text-xs font-medium text-success">
+                  <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                     {t("orders.partialDeliveryComplete")}
                   </span>
                 )}
@@ -228,9 +228,9 @@ const PartialDeliveryModal: React.FC<PartialDeliveryModalProps> = ({
       </div>
 
       {hasAnyReturn && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-3">
-          <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
-          <p className="text-sm text-foreground/80">
+        <div className="mt-3.5 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
             {t("orders.partialDeliveryWarning")}
           </p>
         </div>
