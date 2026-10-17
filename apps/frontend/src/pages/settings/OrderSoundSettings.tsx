@@ -4,11 +4,8 @@ import {
   Volume2,
   Save,
   Check,
-  RotateCw,
   Loader2,
-  VolumeX,
   Radio,
-  Sliders,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
@@ -201,7 +198,7 @@ export const OrderSoundSettings: React.FC = () => {
   return (
     <div dir="rtl" className="space-y-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -265,11 +262,11 @@ export const OrderSoundSettings: React.FC = () => {
             <Volume2 className="w-3.5 h-3.5" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
               {sound.enabled ? `${sound.volume}%` : "معطل"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
-              sound.enabled ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded font-mono ${
+              sound.enabled ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
             }`}>
               {sound.enabled ? sound.pattern : "Muted"}
             </span>
@@ -282,11 +279,11 @@ export const OrderSoundSettings: React.FC = () => {
             <BellRing className="w-3.5 h-3.5" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
               {incompleteSound.enabled ? `${incompleteSound.volume}%` : "معطل"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
-              incompleteSound.enabled ? "bg-teal-500/10 text-teal-600" : "bg-muted text-muted-foreground"
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded font-mono ${
+              incompleteSound.enabled ? "bg-teal-500/10 text-teal-600 dark:text-teal-400" : "bg-muted text-muted-foreground"
             }`}>
               {incompleteSound.enabled ? incompleteSound.pattern : "Muted"}
             </span>

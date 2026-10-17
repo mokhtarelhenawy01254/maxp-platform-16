@@ -10,7 +10,6 @@ import {
   Loader2,
   Save,
   AlertCircle,
-  FileCheck,
 } from "lucide-react";
 
 export interface ExchangeReturnPolicyState {
@@ -122,7 +121,7 @@ export const ExchangeReturnSettings: React.FC = () => {
   return (
     <div dir="rtl" className="space-y-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -162,7 +161,7 @@ export const ExchangeReturnSettings: React.FC = () => {
             <span className="text-base font-bold text-foreground">
               {policy.requirePreviousOrder ? "إلزامي للعميل" : "مفتوح دون قيد"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded font-mono ${
               policy.requirePreviousOrder
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground"

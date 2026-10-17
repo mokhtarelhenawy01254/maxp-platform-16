@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Percent,
   Banknote,
+  Loader2,
 } from 'lucide-react';
 import { storefrontSettingsService, type StorefrontSettings } from '../../services/storefrontSettingsService';
 import { apiClient } from '../../services/apiClient';
@@ -79,18 +80,22 @@ const CodDepositSettings: React.FC = () => {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-12" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-card border border-border/70 rounded-xl shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <Landmark className="h-5 w-5" />
+              <Landmark className="h-4 w-4" />
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-base font-bold tracking-tight text-foreground">
               {t('settings.k_44')}
             </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted/40 text-muted-foreground border border-border/70 font-mono tabular-nums">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold font-mono tabular-nums ${
+              enabled
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              <ShieldCheck className="h-3 w-3" />
               {enabled ? 'مفعل' : 'معطل'}
             </span>
           </div>
@@ -100,11 +105,11 @@ const CodDepositSettings: React.FC = () => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-border/70">
+        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/70 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all active:scale-[0.98] ${
               activeTab === 'settings'
                 ? 'bg-card text-foreground shadow-xs border border-border/70'
                 : 'text-muted-foreground hover:text-foreground'
@@ -116,7 +121,7 @@ const CodDepositSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all active:scale-[0.98] ${
               activeTab === 'orders'
                 ? 'bg-card text-foreground shadow-xs border border-border/70'
                 : 'text-muted-foreground hover:text-foreground'
@@ -129,38 +134,48 @@ const CodDepositSettings: React.FC = () => {
       </div>
 
       {activeTab === 'settings' && (
-        <div className="space-y-4">
-          {/* Enable/Disable Toggle */}
-          <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">{t('settings.k_4')}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t('settings.k_47')}
-                </p>
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
+          {/* Section 1: Enable/Disable Toggle */}
+          <div className="p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors hover:bg-muted/15">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-md bg-primary/10 text-primary">
+                  <ShieldCheck className="w-4 h-4" />
+                </span>
+                <label htmlFor="cod-deposit-toggle" className="text-sm font-semibold text-foreground cursor-pointer">
+                  {t('settings.k_4')}
+                </label>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase bg-muted text-muted-foreground">
+                  Deposit Policy
+                </span>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={enabled}
-                  onChange={(e) => updateField('codDepositEnabled', e.target.checked)}
-                />
-                <div className="w-11 h-6 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-              </label>
+              <p className="text-xs text-muted-foreground leading-relaxed pr-8">
+                {t('settings.k_47')}
+              </p>
             </div>
+
+            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+              <input
+                type="checkbox"
+                id="cod-deposit-toggle"
+                className="sr-only peer"
+                checked={enabled}
+                onChange={(e) => updateField('codDepositEnabled', e.target.checked)}
+              />
+              <div className="w-10 h-5.5 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary" />
+            </label>
           </div>
 
           {enabled && (
             <>
-              {/* Deposit Type */}
-              <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-3">
-                <h3 className="text-sm font-bold text-foreground">{t('settings.k_5')}</h3>
+              {/* Section 2: Deposit Type */}
+              <div className="p-4 sm:p-5 space-y-3">
+                <h3 className="text-xs font-bold text-foreground">{t('settings.k_5')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  <label className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all active:scale-[0.98] ${
                     depositType === 'PERCENTAGE'
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                      : 'border-border/70 bg-card hover:bg-muted/20'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                   }`}>
                     <input
                       type="radio"
@@ -178,10 +193,10 @@ const CodDepositSettings: React.FC = () => {
                     </div>
                   </label>
 
-                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  <label className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all active:scale-[0.98] ${
                     depositType === 'FIXED'
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                      : 'border-border/70 bg-card hover:bg-muted/20'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                   }`}>
                     <input
                       type="radio"
@@ -201,9 +216,9 @@ const CodDepositSettings: React.FC = () => {
                 </div>
               </div>
 
-              {/* Deposit Value */}
-              <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-3">
-                <h3 className="text-sm font-bold text-foreground">
+              {/* Section 3: Deposit Value */}
+              <div className="p-4 sm:p-5 space-y-3">
+                <h3 className="text-xs font-bold text-foreground">
                   {depositType === 'PERCENTAGE' ? t('settings.k_10') : t('settings.k_11')}
                 </h3>
                 <div className="flex items-center gap-4">
@@ -219,7 +234,7 @@ const CodDepositSettings: React.FC = () => {
                           onChange={(e) => updateField('codDepositValue', Number(e.target.value))}
                           className="flex-1 accent-primary cursor-pointer"
                         />
-                        <span className="text-sm font-mono font-bold text-primary min-w-[3.5rem] text-center bg-primary/10 py-1 rounded-lg border border-primary/20">
+                        <span className="text-xs font-mono font-bold text-primary min-w-[3.5rem] text-center bg-primary/10 py-1 rounded-md border border-primary/20 tabular-nums">
                           {depositValue}%
                         </span>
                       </div>
@@ -231,14 +246,14 @@ const CodDepositSettings: React.FC = () => {
                           step="10"
                           value={depositValue}
                           onChange={(e) => updateField('codDepositValue', Number(e.target.value))}
-                          className="w-32 px-3 py-2 border border-border/70 rounded-xl bg-muted/20 text-center font-mono tabular-nums text-xs text-foreground focus:outline-hidden"
+                          className="w-32 px-3 py-1.5 border border-border/80 rounded-md bg-background text-center font-mono tabular-nums text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                         />
                         <span className="text-xs text-muted-foreground">{t('settings.k_12')}</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   {t('settings.k_48')}{' '}
                   {depositType === 'PERCENTAGE'
                     ? t('settings.k_13') + (500 * depositValue) / 100 + ' ' + t('settings.k_12')
@@ -246,12 +261,12 @@ const CodDepositSettings: React.FC = () => {
                 </p>
               </div>
 
-              {/* Min/Max Caps */}
-              <div className="bg-card rounded-2xl border border-border/70 p-5 shadow-2xs space-y-3">
-                <h3 className="text-sm font-bold text-foreground">{t('settings.k_14')}</h3>
+              {/* Section 4: Min/Max Caps */}
+              <div className="p-4 sm:p-5 space-y-3">
+                <h3 className="text-xs font-bold text-foreground">{t('settings.k_14')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground mb-1.5">{t('settings.k_15')}</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-foreground">{t('settings.k_15')}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -259,14 +274,14 @@ const CodDepositSettings: React.FC = () => {
                         value={minAmount ?? ''}
                         onChange={(e) => updateField('codDepositMinAmount', e.target.value ? Number(e.target.value) : null)}
                         placeholder={t('settings.k_16')}
-                        className="w-full px-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 font-mono tabular-nums text-foreground focus:outline-hidden"
+                        className="w-full px-3 py-1.5 text-xs border border-border/80 rounded-md bg-background font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                       />
                       <span className="text-xs text-muted-foreground shrink-0">{t('settings.k_12')}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1">{t('settings.k_17')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('settings.k_17')}</p>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground mb-1.5">{t('settings.k_18')}</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-foreground">{t('settings.k_18')}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -274,18 +289,18 @@ const CodDepositSettings: React.FC = () => {
                         value={maxAmount ?? ''}
                         onChange={(e) => updateField('codDepositMaxAmount', e.target.value ? Number(e.target.value) : null)}
                         placeholder={t('settings.k_19')}
-                        className="w-full px-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 font-mono tabular-nums text-foreground focus:outline-hidden"
+                        className="w-full px-3 py-1.5 text-xs border border-border/80 rounded-md bg-background font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                       />
                       <span className="text-xs text-muted-foreground shrink-0">{t('settings.k_12')}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1">{t('settings.k_20')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('settings.k_20')}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Summary Box */}
-              <div className="bg-primary/5 rounded-2xl border border-primary/20 p-4">
-                <h4 className="font-bold text-xs text-foreground mb-1.5">{t('settings.k_21')}</h4>
+              {/* Section 5: Summary Box */}
+              <div className="p-4 bg-muted/20 text-xs text-muted-foreground space-y-1.5">
+                <h4 className="font-bold text-xs text-foreground">{t('settings.k_21')}</h4>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>{t('settings.k_22')}{enabled ? t('settings.k_23') : t('settings.k_24')}</li>
                   {enabled && (
@@ -303,15 +318,22 @@ const CodDepositSettings: React.FC = () => {
                 </ul>
               </div>
 
-              {/* Save Button */}
-              <div className="pt-2">
+              {/* Section 6: Action Footer */}
+              <div className="p-4 bg-card flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  COD Deposit System v2.1
+                </span>
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50"
                 >
-                  <Check className="w-4 h-4" />
+                  {saving ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
                   <span>{saving ? t('settings.saving') : t('settings.k_28')}</span>
                 </button>
               </div>

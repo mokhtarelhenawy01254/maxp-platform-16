@@ -12,7 +12,6 @@ import {
   Loader2,
   Lock,
   Columns,
-  Sparkles,
 } from "lucide-react";
 
 const COLUMN_OPTIONS = [
@@ -152,7 +151,7 @@ export const OrderColumnsSettings: React.FC = () => {
   return (
     <div dir="rtl" className="space-y-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -183,7 +182,7 @@ export const OrderColumnsSettings: React.FC = () => {
             onClick={handleReset}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors active:scale-[0.98]"
           >
-            <RotateCcw className="w-3 h-3 text-muted-foreground" />
+            <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
             <span>إعادة الضبط</span>
           </button>
           <button
@@ -213,7 +212,7 @@ export const OrderColumnsSettings: React.FC = () => {
             <span className="text-base font-bold text-foreground">
               {showSearchInHeader ? "ظاهر بالهيدر" : "مخفي"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded font-mono ${
               showSearchInHeader
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground"
@@ -294,7 +293,7 @@ export const OrderColumnsSettings: React.FC = () => {
                 حدد الحقول التي يرغب فريق العمل بمشاهدتها مباشرة عند تصفح الطلبات
               </p>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
               {selectedColumns.length} محددة
             </span>
           </div>
@@ -344,7 +343,7 @@ export const OrderColumnsSettings: React.FC = () => {
         {/* Audit footer */}
         <div className="p-3.5 bg-muted/20 text-xs text-muted-foreground flex items-center justify-between">
           <span>ملاحظة: عمود رقم الطلب إلزامي للنظام ولا يمكن إخفاؤه لضمان دقة التتبع.</span>
-          <span className="font-mono text-[11px]">Columns Config v2.4</span>
+          <span className="font-mono tabular-nums text-[11px]">Columns Config v2.4</span>
         </div>
       </div>
     </div>

@@ -219,7 +219,7 @@ export const ScheduledOrderSettings: React.FC = () => {
                 onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
                 className="sr-only peer"
               />
-              <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-10 h-5 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -232,7 +232,7 @@ export const ScheduledOrderSettings: React.FC = () => {
                 min="0"
                 value={settings.minScheduleDays}
                 onChange={(e) => setSettings({ ...settings, minScheduleDays: parseInt(e.target.value) || 0 })}
-                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full px-2.5 py-1.5 text-xs font-mono tabular-nums rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground">أقل مهلة مسموحة للعميل قبل موعد التسليم</p>
             </div>
@@ -245,7 +245,7 @@ export const ScheduledOrderSettings: React.FC = () => {
                 min="1"
                 value={settings.maxScheduleDays}
                 onChange={(e) => setSettings({ ...settings, maxScheduleDays: parseInt(e.target.value) || 1 })}
-                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full px-2.5 py-1.5 text-xs font-mono tabular-nums rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground">أقصى مدى زمني متاح لاختيار تاريخ الاستلام</p>
             </div>
@@ -260,7 +260,7 @@ export const ScheduledOrderSettings: React.FC = () => {
                 min="0"
                 value={settings.autoTransitionDaysBefore}
                 onChange={(e) => setSettings({ ...settings, autoTransitionDaysBefore: parseInt(e.target.value) || 0 })}
-                className="w-full px-2.5 py-1.5 text-xs font-mono rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full px-2.5 py-1.5 text-xs font-mono tabular-nums rounded-md border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground">0 = التحويل في نفس يوم الاستلام، 1 = قبل الموعد بيوم واحد</p>
             </div>
