@@ -19,6 +19,7 @@ import {
 import StoreAnalyticsTelemetry from "./StoreAnalyticsTelemetry";
 import StoreAnalyticsFunnel from "./StoreAnalyticsFunnel";
 import StoreAnalyticsCharts from "./StoreAnalyticsCharts";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
 
 type FilterState = {
   period: string;
@@ -366,13 +367,15 @@ export const StoreAnalyticsDashboard: React.FC = () => {
       />
 
       {/* 3. Conversion Funnel & Drop-off Diagnostics */}
-      <StoreAnalyticsFunnel
-        funnelMetrics={funnelMetrics}
-        visitorToCart={visitorToCart}
-        cartToCheckout={cartToCheckout}
-        checkoutToOrder={checkoutToOrder}
-        dropOffAnalysis={dropOffAnalysis}
-      />
+      <ErrorBoundary fallback={null}>
+        <StoreAnalyticsFunnel
+          funnelMetrics={funnelMetrics}
+          visitorToCart={visitorToCart}
+          cartToCheckout={cartToCheckout}
+          checkoutToOrder={checkoutToOrder}
+          dropOffAnalysis={dropOffAnalysis}
+        />
+      </ErrorBoundary>
 
       {/* 4. Visual Trend Chart & Top Products */}
       <StoreAnalyticsCharts

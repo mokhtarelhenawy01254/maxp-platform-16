@@ -35,31 +35,31 @@ const PreparationOrderQcChecklist = ({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-900/20">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h4 className="font-semibold text-cyan-900 dark:text-cyan-200">{t("preparation.qc.title")}</h4>
-          <p className="mt-1 text-xs text-cyan-800 dark:text-cyan-300">
+          <h4 className="text-xs font-semibold text-foreground">{t("preparation.qc.title")}</h4>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {t("preparation.qc.desc")}
           </p>
         </div>
 
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+          className={`self-start sm:self-auto rounded-md border px-2 py-0.5 text-[11px] font-medium font-mono tabular-nums ${
             qcCompleted
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
           }`}
         >
           {qcCompleted ? t("preparation.qc.completed") : t("preparation.qc.incomplete")}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {enabledQcChecks.map((key) => (
           <label
             key={`${orderNumber}-${key}`}
-            className="flex items-center gap-3 rounded-xl border border-white bg-white px-4 py-3 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border/60 bg-card px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-border"
           >
             <input
               type="checkbox"
@@ -67,7 +67,7 @@ const PreparationOrderQcChecklist = ({
               onChange={(event) =>
                 onQcCheckToggle(orderNumber, key, event.target.checked)
               }
-              className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 dark:border-gray-500 dark:text-cyan-400"
+              className="h-3.5 w-3.5 rounded border-border/70 text-primary focus:ring-primary/40"
             />
             {t(QC_LABEL_KEY_MAP[key])}
           </label>

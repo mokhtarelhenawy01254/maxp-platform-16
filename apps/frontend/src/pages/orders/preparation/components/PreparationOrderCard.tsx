@@ -108,9 +108,11 @@ const PreparationOrderCard = ({
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 active:scale-[0.99] hover:shadow-md hover:border-gray-300 dark:bg-gray-800 dark:shadow-gray-900/30 ${
-        activeFollowUpVisual?.cardClass || "border-gray-200 dark:border-gray-700"
-      } ${isProblemHeld ? "border-amber-300 dark:border-amber-700" : ""}`}
+      className={`overflow-hidden rounded-xl border bg-card text-card-foreground transition-all duration-150 ${
+        selected ? "ring-1 ring-primary/40 border-primary/50" : ""
+      } ${
+        activeFollowUpVisual?.cardClass || "border-border/70 hover:border-border"
+      } ${isProblemHeld ? "border-amber-500/40 bg-amber-500/[0.02]" : ""}`}
     >
       <PreparationOrderCardHeader
         order={order}

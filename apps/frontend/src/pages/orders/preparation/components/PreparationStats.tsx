@@ -78,16 +78,16 @@ const PreparationStats = ({
         return (
           <div
             key={index}
-            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm transition hover:border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+            className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3 py-2 transition-colors hover:border-border"
           >
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${stat.iconBg}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${stat.iconBg}`}
             >
-              <Icon className={`h-4 w-4 ${stat.iconColor}`} strokeWidth={2} />
+              <Icon className={`h-3.5 w-3.5 ${stat.iconColor}`} strokeWidth={2} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
-              <p className={`text-lg font-bold leading-none ${stat.countColor}`}>
+              <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{stat.title}</p>
+              <p className={`mt-0.5 font-mono text-base font-semibold tabular-nums leading-none ${stat.countColor}`}>
                 {stat.count.toLocaleString('en-US')}
               </p>
             </div>

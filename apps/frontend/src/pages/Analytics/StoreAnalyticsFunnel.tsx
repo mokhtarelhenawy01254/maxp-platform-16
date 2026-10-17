@@ -45,29 +45,44 @@ export const StoreAnalyticsFunnel: React.FC<StoreAnalyticsFunnelProps> = ({
 
         {/* Funnel Stages */}
         <div className="space-y-2">
-          {funnelMetrics.map((stage, idx) => (
-            <div key={stage.label} className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-foreground">{stage.label}</span>
-                <div className="flex items-center gap-2 font-mono tabular-nums">
-                  <span className="font-bold text-foreground">
-                    {stage.count.toLocaleString()}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground w-12 text-left">
-                    ({stage.percentOfVisits.toFixed(1)}%)
-                  </span>
+          {Array.isArray(funnelMetrics) && funnelMetrics.length > 0 ? (
+            funnelMetrics.map((stage, idx) => {
+              const count = Number(stage?.value ?? (stage as any)?.count ?? 0);
+              const percent = Number(
+                stage?.baselineRate ?? stage?.visualShare ?? (stage as any)?.percentOfVisits ?? 0
+              );
+              const safeCount = Number.isFinite(count) ? count : 0;
+              const safePercent = Number.isFinite(percent) ? percent : 0;
+
+              return (
+                <div key={stage?.label || stage?.key || idx} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">{stage?.label || "مرحلة"}</span>
+                    <div className="flex items-center gap-2 font-mono tabular-nums">
+                      <span className="font-bold text-foreground">
+                        {safeCount.toLocaleString()}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground w-12 text-left">
+                        ({safePercent.toFixed(1)}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, Math.max(safePercent, safeCount > 0 ? 2 : 0)))}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.max(stage.percentOfVisits, stage.count > 0 ? 2 : 0)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+              );
+            })
+          ) : (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              لا توجد بيانات قمع تحويل كافية حالياً
+            </p>
+          )}
         </div>
 
         {/* Conversion Ratios Strip */}

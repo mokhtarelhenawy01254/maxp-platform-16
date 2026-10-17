@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { Pencil } from "lucide-react";
 import type { PreparationOrder, ProblemHoldDetails } from "../types";
 
 interface PreparationProblemHoldPanelProps {
@@ -20,13 +20,13 @@ const PreparationProblemHoldPanel = ({
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-2xl border border-amber-300 bg-amber-50/60 p-4 dark:border-amber-800 dark:bg-amber-900/15">
+    <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <h4 className="font-semibold text-amber-900 dark:text-amber-200">
+          <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-300">
             {t("preparation.problemPanel.title")}
           </h4>
-          <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {t("preparation.problemPanel.desc")}
           </p>
         </div>
@@ -34,26 +34,26 @@ const PreparationProblemHoldPanel = ({
           type="button"
           onClick={() => onEditProblemReason(order.orderNumber)}
           disabled={rowBusy}
-          className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:border-amber-300 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 transition-all active:scale-[0.98] hover:bg-amber-500/20 dark:text-amber-300"
         >
-          <PencilIcon className="h-3 w-3" />
+          <Pencil className="h-3 w-3" />
           {problemHoldDetails.reason
             ? t("preparation.problemPanel.edit")
             : t("preparation.problemPanel.addReason")}
         </button>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-2.5 space-y-1.5">
         {problemHoldDetails.reason ? (
-          <div className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-amber-700 dark:bg-gray-800 dark:text-gray-100">
+          <div className="rounded-md border border-border/60 bg-card px-2.5 py-1.5 text-xs text-foreground">
             {problemHoldDetails.reason}
           </div>
         ) : (
-          <p className="rounded-xl border border-dashed border-amber-300 bg-white/60 px-3 py-2 text-xs text-amber-700 dark:border-amber-700 dark:bg-gray-800/60 dark:text-amber-300">
+          <p className="rounded-md border border-dashed border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
             {t("preparation.problemPanel.noReason")}
           </p>
         )}
-        <div className="flex flex-wrap gap-3 text-xs text-amber-800 dark:text-amber-300">
+        <div className="flex flex-wrap gap-3 font-mono text-xs tabular-nums text-muted-foreground">
           {problemHoldDetails.heldAt ? (
             <span>
               {t("preparation.problemPanel.heldAt", {

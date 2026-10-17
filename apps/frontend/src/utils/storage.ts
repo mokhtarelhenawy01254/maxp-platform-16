@@ -54,6 +54,7 @@ const STORAGE_WARNING_COOLDOWN_MS = 60 * 1000;
 
 /**
  * Warn if storage is getting full (throttled to at most once per 60s)
+ * and proactively evict expired items to prevent quota exhaustion.
  */
 export function checkStorageQuota(): void {
   const now = Date.now();
@@ -61,13 +62,18 @@ export function checkStorageQuota(): void {
     return;
   }
 
+  // Proactively evict expired items when checking quota
+  clearExpiredItems();
+
   const usage = getStorageUsage();
 
-  if (usage.percentage > 80) {
+  if (usage.percentage > 85) {
     lastStorageWarningTimestamp = now;
-    console.warn(
-      `⚠️ LocalStorage usage is at ${usage.percentage}%. Consider clearing unused data.`,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `⚠️ LocalStorage usage is at ${usage.percentage}%. Consider clearing unused data.`,
+      );
+    }
   }
 }
 
@@ -115,7 +121,17 @@ export function setItem<T>(key: string, value: T): boolean {
     const newUsage = currentUsage.used + serialized.length * 2;
 
     if (newUsage > QUOTA_WARNING_THRESHOLD) {
-      console.warn(`⚠️ Writing "${key}" may exceed storage quota.`);
+      clearExpiredItems();
+      const updatedUsage = getStorageUsage();
+      if (updatedUsage.used + serialized.length * 2 > QUOTA_WARNING_THRESHOLD) {
+        const now = Date.now();
+        if (now - lastStorageWarningTimestamp >= STORAGE_WARNING_COOLDOWN_MS) {
+          lastStorageWarningTimestamp = now;
+          if (process.env.NODE_ENV !== "production") {
+            console.warn(`⚠️ Writing "${key}" may exceed storage quota.`);
+          }
+        }
+      }
     }
 
     localStorage.setItem(key, serialized);
@@ -295,7 +311,7 @@ export const sessionStorageWrapper = {
 /**
  * Clear expired cache items based on timestamp
  */
-function clearExpiredItems(): void {
+export function clearExpiredItems(): void {
   const now = Date.now();
   const EXPIRY_PREFIX = "__expiry__";
 
@@ -321,12 +337,31 @@ function clearExpiredItems(): void {
 
 /**
  * Set item with expiry time
+ * If the key has a namespace (e.g. orders-overview-dashboard-v3:), evicts older keys with
+ * that same namespace to prevent unbounded cache accumulation in localStorage.
  */
 export function setWithExpiry<T>(
   key: string,
   value: T,
   ttlMs: number,
 ): boolean {
+  const colonIdx = key.indexOf(":");
+  if (colonIdx > 0) {
+    const prefix = key.slice(0, colonIdx + 1);
+    const EXPIRY_PREFIX = "__expiry__";
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const existingKey = localStorage.key(i);
+        if (existingKey && existingKey.startsWith(prefix) && existingKey !== key) {
+          localStorage.removeItem(existingKey);
+          localStorage.removeItem(`${EXPIRY_PREFIX}${existingKey}`);
+        }
+      }
+    } catch {
+      // non-blocking
+    }
+  }
+
   const expiry = Date.now() + ttlMs;
 
   const data = {
