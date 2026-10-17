@@ -64,56 +64,54 @@ const FacebookAdsGeoPage: React.FC = () => {
   const rows = geoPerformance?.breakdowns || [];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6" dir={isEn ? "ltr" : "rtl"}>
+    <div className="w-full space-y-3.5" dir={isEn ? "ltr" : "rtl"}>
       <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <Link
-              to="/advertising/facebook-ads"
-              className="hover:text-blue-600 transition flex items-center gap-1"
-            >
-              <ArrowLeft className={`h-3.5 w-3.5 ${isEn ? "" : "rotate-180"}`} />
-              {isEn ? "Facebook Ads Cockpit" : "لوحة إعلانات فيسبوك"}
-            </Link>
-            <span>/</span>
-            <span className="text-slate-900 dark:text-white font-black">
-              {isEn ? "Geographic Performance" : "الأداء الجغرافي والمحافظات"}
-            </span>
+
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-xs">
+            <Globe2 className="size-4 text-primary" />
           </div>
-          <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Globe2 className="h-6 w-6 text-blue-600" />
-            {isEn ? "Geographic Performance & Governorates" : "الأداء الجغرافي وتوزيع المحافظات"}
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            {isEn
-              ? "Analyze sales, spend, CPA, and ROAS across Egyptian governorates and international regions."
-              : "تحليل المبيعات، والإنفاق، وتكلفة الاكتساب CPA، والعائد الإعلاني ROAS عبر المحافظات المصرية والدول."}
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+                {isEn ? "Geographic Performance & Governorates" : "الأداء الجغرافي وتوزيع المحافظات"}
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-blue-500" />
+                {rows.length} {isEn ? "regions" : "منطقة"}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {isEn
+                ? "Analyze sales, spend, CPA, and ROAS across Egyptian governorates and international regions."
+                : "تحليل المبيعات، والإنفاق، وتكلفة الاكتساب CPA، والعائد الإعلاني ROAS عبر المحافظات."}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Breakdown selector */}
-          <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-black dark:bg-slate-800">
+          <div className="flex rounded-lg bg-muted/40 p-0.5 text-xs font-mono border border-border/60">
             <button
               type="button"
               onClick={() => setGeoBreakdown("region")}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`rounded-md px-2.5 py-1 transition-all cursor-pointer text-xs active:scale-[0.98] ${
                 geoBreakdown === "region"
-                  ? "bg-white text-slate-950 shadow-xs dark:bg-slate-900 dark:text-white"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                  ? "bg-card text-foreground font-semibold shadow-xs border border-border/80"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {isEn ? "Governorates / Regions" : "المحافظات / المناطق"}
+              {isEn ? "Governorates" : "المحافظات"}
             </button>
             <button
               type="button"
               onClick={() => setGeoBreakdown("country")}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`rounded-md px-2.5 py-1 transition-all cursor-pointer text-xs active:scale-[0.98] ${
                 geoBreakdown === "country"
-                  ? "bg-white text-slate-950 shadow-xs dark:bg-slate-900 dark:text-white"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                  ? "bg-card text-foreground font-semibold shadow-xs border border-border/80"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {isEn ? "Countries" : "الدول"}
@@ -124,44 +122,48 @@ const FacebookAdsGeoPage: React.FC = () => {
             type="button"
             onClick={loadGeoData}
             disabled={loading}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-mono text-foreground hover:bg-muted/50 transition-colors shadow-xs active:scale-[0.98]"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>{isEn ? "Refresh" : "تحديث"}</span>
           </button>
         </div>
       </div>
 
-      {/* Account indicator */}
+      {/* Account indicator Ribbon */}
       {selectedAdAccount && (
-        <div className="flex items-center gap-2 rounded-xl bg-blue-50/70 px-4 py-2.5 text-xs font-bold text-blue-800 dark:bg-blue-950/30 dark:text-blue-300 border border-blue-200/50 dark:border-blue-900/40">
-          <span>{isEn ? "Active Account:" : "الحساب النشط:"}</span>
-          <span className="font-black">{selectedAdAccount.name || selectedAdAccountId}</span>
-          <span className="text-blue-500">({selectedCurrency})</span>
+        <div className="flex items-center justify-between rounded-xl bg-card border border-border/70 px-3.5 py-2 text-xs font-mono shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">{isEn ? "Active Account:" : "الحساب الإعلاني النشط:"}</span>
+            <span className="font-bold text-foreground">{selectedAdAccount.name || selectedAdAccountId}</span>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {selectedCurrency}
+          </span>
         </div>
       )}
 
       {/* Content */}
       {loading ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border/80 bg-card/40">
           <div className="flex flex-col items-center gap-2">
-            <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-            <span className="text-xs font-bold text-slate-500">
+            <RefreshCw className="size-5 animate-spin text-primary" />
+            <span className="text-xs font-mono text-muted-foreground">
               {isEn ? "Loading geo breakdown from Meta..." : "جاري تحميل بيانات المحافظات من Meta..."}
             </span>
           </div>
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive font-mono">
           {error}
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-          <Globe2 className="h-10 w-10 text-slate-400 mb-3" />
-          <h3 className="text-sm font-black text-slate-900 dark:text-white">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-card/40 p-10 text-center">
+          <Globe2 className="size-8 text-muted-foreground mb-2" />
+          <h3 className="text-xs sm:text-sm font-bold text-foreground">
             {isEn ? "No Geographic Breakdown Available Yet" : "لا توجد بيانات جغرافية كافية بعد"}
           </h3>
-          <p className="mt-1 max-w-sm text-xs text-slate-500">
+          <p className="mt-1 max-w-sm text-xs text-muted-foreground">
             {isEn
               ? "Meta requires active campaigns delivering impressions to compile geographical analytics."
               : "تتطلب Meta وجود حملات نشطة تستهلك ميزانية لتوفير التحليلات الجغرافية."}
@@ -172,54 +174,54 @@ const FacebookAdsGeoPage: React.FC = () => {
           {rows.map((row) => (
             <div
               key={row.key}
-              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+              className="rounded-xl border border-border/70 bg-card p-3.5 shadow-xs transition hover:border-border space-y-2.5"
             >
-              <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+              <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-2.5">
                 <div>
-                  <h3 className="text-sm font-black text-slate-950 dark:text-white">
+                  <h3 className="text-xs sm:text-sm font-bold text-foreground">
                     {row.label}
                   </h3>
-                  <p className="text-[11px] font-bold text-slate-500">
+                  <p className="text-[10px] font-mono text-muted-foreground">
                     {row.campaignsCount || row.campaigns.length} {isEn ? "campaigns" : "حملة"}
                   </p>
                 </div>
-                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/50 dark:border-blue-900/50">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono tabular-nums font-bold bg-muted/60 text-foreground border border-border/70">
                   {formatCurrency(row.metrics.spend, selectedCurrency)}
                 </span>
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded-lg bg-muted/20 border border-border/50">
+                  <span className="text-[10px] font-mono text-muted-foreground block">
                     {isEn ? "Purchases:" : "المشتريات:"}
                   </span>
-                  <p className="font-black text-slate-950 dark:text-white">
+                  <p className="font-bold font-mono tabular-nums text-foreground mt-0.5">
                     {formatNumber(row.metrics.purchases)}
                   </p>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500">
+                <div className="p-2 rounded-lg bg-muted/20 border border-border/50">
+                  <span className="text-[10px] font-mono text-muted-foreground block">
                     CPA:
                   </span>
-                  <p className="font-black text-slate-950 dark:text-white">
+                  <p className="font-bold font-mono tabular-nums text-foreground mt-0.5">
                     {row.metrics.purchases > 0
                       ? formatCurrency(row.metrics.cpa, selectedCurrency)
                       : "—"}
                   </p>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500">
+                <div className="p-2 rounded-lg bg-muted/20 border border-border/50">
+                  <span className="text-[10px] font-mono text-muted-foreground block">
                     ROAS:
                   </span>
-                  <p className="font-black text-slate-950 dark:text-white">
+                  <p className="font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
                     {formatNumber(row.metrics.roas, 2)}x
                   </p>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500">
+                <div className="p-2 rounded-lg bg-muted/20 border border-border/50">
+                  <span className="text-[10px] font-mono text-muted-foreground block">
                     CTR:
                   </span>
-                  <p className="font-black text-slate-950 dark:text-white">
+                  <p className="font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400 mt-0.5">
                     {formatPercentage(row.metrics.ctr)}
                   </p>
                 </div>

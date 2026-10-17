@@ -71,8 +71,9 @@ export const ElementsSidebarDrawer: React.FC<ElementsSidebarDrawerProps> = ({
             type="button"
             className="eo-sidebar-search-clear"
             onClick={() => setSearchQuery("")}
+            aria-label="مسح البحث"
           >
-            ✕
+            <X size={12} />
           </button>
         )}
       </div>

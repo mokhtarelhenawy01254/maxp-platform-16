@@ -104,7 +104,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                   <strong>{section.title}</strong>
                   <span className="eo-sec-type">{section.type}</span>
                   {!isEnabled && (
-                    <span className="eo-disabled-tag">مخفي 👁️‍🗨️</span>
+                    <span className="eo-disabled-tag">مخفي</span>
                   )}
                 </div>
 

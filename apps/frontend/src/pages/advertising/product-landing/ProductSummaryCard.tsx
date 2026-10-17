@@ -73,7 +73,7 @@ export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
             <div className="eo-prod-meta-row">
               <span className="eo-prod-price">{formatMoney(product?.price)}</span>
               <span className={`eo-badge eo-badge-${status.toLowerCase()}`}>
-                {status === "PUBLISHED" ? "منشورة حية ✅" : status === "PAUSED" ? "متوقفة مؤقتاً ⏸️" : "مسودة تعديل 📝"}
+                {status === "PUBLISHED" ? "منشورة حية" : status === "PAUSED" ? "متوقفة مؤقتاً" : "مسودة تعديل"}
               </span>
               <span className="eo-prod-original-name">المنتج: {product?.name || "غير محدد"}</span>
             </div>
@@ -145,7 +145,7 @@ export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
               className="eo-slug-unsaved-badge"
               title="يجب حفظ التعديلات لتفعيل هذا الرابط في المتجر"
             >
-              ⚠️ غير محفوظ
+              غير محفوظ
             </span>
           )}
         </div>
