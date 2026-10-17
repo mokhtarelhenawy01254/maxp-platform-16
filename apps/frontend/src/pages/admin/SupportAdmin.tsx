@@ -97,10 +97,10 @@ export default function SupportAdmin() {
   return (
     <div dir="rtl" className="w-full space-y-3.5">
       {/* Linear Single Chassis Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0">
-            <MessageSquare className="size-4 text-foreground/80" />
+            <MessageSquare className="size-4 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -119,13 +119,13 @@ export default function SupportAdmin() {
         </div>
 
         {/* Tab Switcher Segmented Pills */}
-        <div className="flex items-center gap-1 bg-muted/30 p-0.5 rounded-lg border border-border/70">
+        <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/70">
           <button
             type="button"
             onClick={() => setActiveTab("tickets")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all active:scale-[0.98] ${
               activeTab === "tickets"
-                ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border/70"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -135,9 +135,9 @@ export default function SupportAdmin() {
           <button
             type="button"
             onClick={() => setActiveTab("faq")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all active:scale-[0.98] ${
               activeTab === "faq"
-                ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border/70"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -148,7 +148,7 @@ export default function SupportAdmin() {
       </div>
 
       {/* Unified Telemetry Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/70 bg-card divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
         <div className="p-3 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-muted-foreground">تذاكر مفتوحة</span>
@@ -204,7 +204,7 @@ export default function SupportAdmin() {
 
       {/* Tab 1: Tickets Single Surface Table */}
       {activeTab === "tickets" && (
-        <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
+        <div className="rounded-xl border border-border/70 bg-card shadow-xs overflow-hidden">
           {/* Inline Filter Bar */}
           <div className="p-2.5 border-b border-border/60 bg-muted/20 flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -213,14 +213,14 @@ export default function SupportAdmin() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="بحث برقم التذكرة، الموضوع، أو التاجر..."
-                className="w-full pr-8 pl-3 py-1 bg-background/50 border border-border/70 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full pr-8 pl-3 py-1 bg-background border border-border/70 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-background/50 border border-border/70 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+              className="bg-background border border-border/70 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
             >
               <option value="">جميع الحالات</option>
               <option value="open">مفتوحة</option>
@@ -231,7 +231,7 @@ export default function SupportAdmin() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-background/50 border border-border/70 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+              className="bg-background border border-border/70 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
             >
               <option value="">جميع التصنيفات</option>
               {Object.entries(CATEGORY_NAMES).map(([key, label]) => (
@@ -263,7 +263,7 @@ export default function SupportAdmin() {
                   const cfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.open;
                   const dateStr = new Date(t.createdAt).toLocaleDateString("ar-EG");
                   return (
-                    <tr key={t._id} className="hover:bg-muted/20 transition-colors">
+                    <tr key={t._id} className="hover:bg-muted/15 transition-colors">
                       <td className="py-2.5 px-3.5 font-medium text-foreground">
                         <div className="font-semibold text-xs">{t.subject}</div>
                         <span className="text-[10px] font-mono text-muted-foreground">#{t.ticketId}</span>
@@ -286,7 +286,7 @@ export default function SupportAdmin() {
                       <td className="py-2.5 px-3.5 text-left">
                         <Link
                           to={`/support/tickets/${t.ticketId || t._id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-primary hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-primary hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20 active:scale-[0.98]"
                         >
                           <Eye className="size-3" />
                           <span>عرض</span>
@@ -316,7 +316,7 @@ export default function SupportAdmin() {
       {activeTab === "faq" && (
         <div className="space-y-2.5">
           {faqs.map((f) => (
-            <div key={f._id} className="rounded-xl border border-border/80 bg-card/40 p-3.5 shadow-xs space-y-2 hover:border-border transition-colors">
+            <div key={f._id} className="rounded-xl border border-border/70 bg-card p-3.5 shadow-xs space-y-2 hover:border-border transition-colors">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-semibold text-xs sm:text-sm text-foreground">{f.question}</h3>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-muted/60 text-muted-foreground border border-border/60 shrink-0">
@@ -335,7 +335,7 @@ export default function SupportAdmin() {
             </div>
           ))}
           {faqs.length === 0 && (
-            <div className="rounded-xl border border-border/80 bg-card/40 p-10 text-center text-xs font-mono text-muted-foreground shadow-xs">
+            <div className="rounded-xl border border-border/70 bg-card p-10 text-center text-xs font-mono text-muted-foreground shadow-xs">
               {loading ? "جاري تحميل الأسئلة الشائعة..." : "لا توجد أسئلة شائعة مضافة حتى الآن"}
             </div>
           )}

@@ -57,16 +57,16 @@ export const VERTICAL_CONFIG: Record<
   SkillVertical,
   { labelAr: string; icon: string; accentColor: string }
 > = {
-  all: { labelAr: "الكل", icon: "✨", accentColor: "from-indigo-500 to-violet-500" },
-  sales: { labelAr: "المبيعات والتجارة", icon: "🛒", accentColor: "from-emerald-500 to-teal-600" },
-  support: { labelAr: "خدمة العملاء والدعم", icon: "🎧", accentColor: "from-blue-500 to-indigo-600" },
-  marketing: { labelAr: "التسويق والحملات", icon: "🚀", accentColor: "from-violet-500 to-purple-600" },
-  medical: { labelAr: "العيادات والمراكز الطبية", icon: "🏥", accentColor: "from-rose-500 to-pink-600" },
-  hotels: { labelAr: "الفنادق والضيافة", icon: "🏨", accentColor: "from-sky-500 to-cyan-600" },
-  education: { labelAr: "التعليم والتدريب", icon: "🎓", accentColor: "from-amber-500 to-orange-600" },
-  inventory: { labelAr: "المخزون والمنتجات", icon: "📦", accentColor: "from-teal-500 to-emerald-600" },
-  management: { labelAr: "الإدارة والعمليات", icon: "📊", accentColor: "from-slate-600 to-zinc-800" },
-  other: { labelAr: "مهارات مخصصة", icon: "⚙️", accentColor: "from-slate-500 to-gray-600" },
+  all: { labelAr: "الكل", icon: "", accentColor: "from-indigo-500 to-violet-500" },
+  sales: { labelAr: "المبيعات والتجارة", icon: "", accentColor: "from-emerald-500 to-teal-600" },
+  support: { labelAr: "خدمة العملاء والدعم", icon: "", accentColor: "from-blue-500 to-indigo-600" },
+  marketing: { labelAr: "التسويق والحملات", icon: "", accentColor: "from-violet-500 to-purple-600" },
+  medical: { labelAr: "العيادات والمراكز الطبية", icon: "", accentColor: "from-rose-500 to-pink-600" },
+  hotels: { labelAr: "الفنادق والضيافة", icon: "", accentColor: "from-sky-500 to-cyan-600" },
+  education: { labelAr: "التعليم والتدريب", icon: "", accentColor: "from-amber-500 to-orange-600" },
+  inventory: { labelAr: "المخزون والمنتجات", icon: "", accentColor: "from-teal-500 to-emerald-600" },
+  management: { labelAr: "الإدارة والعمليات", icon: "", accentColor: "from-slate-600 to-zinc-800" },
+  other: { labelAr: "مهارات مخصصة", icon: "", accentColor: "from-slate-500 to-gray-600" },
 };
 
 export const COMMERCIAL_SKILLS_DICTIONARY: Record<string, SkillMetadataMeta> = {

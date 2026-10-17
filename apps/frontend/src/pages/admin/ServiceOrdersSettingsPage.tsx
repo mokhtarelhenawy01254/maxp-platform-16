@@ -112,85 +112,112 @@ export default function ServiceOrdersSettingsPage() {
   const activeSessionName = sessions.find((s) => s.id === settings.defaultWhatsAppSessionId)?.name || "افتراضي";
 
   return (
-    <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
-      {/* Top Breadcrumb Bar */}
-      <div className="border-b border-border/80 bg-card px-4 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Link to="/admin/services" className="hover:text-foreground transition-colors">الخدمات</Link>
-            <ChevronRight className="w-3 h-3 rotate-180 text-muted-foreground/50" />
-            <Link to="/admin/service-orders" className="hover:text-foreground transition-colors">الطلبات</Link>
-            <ChevronRight className="w-3 h-3 rotate-180 text-muted-foreground/50" />
-            <span className="text-foreground font-semibold">إعدادات المنظومة</span>
+    <div className="w-full space-y-3.5" dir="rtl">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-xs">
+            <SlidersHorizontal className="size-4 text-primary" />
           </div>
-          <div className="flex items-center gap-2">
-            <Link to="/admin/service-orders" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-medium text-foreground hover:bg-muted/40 transition-colors">
-              <ArrowRight className="w-3.5 h-3.5" />الطلبات
-            </Link>
-            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-xs">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}حفظ الإعدادات
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+                إعدادات مسارات العمل وقنوات التحصيل
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {assignedStagesCount} / 3 مراحل مكلفة
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              توزيع المهام تلقائياً على فريق العمل، ربط إشعارات الواتساب، وتخصيص قنوات التحصيل
+            </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/service-orders"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-mono text-foreground hover:bg-muted/50 transition-colors shadow-xs active:scale-[0.98]"
+          >
+            <ArrowRight className="size-3.5" />
+            <span>الطلبات</span>
+          </Link>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all shadow-xs active:scale-[0.98]"
+          >
+            {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            <span>حفظ الإعدادات</span>
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4">
-        {/* Unified Single-Surface Chassis */}
-        <div className="bg-card border border-border/80 rounded-xl p-4 sm:p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
-            <div>
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-primary" />
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">إعدادات مسارات العمل وقنوات التحصيل</h1>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">توزيع المهام تلقائياً على فريق العمل، ربط إشعارات الواتساب، وتخصيص قنوات التحصيل.</p>
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/20 border border-border/70 rounded-lg px-2.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />جاهز للتشغيل
-            </span>
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">المراحل المكلفة</span>
+            <SlidersHorizontal className="size-3.5 text-primary" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 text-xs">
-            <div className="p-2.5 rounded-lg bg-muted/15 border border-border/60">
-              <span className="text-[11px] text-muted-foreground block">المراحل المكلفة</span>
-              <span className="font-semibold text-foreground tabular-nums font-mono">{assignedStagesCount} / 3</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/15 border border-border/60">
-              <span className="text-[11px] text-muted-foreground block">أعضاء الفريق</span>
-              <span className="font-semibold text-foreground tabular-nums font-mono">{teamMembers.length} مسجل</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/15 border border-border/60">
-              <span className="text-[11px] text-muted-foreground block">واتساب الإشعارات</span>
-              <span className="font-semibold text-foreground truncate block text-[11px]">{activeSessionName}</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/15 border border-border/60">
-              <span className="text-[11px] text-muted-foreground block">بادئة الفواتير</span>
-              <span className="font-semibold text-foreground font-mono">{settings.invoicePrefix}</span>
-            </div>
-          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{assignedStagesCount} / 3</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">مرحلة عمل آلية</p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-border/70">
-          {[
-            { id: "team", label: "توزيع فريق العمل", icon: Users },
-            { id: "whatsapp", label: "جلسات الواتساب والتنبيهات", icon: MessageCircle },
-            { id: "invoicing", label: "الفواتير والتحصيل المالي", icon: Receipt },
-            { id: "form", label: "نموذج الطلب العام", icon: Globe },
-          ].map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  activeTab === t.id ? "bg-primary text-primary-foreground shadow-xs" : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" /><span>{t.label}</span>
-              </button>
-            );
-          })}
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">أعضاء الفريق</span>
+            <Users className="size-3.5 text-blue-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{teamMembers.length}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">عضو مسجل بالمنظومة</p>
         </div>
+
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">واتساب الإشعارات</span>
+            <MessageCircle className="size-3.5 text-emerald-500" />
+          </div>
+          <div className="text-sm font-bold text-foreground truncate mt-1">{activeSessionName}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">جلسة الإرسال النشطة</p>
+        </div>
+
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">بادئة الفواتير</span>
+            <Receipt className="size-3.5 text-purple-500" />
+          </div>
+          <div className="text-sm font-bold font-mono text-foreground mt-1" dir="ltr">{settings.invoicePrefix}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">تسلسل الأرقام</p>
+        </div>
+      </div>
+
+      {/* Tab Controls */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/60 no-scrollbar">
+        {[
+          { id: "team", label: "توزيع فريق العمل", icon: Users },
+          { id: "whatsapp", label: "جلسات الواتساب والتنبيهات", icon: MessageCircle },
+          { id: "invoicing", label: "الفواتير والتحصيل المالي", icon: Receipt },
+          { id: "form", label: "نموذج الطلب العام", icon: Globe },
+        ].map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id as any)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === t.id
+                  ? "bg-muted text-foreground font-semibold shadow-xs border border-border/80"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="size-3.5" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
         {/* Tab 1: Team Workflow */}
         {activeTab === "team" && (
@@ -340,7 +367,6 @@ export default function ServiceOrdersSettingsPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
