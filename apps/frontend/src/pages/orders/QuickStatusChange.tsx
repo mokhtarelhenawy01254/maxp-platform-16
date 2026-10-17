@@ -7,13 +7,14 @@ import {
   Search,
   ArrowRight,
   Loader2,
-  Package,
   RotateCcw,
   AlertCircle,
-  AlertTriangle,
-  CheckCircle,
 } from "lucide-react";
 import { getStatusDisplay, getSystemStatusOptions } from "../../utils/statusRegistry";
+import { QuickStatusDuplicateModal } from "./quick-status/QuickStatusDuplicateModal";
+import { QuickStatusChangeLog, type ChangeLogEntry } from "./quick-status/QuickStatusChangeLog";
+import { QuickStatusCurrentOrderCard } from "./quick-status/QuickStatusCurrentOrderCard";
+import { QuickStatusControlBox } from "./quick-status/QuickStatusControlBox";
 
 interface OrderData {
   id: string;
@@ -23,14 +24,6 @@ interface OrderData {
   customerPhone?: string;
   total?: number;
   currency?: string;
-}
-
-interface ChangeLogEntry {
-  id: string;
-  orderNumber: string;
-  oldStatus: string;
-  newStatus: string;
-  changedAt: string;
 }
 
 const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, label }) => {
@@ -43,7 +36,7 @@ const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, lab
   );
 };
 
-const QuickStatusChange: React.FC = () => {
+export const QuickStatusChange: React.FC = () => {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +49,7 @@ const QuickStatusChange: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [duplicateModal, setDuplicateModal] = useState<{ code: string; count: number } | null>(null);
-  const [siteStatuses, setSiteStatuses] = useState<{id: string, name: string, code?: string}[]>([]);
+  const [siteStatuses, setSiteStatuses] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [workflowEnabled, setWorkflowEnabled] = useState(false);
   const searchCountsRef = useRef<Record<string, number>>({});
   const blockedCodesRef = useRef<Set<string>>(new Set());
@@ -92,7 +85,6 @@ const QuickStatusChange: React.FC = () => {
 
     const codeKey = code.toLowerCase();
 
-    // Blocked orders (already detected as duplicates) can never be re-entered
     if (blockedCodesRef.current.has(codeKey)) {
       const blockMsg = t("quickStatus.orderBlocked", { code });
       setSearchError(blockMsg);
@@ -102,9 +94,7 @@ const QuickStatusChange: React.FC = () => {
       return;
     }
 
-    // Preserve status pre-selected by user before searching
     const preSelectedStatus = selectedStatus;
-
     setSearchLoading(true);
     setHasSearched(true);
     setSearchError("");
@@ -116,8 +106,6 @@ const QuickStatusChange: React.FC = () => {
       if (body?.success && body?.data) {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
 
-        // Track repeated code entries — a 2nd entry of the same order opens a blocking
-        // modal and blocks that order so it can never be processed again in this session
         const searchCount = (searchCountsRef.current[codeKey] || 0) + 1;
         searchCountsRef.current = { ...searchCountsRef.current, [codeKey]: searchCount };
         if (searchCount > 1) {
@@ -130,15 +118,12 @@ const QuickStatusChange: React.FC = () => {
         }
 
         setCurrentOrder(order);
-
-        // If user pre-selected a status, keep it; otherwise default to order's current status
         const statusToSet = preSelectedStatus || order.status;
         setSelectedStatus(statusToSet);
-        
+
         setChangeLog((prev) => {
-          const exists = prev.find(p => p.id === order.id);
+          const exists = prev.find((p) => p.id === order.id);
           if (exists) return prev;
-          
           const newEntry: ChangeLogEntry = {
             id: order.id,
             orderNumber: order.orderNumber,
@@ -149,8 +134,7 @@ const QuickStatusChange: React.FC = () => {
           return [newEntry, ...prev];
         });
 
-        // Auto-change if user had pre-selected a different status
-         if (preSelectedStatus && preSelectedStatus !== order.status) {
+        if (preSelectedStatus && preSelectedStatus !== order.status) {
           try {
             const changeRes = await apiClient.post("/order-workflow/change-status", {
               orderId: order.id,
@@ -164,8 +148,8 @@ const QuickStatusChange: React.FC = () => {
                 prev.map((entry) =>
                   entry.id === order.id
                     ? { ...entry, newStatus: preSelectedStatus, changedAt: new Date().toLocaleString("ar-EG") }
-                    : entry
-                )
+                    : entry,
+                ),
               );
               setCurrentOrder({ ...order, status: preSelectedStatus });
               toast.success(t("quickStatus.changeSuccess"));
@@ -189,7 +173,6 @@ const QuickStatusChange: React.FC = () => {
         console.error("Search error:", error);
         setSearchError(t("quickStatus.searchError"));
       }
-
     } finally {
       setSearchLoading(false);
       setTimeout(() => {
@@ -220,15 +203,15 @@ const QuickStatusChange: React.FC = () => {
       if (response.data?.data?.status === "pending") {
         toast.info(t("quickStatus.pendingApproval"));
       } else {
-        setChangeLog((prev) => 
-          prev.map((entry) => 
-            entry.id === currentOrder.id 
+        setChangeLog((prev) =>
+          prev.map((entry) =>
+            entry.id === currentOrder.id
               ? { ...entry, newStatus: selectedStatus, changedAt: new Date().toLocaleString("ar-EG") }
-              : entry
-          )
+              : entry,
+          ),
         );
         setCurrentOrder((prev) =>
-          prev ? { ...prev, status: selectedStatus } : null
+          prev ? { ...prev, status: selectedStatus } : null,
         );
         toast.success(t("quickStatus.changeSuccess"));
       }
@@ -252,7 +235,6 @@ const QuickStatusChange: React.FC = () => {
       return;
     }
     if (e.key === "Enter") {
-      // If we already have an order loaded and a different status is selected → change directly
       if (currentOrder && selectedStatus && selectedStatus !== currentOrder.status) {
         handleChangeStatus();
       } else {
@@ -271,284 +253,81 @@ const QuickStatusChange: React.FC = () => {
     inputRef.current?.focus();
   };
 
-  const closeDuplicateModal = () => {
-    setDuplicateModal(null);
-    setOrderCode("");
-    inputRef.current?.focus();
-  };
-
   const getStatusDisplayName = (statusValue: string) => {
-    const dynStatus = siteStatuses.find(s => s.id === statusValue || s.code === statusValue);
+    const dynStatus = siteStatuses.find((s) => s.id === statusValue || s.code === statusValue);
     if (dynStatus) return dynStatus.name;
     return getStatusDisplay(statusValue).label;
   };
 
-  const hasChanges = changeLog.length > 0;
-
   return (
-    <div className="p-6 w-full" dir="rtl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <RotateCcw className="text-blue-600 dark:text-blue-400" size={32} />
+    <div className="p-4 sm:p-6 w-full max-w-7xl mx-auto space-y-4 sm:space-y-6" dir="rtl">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+          <RotateCcw className="text-primary" size={26} />
           {t("quickStatus.title")}
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           {t("quickStatus.description")}
         </p>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-[6] min-w-[320px] w-full">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("quickStatus.orderCode")}
-            </label>
-            <div className="relative">
-              <input
-                ref={inputRef}
-                type="text"
-                value={orderCode}
-                onChange={(e) => setOrderCode(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t("quickStatus.orderCodePlaceholder")}
-                className="w-full px-6 py-5 pr-14 text-2xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors tracking-wider font-mono"
-                disabled={searchLoading || !!duplicateModal}
-              />
-              <Search
-                className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"
-                size={28}
-              />
-            </div>
-          </div>
-
-          <div className="w-full md:w-80">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("quickStatus.newStatus")}
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-5 py-5 text-xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
-              disabled={changeLoading || !!duplicateModal}
-            >
-              <option value="">
-                {t("quickStatus.selectStatus")}
-              </option>
-              {(siteStatuses.length > 0
-                ? siteStatuses
-                : getSystemStatusOptions().map((s) => ({
-                    id: s.code,
-                    name: s.label,
-                  }))
-              ).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-2 w-full md:w-auto">
-            <button
-              onClick={handleSearch}
-              disabled={searchLoading || !!duplicateModal || !orderCode.trim()}
-              className="flex items-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-xl"
-            >
-              {searchLoading ? (
-                <Loader2 size={24} className="animate-spin" />
-              ) : (
-                <Search size={24} />
-              )}
-              {t("quickStatus.search")}
-            </button>
-            <button
-              onClick={handleChangeStatus}
-              disabled={changeLoading || !!duplicateModal || !currentOrder || !selectedStatus || selectedStatus === currentOrder?.status}
-              className="flex items-center gap-2 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-xl"
-            >
-              {changeLoading ? (
-                <Loader2 size={24} className="animate-spin" />
-              ) : (
-                <ArrowRight size={24} />
-              )}
-              {t("quickStatus.change")}
-            </button>
-            <button
-              onClick={handleClear}
-              disabled={searchLoading || changeLoading || !!duplicateModal}
-              className="px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium text-xl"
-            >
-              {t("quickStatus.clear")}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {searchLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-blue-600" />
-        </div>
-      )}
+      <QuickStatusControlBox
+        inputRef={inputRef}
+        orderCode={orderCode}
+        setOrderCode={setOrderCode}
+        handleKeyDown={handleKeyDown}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        siteStatuses={siteStatuses}
+        searchLoading={searchLoading}
+        changeLoading={changeLoading}
+        duplicateModal={duplicateModal}
+        currentOrder={currentOrder}
+        handleSearch={handleSearch}
+        handleChangeStatus={handleChangeStatus}
+        handleClear={handleClear}
+      />
 
       {searchError && !searchLoading && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-start gap-3">
-          <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5 shrink-0" size={20} />
-          <p className="text-red-800 dark:text-red-300">{searchError}</p>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-destructive">
+          <AlertCircle className="mt-0.5 shrink-0" size={16} />
+          <p>{searchError}</p>
         </div>
       )}
 
       {duplicateModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          dir="rtl"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="duplicate-modal-title"
-        >
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-4 border-amber-400">
-            <div className="mx-auto w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-5">
-              <AlertTriangle className="w-11 h-11 text-amber-600 dark:text-amber-400" />
-            </div>
-            <h2
-              id="duplicate-modal-title"
-              className="text-3xl font-bold text-gray-900 dark:text-white mb-3"
-            >
-              {t("quickStatus.duplicateTitle")}
-            </h2>
-            <p className="text-2xl font-mono text-gray-800 dark:text-gray-100 mb-4" dir="ltr">
-              {duplicateModal.code}
-            </p>
-            <p className="text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-              {t("quickStatus.duplicateOrder", { code: duplicateModal.code, count: duplicateModal.count })}
-            </p>
-            <p className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg p-3 text-sm mb-6">
-              {t("quickStatus.duplicateBlockedNote")}
-            </p>
-            <button
-              onClick={closeDuplicateModal}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-lg font-semibold transition-colors"
-            >
-              {t("quickStatus.duplicateAcknowledge")}
-            </button>
-          </div>
-        </div>
+        <QuickStatusDuplicateModal
+          duplicateModal={duplicateModal}
+          onClose={() => {
+            setDuplicateModal(null);
+            setOrderCode("");
+            inputRef.current?.focus();
+          }}
+        />
       )}
 
       {currentOrder && !searchLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 border-r-4 border-blue-500">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <Package className="text-blue-600 dark:text-blue-400" size={24} />
-              <div>
-                <span className="text-lg font-bold text-gray-900 dark:text-white font-mono">
-                  {currentOrder.orderNumber}
-                </span>
-                {currentOrder.customerName && (
-                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">
-                    {currentOrder.customerName}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  {t("quickStatus.currentStatus")}
-                </p>
-                <StatusBadge status={currentOrder.status} label={getStatusDisplayName(currentOrder.status)} />
-              </div>
-              {currentOrder.total != null && (
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t("quickStatus.total")}
-                  </p>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "ج.م"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <QuickStatusCurrentOrderCard
+          currentOrder={currentOrder}
+          getStatusDisplayName={getStatusDisplayName}
+          renderStatusBadge={(st, lb) => <StatusBadge status={st} label={lb} />}
+        />
       )}
 
-      {hasChanges && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <RotateCcw className="text-blue-600 dark:text-blue-400" size={20} />
-              {t("quickStatus.changeLog")} ({changeLog.length})
-            </h2>
-            <button
-              onClick={() => setChangeLog([])}
-              className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
-            >
-              مسح السجل
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {t("quickStatus.orderCode")}
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {t("quickStatus.oldStatus")}
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {t("quickStatus.newStatus")}
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {t("quickStatus.changedAt")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {changeLog.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {entry.orderNumber}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={entry.oldStatus} label={getStatusDisplayName(entry.oldStatus)} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {entry.newStatus ? (
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={entry.newStatus} label={getStatusDisplayName(entry.newStatus)} />
-                          <CheckCircle
-                            className="text-green-500 shrink-0"
-                            size={16}
-                          />
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 dark:text-gray-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {entry.changedAt}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <QuickStatusChangeLog
+        changeLog={changeLog}
+        getStatusDisplayName={getStatusDisplayName}
+        onClearLog={() => setChangeLog([])}
+        renderStatusBadge={(st, lb) => <StatusBadge status={st} label={lb} />}
+      />
 
       {hasSearched && !currentOrder && !searchLoading && !searchError && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-          <Search className="mx-auto text-gray-400 dark:text-gray-500 mb-4" size={64} />
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+        <div className="bg-card rounded-2xl border border-border/70 shadow-xs p-8 sm:p-12 text-center">
+          <Search className="mx-auto text-muted-foreground/60 mb-3" size={48} />
+          <h3 className="text-base font-bold text-foreground mb-1">
             {t("quickStatus.noResults")}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             {t("quickStatus.searchFirst")}
           </p>
         </div>

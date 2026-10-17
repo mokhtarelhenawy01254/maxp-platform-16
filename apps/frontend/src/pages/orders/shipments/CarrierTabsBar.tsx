@@ -1,5 +1,5 @@
 import React from "react";
-import { TruckIcon } from "@heroicons/react/24/outline";
+import { Truck } from "lucide-react";
 
 export interface ShippingCompanyRef {
   id: string;
@@ -32,11 +32,11 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
         onClick={() => onSelectCompany("ALL")}
         className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
           selectedCompanyId === "ALL"
-            ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
+            ? "bg-primary text-primary-foreground shadow-xs scale-[1.01]"
             : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
         }`}
       >
-        <TruckIcon className="h-3.5 w-3.5" />
+        <Truck className="h-3.5 w-3.5" />
         <span>جميع شركات الشحن</span>
         {totalShipmentsCount > 0 && (
           <span
@@ -54,7 +54,10 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
       {/* Dynamic Companies Tabs */}
       {companies.map((c) => {
         const isSelected = selectedCompanyId === c.id;
-        const isLive = c.integrationMode === "LIVE" || c.providerKey === "TURBO" || c.providerKey === "BOSTA";
+        const isLive =
+          c.integrationMode === "LIVE" ||
+          c.providerKey === "TURBO" ||
+          c.providerKey === "BOSTA";
 
         return (
           <button
@@ -63,7 +66,7 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
             onClick={() => onSelectCompany(c.id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
               isSelected
-                ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
+                ? "bg-primary text-primary-foreground shadow-xs scale-[1.01]"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
             }`}
           >
@@ -75,8 +78,8 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
                 isSelected
                   ? "bg-white/20 text-white"
                   : isLive
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                  : "bg-muted text-muted-foreground border border-border/60"
               }`}
             >
               {isLive ? "ربط مباشر" : "شحن يدوي"}
@@ -87,3 +90,5 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
     </div>
   );
 };
+
+export default CarrierTabsBar;
