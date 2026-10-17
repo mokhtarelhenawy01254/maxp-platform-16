@@ -12,6 +12,7 @@ router.use(checkAppAccess('accounting'));
 router.get('/accounts/tree', controller.getAccountTree);
 router.get('/accounts/:id', controller.getAccountById);
 router.get('/accounts', controller.listAccounts);
+router.get('/coa', controller.listAccounts);
 router.post('/accounts', controller.createAccount);
 router.put('/accounts/:id', controller.updateAccount);
 router.delete('/accounts/:id', controller.deleteAccount);

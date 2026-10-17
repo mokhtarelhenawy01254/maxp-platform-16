@@ -459,8 +459,8 @@ class ManufacturingService {
     if (filters.productId) {
       where.productId = filters.productId;
     }
-    if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
+    if (filters.isActive !== undefined && filters.isActive !== null && filters.isActive !== '') {
+      where.isActive = filters.isActive === 'true' || filters.isActive === true || filters.isActive === '1' || filters.isActive === 1;
     }
 
     return await prisma.billOfMaterials.findMany({

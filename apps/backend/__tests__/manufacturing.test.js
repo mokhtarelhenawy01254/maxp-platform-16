@@ -1257,4 +1257,35 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     expect(finishInv.quantity).toBe(20);
     expect(finishInv.cost).toBe(65.0);
   });
+
+  test('12. Query Filter Normalization: handles string boolean filters for isActive without throwing Prisma errors', async () => {
+    const companyId = 'company_filter_test';
+    const activeBom = await ManufacturingService.createBom(companyId, {
+      code: 'BOM-ACTIVE-TEST',
+      name: 'قائمة نشطة',
+      isActive: true,
+      components: [],
+    });
+    const inactiveBom = await ManufacturingService.createBom(companyId, {
+      code: 'BOM-INACTIVE-TEST',
+      name: 'قائمة غير نشطة',
+      isActive: false,
+      components: [],
+    });
+
+    // Test with string 'true'
+    const activeResults = await ManufacturingService.listBoms(companyId, { isActive: 'true' });
+    expect(activeResults.some((b) => b.id === activeBom.id)).toBe(true);
+    expect(activeResults.some((b) => b.id === inactiveBom.id)).toBe(false);
+
+    // Test with string 'false'
+    const inactiveResults = await ManufacturingService.listBoms(companyId, { isActive: 'false' });
+    expect(inactiveResults.some((b) => b.id === activeBom.id)).toBe(false);
+    expect(inactiveResults.some((b) => b.id === inactiveBom.id)).toBe(true);
+
+    // Test with boolean true
+    const boolActiveResults = await ManufacturingService.listBoms(companyId, { isActive: true });
+    expect(boolActiveResults.some((b) => b.id === activeBom.id)).toBe(true);
+    expect(boolActiveResults.some((b) => b.id === inactiveBom.id)).toBe(false);
+  });
 });

@@ -639,7 +639,7 @@ export const manufacturingApi = {
   },
   getAccounts: async (): Promise<AccountOption[]> => {
     try {
-      const res = await apiClient.get('/accounting/coa');
+      const res = await apiClient.get('/accounting/accounts');
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       return list
         .filter((a: any) => a.isPostable)
