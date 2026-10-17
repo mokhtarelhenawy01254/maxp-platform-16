@@ -177,7 +177,7 @@ export const LateCancellationSettings: React.FC = () => {
   return (
     <div dir="rtl" className="space-y-4">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -200,7 +200,7 @@ export const LateCancellationSettings: React.FC = () => {
             type="button"
             onClick={() => { void fetchSettings(); void fetchOrderStatuses(); }}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors disabled:opacity-50 active:scale-[0.98]"
           >
             <RotateCw className="w-3.5 h-3.5" />
             <span>تحديث</span>
@@ -232,7 +232,7 @@ export const LateCancellationSettings: React.FC = () => {
             <span className="text-base font-bold text-foreground">
               {settings.lateCancellationInterceptEnabled ? "مفعل ومحمى" : "معطل"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded font-mono ${
               settings.lateCancellationInterceptEnabled
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground"
@@ -325,7 +325,7 @@ export const LateCancellationSettings: React.FC = () => {
                 اختر الحالات التشغيلية التي يتم حظر الإلغاء المباشر عندها وتحويلها لفحص المخزن أولاً
               </p>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
               {settings.lateCancellationTargetStatuses.length} محددة
             </span>
           </div>

@@ -260,20 +260,20 @@ const OrderSettings: React.FC = () => {
     <div className="order-settings-root h-full min-h-0 overflow-y-auto bg-background text-foreground" dir="rtl">
       {/* Header Chassis */}
       <div className="border-b border-border/70 bg-card">
-        <div className="w-full px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-4">
+        <div className="w-full px-4 sm:px-6 py-3.5">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+              className="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground active:scale-[0.98]"
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
             </button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                <Settings className="h-5 w-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                <Settings className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground">
+                <h1 className="text-base font-bold tracking-tight text-foreground">
                   {t('orderSettings.title')}
                 </h1>
                 <p className="text-xs text-muted-foreground">
@@ -285,29 +285,29 @@ const OrderSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 py-6">
-        <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="w-full px-4 sm:px-6 py-5">
+        <div className="flex flex-col gap-5 lg:flex-row">
           {/* Sidebar Tabs */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm lg:sticky lg:top-6 lg:flex lg:max-h-[calc(100vh-5rem)] lg:flex-col">
-              <div className="hidden border-b border-border/60 p-4 shrink-0 lg:block">
-                <h2 className="text-xs font-semibold text-muted-foreground">
+          <div className="lg:w-60 shrink-0">
+            <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-6rem)] lg:flex-col">
+              <div className="hidden border-b border-border/60 p-3 shrink-0 lg:block">
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground font-mono">
                   {t('orderSettings.k_140')}
                 </h2>
               </div>
               <nav
                 aria-label={t('orderSettings.k_140')}
-                className="flex gap-1.5 overflow-x-auto p-2 no-scrollbar lg:flex-col lg:overflow-y-auto"
+                className="flex gap-1 overflow-x-auto p-1.5 no-scrollbar lg:flex-col lg:overflow-y-auto"
               >
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     data-tab-id={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex flex-shrink-0 items-center gap-3 rounded-lg px-3.5 py-2.5 text-right transition-colors whitespace-nowrap lg:w-full lg:whitespace-normal ${
+                    className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-right transition-all whitespace-nowrap active:scale-[0.98] lg:w-full lg:whitespace-normal ${
                       activeTab === tab.id
-                        ? "border border-primary/20 bg-primary/10 font-medium text-primary shadow-xs"
-                        : "border border-transparent text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                        ? "border border-primary/20 bg-primary/10 font-semibold text-primary shadow-2xs"
+                        : "border border-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     }`}
                   >
                     <tab.icon
@@ -316,8 +316,8 @@ const OrderSettings: React.FC = () => {
                       }`}
                     />
                     <div className="flex-1 min-w-0 text-right">
-                      <div className="text-xs font-medium">{tab.label}</div>
-                      <div className="hidden text-[11px] text-muted-foreground line-clamp-1 lg:block">
+                      <div className="text-xs">{tab.label}</div>
+                      <div className="hidden text-[10px] text-muted-foreground truncate lg:block">
                         {tab.description}
                       </div>
                     </div>

@@ -7,7 +7,8 @@ import {
   ExternalLink,
   ShieldAlert,
   UserX,
-  X
+  X,
+  Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -203,21 +204,21 @@ const FacebookBlockedCustomers: React.FC = () => {
   const isBusy = loadingPages || loadingBlocked;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-4" dir="rtl">
       {/* Header Chassis */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-xs lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/10 text-destructive">
-            <UserX className="h-5 w-5" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/20 bg-destructive/10 text-destructive">
+            <UserX className="h-4.5 w-4.5" />
           </div>
           <div className="space-y-0.5 text-right">
-            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            <h1 className="text-base font-bold tracking-tight text-foreground">
               {t("facebookBlocked.pageTitle")}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>{t("facebookBlocked.connectedPages")}: <strong className="font-mono text-foreground">{pages.length}</strong></span>
+              <span>{t("facebookBlocked.connectedPages")}: <strong className="font-mono tabular-nums text-foreground">{pages.length}</strong></span>
               <span>•</span>
-              <span>المحظورون: <strong className="font-mono text-foreground">{blockedCustomers.length}</strong></span>
+              <span>المحظورون: <strong className="font-mono tabular-nums text-foreground">{blockedCustomers.length}</strong></span>
               {selectedPage && (
                 <>
                   <span>•</span>
@@ -228,12 +229,12 @@ const FacebookBlockedCustomers: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedPageId}
             onChange={(event) => setSelectedPageId(event.target.value)}
             disabled={loadingPages || pages.length === 0}
-            className="h-9 rounded-lg border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            className="h-8.5 rounded-lg border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
           >
             <option value="">
               {loadingPages ? t("facebookBlocked.loadingPages") : t("facebookBlocked.selectPage")}
@@ -251,7 +252,7 @@ const FacebookBlockedCustomers: React.FC = () => {
               if (selectedPageId) void loadBlockedCustomers(selectedPageId);
             }}
             disabled={isBusy}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 text-xs font-medium text-foreground transition-all hover:bg-muted/40 active:scale-[0.98] disabled:opacity-50"
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 text-xs font-medium text-foreground transition-all hover:bg-muted/40 active:scale-[0.98] disabled:opacity-50"
           >
             <RotateCw className={`h-3.5 w-3.5 ${isBusy ? "animate-spin" : ""}`} />
             <span>{t("facebookBlocked.refresh")}</span>
@@ -259,7 +260,7 @@ const FacebookBlockedCustomers: React.FC = () => {
 
           <Link
             to="/settings/facebook-oauth"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             <span>{t("facebookBlocked.connectSettings")}</span>
@@ -268,7 +269,7 @@ const FacebookBlockedCustomers: React.FC = () => {
       </div>
 
       {success && (
-        <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-medium text-emerald-500">
+        <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-medium text-emerald-600 dark:text-emerald-400">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{success}</span>
@@ -292,7 +293,7 @@ const FacebookBlockedCustomers: React.FC = () => {
       )}
 
       {/* Blocked Ledger Table Chassis */}
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
         {pages.length === 0 && !loadingPages ? (
           <div className="p-12 text-center text-xs text-muted-foreground">
             {t("facebookBlocked.noConnectedPages")}
@@ -333,7 +334,7 @@ const FacebookBlockedCustomers: React.FC = () => {
                     <div className="truncate text-xs font-bold text-foreground">
                       {getCustomerDisplayName(blocked, t("facebookBlocked.unknownCustomer"))}
                     </div>
-                    <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground md:hidden">
+                    <div className="mt-0.5 truncate font-mono tabular-nums text-[11px] text-muted-foreground md:hidden">
                       {blocked.reason || blocked.facebookId || t("facebookBlocked.noDetails")}
                     </div>
                   </div>
@@ -342,12 +343,12 @@ const FacebookBlockedCustomers: React.FC = () => {
                     <div className="truncate text-xs text-foreground">
                       {blocked.reason || t("facebookBlocked.noReason")}
                     </div>
-                    <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                    <div className="mt-0.5 truncate font-mono tabular-nums text-[11px] text-muted-foreground">
                       {blocked.facebookId || t("facebookBlocked.fbIdUnavailable")}
                     </div>
                   </div>
 
-                  <div className="col-span-3 hidden font-mono text-xs text-muted-foreground lg:block">
+                  <div className="col-span-3 hidden font-mono tabular-nums text-xs text-muted-foreground lg:block">
                     {formatBlockedAt(blocked.blockedAt, t("facebookBlocked.unavailable"))}
                   </div>
 
@@ -359,7 +360,7 @@ const FacebookBlockedCustomers: React.FC = () => {
                           selectedPageId,
                         )
                       }
-                      className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-[11px] font-medium text-emerald-500 transition-colors hover:bg-emerald-500/20 active:scale-[0.98]"
+                      className="inline-flex h-7.5 items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 transition-colors hover:bg-emerald-500/20 active:scale-[0.98]"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>{t("facebookBlocked.unblock")}</span>
