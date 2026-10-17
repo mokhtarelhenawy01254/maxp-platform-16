@@ -9,6 +9,14 @@ import {
   DocumentTextIcon,
   ShoppingBagIcon,
   BoltIcon,
+  ShoppingCartIcon,
+  ClipboardDocumentListIcon,
+  SparklesIcon,
+  ChartBarIcon,
+  Bars3Icon,
+  ListBulletIcon,
+  BuildingStorefrontIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { Mic, Trash2, Loader2 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
@@ -41,6 +49,20 @@ interface MessageInputProps {
   draftMessage?: string;
   onDraftMessageHandled?: () => void;
   onSendQuickReply?: (reply: QuickReply) => void;
+  // Rich platform actions (e.g. WhatsApp)
+  onOpenOrder?: () => void;
+  onOpenServiceOrder?: () => void;
+  onOpenTasks?: () => void;
+  onOpenInteractive?: () => void;
+  onOpenPoll?: () => void;
+  onOpenButtons?: () => void;
+  onOpenList?: () => void;
+  onOpenCatalog?: () => void;
+  onOpenLocation?: () => void;
+  onOpenTemplate?: () => void;
+  disabled?: boolean;
+  disabledReason?: string;
+  fileAccept?: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -58,18 +80,47 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onOpenProductPicker,
   onSend,
   isSending = false,
+  platform = "facebook",
   draftMessage,
   onDraftMessageHandled,
   onSendQuickReply,
+  onOpenOrder,
+  onOpenServiceOrder,
+  onOpenTasks,
+  onOpenInteractive,
+  onOpenPoll,
+  onOpenButtons,
+  onOpenList,
+  onOpenCatalog,
+  onOpenLocation,
+  onOpenTemplate,
+  disabled = false,
+  disabledReason,
+  fileAccept,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
+  const [showDesktopExtraTools, setShowDesktopExtraTools] = useState(false);
   const [isCompactMobile, setIsCompactMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const desktopExtraToolsRef = useRef<HTMLDivElement>(null);
+
+  const hasExtraTools = Boolean(
+    onOpenOrder ||
+    onOpenServiceOrder ||
+    onOpenTasks ||
+    onOpenInteractive ||
+    onOpenPoll ||
+    onOpenButtons ||
+    onOpenList ||
+    onOpenCatalog ||
+    onOpenLocation ||
+    onOpenTemplate
+  );
 
   // Voice recording integration
   const {
@@ -86,6 +137,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const isSubmittingVoiceRef = useRef(false);
 
   const handleStartVoiceRecording = () => {
+    if (disabled || isBusy || uploadingFile) return;
     setShowMobileTools(false);
     setShowEmojiPicker(false);
     setShowQuickReplies(false);
@@ -225,15 +277,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
     };
   }, []);
 
-  // Close mobile tools dropdown on outside click
+  // Close mobile & desktop extra tools dropdown on outside click
   React.useEffect(() => {
-    if (!showMobileTools) return undefined;
+    if (!showMobileTools && !showDesktopExtraTools) return undefined;
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
       if (
+        showMobileTools &&
         mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(e.target as Node)
+        !mobileMenuRef.current.contains(target)
       ) {
         setShowMobileTools(false);
+      }
+      if (
+        showDesktopExtraTools &&
+        desktopExtraToolsRef.current &&
+        !desktopExtraToolsRef.current.contains(target)
+      ) {
+        setShowDesktopExtraTools(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -242,10 +303,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [showMobileTools]);
+  }, [showMobileTools, showDesktopExtraTools]);
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (disabled) return;
     if (message.trim() && !isBusy && handleSendAction) {
       handleSendAction(message);
       setMessage("");
@@ -393,17 +455,20 @@ const MessageInput: React.FC<MessageInputProps> = ({
               className="font-semibold text-xs truncate"
               style={{ color: "var(--color-primary)" }}
             >
-              الرد على {replyTo.senderName}:
+              الرد على {replyTo.senderName || replyTo.sender_name || "رسالة"}:
             </span>
             <span
               className="truncate text-xs"
               style={{ color: "var(--color-muted-foreground)" }}
             >
-              {replyTo.type === "text"
-                ? replyTo.content
-                : replyTo.type === "image"
+              {replyTo.content ||
+                replyTo.text ||
+                replyTo.message ||
+                (replyTo.type === "image"
                   ? "🖼️ صورة"
-                  : "📎 ملف"}
+                  : replyTo.type === "file"
+                    ? "📎 ملف"
+                    : "رسالة")}
             </span>
           </div>
           <button
@@ -427,7 +492,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
           multiple
           className="hidden"
           onChange={handleFileSelect}
-          accept="image/*,audio/*,.pdf,.doc,.docx,.txt"
+          accept={
+            fileAccept ||
+            "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.csv,.zip,.rar"
+          }
         />
 
         {isRecording ? (
@@ -637,6 +705,197 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     <span className="text-[10px] text-muted-foreground truncate">قائمة الردود (/)</span>
                   </div>
                 </button>
+
+                {/* Extra Tools for WhatsApp / Rich Actions */}
+                {onOpenOrder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenOrder();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                      <ShoppingCartIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">إنشاء طلب سريع</span>
+                      <span className="text-[10px] text-muted-foreground truncate">تسجيل أوردر للعميل</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenServiceOrder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenServiceOrder();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400">
+                      <ClipboardDocumentListIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">طلب صيانة / خدمة</span>
+                      <span className="text-[10px] text-muted-foreground truncate">خدمات فنية ودعم</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenTasks && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenTasks();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
+                      <SparklesIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">إدارة المهام</span>
+                      <span className="text-[10px] text-muted-foreground truncate">إسناد مهمة للفريق</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenInteractive && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenInteractive();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-pink-500/20 text-pink-400">
+                      <SparklesIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">رسائل تفاعلية</span>
+                      <span className="text-[10px] text-muted-foreground truncate">كوبون، رابط، أو اتصال</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenPoll && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenPoll();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                      <ChartBarIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">استطلاع رأي</span>
+                      <span className="text-[10px] text-muted-foreground truncate">تصويت واستبيان</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenButtons && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenButtons();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                      <Bars3Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">أزرار سريعة</span>
+                      <span className="text-[10px] text-muted-foreground truncate">خيارات سريعة للعميل</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenList && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenList();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20 text-teal-400">
+                      <ListBulletIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">رسالة قائمة</span>
+                      <span className="text-[10px] text-muted-foreground truncate">قائمة اختيارات متعددة</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenTemplate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenTemplate();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+                      <DocumentTextIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">قوالب الرسائل</span>
+                      <span className="text-[10px] text-muted-foreground truncate">قوالب رسمية معتمدة</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenLocation && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenLocation();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-red-400">
+                      <MapPinIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">إرسال موقع</span>
+                      <span className="text-[10px] text-muted-foreground truncate">موقع المتجر أو الفرع</span>
+                    </div>
+                  </button>
+                )}
+
+                {onOpenCatalog && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenCatalog();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20 text-teal-400">
+                      <BuildingStorefrontIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">كتالوج المنتجات</span>
+                      <span className="text-[10px] text-muted-foreground truncate">كتالوج واتساب</span>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -749,6 +1008,177 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <FaceSmileIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
+
+          {/* WhatsApp / Rich Actions Popover (Desktop) */}
+          {hasExtraTools && (
+            <div className="relative flex-shrink-0" ref={desktopExtraToolsRef}>
+              <button
+                type="button"
+                onClick={() => setShowDesktopExtraTools((prev) => !prev)}
+                className={`business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 ${
+                  showDesktopExtraTools
+                    ? "text-primary bg-primary/10 border-primary/30"
+                    : ""
+                }`}
+                title="إجراءات وأدوات إضافية"
+                aria-label="إجراءات إضافية"
+              >
+                <PlusIcon
+                  className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-200 ${
+                    showDesktopExtraTools ? "rotate-45" : ""
+                  }`}
+                />
+              </button>
+
+              {showDesktopExtraTools && (
+                <div className="absolute bottom-full mb-2 start-0 z-50 flex w-56 flex-col gap-1 rounded-2xl border border-border/60 bg-popover/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95">
+                  <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                    أدوات وإجراءات المحادثة
+                  </div>
+
+                  {onOpenOrder && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenOrder();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <ShoppingCartIcon className="h-4 w-4 text-emerald-500" />
+                      <span>إنشاء طلب سريع</span>
+                    </button>
+                  )}
+
+                  {onOpenServiceOrder && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenServiceOrder();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <ClipboardDocumentListIcon className="h-4 w-4 text-cyan-500" />
+                      <span>طلب صيانة / خدمة</span>
+                    </button>
+                  )}
+
+                  {onOpenTasks && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenTasks();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <SparklesIcon className="h-4 w-4 text-violet-500" />
+                      <span>إدارة المهام</span>
+                    </button>
+                  )}
+
+                  {onOpenInteractive && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenInteractive();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <SparklesIcon className="h-4 w-4 text-pink-500" />
+                      <span>رسائل تفاعلية</span>
+                    </button>
+                  )}
+
+                  {onOpenPoll && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenPoll();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <ChartBarIcon className="h-4 w-4 text-amber-500" />
+                      <span>استطلاع رأي</span>
+                    </button>
+                  )}
+
+                  {onOpenButtons && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenButtons();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Bars3Icon className="h-4 w-4 text-blue-500" />
+                      <span>أزرار سريعة</span>
+                    </button>
+                  )}
+
+                  {onOpenList && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenList();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <ListBulletIcon className="h-4 w-4 text-teal-500" />
+                      <span>رسالة قائمة</span>
+                    </button>
+                  )}
+
+                  {onOpenTemplate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenTemplate();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <DocumentTextIcon className="h-4 w-4 text-indigo-500" />
+                      <span>قوالب الرسائل</span>
+                    </button>
+                  )}
+
+                  {onOpenLocation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenLocation();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <MapPinIcon className="h-4 w-4 text-red-500" />
+                      <span>إرسال موقع</span>
+                    </button>
+                  )}
+
+                  {onOpenCatalog && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDesktopExtraTools(false);
+                        onOpenCatalog();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <BuildingStorefrontIcon className="h-4 w-4 text-teal-500" />
+                      <span>كتالوج المنتجات</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Text Input Container - Takes flex-1 to maximize typing area */}
@@ -759,19 +1189,21 @@ const MessageInput: React.FC<MessageInputProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
             placeholder={
-              isCompactMobile
-                ? "اكتب رسالة..."
-                : "اكتب رسالة... (أو / للردود السريعة) - Shift+Enter لسطر جديد"
+              disabled
+                ? disabledReason || "يرجى إضافة رقم هاتف العميل أولاً للمراسلة..."
+                : isCompactMobile
+                  ? "اكتب رسالة..."
+                  : "اكتب رسالة... (أو / للردود السريعة) - Shift+Enter لسطر جديد"
             }
-            disabled={isBusy || uploadingFile}
-            autoFocus={!isCompactMobile}
+            disabled={isBusy || uploadingFile || disabled}
+            autoFocus={!isCompactMobile && !disabled}
             rows={1}
             className="business-chat-input w-full resize-none overflow-y-auto ps-3 pe-8 sm:pe-3 py-2 text-xs sm:text-sm md:text-base leading-relaxed disabled:opacity-50"
             style={{
               minHeight: "38px",
               maxHeight: "120px",
               height: "38px",
-              ...(isBusy || uploadingFile
+              ...(isBusy || uploadingFile || disabled
                 ? {
                     background:
                       "var(--business-chat-input-disabled-bg, rgba(255, 255, 255, 0.05))",
@@ -784,14 +1216,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="absolute end-2 top-1/2 -translate-y-1/2 sm:hidden p-1 text-muted-foreground hover:text-foreground transition-colors"
+            disabled={disabled}
+            className="absolute end-2 top-1/2 -translate-y-1/2 sm:hidden p-1 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
             title="إيموجي"
           >
             <FaceSmileIcon className="h-4 w-4" />
           </button>
 
           {/* Quick Reply Lightning Indicator */}
-          {message.startsWith("/") && !showQuickReplies && (
+          {message.startsWith("/") && !showQuickReplies && !disabled && (
             <div
               className="absolute end-8 sm:end-2 top-1/2 -translate-y-1/2 text-xs"
               style={{ color: "var(--color-muted-foreground)" }}
@@ -805,7 +1238,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         {message.trim() || !onSendFile ? (
           <button
             type="submit"
-            disabled={!message.trim() || isBusy || uploadingFile}
+            disabled={!message.trim() || isBusy || uploadingFile || disabled}
             className="business-chat-send-button business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
             style={{
               background:
@@ -832,8 +1265,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={handleStartVoiceRecording}
-            disabled={isBusy || uploadingFile}
-            className="business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-[40px] flex-shrink-0 items-center justify-center rounded-xl transition-transform active:scale-95 shadow-sm text-primary hover:text-primary-foreground hover:bg-primary"
+            disabled={isBusy || uploadingFile || disabled}
+            className="business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-[40px] flex-shrink-0 items-center justify-center rounded-xl transition-transform active:scale-95 shadow-sm text-primary hover:text-primary-foreground hover:bg-primary disabled:opacity-50"
             style={{
               background: "color-mix(in srgb, var(--color-primary, #3b82f6) 12%, transparent)",
             }}

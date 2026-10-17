@@ -41,11 +41,14 @@ import {
 } from "../whatsappContactDisplay";
 import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 import MessageBubble from "./MessageBubble";
-import AudioRecorder from "./AudioRecorder";
 import PinnedMessageBanner from "./PinnedMessageBanner";
+import MessageInput from "../../../components/facebook-inbox/MessageInput/MessageInput";
 
 interface ChatWindowProps {
   className?: string;
+  user?: any;
+  onSendFile?: (file: File) => void;
+  onSendMessageText?: (text: string) => void;
   selectedContact: Contact | null;
   messages: Message[];
   loadingMessages: boolean;
@@ -102,6 +105,9 @@ interface ChatWindowProps {
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   className,
+  user,
+  onSendFile,
+  onSendMessageText,
   selectedContact,
   messages,
   loadingMessages,
@@ -194,7 +200,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         selectedContact.phoneNumber.startsWith("group:"))
   );
 
-  const handleAttemptSend = () => {
+  const handleSendMessageFromBar = (content: string) => {
     if (isUnresolvedLid) {
       toast.error(
         "لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
@@ -204,34 +210,52 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
       return;
     }
-    onSendMessage();
+    setNewMessage(content);
+    if (onSendMessageText) {
+      onSendMessageText(content);
+    } else {
+      onSendMessage();
+    }
   };
 
-  const handleAttemptAttachment = () => {
+  const handleSendFileFromBar = (file: File) => {
     if (isUnresolvedLid) {
       toast.error(
-        "لا يمكن إرسال وسائط إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
+        "لا يمكن إرسال وسائط أو تسجيلات إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
       );
       if (onToggleRightPanel && !showRightPanel) {
         onToggleRightPanel();
       }
       return;
     }
-    fileInputRef.current?.click();
+    if (onSendFile) {
+      onSendFile(file);
+    } else if (onVoiceNoteSend && (file.name.startsWith("voice-") || file.type.startsWith("audio/"))) {
+      onVoiceNoteSend(file);
+    }
   };
 
-  const handleAttemptRecord = () => {
-    if (isUnresolvedLid) {
-      toast.error(
-        "لا يمكن إرسال تسجيل صوتي إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
-      );
-      if (onToggleRightPanel && !showRightPanel) {
-        onToggleRightPanel();
+  const replyToData = replyingTo
+    ? {
+        senderName: replyingTo.fromMe
+          ? t("whatsapp.window.you")
+          : replyingTo.participant || replyingTo.participantName
+            ? replyingTo.participantName || getParticipantName(replyingTo.participant || "")
+            : getContactName(selectedContact),
+        content: replyPreview,
+        type: replyingTo.mediaType || "text",
       }
-      return;
-    }
-    setIsRecording(true);
-  };
+    : null;
+
+  const conversationData = selectedContact
+    ? {
+        id: selectedContact.jid,
+        name: getContactName(selectedContact),
+        customer_name: getContactName(selectedContact),
+        customer_phone: selectedContact.phoneNumber || getContactDisplayPhone(selectedContact),
+        platform: "whatsapp",
+      }
+    : null;
 
   const handleCopyChatLink = () => {
     if (!selectedContact) return;
@@ -460,322 +484,84 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
-      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3 shrink-0">
-        {selectedContact?.session?.provider === 'META_CLOUD' && selectedContact?.window && !selectedContact.window.isOpen ? (
-          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span className="truncate">
-                انتهت نافذة الـ 24 ساعة المسموحة من Meta. يجب استخدام قالب رسمي معتمد للمراسلة.
-              </span>
-            </div>
-            {onOpenTemplate && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenTemplate}
-                className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100"
-              >
-                <FileText className="size-3.5 me-1" />
-                إرسال قالب رسمي
-              </Button>
-            )}
-          </div>
-        ) : null}
-
-        {isUnresolvedLid ? (
-          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span className="truncate sm:whitespace-normal">
-                جهة الاتصال هذه تستخدم معرّف واتساب مشفر (LID). لإرسال واستلام الرسائل بنجاح، يُرجى حفظ رقم هاتف العميل.
-              </span>
-            </div>
-            {onToggleRightPanel && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!showRightPanel) onToggleRightPanel();
-                }}
-                className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100 font-medium"
-              >
-                {showRightPanel ? "اللوحة مفتوحة" : "إضافة رقم الهاتف"}
-              </Button>
-            )}
-          </div>
-        ) : null}
-
-        {replyingTo ? (
-          <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
-            <div className="min-w-0 space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">
-                {replyingTo.fromMe
-                  ? t("whatsapp.window.you")
-                  : replyingTo.participant || replyingTo.participantName
-                    ? (replyingTo.participantName || getParticipantName(replyingTo.participant || ''))
-                    : getContactName(selectedContact)}
-              </p>
-              <p className="line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">
-                {replyPreview}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              onClick={() => setReplyingTo(null)}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : null}
-
-        {isRecording ? (
-          <AudioRecorder
-            onCancel={() => setIsRecording(false)}
-            onSend={(blob) => {
-              setIsRecording(false);
-              onVoiceNoteSend(blob);
-            }}
-          />
-        ) : (
-          <div className="relative flex flex-wrap items-end gap-2">
-            {showEmojiPicker ? (
-              <>
-                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" {...({inert: true} as any)} onClick={() => setShowEmojiPicker(false)} />
-                <div className="whatsapp-emoji-picker absolute bottom-full start-0 z-20 mb-3 overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] shadow-lg">
-                  <EmojiPicker
-                    onEmojiClick={(data) => setNewMessage(newMessage + data.emoji)}
-                  />
+      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] shrink-0">
+        {(selectedContact?.session?.provider === 'META_CLOUD' && selectedContact?.window && !selectedContact.window.isOpen) || isUnresolvedLid ? (
+          <div className="px-2 pt-2 sm:px-3 sm:pt-2.5 space-y-2">
+            {selectedContact?.session?.provider === 'META_CLOUD' && selectedContact?.window && !selectedContact.window.isOpen ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="truncate">
+                    انتهت نافذة الـ 24 ساعة المسموحة من Meta. يجب استخدام قالب رسمي معتمد للمراسلة.
+                  </span>
                 </div>
-              </>
-            ) : null}
-
-            <div className="order-1 flex shrink-0 items-center gap-0.5">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className={cn(
-                  "rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
-                  showEmojiPicker && "bg-primary/10 text-[color:var(--color-primary)]",
-                )}
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              >
-                <Smile className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-                onClick={handleAttemptAttachment}
-                disabled={isUploadingMedia}
-                title={isUploadingMedia ? "جاري رفع الوسائط..." : (t("whatsapp.tooltips.attach") as string)}
-              >
-                {isUploadingMedia ? <RefreshCw className="size-4 animate-spin text-primary" /> : <Paperclip className="size-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className={cn(
-                  "rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
-                  showRichTools && "bg-primary/10 text-[color:var(--color-primary)]",
-                )}
-                onClick={() => setShowRichTools(!showRichTools)}
-                title="أدوات إضافية"
-              >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-
-            {showRichTools ? (
-              <>
-                {/* Mobile: bottom tray */}
-                <div className="wa-rich-tools-backdrop sm:hidden" aria-hidden="true" {...({inert: true} as any)} onClick={() => setShowRichTools(false)} />
-                <div className="wa-rich-tools-tray sm:order-2 sm:static sm:inset-auto sm:z-auto sm:w-auto sm:animate-none sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:shadow-none">
-                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenPoll}
-                  title={t("whatsapp.tooltips.poll") as string}
-                >
-                  <BarChart3 className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenButtons}
-                  title={t("whatsapp.tooltips.buttons") as string}
-                >
-                  <Menu className="size-4" />
-                </Button>
-                {onOpenInteractive && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400"
-                    onClick={onOpenInteractive}
-                    title="أزرار تفاعلية (كوبون، رابط، اتصال)"
-                  >
-                    <Sparkles className="size-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenList}
-                  title={t("whatsapp.tooltips.list") as string}
-                >
-                  <List className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenCatalog}
-                  title={t("whatsapp.tooltips.catalog") as string}
-                >
-                  <Store className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenLocation}
-                  title={t("whatsapp.tooltips.location") as string}
-                >
-                  <MapPin className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={onOpenOrder}
-                  title={t("whatsapp.tooltips.order") as string}
-                >
-                  <ShoppingCart className="size-4" />
-                </Button>
-                {onOpenServiceOrder && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400"
-                    onClick={onOpenServiceOrder}
-                    title="إنشاء طلب خدمة للعميل"
-                  >
-                    <span className="text-sm leading-none">🛠️</span>
-                  </Button>
-                )}
-                {onOpenTasks && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full"
-                    onClick={onOpenTasks}
-                    title={t("whatsapp.tooltips.task") as string}
-                  >
-                    <ClipboardList className="size-4" />
-                  </Button>
-                )}
                 {onOpenTemplate && (
                   <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full"
+                    variant="outline"
+                    size="sm"
                     onClick={onOpenTemplate}
-                    title={t("whatsapp.tooltips.template") as string}
+                    className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100"
                   >
-                    <FileText className="size-4" />
+                    <FileText className="size-3.5 me-1" />
+                    إرسال قالب رسمي
                   </Button>
                 )}
-                {onOpenImageGallery && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400"
-                    onClick={onOpenImageGallery}
-                    title={t("whatsapp.tooltips.imageGallery", "حافظة الصور المحفوظة") as string}
-                  >
-                    <ImageIcon className="size-4" />
-                  </Button>
-                )}
-                  </div>
-                </div>
-              </>
+              </div>
             ) : null}
 
-            <input type="file" ref={fileInputRef} hidden onChange={onFileUpload} />
-
-            <textarea
-              value={newMessage}
-              onChange={(event) => setNewMessage(event.target.value)}
-              placeholder={t("whatsapp.window.inputPlaceholder") as string}
-              aria-label={t("whatsapp.window.inputPlaceholder") as string}
-              className="wa-auto-textarea order-2 min-h-[2.5rem] min-w-[10rem] flex-1 resize-none rounded-xl border border-[color:var(--shell-control-border)] bg-background dark:bg-[var(--whatsapp-surface-strong)] px-3.5 py-2 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3 sm:min-h-[2.5rem] sm:min-w-[14rem] sm:py-2"
-              rows={1}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  handleAttemptSend();
-                }
-              }}
-            />
-
-            {onOpenImageGallery && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
-                onClick={onOpenImageGallery}
-                title={t("whatsapp.tooltips.imageGallery", "حافظة الصور المحفوظة") as string}
-              >
-                <ImageIcon className="size-4" />
-              </Button>
-            )}
-
-            {onOpenProducts && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
-                onClick={onOpenProducts}
-                title={t("whatsapp.tooltips.products") as string}
-              >
-                <Package className="size-4" />
-              </Button>
-            )}
-
-            {newMessage.trim() ? (
-              <Button
-                className={cn(
-                  "order-4 rounded-full text-white w-10 h-10 p-0 shrink-0 flex items-center justify-center shadow-sm",
-                  isUnresolvedLid ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700"
+            {isUnresolvedLid ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="truncate sm:whitespace-normal">
+                    جهة الاتصال هذه تستخدم معرّف واتساب مشفر (LID). لإرسال واستلام الرسائل بنجاح، يُرجى حفظ رقم هاتف العميل.
+                  </span>
+                </div>
+                {onToggleRightPanel && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!showRightPanel) onToggleRightPanel();
+                    }}
+                    className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100 font-medium"
+                  >
+                    {showRightPanel ? "اللوحة مفتوحة" : "إضافة رقم الهاتف"}
+                  </Button>
                 )}
-                onClick={handleAttemptSend}
-                disabled={isSendingMessage}
-                title={isUnresolvedLid ? "يرجى إضافة رقم الهاتف أولاً" : "إرسال"}
-              >
-                {isSendingMessage ? (
-                  <RefreshCw className="size-4 animate-spin" />
-                ) : (
-                  <Send className="size-4" />
-                )}
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
-                onClick={handleAttemptRecord}
-              >
-                <Mic className="size-4" />
-              </Button>
-            )}
+              </div>
+            ) : null}
           </div>
-        )}
+        ) : null}
+
+        <MessageInput
+          platform="whatsapp"
+          onSendMessage={handleSendMessageFromBar}
+          onSendFile={handleSendFileFromBar}
+          isSending={isSendingMessage}
+          sending={isSendingMessage}
+          uploadingFile={isUploadingMedia}
+          disabled={isUnresolvedLid}
+          disabledReason="يرجى حفظ رقم هاتف العميل أولاً لإرسال واستلام الرسائل"
+          draftMessage={newMessage}
+          onDraftMessageHandled={() => setNewMessage("")}
+          user={user}
+          conversation={conversationData}
+          replyTo={replyToData}
+          onCancelReply={() => setReplyingTo(null)}
+          onOpenOrder={onOpenOrder}
+          onOpenServiceOrder={onOpenServiceOrder}
+          onOpenTasks={onOpenTasks}
+          onOpenInteractive={onOpenInteractive}
+          onOpenPoll={onOpenPoll}
+          onOpenButtons={onOpenButtons}
+          onOpenList={onOpenList}
+          onOpenCatalog={onOpenCatalog}
+          onOpenLocation={onOpenLocation}
+          onOpenTemplate={onOpenTemplate}
+          onOpenImageGallery={onOpenImageGallery}
+          onOpenProductPicker={onOpenProducts}
+        />
       </div>
     </div>
   );

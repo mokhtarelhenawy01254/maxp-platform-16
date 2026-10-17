@@ -653,6 +653,7 @@ const WhatsAppChatContent: React.FC = () => {
   const deleteConversationsBulkMutation = useDeleteConversationsBulk();
   const deleteAllConversationsMutation = useDeleteAllConversations();
   const archiveConversationMutation = useArchiveConversation();
+  const [isDirectUploading, setIsDirectUploading] = useState(false);
 
   // Helper functions
   const getContactName = useCallback((contact: Contact) => {
@@ -1618,8 +1619,9 @@ const WhatsAppChatContent: React.FC = () => {
     }
   }, [queryClient]);
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedContact || !selectedSession || sendMessageMutation.isPending) return;
+  const handleSendMessage = async (textToSend?: string) => {
+    const text = typeof textToSend === 'string' ? textToSend : newMessage;
+    if (!text.trim() || !selectedContact || !selectedSession || sendMessageMutation.isPending) return;
 
     // Check authentication
     if (!user?.id) {
@@ -1636,7 +1638,7 @@ const WhatsAppChatContent: React.FC = () => {
     sendMessageMutation.mutate({
       sessionId: targetSessionId,
       to: selectedContact.jid,
-      text: newMessage,
+      text: text,
       quotedMessageId: replyingTo?.messageId,
       userId: user?.id
     }, {
@@ -1648,6 +1650,51 @@ const WhatsAppChatContent: React.FC = () => {
         toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_d123")));
       }
     });
+  };
+
+  const handleSendFileDirect = async (file: File) => {
+    if (!file || !selectedContact || !selectedSession) return;
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("حجم الملف يتجاوز الحد الأقصى المسموح (100 ميجابايت)");
+      return;
+    }
+
+    const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
+    if (!targetSessionId) {
+      tToast.error("whatsappChat.msg_1f79");
+      return;
+    }
+
+    const isVoice = file.name?.startsWith('voice-') || file.type?.startsWith('audio/');
+    const formData = new FormData();
+    formData.append('sessionId', targetSessionId);
+    formData.append('to', selectedContact.jid);
+    formData.append('file', file, file.name || (isVoice ? 'voice_note.webm' : 'attachment'));
+    if (isVoice) {
+      formData.append('ptt', 'true');
+    }
+    if (replyingTo?.messageId) {
+      formData.append('quotedMessageId', replyingTo.messageId);
+    }
+    if (user?.id) {
+      formData.append('userId', user.id);
+    }
+
+    setIsDirectUploading(true);
+    try {
+      await api.post('/whatsapp/messages/upload-send', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      tToast.success("whatsappChat.success_send_ba8a");
+      setReplyingTo(null);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp", "messages", selectedContact.jid] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp", "conversations"] });
+    } catch (error) {
+      console.error("Failed to upload/send file:", error);
+      tToast.error("whatsappChat.failed_send_8f23");
+    } finally {
+      setIsDirectUploading(false);
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2822,6 +2869,9 @@ const WhatsAppChatContent: React.FC = () => {
           isRecording={isRecording}
           setIsRecording={setIsRecording}
           isSendingMessage={sendMessageMutation.isPending}
+          user={user}
+          onSendFile={handleSendFileDirect}
+          onSendMessageText={handleSendMessage}
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
           onVoiceNoteSend={async (blob) => {
@@ -2865,7 +2915,7 @@ const WhatsAppChatContent: React.FC = () => {
           onTouchStart={handleChatTouchStart}
           onTouchEnd={handleChatTouchEnd}
           fileInputRef={fileInputRef}
-          isUploadingMedia={sendMediaMutation.isPending}
+          isUploadingMedia={sendMediaMutation.isPending || isDirectUploading}
           messagesError={messagesError}
           onRetryMessages={() => refetchMessages()}
           onOpenInteractive={() => setInteractiveDialogOpen(true)}
