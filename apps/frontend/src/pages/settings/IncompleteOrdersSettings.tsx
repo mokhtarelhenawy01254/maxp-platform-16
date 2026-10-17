@@ -78,15 +78,15 @@ export default function IncompleteOrdersSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8 text-muted-foreground font-mono text-xs">
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        جاري تحميل إعدادات الطلبات غير المكتملة...
+      <div className="flex flex-col items-center justify-center p-8 text-muted-foreground font-mono text-xs gap-2 select-none" dir="rtl">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span>جاري تحميل إعدادات الطلبات غير المكتملة...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-foreground font-sans rtl" dir="rtl">
+    <div className="space-y-4 text-foreground select-none" dir="rtl">
       {/* Telemetry Ribbon */}
       <div className="border border-border/70 bg-muted/20 px-4 py-2.5 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
@@ -95,11 +95,11 @@ export default function IncompleteOrdersSettings() {
             نظام استعادة السلال المتروكة
           </span>
           <span className="text-border">|</span>
-          <span className="text-muted-foreground font-mono">
+          <span className="text-muted-foreground font-mono text-[11px]">
             TIMEOUT: {hours}H
           </span>
         </div>
-        <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground">
+        <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground text-xs">
           <span>
             عرض السلال بقائمة الطلبات:{" "}
             <strong className="text-foreground">
@@ -110,10 +110,10 @@ export default function IncompleteOrdersSettings() {
       </div>
 
       {/* Main Single Surface Panel */}
-      <div className="rounded-lg border border-border/70 bg-card p-5 space-y-5">
-        <div className="flex items-center gap-3 border-b border-border/70 pb-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted/40 border border-border/70">
-            <Clock className="h-4 w-4 text-primary" />
+      <div className="rounded-xl border border-border/70 bg-card p-5 space-y-4 shadow-2xs">
+        <div className="flex items-center gap-3 border-b border-border/60 pb-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
+            <Clock className="h-4 w-4" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">
@@ -125,12 +125,12 @@ export default function IncompleteOrdersSettings() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           <div>
             <label className="mb-1 block text-xs font-medium text-foreground">
               مهلة اعتبار الطلب مفقوداً (بالساعات)
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 max-w-xs">
               <input
                 type="number"
                 min={MIN_HOURS}
@@ -140,21 +140,21 @@ export default function IncompleteOrdersSettings() {
                   const value = parseInt(e.target.value, 10);
                   setHours(Number.isNaN(value) ? MIN_HOURS : value);
                 }}
-                className="w-full max-w-xs rounded-md border border-border/80 bg-background px-3 py-1.5 text-xs text-foreground font-mono tabular-nums focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border/80 bg-background px-3 py-1.5 text-xs text-foreground font-mono tabular-nums focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
-              <span className="text-xs text-muted-foreground font-mono">ساعة</span>
+              <span className="text-xs text-muted-foreground font-mono shrink-0">ساعة</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5">
+            <p className="text-[11px] text-muted-foreground mt-1">
               يتم احتساب المدة من توقيت آخر إدخال لبيانات العميل داخل نموذج الشيك آوت
             </p>
 
-            <div className="mt-3 p-3 rounded-md border border-border/70 bg-muted/10 text-xs text-muted-foreground font-mono">
-              معيار الفرز: أي سلة لم يتم تأكيدها خلال <strong className="text-foreground font-bold">{hours} ساعة</strong> تُصنف تلقائياً كـ "طلب مفقود" للمتابعة.
+            <div className="mt-2.5 p-2.5 rounded-lg border border-border/60 bg-muted/15 text-xs text-muted-foreground font-mono">
+              معيار الفرز: أي سلة لم يتم تأكيدها خلال <strong className="text-foreground font-bold tabular-nums">{hours} ساعة</strong> تُصنف تلقائياً كـ "طلب مفقود" للمتابعة.
             </div>
           </div>
 
           {/* Toggle Switch */}
-          <div className="flex items-center justify-between gap-4 rounded-md border border-border/70 bg-muted/10 p-3.5">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border/70 bg-muted/15 p-3.5">
             <div>
               <p className="text-xs font-semibold text-foreground">
                 دمج وعرض السلال غير المكتملة في جدول الطلبات الرئيسي
@@ -175,21 +175,22 @@ export default function IncompleteOrdersSettings() {
           </div>
         </div>
 
-        <div className="border-t border-border/70 pt-4 flex justify-end">
+        <div className="border-t border-border/60 pt-3 flex justify-end">
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-2xs active:scale-[0.98] cursor-pointer"
           >
             {saving ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                جاري الحفظ...
+                <span>جاري الحفظ...</span>
               </>
             ) : (
               <>
                 <Save className="h-3.5 w-3.5" />
-                حفظ الإعدادات
+                <span>حفظ الإعدادات</span>
               </>
             )}
           </button>

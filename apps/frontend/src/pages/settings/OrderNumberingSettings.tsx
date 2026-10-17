@@ -103,17 +103,17 @@ export const OrderNumberingSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12 text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        <span className="mr-2 text-xs font-medium">جاري تحميل إعدادات ترقيم الطلبات...</span>
+      <div className="flex flex-col items-center justify-center p-12 text-muted-foreground gap-2 select-none" dir="rtl">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <span className="text-xs font-medium">جاري تحميل إعدادات ترقيم الطلبات...</span>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="space-y-3.5 select-none">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-2xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
@@ -135,7 +135,7 @@ export const OrderNumberingSettings: React.FC = () => {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors disabled:opacity-50 active:scale-[0.98] self-start sm:self-center"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-2xs transition-colors disabled:opacity-50 active:scale-[0.98] self-start sm:self-center cursor-pointer"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           <span>حفظ الإعدادات</span>
@@ -147,14 +147,16 @@ export const OrderNumberingSettings: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>نمط الترقيم المعتمد</span>
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-primary" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">
+            <span className="text-sm font-bold text-foreground">
               {settings.enableSequentialOrders ? "تسلسلي منظم" : "عشوائي مشفر"}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
-              settings.enableSequentialOrders ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded border ${
+              settings.enableSequentialOrders
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : "bg-muted text-muted-foreground border-border/60"
             }`}>
               {settings.enableSequentialOrders ? "Sequential" : "Random"}
             </span>
@@ -164,10 +166,10 @@ export const OrderNumberingSettings: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>البادئة النشطة (Prefix)</span>
-            <Barcode className="w-3.5 h-3.5" />
+            <Barcode className="w-3.5 h-3.5 text-blue-500" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold font-mono text-foreground uppercase">
+            <span className="text-sm font-bold font-mono text-foreground uppercase">
               {settings.orderPrefix || "None"}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">CODE128</span>
@@ -177,10 +179,10 @@ export const OrderNumberingSettings: React.FC = () => {
         <div className="bg-card border border-border/70 rounded-lg p-3">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
             <span>الرقم القادم في العداد</span>
-            <Hash className="w-3.5 h-3.5" />
+            <Hash className="w-3.5 h-3.5 text-amber-500" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold font-mono text-foreground tabular-nums">
+            <span className="text-sm font-bold font-mono text-foreground tabular-nums">
               #{settings.nextOrderNumber}
             </span>
             <span className="text-[11px] text-muted-foreground">التالي بالجدول</span>
@@ -189,22 +191,22 @@ export const OrderNumberingSettings: React.FC = () => {
       </div>
 
       {/* Main Single-Surface Panel */}
-      <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60 shadow-2xs">
         {/* Toggle Sequential Numbering */}
         <div className="p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors hover:bg-muted/15">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-md bg-primary/10 text-primary">
-                <Hash className="w-4 h-4" />
+              <span className="p-1 rounded-md bg-primary/10 text-primary border border-primary/20">
+                <Hash className="w-3.5 h-3.5" />
               </span>
-              <label htmlFor="seq-toggle" className="text-sm font-semibold text-foreground cursor-pointer">
+              <label htmlFor="seq-toggle" className="text-xs font-semibold text-foreground cursor-pointer">
                 تفعيل الترقيم التسلسلي المنظم للطلبات
               </label>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase bg-primary/10 text-primary">
+              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono uppercase bg-primary/10 text-primary border border-primary/20">
                 Auto Sequence
               </span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed pr-8">
+            <p className="text-xs text-muted-foreground leading-relaxed pr-7">
               توليد أرقام متتالية سهلة الحفظ والمتابعة (مثل: ORD-1001) بدلاً من الأكواد العشوائية الطويلة لتسهيل خدمة العملاء.
             </p>
           </div>
@@ -262,7 +264,7 @@ export const OrderNumberingSettings: React.FC = () => {
                 value={settings.nextOrderNumber}
                 onChange={(e) => setSettings({ ...settings, nextOrderNumber: parseInt(e.target.value) || 1 })}
                 min="1"
-                className="w-full h-9 px-3 text-xs font-mono font-medium rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                className="w-full h-9 px-3 text-xs font-mono font-medium rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary tabular-nums"
                 disabled={!settings.enableSequentialOrders}
               />
               <p className="text-[11px] text-muted-foreground">الرقم التسلسلي الذي سيتم تخصيصه تلقائياً للطلب القادم.</p>
@@ -270,11 +272,11 @@ export const OrderNumberingSettings: React.FC = () => {
           </div>
 
           {/* Live Preview Strip */}
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="p-3 rounded-lg bg-muted/20 border border-border/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span className="text-xs font-semibold text-foreground">
               معاينة تنسيق رقم الطلب القادم:
             </span>
-            <div className="px-3 py-1.5 rounded-md bg-background border border-border/80 font-mono text-sm font-bold text-primary tracking-wider tabular-nums">
+            <div className="px-3 py-1 rounded-md bg-background border border-border/80 font-mono text-xs font-bold text-primary tracking-wider tabular-nums">
               {settings.enableSequentialOrders ? previewNumber : "ORD-173719-456 (عشوائي)"}
             </div>
           </div>
@@ -287,7 +289,7 @@ export const OrderNumberingSettings: React.FC = () => {
             <button
               type="button"
               onClick={() => setApplyToPastOrders(false)}
-              className={`flex items-start gap-2.5 p-3 rounded-lg border text-right transition-all active:scale-[0.98] ${
+              className={`flex items-start gap-2.5 p-3 rounded-lg border text-right transition-all cursor-pointer active:scale-[0.98] ${
                 !applyToPastOrders
                   ? "border-primary bg-primary/10 text-foreground font-medium shadow-2xs"
                   : "border-border/70 bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground"
@@ -304,7 +306,7 @@ export const OrderNumberingSettings: React.FC = () => {
             <button
               type="button"
               onClick={() => setApplyToPastOrders(true)}
-              className={`flex items-start gap-2.5 p-3 rounded-lg border text-right transition-all active:scale-[0.98] ${
+              className={`flex items-start gap-2.5 p-3 rounded-lg border text-right transition-all cursor-pointer active:scale-[0.98] ${
                 applyToPastOrders
                   ? "border-amber-500 bg-amber-500/10 text-foreground font-medium shadow-2xs"
                   : "border-border/70 bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground"
@@ -335,13 +337,13 @@ export const OrderNumberingSettings: React.FC = () => {
                 onChange={(e) => setResetNumber(e.target.value)}
                 min="1"
                 placeholder="مثال: 5000"
-                className="h-9 px-3 text-xs font-mono font-medium rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-destructive flex-1"
+                className="h-9 px-3 text-xs font-mono font-medium rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-destructive flex-1 tabular-nums"
               />
               <button
                 type="button"
                 onClick={handleResetCounter}
                 disabled={saving || !resetNumber}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-medium transition-colors disabled:opacity-50 active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-medium transition-colors disabled:opacity-50 active:scale-[0.98] cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>إعادة ضبط العداد</span>
