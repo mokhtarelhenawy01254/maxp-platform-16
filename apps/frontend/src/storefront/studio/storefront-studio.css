@@ -1,0 +1,25 @@
+/* Storefront Studio Canvas & Sections Scoped Styles (Ticket 1B.1) */
+
+/* Guaranteed Canvas Frame Styling */
+.studio-canvas-desktop-frame {
+  border-color: #d6dae2 !important;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Guaranteed Section Resting Hairline */
+.studio-section-hairline {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+  transition: box-shadow 150ms ease, background-color 150ms ease;
+}
+
+/* Guaranteed Section Hover Outline */
+.group:hover .studio-section-hairline {
+  box-shadow: inset 0 0 0 2px rgba(43, 108, 246, 0.55) !important;
+  background-color: rgba(43, 108, 246, 0.015) !important;
+}
+
+/* DragOverlay Ghost Preview */
+.studio-drag-ghost {
+  border-color: #2b6cf6 !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3) !important;
+}

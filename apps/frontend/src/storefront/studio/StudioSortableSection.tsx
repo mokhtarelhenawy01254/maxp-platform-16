@@ -114,14 +114,14 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           <span className="pointer-events-none absolute -bottom-1 -start-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
 
           {/* Section Indicator Badge */}
-          <div className="absolute -top-7 end-0 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none">
+          <div className="absolute -top-7 end-2 sm:end-4 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none">
             <span>#{index + 1} {sectionLabel}</span>
           </div>
 
           {/* Floating Action Bar (fbtool) */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute -top-7 start-0 sm:start-auto sm:end-28 z-40 flex items-center overflow-hidden rounded-lg border border-[#33363c] bg-[#17181c] text-[#d6dae0] shadow-xl text-[10px] sm:text-[11px] select-none max-w-[calc(100%-80px)] sm:max-w-none"
+            className="absolute -top-7 start-2 sm:start-4 z-40 flex items-center overflow-hidden rounded-lg border border-[#33363c] bg-[#17181c] text-[#d6dae0] shadow-xl text-[10px] sm:text-[11px] select-none max-w-[calc(100%-90px)] sm:max-w-none"
           >
             <span className="flex items-center gap-1 px-2 sm:px-2.5 py-1 font-bold text-white bg-[#202226] truncate max-w-[120px] sm:max-w-none">
               <span className="truncate">{sectionLabel}</span>
@@ -216,7 +216,12 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       {!selected && (
         <>
           {/* 1. Resting Hairline Border (0 layout shift via inset shadow) + Hover Border */}
-          <div className="pointer-events-none absolute inset-0 z-20 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] transition-all group-hover:shadow-[inset_0_0_0_2px_rgba(43,108,246,0.55)] group-hover:bg-[#2b6cf6]/[0.015]" />
+          <div
+            style={{
+              boxShadow: "inset 0 0 0 1px rgba(15, 23, 42, 0.08)",
+            }}
+            className="pointer-events-none absolute inset-0 z-20 studio-section-hairline shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] transition-all group-hover:shadow-[inset_0_0_0_2px_rgba(43,108,246,0.55)] group-hover:bg-[#2b6cf6]/[0.015]"
+          />
 
           {/* 2. Hover Section Label Pill */}
           <div className="pointer-events-none absolute top-2.5 start-3 z-30 flex items-center gap-1.5 rounded-md bg-[#1e293b]/90 px-2 py-0.5 text-[10px] font-medium text-white shadow-xs backdrop-blur-xs ring-1 ring-white/10 opacity-0 transition-opacity duration-150 group-hover:opacity-100 select-none">

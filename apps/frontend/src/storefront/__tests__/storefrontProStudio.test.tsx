@@ -351,6 +351,7 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       const desktopFrame = container.querySelector(".max-w-\\[1200px\\] > div") as HTMLElement;
       expect(desktopFrame).toBeDefined();
       expect(desktopFrame.className).toContain("border-[#d6dae2]");
+      expect(desktopFrame.className).toContain("studio-canvas-desktop-frame");
       expect(desktopFrame.className).toContain("bg-white");
     });
 
@@ -392,6 +393,7 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       // Resting border container with zero layout shift inset shadow
       const restingBorder = document.querySelector(".shadow-\\[inset_0_0_0_1px_rgba\\(15\\,23\\,42\\,0\\.08\\)\\]");
       expect(restingBorder).toBeDefined();
+      expect((restingBorder as HTMLElement)?.className).toContain("studio-section-hairline");
 
       // Section hover label pill with Arabic text
       expect(screen.getByText("قسم البطل الرئيسي")).toBeDefined();
@@ -422,6 +424,11 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       expect(dragHandle).toBeDefined();
       expect(dragHandle.getAttribute("aria-label")).toBe("اسحب لإعادة ترتيب قسم البطل الرئيسي");
       expect(dragHandle.getAttribute("tabindex")).toBe("0");
+
+      // Verify Ticket 1B.1 action bar start docking (uncovered side in RTL/LTR)
+      const actionBar = dragHandle.closest("div.absolute") as HTMLElement;
+      expect(actionBar).toBeDefined();
+      expect(actionBar.className).toContain("start-2");
     });
 
     it("reorders sections cleanly through handleMoveSection and supports undo without data loss", () => {

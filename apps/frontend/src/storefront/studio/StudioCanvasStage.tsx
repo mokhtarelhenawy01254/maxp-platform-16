@@ -72,7 +72,14 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
               </div>
             ) : (
               /* Desktop Viewport */
-              <div className="relative mx-auto w-full overflow-hidden rounded-xl border border-[#d6dae2] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.05)]">
+              <div
+                style={{
+                  borderColor: "#d6dae2",
+                  boxShadow:
+                    "0 20px 50px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05)",
+                }}
+                className="studio-canvas-desktop-frame relative mx-auto w-full rounded-xl border border-[#d6dae2] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.05)]"
+              >
                 {children}
               </div>
             )}

@@ -18,6 +18,7 @@ import { StudioStatusBar } from "./StudioStatusBar";
 import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
 import { StudioPagesPanel } from "./StudioPagesPanel";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
+import "./storefront-studio.css";
 
 import type {
   StudioDeviceMode,
@@ -463,10 +464,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
           {activeDragId && draggedSectionEntry ? (
             <div
-              className="pointer-events-none select-none rounded-xl border-2 border-[#2b6cf6] bg-white p-4 shadow-[0_25px_50px_rgba(0,0,0,0.3)] ring-1 ring-black/5 opacity-95 transition-shadow"
+              className="studio-drag-ghost pointer-events-none select-none rounded-xl border-2 border-[#2b6cf6] bg-white p-4 shadow-[0_25px_50px_rgba(0,0,0,0.3)] ring-1 ring-black/5 opacity-95 transition-shadow"
               style={{
                 width: deviceMode === "mobile" ? "375px" : deviceMode === "tablet" ? "768px" : "1100px",
                 maxWidth: "92vw",
+                borderColor: "#2b6cf6",
+                boxShadow: "0 25px 50px rgba(0,0,0,0.3)",
               }}
               dir="rtl"
             >
