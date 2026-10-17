@@ -22,7 +22,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
   };
 
   return (
-    <div className="relative flex flex-1 flex-col min-w-0 bg-[#26282d] overflow-hidden select-none">
+    <div className="relative flex flex-1 flex-col min-w-0 bg-[#e9ebf0] overflow-hidden select-none">
       {/* 1. Top Pixel Ruler (Follows Zoom and Device Breakpoint) */}
       <StudioCanvasRuler
         deviceMode={deviceMode}
@@ -44,7 +44,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
           >
             {deviceMode === "mobile" ? (
               /* Smartphone Viewport */
-              <div className="relative mx-auto overflow-hidden rounded-2xl sm:rounded-[2.5rem] border-2 sm:border-[8px] border-[#101114] bg-white shadow-[0_30px_70px_rgba(0,0,0,0.65)] ring-1 ring-white/10">
+              <div className="relative mx-auto overflow-hidden rounded-2xl sm:rounded-[2.5rem] border-2 sm:border-[8px] border-[#101114] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/5">
                 {/* Dynamic Island Pill */}
                 <div className="absolute top-2 inset-x-0 z-40 flex items-center justify-center pointer-events-none">
                   <div className="flex h-3.5 w-24 items-center justify-between rounded-full bg-black px-2">
@@ -65,14 +65,14 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
               </div>
             ) : deviceMode === "tablet" ? (
               /* Tablet Viewport - Single scroller, no inner overflow-y-auto */
-              <div className="relative mx-auto overflow-hidden rounded-[1.75rem] border-[8px] border-[#101114] bg-white shadow-[0_30px_70px_rgba(0,0,0,0.55)]">
+              <div className="relative mx-auto overflow-hidden rounded-[1.75rem] border-[8px] border-[#101114] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/5">
                 <div className="w-full overflow-hidden bg-background">
                   {children}
                 </div>
               </div>
             ) : (
               /* Desktop Viewport */
-              <div className="relative mx-auto w-full overflow-hidden rounded-xl border border-[#32353b]/40 bg-white shadow-[0_26px_60px_rgba(0,0,0,0.5)]">
+              <div className="relative mx-auto w-full overflow-hidden rounded-xl border border-[#d6dae2] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.05)]">
                 {children}
               </div>
             )}
