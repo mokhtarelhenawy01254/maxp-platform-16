@@ -177,7 +177,7 @@ export default function MainDashboardPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-12" style={{ viewTransitionName: "main-dashboard" }}>
+    <div className="space-y-4 w-full pb-12" style={{ viewTransitionName: "main-dashboard" }}>
       {/* Top Welcome Bar with View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/70">
         <div>
