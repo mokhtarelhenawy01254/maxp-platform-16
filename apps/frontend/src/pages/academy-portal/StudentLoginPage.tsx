@@ -49,9 +49,15 @@ const StudentLoginPage: React.FC = () => {
         body: JSON.stringify({ phone: phone.trim() }),
       });
 
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.message || data.error || "تعذر إرسال كود التحقق");
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = null;
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.message || data?.error || "تعذر إرسال كود التحقق عبر واتساب حالياً. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.");
       }
 
       setStep("code");

@@ -347,7 +347,6 @@ function cleanupSocketListeners(sock) {
     try {
         sock.ev.removeAllListeners('connection.update');
         sock.ev.removeAllListeners('creds.update');
-        sock.ev.removeAllListeners('error');
         sock.ev.removeAllListeners('messages.upsert');
         sock.ev.removeAllListeners('messaging-history.set');
         sock.ev.removeAllListeners('messages.update');
@@ -356,6 +355,9 @@ function cleanupSocketListeners(sock) {
         sock.ev.removeAllListeners('contacts.update');
         sock.ev.removeAllListeners('presence.update');
         sock.ev.removeAllListeners('call.update');
+        sock.ev.removeAllListeners('error');
+        // 🛡️ Always preserve a no-op error handler so closing/dead sockets never emit unhandled error events that crash Node
+        sock.ev.on('error', () => {});
     } catch (e) {
         // Ignore cleanup errors
     }
@@ -1677,6 +1679,11 @@ async function createSession(sessionId, companyId, options = {}) {
 
         // إنشاء Socket
         sock = makeWASocket(socketOptions);
+        if (sock?.ws && typeof sock.ws.on === 'function') {
+            sock.ws.on('error', (err) => {
+                WA_LOG.warn(sessionId, `Direct ws error caught safely: ${err?.message || err}`);
+            });
+        }
 
         // حفظ الجلسة في الذاكرة
         const sessionData = {

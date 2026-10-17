@@ -678,61 +678,124 @@ exports.syncOrderEnrollment = async (req, res) => {
   }
 };
 
-// Helper to resolve an active connected WhatsApp session for a company (Baileys in-memory or Meta Cloud)
+// Helper to resolve an active connected WhatsApp session for a company (Baileys in-memory or Meta Cloud) with platform-wide fallback
 async function resolveActiveWhatsAppSession(companyId, db) {
   try {
     const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+    let ensureRuntimeSessionConnected = null;
+    try {
+      const balancer = require('../services/whatsapp/sessionBalancer');
+      ensureRuntimeSessionConnected = balancer?.ensureRuntimeSessionConnected;
+    } catch (_) {}
 
-    // 1. Check in-memory Baileys sessions for companyId
-    if (typeof WhatsAppManager.getCompanySessions === 'function') {
-      const memorySessions = (WhatsAppManager.getCompanySessions(companyId) || []).filter(
-        (s) => s.status === 'connected' && s.sock
-      );
-      if (memorySessions.length > 0) {
-        return { id: memorySessions[0].id || memorySessions[0].sessionId, provider: memorySessions[0].provider || 'BAILEYS' };
+    const isSendableBaileys = (mem) => {
+      if (!mem || mem.status !== 'connected' || !mem.sock) return false;
+      if (typeof mem.sock.sendMessage !== 'function') return false;
+      const readyState = typeof WhatsAppManager?.getSocketReadyState === 'function'
+        ? WhatsAppManager.getSocketReadyState(mem.sock)
+        : (mem.sock?.ws?.readyState ?? 1);
+      return readyState === 1;
+    };
+
+    const evaluateDbCandidate = async (candidate, targetCompanyId) => {
+      if (!candidate?.id) return null;
+      if (candidate.provider === 'META_CLOUD') {
+        return { id: candidate.id, provider: 'META_CLOUD' };
+      }
+      if (typeof WhatsAppManager.getSession === 'function') {
+        const mem = WhatsAppManager.getSession(candidate.id);
+        if (isSendableBaileys(mem)) {
+          return { id: candidate.id, provider: 'BAILEYS' };
+        }
+      }
+      if (typeof ensureRuntimeSessionConnected === 'function' && candidate.authState) {
+        try {
+          const jitSession = await ensureRuntimeSessionConnected(candidate.id, targetCompanyId);
+          if (isSendableBaileys(jitSession)) {
+            return { id: candidate.id, provider: 'BAILEYS' };
+          }
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    // 1. In-memory check for target company
+    if (typeof WhatsAppManager.getCompanySessions === 'function' && companyId) {
+      const companySessions = WhatsAppManager.getCompanySessions(companyId) || [];
+      for (const s of companySessions) {
+        const sid = s.sessionId || s.id;
+        if (!sid) continue;
+        const mem = WhatsAppManager.getSession(sid);
+        if (isSendableBaileys(mem)) {
+          return { id: sid, provider: mem.provider || 'BAILEYS' };
+        }
       }
     }
 
-    // 2. Query DB for CONNECTED session for target company
-    if (db?.whatsAppSession) {
-      const connectedSession = await db.whatsAppSession.findFirst({
+    // 2. Query DB for CONNECTED sessions belonging to target company
+    if (db?.whatsAppSession && companyId) {
+      const targetDbSessions = await db.whatsAppSession.findMany({
         where: { companyId, status: 'CONNECTED' },
-        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
-        select: { id: true, provider: true, status: true },
+        orderBy: [{ isDefault: 'desc' }, { lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+        select: { id: true, provider: true, status: true, authState: true },
       });
 
-      if (connectedSession?.id) {
-        if (connectedSession.provider === 'META_CLOUD') {
-          return { id: connectedSession.id, provider: 'META_CLOUD' };
-        }
-        if (typeof WhatsAppManager.getSession === 'function') {
-          const mem = WhatsAppManager.getSession(connectedSession.id);
-          if (mem && mem.status === 'connected') {
-            return { id: connectedSession.id, provider: 'BAILEYS' };
+      for (const candidate of targetDbSessions) {
+        const resolved = await evaluateDbCandidate(candidate, companyId);
+        if (resolved) return resolved;
+      }
+    }
+
+    // 3. Fallback: Central max-p platform session ('cmopgxu3a07i4jujj6f1oh32h')
+    const fallbackCompanyId = 'cmopgxu3a07i4jujj6f1oh32h';
+    if (companyId !== fallbackCompanyId) {
+      if (typeof WhatsAppManager.getCompanySessions === 'function') {
+        const centralSessions = WhatsAppManager.getCompanySessions(fallbackCompanyId) || [];
+        for (const s of centralSessions) {
+          const sid = s.sessionId || s.id;
+          if (!sid) continue;
+          const mem = WhatsAppManager.getSession(sid);
+          if (isSendableBaileys(mem)) {
+            return { id: sid, provider: mem.provider || 'BAILEYS' };
           }
         }
       }
 
-      // 3. Fallback: Central max-p platform session
-      const fallbackCompanyId = 'cmopgxu3a07i4jujj6f1oh32h';
-      if (companyId !== fallbackCompanyId) {
-        const fallbackDbSession = await db.whatsAppSession.findFirst({
+      if (db?.whatsAppSession) {
+        const fallbackDbSessions = await db.whatsAppSession.findMany({
           where: { companyId: fallbackCompanyId, status: 'CONNECTED' },
-          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
-          select: { id: true, provider: true, status: true },
+          orderBy: [{ isDefault: 'desc' }, { lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+          select: { id: true, provider: true, status: true, authState: true },
         });
 
-        if (fallbackDbSession?.id) {
-          if (fallbackDbSession.provider === 'META_CLOUD') {
-            return { id: fallbackDbSession.id, provider: 'META_CLOUD' };
-          }
-          if (typeof WhatsAppManager.getSession === 'function') {
-            const mem = WhatsAppManager.getSession(fallbackDbSession.id);
-            if (mem && mem.status === 'connected') {
-              return { id: fallbackDbSession.id, provider: 'BAILEYS' };
-            }
-          }
+        for (const candidate of fallbackDbSessions) {
+          const resolved = await evaluateDbCandidate(candidate, fallbackCompanyId);
+          if (resolved) return resolved;
         }
+      }
+    }
+
+    // 4. Universal platform safety net: Find ANY verified connected WhatsApp session across the platform
+    // This ensures student OTP is NEVER blocked if max-p's dedicated Baileys socket is recovering/relinking
+    if (db?.whatsAppSession) {
+      const anyMetaSession = await db.whatsAppSession.findFirst({
+        where: { provider: 'META_CLOUD', status: 'CONNECTED' },
+        orderBy: [{ lastConnectedAt: 'desc' }],
+        select: { id: true, provider: true },
+      });
+      if (anyMetaSession?.id) {
+        return { id: anyMetaSession.id, provider: 'META_CLOUD' };
+      }
+
+      const otherConnectedSessions = await db.whatsAppSession.findMany({
+        where: { status: 'CONNECTED' },
+        orderBy: [{ lastConnectedAt: 'desc' }],
+        select: { id: true, provider: true, companyId: true, authState: true },
+        take: 5,
+      });
+      for (const candidate of otherConnectedSessions) {
+        const resolved = await evaluateDbCandidate(candidate, candidate.companyId);
+        if (resolved) return resolved;
       }
     }
   } catch (err) {
@@ -859,6 +922,10 @@ exports.sendStudentLoginCode = async (req, res) => {
           });
         }
       } catch (_) {}
+
+      res.setHeader('cf-turn-off-custom-errors', '1');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
       return res.status(502).json({
         success: false,
