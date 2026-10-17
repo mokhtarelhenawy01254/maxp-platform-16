@@ -96,7 +96,7 @@ const AcademyCoursePublicPage: React.FC = () => {
           } else {
             setPaymentBanner({
               type: 'error',
-              message: data.message || 'لم يتم تأكيد السداد بعد من بوابة الدفع.',
+              message: (data.message || 'لم يتم تأكيد السداد بعد من بوابة الدفع.') + ' لو تم الخصم، الحالة تتحدث تلقائياً خلال دقائق.',
             });
           }
         } catch (e: any) {
@@ -107,6 +107,15 @@ const AcademyCoursePublicPage: React.FC = () => {
         }
       };
       verifyPayment();
+    } else if (orderNumber && paymentSuccess && paymentSuccess !== "1") {
+      // 🔔 الطالب رجع من بوابة الدفع بدون إتمام (إلغاء أو فشل) — رسالة صادقة مع إعادة محاولة
+      setPaymentBanner({
+        type: 'error',
+        message: 'لم تكتمل عملية الدفع. لم يتم خصم أي مبلغ — يمكنك إعادة المحاولة في أي وقت.',
+        actionUrl: `/portal/course/${targetId}`,
+        actionText: 'إعادة محاولة الاشتراك',
+      });
+      fetchOutline();
     } else {
       fetchOutline();
     }
@@ -145,9 +154,14 @@ const AcademyCoursePublicPage: React.FC = () => {
   const course = outline?.course;
   const modules = Array.isArray(outline?.modules) ? outline.modules : [];
   const isEnrolled = outline?.isEnrolled ?? false;
-  const firstLesson = modules[0]?.lessons?.[0];
-  const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
-  const freeLessons = course?.freePreviewLessons ?? 2;
+  const flatLessonsAll = modules.flatMap((m) => m.lessons || []);
+  const firstLesson = flatLessonsAll[0];
+  // نقطة الاستكمال: آخر درس مفتوح للطالب المسجّل (قبل أول درس مقفول)
+  const resumeLesson = isEnrolled
+    ? [...flatLessonsAll].reverse().find((l) => l.isUnlocked) || firstLesson
+    : firstLesson;
+  const totalLessons = flatLessonsAll.length;
+  const freeLessons = course?.freePreviewLessons ?? 0;
   const isDefaultCourse = course?.id === "cmuzmwaxs07r2juml2v04xon5";
 
   return (
@@ -172,7 +186,11 @@ const AcademyCoursePublicPage: React.FC = () => {
           {paymentBanner.actionUrl && (
             <Link
               to={paymentBanner.actionUrl}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all self-start sm:self-auto shrink-0 shadow-sm"
+              className={`px-4 py-2 rounded-xl text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all self-start sm:self-auto shrink-0 shadow-sm ${
+                paymentBanner.type === 'success'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-slate-900 hover:bg-slate-800'
+              }`}
             >
               <span>{paymentBanner.actionText || 'تسجيل الدخول'}</span>
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -186,7 +204,7 @@ const AcademyCoursePublicPage: React.FC = () => {
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{totalLessons} درس · أول {freeLessons} دروس معاينة مجانًا</span>
+            <span>{totalLessons} درس{freeLessons > 0 ? ` · أول ${freeLessons} ${freeLessons === 1 ? "درس" : "دروس"} معاينة مجانًا` : ""}</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -203,10 +221,10 @@ const AcademyCoursePublicPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center gap-3">
             {isEnrolled ? (
               <Link
-                to={`/portal/course/${course.id}/lesson/${firstLesson?.id}`}
+                to={resumeLesson ? `/portal/course/${course.id}/lesson/${resumeLesson.id}` : `/portal/my-courses`}
                 className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
               >
-                <span>متابعة الكورس الآن</span>
+                <span>أكمل من حيث توقفت</span>
                 <ArrowLeft className="w-4 h-4" />
               </Link>
             ) : (
@@ -249,9 +267,11 @@ const AcademyCoursePublicPage: React.FC = () => {
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-500">
-            أول {freeLessons} دروس مفتوحة من غير ما تدفع — اتفرج على الأسلوب قبل أي قرار.
-          </p>
+          {freeLessons > 0 && (
+            <p className="text-[11px] text-slate-500">
+              أول {freeLessons} دروس مفتوحة من غير ما تدفع — اتفرج على الأسلوب قبل أي قرار.
+            </p>
+          )}
 
           {/* Feature Chips */}
           <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
@@ -375,11 +395,11 @@ const AcademyCoursePublicPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <span className="text-xs font-bold text-indigo-600">المحتوى الأكاديمي</span>
-            <h2 className="text-xl font-bold text-slate-900">4 وحدات · 25 درس — مسار واحد من أوله لآخره</h2>
+            <h2 className="text-xl font-bold text-slate-900">{modules.length} وحدات · {totalLessons} درس — مسار واحد من أوله لآخره</h2>
             <p className="text-xs text-slate-500">كل درس فكرة واحدة عملية على شاشات MaxP نفسها.</p>
           </div>
           <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full self-start sm:self-auto">
-            أول درسين متاحين مجاناً للمعاينة
+            أول {freeLessons} دروس متاحة مجاناً للمعاينة
           </span>
         </div>
 
@@ -417,7 +437,7 @@ const AcademyCoursePublicPage: React.FC = () => {
           <span className="text-xs font-bold text-indigo-600 block">السعر الرسمي المسجّل</span>
           <h2 className="text-2xl font-black text-slate-900">{course.price} ج.م — والكورس كامل جوه حسابك</h2>
           <p className="text-xs text-slate-600 leading-relaxed">
-            أول درسين معاينة مجانًا بدون أي تسجيل أو دفع. تدخل، تشوف الأسلوب والدرس الأول، وبعدها تقرر الاشتراك.
+            أول {freeLessons} دروس معاينة مجانًا بدون أي تسجيل أو دفع. تدخل، تشوف الأسلوب والدرس الأول، وبعدها تقرر الاشتراك.
           </p>
         </div>
 
@@ -440,7 +460,7 @@ const AcademyCoursePublicPage: React.FC = () => {
       </section>
 
       {/* 8. الأسئلة الشائعة (FAQ) */}
-      <CourseFaqSection />
+      <CourseFaqSection price={Number(course.price) || 0} totalLessons={totalLessons} />
 
       {/* 9. Final CTA */}
       <section className="bg-slate-900 rounded-3xl p-8 sm:p-12 text-white text-center space-y-5">

@@ -111,10 +111,10 @@ export default function AcademyStudentsPage() {
     try {
       setSuspendingId(studentId);
       if (currentStatus === "SUSPENDED") {
-        await academyApi.activateStudent(studentId);
+        await academyApi.reactivateEnrollment(studentId);
         toast.success("تم رفع الإيقاف وتفعيل حساب الطالب بنجاح");
       } else {
-        await academyApi.suspendStudent(studentId);
+        await academyApi.suspendEnrollment(studentId);
         toast.success("تم إيقاف حساب الطالب ومنعه من مشاهدة المحتوى");
       }
       if (selectedCourseId) loadStudents(selectedCourseId);
@@ -133,11 +133,11 @@ export default function AcademyStudentsPage() {
   }) => {
     if (!selectedCourseId) return;
     try {
-      await academyApi.enrollStudentManually(selectedCourseId, {
+      await academyApi.enrollStudent(selectedCourseId, {
         studentName: payload.name,
         studentPhone: payload.phone,
         studentEmail: payload.email,
-        accessDurationDays: payload.days,
+        subscriptionDays: payload.days,
       });
       toast.success("تم تسجيل الطالب في الدورة التدريبية بنجاح");
       loadStudents(selectedCourseId);
@@ -153,7 +153,7 @@ export default function AcademyStudentsPage() {
     note?: string
   ) => {
     try {
-      await academyApi.reviewExerciseSubmission(subId, {
+      await academyApi.reviewSubmission(subId, {
         status,
         instructorNote: note,
       });

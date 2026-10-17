@@ -119,7 +119,7 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="space-y-1.5">
               <h4 className="text-lg font-extrabold text-foreground">أهلاً بك معنا في الكورس!</h4>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-                تم تسجيل حسابك وتأكيد العملية بنجاح. جميع الدروس الـ25 والكوتش الذكي والتمارين أصبحت مفتوحة لك الآن.
+                تم تسجيل حسابك وتأكيد العملية بنجاح. جميع دروس {courseTitle} والكوتش الذكي والتمارين أصبحت مفتوحة لك الآن.
               </p>
             </div>
 

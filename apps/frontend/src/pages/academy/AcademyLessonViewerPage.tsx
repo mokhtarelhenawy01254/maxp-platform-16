@@ -176,9 +176,8 @@ export default function AcademyLessonViewerPage() {
     try {
       setQuizSubmitting(true);
       const res = await academyApi.submitQuiz(
-        currentQuiz.id,
-        courseOutline.enrollmentId,
         currentLesson.id,
+        courseOutline.enrollmentId,
         quizAnswers
       );
       setQuizResult(res);

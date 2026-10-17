@@ -99,6 +99,7 @@ const AcademyCatalogPublicPage: React.FC = () => {
           {courses.map((course) => {
             const totalLessons = course.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
             const firstLesson = course.modules[0]?.lessons[0];
+            const previewLessons = Number(course.freePreviewLessons) || 0;
 
             return (
               <div
@@ -109,16 +110,20 @@ const AcademyCatalogPublicPage: React.FC = () => {
                 <div className="p-5 sm:p-6 flex-1 flex flex-col space-y-4">
                   {/* Badges Row */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>أول درسين معاينة مجانًا</span>
-                    </span>
+                    {previewLessons > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{previewLessons} {previewLessons === 1 ? "درس" : "دروس"} معاينة مجانًا</span>
+                      </span>
+                    ) : (
+                      <span />
+                    )}
                     <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-1 font-mono tabular-nums">
                       <Layers className="w-3.5 h-3.5" />
                       <span>{course.modules.length} وحدات</span>
                       <span className="text-border">·</span>
                       <Clock className="w-3.5 h-3.5" />
-                      <span>{totalLessons || 25} درس</span>
+                      <span>{totalLessons} درس</span>
                     </span>
                   </div>
 
@@ -155,7 +160,7 @@ const AcademyCatalogPublicPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {firstLesson && (
+                    {firstLesson && previewLessons > 0 && (
                       <Link
                         to={`/portal/course/${course.id}/lesson/${firstLesson.id}`}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"

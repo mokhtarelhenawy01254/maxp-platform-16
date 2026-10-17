@@ -98,7 +98,7 @@ export default function AcademyCoursesPage() {
     try {
       setSyncing(true);
       setSyncResult(null);
-      const res = await academyApi.syncOrder(syncOrderNumber.trim());
+      const res = await academyApi.syncOrderEnrollment(syncOrderNumber.trim());
       setSyncResult(res);
       loadCourses();
     } catch (err: any) {

@@ -511,12 +511,15 @@ class AcademyService {
 
       const vis = course.visibility || 'PUBLIC';
       if (vis === 'PUBLIC') return true;
-      if (course.companyId === companyId && (vis === 'UNLISTED' || includeUnlisted)) return true;
-      if (includeUnlisted) return true;
+      if (vis === 'UNLISTED') {
+        // ضمن كتالوج شركة الكورس نفسه، أو عندما يُطلب صراحةً
+        return course.companyId === companyId || includeUnlisted;
+      }
       if (vis === 'TAG_GATED') {
         if (!Array.isArray(course.allowedTags) || course.allowedTags.length === 0) return true;
         return course.allowedTags.some((tag) => customerTags.includes(tag));
       }
+      // INVITE_ONLY أو أي وضع آخر: غير ظاهر في الكتالوج العام
       return false;
     });
 
@@ -703,7 +706,93 @@ class AcademyService {
       },
     });
 
+    // 🔔 إشعار الطالب عبر واتساب بتفعيل اشتراكه (غير حاجز — فشله لا يلغي التسجيل)
+    //    يغطي كل مسارات التسجيل لأنها كلها تمر عبر هذه الدالة
+    this.sendEnrollmentWelcome({ enrollment, course }).catch((e) => {
+      console.warn('[academy] enrollment WhatsApp notify failed:', e?.message || e);
+    });
+
     return enrollment;
+  }
+
+  // 🔎 إيجاد جلسة واتساب نشطة للشركة (Baileys في الذاكرة أو Meta Cloud في القاعدة) مع fallback للمنصة
+  async _resolveActiveWhatsAppSession(companyId, db) {
+    try {
+      const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+
+      if (typeof WhatsAppManager.getCompanySessions === 'function') {
+        const memorySessions = (WhatsAppManager.getCompanySessions(companyId) || []).filter(
+          (s) => s.status === 'connected' && s.sock
+        );
+        if (memorySessions.length > 0) {
+          return { id: memorySessions[0].id || memorySessions[0].sessionId, provider: memorySessions[0].provider || 'BAILEYS' };
+        }
+      }
+
+      if (db?.whatsAppSession) {
+        const connectedSession = await db.whatsAppSession.findFirst({
+          where: { companyId, status: 'CONNECTED' },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+          select: { id: true, provider: true, status: true },
+        });
+
+        if (connectedSession?.id) {
+          if (connectedSession.provider === 'META_CLOUD') return { id: connectedSession.id, provider: 'META_CLOUD' };
+          if (typeof WhatsAppManager.getSession === 'function') {
+            const mem = WhatsAppManager.getSession(connectedSession.id);
+            if (mem && mem.status === 'connected') return { id: connectedSession.id, provider: 'BAILEYS' };
+          }
+        }
+
+        const fallbackCompanyId = 'cmopgxu3a07i4jujj6f1oh32h';
+        if (companyId !== fallbackCompanyId) {
+          const fallbackDbSession = await db.whatsAppSession.findFirst({
+            where: { companyId: fallbackCompanyId, status: 'CONNECTED' },
+            orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+            select: { id: true, provider: true, status: true },
+          });
+          if (fallbackDbSession?.id) {
+            if (fallbackDbSession.provider === 'META_CLOUD') return { id: fallbackDbSession.id, provider: 'META_CLOUD' };
+            if (typeof WhatsAppManager.getSession === 'function') {
+              const mem = WhatsAppManager.getSession(fallbackDbSession.id);
+              if (mem && mem.status === 'connected') return { id: fallbackDbSession.id, provider: 'BAILEYS' };
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[academy] Error resolving WhatsApp session:', err.message);
+    }
+    return null;
+  }
+
+  async sendEnrollmentWelcome({ enrollment, course }) {
+    try {
+      if (!enrollment?.studentPhone) return;
+      const db = this.getDb();
+      const activeSession = await this._resolveActiveWhatsAppSession(enrollment.companyId || course.companyId, db);
+      if (!activeSession) return;
+
+      const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+      if (typeof WhatsAppMessageHandler.sendText !== 'function') return;
+
+      // تجاهل حسابات الاختبار
+      if (['01000000099', '01000000088'].includes(enrollment.studentPhone)) return;
+
+      const portalBase = process.env.PORTAL_BASE_URL || 'https://maxp.online';
+      const expiryLine = enrollment.expiresAt
+        ? `\nمدة اشتراكك حتى: ${new Date(enrollment.expiresAt).toLocaleDateString('ar-EG')}`
+        : '';
+      const message =
+        `أهلاً ${enrollment.studentName || 'بك'}\n` +
+        `تم تفعيل اشتراكك في كورس: «${course?.title || ''}» على أكاديمية ماكس بي.\n` +
+        `سجّل دخولك برقم موبايلك (${enrollment.studentPhone}) وابدأ من حيث توقفت:\n${portalBase}/portal/login` +
+        expiryLine;
+
+      await WhatsAppMessageHandler.sendText(activeSession.id, enrollment.studentPhone, message);
+    } catch (e) {
+      console.warn('[academy] sendEnrollmentWelcome error:', e?.message || e);
+    }
   }
 
   async autoEnrollFromPaidOrder({ companyId, customerId, storeProductId, orderId, customerName, customerPhone, customerEmail }) {
@@ -1005,6 +1094,20 @@ class AcademyService {
       where: { id: enrollmentId },
       data: { status: 'SUSPENDED' },
     });
+  }
+
+  // 🔒 إلغاء/استرداد الأوردر يوقف تسجيلات الكورسات المرتبطة به (idempotent)
+  async suspendEnrollmentsForOrder({ orderId, reason }) {
+    if (!orderId) return 0;
+    const db = this.getDb();
+    const result = await db.academyEnrollment.updateMany({
+      where: { orderId, status: { in: ['ACTIVE', 'COMPLETED'] } },
+      data: { status: 'SUSPENDED' },
+    });
+    if (result.count > 0) {
+      console.log(`[academy] suspended ${result.count} enrollment(s) for revoked order ${orderId} (${reason || 'cancelled/refunded'})`);
+    }
+    return result.count;
   }
 
   // ─── الأدمن يُعيد تفعيل اشتراك طالب ────────────────────────────────────
@@ -1331,10 +1434,34 @@ class AcademyService {
     };
   }
 
-  async completeLessonManual({ lessonId, enrollmentId, companyId }) {
+  // 🔒 فحص صلاحية الاشتراك للكتابة (ملكية + حالة + انتهاء مدة)
+  async _getWritableEnrollment({ enrollmentId, companyId, studentPhone, include }) {
     const db = this.getDb();
+    if (!enrollmentId) throw new Error('Enrollment not found');
     const enrollment = await db.academyEnrollment.findFirst({
-      where: { id: enrollmentId, ...(companyId ? { companyId } : {}) },
+      where: {
+        id: enrollmentId,
+        ...(companyId ? { companyId } : {}),
+        ...(studentPhone ? { studentPhone } : {}),
+      },
+      ...(include ? { include } : {}),
+    });
+    if (!enrollment) throw new Error('Enrollment not found');
+    if (!['ACTIVE', 'COMPLETED'].includes(enrollment.status)) {
+      throw new Error('هذا الاشتراك موقوف حالياً — تواصل مع الدعم لإعادة تفعيله');
+    }
+    if (enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date()) {
+      throw new Error('انتهت مدة اشتراكك في هذا الكورس — جدّد الاشتراك للمتابعة');
+    }
+    return enrollment;
+  }
+
+  async completeLessonManual({ lessonId, enrollmentId, companyId, studentPhone }) {
+    const db = this.getDb();
+    const enrollment = await this._getWritableEnrollment({
+      enrollmentId,
+      companyId,
+      studentPhone,
       include: {
         course: {
           include: {
@@ -1345,7 +1472,6 @@ class AcademyService {
         },
       },
     });
-    if (!enrollment) throw new Error('Enrollment not found');
 
     const progress = await db.academyProgress.upsert({
       where: {
@@ -1372,7 +1498,7 @@ class AcademyService {
     return progress;
   }
 
-  async submitLessonQuiz({ lessonId, enrollmentId, companyId, answers = [] }) {
+  async submitLessonQuiz({ lessonId, enrollmentId, companyId, studentPhone, answers = [] }) {
     const db = this.getDb();
     const lesson = await db.academyLesson.findFirst({
       where: { id: lessonId },
@@ -1380,10 +1506,14 @@ class AcademyService {
     });
     if (!lesson || !lesson.quiz) throw new Error('Quiz not found for this lesson');
 
+    // 🔒 الاشتراك يُقرأ من قاعدة البيانات بملكية الطالب — مش من الجسم
+    const enrollment = await this._getWritableEnrollment({ enrollmentId, companyId, studentPhone });
+    const effectiveEnrollmentId = enrollment.id;
+
     const quiz = lesson.quiz;
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     if (questions.length === 0) {
-      return this.completeLessonManual({ lessonId, enrollmentId, companyId });
+      return this.completeLessonManual({ lessonId, enrollmentId: effectiveEnrollmentId, companyId, studentPhone });
     }
 
     let correctCount = 0;
@@ -1405,12 +1535,12 @@ class AcademyService {
     const progress = await db.academyProgress.upsert({
       where: {
         enrollmentId_lessonId: {
-          enrollmentId,
+          enrollmentId: effectiveEnrollmentId,
           lessonId,
         },
       },
       create: {
-        enrollmentId,
+        enrollmentId: effectiveEnrollmentId,
         lessonId,
         status: passed ? 'DONE' : 'IN_PROGRESS',
         quizScore: scorePercent,
@@ -1426,7 +1556,7 @@ class AcademyService {
     });
 
     if (passed) {
-      await this.checkAndIssueCertificate(enrollmentId);
+      await this.checkAndIssueCertificate(effectiveEnrollmentId);
     }
 
     return {
@@ -1496,7 +1626,7 @@ class AcademyService {
   // AI Coach Grounded Q&A
   // -------------------------------------------------------------
 
-  async askCoachOnLesson({ lessonId, companyId, userMessage, quizContext, userId }) {
+  async askCoachOnLesson({ lessonId, companyId, studentPhone, userMessage, quizContext, userId }) {
     if (!userMessage || !userMessage.trim()) {
       throw new Error('Message is required');
     }
@@ -1515,7 +1645,39 @@ class AcademyService {
 
     if (!lesson) throw new Error('Lesson not found');
 
-    const courseTitle = lesson.module?.course?.title || '';
+    const course = lesson.module?.course;
+
+    // 🔒 نفس بوابة قراءة المحتوى: طالب بلا اشتراك ساري أو معاينة مجانية = ممنوع
+    if (studentPhone) {
+      const enrollment = await db.academyEnrollment.findFirst({
+        where: {
+          courseId: course.id,
+          studentPhone,
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+      });
+      const enrollmentLive = enrollment && !(enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date());
+      let isFreePreview = Boolean(lesson.isFreePreview);
+      if (!isFreePreview && course.freePreviewLessons > 0) {
+        const fullCourse = await db.academyCourse.findUnique({
+          where: { id: course.id },
+          include: {
+            modules: {
+              orderBy: { sortOrder: 'asc' },
+              include: { lessons: { orderBy: { sortOrder: 'asc' }, select: { id: true } } },
+            },
+          },
+        });
+        const allCourseLessons = (fullCourse?.modules || []).flatMap((m) => m.lessons || []);
+        const lessonIdx = allCourseLessons.findIndex((l) => l.id === lesson.id);
+        if (lessonIdx !== -1 && lessonIdx < course.freePreviewLessons) isFreePreview = true;
+      }
+      if (!enrollmentLive && !isFreePreview) {
+        throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
+      }
+    }
+
+    const courseTitle = course?.title || '';
     const lessonTitle = lesson.title;
     const scriptText = lesson.scriptText || 'لم يتوفر سكريبت نصي مفصل لهذا الدرس بعد.';
     const exerciseText = lesson.exerciseText || 'لا يوجد تمرين محدد لهذا الدرس.';
@@ -1722,6 +1884,7 @@ ${studentUrl || 'لا يوجد رابط'}`;
     lessonId,
     enrollmentId,
     companyId,
+    studentPhone,
     studentUserId,
     customerId,
     submissionText,
@@ -1745,6 +1908,34 @@ ${studentUrl || 'لا يوجد رابط'}`;
 
     if (!lesson) throw new Error('الدرس غير موجود');
 
+    // 🔒 الطالب: التسليم يتطلب اشتراكاً مملوكاً له على كورس هذا الدرس
+    let effectiveEnrollmentId = enrollmentId || null;
+    if (studentPhone) {
+      let enrollment = null;
+      if (effectiveEnrollmentId) {
+        enrollment = await this._getWritableEnrollment({
+          enrollmentId: effectiveEnrollmentId,
+          companyId,
+          studentPhone,
+        });
+      } else {
+        const candidate = await db.academyEnrollment.findFirst({
+          where: {
+            courseId: lesson.module?.course?.id,
+            studentPhone,
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+          },
+        });
+        enrollment = candidate && !(candidate.expiresAt && new Date(candidate.expiresAt) < new Date())
+          ? candidate
+          : null;
+      }
+      if (!enrollment) {
+        throw new Error('التطبيق العملي متاح للمشتركين في الكورس فقط');
+      }
+      effectiveEnrollmentId = enrollment.id;
+    }
+
     // Run AI Grader
     const gradeResult = await this.gradeSubmission({
       lessonId,
@@ -1756,7 +1947,7 @@ ${studentUrl || 'لا يوجد رابط'}`;
       data: {
         companyId: companyId || lesson.companyId,
         lessonId,
-        enrollmentId: enrollmentId || null,
+        enrollmentId: effectiveEnrollmentId,
         studentUserId: studentUserId || null,
         customerId: customerId || null,
         submissionText: submissionText ? submissionText.trim() : null,
@@ -1769,16 +1960,16 @@ ${studentUrl || 'لا يوجد رابط'}`;
 
     // If verdict is ACCEPTED and student is enrolled, mark progress as DONE
     let progress = null;
-    if (gradeResult.verdict === 'ACCEPTED' && enrollmentId) {
+    if (gradeResult.verdict === 'ACCEPTED' && effectiveEnrollmentId) {
       progress = await db.academyProgress.upsert({
         where: {
           enrollmentId_lessonId: {
-            enrollmentId,
+            enrollmentId: effectiveEnrollmentId,
             lessonId,
           },
         },
         create: {
-          enrollmentId,
+          enrollmentId: effectiveEnrollmentId,
           lessonId,
           status: 'DONE',
           completedAt: new Date(),
@@ -1789,7 +1980,7 @@ ${studentUrl || 'لا يوجد رابط'}`;
         },
       });
 
-      await this.checkAndIssueCertificate(enrollmentId);
+      await this.checkAndIssueCertificate(effectiveEnrollmentId);
     }
 
     return {

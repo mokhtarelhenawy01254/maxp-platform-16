@@ -55,6 +55,12 @@ const StudentMyCoursesPage: React.FC = () => {
         const res = await fetch(`/api/v1/academy/my-courses`, {
           headers,
         });
+        // 🔒 التوكن منتهي/غير صالح → تنظيف والعودة لتسجيل الدخول بدل رسالة خطأ عامة
+        if (res.status === 401) {
+          localStorage.removeItem("studentToken");
+          navigate("/portal/login?expired=1", { replace: true });
+          return;
+        }
         const data = await res.json();
         if (data.success && Array.isArray(data.enrollments)) {
           setEnrollments(data.enrollments);
@@ -130,7 +136,11 @@ const StudentMyCoursesPage: React.FC = () => {
             const completedCount = enr.progress?.filter((p) => p.status === "DONE").length || 0;
             const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
             const isCompleted = progressPercent === 100;
-            const firstLessonId = course.modules?.[0]?.lessons?.[0]?.id;
+            const flatLessons = (course.modules || []).flatMap((m) => m.lessons || []);
+            const firstLessonId = flatLessons[0]?.id;
+            // استكمال من حيث توقفت: أول درس لم يكتمل بعد (والأول لو الكورس خلص)
+            const doneSet = new Set((enr.progress || []).filter((p) => p.status === "DONE").map((p) => p.lessonId));
+            const resumeLessonId = flatLessons.find((l) => !doneSet.has(l.id))?.id || firstLessonId;
 
             return (
               <div
@@ -199,10 +209,10 @@ const StudentMyCoursesPage: React.FC = () => {
                   )}
 
                   <Link
-                    to={firstLessonId ? `/portal/course/${enr.courseId}/lesson/${firstLessonId}` : `/portal/course/${enr.courseId}`}
+                    to={resumeLessonId ? `/portal/course/${enr.courseId}/lesson/${resumeLessonId}` : `/portal/course/${enr.courseId}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-xs"
                   >
-                    <span>{progressPercent > 0 ? "متابعة الدرس" : "بدء الكورس"}</span>
+                    <span>{progressPercent > 0 ? (isCompleted ? "مراجعة الكورس" : "أكمل من حيث توقفت") : "بدء الكورس"}</span>
                     <ArrowLeft className="w-3.5 h-3.5" />
                   </Link>
                 </div>

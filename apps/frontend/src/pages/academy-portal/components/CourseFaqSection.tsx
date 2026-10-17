@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, MessageSquareQuote } from "lucide-react";
 
-export const FAQ_ITEMS = [
+// FAQ بصياغة ديناميكية — السعر وعدد الدروس من بيانات الكورس الفعلية
+export const buildFaqItems = (price: number, totalLessons: number) => [
   {
-    q: "غالي — 500 ج.م؟",
+    q: `غالي — ${price} ج.م؟`,
     a: "السعر مدفوع مرة واحدة وبتفضل معاك. الفلوس بتتصرف مرة واحدة على مسار كامل بدل ما تجرّب لوحدك شهر ورا شهر. ومقابل التجربة العشوائية بتوفّر وقت وفلوس.",
   },
   {
-    q: "معنديش وقت لـ25 درس.",
+    q: `معنديش وقت لـ${totalLessons} درس.`,
     a: "كل درس قصير (بين 5 و11 دقيقة) وفكرة واحدة، فتقدر تسمعه في أي وقت من الموبايل. مش محتاج جلسات طويلة — بتتعلم خطوة وتنفّذها.",
   },
   {
@@ -28,7 +29,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "فيه دروس لسه مش مكتملة؟",
-    a: "السلسلة 25 درس، ومعظمها متاح ومرتب على الأكاديمية دلوقتي. لو درس معيّن لسه في التجهيز، بيوصل لحاله بمجرد ما يكتمل، وإنت معاك الكورس كامل.",
+    a: `السلسلة ${totalLessons} درس، ومعظمها متاح ومرتب على الأكاديمية دلوقتي. لو درس معيّن لسه في التجهيز، بيوصل لحاله بمجرد ما يكتمل، وإنت معاك الكورس كامل.`,
   },
   {
     q: "محتاج أفكر.",
@@ -36,8 +37,14 @@ export const FAQ_ITEMS = [
   },
 ];
 
-export const CourseFaqSection: React.FC = () => {
+interface Props {
+  price: number;
+  totalLessons: number;
+}
+
+export const CourseFaqSection: React.FC<Props> = ({ price, totalLessons }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const faqItems = buildFaqItems(price, totalLessons);
 
   return (
     <section className="bg-card rounded-2xl border border-border/70 p-6 sm:p-7 space-y-5 text-right shadow-xs" dir="rtl">
@@ -50,7 +57,7 @@ export const CourseFaqSection: React.FC = () => {
       </div>
 
       <div className="divide-y divide-border/50 space-y-2">
-        {FAQ_ITEMS.map((faq, idx) => {
+        {faqItems.map((faq, idx) => {
           const isOpen = openFaq === idx;
 
           return (

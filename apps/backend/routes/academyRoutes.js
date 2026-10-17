@@ -36,6 +36,15 @@ const studentContentLimiter = rateLimit({
   message: { success: false, message: 'تجاوزت الحد المسموح لتصفح المحتوى. حاول بعد دقيقة.' },
 });
 
+// 🔒 limiter لصفحة الشهادة العامة (تمنع تعداد المعرفات وسحب البيانات)
+const certificateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'تجاوزت الحد المسموح لعرض الشهادات. حاول بعد دقيقة.' },
+});
+
 // -------------------------------------------------------------
 // Instructor / Company Course Management (Protected)
 // -------------------------------------------------------------
@@ -92,6 +101,6 @@ router.post('/enrollments/:enrollmentId/suspend', instructorAuth, controller.sus
 router.post('/enrollments/:enrollmentId/reactivate', instructorAuth, controller.reactivateEnrollment);
 
 // Certificates
-router.get('/certificates/:enrollmentId/view', controller.renderCertificate);
+router.get('/certificates/:enrollmentId/view', certificateLimiter, controller.renderCertificate);
 
 module.exports = router;

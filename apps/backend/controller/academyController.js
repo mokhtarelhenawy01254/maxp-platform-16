@@ -253,7 +253,8 @@ exports.getPublishedCatalog = async (req, res) => {
         .filter(Boolean);
     }
 
-    const includeUnlisted = req.query.includeUnlisted === 'true' || true;
+    // 🔒 الكتالوج العام يعرض PUBLIC حصراً — UNLISTED يُطلب صراحةً فقط
+    const includeUnlisted = req.query.includeUnlisted === 'true';
 
     const courses = await academyService.getPublishedCatalog({
       companyId,
@@ -339,21 +340,51 @@ exports.getLessonContent = async (req, res) => {
 
 exports.enrollStudent = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
     const { courseId } = req.params;
     const { studentName, studentPhone, studentEmail, customerId, orderId, subscriptionDays } = req.body;
 
-    // الأدمن المصادق عليه يستطيع التسجيل بدون دفع
-    const byAdmin = Boolean(req.user?.id);
+    // أنواع التوكنات غير التابعة لفريق الشركة لا تُعامل كأدمن إطلاقاً
+    const NON_STAFF_ROLES = ['STUDENT', 'CUSTOMER', 'COURIER', 'AI_SERVICE'];
+    const isStaffCaller = Boolean(req.user?.id) && !NON_STAFF_ROLES.includes(req.user?.role);
+
+    // الطالب المصادق: الشركة تُقرأ من توكنه حصراً (ممنوع الثقة في الهيدر)
+    const tokenCompanyId = req.user?.role === 'STUDENT' ? req.user.companyId : null;
+    const companyId = tokenCompanyId || getCompanyId(req);
+
+    // 🔒 حارس الدفع: تسجيل كورس مدفوع بـ orderId يتطلب أوردر مدفوع حقيقي في قاعدة البيانات
+    let verifiedOrderId = null;
+    if (orderId) {
+      const db = academyService.getDb();
+      const order = await db.order.findFirst({
+        where: {
+          OR: [{ id: String(orderId) }, { orderNumber: String(orderId) }],
+        },
+        select: { id: true, companyId: true, paymentStatus: true, status: true },
+      });
+      const isPaidOrder = order && ['COMPLETED', 'PAID'].includes(String(order.paymentStatus || '').toUpperCase());
+      if (isStaffCaller) {
+        verifiedOrderId = order?.id || null;
+      } else if (isPaidOrder && (!order.companyId || !tokenCompanyId || order.companyId === tokenCompanyId)) {
+        verifiedOrderId = order.id;
+      } else {
+        return res.status(403).json({
+          success: false,
+          error: 'لا يمكن التسجيل في كورس مدفوع إلا بعد إتمام الدفع فعلياً.',
+        });
+      }
+    }
+
+    // الأدمن (فريق الشركة المصادق عليه) يستطيع التسجيل بدون دفع — الطلاب والعملاء لا
+    const byAdmin = isStaffCaller;
 
     const enrollment = await academyService.enrollStudent({
       companyId,
       courseId,
-      studentUserId: req.user?.id || null,
+      studentUserId: isStaffCaller ? req.user?.id || null : null,
       customerId: customerId || null,
-      orderId: orderId || null,
+      orderId: verifiedOrderId,
       studentName: studentName || req.user?.name,
-      studentPhone: studentPhone || req.user?.phone,
+      studentPhone: studentPhone || req.user?.studentPhone || req.user?.phone,
       studentEmail: studentEmail || req.user?.email,
       subscriptionDays: subscriptionDays ? Number(subscriptionDays) : null,
       byAdmin,
@@ -387,9 +418,17 @@ exports.reactivateEnrollment = async (req, res) => {
   }
 };
 
+// 🔒 الطالب المصادق: الهوية والشركة من التوكن حصراً — ممنوع الثقة في الهيدر/الجسم
+function getStudentScope(req) {
+  if (req.user?.role === 'STUDENT') {
+    return { companyId: req.user.companyId, studentPhone: req.user.studentPhone, isStudent: true };
+  }
+  return { companyId: getCompanyId(req), studentPhone: null, isStudent: false };
+}
+
 exports.completeLesson = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const { companyId, studentPhone } = getStudentScope(req);
     const { id } = req.params; // lessonId
     const { enrollmentId } = req.body;
 
@@ -397,6 +436,7 @@ exports.completeLesson = async (req, res) => {
       lessonId: id,
       enrollmentId,
       companyId,
+      studentPhone,
     });
 
     res.json({ success: true, progress });
@@ -407,7 +447,7 @@ exports.completeLesson = async (req, res) => {
 
 exports.submitQuiz = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const { companyId, studentPhone } = getStudentScope(req);
     const { id } = req.params; // lessonId
     const { enrollmentId, answers } = req.body;
 
@@ -415,6 +455,7 @@ exports.submitQuiz = async (req, res) => {
       lessonId: id,
       enrollmentId,
       companyId,
+      studentPhone,
       answers,
     });
 
@@ -426,13 +467,14 @@ exports.submitQuiz = async (req, res) => {
 
 exports.askCoach = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const { companyId, studentPhone } = getStudentScope(req);
     const { id } = req.params; // lessonId
     const { message, quizContext } = req.body;
 
     const result = await academyService.askCoachOnLesson({
       lessonId: id,
       companyId,
+      studentPhone,
       userMessage: message,
       quizContext,
       userId: req.user?.id || req.user?.userId || null,
@@ -456,6 +498,16 @@ exports.getStudentsProgress = async (req, res) => {
   }
 };
 
+// 🔒 هروب HTML لأي نص يُحقن في قالب الشهادة (الاسم نص حر من فورم عام)
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 exports.renderCertificate = async (req, res) => {
   try {
     const { enrollmentId } = req.params;
@@ -474,7 +526,7 @@ exports.renderCertificate = async (req, res) => {
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>شهادة إتمام — ${cert.courseTitle}</title>
+  <title>شهادة إتمام — ${escapeHtml(cert.courseTitle)}</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     .cert-card { background: linear-gradient(135deg, #1e293b, #0f172a); border: 4px double #38bdf8; border-radius: 24px; padding: 60px 80px; max-width: 800px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative; }
@@ -493,10 +545,10 @@ exports.renderCertificate = async (req, res) => {
     <div class="badge">MAXP ACADEMY CERTIFICATE OF COMPLETION</div>
     <h1>شهادة إتمام معتمدة</h1>
     <p class="lead">تشهد أكاديمية ماكس بي بأن المتدرب:</p>
-    <h2 class="student">${cert.studentName}</h2>
-    <p class="course">قد أتم بنجاح كافة متطلبات وتطبيقات الدورة التدريبية المكثفة:<br><strong style="color: #f1f5f9; font-size: 24px;">${cert.courseTitle}</strong></p>
+    <h2 class="student">${escapeHtml(cert.studentName)}</h2>
+    <p class="course">قد أتم بنجاح كافة متطلبات وتطبيقات الدورة التدريبية المكثفة:<br><strong style="color: #f1f5f9; font-size: 24px;">${escapeHtml(cert.courseTitle)}</strong></p>
     <div class="meta-row">
-      <span>رقم الشهادة: <strong>${cert.certificateNumber}</strong></span>
+      <span>رقم الشهادة: <strong>${escapeHtml(cert.certificateNumber)}</strong></span>
       <span>تاريخ الإصدار: <strong>${new Date(cert.issuedAt).toLocaleDateString('ar-EG')}</strong></span>
     </div>
     <button class="print-btn" onclick="window.print()">طباعة / حفظ كـ PDF</button>
@@ -517,16 +569,17 @@ exports.renderCertificate = async (req, res) => {
 
 exports.submitExercise = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const { companyId, studentPhone } = getStudentScope(req);
     const { id } = req.params; // lessonId
     const { enrollmentId, submissionText, submissionUrl } = req.body;
     const studentUserId = req.user?.id || null;
-    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
+    const customerId = req.user?.role === 'STUDENT' ? null : (req.query.customerId || req.headers['x-customer-id'] || null);
 
     const result = await academyService.submitLessonExercise({
       lessonId: id,
       enrollmentId,
       companyId,
+      studentPhone,
       studentUserId,
       customerId,
       submissionText,
@@ -743,8 +796,10 @@ exports.sendStudentLoginCode = async (req, res) => {
     }
 
     // 3. Generate 6-digit code
-    // Internal test accounts 01000000099 and 01000000088 have fixed predictable code 123456
-    const isTestAccount = cleanPhone === '01000000099' || cleanPhone === '01000000088';
+    // 🔒 حسابات الاختبار (01000000099 / 01000000088) بكود ثابت 123456 — مفعّلة فقط بمتغير البيئة
+    //    ACADEMY_TEST_ACCOUNTS === 'true' (ممنوعة تماماً في الإنتاج افتراضياً)
+    const allowTestAccounts = process.env.ACADEMY_TEST_ACCOUNTS === 'true';
+    const isTestAccount = allowTestAccounts && (cleanPhone === '01000000099' || cleanPhone === '01000000088');
     const code = isTestAccount ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
 
     // 4. Save in OTP store (valid for 10 minutes)
@@ -856,7 +911,8 @@ exports.studentLogin = async (req, res) => {
     }
 
     const cleanCode = String(code).trim();
-    const isTestAccount = cleanPhone === '01000000099' || cleanPhone === '01000000088';
+    const allowTestAccounts = process.env.ACADEMY_TEST_ACCOUNTS === 'true';
+    const isTestAccount = allowTestAccounts && (cleanPhone === '01000000099' || cleanPhone === '01000000088');
 
     // Verify OTP
     let isCodeValid = false;
@@ -1094,6 +1150,21 @@ exports.checkoutCourse = async (req, res) => {
       return res.status(404).json({ success: false, message: 'الكورس غير موجود' });
     }
 
+    // 🔒 لا شراء إلا لكورس منشور
+    if (!course.isPublished) {
+      return res.status(400).json({ success: false, message: 'هذا الكورس غير متاح للاشتراك حالياً' });
+    }
+
+    // 🔒 الكورس المجاني لا يمر عبر الدفع — التسجيل فيه مجاني مباشرة
+    const coursePrice = Number(course.price) || 0;
+    if (coursePrice <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'هذا الكورس مجاني — يمكنك التسجيل فيه مباشرة بدون دفع.',
+        code: 'FREE_COURSE_NO_CHECKOUT',
+      });
+    }
+
     const targetCompanyId = course.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
 
     // 1. Idempotency Check: if student already enrolled, return existing enrollment immediately
@@ -1158,7 +1229,7 @@ exports.checkoutCourse = async (req, res) => {
     // 🔒 P0-1 Security: testMode is strictly locked behind internal env flag ALLOW_ACADEMY_TEST_PAYMENTS === 'true'
     const allowTestMode = process.env.ALLOW_ACADEMY_TEST_PAYMENTS === 'true';
     const isTestCheckout = Boolean(testMode && allowTestMode);
-    const orderNumber = `ORD-CRS-${Date.now().toString().slice(-6)}`;
+    const orderNumber = `ORD-CRS-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     if (!isTestCheckout) {
       // 🔒 Real Payment via Kashier Payment Gateway
@@ -1170,7 +1241,7 @@ exports.checkoutCourse = async (req, res) => {
 
       const session = await KashierService.createPaymentSession(
         {
-          amount: Number(course.price) || 500,
+          amount: coursePrice,
           currency: 'EGP',
           orderId: orderNumber,
           customer: { email: cleanEmail || '', reference: cleanPhone },
@@ -1201,8 +1272,8 @@ exports.checkoutCourse = async (req, res) => {
           status: 'PENDING',
           paymentStatus: 'PENDING',
           paymentMethod: 'CREDIT_CARD',
-          total: Number(course.price) || 500,
-          subtotal: Number(course.price) || 500,
+          total: coursePrice,
+          subtotal: coursePrice,
           shipping: 0,
           shippingAddress: 'رقمي / كورس أونلاين',
           city: 'أونلاين',
@@ -1220,8 +1291,8 @@ exports.checkoutCourse = async (req, res) => {
                 productId: course.storeProductId || undefined,
                 productName: course.title || 'كورس رقمي',
                 quantity: 1,
-                price: Number(course.price) || 500,
-                total: Number(course.price) || 500,
+                price: coursePrice,
+                total: coursePrice,
               },
             ],
           },
@@ -1244,7 +1315,7 @@ exports.checkoutCourse = async (req, res) => {
           orderNumber: order.orderNumber,
           status: order.status,
           paymentStatus: order.paymentStatus,
-          totalAmount: Number(order.total) || 500,
+          totalAmount: Number(order.total) || coursePrice,
         },
         message: 'تم إنشاء طلب الاشتراك. يرجى إتمام عملية الدفع عبر بوابة كاشير.',
       });
@@ -1262,8 +1333,8 @@ exports.checkoutCourse = async (req, res) => {
         status: 'CONFIRMED',
         paymentStatus: 'COMPLETED',
         paymentMethod: 'CREDIT_CARD',
-        total: Number(course.price) || 500,
-        subtotal: Number(course.price) || 500,
+        total: coursePrice,
+        subtotal: coursePrice,
         shipping: 0,
         shippingAddress: 'رقمي / كورس أونلاين (اختبار داخلي)',
         city: 'أونلاين',
@@ -1274,8 +1345,8 @@ exports.checkoutCourse = async (req, res) => {
               productId: course.storeProductId || undefined,
               productName: course.title || 'كورس رقمي',
               quantity: 1,
-              price: Number(course.price) || 500,
-              total: Number(course.price) || 500,
+              price: coursePrice,
+              total: coursePrice,
             },
           ],
         },

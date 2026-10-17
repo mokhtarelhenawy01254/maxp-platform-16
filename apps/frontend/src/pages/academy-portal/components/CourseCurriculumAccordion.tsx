@@ -58,13 +58,15 @@ export const CourseCurriculumAccordion: React.FC<Props> = ({ courseId, modules }
 
             {isExp && (
               <div className="p-2 sm:p-3 bg-muted/10 divide-y divide-border/40 border-t border-border/60">
-                {module.lessons?.map((lesson, lIdx) => {
-                  const isFree = lesson.isFreePreview || lIdx < 2;
+                {module.lessons?.map((lesson) => {
+                  // 🔗 نفس قاعدة الباكند: isFreePreview جاي من الـoutline محسوب عالمياً
+                  //    (أول N دروس في الكورس كله) وليس لكل وحدة
+                  const canOpen = lesson.isFreePreview || lesson.isUnlocked;
 
                   return (
                     <div key={lesson.id} className="py-2.5 px-2 flex items-center justify-between gap-3 text-xs">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {isFree ? (
+                        {canOpen ? (
                           <PlayCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         ) : (
                           <Lock className="w-4 h-4 text-muted-foreground/60 shrink-0" />
@@ -73,12 +75,19 @@ export const CourseCurriculumAccordion: React.FC<Props> = ({ courseId, modules }
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {isFree ? (
+                        {lesson.isFreePreview ? (
                           <Link
                             to={`/portal/course/${courseId}/lesson/${lesson.id}`}
                             className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                           >
                             معاينة مجانية
+                          </Link>
+                        ) : canOpen ? (
+                          <Link
+                            to={`/portal/course/${courseId}/lesson/${lesson.id}`}
+                            className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold border border-primary/20 hover:bg-primary/20 transition-colors"
+                          >
+                            متاح لك
                           </Link>
                         ) : (
                           <span className="text-[11px] text-muted-foreground">متاح بعد الاشتراك</span>

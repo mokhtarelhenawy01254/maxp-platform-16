@@ -2267,6 +2267,11 @@ class OrderService {
             }).catch(commErr => {
               console.error(`❌ [COMMISSION-BG] cancelAffiliateCommissionsForOrder failed for ${orderNumber}:`, commErr.message);
             });
+            // 🎓 استرداد/إرجاع الأوردر يوقف تسجيلات أكاديمية الكورسات المرتبطة به
+            const academyRevokeService = require('./academyService');
+            await academyRevokeService.suspendEnrollmentsForOrder({ orderId: order.id, reason: `order ${orderNumber} ${status}` }).catch(error => {
+              console.error(`❌ [ACADEMY-REVOKE] Failed for order ${orderNumber} (${status}):`, error.message);
+            });
             await commissionService.cancelMerchantCommissionsForOrder(order.id, {
               reason:
                 notes ||
@@ -2293,6 +2298,11 @@ class OrderService {
             });
             await autoDiscountService.restoreRedeemedPointsForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
               console.error(`❌ [AUTO-DISCOUNT-RESTORE-POINTS] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+            // 🎓 إيقاف تسجيلات أكاديمية الكورسات المرتبطة بالأوردر الملغي
+            const academyService = require('./academyService');
+            await academyService.suspendEnrollmentsForOrder({ orderId: order.id, reason: `order ${orderNumber} cancelled` }).catch(error => {
+              console.error(`❌ [ACADEMY-REVOKE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
           }
 

@@ -11,6 +11,7 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
   const navigate = useNavigate();
   const location = useLocation();
   const branding = useCompanyBranding();
+  const [loggedIn, setLoggedIn] = useState<boolean>(false);
   const [studentPhone, setStudentPhone] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string | null>(null);
 
@@ -26,16 +27,17 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
     }
     meta.content = "noindex, nofollow";
 
-    const phone = localStorage.getItem("studentPhone");
-    const name = localStorage.getItem("studentName");
-    setStudentPhone(phone);
-    setStudentName(name);
+    // 🔒 حالة الدخول الحقيقية = وجود توكن الطالب (مش مجرد حفظ الاسم بعد الدفع)
+    setLoggedIn(Boolean(localStorage.getItem("studentToken")));
+    setStudentPhone(localStorage.getItem("studentPhone"));
+    setStudentName(localStorage.getItem("studentName"));
   }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("studentToken");
     localStorage.removeItem("studentPhone");
     localStorage.removeItem("studentName");
+    setLoggedIn(false);
     setStudentPhone(null);
     setStudentName(null);
     navigate("/portal/catalog");
@@ -97,11 +99,11 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
 
           {/* Right Controls: User Profile or Login */}
           <div className="flex items-center gap-2.5">
-            {studentPhone ? (
+            {loggedIn ? (
               <div className="flex items-center gap-2.5">
                 <div className="hidden sm:flex flex-col text-left">
                   <span className="text-xs font-bold text-foreground text-right">{studentName || "طالب ماكس بي"}</span>
-                  <span className="text-[11px] font-mono text-muted-foreground text-right dir-ltr tabular-nums">{studentPhone}</span>
+                  <span className="text-[11px] font-mono text-muted-foreground text-right tabular-nums" dir="ltr">{studentPhone}</span>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold border border-primary/20">
                   <User className="w-4 h-4" />
@@ -129,9 +131,35 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
       </header>
 
       {/* Main Surface */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-6">
         {children}
       </main>
+
+      {/* Mobile Bottom Nav (الموبايل مش ليه نافيجيشن غير من هنا) */}
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xs border-t border-border/70 shadow-lg">
+        <div className="grid grid-cols-2 h-14">
+          <Link
+            to="/portal/catalog"
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors ${
+              isActive("/portal/catalog") || location.pathname === "/portal"
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            <Compass className="w-5 h-5" />
+            <span>الكتالوج</span>
+          </Link>
+          <Link
+            to="/portal/my-courses"
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors ${
+              isActive("/portal/my-courses") ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <BookOpen className="w-5 h-5" />
+            <span>كورساتي</span>
+          </Link>
+        </div>
+      </nav>
 
       {/* Footer */}
       <footer className="mt-auto border-t border-border/70 bg-card py-6">
