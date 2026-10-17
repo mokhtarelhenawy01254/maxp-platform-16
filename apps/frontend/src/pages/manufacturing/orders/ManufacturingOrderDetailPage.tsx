@@ -12,8 +12,6 @@ import { OrderCostAnalysisTab } from './tabs/OrderCostAnalysisTab';
 import { OrderJournalEntriesTab } from './tabs/OrderJournalEntriesTab';
 
 // Modals & Header
-import { IssueMaterialsModal } from './modals/IssueMaterialsModal';
-import { ReceiveGoodsModal } from './modals/ReceiveGoodsModal';
 import { OrderCockpitHeader } from './cockpit/OrderCockpitHeader';
 import { OrderLifecycleModals } from './cockpit/OrderLifecycleModals';
 
@@ -32,8 +30,6 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
   const [autoIssue, setAutoIssue] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [issueModalOpen, setIssueModalOpen] = useState(false);
-  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [costWarnings, setCostWarnings] = useState<any[]>([]);
 
   const loadOrder = async () => {
@@ -242,66 +238,26 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
         </div>
 
         {/* Tab 1: Stages Progress */}
-        {activeTab === 'stages' && (
-          <OrderStagesTab
-            orderId={order.id}
-            orderStatus={order.status}
-            stages={order.stages || []}
-            onStageUpdated={loadOrder}
-          />
-        )}
+        {activeTab === 'stages' && <OrderStagesTab order={order} onRefresh={loadOrder} />}
 
         {/* Tab 2: Material Issues */}
         {activeTab === 'issues' && (
           <OrderMaterialIssuesTab
-            orderId={order.id}
-            orderStatus={order.status}
-            materialIssues={order.materialIssues || []}
-            onOpenIssueModal={() => setIssueModalOpen(true)}
+            order={order}
+            onRefresh={loadOrder}
+            onShowWarnings={setCostWarnings}
           />
         )}
 
         {/* Tab 3: Goods Receipts */}
-        {activeTab === 'receipts' && (
-          <OrderGoodsReceiptsTab
-            orderId={order.id}
-            orderStatus={order.status}
-            goodsReceipts={order.goodsReceipts || []}
-            onOpenReceiveModal={() => setReceiveModalOpen(true)}
-          />
-        )}
+        {activeTab === 'receipts' && <OrderGoodsReceiptsTab order={order} onRefresh={loadOrder} />}
 
         {/* Tab 4: 3-Way Cost Analysis */}
-        {activeTab === 'costing' && <OrderCostAnalysisTab orderId={order.id} />}
+        {activeTab === 'costing' && <OrderCostAnalysisTab order={order} />}
 
         {/* Tab 5: Linked Journal Entries */}
-        {activeTab === 'entries' && <OrderJournalEntriesTab orderNumber={order.orderNumber} />}
+        {activeTab === 'entries' && <OrderJournalEntriesTab order={order} />}
       </div>
-
-      {/* Manual Issue Materials Modal */}
-      <IssueMaterialsModal
-        isOpen={issueModalOpen}
-        orderId={order.id}
-        sourceWarehouseId={order.sourceWarehouseId}
-        onClose={() => setIssueModalOpen(false)}
-        onIssued={() => {
-          setIssueModalOpen(false);
-          loadOrder();
-        }}
-      />
-
-      {/* Receive Finished Goods Modal */}
-      <ReceiveGoodsModal
-        isOpen={receiveModalOpen}
-        orderId={order.id}
-        targetWarehouseId={order.targetWarehouseId}
-        variantMatrix={order.variants || []}
-        onClose={() => setReceiveModalOpen(false)}
-        onReceived={() => {
-          setReceiveModalOpen(false);
-          loadOrder();
-        }}
-      />
 
       {/* Lifecycle Dialogs */}
       <OrderLifecycleModals
