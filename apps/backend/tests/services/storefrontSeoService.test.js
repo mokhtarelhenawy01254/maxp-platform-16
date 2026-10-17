@@ -508,5 +508,29 @@ describe("storefrontSeoService", () => {
     });
     expect(refundMeta.title).toBe("سياسة الاسترداد | Swan");
   });
+
+  test("normalizes product canonical URL when product slug contains spaces or special characters", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/product/%C5%9E%C4%B1k-Sole",
+      currentUrl: "https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole",
+      company: { name: "Swan" },
+      product: {
+        id: "prod_123",
+        name: "Şık Sole",
+        slug: "Şık Sole", // Raw slug with spaces in DB
+        price: 1200,
+      },
+    });
+
+    expect(metadata.url).toBe("https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole");
+    expect(metadata.jsonLd.offers.url).toBe("https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole");
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+
+    expect(updated).toContain('rel="canonical" href="https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole"');
+    expect(updated).toContain('property="og:url" content="https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole"');
+    expect(updated).toContain('"url":"https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole"');
+  });
 });
 
