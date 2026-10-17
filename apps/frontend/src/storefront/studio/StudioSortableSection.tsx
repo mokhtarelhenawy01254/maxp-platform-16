@@ -61,7 +61,12 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     transform,
     transition,
     isDragging,
+    isOver,
+    active,
   } = useSortable({ id });
+
+  const isDropAbove =
+    Boolean(isOver && active && active.id !== id && (active.data.current?.sortable?.index ?? 0) > index);
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -82,6 +87,20 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
         selected ? "z-20" : "z-10 hover:z-15"
       }`}
     >
+      {/* Drop insertion line indicator during drag */}
+      {isOver && active && active.id !== id && (
+        <div
+          className={`pointer-events-none absolute inset-x-0 z-50 flex items-center ${
+            isDropAbove ? "-top-1" : "-bottom-1"
+          }`}
+        >
+          <div className="h-1 w-full bg-[#2b6cf6] shadow-[0_0_8px_rgba(43,108,246,0.8)]" />
+          <span className="absolute start-3 -top-2.5 rounded-full bg-[#2b6cf6] px-2 py-0.5 text-[9px] font-bold text-white shadow-md">
+            إفلات هنا
+          </span>
+        </div>
+      )}
+
       {/* Selected Blue Outline & Handles */}
       {selected && (
         <>
@@ -114,7 +133,9 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
               type="button"
               {...attributes}
               {...listeners}
-              className="flex items-center px-2 py-1 text-[#9ba0a8] hover:bg-[#2b303a] hover:text-white cursor-grab active:cursor-grabbing border-s border-[#2c2f35]"
+              tabIndex={0}
+              aria-label={`اسحب لإعادة ترتيب ${sectionLabel}`}
+              className="flex items-center px-2 py-1 text-[#9ba0a8] hover:bg-[#2b303a] hover:text-white cursor-grab active:cursor-grabbing border-s border-[#2c2f35] focus-visible:ring-2 focus-visible:ring-[#2b6cf6] focus-visible:outline-none"
               title="اسحب لإعادة الترتيب"
             >
               <GripDotsIcon className="h-3.5 w-3.5" />
@@ -191,9 +212,18 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
         </>
       )}
 
-      {/* Hover outline when not selected */}
+      {/* Resting hairline border, hover outline, and hover pill label when not selected */}
       {!selected && (
-        <div className="pointer-events-none absolute inset-0 z-20 border-2 border-transparent transition-all group-hover:border-[#2b6cf6]/50 group-hover:bg-[#2b6cf6]/[0.02]" />
+        <>
+          {/* 1. Resting Hairline Border (0 layout shift via inset shadow) + Hover Border */}
+          <div className="pointer-events-none absolute inset-0 z-20 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] transition-all group-hover:shadow-[inset_0_0_0_2px_rgba(43,108,246,0.55)] group-hover:bg-[#2b6cf6]/[0.015]" />
+
+          {/* 2. Hover Section Label Pill */}
+          <div className="pointer-events-none absolute top-2.5 start-3 z-30 flex items-center gap-1.5 rounded-md bg-[#1e293b]/90 px-2 py-0.5 text-[10px] font-medium text-white shadow-xs backdrop-blur-xs ring-1 ring-white/10 opacity-0 transition-opacity duration-150 group-hover:opacity-100 select-none">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
+            <span>{sectionLabel}</span>
+          </div>
+        </>
       )}
 
       {/* Content wrapper with pointer events isolated */}
