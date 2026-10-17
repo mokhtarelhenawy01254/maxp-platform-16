@@ -149,6 +149,8 @@ const CANONICAL_TURBO_MAP = {
   'غير مكتملة': 'incomplete',
   'status_18': 'incomplete',
   '18': 'incomplete',
+  // كود 99 من /search-order = "غير مكتملة" في تربو (لايف 2026-10-17)
+  '99': 'incomplete',
 };
 
 const SYSTEM_STATUS_MAPPING = {

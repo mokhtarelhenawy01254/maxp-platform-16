@@ -194,6 +194,8 @@ const TURBO_STATUS_CODE_MAP = {
   '18': 'incomplete',
   '19': 'remitted',
   '20': 'returned_received',
+  // كود 99 يظهر من /search-order كـ"غير مكتملة" (موثق لايف من بيانات red line 2026-10-17)
+  '99': 'incomplete',
   'قيد الإنتظار': 'turbo_sent',
   'قيد الانتظار': 'turbo_sent',
   'انتظار': 'turbo_sent',
