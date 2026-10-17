@@ -576,15 +576,21 @@ class AcademyService {
       const totalLessons = allLessons.length;
       const completedCount = enr.progress.filter((p) => p.status === 'DONE').length;
       const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+      const doneLessonIds = new Set(enr.progress.filter((p) => p.status === 'DONE').map((p) => p.lessonId));
+      // استكمال من حيث توقفت: أول درس لم يُكمل بعد (null لو الكورس خلص)
+      const resumeLesson = allLessons.find((l) => !doneLessonIds.has(l.id)) || null;
 
       return {
         enrollmentId: enr.id,
+        courseId: enr.courseId,
         status: enr.status,
         enrolledAt: enr.enrolledAt,
         completedAt: enr.completedAt,
+        expiresAt: enr.expiresAt,
         progressPercent,
         completedCount,
         totalLessons,
+        resumeLessonId: resumeLesson?.id || null,
         certificate: enr.certificate,
         course: {
           id: enr.course.id,
@@ -1435,15 +1441,14 @@ class AcademyService {
   }
 
   // 🔒 فحص صلاحية الاشتراك للكتابة (ملكية + حالة + انتهاء مدة)
+  // للطالب: الملكية = id + رقم هاتف التوكن (بلا فلتر شركة — تسجيلات تاريخية قد تحمل شركة مختلفة عن التوكن)
   async _getWritableEnrollment({ enrollmentId, companyId, studentPhone, include }) {
     const db = this.getDb();
     if (!enrollmentId) throw new Error('Enrollment not found');
     const enrollment = await db.academyEnrollment.findFirst({
-      where: {
-        id: enrollmentId,
-        ...(companyId ? { companyId } : {}),
-        ...(studentPhone ? { studentPhone } : {}),
-      },
+      where: studentPhone
+        ? { id: enrollmentId, studentPhone }
+        : { id: enrollmentId, ...(companyId ? { companyId } : {}) },
       ...(include ? { include } : {}),
     });
     if (!enrollment) throw new Error('Enrollment not found');

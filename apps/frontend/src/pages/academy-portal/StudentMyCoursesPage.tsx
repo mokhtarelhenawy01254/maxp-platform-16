@@ -2,32 +2,28 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Award, ArrowLeft, PlayCircle, Loader2, Sparkles, CheckCircle2, Layers, Clock } from "lucide-react";
 
-interface ProgressItem {
-  id: string;
-  lessonId: string;
-  status: "NOT_STARTED" | "IN_PROGRESS" | "DONE";
-}
-
 interface CourseItem {
   id: string;
   title: string;
   description: string | null;
   price: number;
   thumbnailUrl: string | null;
-  modules: Array<{
-    id: string;
-    title: string;
-    lessons: Array<{ id: string; title: string }>;
-  }>;
+  modulesCount?: number;
+  lessonsCount?: number;
 }
 
+// شكل الاستجابة الفعلي من /my-courses (حقول محسوبة جاهزة من السيرفس)
 interface Enrollment {
-  id: string;
+  enrollmentId: string;
   courseId: string;
   status: string;
   completedAt: string | null;
+  expiresAt?: string | null;
+  progressPercent: number;
+  completedCount: number;
+  totalLessons: number;
+  resumeLessonId: string | null;
   course: CourseItem;
-  progress: ProgressItem[];
 }
 
 const StudentMyCoursesPage: React.FC = () => {
@@ -132,19 +128,18 @@ const StudentMyCoursesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {enrollments.map((enr) => {
             const course = enr.course;
-            const totalLessons = course.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0;
-            const completedCount = enr.progress?.filter((p) => p.status === "DONE").length || 0;
-            const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-            const isCompleted = progressPercent === 100;
-            const flatLessons = (course.modules || []).flatMap((m) => m.lessons || []);
-            const firstLessonId = flatLessons[0]?.id;
-            // استكمال من حيث توقفت: أول درس لم يكتمل بعد (والأول لو الكورس خلص)
-            const doneSet = new Set((enr.progress || []).filter((p) => p.status === "DONE").map((p) => p.lessonId));
-            const resumeLessonId = flatLessons.find((l) => !doneSet.has(l.id))?.id || firstLessonId;
+            const courseId = enr.courseId || course.id;
+            const totalLessons = enr.totalLessons || 0;
+            const modulesCount = course.modulesCount || 0;
+            const completedCount = enr.completedCount || 0;
+            const progressPercent = enr.progressPercent || 0;
+            const isCompleted = progressPercent === 100 && totalLessons > 0;
+            // استكمال من حيث توقفت: السيرفس بيرجع أول درس لم يُكمل
+            const resumeLessonId = enr.resumeLessonId;
 
             return (
               <div
-                key={enr.id}
+                key={enr.enrollmentId}
                 className="bg-card rounded-2xl border border-border/70 hover:border-primary/40 transition-all duration-200 shadow-xs flex flex-col overflow-hidden group"
               >
                 <div className="p-5 sm:p-6 flex-1 flex flex-col space-y-4">
@@ -162,7 +157,7 @@ const StudentMyCoursesPage: React.FC = () => {
 
                     <span className="text-xs font-mono tabular-nums text-muted-foreground inline-flex items-center gap-1">
                       <Layers className="w-3.5 h-3.5" />
-                      <span>{course.modules?.length || 0} وحدات</span>
+                      <span>{modulesCount} وحدات</span>
                       <span className="text-border">·</span>
                       <Clock className="w-3.5 h-3.5" />
                       <span>{totalLessons} درس</span>
@@ -171,7 +166,7 @@ const StudentMyCoursesPage: React.FC = () => {
 
                   <div className="space-y-1.5 flex-1">
                     <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
-                      <Link to={`/portal/course/${enr.courseId}`}>{course.title}</Link>
+                      <Link to={`/portal/course/${courseId}`}>{course.title}</Link>
                     </h2>
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                       {course.description || "مسار تطبيقي متكامل من أول فهم العميل وتظبيط العرض لحد قراءة الرقم وإطلاق الحملات الإعلانية."}
@@ -196,7 +191,7 @@ const StudentMyCoursesPage: React.FC = () => {
                 <div className="px-5 sm:px-6 py-3.5 bg-muted/30 border-t border-border/60 flex items-center justify-between gap-3">
                   {isCompleted ? (
                     <Link
-                      to={`/portal/certificate/${enr.id}`}
+                      to={`/portal/certificate/${enr.enrollmentId}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
                     >
                       <Award className="w-3.5 h-3.5" />
@@ -209,7 +204,7 @@ const StudentMyCoursesPage: React.FC = () => {
                   )}
 
                   <Link
-                    to={resumeLessonId ? `/portal/course/${enr.courseId}/lesson/${resumeLessonId}` : `/portal/course/${enr.courseId}`}
+                    to={resumeLessonId ? `/portal/course/${courseId}/lesson/${resumeLessonId}` : `/portal/course/${courseId}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-xs"
                   >
                     <span>{progressPercent > 0 ? (isCompleted ? "مراجعة الكورس" : "أكمل من حيث توقفت") : "بدء الكورس"}</span>
