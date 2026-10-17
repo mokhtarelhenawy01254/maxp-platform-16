@@ -1,5 +1,5 @@
 import React from "react";
-import { AovLifecycleLaneId, AovToolDefinition } from "./aovToolsCatalog";
+import { AovLifecycleLaneId, AovToolDefinition, formatToolsCountLabel } from "./aovToolsCatalog";
 import { AovEngineCard } from "./AovEngineCard";
 import { ToolTelemetryState } from "./useAovCockpitData";
 
@@ -7,7 +7,6 @@ interface AovLaneSectionProps {
   lane: {
     id: AovLifecycleLaneId;
     title: string;
-    badge: string;
     description: string;
   };
   tools: AovToolDefinition[];
@@ -28,14 +27,14 @@ export const AovLaneSection: React.FC<AovLaneSectionProps> = ({
       {/* Lane Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white">
               {lane.title}
             </h2>
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-white/[0.08]">
-              {lane.badge}
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-white/[0.08]">
+              {formatToolsCountLabel(tools.length)}
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
               {activeCount} نشط
             </span>
           </div>
@@ -55,6 +54,8 @@ export const AovLaneSection: React.FC<AovLaneSectionProps> = ({
               toolsTelemetry[tool.id] || {
                 isActive: false,
                 isCollecting: true,
+                isToggling: false,
+                toggleSupported: false,
                 metrics: [],
               }
             }

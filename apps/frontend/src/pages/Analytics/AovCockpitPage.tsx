@@ -12,6 +12,7 @@ export const AovCockpitPage: React.FC = () => {
     period,
     setPeriod,
     loading,
+    error,
     lastRefreshedAt,
     loadData,
     overallKpis,
@@ -26,6 +27,7 @@ export const AovCockpitPage: React.FC = () => {
         period={period}
         setPeriod={setPeriod}
         loading={loading}
+        error={error}
         onRefresh={loadData}
         lastRefreshedAt={lastRefreshedAt}
         overallKpis={overallKpis}

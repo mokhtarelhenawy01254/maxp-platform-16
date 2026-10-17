@@ -1,191 +1,205 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { apiClient } from "../../../services/apiClient";
-import { useAuth } from "../../../hooks/useAuthSimple";
 import {
   buildQuantityOfferInsights,
   QuantityOfferInsightsSummary,
-  QuantityOfferUsageFeatureTotals,
 } from "../../marketplace/quantityOfferInsights";
-import {
-  AOV_TOOLS_CATALOG,
-  AovMetricItem,
-  AovToolDefinition,
-} from "./aovToolsCatalog";
+import { AOV_TOOLS_CATALOG, AovMetricItem, AovToolDefinition } from "./aovToolsCatalog";
 import { toast } from "sonner";
+import {
+  AovCockpitPeriod,
+  buildConversionUsageMap,
+  buildQuantityFeatureMap,
+  getPeriodDateRange,
+  isManagedAppActive,
+  ManagedAppRecord,
+  mapPostPurchaseAnalytics,
+  PostPurchaseAnalyticsData,
+  resolveToolActive,
+} from "./aovCockpitHelpers";
 
-export interface PostPurchaseAnalyticsData {
-  totalOrders: number;
-  offerAccepts: number;
-  acceptanceRate: number;
-  offerRevenue: number;
-  aovImpact: number;
-  averageTimeSeconds: number;
-  deliveredCount: number;
-  returnedCount: number;
-  pendingCount: number;
-  netRevenue: number;
-}
+export type { PostPurchaseAnalyticsData };
 
 export interface ToolTelemetryState {
   isActive: boolean;
   isCollecting: boolean;
+  isToggling: boolean;
+  toggleSupported: boolean;
   metrics: AovMetricItem[];
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
+
+const USAGE_CFG = { _skipErrorToast: true } as any;
+
 export const useAovCockpitData = () => {
-  const { user } = useAuth();
-  const [period, setPeriod] = useState<"today" | "yesterday" | "7" | "30">("today");
+  const [period, setPeriod] = useState<AovCockpitPeriod>("today");
   const [loading, setLoading] = useState(true);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
 
   // Raw states
+  const [appStateMap, setAppStateMap] = useState<Record<string, any>>({});
   const [postPurchaseData, setPostPurchaseData] = useState<PostPurchaseAnalyticsData | null>(null);
   const [quantityInsights, setQuantityInsights] = useState<QuantityOfferInsightsSummary | null>(null);
   const [conversionUsageMap, setConversionUsageMap] = useState<Record<string, number>>({});
-  const [activeAppsSet, setActiveAppsSet] = useState<Set<string>>(new Set());
-  const [managedAppSettings, setManagedAppSettings] = useState<Record<string, any>>({});
+  const [togglingToolIds, setTogglingToolIds] = useState<string[]>([]);
   const [ordersSummary, setOrdersSummary] = useState<{ totalOrders: number; totalRevenue: number; aov: number }>({
     totalOrders: 0,
     totalRevenue: 0,
     aov: 0,
   });
 
-  const loadData = useCallback(async () => {
+  const periodReqRef = useRef(0);
+  const appsReqRef = useRef(0);
+  const usageReqRef = useRef(0);
+  const appsRef = useRef(appStateMap);
+  appsRef.current = appStateMap;
+
+  const periodRange = useMemo(() => getPeriodDateRange(period), [period]);
+
+  // A. Installed apps + settings — mount & manual refresh only (NOT per period)
+  const loadApps = useCallback(async (): Promise<boolean> => {
+    const reqId = ++appsReqRef.current;
     try {
-      setLoading(true);
-
-      const [postPurchaseRes, myAppsRes, ordersRes] = await Promise.allSettled([
-        apiClient.get(`/post-purchase-offer/analytics?period=${period}`, { _skipErrorToast: true }),
-        apiClient.get(`/my-apps`, { _skipErrorToast: true }),
-        apiClient.get(`/reports/orders-detailed?period=${period}`, { _skipErrorToast: true }),
-      ]);
-
-      // 1. Post Purchase Offer Analytics
-      if (postPurchaseRes.status === "fulfilled" && (postPurchaseRes.value as any)?.data?.success) {
-        setPostPurchaseData((postPurchaseRes.value as any).data.data);
-      }
-
-      // 2. Orders detailed (baseline AOV)
-      if (ordersRes.status === "fulfilled" && (ordersRes.value as any)?.data?.success) {
-        const d = (ordersRes.value as any).data.data;
-        const totalOrd = Number(d?.totalOrders || 0);
-        const totalRev = Number(d?.totalRevenue || 0);
-        const aov = totalOrd > 0 ? Math.round(totalRev / totalOrd) : 0;
-        setOrdersSummary({ totalOrders: totalOrd, totalRevenue: totalRev, aov });
-      }
-
-      // 3. My Apps & Usage
-      if (myAppsRes.status === "fulfilled" && (myAppsRes.value as any)?.data?.success) {
-        const appsList: any[] = Array.isArray((myAppsRes.value as any).data.data)
-          ? (myAppsRes.value as any).data.data
-          : [];
-
-        const activeSet = new Set<string>();
-        const settingsMap: Record<string, any> = {};
-
-        appsList.forEach((item) => {
-          const slug = item?.app?.slug;
-          if (slug && item.isActive !== false) {
-            activeSet.add(slug);
-          }
-          if (slug && item.settings) {
-            settingsMap[slug] = item.settings;
-          }
-        });
-
-        setActiveAppsSet(activeSet);
-        setManagedAppSettings(settingsMap);
-
-        // Fetch usage for quantity-offers-pro or conversion-suite
-        const quantityApp = appsList.find((a) => a?.app?.slug === "quantity-offers-pro");
-        const conversionApp = appsList.find((a) => a?.app?.slug === "conversion-suite");
-
-        const usagePromises: Promise<any>[] = [];
-
-        if (quantityApp?.id) {
-          usagePromises.push(
-            apiClient.get(`/my-apps/${quantityApp.id}/usage`, { _skipErrorToast: true }).then((res: any) => ({
-              type: "quantity",
-              data: res?.data?.data,
-            })),
-          );
-        }
-
-        if (conversionApp?.id) {
-          usagePromises.push(
-            apiClient.get(`/my-apps/${conversionApp.id}/usage`, { _skipErrorToast: true }).then((res: any) => ({
-              type: "conversion",
-              data: res?.data?.data,
-            })),
-          );
-        }
-
-        const usageResults = await Promise.allSettled(usagePromises);
-        usageResults.forEach((res) => {
-          if (res.status === "fulfilled" && res.value?.data) {
-            const { type, data } = res.value;
-            if (type === "quantity") {
-              // Build featureMap
-              const featureMap: Record<string, QuantityOfferUsageFeatureTotals> = {};
-              const byFeature = Array.isArray(data.byFeature) ? data.byFeature : [];
-              byFeature.forEach((f: any) => {
-                if (f.feature) {
-                  featureMap[f.feature] = {
-                    actions: Number(f._count?.id || 0),
-                    quantity: Number(f._sum?.quantity || 0),
-                    totalCost: Number(f._sum?.totalCost || 0),
-                  };
-                }
-              });
-              const insights = buildQuantityOfferInsights(featureMap);
-              setQuantityInsights(insights);
-            } else if (type === "conversion") {
-              const countMap: Record<string, number> = {};
-              const byFeature = Array.isArray(data.byFeature) ? data.byFeature : [];
-              byFeature.forEach((f: any) => {
-                if (f.feature) {
-                  countMap[f.feature] = Number(f._count?.id || 0);
-                }
-              });
-              setConversionUsageMap(countMap);
-            }
-          }
-        });
-      }
-
-      setLastRefreshedAt(new Date());
-    } catch (err) {
-      console.error("Error loading AOV cockpit data:", err);
-    } finally {
-      setLoading(false);
+      const res = await apiClient.get(`/my-apps?slim=1`, USAGE_CFG);
+      if (reqId !== appsReqRef.current) return true; // superseded → not a failure
+      const list: any[] = Array.isArray((res as any)?.data?.data) ? (res as any).data.data : [];
+      const map: Record<string, Record<string, unknown>> = {};
+      list.forEach((item) => {
+        const slug = item?.app?.slug;
+        if (!slug) return;
+        map[slug] = {
+          id: String(item.id),
+          active: isManagedAppActive(item),
+          settings: isRecord(item.settings) ? item.settings : undefined,
+        };
+      });
+      setAppStateMap(map);
+      appsRef.current = map; // immediate commit — loadUsage may run before the next render flush
+      return true;
+    } catch {
+      return reqId !== appsReqRef.current; // superseded requests don't count as errors
     }
+  }, []);
+
+  // B. Period-scoped analytics: post-purchase real contract (data.kpis.*) + orders baseline
+  const loadPeriodData = useCallback(async (p: AovCockpitPeriod): Promise<boolean> => {
+    const reqId = ++periodReqRef.current;
+    const [ppRes, ordersRes] = await Promise.allSettled([
+      apiClient.get(`/post-purchase-offer/analytics?period=${p}`, USAGE_CFG),
+      apiClient.get(`/reports/orders-detailed?period=${p}`, USAGE_CFG),
+    ]);
+    if (reqId !== periodReqRef.current) return true; // superseded
+
+    let okAny = false;
+    if (ppRes.status === "fulfilled") {
+      const mapped = mapPostPurchaseAnalytics((ppRes.value as any)?.data?.data);
+      if (mapped) {
+        setPostPurchaseData(mapped);
+        okAny = true;
+      }
+    }
+    if (ordersRes.status === "fulfilled") {
+      const d = (ordersRes.value as any)?.data?.data;
+      if (isRecord(d)) {
+        const totalOrd = Number(d.totalOrders || 0);
+        const totalRev = Number(d.totalRevenue || 0);
+        setOrdersSummary({
+          totalOrders: totalOrd,
+          totalRevenue: totalRev,
+          aov: totalOrd > 0 ? Math.round(totalRev / totalOrd) : 0,
+        });
+        okAny = true;
+      }
+    }
+    return okAny;
+  }, []);
+
+  // C. Usage telemetry, scoped to the selected period (cheap calls)
+  const loadUsage = useCallback(async (): Promise<boolean> => {
+    const reqId = ++usageReqRef.current;
+    const quantityApp = appsRef.current["quantity-offers-pro"];
+    const conversionApp = appsRef.current["conversion-suite"];
+    const params = new URLSearchParams({
+      startDate: periodRange.startDate,
+      endDate: periodRange.endDate,
+    });
+    const targets: Array<{ id: string; type: "quantity" | "conversion" }> = [];
+    if (quantityApp?.id) targets.push({ id: quantityApp.id, type: "quantity" });
+    if (conversionApp?.id) targets.push({ id: conversionApp.id, type: "conversion" });
+    if (targets.length === 0) {
+      if (reqId === usageReqRef.current) {
+        setQuantityInsights(null);
+        setConversionUsageMap({});
+      }
+      return true;
+    }
+    try {
+      const results = await Promise.allSettled(
+        targets.map((t) => apiClient.get(`/my-apps/${t.id}/usage?${params.toString()}`, USAGE_CFG)),
+      );
+      if (reqId !== usageReqRef.current) return true;
+      let okAny = false;
+      results.forEach((res, idx) => {
+        if (res.status !== "fulfilled") return;
+        const data = (res.value as any)?.data?.data;
+        if (!isRecord(data)) return;
+        okAny = true;
+        if (targets[idx].type === "quantity") {
+          setQuantityInsights(buildQuantityOfferInsights(buildQuantityFeatureMap(data.byFeature)));
+        } else {
+          setConversionUsageMap(buildConversionUsageMap(data.byFeature));
+        }
+      });
+      return okAny;
+    } catch {
+      return false;
+    }
+  }, [periodRange]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const okApps = await loadApps();
+    const [okPeriod, okUsage] = await Promise.all([loadPeriodData(period), loadUsage()]);
+    if (!okApps && !okPeriod && !okUsage) {
+      setError("تعذر تحميل بيانات المركز — تحقق من الاتصال ثم اضغط تحديث");
+    } else if (!okPeriod) {
+      setError("تعذر تحميل تحليلات الفترة — اضغط تحديث لإعادة المحاولة");
+    }
+    setLastRefreshedAt(new Date());
+    setLoading(false);
+  }, [period, loadApps, loadPeriodData, loadUsage]);
+
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      void loadData();
+      return;
+    }
+    // Period change → refresh period-scoped data only; /my-apps stays cached
+    void (async () => {
+      setLoading(true);
+      await Promise.all([loadPeriodData(period), loadUsage()]);
+      setLastRefreshedAt(new Date());
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
-
-  // Telemetry mapper per tool
+  // Telemetry mapping per tool
   const toolsTelemetry = useMemo<Record<string, ToolTelemetryState>>(() => {
     const result: Record<string, ToolTelemetryState> = {};
 
     AOV_TOOLS_CATALOG.forEach((tool) => {
-      // Determine isActive
-      let isActive = tool.defaultActive ?? false;
-      if (tool.appSlug) {
-        const isAppActive = activeAppsSet.has(tool.appSlug);
-        const settings = managedAppSettings[tool.appSlug] || {};
-        const moduleVal = tool.moduleKey ? settings?.modules?.[tool.moduleKey] : undefined;
-        if (moduleVal !== undefined) {
-          isActive = Boolean(moduleVal && isAppActive);
-        } else {
-          isActive = isAppActive;
-        }
-      }
-
+      const app = tool.appSlug ? appStateMap[tool.appSlug] : undefined;
+      const isActive = resolveToolActive(tool, app);
       const metrics: AovMetricItem[] = [];
 
-      // 1. Post Purchase Offer
+      // 1. Post Purchase Offer (real data.kpis.* contract)
       if (tool.id === "post-purchase-offer" || tool.id === "post-purchase-analytics-dashboard") {
         if (postPurchaseData && postPurchaseData.offerAccepts > 0) {
           metrics.push(
@@ -194,10 +208,8 @@ export const useAovCockpitData = () => {
             { label: "أثر الـ AOV", value: `+${postPurchaseData.aovImpact}`, isCurrency: true },
           );
         }
-      }
-
-      // 2. Quantity Offers
-      if (tool.id === "quantity-offers-pro" || tool.id === "quantity-offer-insights-engine") {
+      } else if (tool.id === "quantity-offers-pro" || tool.id === "quantity-offer-insights-engine") {
+        // 2. Quantity Offers (period-scoped usage)
         if (quantityInsights && (quantityInsights.panelViews > 0 || quantityInsights.offerSelections > 0)) {
           metrics.push(
             { label: "مرات المشاهدة", value: quantityInsights.panelViews.toLocaleString() },
@@ -205,56 +217,29 @@ export const useAovCockpitData = () => {
             { label: "قيمة المبيعات", value: quantityInsights.trackedOrderValue, isCurrency: true },
           );
         }
+      } else if (tool.telemetryFeatures?.length) {
+        // 3. Generic recorded-feature metrics (exact appUsageLog feature names)
+        tool.telemetryFeatures.forEach((spec) => {
+          const count = conversionUsageMap[spec.feature] || 0;
+          if (count > 0) metrics.push({ label: spec.label, value: count.toLocaleString() });
+        });
       }
-
-      // 3. Bought Together & Cross-Sell
-      if (tool.id === "bought-together") {
-        const views = conversionUsageMap["bought_together_view"] || 0;
-        const adds = conversionUsageMap["bought_together_add"] || 0;
-        if (views > 0 || adds > 0) {
-          metrics.push(
-            { label: "المشاهدات", value: views.toLocaleString() },
-            { label: "إضافات الباقة", value: adds.toLocaleString() },
-          );
-        }
-      }
-
-      if (tool.id === "cross-sell-rail") {
-        const views = conversionUsageMap["cross_sell_view"] || 0;
-        if (views > 0) {
-          metrics.push({ label: "المشاهدات", value: views.toLocaleString() });
-        }
-      }
-
-      // 4. Free Shipping Bar
-      if (tool.id === "free-shipping-bar" || tool.id === "cart-free-shipping-goal") {
-        const views = conversionUsageMap["free_shipping_bar_view"] || 0;
-        if (views > 0) {
-          metrics.push({ label: "مرات العرض", value: views.toLocaleString() });
-        }
-      }
-
-      // 5. Exit Intent
-      if (tool.id === "exit-intent-popup") {
-        const views = conversionUsageMap["exit_intent_view"] || 0;
-        if (views > 0) {
-          metrics.push({ label: "مرات الظهور", value: views.toLocaleString() });
-        }
-      }
-
-      const isCollecting = metrics.length === 0;
 
       result[tool.id] = {
         isActive,
-        isCollecting,
+        isCollecting: metrics.length === 0,
+        isToggling: togglingToolIds.includes(tool.id),
+        toggleSupported: Boolean(
+          tool.canToggle && tool.moduleKey && app?.active && app?.id,
+        ),
         metrics,
       };
     });
 
     return result;
-  }, [activeAppsSet, managedAppSettings, postPurchaseData, quantityInsights, conversionUsageMap]);
+  }, [appStateMap, postPurchaseData, quantityInsights, conversionUsageMap, togglingToolIds]);
 
-  // Overall KPIs
+  // Overall KPIs — every source is period-scoped now
   const overallKpis = useMemo(() => {
     const postPurchaseRev = postPurchaseData?.offerRevenue || 0;
     const quantityRev = quantityInsights?.trackedOrderValue || 0;
@@ -278,32 +263,61 @@ export const useAovCockpitData = () => {
     };
   }, [ordersSummary, postPurchaseData, quantityInsights, toolsTelemetry]);
 
-  const toggleTool = async (tool: AovToolDefinition) => {
-    if (!tool.appSlug || !tool.canToggle) return;
-    try {
-      const current = toolsTelemetry[tool.id]?.isActive;
-      toast.info(`جارٍ ${current ? "إيقاف" : "تفعيل"} ${tool.name}…`);
-      // Simulates or writes setting
-      // Local state update
-      setActiveAppsSet((prev) => {
-        const next = new Set(prev);
-        if (current) {
-          // toggle off
-        } else {
-          next.add(tool.appSlug!);
-        }
-        return next;
-      });
-      toast.success(`تم تحديث حالة ${tool.name}`);
-    } catch (err: any) {
-      toast.error(`تعذر تحديث الأداة: ${err?.message || err}`);
-    }
-  };
+  // Toggle = REAL settings write (module-level), optimistic-safe with rollback-free flow
+  const toggleTool = useCallback(
+    async (tool: AovToolDefinition) => {
+      if (!tool.appSlug || !tool.moduleKey || !tool.canToggle) return;
+      const app: ManagedAppRecord | undefined = appsRef.current[tool.appSlug];
+      if (!app?.active || !app.id) {
+        toast.error(`${tool.name}: التطبيق غير مفعّل حاليًا`);
+        return;
+      }
+      if (togglingToolIds.includes(tool.id)) return;
+
+      const currentVal = resolveToolActive(tool, app);
+      const nextVal = !currentVal;
+      const existingSettings = isRecord(app.settings) ? app.settings : {};
+      const existingModules = isRecord(existingSettings.modules) ? existingSettings.modules : {};
+      // PUT /my-apps/:id/settings replaces the whole settings object — always send it merged
+      const nextSettings = {
+        ...existingSettings,
+        modules: { ...existingModules, [tool.moduleKey]: nextVal },
+      };
+
+      setTogglingToolIds((prev) => [...prev, tool.id]);
+      try {
+        const res: any = await apiClient.put(
+          `/my-apps/${app.id}/settings`,
+          { settings: nextSettings },
+          USAGE_CFG,
+        );
+        const updatedApp: Record<string, unknown> = isRecord(res?.data?.data) ? res.data.data : {};
+        const merged = isRecord(updatedApp.settings) ? updatedApp.settings : nextSettings;
+        const nextMap = {
+          ...appsRef.current,
+          [tool.appSlug!]: {
+            id: app.id,
+            active: isManagedAppActive(updatedApp),
+            settings: merged,
+          },
+        };
+        appsRef.current = nextMap;
+        setAppStateMap(nextMap);
+        toast.success(`${currentVal ? "تم إيقاف" : "تم تشغيل"} ${tool.name}`);
+      } catch (err: any) {
+        toast.error(`تعذر حفظ حالة ${tool.name}${err?.message ? `: ${err.message}` : ""}`);
+      } finally {
+        setTogglingToolIds((prev) => prev.filter((id) => id !== tool.id));
+      }
+    },
+    [togglingToolIds],
+  );
 
   return {
     period,
     setPeriod,
     loading,
+    error,
     lastRefreshedAt,
     loadData,
     overallKpis,

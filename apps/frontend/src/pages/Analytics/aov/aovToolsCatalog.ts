@@ -22,36 +22,45 @@ export interface AovToolDefinition {
   externalLink?: boolean;
   canToggle?: boolean;
   defaultActive?: boolean;
+  /**
+   * Real appUsageLog feature names (exact DB values) this card reports.
+   * Metric value = number of recorded actions for the feature.
+   */
+  telemetryFeatures?: Array<{ feature: string; label: string }>;
 }
+
+/**
+ * Arabic-friendly tool count: 3-10 → "أدوات", otherwise → "أداة".
+ */
+export const formatToolsCountLabel = (count: number): string => {
+  if (count === 1) return "أداة واحدة";
+  if (count >= 3 && count <= 10) return `${count} أدوات`;
+  return `${count} أداة`;
+};
 
 export const AOV_LIFECYCLE_LANES: Array<{
   id: AovLifecycleLaneId;
   title: string;
-  badge: string;
   description: string;
 }> = [
   {
     id: "pre-purchase",
     title: "1. مرحلة قبل الشراء (بناء وتضخيم السلة)",
-    badge: "12 أداة",
     description: "محفزات صفحة المنتج والكتالوج لدفع العميل لاختيار قطع أكثر أو حزم أعلى قيمة قبل التوجه للسلة.",
   },
   {
     id: "in-purchase",
     title: "2. مرحلة أثناء الشراء (السلة ومكالمة التأكيد)",
-    badge: "8 أدوات",
     description: "تعظيم متوسط الفاتورة داخل درج السلة، صفحة الدفع، وتوجيه مسؤولي التأكيد للـ Upsell الهاتفي.",
   },
   {
     id: "post-purchase",
     title: "3. مرحلة بعد الشراء (العروض الفورية وإعادة البيع)",
-    badge: "8 أدوات",
     description: "استغلال ذروة ثقة العميل مباشرة بعد الطلب عبر عروض بضغطة واحدة وقنوات المتابعة الآلية.",
   },
   {
     id: "intelligence",
     title: "4. مرحلة الذكاء والقياس (Analytics & AI Agents)",
-    badge: "6 أدوات",
     description: "محركات الحسابات الدقيقة، تتبع هوامش الربح، والوكيل الذكي المتخصص في تعظيم الـ AOV.",
   },
 ];
@@ -64,7 +73,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "تدرج أسعار الخصم عند شراء 2 أو 3 قطع مع تخصيص المقاسات والألوان",
     lane: "pre-purchase",
     appSlug: "quantity-offers-pro",
-    moduleKey: "quantityOffers",
+    moduleKey: "renderOnProductPage",
     settingsPath: "/settings/store/offers-bundles",
     canToggle: true,
   },
@@ -77,6 +86,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "boughtTogether",
     settingsPath: "/settings/upsell",
     canToggle: true,
+    telemetryFeatures: [{ feature: "bought_together_view", label: "مشاهدات الباقة" }],
   },
   {
     id: "cross-sell-rail",
@@ -87,6 +97,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "crossSell",
     settingsPath: "/settings/upsell",
     canToggle: true,
+    telemetryFeatures: [{ feature: "cross_sell_section_view", label: "مرات المشاهدة" }],
   },
   {
     id: "upsell-upgrade",
@@ -94,9 +105,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "عرض النسخة الأحدث أو الفئة الأعلى قيمة من المنتج أثناء التصفح",
     lane: "pre-purchase",
     appSlug: "conversion-suite",
-    moduleKey: "upsell",
     settingsPath: "/settings/upsell",
-    canToggle: true,
   },
   {
     id: "store-promo-tiers",
@@ -116,6 +125,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "freeShippingBar",
     settingsPath: "/settings/store/growth-widgets",
     canToggle: true,
+    telemetryFeatures: [{ feature: "free_shipping_bar_view", label: "مرات العرض" }],
   },
   {
     id: "exit-intent-popup",
@@ -123,7 +133,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "عرض كوبون محفز برفع السلة للعميل المتردد قبل مغادرة الصفحة",
     lane: "pre-purchase",
     appSlug: "conversion-suite",
-    moduleKey: "exitIntent",
+    moduleKey: "exitIntentPopup",
     settingsPath: "/settings/store/growth-widgets",
     canToggle: true,
   },
@@ -136,6 +146,10 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "stickyAddToCart",
     settingsPath: "/settings/store/product-conversion",
     canToggle: true,
+    telemetryFeatures: [
+      { feature: "sticky_add_to_cart_click", label: "نقرات الزر الثابت" },
+      { feature: "sticky_buy_now_click", label: "نقرات اشترِ الآن" },
+    ],
   },
   {
     id: "pdp-quick-order",
@@ -143,9 +157,11 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "فورم شراء سريع بضغطة واحدة من صفحة المنتج متكامل مع عروض الكميات",
     lane: "pre-purchase",
     appSlug: "conversion-suite",
-    moduleKey: "quickAdd",
     settingsPath: "/settings/store/product-conversion",
-    canToggle: true,
+    telemetryFeatures: [
+      { feature: "pdp_quick_order_submit", label: "طلبات سريعة" },
+      { feature: "pdp_quick_order_add_to_cart", label: "إضافات للسلة" },
+    ],
   },
   {
     id: "payment-offers-wallet",
@@ -183,19 +199,17 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "عرض منتجات مكملة وإضافات سريعة (Quick Add) داخل درج السلة مباشرة",
     lane: "in-purchase",
     appSlug: "conversion-suite",
-    moduleKey: "cartUpsell",
     settingsPath: "/settings/store/growth-widgets",
-    canToggle: true,
+    telemetryFeatures: [{ feature: "cart_upsell_view", label: "مرات المشاهدة" }],
   },
   {
     id: "cart-quantity-reminder",
     name: "تذكير ترقية الكمية في السلة (Cart Quantity Upsell)",
     subtitle: "تنبيه العميل بفرق السعر البسيط للحصول على قطعة إضافية داخل السلة",
     lane: "in-purchase",
-    appSlug: "quantity-offers-pro",
-    moduleKey: "cartQuantityUpsell",
+    appSlug: "conversion-suite",
     settingsPath: "/settings/store/offers-bundles",
-    canToggle: true,
+    telemetryFeatures: [{ feature: "cart_quantity_upsell_click", label: "نقرات الترقية" }],
   },
   {
     id: "cart-free-shipping-goal",
@@ -206,6 +220,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "freeShippingBar",
     settingsPath: "/settings/store/growth-widgets",
     canToggle: true,
+    telemetryFeatures: [{ feature: "free_shipping_progress_milestone", label: "أداء التقدم" }],
   },
   {
     id: "cart-reservation-timer",
@@ -225,6 +240,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     settingsPath: "/coupons",
     canToggle: false,
     defaultActive: true,
+    telemetryFeatures: [{ feature: "coupon_validation_success", label: "كوبونات ناجحة" }],
   },
   {
     id: "call-center-upsell",
@@ -261,7 +277,7 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     subtitle: "عرض منتج مكمل بخصم حصري ومؤقت بعد الضغط على تأكيد الطلب مباشرة",
     lane: "post-purchase",
     settingsPath: "/settings/post-purchase-offer",
-    canToggle: true,
+    canToggle: false,
     defaultActive: true,
   },
   {
@@ -273,6 +289,10 @@ export const AOV_TOOLS_CATALOG: AovToolDefinition[] = [
     moduleKey: "postPurchaseUpsell",
     settingsPath: "/settings/upsell",
     canToggle: true,
+    telemetryFeatures: [
+      { feature: "post_purchase_upsell_view", label: "مشاهدات ما بعد الشراء" },
+      { feature: "thank_you_reorder_completed", label: "إعادة طلب مكتملة" },
+    ],
   },
   {
     id: "whatsapp-abandoned-series",

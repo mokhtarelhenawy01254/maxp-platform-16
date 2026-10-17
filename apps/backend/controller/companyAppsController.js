@@ -21,6 +21,10 @@ exports.getMyApps = async (req, res) => {
       });
     }
 
+    // ?slim=1 — سياق خفيف اختياري (status/settings/app فقط) للصفحات اللي
+    // مش محتاجة usageLogs لكل app. بدون الـ param السلوك زي ما هو 100%.
+    const slim = req.query.slim === '1' || req.query.slim === 'true';
+
     const [rawApps, company] = await executeWithRetry(async () => {
       const prisma = getSharedPrismaClient();
       return await Promise.all([
@@ -36,10 +40,14 @@ exports.getMyApps = async (req, res) => {
           },
           include: {
             app: true,
-            usageLogs: {
-              take: 10,
-              orderBy: { createdAt: 'desc' }
-            }
+            ...(slim
+              ? {}
+              : {
+                  usageLogs: {
+                    take: 10,
+                    orderBy: { createdAt: 'desc' }
+                  }
+                })
           },
           orderBy: { createdAt: 'desc' }
         }),
@@ -71,23 +79,26 @@ exports.getMyApps = async (req, res) => {
     // over a 25-connection pool (Prisma + PgBouncer), saturating every
     // connection and wedging this request 50s+ — which froze the whole
     // dashboard for the biggest merchants (Swan, 2026-09-01).
+    // (skipped in slim mode — callers passing ?slim=1 don't need monthlyUsage)
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const usageSums = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().appUsageLog.groupBy({
-        by: ['companyAppId'],
-        where: {
-          companyAppId: { in: apps.map((companyApp) => companyApp.id) },
-          createdAt: { gte: monthStart }
-        },
-        _sum: {
-          totalCost: true,
-          quantity: true
-        }
-      });
-    });
+    const usageSums = slim
+      ? []
+      : await executeWithRetry(async () => {
+          return await getSharedPrismaClient().appUsageLog.groupBy({
+            by: ['companyAppId'],
+            where: {
+              companyAppId: { in: apps.map((companyApp) => companyApp.id) },
+              createdAt: { gte: monthStart }
+            },
+            _sum: {
+              totalCost: true,
+              quantity: true
+            }
+          });
+        });
 
     const usageByApp = new Map(usageSums.map((row) => [row.companyAppId, row._sum]));
 

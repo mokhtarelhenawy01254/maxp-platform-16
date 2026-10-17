@@ -188,17 +188,27 @@ async function runBrowserVerification() {
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
+        // Real production contract: dateRange + kpis + deliveryOutcomes
         data: {
-          totalOrders: 145,
-          offerAccepts: 28,
-          acceptanceRate: 19.3,
-          offerRevenue: 9800,
-          aovImpact: 67.6,
-          averageTimeSeconds: 42,
-          deliveredCount: 22,
-          returnedCount: 2,
-          pendingCount: 4,
-          netRevenue: 8500,
+          dateRange: {
+            start: "2026-10-09T21:00:00.000Z",
+            end: "2026-10-16T20:59:59.999Z",
+          },
+          kpis: {
+            totalOrders: 145,
+            offerAcceptsCount: 28,
+            offerAcceptedOrders: 28,
+            acceptanceRate: 19.3,
+            offerRevenue: 9800,
+            aovLift: 67.6,
+            aovLiftAmount: 67.6,
+          },
+          deliveryOutcomes: {
+            delivered: { count: 22, revenue: 15000 },
+            returned: { count: 2, revenue: 700 },
+            inTransit: { count: 4, revenue: 1200 },
+            netRealizedOfferRevenue: 8500,
+          },
         },
       }),
     }),
