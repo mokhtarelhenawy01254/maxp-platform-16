@@ -8,6 +8,7 @@ import {
   Calendar,
   ChevronDown,
   Zap,
+  ArrowLeftRight,
 } from "lucide-react";
 
 // Modular Analytics Components
@@ -149,7 +150,7 @@ export const OrdersAnalytics: React.FC = () => {
                 title={`الفترة المحددة: من ${dateRange.start} إلى ${dateRange.end} (${daysCount} يوم)`}
               >
                 <span>{dateRange.start}</span>
-                <span className="text-muted-foreground/60">↔</span>
+                <ArrowLeftRight className="h-3 w-3 text-muted-foreground/60" />
                 <span>{dateRange.end}</span>
                 <span className="text-[10px] text-muted-foreground font-sans">
                   ({daysCount}&nbsp;{daysCount === 1 ? "يوم" : "أيام"})
