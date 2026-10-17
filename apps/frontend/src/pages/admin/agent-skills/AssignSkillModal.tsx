@@ -151,15 +151,17 @@ export const AssignSkillModal: React.FC<AssignSkillModalProps> = ({
                   {checked && <Check className="size-3" />}
                 </div>
 
-                <span className="text-lg">{agent.icon || "🤖"}</span>
+                <div className="size-6 rounded-full bg-primary/10 border border-border/60 flex items-center justify-center text-[10px] font-mono font-bold text-primary shrink-0">
+                  {agent.name.charAt(0)}
+                </div>
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-bold text-foreground">{agent.name}</p>
-                  <span className="text-[0.65rem] text-muted-foreground">{agent.role}</span>
+                  <span className="text-[10px] text-muted-foreground">{agent.role}</span>
                 </div>
 
                 {already && !checked && (
-                  <Badge variant="outline" className="h-4 text-[0.6rem] text-muted-foreground">
+                  <Badge variant="outline" className="h-4 text-[9px] font-mono text-muted-foreground">
                     حالي
                   </Badge>
                 )}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, X, RefreshCw, AlertTriangle, Lock, Unlock } from "lucide-react";
+import { Search, X, RefreshCw, AlertTriangle, Lock, Unlock, Wrench } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -65,16 +65,15 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* 1. Diagnostics Banner (Image 1 Style: > ⚠️ Tool diagnostics: ...) */}
-      <div className="flex items-center justify-between rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 text-xs text-amber-800 dark:text-amber-300 font-mono">
+      {/* 1. Diagnostics Banner */}
+      <div className="flex items-center justify-between rounded-xl bg-card border border-border/70 px-3.5 py-2 text-xs font-mono shadow-xs">
         <div className="flex items-center gap-2">
-          <span>&gt;</span>
-          <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="font-semibold">
-            تشخيص الأدوات: {totalCount} أداة برمجية معتمدة ({equippedCount} مجهزة ومفعلة للوكلاء)، 0 أخطاء تكامل
+          <AlertTriangle className="size-3.5 text-amber-500 shrink-0" />
+          <span className="font-semibold text-foreground">
+            تشخيص الأدوات: {totalCount} أداة برمجية معتمدة ({equippedCount} مجهزة للوكلاء)
           </span>
         </div>
-        <span className="text-[0.7rem] text-amber-700 dark:text-amber-400/80 hidden sm:inline">
+        <span className="text-[10px] text-muted-foreground hidden sm:inline">
           نواة MaxP Core 2026
         </span>
       </div>
@@ -83,26 +82,31 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
         {/* Title + Equipped vs Available Segmented Pills */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-            مستودع الأدوات البرمجية
-          </h2>
+          <div className="flex items-center gap-2">
+            <div className="size-7 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-xs">
+              <Wrench className="size-3.5 text-primary" />
+            </div>
+            <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+              مستودع الأدوات البرمجية
+            </h2>
+          </div>
 
           {/* Distinction Filter Pills: Equipped vs Available vs All */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-border/60 text-xs">
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/60 text-xs">
             {/* Equipped Pill */}
             <button
               type="button"
               onClick={() => onInstallFilterChange("installed")}
               className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer active:scale-[0.98]",
                 installFilter === "installed"
-                  ? "bg-card text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  ? "bg-card text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <span className="size-2 rounded-full bg-emerald-500" />
-              <span>المجهزة للوكلاء</span>
-              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>المجهزة</span>
+              <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
                 {equippedCount}
               </span>
             </button>
@@ -112,14 +116,14 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               type="button"
               onClick={() => onInstallFilterChange("uninstalled")}
               className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer active:scale-[0.98]",
                 installFilter === "uninstalled"
-                  ? "bg-card text-primary border border-primary/30 shadow-xs"
+                  ? "bg-card text-primary border border-primary/30 shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span>المتاحة للتجهيز</span>
-              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-primary/10 text-primary">
+              <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-primary/10 text-primary tabular-nums">
                 {unassignedCount}
               </span>
             </button>
@@ -129,28 +133,28 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               type="button"
               onClick={() => onInstallFilterChange("all")}
               className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer active:scale-[0.98]",
                 installFilter === "all"
-                  ? "bg-card text-foreground border border-border/80 shadow-xs"
+                  ? "bg-card text-foreground border border-border/80 shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span>الكل</span>
-              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-muted text-muted-foreground">
+              <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-muted text-muted-foreground tabular-nums">
                 {totalCount}
               </span>
             </button>
           </div>
 
           {/* Side Effects Segmented Pills (Read vs Write vs All) */}
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/30 border border-border/50 text-[0.7rem]">
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/60 text-xs">
             <button
               type="button"
               onClick={() => onSideEffectFilterChange("all")}
               className={cn(
-                "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer",
+                "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer active:scale-[0.98]",
                 sideEffectFilter === "all"
-                  ? "bg-card text-foreground shadow-2xs font-bold"
+                  ? "bg-card text-foreground shadow-xs font-semibold border border-border/80"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -160,9 +164,9 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               type="button"
               onClick={() => onSideEffectFilterChange("read")}
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer",
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer active:scale-[0.98]",
                 sideEffectFilter === "read"
-                  ? "bg-card text-sky-600 dark:text-sky-400 shadow-2xs font-bold"
+                  ? "bg-card text-sky-600 dark:text-sky-400 shadow-xs font-semibold border border-sky-500/30"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -173,9 +177,9 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               type="button"
               onClick={() => onSideEffectFilterChange("write")}
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer",
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer active:scale-[0.98]",
                 sideEffectFilter === "write"
-                  ? "bg-card text-amber-600 dark:text-amber-400 shadow-2xs font-bold"
+                  ? "bg-card text-amber-600 dark:text-amber-400 shadow-xs font-semibold border border-amber-500/30"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -194,7 +198,7 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="بحث في أسماء ووظائف الأدوات..."
-              className="h-8 border-border/80 bg-muted/30 pr-8 pl-7 text-xs focus-visible:ring-1"
+              className="h-8 border-border/80 bg-background/50 pr-8 pl-7 text-xs focus-visible:ring-1 font-mono"
             />
             {query && (
               <button
@@ -213,7 +217,7 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
             size="icon-sm"
             onClick={onRefresh}
             disabled={loading}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/80 rounded-lg cursor-pointer"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/80 rounded-lg cursor-pointer active:scale-[0.98]"
             title="تحديث الأدوات"
           >
             <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -221,13 +225,13 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
         </div>
       </div>
 
-      {/* 3. Minimalist Category Tabs with Active Underline (Image 2 Style) */}
-      <div className="flex items-center gap-4 overflow-x-auto border-b border-border/60 pb-px scrollbar-none text-xs">
+      {/* 3. Category Tabs */}
+      <div className="flex items-center gap-3 overflow-x-auto border-b border-border/60 pb-1 scrollbar-none text-xs">
         {groupKeys.map((key) => {
           const meta = KNOWN_TOOL_GROUPS[key] || {
             key,
             labelAr: key,
-            icon: "🔧",
+            icon: "",
             colorClass: "text-muted-foreground",
           };
           const isSelected = selectedGroup === key;
@@ -241,27 +245,21 @@ export const ToolFilterBar: React.FC<ToolFilterBarProps> = ({
               key={key}
               onClick={() => onSelectGroup(key)}
               className={cn(
-                "group inline-flex items-center gap-1.5 whitespace-nowrap pb-2.5 font-bold transition-all shrink-0 relative cursor-pointer",
+                "group inline-flex items-center gap-1.5 whitespace-nowrap pb-1.5 font-medium transition-all shrink-0 relative cursor-pointer active:scale-[0.98]",
                 isSelected
-                  ? "text-foreground font-black"
+                  ? "text-foreground font-bold border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <span>{meta.icon}</span>
               <span>{meta.labelAr}</span>
               <span
                 className={cn(
-                  "font-mono text-[0.7rem]",
-                  isSelected ? "text-foreground" : "text-muted-foreground/70"
+                  "font-mono text-[10px] tabular-nums",
+                  isSelected ? "text-foreground font-semibold" : "text-muted-foreground/70"
                 )}
               >
                 ({count})
               </span>
-
-              {/* Active Underline Indicator */}
-              {isSelected && (
-                <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full" />
-              )}
             </button>
           );
         })}

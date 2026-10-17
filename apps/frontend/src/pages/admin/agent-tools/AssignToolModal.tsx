@@ -162,10 +162,12 @@ export const AssignToolModal: React.FC<AssignToolModalProps> = ({
                   >
                     {checked && <Check className="size-3" />}
                   </div>
-                  <span className="text-base">{agent.icon || "🤖"}</span>
+                  <div className="size-6 rounded-full bg-primary/10 border border-border/60 flex items-center justify-center text-[10px] font-mono font-bold text-primary shrink-0">
+                    {agent.name.charAt(0)}
+                  </div>
                   <div className="min-w-0">
                     <p className="truncate font-bold text-foreground">{agent.name}</p>
-                    <span className="text-[0.65rem] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground">
                       {agent.role}
                     </span>
                   </div>

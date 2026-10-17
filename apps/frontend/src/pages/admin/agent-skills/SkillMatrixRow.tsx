@@ -1,5 +1,5 @@
 import React from "react";
-import { Zap, ShieldAlert, UserPlus, Play, Eye } from "lucide-react";
+import { Zap, ShieldAlert, UserPlus, Play, Eye, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -30,17 +30,19 @@ export const SkillMatrixRow: React.FC<SkillMatrixRowProps> = ({
   return (
     <tr
       onClick={() => onInspect(skill)}
-      className="group border-b border-border/60 hover:bg-muted/40 cursor-pointer transition-colors"
+      className="group border-b border-border/60 hover:bg-muted/30 cursor-pointer transition-colors text-xs"
     >
       {/* Skill Name & ID */}
-      <td className="py-3 px-4">
+      <td className="py-2.5 px-3.5">
         <div className="flex items-center gap-2.5">
-          <span className="text-lg leading-none">{verticalCfg.icon}</span>
+          <div className="size-7 rounded-md bg-muted/40 border border-border/60 flex items-center justify-center shrink-0">
+            <Layers className="size-3.5 text-muted-foreground" />
+          </div>
           <div className="min-w-0">
-            <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+            <p className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors truncate">
               {meta.titleAr}
             </p>
-            <span className="font-mono text-[0.65rem] text-muted-foreground block truncate" dir="ltr">
+            <span className="font-mono text-[10px] text-muted-foreground block truncate" dir="ltr">
               {skill.id}
             </span>
           </div>
@@ -48,18 +50,18 @@ export const SkillMatrixRow: React.FC<SkillMatrixRowProps> = ({
       </td>
 
       {/* Sector / Vertical */}
-      <td className="py-3 px-3 hidden sm:table-cell">
-        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+      <td className="py-2.5 px-3 hidden sm:table-cell">
+        <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 border border-border/50 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
           {verticalCfg.labelAr}
         </span>
       </td>
 
       {/* Safety / Mode */}
-      <td className="py-3 px-3">
+      <td className="py-2.5 px-3 text-center">
         {isSupervised ? (
           <Badge
             variant="outline"
-            className="gap-1 border-amber-500/30 bg-amber-500/10 text-[0.65rem] text-amber-600 dark:text-amber-400"
+            className="gap-1 border-amber-500/30 bg-amber-500/10 text-[10px] font-mono text-amber-600 dark:text-amber-400"
           >
             <ShieldAlert className="size-2.5" />
             <span>موافقة</span>
@@ -67,7 +69,7 @@ export const SkillMatrixRow: React.FC<SkillMatrixRowProps> = ({
         ) : (
           <Badge
             variant="outline"
-            className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[0.65rem] text-emerald-600 dark:text-emerald-400"
+            className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[10px] font-mono text-emerald-600 dark:text-emerald-400"
           >
             <Zap className="size-2.5" />
             <span>ذاتي</span>
@@ -76,43 +78,45 @@ export const SkillMatrixRow: React.FC<SkillMatrixRowProps> = ({
       </td>
 
       {/* Allowed Tools Count */}
-      <td className="py-3 px-3 hidden md:table-cell">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono font-bold text-xs">{allowedTools.length}</span>
-          <span className="text-[0.65rem] text-muted-foreground">أدوات</span>
-        </div>
+      <td className="py-2.5 px-3 hidden md:table-cell text-center">
+        <span className="font-mono tabular-nums text-foreground font-semibold">{allowedTools.length}</span>
+        <span className="text-[10px] text-muted-foreground mr-1">أداة</span>
       </td>
 
       {/* Equipped Agents */}
-      <td className="py-3 px-3 hidden lg:table-cell">
+      <td className="py-2.5 px-3 hidden lg:table-cell">
         {equippedAgents.length > 0 ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <div className="flex -space-x-1.5 space-x-reverse">
               {equippedAgents.slice(0, 2).map((a) => (
-                <span key={a.id} className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-[0.65rem] border border-background" title={a.name}>
-                  {a.icon || "🤖"}
+                <span
+                  key={a.id}
+                  className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-mono font-bold text-primary border border-background shadow-2xs"
+                  title={a.name}
+                >
+                  {a.name.charAt(0)}
                 </span>
               ))}
             </div>
-            <span className="text-xs font-semibold text-foreground">
+            <span className="text-[11px] font-mono tabular-nums text-foreground font-medium">
               {equippedAgents.length}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">غير مسند</span>
+          <span className="text-[10px] font-mono text-muted-foreground">غير مسند</span>
         )}
       </td>
 
       {/* Actions */}
-      <td className="py-3 px-4 text-left" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-end gap-1.5">
+      <td className="py-2.5 px-3.5 text-left" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onInspect(skill)}
-            className="h-8 px-2.5 text-xs text-muted-foreground hover:text-primary"
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground active:scale-[0.98]"
           >
-            <Eye className="size-3.5 ml-1" />
+            <Eye className="size-3 ml-1" />
             <span className="hidden sm:inline">فحص</span>
           </Button>
 
@@ -120,20 +124,20 @@ export const SkillMatrixRow: React.FC<SkillMatrixRowProps> = ({
             variant="outline"
             size="icon-sm"
             onClick={() => onAssign(skill)}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground border-border/70 rounded-md active:scale-[0.98]"
             title="تعيين لوكيل"
           >
-            <UserPlus className="size-3.5" />
+            <UserPlus className="size-3" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => onTestSandbox(skill)}
-            className="h-8 w-8 text-emerald-600 hover:bg-emerald-500/10"
+            className="h-7 w-7 text-emerald-600 hover:bg-emerald-500/10 rounded-md active:scale-[0.98]"
             title="اختبار في Sandbox"
           >
-            <Play className="size-3.5" />
+            <Play className="size-3" />
           </Button>
         </div>
       </td>

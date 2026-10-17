@@ -43,23 +43,23 @@ export interface ToolGroupMeta {
 }
 
 export const KNOWN_TOOL_GROUPS: Record<string, ToolGroupMeta> = {
-  all: { key: "all", labelAr: "الكل", icon: "⚡", colorClass: "text-primary" },
-  order: { key: "order", labelAr: "الطلبات والمبيعات", icon: "📦", colorClass: "text-amber-500" },
-  product: { key: "product", labelAr: "كتالوج المنتجات", icon: "🏷️", colorClass: "text-blue-500" },
-  facebook: { key: "facebook", labelAr: "إعلانات ميتا وفيسبوك", icon: "📢", colorClass: "text-indigo-500" },
-  customer: { key: "customer", labelAr: "العملاء والمحادثات", icon: "💬", colorClass: "text-emerald-500" },
-  inventory: { key: "inventory", labelAr: "المخزون والمستودعات", icon: "📊", colorClass: "text-cyan-500" },
-  sales: { key: "sales", labelAr: "المبيعات والصفقات", icon: "💼", colorClass: "text-rose-500" },
-  shipping: { key: "shipping", labelAr: "الشحن والتوصيل", icon: "🚚", colorClass: "text-orange-500" },
-  medical: { key: "medical", labelAr: "العيادات والمواعيد", icon: "🩺", colorClass: "text-teal-500" },
-  hotel: { key: "hotel", labelAr: "الفنادق والغرف", icon: "🏨", colorClass: "text-amber-600" },
-  governance: { key: "governance", labelAr: "الحوكمة والرقابة", icon: "🛡️", colorClass: "text-purple-500" },
-  knowledge_base: { key: "knowledge_base", labelAr: "قاعدة المعرفة", icon: "📚", colorClass: "text-sky-500" },
-  hr: { key: "hr", labelAr: "الموارد البشرية", icon: "👥", colorClass: "text-emerald-600" },
-  smart_seller: { key: "smart_seller", labelAr: "البيع الذكي", icon: "🎯", colorClass: "text-pink-500" },
-  system: { key: "system", labelAr: "النظام والبيئة", icon: "⚙️", colorClass: "text-slate-500" },
-  mcp: { key: "mcp", labelAr: "بروتوكول MCP", icon: "🔌", colorClass: "text-violet-500" },
-  other: { key: "other", labelAr: "أخرى", icon: "🔧", colorClass: "text-muted-foreground" },
+  all: { key: "all", labelAr: "الكل", icon: "", colorClass: "text-primary" },
+  order: { key: "order", labelAr: "الطلبات والمبيعات", icon: "", colorClass: "text-amber-500" },
+  product: { key: "product", labelAr: "كتالوج المنتجات", icon: "", colorClass: "text-blue-500" },
+  facebook: { key: "facebook", labelAr: "إعلانات ميتا وفيسبوك", icon: "", colorClass: "text-indigo-500" },
+  customer: { key: "customer", labelAr: "العملاء والمحادثات", icon: "", colorClass: "text-emerald-500" },
+  inventory: { key: "inventory", labelAr: "المخزون والمستودعات", icon: "", colorClass: "text-cyan-500" },
+  sales: { key: "sales", labelAr: "المبيعات والصفقات", icon: "", colorClass: "text-rose-500" },
+  shipping: { key: "shipping", labelAr: "الشحن والتوصيل", icon: "", colorClass: "text-orange-500" },
+  medical: { key: "medical", labelAr: "العيادات والمواعيد", icon: "", colorClass: "text-teal-500" },
+  hotel: { key: "hotel", labelAr: "الفنادق والغرف", icon: "", colorClass: "text-amber-600" },
+  governance: { key: "governance", labelAr: "الحوكمة والرقابة", icon: "", colorClass: "text-purple-500" },
+  knowledge_base: { key: "knowledge_base", labelAr: "قاعدة المعرفة", icon: "", colorClass: "text-sky-500" },
+  hr: { key: "hr", labelAr: "الموارد البشرية", icon: "", colorClass: "text-emerald-600" },
+  smart_seller: { key: "smart_seller", labelAr: "البيع الذكي", icon: "", colorClass: "text-pink-500" },
+  system: { key: "system", labelAr: "النظام والبيئة", icon: "", colorClass: "text-slate-500" },
+  mcp: { key: "mcp", labelAr: "بروتوكول MCP", icon: "", colorClass: "text-violet-500" },
+  other: { key: "other", labelAr: "أخرى", icon: "", colorClass: "text-muted-foreground" },
 };
 
 export function getToolGroupMeta(groupName?: string): ToolGroupMeta {
@@ -80,7 +80,7 @@ export function getToolGroupMeta(groupName?: string): ToolGroupMeta {
   return {
     key: groupName,
     labelAr: groupName,
-    icon: "🔧",
+    icon: "",
     colorClass: "text-muted-foreground",
   };
 }
