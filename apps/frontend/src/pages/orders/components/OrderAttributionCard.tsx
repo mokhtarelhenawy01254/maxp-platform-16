@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  GlobeAltIcon,
-  HashtagIcon,
-  LinkIcon,
-  MegaphoneIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+  Globe,
+  Hash,
+  Link2,
+  Megaphone,
+  Clock,
+} from "lucide-react";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderAttributionData, OrderDetailsType } from "../types";
 
@@ -46,23 +46,23 @@ const DetailRow: React.FC<{
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={`break-all text-sm text-blue-600 hover:underline dark:text-blue-400 ${mono ? "font-mono" : ""}`}
+      className={`break-all text-sm font-medium text-primary hover:underline ${mono ? "font-mono tabular-nums" : ""}`}
     >
       {value}
     </a>
   ) : (
-    <span className={`break-all text-sm text-gray-900 dark:text-gray-100 ${mono ? "font-mono" : ""}`}>
+    <span className={`break-all text-sm font-medium text-foreground ${mono ? "font-mono tabular-nums" : ""}`}>
       {value}
     </span>
   );
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/10">
-      <div className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500 dark:text-gray-400">
+    <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3">
+      <div className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">{label}</div>
+        <div className="mb-0.5 text-xs text-muted-foreground">{label}</div>
         {content}
       </div>
     </div>
@@ -84,42 +84,42 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
   const campaignLabel = attribution?.campaignName || attribution?.campaignId;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 text-card-foreground shadow-sm">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
-          <MegaphoneIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <Megaphone className="h-4.5 w-4.5" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-sm font-semibold text-foreground">
             بيانات الحملة
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             المصدر الإعلاني والربط التسويقي للطلب
           </p>
         </div>
       </div>
 
       {!attribution ? (
-        <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+        <p className="text-xs leading-5 text-muted-foreground">
           لا توجد بيانات حملة محفوظة لهذا الطلب. ستظهر هنا الطلبات الجديدة القادمة من روابط
           معلّمة أو بعد تفعيل الالتقاط الجديد.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {(campaignLabel || attribution.platform || sourceMedium) && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {campaignLabel && (
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                <span className="inline-flex items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   {campaignLabel}
                 </span>
               )}
               {attribution.platform && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   {attribution.platform}
                 </span>
               )}
               {sourceMedium && (
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                <span className="inline-flex items-center rounded-md border border-border/60 bg-muted/30 px-2.5 py-0.5 text-xs font-medium text-foreground">
                   {sourceMedium}
                 </span>
               )}
@@ -127,47 +127,47 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
           )}
 
           <DetailRow
-            icon={<GlobeAltIcon />}
+            icon={<Globe className="h-4 w-4" />}
             label="المصدر / الوسيط"
             value={sourceMedium}
           />
           <DetailRow
-            icon={<MegaphoneIcon />}
+            icon={<Megaphone className="h-4 w-4" />}
             label="اسم الحملة"
             value={attribution.campaignName}
           />
           <DetailRow
-            icon={<HashtagIcon />}
+            icon={<Hash className="h-4 w-4" />}
             label="رقم الحملة"
             value={attribution.campaignId}
             mono
           />
           <DetailRow
-            icon={<HashtagIcon />}
+            icon={<Hash className="h-4 w-4" />}
             label="Ad Set ID"
             value={attribution.adSetId}
             mono
           />
           <DetailRow
-            icon={<HashtagIcon />}
+            icon={<Hash className="h-4 w-4" />}
             label="Ad ID"
             value={attribution.adId}
             mono
           />
           <DetailRow
-            icon={<LinkIcon />}
+            icon={<Link2 className="h-4 w-4" />}
             label="صفحة الهبوط"
             value={attribution.landingPath}
             mono
           />
           <DetailRow
-            icon={<LinkIcon />}
+            icon={<Link2 className="h-4 w-4" />}
             label="Referrer"
             value={attribution.referrer}
             href={attribution.referrer}
           />
           <DetailRow
-            icon={<ClockIcon />}
+            icon={<Clock className="h-4 w-4" />}
             label="وقت الالتقاط"
             value={attribution.capturedAt ? formatDateTime(attribution.capturedAt) : undefined}
           />
@@ -178,3 +178,4 @@ const OrderAttributionCard: React.FC<OrderAttributionCardProps> = ({ order }) =>
 };
 
 export default OrderAttributionCard;
+

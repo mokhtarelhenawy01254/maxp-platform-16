@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import {
-  GlobeAltIcon,
-  MapPinIcon,
-  ClockIcon,
-  ShoppingBagIcon,
-  CalendarDaysIcon,
-  DocumentDuplicateIcon,
-  CheckIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+  Globe,
+  MapPin,
+  Clock,
+  ShoppingBag,
+  Calendar,
+  Copy,
+  Check,
+  Link2,
+} from "lucide-react";
 import { OrderSessionDetailsData, CustomerFirstOrderInfo } from "../types";
 import { useDateFormat } from "../../../hooks/useDateFormat";
+import { formatLocationPart } from "../utils/locationNames";
 
 interface OrderSessionDetailsCardProps {
   sessionDetails?: OrderSessionDetailsData | null;
@@ -45,159 +46,6 @@ const formatRelativeDays = (dateStr?: string | null): string => {
   } catch {
     return "";
   }
-};
-
-const EGYPTIAN_GOVERNORATES_EN_TO_AR: Record<string, string> = {
-  c: "القاهرة",
-  cai: "القاهرة",
-  cairo: "القاهرة",
-  "cairo governorate": "القاهرة",
-  "al qahirah": "القاهرة",
-  gz: "الجيزة",
-  giz: "الجيزة",
-  giza: "الجيزة",
-  "al jizah": "الجيزة",
-  alx: "الإسكندرية",
-  alexandria: "الإسكندرية",
-  "al iskandariyah": "الإسكندرية",
-  dk: "الدقهلية",
-  dakahlia: "الدقهلية",
-  "ad daqahliyah": "الدقهلية",
-  mansoura: "الدقهلية",
-  gh: "الغربية",
-  gharbia: "الغربية",
-  "al gharbiyah": "الغربية",
-  tanta: "الغربية",
-  shk: "الشرقية",
-  sharqia: "الشرقية",
-  "ash sharqiyah": "الشرقية",
-  zagazig: "الشرقية",
-  kb: "القليوبية",
-  qalyubia: "القليوبية",
-  "al qalyubiyah": "القليوبية",
-  banha: "القليوبية",
-  bh: "البحيرة",
-  beheira: "البحيرة",
-  "al buhayrah": "البحيرة",
-  damanhur: "البحيرة",
-  mnf: "المنوفية",
-  monufia: "المنوفية",
-  "al minufiyah": "المنوفية",
-  dt: "دمياط",
-  damietta: "دمياط",
-  dumyat: "دمياط",
-  pts: "بورسعيد",
-  "port said": "بورسعيد",
-  "bur said": "بورسعيد",
-  is: "الإسماعيلية",
-  ismailia: "الإسماعيلية",
-  "al ismailiyah": "الإسماعيلية",
-  suz: "السويس",
-  suez: "السويس",
-  "as suways": "السويس",
-  fym: "الفيوم",
-  fayoum: "الفيوم",
-  "al fayyum": "الفيوم",
-  bns: "بني سويف",
-  "beni suef": "بني سويف",
-  "bani suwayf": "بني سويف",
-  mn: "المنيا",
-  minya: "المنيا",
-  "al minya": "المنيا",
-  ast: "أسيوط",
-  asyut: "أسيوط",
-  shg: "سوهاج",
-  sohag: "سوهاج",
-  suhaj: "سوهاج",
-  kn: "قنا",
-  qena: "قنا",
-  qina: "قنا",
-  lx: "الأقصر",
-  luxor: "الأقصر",
-  "al uqsur": "الأقصر",
-  asn: "أسوان",
-  aswan: "أسوان",
-  ba: "البحر الأحمر",
-  "red sea": "البحر الأحمر",
-  "al bahr al ahmar": "البحر الأحمر",
-  hurghada: "البحر الأحمر",
-  js: "جنوب سيناء",
-  "south sinai": "جنوب سيناء",
-  "janub sina": "جنوب سيناء",
-  "sharm el-sheikh": "جنوب سيناء",
-  sin: "شمال سيناء",
-  "north sinai": "شمال سيناء",
-  "shamal sina": "شمال سيناء",
-  mt: "مطروح",
-  matrouh: "مطروح",
-  matruh: "مطروح",
-  wad: "الوادي الجديد",
-  "new valley": "الوادي الجديد",
-  "al wadi al jadid": "الوادي الجديد",
-  kfs: "كفر الشيخ",
-  "kafr el sheikh": "كفر الشيخ",
-  "kafr ash shaykh": "كفر الشيخ",
-};
-
-const COMMON_CITIES_EN_TO_AR: Record<string, string> = {
-  girga: "جرجا",
-  "al mansurah": "المنصورة",
-  mansoura: "المنصورة",
-  talkha: "طلخا",
-  tanta: "طنطا",
-  mahalla: "المحلة الكبرى",
-  "el mahalla el kubra": "المحلة الكبرى",
-  zagazig: "الزقازيق",
-  damanhur: "دمنهور",
-  banha: "بنها",
-  "sharm el-sheikh": "شرم الشيخ",
-  hurghada: "الغردقة",
-  cairo: "القاهرة",
-  giza: "الجيزة",
-  alexandria: "الإسكندرية",
-  obour: "مدينة العبور",
-  "el obour": "مدينة العبور",
-  "6th of october": "السادس من أكتوبر",
-  "sheikh zayed": "الشيخ زايد",
-  "new cairo": "القاهرة الجديدة",
-  "nasr city": "مدينة نصر",
-  "heliopolis": "مصر الجديدة",
-  "maadi": "المعادي",
-  "helwan": "حلوان",
-  "shubra": "شبرا",
-  "dokki": "الدقي",
-  "mohandessin": "المهندسين",
-  suez: "السويس",
-  "port said": "بورسعيد",
-  ismailia: "الإسماعيلية",
-  damietta: "دمياط",
-  fayoum: "الفيوم",
-  "beni suef": "بني سويف",
-  minya: "المنيا",
-  asyut: "أسيوط",
-  sohag: "سوهاج",
-  qena: "قنا",
-  luxor: "الأقصر",
-  aswan: "أسوان",
-  "marsa matruh": "مرسى مطروح",
-  arish: "العريش",
-  mallawi: "ملوي",
-  maghagha: "مغاغة",
-  samalut: "سمالوط",
-  tahta: "طهطا",
-  qous: "قوص",
-  edfu: "إدفو",
-  "kom ombo": "كوم أمبو",
-  "mit gamr": "ميت غمر",
-  "shebin el kom": "شبين الكوم",
-  desouk: "دسوق",
-  "kafr el dawwar": "كفر الدوار",
-};
-
-const formatLocationPart = (val?: string | null): string => {
-  if (!val || typeof val !== "string") return "";
-  const clean = val.toLowerCase().trim();
-  return EGYPTIAN_GOVERNORATES_EN_TO_AR[clean] || COMMON_CITIES_EN_TO_AR[clean] || val.trim();
 };
 
 export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = ({
@@ -271,57 +119,57 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
   const isLocationFromShipping = !hasValidIpLocation && Boolean(shippingLocationDisplay);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 text-card-foreground shadow-none">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-700">
+      <div className="flex items-center justify-between border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-            <GlobeAltIcon className="h-5 w-5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-primary">
+            <Globe className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">
+            <h2 className="text-sm font-semibold text-foreground">
               تفاصيل الجلسة
             </h2>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+            <p className="text-[11px] text-muted-foreground">
               الموقع الجغرافي للـ IP ورحلة التصفح
             </p>
           </div>
         </div>
 
         {firstOrderInfo?.isFirstOrder ? (
-          <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <span className="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
             عميل جديد
           </span>
         ) : firstOrderInfo && firstOrderInfo.totalOrdersCount > 1 ? (
-          <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+          <span className="inline-flex items-center rounded-md border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-indigo-600 dark:text-indigo-400">
             عميل متكرر ({firstOrderInfo.totalOrdersCount} طلبات)
           </span>
         ) : null}
       </div>
 
-      <div className="mt-4 space-y-4 text-xs">
+      <div className="mt-3.5 space-y-3 text-xs">
         {/* IP & Location */}
-        <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-700/60 dark:bg-gray-900/20">
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
-              <MapPinIcon className="h-4 w-4 text-blue-500" />
+            <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
               <span>عنوان الـ IP والموقع الجغرافي</span>
             </div>
             {(ip || isLocalIp) && (
               <button
                 type="button"
                 onClick={handleCopyIp}
-                className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                className="inline-flex items-center gap-1 rounded border border-border/60 bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
                 title="نسخ عنوان IP"
               >
                 {copiedIp ? (
                   <>
-                    <CheckIcon className="h-3.5 w-3.5 text-emerald-600" />
-                    <span className="text-emerald-600 font-medium">تم النسخ</span>
+                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">تم النسخ</span>
                   </>
                 ) : (
                   <>
-                    <DocumentDuplicateIcon className="h-3.5 w-3.5" />
+                    <Copy className="h-3 w-3" />
                     <span>نسخ IP</span>
                   </>
                 )}
@@ -331,12 +179,12 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
 
           <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">IP العميل:</span>
-              <div className="mt-0.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200 dir-ltr text-right">
+              <span className="text-[11px] text-muted-foreground">IP العميل:</span>
+              <div className="mt-0.5 font-mono text-xs font-semibold tabular-nums text-foreground dir-ltr text-right">
                 {ip ? (
                   ip
                 ) : isLocalIp ? (
-                  <span className="text-gray-500 font-normal">شبكة داخلية / محلي</span>
+                  <span className="text-muted-foreground font-normal">شبكة داخلية / محلي</span>
                 ) : isManualOrder ? (
                   "طلب يدوي (بدون IP)"
                 ) : (
@@ -345,20 +193,20 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
               </div>
             </div>
             <div>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              <span className="text-[11px] text-muted-foreground">
                 {isLocationFromShipping ? "الموقع (من عنوان الشحن):" : "الموقع من الـ IP:"}
               </span>
-              <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-200">
+              <div className="mt-0.5 font-semibold text-foreground">
                 {finalLocationDisplay ? (
                   <span>
                     {finalLocationDisplay}
                     {hasValidIpLocation && country ? ` (${country})` : ""}
                     {isLocationFromShipping ? (
-                      <span className="text-[10px] font-normal text-gray-400 mr-1.5">(من بيانات الشحن)</span>
+                      <span className="text-[10px] font-normal text-muted-foreground mr-1.5">(من بيانات الشحن)</span>
                     ) : null}
                   </span>
                 ) : (
-                  <span className="text-gray-400 font-normal">
+                  <span className="text-muted-foreground font-normal">
                     {rawIp ? "جارٍ التحديد / غير متاح" : "غير متاح"}
                   </span>
                 )}
@@ -370,23 +218,23 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
         {/* Telemetry Metrics: Duration, Session Count, First Seen */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {/* Time spent */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700/60 dark:bg-gray-900/20">
-            <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-              <ClockIcon className="h-3.5 w-3.5 text-indigo-500" />
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 text-indigo-500" />
               <span>وقت الشراء</span>
             </div>
-            <div className="mt-1 font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
+            <div className="mt-1 font-mono font-semibold tabular-nums text-foreground">
               {formatDuration(durationSeconds)}
             </div>
           </div>
 
           {/* Session count */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700/60 dark:bg-gray-900/20">
-            <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-              <CalendarDaysIcon className="h-3.5 w-3.5 text-sky-500" />
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 text-sky-500" />
               <span>عدد الجلسات</span>
             </div>
-            <div className="mt-1 font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
+            <div className="mt-1 font-mono font-semibold tabular-nums text-foreground">
               {sessionCount && sessionCount > 1
                 ? `${sessionCount} جلسات`
                 : "الجلسة الأولى"}
@@ -394,22 +242,22 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
           </div>
 
           {/* First visit date */}
-          <div className="col-span-2 sm:col-span-1 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700/60 dark:bg-gray-900/20">
-            <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-              <ClockIcon className="h-3.5 w-3.5 text-teal-500" />
+          <div className="col-span-2 sm:col-span-1 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 text-teal-500" />
               <span>أول زيارة للمتجر</span>
             </div>
-            <div className="mt-1 font-semibold text-gray-800 dark:text-gray-200">
+            <div className="mt-1 font-semibold text-foreground">
               {firstSeenAt ? (
                 <div>
-                  <span className="tabular-nums">{formatDate(firstSeenAt)}</span>
-                  <span className="text-[10px] font-normal text-gray-400 mr-1">
+                  <span className="font-mono tabular-nums">{formatDate(firstSeenAt)}</span>
+                  <span className="text-[10px] font-normal text-muted-foreground mr-1">
                     ({formatRelativeDays(firstSeenAt)})
                   </span>
                 </div>
               ) : createdAt ? (
                 <div>
-                  <span className="tabular-nums">{formatDate(createdAt)}</span>
+                  <span className="font-mono tabular-nums">{formatDate(createdAt)}</span>
                 </div>
               ) : (
                 "غير محدد"
@@ -419,43 +267,43 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
         </div>
 
         {/* Customer First Order Info */}
-        <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-700/60 dark:bg-gray-900/20">
-          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
-            <ShoppingBagIcon className="h-4 w-4 text-emerald-500" />
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
+            <ShoppingBag className="h-3.5 w-3.5 text-emerald-500" />
             <span>سجل طلبات العميل (أول طلب)</span>
           </div>
 
           <div className="mt-2 text-xs">
             {firstOrderInfo?.isFirstOrder ? (
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium">
+              <div className="flex items-center gap-2 font-medium text-emerald-600 dark:text-emerald-400">
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
                 <span>هذا هو أول طلب للعميل على المتجر (عميل جديد).</span>
               </div>
             ) : firstOrderInfo?.firstOrderAt ? (
-              <div className="space-y-1 text-gray-700 dark:text-gray-300">
+              <div className="space-y-1 text-muted-foreground">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">تاريخ أول طلب:</span>
-                  <span className="font-semibold tabular-nums">
+                  <span className="text-[11px] text-muted-foreground">تاريخ أول طلب:</span>
+                  <span className="font-mono font-semibold tabular-nums text-foreground">
                     {formatDateTime(firstOrderInfo.firstOrderAt)}
                   </span>
                 </div>
                 {firstOrderInfo.firstOrderNumber && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500">رقم أول طلب:</span>
-                    <span className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
+                    <span className="text-[11px] text-muted-foreground">رقم أول طلب:</span>
+                    <span className="font-mono text-xs font-semibold tabular-nums text-primary">
                       #{firstOrderInfo.firstOrderNumber}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">إجمالي الطلبات السابقة:</span>
-                  <span className="font-bold tabular-nums">
+                  <span className="text-[11px] text-muted-foreground">إجمالي الطلبات السابقة:</span>
+                  <span className="font-mono font-bold tabular-nums text-foreground">
                     {firstOrderInfo.totalOrdersCount} طلبات
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="text-gray-500 dark:text-gray-400">
+              <div className="text-muted-foreground">
                 لا توجد بيانات سابقة مسجلة لهذا العميل.
               </div>
             )}
@@ -464,16 +312,16 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
 
         {/* Visited Pages Timeline */}
         {pagesVisited.length > 0 && (
-          <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-700/60 dark:bg-gray-900/20">
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
-                <LinkIcon className="h-4 w-4 text-purple-500" />
+              <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                <Link2 className="h-3.5 w-3.5 text-purple-500" />
                 <span>رحلة التصفح ({pagesVisited.length} صفحات)</span>
               </div>
-              <span className="text-[10px] text-gray-400">مرتبة زمنياً</span>
+              <span className="font-mono text-[10px] text-muted-foreground">مرتبة زمنياً</span>
             </div>
 
-            <ol className="relative border-r border-gray-200 dark:border-gray-700 mr-2 space-y-2 mt-2">
+            <ol className="relative mr-2 space-y-2 mt-2 border-r border-border/60">
               {pagesVisited.map((page, idx) => {
                 const timeStr = page.timestamp
                   ? new Date(page.timestamp).toLocaleTimeString("ar-EG", {
@@ -485,18 +333,18 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
 
                 return (
                   <li key={idx} className="mr-3">
-                    <span className="absolute -right-1.5 mt-1 h-3 w-3 rounded-full border-2 border-white bg-blue-500 dark:border-gray-800"></span>
+                    <span className="absolute -right-1 mt-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"></span>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                      <span className="truncate font-medium text-foreground">
                         {page.title || page.path}
                       </span>
                       {timeStr && (
-                        <span className="font-mono text-[10px] text-gray-400 shrink-0 tabular-nums">
+                        <span className="font-mono text-[10px] tabular-nums text-muted-foreground shrink-0">
                           {timeStr}
                         </span>
                       )}
                     </div>
-                    <div className="font-mono text-[10px] text-gray-400 truncate dir-ltr text-right">
+                    <div className="font-mono text-[10px] text-muted-foreground truncate dir-ltr text-right">
                       {page.path}
                     </div>
                   </li>
