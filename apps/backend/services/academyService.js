@@ -1091,8 +1091,12 @@ class AcademyService {
   // ─── الأدمن يوقف اشتراك طالب ───────────────────────────────────────────
   async suspendEnrollment({ enrollmentId, companyId }) {
     const db = this.getDb();
+    // الاشتراك قد يكون تاريخياً بشركة مختلفة عن شركة الكورس الحالية — نقبل الاثنتين
     const enrollment = await db.academyEnrollment.findFirst({
-      where: { id: enrollmentId, companyId },
+      where: {
+        id: enrollmentId,
+        OR: [{ companyId }, { course: { companyId } }],
+      },
     });
     if (!enrollment) throw new Error('الاشتراك غير موجود');
 
@@ -1119,8 +1123,12 @@ class AcademyService {
   // ─── الأدمن يُعيد تفعيل اشتراك طالب ────────────────────────────────────
   async reactivateEnrollment({ enrollmentId, companyId }) {
     const db = this.getDb();
+    // نفس تسامح suspend مع التسجيلات التاريخية عبر شركات
     const enrollment = await db.academyEnrollment.findFirst({
-      where: { id: enrollmentId, companyId },
+      where: {
+        id: enrollmentId,
+        OR: [{ companyId }, { course: { companyId } }],
+      },
     });
     if (!enrollment) throw new Error('الاشتراك غير موجود');
 
