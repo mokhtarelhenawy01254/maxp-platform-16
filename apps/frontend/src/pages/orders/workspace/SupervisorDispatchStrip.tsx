@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  InboxArrowDownIcon,
-  BoltIcon,
-  UsersIcon,
-  ArrowPathIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/24/outline';
+  Inbox,
+  Zap,
+  Users,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { AgentWorkload } from './types';
 
 interface SupervisorDispatchStripProps {
@@ -31,7 +31,6 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
 }) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
-  // صف الموظفين قابل للطي: إفتراضيًا مطوي — مساحة التشغيل للمدير أهم من رؤية 12 زرًا دائمًا
   const [teamExpanded, setTeamExpanded] = useState(false);
 
   const isUnassignedSelected = selectedAgentId === 'unassigned';
@@ -39,20 +38,20 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
   const hasActiveAgentFilter = Boolean(selectedAgentId) && !isUnassignedSelected;
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-3 py-1.5 backdrop-blur-sm sm:px-4">
+    <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-card/60 px-3 py-1.5 backdrop-blur-sm sm:px-4">
       {/* Left: Unassigned pool trigger + 1-Click Auto-Distribute */}
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
           onClick={() => onSelectAgent('unassigned')}
-          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
             isUnassignedSelected
-              ? 'bg-amber-500 text-amber-950 shadow-sm dark:bg-amber-400 dark:text-amber-950'
+              ? 'bg-amber-500 text-amber-950 shadow-xs dark:bg-amber-400 dark:text-amber-950'
               : 'border border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
           }`}
           title={isArabic ? 'عرض الطلبات غير الموزعة' : 'View unassigned orders'}
         >
-          <InboxArrowDownIcon className="h-3.5 w-3.5" />
+          <Inbox size={14} />
           <span>{isArabic ? 'غير الموزع' : 'Unassigned'}</span>
           <span className="font-mono text-[11px] font-bold tabular-nums">
             ({unassignedCount})
@@ -63,13 +62,13 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
           type="button"
           onClick={onAutoDistribute}
           disabled={isDistributing || unassignedCount === 0}
-          className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-sm transition-all active:scale-[0.98] hover:bg-primary/90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-xs transition-all active:scale-[0.98] hover:bg-primary/90 disabled:opacity-50"
           title={isArabic ? 'توزيع الطلبات غير الموزعة تلقائياً على الفريق' : 'Auto distribute unassigned orders'}
         >
           {isDistributing ? (
-            <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+            <RefreshCw size={13} className="animate-spin" />
           ) : (
-            <BoltIcon className="h-3.5 w-3.5 text-amber-300" />
+            <Zap size={13} className="text-amber-300" />
           )}
           <span>{isArabic ? 'توزيع تلقائي' : 'Auto-Distribute'}</span>
         </button>
@@ -78,41 +77,37 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
       {/* Vertical hairline divider */}
       <div className="hidden sm:block h-4 w-px bg-border/40 shrink-0 mx-1" aria-hidden="true" />
 
-      {/* Team toggle: chip يوسع صف الموظفين عند الحاجة */}
+      {/* Team toggle: chip to expand/collapse agent workloads */}
       <button
         type="button"
         onClick={() => setTeamExpanded((v) => !v)}
         aria-expanded={teamExpanded}
-        className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+        className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all ${
           teamExpanded || hasActiveAgentFilter
             ? 'bg-foreground text-background shadow-xs'
-            : 'border border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+            : 'border border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
         }`}
         title={isArabic ? 'عرض/إخفاء أحمال الفريق' : 'Toggle team workload chips'}
       >
-        <UsersIcon className="h-3 w-3" />
+        <Users size={13} />
         <span>{isArabic ? `فريق العمل (${agents.length})` : `Team (${agents.length})`}</span>
-        {teamExpanded ? (
-          <ChevronUpIcon className="h-3 w-3" />
-        ) : (
-          <ChevronDownIcon className="h-3 w-3" />
-        )}
+        {teamExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
       </button>
 
-      {/* Agent Workload Chips — تظهر فقط عند التوسيع أو وجود فلتر موظف نشط */}
+      {/* Agent Workload Chips */}
       {(teamExpanded || hasActiveAgentFilter) && (
-        <div className="flex flex-1 items-center justify-start sm:justify-end gap-1 overflow-x-auto ps-1 no-scrollbar">
+        <div className="flex flex-1 items-center justify-start sm:justify-end gap-1.5 overflow-x-auto ps-1 no-scrollbar">
           {/* All Team chip */}
           <button
             type="button"
             onClick={() => onSelectAgent(null)}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all ${
               isAllSelected
                 ? 'bg-foreground text-background shadow-xs'
-                : 'border border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                : 'border border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             }`}
           >
-            <UsersIcon className="h-3 w-3" />
+            <Users size={13} />
             <span>{isArabic ? 'الكل' : 'All'}</span>
           </button>
 
@@ -127,10 +122,10 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
                 key={agent.id}
                 type="button"
                 onClick={() => onSelectAgent(agent.id)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'border border-border/40 bg-background text-foreground hover:bg-muted/40'
+                    : 'border border-border/50 bg-background text-foreground hover:bg-muted/50'
                 }`}
                 title={`${agent.name} — ${agent.pendingCount} معلق، ${agent.todayConfirmedCount} مؤكد اليوم`}
               >
@@ -140,7 +135,7 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
                   }`}
                 />
                 <span className="truncate max-w-[90px]">{agent.name}</span>
-                <span className="font-mono text-[10px] font-bold tabular-nums opacity-85">
+                <span className="font-mono text-[10px] font-bold tabular-nums opacity-90">
                   {agent.pendingCount}
                   <span className="opacity-60 font-normal"> / </span>
                   {agent.todayConfirmedCount}
@@ -153,3 +148,5 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
     </div>
   );
 };
+
+export default SupervisorDispatchStrip;

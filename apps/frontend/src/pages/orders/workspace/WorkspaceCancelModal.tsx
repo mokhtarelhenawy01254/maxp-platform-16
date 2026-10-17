@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertCircle, X } from 'lucide-react';
 import { cancellationService, CancellationReason } from '../../../services/cancellationService';
 import { useModalA11y } from '../../../hooks/useModalA11y';
 import { WorkspaceOrder } from './types';
@@ -25,7 +26,7 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
   const panelRef = useModalA11y(Boolean(order), onClose);
   const [standardReasons, setStandardReasons] = useState<CancellationReason[]>([]);
-  const [loadingReasons, setLoadingReasons] = useState(false);
+  const [, setLoadingReasons] = useState(false);
 
   useEffect(() => {
     if (!order || standardReasons.length > 0) return;
@@ -62,22 +63,37 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
     >
       <div
         ref={panelRef}
-        className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-5 shadow-xl transition-all"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 text-balance">
-          <h2 className="text-base font-black text-foreground">
-            {t('orders.cancelReasonTitle')}
-          </h2>
-          <p className="mt-0.5 font-mono text-xs text-muted-foreground" dir="ltr">
-            #{order.orderNumber} • {order.customerName}
-          </p>
+        <div className="mb-3.5 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <AlertCircle size={15} />
+              </span>
+              <h2 className="text-base font-bold text-foreground">
+                {t('orders.cancelReasonTitle')}
+              </h2>
+            </div>
+            <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground" dir="ltr">
+              #{order.orderNumber} • {order.customerName}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* Standard Reason Chips */}
         {standardReasons.length > 0 && (
-          <div className="mb-3 text-balance">
-            <span className="mb-1.5 block text-[11px] font-semibold text-muted-foreground">
+          <div className="mb-3.5">
+            <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
               {isArabic ? 'أسباب معيارية سريعة:' : 'Quick standard reasons:'}
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -86,10 +102,10 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
                   key={r.id}
                   type="button"
                   onClick={() => onReasonTextChange(r.reason)}
-                  className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
                     reasonText === r.reason
-                      ? 'border-destructive bg-destructive/15 text-destructive'
-                      : 'border-border/60 bg-background text-foreground hover:bg-muted/40'
+                      ? 'border-destructive bg-destructive/15 text-destructive font-semibold'
+                      : 'border-border/70 bg-background text-foreground hover:bg-muted/50'
                   }`}
                 >
                   {r.reason}
@@ -104,14 +120,14 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
           onChange={(e) => onReasonTextChange(e.target.value)}
           placeholder={t('orders.cancelReasonPlaceholder') || ''}
           rows={3}
-          className="w-full rounded-md border border-border/60 bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+          className="w-full rounded-xl border border-border/70 bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-destructive focus:outline-none focus:ring-2 focus:ring-destructive/20 transition-all"
         />
 
-        <div className="mt-4 flex items-center justify-end gap-2">
+        <div className="mt-5 flex items-center justify-end gap-2 border-t border-border/40 pt-3.5">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            className="rounded-xl border border-border/70 bg-background px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             {t('orders.cancelClose')}
           </button>
@@ -119,7 +135,7 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={!reasonText.trim() || isSubmitting}
-            className="rounded-md bg-destructive px-3.5 py-1.5 text-xs font-black text-destructive-foreground transition-all active:scale-[0.98] hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-destructive px-4 py-2 text-xs font-bold text-destructive-foreground shadow-xs transition-all active:scale-[0.98] hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (isArabic ? 'جارٍ الإلغاء…' : 'Cancelling…') : t('orders.cancelConfirm')}
           </button>
@@ -128,3 +144,5 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
     </div>
   );
 };
+
+export default WorkspaceCancelModal;

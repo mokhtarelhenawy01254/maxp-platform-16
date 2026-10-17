@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowPathIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
-  CheckCircleIcon,
-  SparklesIcon,
-} from '@heroicons/react/24/outline';
+  RefreshCw,
+  MessageSquare,
+  CheckCircle2,
+  FileText,
+} from 'lucide-react';
 
 export interface ChatMessage {
   id: string;
@@ -36,7 +36,7 @@ export const WorkspaceWhatsAppMessages: React.FC<WorkspaceWhatsAppMessagesProps>
   if (loadingMessages) {
     return (
       <div className="flex h-full flex-1 items-center justify-center">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-emerald-500" />
+        <RefreshCw size={24} className="animate-spin text-emerald-500" />
       </div>
     );
   }
@@ -44,10 +44,10 @@ export const WorkspaceWhatsAppMessages: React.FC<WorkspaceWhatsAppMessagesProps>
   if (messages.length === 0) {
     return (
       <div className="flex h-full flex-1 flex-col items-center justify-center p-6 text-center text-muted-foreground">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 mb-2">
-          <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 mb-3 border border-emerald-500/20">
+          <MessageSquare size={22} />
         </div>
-        <p className="text-xs font-semibold text-foreground">
+        <p className="text-xs font-bold text-foreground">
           {isArabic ? 'لا توجد محادثة سابقة مع هذا العميل' : 'No prior messages found'}
         </p>
         <p className="mt-1 text-[11px] max-w-xs text-muted-foreground">
@@ -58,9 +58,9 @@ export const WorkspaceWhatsAppMessages: React.FC<WorkspaceWhatsAppMessagesProps>
         <button
           type="button"
           onClick={onSwitchToTemplates}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600 hover:bg-emerald-500/20 active:scale-[0.98] transition-transform"
+          className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-600 hover:bg-emerald-500/20 active:scale-[0.98] transition-all"
         >
-          <SparklesIcon className="h-3.5 w-3.5" />
+          <FileText size={14} />
           <span>{isArabic ? 'تصفح القوالب الجاهزة' : 'Browse Templates'}</span>
         </button>
       </div>
@@ -80,20 +80,20 @@ export const WorkspaceWhatsAppMessages: React.FC<WorkspaceWhatsAppMessagesProps>
             className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-xs ${
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-xs ${
                 isMine
                   ? 'rounded-ee-xs bg-emerald-600 text-white dark:bg-emerald-700'
-                  : 'rounded-es-xs bg-card border border-border/50 text-foreground'
+                  : 'rounded-es-xs bg-card border border-border/70 text-foreground'
               }`}
             >
               <p className="whitespace-pre-wrap select-text">{msg.content}</p>
               <div
-                className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                  isMine ? 'text-emerald-100/80' : 'text-muted-foreground'
+                className={`mt-1.5 flex items-center justify-end gap-1 text-[10px] font-mono tabular-nums ${
+                  isMine ? 'text-emerald-100/85' : 'text-muted-foreground'
                 }`}
               >
                 <span dir="ltr">{dateStr}</span>
-                {isMine && <CheckCircleIcon className="h-3 w-3 inline text-emerald-200" />}
+                {isMine && <CheckCircle2 size={11} className="inline text-emerald-200" />}
               </div>
             </div>
           </div>
@@ -103,3 +103,5 @@ export const WorkspaceWhatsAppMessages: React.FC<WorkspaceWhatsAppMessagesProps>
     </div>
   );
 };
+
+export default WorkspaceWhatsAppMessages;

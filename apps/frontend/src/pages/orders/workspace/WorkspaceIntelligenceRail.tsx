@@ -2,11 +2,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  ChartBarIcon,
-  UserGroupIcon,
-} from '@heroicons/react/24/outline';
+  ShieldCheck,
+  AlertTriangle,
+  BarChart2,
+  Users,
+  ArrowLeft,
+  ArrowRight,
+} from 'lucide-react';
 import { PerspectiveMode, WorkspaceOrder, WorkspaceStats } from './types';
 
 interface WorkspaceIntelligenceRailProps {
@@ -31,27 +33,26 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
   const isVip = deliveryRate !== null && deliveryRate >= 85 && (customerStats?.totalDelivered || 0) >= 3;
 
   return (
-    <aside className="flex h-full flex-col overflow-y-auto border-s border-border/40 bg-card/60 p-3.5 text-xs">
+    <aside className="flex h-full flex-col overflow-y-auto border-s border-border/60 bg-card/70 p-3.5 text-xs">
       {onClose && (
-        <div className="flex items-center justify-between border-b border-border/30 pb-2 mb-2 md:hidden">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 md:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
           >
-            <span>←</span>
+            {isArabic ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
             <span>{isArabic ? 'العودة إلى تفاصيل الطلب' : 'Back to Order Details'}</span>
           </button>
         </div>
       )}
       {/* ─── Mode 1: Operator / Execution Intelligence ─────────────────────── */}
-      {/* سطح واحد بفواصل شعرية — لا بوكسات داخلية (قاعدة Ergonomic Workspace Design) */}
       {perspective === 'operator' && (
-        <div className="divide-y divide-border/30">
+        <div className="divide-y divide-border/40">
           {/* Customer Risk & Trust Dossier */}
           <section className="pb-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <ShieldCheckIcon className="h-4 w-4 text-primary" />
+              <ShieldCheck className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'سجل ثقة العميل' : 'Customer Trust Dossier'}</span>
             </div>
 
@@ -71,14 +72,14 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               </div>
 
               {isHighRisk && (
-                <div className="mt-2 flex items-center gap-1.5 rounded bg-rose-500/10 p-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-                  <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
+                <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/10 p-2 text-[11px] font-semibold text-destructive">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>{isArabic ? 'تنبيه: مرتجع مرتفع — يفضل طلب عربون شحن' : 'High return risk — recommend shipping deposit'}</span>
                 </div>
               )}
 
               {isVip && (
-                <div className="mt-2 rounded bg-emerald-500/10 p-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                   <span>{isArabic ? 'عميل موثوق VIP — أولوية قصوى للشحن' : 'VIP Customer — top fulfillment priority'}</span>
                 </div>
               )}
@@ -89,10 +90,10 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
 
       {/* ─── Mode 2: Supervisor Operational View ──────────────────────────── */}
       {perspective === 'supervisor' && (
-        <div className="divide-y divide-border/30">
+        <div className="divide-y divide-border/40">
           <section className="pb-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <ChartBarIcon className="h-4 w-4 text-primary" />
+              <BarChart2 className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'تيليمتري الطابور الحي' : 'Live Queue Telemetry'}</span>
             </div>
 
@@ -111,21 +112,22 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{isArabic ? 'الملغية' : 'Cancelled'}</span>
-                <span className="font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400">{stats?.cancelled || 0}</span>
+                <span className="font-mono font-bold tabular-nums text-destructive">{stats?.cancelled || 0}</span>
               </div>
             </div>
           </section>
 
           <section className="py-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <UserGroupIcon className="h-4 w-4 text-primary" />
+              <Users className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
             </div>
             <Link
               to="/settings/orders?tab=confirmation"
-              className="mt-2.5 inline-block text-[11px] font-bold text-primary hover:underline"
+              className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
             >
-              {isArabic ? 'ضبط إعدادات التوزيع ←' : 'Configure Assignment Rules →'}
+              <span>{isArabic ? 'ضبط إعدادات التوزيع' : 'Configure Assignment Rules'}</span>
+              {isArabic ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
             </Link>
           </section>
         </div>
@@ -133,3 +135,5 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
     </aside>
   );
 };
+
+export default WorkspaceIntelligenceRail;
