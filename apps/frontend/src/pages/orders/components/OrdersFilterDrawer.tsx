@@ -1,19 +1,17 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  XMarkIcon,
-  AdjustmentsHorizontalIcon,
-  CalendarDaysIcon,
-  CheckCircleIcon,
-  CreditCardIcon,
-  GlobeAltIcon,
-  BuildingStorefrontIcon,
-  UsersIcon,
-  TruckIcon,
-  ArrowPathIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+  X,
+  SlidersHorizontal,
+  Calendar,
+  CheckCircle2,
+  CreditCard,
+  Globe,
+  RotateCcw,
+  Eye,
+} from "lucide-react";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
+import { OrdersOperationsFilterSection } from "./OrdersOperationsFilterSection";
 import type { OrdersFilters } from "../Orders";
 
 export interface OrdersFilterDrawerProps {
@@ -40,6 +38,50 @@ export interface OrdersFilterDrawerProps {
   onClearAdvancedFilters: () => void;
 }
 
+interface FilterSectionProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  count?: number;
+  onClear?: () => void;
+  clearLabel?: string;
+  children: React.ReactNode;
+}
+
+const FilterSection: React.FC<FilterSectionProps> = ({
+  icon: Icon,
+  title,
+  count,
+  onClear,
+  clearLabel,
+  children,
+}) => (
+  <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/20 p-3 sm:p-3.5">
+    <div className="flex items-center justify-between">
+      <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground">
+        <Icon className="h-4 w-4 text-primary shrink-0" />
+        {title}
+      </label>
+      <div className="flex items-center gap-1.5">
+        {count !== undefined && count > 0 && (
+          <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary tabular-nums">
+            {count}
+          </span>
+        )}
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {clearLabel || "مسح"}
+          </button>
+        )}
+      </div>
+    </div>
+    {children}
+  </div>
+);
+
 export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
   isOpen,
   onClose,
@@ -65,19 +107,15 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Escape key handler
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when open
   useEffect(() => {
     if (!isOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -106,32 +144,31 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Slide-over Drawer Panel */}
-      <aside
-        className="relative z-50 flex h-full w-full max-w-md flex-col border-s border-slate-200 bg-white shadow-2xl transition-transform animate-in slide-in-from-end duration-200 dark:border-slate-800 dark:bg-slate-950 sm:max-w-lg"
-      >
+      <aside className="relative z-50 flex h-full w-full max-w-md flex-col border-s border-border bg-card shadow-2xl transition-transform animate-in slide-in-from-end duration-200 sm:max-w-lg">
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4 dark:border-slate-800/80">
+        <div className="flex items-center justify-between border-b border-border/70 px-4 sm:px-5 py-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-              <AdjustmentsHorizontalIcon className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <SlidersHorizontal className="h-4 w-4" />
             </div>
             <div>
               <h2
                 id="orders-filter-drawer-title"
-                className="text-base font-bold text-slate-900 dark:text-white"
+                className="text-sm sm:text-base font-bold text-foreground"
               >
                 {t("orders.filters")}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {advancedFilterCount > 0 ? (
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">
-                    {advancedFilterCount} {t("orders.activeFilters", { count: advancedFilterCount }) || "فلاتر نشطة"}
+                  <span className="font-semibold text-primary tabular-nums">
+                    {advancedFilterCount}{" "}
+                    {t("orders.activeFilters", { count: advancedFilterCount }) || "فلاتر نشطة"}
                   </span>
                 ) : (
                   t("orders.allOrders")
@@ -145,10 +182,10 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               <button
                 type="button"
                 onClick={onClearAdvancedFilters}
-                className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 active:scale-95 dark:text-red-400 dark:hover:bg-red-950/30"
+                className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 active:scale-95 transition"
                 title={t("orders.clearAdvancedFilters")}
               >
-                <ArrowPathIcon className="h-3.5 w-3.5" />
+                <RotateCcw className="h-3.5 w-3.5" />
                 <span>{t("orders.clearAll")}</span>
               </button>
             )}
@@ -156,33 +193,22 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               type="button"
               onClick={onClose}
               aria-label={String(t("common.close") || "إغلاق")}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-95 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition"
             >
-              <XMarkIcon className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
         {/* Drawer Body - Scrollable */}
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-5 py-4">
           {/* Section: Date Range */}
-          <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <CalendarDaysIcon className="h-4 w-4 text-blue-500" />
-                {t("orders.allDates")}
-              </label>
-              {filters.timeRange && (
-                <button
-                  type="button"
-                  onClick={() => onSetQuickDate("")}
-                  className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  {t("orders.clearAll")}
-                </button>
-              )}
-            </div>
-
+          <FilterSection
+            icon={Calendar}
+            title={String(t("orders.allDates"))}
+            onClear={filters.timeRange ? () => onSetQuickDate("") : undefined}
+            clearLabel={String(t("orders.clearAll"))}
+          >
             <select
               aria-label={String(t("orders.allDates"))}
               value={filters.timeRange}
@@ -203,9 +229,9 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
             </select>
 
             {hasCustomDateFilters && (
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2 pt-1.5">
                 <div>
-                  <span className="mb-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
                     {t("orders.fromDate")}
                   </span>
                   <input
@@ -222,7 +248,7 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
                   />
                 </div>
                 <div>
-                  <span className="mb-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
                     {t("orders.toDate")}
                   </span>
                   <input
@@ -240,21 +266,14 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
                 </div>
               </div>
             )}
-          </div>
+          </FilterSection>
 
           {/* Section: Order Status */}
-          <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-                {t("orders.allStatuses")}
-              </label>
-              {filters.status.length > 0 && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                  {filters.status.length}
-                </span>
-              )}
-            </div>
+          <FilterSection
+            icon={CheckCircle2}
+            title={String(t("orders.allStatuses"))}
+            count={filters.status.length}
+          >
             <MultiSelectFilter
               ariaLabel={String(t("orders.allStatuses"))}
               placeholder={String(t("orders.allStatuses"))}
@@ -263,21 +282,14 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               onChange={(next) => onFilterChange("status", next)}
               {...multiSelectCommon}
             />
-          </div>
+          </FilterSection>
 
           {/* Section: Payment Status */}
-          <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <CreditCardIcon className="h-4 w-4 text-purple-500" />
-                {t("orders.allPaymentStatuses")}
-              </label>
-              {filters.paymentStatus.length > 0 && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                  {filters.paymentStatus.length}
-                </span>
-              )}
-            </div>
+          <FilterSection
+            icon={CreditCard}
+            title={String(t("orders.allPaymentStatuses"))}
+            count={filters.paymentStatus.length}
+          >
             <MultiSelectFilter
               ariaLabel={String(t("orders.allPaymentStatuses"))}
               placeholder={String(t("orders.allPaymentStatuses"))}
@@ -286,22 +298,15 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               onChange={(next) => onFilterChange("paymentStatus", next)}
               {...multiSelectCommon}
             />
-          </div>
+          </FilterSection>
 
           {/* Section: Order Source */}
           {showOrderSourceFilter && (
-            <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  <GlobeAltIcon className="h-4 w-4 text-cyan-500" />
-                  {t("orders.allSources")}
-                </label>
-                {filters.sourceType.length > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                    {filters.sourceType.length}
-                  </span>
-                )}
-              </div>
+            <FilterSection
+              icon={Globe}
+              title={String(t("orders.allSources"))}
+              count={filters.sourceType.length}
+            >
               <MultiSelectFilter
                 ariaLabel={String(t("orders.allSources"))}
                 placeholder={String(t("orders.allSources"))}
@@ -310,109 +315,35 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
                 onChange={(next) => onFilterChange("sourceType", next)}
                 {...multiSelectCommon}
               />
-            </div>
+            </FilterSection>
           )}
 
           {/* Section: Operations, Merchants & Affiliates */}
           {showUnifiedOperationFilters && (
-            <div className="space-y-3.5 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <TruckIcon className="h-4 w-4 text-amber-500" />
-                {t("orders.unifiedOperations", { defaultValue: "العمليات والتنفيذ" })}
-              </div>
-
-              {showMerchantOperationFilters && (
-                <div className="space-y-1.5">
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                    <BuildingStorefrontIcon className="h-3.5 w-3.5" />
-                    {t("orders.allMerchants")}
-                  </span>
-                  <MultiSelectFilter
-                    ariaLabel={String(t("orders.allMerchants"))}
-                    placeholder={String(t("orders.allMerchants"))}
-                    options={merchantOptionsList}
-                    value={filters.merchantId}
-                    onChange={(next) => onFilterChange("merchantId", next)}
-                    {...multiSelectCommon}
-                  />
-                </div>
-              )}
-
-              {showAffiliateOperationFilter && (
-                <div className="space-y-1.5">
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                    <UsersIcon className="h-3.5 w-3.5" />
-                    {t("orders.allAffiliates")}
-                  </span>
-                  <MultiSelectFilter
-                    ariaLabel={String(t("orders.allAffiliates"))}
-                    placeholder={String(t("orders.allAffiliates"))}
-                    options={affiliateOptionsList}
-                    value={filters.affiliateId}
-                    onChange={(next) => onFilterChange("affiliateId", next)}
-                    {...multiSelectCommon}
-                  />
-                </div>
-              )}
-
-              {showMerchantOperationFilters && (
-                <>
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                      {t("orders.fulfillmentSource")}
-                    </span>
-                    <MultiSelectFilter
-                      ariaLabel={String(t("orders.fulfillmentSource"))}
-                      placeholder={String(t("orders.allFulfillmentSources"))}
-                      options={fulfillmentOptions}
-                      value={filters.fulfillmentSource}
-                      onChange={(next) => onFilterChange("fulfillmentSource", next)}
-                      {...multiSelectCommon}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                      {t("orders.merchantOperationStatus")}
-                    </span>
-                    <MultiSelectFilter
-                      ariaLabel={String(t("orders.merchantOperationStatus"))}
-                      placeholder={String(t("orders.allMerchantOperationStatuses"))}
-                      options={operationOptions}
-                      value={filters.merchantOperationStatus}
-                      onChange={(next) => onFilterChange("merchantOperationStatus", next)}
-                      {...multiSelectCommon}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                      {t("orders.merchantSettlements")}
-                    </span>
-                    <MultiSelectFilter
-                      ariaLabel={String(t("orders.merchantSettlements"))}
-                      placeholder={String(t("orders.allSettlements"))}
-                      options={settlementOptions}
-                      value={filters.merchantSettlementStatus}
-                      onChange={(next) => onFilterChange("merchantSettlementStatus", next)}
-                      {...multiSelectCommon}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+            <OrdersOperationsFilterSection
+              filters={filters}
+              merchantOptionsList={merchantOptionsList}
+              affiliateOptionsList={affiliateOptionsList}
+              fulfillmentOptions={fulfillmentOptions}
+              operationOptions={operationOptions}
+              settlementOptions={settlementOptions}
+              showMerchantOperationFilters={showMerchantOperationFilters}
+              showAffiliateOperationFilter={showAffiliateOperationFilter}
+              multiSelectCommon={multiSelectCommon}
+              onFilterChange={onFilterChange}
+            />
           )}
 
           {/* Section: Unseen toggle */}
-          <div className="rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
+          <div className="rounded-2xl border border-border/70 bg-muted/20 p-3 sm:p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <EyeIcon className="h-4 w-4 text-blue-500" />
+                <Eye className="h-4 w-4 text-primary shrink-0" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span className="text-xs font-bold text-foreground">
                     {t("orders.unseen")}
                   </span>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] text-muted-foreground">
                     {t("orders.unseenHint") || "عرض الطلبات غير المقروءة فقط"}
                   </p>
                 </div>
@@ -422,12 +353,12 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
                 role="switch"
                 aria-checked={filters.onlyUnseen}
                 onClick={() => onFilterChange("onlyUnseen", !filters.onlyUnseen)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
-                  filters.onlyUnseen ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-700"
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                  filters.onlyUnseen ? "bg-primary" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-xs ring-0 transition duration-200 ease-in-out ${
                     filters.onlyUnseen ? "ltr:translate-x-5 rtl:-translate-x-5" : "translate-x-0"
                   }`}
                 />
@@ -437,22 +368,20 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
         </div>
 
         {/* Drawer Sticky Footer */}
-        <div className="border-t border-slate-200/80 bg-slate-50/90 px-5 py-3.5 backdrop-blur-xs dark:border-slate-800/80 dark:bg-slate-900/90">
+        <div className="border-t border-border/70 bg-card px-4 sm:px-5 py-3 backdrop-blur-xs">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              onClick={() => {
-                onClearAdvancedFilters();
-              }}
+              onClick={onClearAdvancedFilters}
               disabled={advancedFilterCount === 0 && !filters.onlyUnseen}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center rounded-xl border border-border/70 px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 active:scale-95 transition"
             >
               {t("orders.clearAdvancedFilters")}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl bg-blue-600 px-5 py-2 text-center text-xs font-bold text-white shadow-sm shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="flex-1 rounded-xl bg-primary px-5 py-2 text-center text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-95 transition"
             >
               {t("orders.applyFilters", { defaultValue: "تطبيق الفلاتر" })}
             </button>

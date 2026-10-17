@@ -1,10 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { ChevronLeft, Copy, Undo2 } from "lucide-react";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { CustomerRatingBadge } from "../../../components/orders/CustomerRatingBadge";
 import type { Order } from "../Orders";
+import { toCompactRelativeTime, formatMobileOrderNumber } from "../utils/mobileListHelpers";
 
 export interface OrdersMobileListHelpers {
   getCustomerDisplayName: (order: Order) => string;
@@ -45,19 +46,6 @@ interface OrdersMobileListProps {
   onCustomerRatingChange?: (orderNumber: string, newRating: string) => void;
 }
 
-const toCompactRelativeTime = (timeStr: string): string => {
-  if (!timeStr) return "";
-  return timeStr
-    .replace(/^منذ\s+/, "")
-    .replace(/\s*دقيقة|\s*دقائق/, " د")
-    .replace(/\s*ساعة|\s*ساعات/, " س")
-    .replace(/\s*يوم|\s*أيام/, " ي")
-    .replace(/\s*minutes?\s*ago/i, "m")
-    .replace(/\s*hours?\s*ago/i, "h")
-    .replace(/\s*days?\s*ago/i, "d")
-    .replace(/\s*just now/i, "now");
-};
-
 export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
   orders,
   loading,
@@ -73,7 +61,6 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
   onToggleSelection,
   onMarkAsViewed,
   onClearFilters,
-  onCustomerRatingChange,
 }) => {
   const { t } = useTranslation();
   const {
@@ -102,14 +89,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
           {orders.map((order, idx) => {
             if (!order) return null;
             const isSelected = selectedOrders.includes(order.orderNumber);
+            const { rawNumber, compactOrderNumber } = formatMobileOrderNumber(order.orderNumber, order.metadata);
 
-            const isCartId = String(order.orderNumber || "").startsWith("cart_");
-            const rawNumber =
-              order.metadata?.isIncompleteCart || isCartId
-                ? `INC-${String(order.orderNumber || "").replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
-                : order.orderNumber;
-
-            const compactOrderNumber = rawNumber.replace(/^ORD-/, "");
             const rawTime = getRelativeTime(order.createdAt || new Date().toISOString());
             const compactTime = toCompactRelativeTime(rawTime);
 
@@ -149,18 +130,18 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     onOpenOrder(order);
                   }
                 }}
-                className={`group relative rounded-xl border bg-white/95 shadow-sm transition-all duration-150 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:bg-slate-900/90 ${
+                className={`group relative rounded-xl border bg-card shadow-xs transition-all duration-150 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                   density === "compact"
                     ? "flex items-center justify-between gap-2 min-h-[42px] px-2.5 py-1.5"
                     : "flex flex-col justify-center gap-1.5 min-h-[56px] px-3 py-2.5"
                 } ${
                   isSelected
-                    ? "border-blue-500/70 bg-blue-50/80 ring-1 ring-blue-500/30 dark:border-blue-500/60 dark:bg-blue-500/10"
-                    : "border-slate-200/80 hover:border-slate-300 dark:border-slate-700/80 dark:hover:border-slate-600"
+                    ? "border-primary/70 bg-primary/5 ring-1 ring-primary/30"
+                    : "border-border/70 hover:border-border"
                 }`}
               >
                 {density === "compact" ? (
-                  /* Compact 1-Row Layout: Order# + Customer Name (flex-1 truncate) + Time + Price + Status */
+                  /* Compact 1-Row Layout: Order# + Customer Name + Time + Price + Status */
                   <>
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                       {canSelectOrders && (
@@ -169,7 +150,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           aria-label={String(
                             t("orders.selectOrder", { orderNumber: rawNumber }),
                           )}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400 shrink-0 cursor-pointer"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0 cursor-pointer"
                           checked={isSelected}
                           onChange={() => onToggleSelection(order.orderNumber)}
                           onClick={(e) => e.stopPropagation()}
@@ -179,20 +160,20 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       <div className="flex items-center gap-1 shrink-0">
                         <span
                           dir="ltr"
-                          className="inline-flex items-center rounded-md border border-slate-200/80 bg-slate-50 px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                          className="inline-flex items-center rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-foreground shadow-xs"
                         >
                           #{compactOrderNumber}
                         </span>
                         {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
                           <span
-                            className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60 shrink-0"
+                            className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-500/30 dark:text-amber-400 shrink-0"
                             title={
                               order.metadata?.duplicate?.duplicateOfOrderNumber
                                 ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
                                 : "طلب مكرر"
                             }
                           >
-                            <DocumentDuplicateIcon className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" />
+                            <Copy className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
                             <span>مكرر</span>
                           </span>
                         )}
@@ -205,7 +186,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1 min-w-0 flex-1">
-                        <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        <span className="truncate text-xs font-semibold text-foreground">
                           {customerName}
                         </span>
                         <CustomerRatingBadge
@@ -231,40 +212,40 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span
-                        className="truncate text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0"
+                        className="truncate text-[11px] font-medium text-muted-foreground shrink-0"
                         title={formatDate(order.createdAt || new Date().toISOString())}
                       >
                         {compactTime}
                       </span>
 
                       <div className="flex flex-col items-end">
-                        <span className="text-xs font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
+                        <span className="text-xs font-bold font-mono tabular-nums text-foreground shrink-0">
                           {formatPrice(getOrderAmount(order))}
                         </span>
                         {Boolean(order.discount && Number(order.discount) > 0) && (
                           <span
-                            className="text-[9px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[70px] leading-tight"
+                            className="text-[9px] text-destructive font-medium truncate max-w-[70px] leading-tight"
                             title={order.discountReason ? `خصم: ${order.discountReason}` : "خصم"}
                           >
                             {order.discountReason || "خصم"}
                           </span>
                         )}
                         {((order.discountApprovalStatus || (order.metadata as any)?.discountApprovalStatus) === "PENDING_APPROVAL" || order.needsDiscountApproval) && (
-                          <span className="text-[8px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-800">
+                          <span className="text-[8px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/30">
                             بانتظار الاعتماد
                           </span>
                         )}
                       </div>
 
                       <span
-                        className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-sm`}
+                        className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-xs`}
                         style={unifiedStatus.style}
                         aria-label={unifiedStatus.labelKey}
                       >
                         {unifiedStatus.text}
                       </span>
 
-                      <ChevronLeftIcon className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 group-active:-translate-x-0.5 dark:text-slate-600 dark:group-hover:text-slate-400 shrink-0 transition-transform duration-150" />
+                      <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground group-active:-translate-x-0.5 shrink-0 transition-transform duration-150" />
                     </div>
                   </>
                 ) : (
@@ -279,7 +260,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                             aria-label={String(
                               t("orders.selectOrder", { orderNumber: rawNumber }),
                             )}
-                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400 shrink-0 cursor-pointer"
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0 cursor-pointer"
                             checked={isSelected}
                             onChange={() => onToggleSelection(order.orderNumber)}
                             onClick={(e) => e.stopPropagation()}
@@ -289,20 +270,20 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         <div className="flex items-center gap-1 shrink-0">
                           <span
                             dir="ltr"
-                            className="inline-flex items-center rounded-md border border-slate-200/80 bg-slate-50 px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                            className="inline-flex items-center rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-foreground shadow-xs"
                           >
                             #{compactOrderNumber}
                           </span>
                           {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
                             <span
-                              className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60 shrink-0"
+                              className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-500/30 dark:text-amber-400 shrink-0"
                               title={
                                 order.metadata?.duplicate?.duplicateOfOrderNumber
                                   ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
                                   : "طلب مكرر"
                               }
                             >
-                              <DocumentDuplicateIcon className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" />
+                              <Copy className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
                               <span>مكرر</span>
                             </span>
                           )}
@@ -314,40 +295,40 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           )}
                         </div>
 
-                        <span className="truncate text-xs sm:text-sm font-semibold text-slate-900 dark:text-white min-w-0 flex-1">
+                        <span className="truncate text-xs sm:text-sm font-semibold text-foreground min-w-0 flex-1">
                           {customerName}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         <div className="flex flex-col items-end">
-                          <span className="text-xs sm:text-sm font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
+                          <span className="text-xs sm:text-sm font-bold font-mono tabular-nums text-foreground shrink-0">
                             {formatPrice(getOrderAmount(order))}
                           </span>
                           {Boolean(order.discount && Number(order.discount) > 0) && (
                             <span
-                              className="text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[100px] leading-tight"
+                              className="text-[10px] text-destructive font-medium truncate max-w-[100px] leading-tight"
                               title={order.discountReason ? `خصم: ${order.discountReason}` : "خصم"}
                             >
                               {order.discountReason || "خصم"}
                             </span>
                           )}
                           {((order.discountApprovalStatus || (order.metadata as any)?.discountApprovalStatus) === "PENDING_APPROVAL" || order.needsDiscountApproval) && (
-                            <span className="text-[9px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-800">
+                            <span className="text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/30">
                               بانتظار الاعتماد
                             </span>
                           )}
                         </div>
 
-                        <ChevronLeftIcon className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 group-active:-translate-x-0.5 dark:text-slate-600 dark:group-hover:text-slate-400 shrink-0 transition-transform duration-150" />
+                        <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground group-active:-translate-x-0.5 shrink-0 transition-transform duration-150" />
                       </div>
                     </div>
 
                     {/* Row 2: Relative Time + Phone/City + Status Badge */}
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 w-full min-w-0">
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground w-full min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
                         <span
-                          className="shrink-0 font-medium text-slate-500 dark:text-slate-400"
+                          className="shrink-0 font-medium text-muted-foreground"
                           title={formatDate(order.createdAt || new Date().toISOString())}
                         >
                           {compactTime}
@@ -355,10 +336,10 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
 
                         {customerPhone && (
                           <>
-                            <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
+                            <span className="text-border shrink-0">•</span>
                             <span
                               dir="ltr"
-                              className="font-mono tabular-nums text-[11px] text-slate-500 dark:text-slate-400 shrink-0"
+                              className="font-mono tabular-nums text-[11px] text-muted-foreground shrink-0"
                             >
                               {customerPhone}
                             </span>
@@ -367,8 +348,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
 
                         {customerCity && (
                           <>
-                            <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
+                            <span className="text-border shrink-0">•</span>
+                            <span className="truncate text-[11px] text-muted-foreground min-w-0">
                               {customerCity}
                             </span>
                           </>
@@ -378,14 +359,15 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         {(order.turboReturnReason || (order as any).turboDelayReason) && (
                           <span
-                            className="text-[10px] font-medium text-rose-700 dark:text-rose-300 max-w-[120px] truncate"
+                            className="inline-flex items-center gap-0.5 text-[10px] font-medium text-destructive max-w-[120px] truncate"
                             title={`سبب المرتجع: ${order.turboReturnReason || (order as any).turboDelayReason}`}
                           >
-                            ↩ {order.turboReturnReason || (order as any).turboDelayReason}
+                            <Undo2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{order.turboReturnReason || (order as any).turboDelayReason}</span>
                           </span>
                         )}
                         <span
-                          className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-sm`}
+                          className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-xs`}
                           style={unifiedStatus.style}
                           aria-label={unifiedStatus.labelKey}
                         >
