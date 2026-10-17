@@ -3,7 +3,7 @@
 ## Deployment & Repository Directives
 
 - **Mandatory Target Repo for Post-Task Auto-Push:**
-  - **URL:** `https://github.com/shroukmagdi74-source/maxperformance14`
+  - **URL:** `https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions`
   - **Remote Name:** `origin`
   - **Strict Post-Task Rule:** After completing **ANY** task, automatically commit all changes with a clear, descriptive commit message explaining what was updated, and push directly to `origin` (`git push origin main`).
   - **Commit Naming:** Always write explicit commit messages (e.g., `feat(...)`, `fix(...)`, `docs(...)`) so the user can easily trace every update.

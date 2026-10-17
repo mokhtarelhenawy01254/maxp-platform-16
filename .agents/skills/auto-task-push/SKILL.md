@@ -1,6 +1,6 @@
 ---
 name: auto-task-push
-description: Automatically commit and push updates to https://github.com/shroukmagdi74-source/maxperformance14 with descriptive commit messages after completing any task.
+description: Automatically commit and push updates to https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions with descriptive commit messages after completing any task.
 ---
 
 # Auto Task Push Skill
@@ -24,7 +24,7 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
 
 
 
-- **Repository URL:** `https://github.com/shroukmagdi74-source/maxperformance14`
+- **Repository URL:** `https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions`
 - **Git Remote Name:** `origin`
 - **Branch:** `main` (or current active branch)
 
@@ -93,4 +93,4 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
    > If you ever feel tempted to force push, **STOP and ask the user first.**
 
 5. **Report to User:**
-   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/shroukmagdi74-source/maxperformance14`.
+   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions`.

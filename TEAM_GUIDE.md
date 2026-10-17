@@ -13,8 +13,8 @@
 ## ≡ƒÜÇ ╪Ñ╪╣╪»╪º╪» ╪º┘ä┘à╪┤╪▒┘ê╪╣
 
 ```bash
-git clone https://github.com/shroukmagdi74-source/maxperformance14.git
-cd maxperformance14
+git clone https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions.git
+cd https-github.com-shroukmagdi74-source-maxperformance15-actions
 
 # ╪º┘ä┘ü╪▒┘ê┘å╪¬
 cd apps/frontend

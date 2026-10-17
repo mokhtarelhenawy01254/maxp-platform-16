@@ -30,7 +30,7 @@ jobs:
           DEST_PAT: ${{ secrets.DEST_PAT }}
         run: |
           git config --global url."https://x-access-token:${DEST_PAT}@github.com/".insteadOf "https://github.com/"
-          git remote add dest https://github.com/shroukmagdi74-source/maxperformance14.git
+          git remote add dest https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions.git
 
       - name: Push to destination
         run: |
