@@ -70,6 +70,41 @@ const ROUTE_SEO_MAP = [
     },
   },
 
+  // ── Academy Portal Public Routes ──────────────────────────────────────────
+  {
+    match: "/portal/course/cmuzmwaxs07r2juml2v04xon5",
+    title: "كورس MaxP — من أول إعلان لأول نظام",
+    description:
+      "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+    image: `${PLATFORM_BASE_URL}/og/p1_course-path_1200x628.png`,
+    canonical: "https://maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5",
+    type: "product",
+    noIndex: false,
+    robots: "index, follow",
+  },
+  {
+    match: "/portal/catalog",
+    title: "أكاديمية MaxP — كورسات لأصحاب المشاريع",
+    description:
+      "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+    image: `${PLATFORM_BASE_URL}/og/p1_course-path_1200x628.png`,
+    canonical: "https://maxp.online/portal",
+    type: "website",
+    noIndex: false,
+    robots: "index, follow",
+  },
+  {
+    match: "/portal",
+    title: "أكاديمية MaxP — كورسات لأصحاب المشاريع",
+    description:
+      "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+    image: `${PLATFORM_BASE_URL}/og/p1_course-path_1200x628.png`,
+    canonical: "https://maxp.online/portal",
+    type: "website",
+    noIndex: false,
+    robots: "index, follow",
+  },
+
   // ── Landing Pages (Both /lp/* and /landing/* aliases) ───────────────────────
   {
     match: "/lp/ai-inbox",
@@ -324,7 +359,7 @@ const upsertCanonical = (html, url) => {
     : html.replace("</head>", `  ${tag}\n</head>`);
 };
 
-const injectSeoTags = (html, { title, description, image, url, noIndex, price, currency, type, jsonLd }) => {
+const injectSeoTags = (html, { title, description, image, url, noIndex, robots, price, currency, type, jsonLd }) => {
   let h = upsertTitle(html, title);
   h = upsertMeta(h, "name", "description", description);
   h = upsertMeta(h, "property", "og:title", title);
@@ -345,9 +380,21 @@ const injectSeoTags = (html, { title, description, image, url, noIndex, price, c
     h = upsertMeta(h, "property", "product:price:currency", currency || "EGP");
   }
 
-  if (noIndex) {
+  if (robots) {
+    const robotsPattern = /<meta[^>]+name=["']robots["'][^>]*>/i;
+    const robotsTag = `<meta name="robots" content="${escapeHtml(robots)}" />`;
+    h = robotsPattern.test(h)
+      ? h.replace(robotsPattern, robotsTag)
+      : h.replace("</head>", `  ${robotsTag}\n</head>`);
+  } else if (noIndex) {
     const robotsPattern = /<meta[^>]+name=["']robots["'][^>]*>/i;
     const robotsTag = `<meta name="robots" content="noindex, nofollow" />`;
+    h = robotsPattern.test(h)
+      ? h.replace(robotsPattern, robotsTag)
+      : h.replace("</head>", `  ${robotsTag}\n</head>`);
+  } else if (noIndex === false) {
+    const robotsPattern = /<meta[^>]+name=["']robots["'][^>]*>/i;
+    const robotsTag = `<meta name="robots" content="index, follow" />`;
     h = robotsPattern.test(h)
       ? h.replace(robotsPattern, robotsTag)
       : h.replace("</head>", `  ${robotsTag}\n</head>`);
@@ -533,8 +580,10 @@ const handlePlatformSeo = async (req, res, next) => {
       title: routeSeo.title,
       description: routeSeo.description,
       image: finalImage,
-      url: currentUrl,
-      noIndex: routeSeo.noIndex || false,
+      url: routeSeo.canonical || currentUrl,
+      noIndex: routeSeo.noIndex !== undefined ? routeSeo.noIndex : false,
+      robots: routeSeo.robots,
+      type: routeSeo.type || "website",
       jsonLd: routeSeo.jsonLd,
     });
 

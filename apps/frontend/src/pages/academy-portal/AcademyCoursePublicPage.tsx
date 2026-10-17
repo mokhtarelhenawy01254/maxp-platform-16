@@ -201,22 +201,38 @@ const AcademyCoursePublicPage: React.FC = () => {
 
       {/* 1. Hero Section */}
       <section className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-6">
-        <div className="max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{totalLessons} درس{freeLessons > 0 ? ` · أول ${freeLessons} ${freeLessons === 1 ? "درس" : "دروس"} معاينة مجانًا` : ""}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{totalLessons} درس{freeLessons > 0 ? ` · أول ${freeLessons} ${freeLessons === 1 ? "درس" : "دروس"} معاينة مجانًا` : ""}</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              {course.title || (isDefaultCourse ? "من أول إعلان… لأول نظام — كورس صاحب المحل، مش للوكالة" : "تفاصيل الكورس التدريبي")}
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              {course.description || (isDefaultCourse
+                ? "سايب الإعلانات للتجربة عشان محدش ورّاك الطريق كامل؟ الكورس ده ماشي معاك من أول خطوة: تفهم عميلك مين، تظبّط عرضك وسعرك، تكتب محتوى بيبيع، تشغّل إعلانك، وتقرا رقمك آخر الشهر. مسار واحد من أوله لآخره — 25 درس، كل درس فكرة واحدة بالعربي المصري، من غير كلام كبير."
+                : "منهج عملي مكثف خطوة بخطوة يبدأ معك من الصفر وحتى إتقان المهارات وتحقيق النتائج المطلوبة.")}
+            </p>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            {course.title || (isDefaultCourse ? "من أول إعلان… لأول نظام — كورس صاحب المحل، مش للوكالة" : "تفاصيل الكورس التدريبي")}
-          </h1>
+          {(course.thumbnailUrl || isDefaultCourse) && (
+            <div className="lg:col-span-4 flex justify-center">
+              <div className="w-full max-w-xs rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm bg-slate-50 aspect-square">
+                <img
+                  src={course.thumbnailUrl || '/og/p1_course-path_1080x1080.png'}
+                  alt={course.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-            {course.description || (isDefaultCourse
-              ? "سايب الإعلانات للتجربة عشان محدش ورّاك الطريق كامل؟ الكورس ده ماشي معاك من أول خطوة: تفهم عميلك مين، تظبّط عرضك وسعرك، تكتب محتوى بيبيع، تشغّل إعلانك، وتقرا رقمك آخر الشهر. مسار واحد من أوله لآخره — 25 درس، كل درس فكرة واحدة بالعربي المصري، من غير كلام كبير."
-              : "منهج عملي مكثف خطوة بخطوة يبدأ معك من الصفر وحتى إتقان المهارات وتحقيق النتائج المطلوبة.")}
-          </p>
-
+        <div className="max-w-3xl space-y-4">
           {/* Action Row */}
           <div className="pt-2 flex flex-wrap items-center gap-3">
             {isEnrolled ? (

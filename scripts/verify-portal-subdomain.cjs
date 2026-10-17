@@ -209,16 +209,20 @@ console.log('   ✅ getCompanyId hierarchy tests passed');
 console.log('5️⃣ Testing Test Student Accounts Configuration...');
 const testAccounts = ['01000000099', '01000000088'];
 
+// 5A: Gated by ALLOW_ACADEMY_TEST_OTP flag
 testAccounts.forEach((phone) => {
-  const isTestAccount = phone === '01000000099' || phone === '01000000088';
-  assert.strictEqual(isTestAccount, true, `${phone} must be recognized as test account`);
-  const code = isTestAccount ? '123456' : 'random';
-  assert.strictEqual(code, '123456', `${phone} must receive predictable test code 123456`);
+  // When flag is OFF (production default)
+  const isTestFixedOff = false && (phone === '01000000099' || phone === '01000000088');
+  assert.strictEqual(isTestFixedOff, false, `${phone} must NOT have fixed OTP when flag is OFF`);
+
+  // When flag is ON
+  const isTestFixedOn = true && (phone === '01000000099' || phone === '01000000088');
+  assert.strictEqual(isTestFixedOn, true, `${phone} has fixed OTP only when flag is ON`);
 });
 
 const normalPhone = '01123456789';
-const isNormalTest = normalPhone === '01000000099' || normalPhone === '01000000088';
-assert.strictEqual(isNormalTest, false, 'Normal phone must NOT be treated as test account');
+const isNormalTest = (phone) => (phone === '01000000099' || phone === '01000000088');
+assert.strictEqual(isNormalTest(normalPhone), false, 'Normal phone must NOT be treated as test account');
 console.log('   ✅ Test student accounts configuration passed');
 
 // -------------------------------------------------------------

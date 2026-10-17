@@ -23,6 +23,10 @@ interface RawRoute {
   title: string;
   description: string;
   canonicalPath?: string;
+  image?: string;
+  ogType?: string;
+  twitterCard?: string;
+  robots?: string;
   noindex?: boolean;
 }
 
@@ -31,6 +35,10 @@ export interface RouteSeo {
   description: string;
   /** Canonical path when it differs from the route itself (alias pages). */
   canonicalPath?: string;
+  image?: string;
+  ogType?: string;
+  twitterCard?: string;
+  robots?: string;
 }
 
 const ROUTES: RawRoute[] = (routeSeoData.routes || []) as RawRoute[];
@@ -45,6 +53,10 @@ export const ROUTE_SEO: Record<string, RouteSeo> = ROUTES.reduce(
       title: route.title,
       description: route.description,
       ...(route.canonicalPath ? { canonicalPath: route.canonicalPath } : {}),
+      ...(route.image ? { image: route.image } : {}),
+      ...(route.ogType ? { ogType: route.ogType } : {}),
+      ...(route.twitterCard ? { twitterCard: route.twitterCard } : {}),
+      ...(route.robots ? { robots: route.robots } : {}),
     };
     return acc;
   },
@@ -123,6 +135,23 @@ export function applyPublicRouteSeo(pathname: string): void {
     upsertMeta("name", "twitter:title", entry.title);
     upsertMeta("name", "twitter:description", entry.description);
     upsertMeta("property", "og:url", canonicalUrl);
+
+    if (entry.image) {
+      const imageUrl = entry.image.startsWith("http")
+        ? entry.image
+        : `${SITE_ORIGIN}${entry.image.startsWith("/") ? "" : "/"}${entry.image}`;
+      upsertMeta("property", "og:image", imageUrl);
+      upsertMeta("name", "twitter:image", imageUrl);
+    }
+    if (entry.ogType) {
+      upsertMeta("property", "og:type", entry.ogType);
+    }
+    if (entry.twitterCard) {
+      upsertMeta("name", "twitter:card", entry.twitterCard);
+    }
+    if (entry.robots) {
+      upsertMeta("name", "robots", entry.robots);
+    }
   }
 
   const shouldNoindex =
@@ -131,5 +160,11 @@ export function applyPublicRouteSeo(pathname: string): void {
 
   if (shouldNoindex) {
     upsertMeta("name", "robots", "noindex, follow");
+  } else if (!entry?.robots) {
+    // If route is public and no custom robots, ensure any stale noindex tag is normalized
+    const robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (robotsMeta && robotsMeta.getAttribute("content")?.includes("noindex")) {
+      robotsMeta.setAttribute("content", "index, follow");
+    }
   }
 }

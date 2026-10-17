@@ -175,6 +175,48 @@
       "description": "منظومة متاجر وبراندات الملابس في مصر: 17 أداة في باقة واحدة تشمل متجر أونلاين، كاشير فروع بالباركود، ربط شحن بوسطة وتوربو، تأكيد واتساب، وتشخيص أسباب المرتجعات.",
       "noindex": true,
       "sitemap": { "include": false }
+    },
+    {
+      "path": "/portal",
+      "title": "أكاديمية MaxP — كورسات لأصحاب المشاريع",
+      "description": "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+      "image": "https://maxp.online/og/p1_course-path_1200x628.png",
+      "ogType": "website",
+      "twitterCard": "summary_large_image",
+      "robots": "index, follow",
+      "sitemap": { "include": true, "changefreq": "weekly", "priority": "0.8" }
+    },
+    {
+      "path": "/portal/catalog",
+      "title": "أكاديمية MaxP — كورسات لأصحاب المشاريع",
+      "description": "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+      "canonicalPath": "/portal",
+      "image": "https://maxp.online/og/p1_course-path_1200x628.png",
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/portal/course/cmuzmwaxs07r2juml2v04xon5",
+      "title": "كورس MaxP — من أول إعلان لأول نظام",
+      "description": "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+      "image": "https://maxp.online/og/p1_course-path_1200x628.png",
+      "ogType": "product",
+      "twitterCard": "summary_large_image",
+      "robots": "index, follow",
+      "sitemap": { "include": true, "changefreq": "weekly", "priority": "0.9" }
+    },
+    {
+      "path": "/portal/login",
+      "title": "تسجيل دخول الطالب | أكاديمية MaxP",
+      "description": "سجّل دخولك بكود التحقق لمتابعة دروسك في أكاديمية MaxP.",
+      "noindex": true,
+      "sitemap": { "include": false }
+    },
+    {
+      "path": "/portal/my-courses",
+      "title": "كورساتي | أكاديمية MaxP",
+      "description": "دوراتك ومساراتك التعليمية المسجلة في أكاديمية MaxP.",
+      "noindex": true,
+      "sitemap": { "include": false }
     }
   ]
 }

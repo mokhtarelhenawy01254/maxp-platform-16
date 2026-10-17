@@ -797,10 +797,10 @@ exports.sendStudentLoginCode = async (req, res) => {
 
     // 3. Generate 6-digit code
     // 🔒 حسابات الاختبار (01000000099 / 01000000088) بكود ثابت 123456 — مفعّلة فقط بمتغير البيئة
-    //    ACADEMY_TEST_ACCOUNTS === 'true' (ممنوعة تماماً في الإنتاج افتراضياً)
-    const allowTestAccounts = process.env.ACADEMY_TEST_ACCOUNTS === 'true';
-    const isTestAccount = allowTestAccounts && (cleanPhone === '01000000099' || cleanPhone === '01000000088');
-    const code = isTestAccount ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+    //    ALLOW_ACADEMY_TEST_OTP === 'true' (ممنوعة تماماً في الإنتاج افتراضياً)
+    const isTestFixedOtp = (process.env.ALLOW_ACADEMY_TEST_OTP === 'true' || process.env.ACADEMY_TEST_ACCOUNTS === 'true') &&
+      (cleanPhone === '01000000099' || cleanPhone === '01000000088');
+    const code = isTestFixedOtp ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
 
     // 4. Save in OTP store (valid for 10 minutes)
     studentOtpStore.set(cleanPhone, {
@@ -814,8 +814,8 @@ exports.sendStudentLoginCode = async (req, res) => {
     let dispatchSuccess = false;
     let dispatchError = null;
 
-    if (isTestAccount) {
-      // 🧹 Test accounts (01000000099 / 01000000088) have fixed predictable code 123456 for automation tests
+    if (isTestFixedOtp) {
+      // 🧹 Test accounts (01000000099 / 01000000088) have fixed predictable code 123456 only when ALLOW_ACADEMY_TEST_OTP === 'true'
       dispatchSuccess = true;
     } else {
       const companyId = enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
@@ -885,7 +885,7 @@ exports.sendStudentLoginCode = async (req, res) => {
       success: true,
       message: 'تم إرسال كود التحقق بنجاح إلى هاتفك عبر واتساب',
       expiresInSeconds: 600,
-      ...(isTestAccount ? { testCode: '123456' } : {}),
+      ...(isTestFixedOtp ? { testCode: '123456' } : {}),
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -911,12 +911,12 @@ exports.studentLogin = async (req, res) => {
     }
 
     const cleanCode = String(code).trim();
-    const allowTestAccounts = process.env.ACADEMY_TEST_ACCOUNTS === 'true';
-    const isTestAccount = allowTestAccounts && (cleanPhone === '01000000099' || cleanPhone === '01000000088');
+    const isTestFixedOtp = (process.env.ALLOW_ACADEMY_TEST_OTP === 'true' || process.env.ACADEMY_TEST_ACCOUNTS === 'true') &&
+      (cleanPhone === '01000000099' || cleanPhone === '01000000088');
 
     // Verify OTP
     let isCodeValid = false;
-    if (isTestAccount && cleanCode === '123456') {
+    if (isTestFixedOtp && cleanCode === '123456') {
       isCodeValid = true;
     } else {
       const otpRecord = studentOtpStore.get(cleanPhone);

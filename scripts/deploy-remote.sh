@@ -748,6 +748,10 @@ if [ -n "$PM2_BIN" ]; then
     echo "🎓 Seeding Swan Academy Test Course & Demo Student..."
     NODE_ENV=production timeout 60 node scripts/seed-swan-test-course.js || echo "⚠️ seed-swan-test-course skipped, continuing..."
   fi
+  if [ -f "scripts/update-course1-thumbnail.js" ]; then
+    echo "🖼️ Updating Course 1 Thumbnail (1080x1080)..."
+    NODE_ENV=production timeout 60 node scripts/update-course1-thumbnail.js || echo "⚠️ update-course1-thumbnail skipped, continuing..."
+  fi
   echo "🚀 Starting/reloading ecosystem (backend + worker)..."
   NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env || "$PM2_BIN" reload ecosystem.config.js --env production --update-env || true
   "$PM2_BIN" save

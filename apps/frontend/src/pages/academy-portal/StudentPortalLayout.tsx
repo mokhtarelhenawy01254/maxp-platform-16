@@ -18,14 +18,34 @@ const StudentPortalLayout: React.FC<StudentPortalLayoutProps> = ({ children }) =
   const portalTitle = branding.name ? `أكاديمية ${branding.name}` : "أكاديمية MaxP";
 
   useEffect(() => {
-    // Enforce noindex on production for student portal until official rollout
+    // Robots indexing policy:
+    // 1. Subdomain tenant portals (*.maxp.online) remain strictly noindex until future rollout.
+    // 2. Private portal pages on apex (/portal/login, /portal/my-courses, lesson player) remain strictly noindex.
+    // 3. Public catalog and course landing pages on apex (maxp.online) are indexable (index, follow).
+    const host = (typeof window !== "undefined" ? window.location.hostname || "" : "").toLowerCase();
+    const isApex = host === "maxp.online" || host === "www.maxp.online" || host === "localhost" || host === "127.0.0.1";
+    const path = location.pathname;
+    const isPrivatePage =
+      path === "/portal/login" ||
+      path.startsWith("/portal/login/") ||
+      path === "/portal/my-courses" ||
+      path.startsWith("/portal/my-courses/") ||
+      path.includes("/lesson/") ||
+      path.includes("/learn/") ||
+      path.includes("/watch/");
+
     let meta = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement("meta");
       meta.name = "robots";
       document.head.appendChild(meta);
     }
-    meta.content = "noindex, nofollow";
+
+    if (isApex && !isPrivatePage) {
+      meta.content = "index, follow";
+    } else {
+      meta.content = "noindex, nofollow";
+    }
 
     // 🔒 حالة الدخول الحقيقية = وجود توكن الطالب (مش مجرد حفظ الاسم بعد الدفع)
     setLoggedIn(Boolean(localStorage.getItem("studentToken")));

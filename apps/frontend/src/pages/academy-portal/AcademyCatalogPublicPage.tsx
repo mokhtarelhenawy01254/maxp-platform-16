@@ -106,6 +106,21 @@ const AcademyCatalogPublicPage: React.FC = () => {
                 key={course.id}
                 className="bg-card rounded-2xl border border-border/70 hover:border-primary/40 transition-all duration-200 shadow-xs hover:shadow-sm flex flex-col overflow-hidden group"
               >
+                {/* Course Card Thumbnail */}
+                {(course.thumbnailUrl || course.id === 'cmuzmwaxs07r2juml2v04xon5') && (
+                  <Link
+                    to={`/portal/course/${course.id}`}
+                    className="block relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-border/50"
+                  >
+                    <img
+                      src={course.thumbnailUrl || '/og/p1_course-path_1080x1080.png'}
+                      alt={course.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </Link>
+                )}
+
                 {/* Course Card Header */}
                 <div className="p-5 sm:p-6 flex-1 flex flex-col space-y-4">
                   {/* Badges Row */}

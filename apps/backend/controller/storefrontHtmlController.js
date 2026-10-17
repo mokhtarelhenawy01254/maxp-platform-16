@@ -455,7 +455,15 @@ exports.handleStorefrontShell = async (req, res, next) => {
     }
 
     const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const host = (req.get("host") || "").toLowerCase().split(":")[0];
+    const isApexHost = host === "maxp.online" || host === "www.maxp.online";
     const isPortalRoute = req.path.startsWith("/portal") || req.path.startsWith("/academy");
+    const isPublicApexPortal = isApexHost && (
+      req.path === "/portal" ||
+      req.path === "/portal/catalog" ||
+      req.path === "/portal/course/cmuzmwaxs07r2juml2v04xon5"
+    );
+
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
       currentUrl,
@@ -468,7 +476,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
       storePage,
       landing: landingMeta,
       reviews,
-      noIndex: isNotFound || landingMissing || isPortalRoute,
+      noIndex: isNotFound || landingMissing || (isPortalRoute && !isPublicApexPortal),
     });
 
     const indexHtml = await loadIndexHtml();

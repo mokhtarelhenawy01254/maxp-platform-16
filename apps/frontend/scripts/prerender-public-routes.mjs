@@ -132,9 +132,26 @@ const main = () => {
     html = upsertMeta(html, "name", "twitter:title", route.title);
     html = upsertMeta(html, "name", "twitter:description", route.description);
     html = upsertCanonical(html, canonicalUrl);
-    if (route.noindex === true) {
+
+    if (route.image) {
+      const imageUrl = route.image.startsWith("http")
+        ? route.image
+        : `${origin}${route.image.startsWith("/") ? "" : "/"}${route.image}`;
+      html = upsertMeta(html, "property", "og:image", imageUrl);
+      html = upsertMeta(html, "name", "twitter:image", imageUrl);
+    }
+    if (route.ogType) {
+      html = upsertMeta(html, "property", "og:type", route.ogType);
+    }
+    if (route.twitterCard) {
+      html = upsertMeta(html, "name", "twitter:card", route.twitterCard);
+    }
+    if (route.robots) {
+      html = upsertMeta(html, "name", "robots", route.robots);
+    } else if (route.noindex === true) {
       html = upsertMeta(html, "name", "robots", "noindex, follow");
     }
+
     html = injectSemanticSnippet(html, route.title, route.description);
 
     const outFile = path.join(
