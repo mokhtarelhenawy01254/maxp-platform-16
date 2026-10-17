@@ -26,13 +26,20 @@ export const ManufacturingReportsPage: React.FC = () => {
   // Filters
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'quarter'>('month');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
+  const [customerIdFilter, setCustomerIdFilter] = useState<string>('all');
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await manufacturingApi.listOrders();
+      const [data, custList] = await Promise.all([
+        manufacturingApi.listOrders(),
+        manufacturingApi.getCustomersList().catch(() => []),
+      ]);
       setOrders(Array.isArray(data) ? data : []);
+      setCustomers(custList);
     } catch (err: any) {
       console.error('Failed to load manufacturing reports data', err);
       setError('تعذر تحميل بيانات تقارير التصنيع');
@@ -49,6 +56,8 @@ export const ManufacturingReportsPage: React.FC = () => {
     const now = new Date();
     return orders.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+      if (orderTypeFilter !== 'all' && o.orderType !== orderTypeFilter) return false;
+      if (customerIdFilter !== 'all' && o.customerId !== customerIdFilter) return false;
       if (dateFilter === 'all') return true;
 
       const orderDate = new Date(o.createdAt);
@@ -61,7 +70,7 @@ export const ManufacturingReportsPage: React.FC = () => {
       if (dateFilter === 'quarter') return diffDays <= 90;
       return true;
     });
-  }, [orders, dateFilter, statusFilter]);
+  }, [orders, dateFilter, statusFilter, orderTypeFilter, customerIdFilter]);
 
   const metrics = useMemo(() => {
     const totalOrders = filteredOrders.length;
@@ -82,6 +91,14 @@ export const ManufacturingReportsPage: React.FC = () => {
     const totalOverheadCost = filteredOrders.reduce((sum, o) => sum + (o.actualOverheadCost || 0), 0);
     const totalSpend = totalMaterialCost + totalLaborCost + totalOverheadCost;
 
+    // Contract Revenue & Estimated Profit (Wave 1)
+    const totalContractRevenue = filteredOrders.reduce(
+      (sum, o) => sum + ((o.plannedQuantity || 0) * (o.salePricePerUnit || 0)),
+      0
+    );
+    const estimatedProfit = totalContractRevenue - totalSpend;
+    const profitMargin = totalContractRevenue > 0 ? (estimatedProfit / totalContractRevenue) * 100 : 0;
+
     const completedUnits = completedOrders.reduce((sum, o) => sum + (o.producedQuantity || 0), 0);
     const completedSpend = completedOrders.reduce((sum, o) => sum + (o.totalCost || 0), 0);
     const avgUnitCost = completedUnits > 0 ? completedSpend / completedUnits : 0;
@@ -99,6 +116,9 @@ export const ManufacturingReportsPage: React.FC = () => {
       totalLaborCost,
       totalOverheadCost,
       avgUnitCost,
+      totalContractRevenue,
+      estimatedProfit,
+      profitMargin,
     };
   }, [filteredOrders]);
 
@@ -148,7 +168,8 @@ export const ManufacturingReportsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-16" dir="rtl">
       <ManufacturingHeader
-        activeTab="reports"
+        title="تقارير الإنتاج والتكاليف وهوامش الربح"
+        subtitle="تحليل تكاليف التشغيل الفعلي، انحرافات MOH، وإيرادات وأرباح عقود التصنيع للغير"
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -181,58 +202,86 @@ export const ManufacturingReportsPage: React.FC = () => {
         )}
 
         {/* Global Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-card border border-border/70 shadow-xs">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
             <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
-              <span>أوامر الإنتاج في الفترة</span>
+              <span>أوامر الإنتاج</span>
               <Layers className="w-4 h-4 text-primary" />
             </div>
-            <div className="text-xl font-bold text-foreground tabular-nums">{metrics.totalOrders}</div>
-            <div className="text-[11px] text-muted-foreground mt-1 flex gap-2">
+            <div className="text-lg font-bold text-foreground tabular-nums">{metrics.totalOrders}</div>
+            <div className="text-[10px] text-muted-foreground mt-1 flex gap-1">
               <span className="text-emerald-600 font-semibold">{metrics.completedOrdersCount} منجز</span>
               <span>·</span>
               <span className="text-amber-600 font-semibold">{metrics.inProgressOrdersCount} قيد التشغيل</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-card border border-border/70 shadow-xs">
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
             <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
               <span>الكميات التامة المنتجة</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
-            <div className="text-xl font-bold text-foreground tabular-nums">
+            <div className="text-lg font-bold text-foreground tabular-nums">
               {metrics.totalProduced.toLocaleString()}{' '}
               <span className="text-xs font-normal text-muted-foreground">قطعة</span>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              من أصل {metrics.totalPlanned.toLocaleString()} قطعة مخططة
+            <div className="text-[10px] text-muted-foreground mt-1">
+              من {metrics.totalPlanned.toLocaleString()} مخططة
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-card border border-border/70 shadow-xs">
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
+            <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
+              <span>القيمة المبيعة التقديرية</span>
+              <Coins className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="text-lg font-bold text-blue-600 tabular-nums">
+              {formatEGP(metrics.totalContractRevenue)}{' '}
+              <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">
+              إجمالي قيمة عقود التصنيع
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
+            <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
+              <span>الربح التقديري المحقق</span>
+              <Coins className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className={`text-lg font-bold tabular-nums ${metrics.estimatedProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {formatEGP(metrics.estimatedProfit)}{' '}
+              <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1 font-mono">
+              هامش: %{metrics.profitMargin.toFixed(1)}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
+            <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
+              <span>متوسط تكلفة القطعة</span>
+              <Coins className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-lg font-bold text-foreground tabular-nums">
+              {formatEGP(metrics.avgUnitCost)}{' '}
+              <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">
+              المنفق: {formatEGP(metrics.totalSpend)} ج.م
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs">
             <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
               <span>نسبة الهدر والتلف</span>
               <AlertTriangle className="w-4 h-4 text-amber-600" />
             </div>
-            <div className="text-xl font-bold text-foreground tabular-nums">
+            <div className="text-lg font-bold text-foreground tabular-nums">
               %{metrics.scrapRate.toFixed(2)}
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              إجمالي {metrics.totalScrapped} قطعة هالك مسجلة
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-card border border-border/70 shadow-xs">
-            <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between mb-1">
-              <span>متوسط تكلفة القطعة التامة</span>
-              <Coins className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div className="text-xl font-bold text-emerald-600 tabular-nums">
-              {formatEGP(metrics.avgUnitCost)}{' '}
-              <span className="text-xs font-normal text-muted-foreground">ج.م</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              إجمالي المنفق: {formatEGP(metrics.totalSpend)} ج.م
+            <div className="text-[10px] text-muted-foreground mt-1">
+              {metrics.totalScrapped} قطعة هالك
             </div>
           </div>
         </div>
@@ -273,7 +322,7 @@ export const ManufacturingReportsPage: React.FC = () => {
           </div>
 
           {/* Quick Filters */}
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
               <span>الفترة:</span>
@@ -281,7 +330,7 @@ export const ManufacturingReportsPage: React.FC = () => {
             <select
               value={dateFilter}
               onChange={(e: any) => setDateFilter(e.target.value)}
-              className="px-2.5 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none"
+              className="px-2 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none"
             >
               <option value="today">اليوم</option>
               <option value="week">آخر 7 أيام</option>
@@ -290,14 +339,14 @@ export const ManufacturingReportsPage: React.FC = () => {
               <option value="all">جميع الفترات</option>
             </select>
 
-            <div className="flex items-center gap-1 text-muted-foreground mr-2">
+            <div className="flex items-center gap-1 text-muted-foreground mr-1">
               <Filter className="w-3.5 h-3.5" />
               <span>الحالة:</span>
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none"
+              className="px-2 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none"
             >
               <option value="all">جميع الحالات</option>
               <option value="COMPLETED">مكتمل</option>
@@ -306,6 +355,41 @@ export const ManufacturingReportsPage: React.FC = () => {
               <option value="PLANNED">مخطط</option>
               <option value="CANCELLED">ملغي</option>
             </select>
+
+            <div className="flex items-center gap-1 text-muted-foreground mr-1">
+              <span>النمط:</span>
+            </div>
+            <select
+              value={orderTypeFilter}
+              onChange={(e) => setOrderTypeFilter(e.target.value)}
+              className="px-2 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none"
+            >
+              <option value="all">جميع الأنماط</option>
+              <option value="FULL_PACKAGE">حزمة كاملة</option>
+              <option value="CMT">تشغيل للغير (CMT)</option>
+              <option value="CUSTOMER_MATERIALS">خامات عميل</option>
+              <option value="OUTSOURCED">تشغيل خارجي</option>
+              <option value="SAMPLE">عينة</option>
+              <option value="REWORK">إعادة تشغيل</option>
+            </select>
+
+            {customers.length > 0 && (
+              <>
+                <div className="flex items-center gap-1 text-muted-foreground mr-1">
+                  <span>العميل:</span>
+                </div>
+                <select
+                  value={customerIdFilter}
+                  onChange={(e) => setCustomerIdFilter(e.target.value)}
+                  className="px-2 py-1 rounded-md border border-border/70 bg-background text-foreground font-medium text-xs focus:outline-none max-w-[120px]"
+                >
+                  <option value="all">جميع العملاء</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
         </div>
 

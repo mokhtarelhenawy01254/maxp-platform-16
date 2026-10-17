@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Factory } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, CheckCircle2, Factory } from 'lucide-react';
 import {
   manufacturingApi,
   BillOfMaterials,
   VariantRequirementResolution,
   WarehouseOption,
   ProductionOrder,
+  ProductionOrderType,
 } from '../manufacturingApi';
 import { WizardVariantMatrixStep } from './wizard/WizardVariantMatrixStep';
 import { WizardRequirementsPreviewStep } from './wizard/WizardRequirementsPreviewStep';
@@ -27,6 +28,8 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [boms, setBoms] = useState<BillOfMaterials[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
+  const [customerOrders, setCustomerOrders] = useState<Array<{ id: string; orderNumber: string; brandName?: string | null }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +39,16 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
   const [targetWarehouseId, setTargetWarehouseId] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  // Contract Manufacturing (Wave 1) Form State
+  const [orderType, setOrderType] = useState<ProductionOrderType>('FULL_PACKAGE');
+  const [customerId, setCustomerId] = useState<string>('');
+  const [brandName, setBrandName] = useState<string>('');
+  const [customerCountry, setCustomerCountry] = useState<string>('');
+  const [salePricePerUnit, setSalePricePerUnit] = useState<number | ''>('');
+  const [customerOrderId, setCustomerOrderId] = useState<string>('');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  const [deliveryMethod, setDeliveryMethod] = useState<string>('');
 
   // Matrix quantities: size_color -> qty
   const [matrix, setMatrix] = useState<Record<string, number>>({
@@ -56,8 +69,13 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
       Promise.all([
         manufacturingApi.listBoms({ isActive: true }).catch(() => []),
         manufacturingApi.getWarehouses().catch(() => []),
-      ]).then(([bomsList, whList]) => {
+        manufacturingApi.getCustomersList().catch(() => []),
+        manufacturingApi.listCustomerOrders().catch(() => ({ items: [] })),
+      ]).then(([bomsList, whList, custList, coList]) => {
         setBoms(bomsList);
+        setWarehouses(whList);
+        setCustomers(custList);
+        setCustomerOrders(coList.items || []);
         setWarehouses(whList);
         if (bomsList.length > 0 && !selectedBomId) {
           setSelectedBomId(bomsList[0].id);
@@ -137,6 +155,14 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
         notes: notes || null,
         variantMatrix: variantList,
         stages: selectedBom?.standardStages || [],
+        orderType,
+        customerId: customerId || null,
+        customerOrderId: customerOrderId || null,
+        brandName: brandName.trim() || null,
+        customerCountry: customerCountry.trim() || null,
+        salePricePerUnit: salePricePerUnit !== '' ? Number(salePricePerUnit) : null,
+        deliveryAddress: deliveryAddress.trim() || null,
+        deliveryMethod: deliveryMethod.trim() || null,
       });
       onCreated(newOrder);
       onClose();
@@ -253,6 +279,127 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
                       <option key={w.id} value={w.id}>{w.name}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Contract Manufacturing Section */}
+              <div className="p-3 rounded-xl bg-card border border-border/80 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <span className="font-bold text-foreground text-xs">بيانات التعاقد والتصنيع للغير (اختياري)</span>
+                  <span className="text-[10px] text-muted-foreground">Contract Manufacturing</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">نمط وأسلوب التصنيع</label>
+                    <select
+                      value={orderType}
+                      onChange={(e) => setOrderType(e.target.value as ProductionOrderType)}
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none font-medium"
+                    >
+                      <option value="FULL_PACKAGE">حزمة كاملة (Full Package — قماش وتصنيع)</option>
+                      <option value="CMT">تشغيل للغير (CMT — قص وخياطة فقط)</option>
+                      <option value="CUSTOMER_MATERIALS">تشغيل بخامات العميل</option>
+                      <option value="OUTSOURCED">تشغيل خارجي لدى الغير</option>
+                      <option value="SAMPLE">عينة / بروتوتايب (Sample)</option>
+                      <option value="REWORK">إعادة تشغيل (Rework)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">اختيار العميل من النظام</label>
+                    <select
+                      value={customerId}
+                      onChange={(e) => {
+                        setCustomerId(e.target.value);
+                        const cust = customers.find((c) => c.id === e.target.value);
+                        if (cust && !brandName) setBrandName(cust.name);
+                      }}
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                    >
+                      <option value="">-- أمر إنتاج داخلي / بدون عميل --</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">اسم البراند / العلامة التجارية</label>
+                    <input
+                      type="text"
+                      value={brandName}
+                      onChange={(e) => setBrandName(e.target.value)}
+                      placeholder="Brand X..."
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">دولة العميل / التصدير</label>
+                    <input
+                      type="text"
+                      value={customerCountry}
+                      onChange={(e) => setCustomerCountry(e.target.value)}
+                      placeholder="مصر، السعودية..."
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">سعر بيع القطعة للعميل (ج.م)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={salePricePerUnit}
+                      onChange={(e) => setSalePricePerUnit(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                      placeholder="150..."
+                      className="w-full p-2 text-xs font-mono font-bold rounded-lg border border-border bg-background focus:outline-none tabular-nums"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">ربط بأمر عميل أب قائم (Customer Order)</label>
+                    <select
+                      value={customerOrderId}
+                      onChange={(e) => setCustomerOrderId(e.target.value)}
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                    >
+                      <option value="">-- بدون ربط بأمر عميل أب --</option>
+                      {customerOrders.map((co) => (
+                        <option key={co.id} value={co.id}>
+                          {co.orderNumber} {co.brandName ? `(${co.brandName})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1">طريقة التسليم والشحن</label>
+                    <input
+                      type="text"
+                      value={deliveryMethod}
+                      onChange={(e) => setDeliveryMethod(e.target.value)}
+                      placeholder="استلام من المصنع، شحن بوسطة، شحن جوي..."
+                      className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1">عنوان ومكان التسليم</label>
+                  <input
+                    type="text"
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="عنوان مقر العميل، المستودع، أو منفذ الشحن..."
+                    className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none"
+                  />
                 </div>
               </div>
 

@@ -99,7 +99,8 @@ export const ManufacturingSettingsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-16" dir="rtl">
       <ManufacturingHeader
-        activeTab="settings"
+        title="إعدادات نظام إدارة خطوط الإنتاج"
+        subtitle="حسابات WIP وضبط التوجيه المحاسبي الآلي ومستودعات الصرف والاستلام"
         actions={
           <button
             type="button"

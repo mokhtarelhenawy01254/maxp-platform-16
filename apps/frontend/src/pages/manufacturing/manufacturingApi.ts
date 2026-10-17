@@ -12,6 +12,87 @@ export type ProductionOrderStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
+export type ProductionOrderType =
+  | 'FULL_PACKAGE'
+  | 'CMT'
+  | 'CUSTOMER_MATERIALS'
+  | 'OUTSOURCED'
+  | 'SAMPLE'
+  | 'REWORK';
+
+export type CustomerOrderStatus =
+  | 'DRAFT'
+  | 'CONFIRMED'
+  | 'IN_PRODUCTION'
+  | 'READY'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export type CustomerOrderPaymentKind = 'DEPOSIT' | 'INSTALLMENT' | 'FINAL' | 'CUSTOM';
+
+export type CustomerOrderPaymentDueTrigger =
+  | 'ON_CONFIRMATION'
+  | 'ON_START'
+  | 'ON_STAGE'
+  | 'ON_DELIVERY'
+  | 'MANUAL';
+
+export type CustomerOrderPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+
+export interface CustomerOrderPayment {
+  id: string;
+  companyId: string;
+  customerOrderId: string;
+  kind: CustomerOrderPaymentKind;
+  label?: string | null;
+  percent?: number | null;
+  amount: number;
+  dueTrigger: CustomerOrderPaymentDueTrigger;
+  dueDate?: string | null;
+  status: CustomerOrderPaymentStatus;
+  paidAt?: string | null;
+  paidAmount?: number | null;
+  method?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerOrder {
+  id: string;
+  companyId: string;
+  orderNumber: string;
+  customerId?: string | null;
+  customer?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    phone?: string;
+    email?: string;
+  } | null;
+  brandName?: string | null;
+  customerCountry?: string | null;
+  responsibleUserId?: string | null;
+  status: CustomerOrderStatus;
+  expectedDelivery?: string | null;
+  notes?: string | null;
+  currency: string;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  orders?: ProductionOrder[];
+  payments?: CustomerOrderPayment[];
+  ordersCount?: number;
+  plannedQuantity?: number;
+  producedQuantity?: number;
+  totalAmount?: number;
+  totalActualCost?: number;
+  estimatedProfit?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+}
+
 export type ProductionStageType =
   | 'CUTTING'
   | 'PRINTING_EMBROIDERY'
@@ -198,6 +279,34 @@ export interface ProductionOrder {
   totalCost: number;
   unitCost: number;
   notes?: string | null;
+  // Contract Manufacturing (Wave 1) Fields
+  customerOrderId?: string | null;
+  customerOrder?: {
+    id: string;
+    orderNumber: string;
+    status: CustomerOrderStatus;
+    brandName?: string | null;
+    totalAmount?: number;
+    paidAmount?: number;
+    remainingAmount?: number;
+  } | null;
+  orderType?: ProductionOrderType;
+  customerId?: string | null;
+  customer?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    phone?: string;
+    email?: string;
+  } | null;
+  brandName?: string | null;
+  customerCountry?: string | null;
+  salePricePerUnit?: number | null;
+  totalContractValue?: number | null;
+  deliveryAddress?: string | null;
+  deliveryMethod?: string | null;
+  responsibleUserId?: string | null;
   createdById?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -382,6 +491,15 @@ export const manufacturingApi = {
     notes?: string | null;
     variantMatrix: Array<{ size: string; color: string; plannedQuantity: number; sku?: string }>;
     stages?: BomStandardStage[];
+    orderType?: ProductionOrderType;
+    customerId?: string | null;
+    customerOrderId?: string | null;
+    brandName?: string | null;
+    customerCountry?: string | null;
+    salePricePerUnit?: number | null;
+    deliveryAddress?: string | null;
+    deliveryMethod?: string | null;
+    responsibleUserId?: string | null;
   }): Promise<ProductionOrder> => {
     const res = await apiClient.post('/manufacturing/orders', data);
     return res.data?.data;
@@ -547,6 +665,80 @@ export const manufacturingApi = {
         const srcType = String(e.sourceType || '');
         return narr.includes(orderNumber) || srcType.startsWith('MANUFACTURING_');
       });
+    } catch {
+      return [];
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // Contract Manufacturing (Wave 1) API
+  // --------------------------------------------------------------------------
+  listCustomerOrders: async (params?: any): Promise<{ items: CustomerOrder[]; totals: any }> => {
+    const res = await apiClient.get('/manufacturing/customer-orders', { params });
+    return res.data?.data || { items: [], totals: {} };
+  },
+
+  getCustomerOrder: async (id: string): Promise<CustomerOrder> => {
+    const res = await apiClient.get(`/manufacturing/customer-orders/${id}`);
+    return res.data?.data;
+  },
+
+  createCustomerOrder: async (data: any): Promise<CustomerOrder> => {
+    const res = await apiClient.post('/manufacturing/customer-orders', data);
+    return res.data?.data;
+  },
+
+  updateCustomerOrder: async (id: string, data: any): Promise<CustomerOrder> => {
+    const res = await apiClient.patch(`/manufacturing/customer-orders/${id}`, data);
+    return res.data?.data;
+  },
+
+  linkOrCreateChildOrder: async (customerOrderId: string, data: any): Promise<any> => {
+    const res = await apiClient.post(`/manufacturing/customer-orders/${customerOrderId}/children`, data);
+    return res.data?.data;
+  },
+
+  listCustomerOrderPayments: async (customerOrderId: string): Promise<CustomerOrderPayment[]> => {
+    const res = await apiClient.get(`/manufacturing/customer-orders/${customerOrderId}/payments`);
+    return res.data?.data || [];
+  },
+
+  generateDefaultPayments: async (customerOrderId: string): Promise<CustomerOrderPayment[]> => {
+    const res = await apiClient.post(`/manufacturing/customer-orders/${customerOrderId}/payments/generate`);
+    return res.data?.data || [];
+  },
+
+  createCustomerOrderPayment: async (customerOrderId: string, data: any): Promise<CustomerOrderPayment> => {
+    const res = await apiClient.post(`/manufacturing/customer-orders/${customerOrderId}/payments`, data);
+    return res.data?.data;
+  },
+
+  updateCustomerOrderPayment: async (
+    customerOrderId: string,
+    paymentId: string,
+    data: any
+  ): Promise<{ payment: CustomerOrderPayment; customerOrder: CustomerOrder }> => {
+    const res = await apiClient.patch(
+      `/manufacturing/customer-orders/${customerOrderId}/payments/${paymentId}`,
+      data
+    );
+    return res.data?.data;
+  },
+
+  getCustomersList: async (search?: string): Promise<Array<{ id: string; name: string; phone?: string; email?: string }>> => {
+    try {
+      const res = await apiClient.get('/customers', { params: { search, limit: 30 } });
+      const raw = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data?.customers)
+        ? res.data.customers
+        : [];
+      return raw.map((c: any) => ({
+        id: String(c.id),
+        name: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.name || 'عميل بدون اسم',
+        phone: c.phone || '',
+        email: c.email || '',
+      }));
     } catch {
       return [];
     }

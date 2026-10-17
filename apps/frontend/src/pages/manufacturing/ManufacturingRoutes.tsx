@@ -4,6 +4,8 @@ import ManufacturingDashboardPage from './ManufacturingDashboardPage';
 import ManufacturingBomsPage from './boms/ManufacturingBomsPage';
 import ManufacturingOrdersPage from './orders/ManufacturingOrdersPage';
 import ManufacturingOrderDetailPage from './orders/ManufacturingOrderDetailPage';
+import CustomerOrdersListPage from './customerOrders/CustomerOrdersListPage';
+import CustomerOrderDetailPage from './customerOrders/CustomerOrderDetailPage';
 import ManufacturingReportsPage from './reports/ManufacturingReportsPage';
 import ManufacturingSettingsPage from './settings/ManufacturingSettingsPage';
 
@@ -11,6 +13,8 @@ export const ManufacturingRoutes: React.FC = () => {
   return (
     <Routes>
       <Route index element={<ManufacturingDashboardPage />} />
+      <Route path="customer-orders" element={<CustomerOrdersListPage />} />
+      <Route path="customer-orders/:id" element={<CustomerOrderDetailPage />} />
       <Route path="orders" element={<ManufacturingOrdersPage />} />
       <Route path="orders/:id" element={<ManufacturingOrderDetailPage />} />
       <Route path="boms" element={<ManufacturingBomsPage />} />

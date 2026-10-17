@@ -7,10 +7,12 @@ import {
   LineChart,
   Settings,
   LayoutDashboard,
+  FileText,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/manufacturing', label: 'نظرة عامة', icon: LayoutDashboard, end: true },
+  { to: '/manufacturing/customer-orders', label: 'أوامر العملاء (التصنيع للغير)', icon: FileText },
   { to: '/manufacturing/orders', label: 'أوامر الإنتاج والتشغيل', icon: ClipboardList },
   { to: '/manufacturing/boms', label: 'قوائم المكونات (BOM)', icon: ListTree },
   { to: '/manufacturing/reports', label: 'تقارير الإنتاج والتكاليف', icon: LineChart },

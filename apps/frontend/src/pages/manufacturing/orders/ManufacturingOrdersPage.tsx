@@ -32,6 +32,7 @@ export const ManufacturingOrdersPage: React.FC = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL');
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const loadOrders = async () => {
@@ -59,12 +60,16 @@ export const ManufacturingOrdersPage: React.FC = () => {
         !q ||
         ord.orderNumber.toLowerCase().includes(q) ||
         (ord.bom?.name || '').toLowerCase().includes(q) ||
+        (ord.brandName || '').toLowerCase().includes(q) ||
+        (ord.customer?.name || '').toLowerCase().includes(q) ||
+        (ord.customerOrder?.orderNumber || '').toLowerCase().includes(q) ||
         (ord.notes || '').toLowerCase().includes(q);
 
       const matchStatus = statusFilter === 'ALL' || ord.status === statusFilter;
-      return matchSearch && matchStatus;
+      const matchType = orderTypeFilter === 'ALL' || ord.orderType === orderTypeFilter;
+      return matchSearch && matchStatus && matchType;
     });
-  }, [orders, search, statusFilter]);
+  }, [orders, search, statusFilter, orderTypeFilter]);
 
   const getStatusBadge = (status: ProductionOrderStatus) => {
     switch (status) {
@@ -80,6 +85,25 @@ export const ManufacturingOrdersPage: React.FC = () => {
         return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">مكتمل</span>;
       case 'CANCELLED':
         return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">ملغي</span>;
+    }
+  };
+
+  const getOrderTypeBadge = (type?: string) => {
+    switch (type) {
+      case 'FULL_PACKAGE':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">حزمة كاملة</span>;
+      case 'CMT':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">تشغيل CMT</span>;
+      case 'CUSTOMER_MATERIALS':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20">خامات عميل</span>;
+      case 'OUTSOURCED':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">تشغيل خارجي</span>;
+      case 'SAMPLE':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/20">عينة</span>;
+      case 'REWORK':
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">إعادة تشغيل</span>;
+      default:
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border">حزمة كاملة</span>;
     }
   };
 
@@ -109,13 +133,28 @@ export const ManufacturingOrdersPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث برقم الأمر أو اسم الموديل..."
+                placeholder="بحث برقم الأمر، الموديل، العميل، أو البراند..."
                 className="w-full pl-3 pr-9 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end overflow-x-auto no-scrollbar">
+            {/* Order Type Filter */}
+            <select
+              value={orderTypeFilter}
+              onChange={(e) => setOrderTypeFilter(e.target.value)}
+              className="p-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none font-medium"
+            >
+              <option value="ALL">جميع الأنماط</option>
+              <option value="FULL_PACKAGE">حزمة كاملة</option>
+              <option value="CMT">تشغيل للغير (CMT)</option>
+              <option value="CUSTOMER_MATERIALS">خامات عميل</option>
+              <option value="OUTSOURCED">تشغيل خارجي</option>
+              <option value="SAMPLE">عينة</option>
+              <option value="REWORK">إعادة تشغيل</option>
+            </select>
+
             <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs">
               {['ALL', 'PLANNED', 'RELEASED', 'IN_PROGRESS', 'COMPLETED'].map((st) => (
                 <button
@@ -169,10 +208,13 @@ export const ManufacturingOrdersPage: React.FC = () => {
               <thead className="bg-muted/40 text-muted-foreground border-b border-border/60">
                 <tr>
                   <th className="p-3.5 font-semibold">رقم أمر الإنتاج</th>
-                  <th className="p-3.5 font-semibold">الموديل / قائمة المكونات</th>
+                  <th className="p-3.5 font-semibold">الموديل / الـ BOM</th>
+                  <th className="p-3.5 font-semibold">العميل / التعاقد</th>
+                  <th className="p-3.5 font-semibold text-center">النمط</th>
                   <th className="p-3.5 font-semibold text-center">الحالة</th>
                   <th className="p-3.5 font-semibold text-center">المخطط / المنجز</th>
                   <th className="p-3.5 font-semibold">نسبة الإنجاز</th>
+                  <th className="p-3.5 font-semibold">سعر البيع / القيمة</th>
                   <th className="p-3.5 font-semibold">التكلفة الفعلية</th>
                   <th className="p-3.5 font-semibold">تكلفة القطعة</th>
                   <th className="p-3.5 font-semibold">تاريخ الإنشاء</th>
@@ -182,7 +224,7 @@ export const ManufacturingOrdersPage: React.FC = () => {
               <tbody className="divide-y divide-border/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground text-xs">
+                    <td colSpan={12} className="py-12 text-center text-muted-foreground text-xs">
                       <div className="flex items-center justify-center gap-2">
                         <RotateCw className="w-4 h-4 animate-spin text-primary" />
                         <span>جارٍ تحميل أوامر الإنتاج...</span>
@@ -191,7 +233,7 @@ export const ManufacturingOrdersPage: React.FC = () => {
                   </tr>
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-muted-foreground text-xs">
+                    <td colSpan={12} className="py-12 text-center text-muted-foreground text-xs">
                       لا توجد أوامر إنتاج مسجلة مطابقة للبحث.
                     </td>
                   </tr>
@@ -201,6 +243,9 @@ export const ManufacturingOrdersPage: React.FC = () => {
                     const produced = Number(ord.producedQuantity) || 0;
                     const scrapped = Number(ord.scrappedQuantity) || 0;
                     const percent = planned > 0 ? Math.min(100, Math.round((produced / planned) * 100)) : 0;
+                    const salePrice = ord.salePricePerUnit ? Number(ord.salePricePerUnit) : null;
+                    const totalContractVal = salePrice ? planned * salePrice : null;
+
                     return (
                       <tr key={ord.id} className="hover:bg-muted/20 transition">
                         <td className="p-3 font-mono font-bold">
@@ -215,6 +260,24 @@ export const ManufacturingOrdersPage: React.FC = () => {
                           <div className="font-semibold text-foreground">{ord.bom?.name || '—'}</div>
                           <div className="text-[11px] text-muted-foreground font-mono">{ord.bom?.code}</div>
                         </td>
+                        <td className="p-3">
+                          <div className="space-y-0.5">
+                            <span className="font-semibold text-foreground block">
+                              {ord.brandName || ord.customer?.name || 'إنتاج داخلي'}
+                            </span>
+                            {ord.customerOrder && (
+                              <Link
+                                to={`/manufacturing/customer-orders/${ord.customerOrderId}`}
+                                className="text-[10px] text-primary hover:underline font-mono block"
+                              >
+                                {ord.customerOrder.orderNumber}
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          {getOrderTypeBadge(ord.orderType)}
+                        </td>
                         <td className="p-3 text-center">
                           {getStatusBadge(ord.status)}
                         </td>
@@ -222,7 +285,7 @@ export const ManufacturingOrdersPage: React.FC = () => {
                           <span className="font-bold text-emerald-600">{produced}</span> / {planned}{' '}
                           {scrapped > 0 && <span className="text-amber-600 text-[10px]">({scrapped} هالك)</span>}
                         </td>
-                        <td className="p-3 w-32">
+                        <td className="p-3 w-28">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 bg-muted/60 h-1.5 rounded-full overflow-hidden">
                               <div
@@ -234,6 +297,20 @@ export const ManufacturingOrdersPage: React.FC = () => {
                               {percent}%
                             </span>
                           </div>
+                        </td>
+                        <td className="p-3 font-mono tabular-nums text-foreground">
+                          {salePrice ? (
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-primary block">
+                                {totalContractVal?.toLocaleString()} ج.م
+                              </span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                @ {salePrice} ج.م/ق
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-[11px]">—</span>
+                          )}
                         </td>
                         <td className="p-3 font-mono font-bold tabular-nums text-foreground">
                           {Number(ord.totalCost).toFixed(2)}{' '}
@@ -267,9 +344,9 @@ export const ManufacturingOrdersPage: React.FC = () => {
       <NewOrderWizardModal
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onSuccess={(newOrderId) => {
+        onCreated={(newOrder) => {
           loadOrders();
-          navigate(`/manufacturing/orders/${newOrderId}`);
+          navigate(`/manufacturing/orders/${newOrder.id}`);
         }}
       />
     </div>

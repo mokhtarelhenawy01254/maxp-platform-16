@@ -1,5 +1,6 @@
 import React from 'react';
-import { Play, Check, CheckCircle2, Ban, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Play, Check, CheckCircle2, Ban, AlertTriangle, FileText, ExternalLink, DollarSign } from 'lucide-react';
 import { ProductionOrder, ProductionOrderStatus } from '../../manufacturingApi';
 
 interface OrderCockpitHeaderProps {
@@ -25,6 +26,28 @@ export const OrderCockpitHeader: React.FC<OrderCockpitHeaderProps> = ({
   const produced = Number(order.producedQuantity);
   const scrapped = Number(order.scrappedQuantity);
   const progressPercent = planned > 0 ? Math.min(100, Math.round((produced / planned) * 100)) : 0;
+
+  const salePrice = order.salePricePerUnit ? Number(order.salePricePerUnit) : null;
+  const orderContractValue = salePrice ? planned * salePrice : null;
+
+  const getOrderTypeBadge = (type?: string) => {
+    switch (type) {
+      case 'FULL_PACKAGE':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">حزمة كاملة (Full Package)</span>;
+      case 'CMT':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">تشغيل للغير (CMT)</span>;
+      case 'CUSTOMER_MATERIALS':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20">خامات عميل</span>;
+      case 'OUTSOURCED':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">تشغيل خارجي</span>;
+      case 'SAMPLE':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/20">عينة بروتوتايب</span>;
+      case 'REWORK':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">إعادة تشغيل</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border">حزمة كاملة</span>;
+    }
+  };
 
   const getStatusBadge = (status: ProductionOrderStatus) => {
     const config: Record<ProductionOrderStatus, { label: string; class: string }> = {
@@ -107,6 +130,57 @@ export const OrderCockpitHeader: React.FC<OrderCockpitHeaderProps> = ({
             )}
           </div>
         </div>
+
+        {/* Contract & Customer Layer (Wave 1) */}
+        {(order.brandName || order.customer || order.customerOrder || salePrice || order.orderType) && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1.5 font-bold text-foreground">
+                <FileText className="w-4 h-4 text-primary" />
+                <span>{order.brandName || order.customer?.name || 'تصنيع للغير'}</span>
+                {order.customerCountry && (
+                  <span className="text-[10px] text-muted-foreground font-normal">({order.customerCountry})</span>
+                )}
+              </div>
+
+              {getOrderTypeBadge(order.orderType)}
+
+              {order.customerOrder && (
+                <Link
+                  to={`/manufacturing/customer-orders/${order.customerOrderId}`}
+                  className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-primary hover:underline bg-background px-2 py-0.5 rounded border border-primary/30"
+                >
+                  <span>أمر العميل الأب: {order.customerOrder.orderNumber}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px] font-mono tabular-nums">
+              {salePrice && (
+                <div>
+                  <span className="text-muted-foreground block text-[10px]">سعر القطعة / القيمة:</span>
+                  <span className="font-bold text-foreground">
+                    {salePrice} ج.م <span className="text-muted-foreground font-normal">({orderContractValue?.toLocaleString()} ج.م)</span>
+                  </span>
+                </div>
+              )}
+
+              {order.customerOrder && order.customerOrder.paidAmount !== undefined && (
+                <div>
+                  <span className="text-muted-foreground block text-[10px]">تحصيل أمر العميل:</span>
+                  <span className="font-bold text-emerald-600">
+                    {order.customerOrder.paidAmount.toLocaleString()} ج.م
+                  </span>
+                  <span className="text-muted-foreground"> / </span>
+                  <span className="font-bold text-amber-600">
+                    {order.customerOrder.remainingAmount?.toLocaleString()} ج.م متبقي
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Progress & Metrics Strip */}
         <div className="pt-3 border-t border-border/60 grid grid-cols-2 sm:grid-cols-4 gap-3">
