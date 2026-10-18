@@ -55,7 +55,6 @@ import type {
 } from "./preparation/types";
 import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState, type PreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
-import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
@@ -65,6 +64,9 @@ import PreparationAlertBanners from "./preparation/components/PreparationAlertBa
 import PreparationColumnSettingsDropdown from "./preparation/components/PreparationColumnSettingsDropdown";
 import PreparationPaginationBar from "./preparation/components/PreparationPaginationBar";
 import PreparationQueueDialogsContainer from "./preparation/components/PreparationQueueDialogsContainer";
+import PreparationSelectionBar from "./preparation/components/PreparationSelectionBar";
+import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
+import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -275,13 +277,8 @@ const PreparationQueue: React.FC = () => {
   const [bulkHoldDialog, setBulkHoldDialog] = useState<{
     mode: "selected" | "all";
     validOrders: PreparationOrder[];
-    count: number;
   } | null>(null);
-  const [sendingToTurbo, setSendingToTurbo] = useState(false);
-  const [activeCarriers, setActiveCarriers] = useState<ActiveCarrier[]>([]);
-  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showInternalCourierModal, setShowInternalCourierModal] = useState(false);
-  const [printingInvoices, setPrintingInvoices] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
     if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
     try {
@@ -1739,205 +1736,26 @@ const PreparationQueue: React.FC = () => {
     [fetchInventory, inventorySummaryByProduct, selectedWarehouseId],
   );
 
-  const fetchActiveCarriers = useCallback(async () => {
-    try {
-      const res = await apiClient.get('/shipping-companies/active-carriers');
-      if (res.data?.success) {
-        setActiveCarriers(res.data.data || []);
-      }
-    } catch (e) {
-      console.warn('Failed to fetch active shipping carriers:', e);
-    }
-  }, []);
+  const {
+    activeCarriers,
+    showDispatchModal,
+    setShowDispatchModal,
+    sendingToTurbo,
+    handleOpenDispatchModal,
+    handleDispatchToCarrier,
+  } = usePreparationCarrierDispatch({
+    selectedOrders,
+    activeStage,
+    getOrderByNumber,
+    fetchAll,
+    clearBulkControls: uiActions.clearBulkControls,
+  });
 
-  useEffect(() => {
-    void fetchActiveCarriers();
-  }, [fetchActiveCarriers]);
-
-  const handleOpenDispatchModal = useCallback(async () => {
-    if (selectedOrders.length === 0) {
-      toast.error(t('preparation.page.selectOrderFirst'));
-      return;
-    }
-
-    const onHoldSelected = selectedOrders.some((orderNumber) => {
-      const o = getOrderByNumber(orderNumber);
-      return o?.stage === 'ON_HOLD_PREP' || o?.normalizedStatus === 'ON_HOLD_PREP';
-    }) || activeStage === 'ON_HOLD_PREP';
-
-    if (onHoldSelected) {
-      const confirmed = window.confirm(
-        '⚠️ تنبيه: لقد حددت طلبات معلقة لوجود مشكلة (ON_HOLD_PREP).\n\nهل أنت متأكد من رغبتك في إرسالها لشركة الشحن واستخراج بوالص شحن رسمية لها الآن؟'
-      );
-      if (!confirmed) return;
-    }
-
-    await fetchActiveCarriers();
-    setShowDispatchModal(true);
-  }, [activeStage, fetchActiveCarriers, getOrderByNumber, selectedOrders, t]);
-
-  const handleDispatchToCarrier = useCallback(
-    async (carrier: ActiveCarrier) => {
-      if (selectedOrders.length === 0) {
-        toast.error(t('preparation.page.selectOrderFirst'));
-        return;
-      }
-
-      try {
-        setSendingToTurbo(true);
-        let response: {
-          data?: {
-            success?: boolean;
-            data?: {
-              success?: number;
-              failed?: number;
-              results?: {
-                failed?: Array<{ orderNumber: string; error?: string; reason?: string }>;
-                skipped?: Array<{ orderNumber: string; reason?: string }>;
-              };
-            };
-            error?: string;
-          };
-        };
-
-        if (carrier.providerKey === 'QP_EXPRESS') {
-          response = await apiClient.post('/qp-express/bulk/create-shipments', {
-            orderIds: selectedOrders,
-          });
-        } else if (carrier.providerKey === 'BOSTA') {
-          response = await apiClient.post('/bosta/bulk/create-shipments', {
-            orderIds: selectedOrders,
-          });
-        } else if (carrier.providerKey === 'TURBO') {
-          response = await apiClient.post('/turbo/bulk/create-shipments', {
-            orderIds: selectedOrders,
-          });
-        } else {
-          let successCount = 0;
-          for (const orderId of selectedOrders) {
-            try {
-              await apiClient.post('/shipments/create', {
-                orderId,
-                shippingCompanyId: carrier.id,
-              });
-              successCount++;
-            } catch (err) {
-              console.warn(`Failed to create shipment for order ${orderId}:`, err);
-            }
-          }
-          response = {
-            data: {
-              success: true,
-              data: { success: successCount, failed: selectedOrders.length - successCount },
-            },
-          };
-        }
-
-        if (response.data?.success) {
-          const data = response.data.data || {};
-          const successCount = data.success ?? selectedOrders.length;
-          const failedCount = data.failed ?? 0;
-          const failedList = data.results?.failed || [];
-
-          toast.success(
-            `تم بنجاح إرسال ${successCount} طلب إلى ${carrier.name}` +
-              (failedCount > 0 ? ` (فشل ${failedCount})` : '')
-          );
-
-          if (failedList.length > 0) {
-            const preview = failedList
-              .slice(0, 5)
-              .map((item) => `• طلب #${item.orderNumber}: ${item.error || item.reason || 'تعذر الإنشاء'}`)
-              .join('\n');
-            const remainder = failedList.length > 5 ? `\n... و ${failedList.length - 5} طلبات أخرى` : '';
-            toast.error(
-              `تعذر إرسال ${failedList.length} طلب إلى ${carrier.name}:\n${preview}${remainder}`,
-              { duration: 10000 }
-            );
-          }
-
-          setShowDispatchModal(false);
-          uiActions.clearBulkControls();
-          void fetchAll();
-        } else {
-          toast.error(response.data?.error || `فشل إرسال الشحنات إلى ${carrier.name}`);
-        }
-      } catch (error: unknown) {
-        console.error('Failed to dispatch shipments:', error);
-        toast.error(getApiErrorMessage(error) || `فشل إرسال الشحنات إلى ${carrier.name}`);
-      } finally {
-        setSendingToTurbo(false);
-      }
-    },
-    [fetchAll, selectedOrders, uiActions],
-  );
-
-  const handlePrintInvoices = useCallback(async () => {
-    if (selectedOrders.length === 0) {
-      toast.error(t('preparation.page.selectOrderFirst'));
-      return;
-    }
-
-    try {
-      setPrintingInvoices(true);
-      const response = await apiClient.post("/order-invoices/bulk-generate", {
-        orderIds: selectedOrders,
-      });
-
-      if (response.data?.success) {
-        const data = response.data.data || {};
-        const invoices: Array<{ id: string }> = data.invoices || [];
-        const guestOrders: Array<{ orderId: string; order: OrderDetailsType }> = data.guestOrders || [];
-        const failed: Array<{ orderId: string; error?: string }> = data.failed || [];
-
-        if (invoices.length === 0 && guestOrders.length === 0) {
-          toast.error(t('preparation.page.invoiceNotFound'));
-          return;
-        }
-
-        // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
-        // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
-        const params = new URLSearchParams();
-        if (invoices.length > 0) {
-          params.set("ids", invoices.map((inv) => inv.id).join(","));
-        }
-        if (guestOrders.length > 0) {
-          const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
-          const guestKey = storeGuestPrintPayload({
-            company: {
-              companyName: user?.company?.name || "",
-              companyPhone: user?.company?.phone || null,
-              companyLogo: user?.company?.logo || null,
-            },
-            orders: guestOrders.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
-          });
-          params.set("guestKey", guestKey);
-        }
-        const printUrl = `/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`;
-        navigate(printUrl);
-
-        // رسالة واضحة بالأعداد (فواتير + بوليصات ضيف)، مع تنبيه منفصل للطلبات المتعثرة
-        toast.success(
-          t('preparation.page.bulkPrintSummary', {
-            invoiceCount: invoices.length,
-            guestCount: guestOrders.length,
-          }),
-        );
-        if (failed.length > 0) {
-          toast.warning(
-            t('preparation.page.bulkPrintFailed', { failedCount: failed.length }),
-          );
-        }
-      } else {
-        toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
-      }
-    } catch (error: unknown) {
-      console.error("Failed to print invoices:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
-    } finally {
-      setPrintingInvoices(false);
-    }
-  }, [navigate, selectedOrders, user]);
+  const { printingInvoices, handlePrintInvoices } = usePreparationInvoicePrinting({
+    selectedOrders,
+    navigate,
+    user,
+  });
 
   const handleMarkAsShortageHold = useCallback(
     async (orderNumber: string) => {
@@ -2138,74 +1956,39 @@ const PreparationQueue: React.FC = () => {
       )}
 
       <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-2 sm:px-3 sm:py-2 dark:border-slate-800">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-mono text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-            <input
-              type="checkbox"
-              checked={allVisibleSelected}
-              onChange={toggleSelectAllVisible}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-500"
-            />
-            {t('preparation.selectAllCheckbox')}
-          </label>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">{t('preparation.k_4')}</span>
-            <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-mono font-bold tabular-nums text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              {pagination.total}
-            </span>
-          </div>
-          {inventoryLoading && (
-            <div className="flex items-center gap-1.5 rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-mono text-amber-700 dark:text-amber-400 border border-amber-500/20">
-              <div className="h-2 w-2 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-              {t('preparation.checkingInventory')}
-            </div>
-          )}
-          {!inventoryLoading && loading && (
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-          )}
-
-          <div className="ms-auto" data-column-settings>
-            <PreparationColumnSettingsDropdown
-              showFilters={showFilters}
-              setShowFilters={setShowFilters}
-              columnSettingsOpen={columnSettingsOpen}
-              setColumnSettingsOpen={setColumnSettingsOpen}
-              visibleColumns={visibleColumns}
-              toggleColumn={toggleColumn}
-              visibleFilterSections={visibleFilterSections}
-              toggleFilterSection={toggleFilterSection}
-            />
-          </div>
-        </div>
-
-        {selectedOrders.length > 0 && (
-          <div className="animate-in fade-in-0 slide-in-from-top-2 border-b border-amber-200/80 bg-amber-50/80 px-3 py-2.5 duration-200 sm:px-4 sm:py-3 dark:border-amber-800/60 dark:bg-amber-950/20">
-            <PreparationBulkActions
-              compact
-              selectedOrdersCount={selectedOrders.length}
-              bulkStatus={bulkStatus}
-              statusOptions={statusOptions}
-              statusLabelMap={statusLabelMap}
-              bulkUpdating={bulkUpdating}
-              preparationEnabled={preparationSettings.enabled}
-              bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
-              allVisibleSelected={allVisibleSelected}
-              totalVisibleOrders={pagination.total}
-              sendingToTurbo={sendingToTurbo}
-              printingInvoices={printingInvoices}
-              onBulkStatusChange={uiActions.setBulkStatus}
-              onApply={() => void handleBulkUpdate()}
-              onApplyToAll={() => void handleBulkUpdateAll()}
-              onClear={uiActions.clearBulkControls}
-              onSelectAll={toggleSelectAllVisible}
-              onClearSelection={() => uiActions.clearBulkControls()}
-              onSendToTurbo={() => void handleOpenDispatchModal()}
-              onSendToShipping={() => void handleOpenDispatchModal()}
-              onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
-              onPrintInvoices={() => void handlePrintInvoices()}
-            />
-          </div>
-        )}
+        <PreparationSelectionBar
+          allVisibleSelected={allVisibleSelected}
+          toggleSelectAllVisible={toggleSelectAllVisible}
+          totalVisibleOrders={pagination.total}
+          inventoryLoading={inventoryLoading}
+          loading={loading}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          columnSettingsOpen={columnSettingsOpen}
+          setColumnSettingsOpen={setColumnSettingsOpen}
+          visibleColumns={visibleColumns}
+          toggleColumn={toggleColumn}
+          visibleFilterSections={visibleFilterSections}
+          toggleFilterSection={toggleFilterSection}
+          selectedOrdersCount={selectedOrders.length}
+          bulkStatus={bulkStatus}
+          statusOptions={statusOptions}
+          statusLabelMap={statusLabelMap}
+          bulkUpdating={bulkUpdating}
+          preparationEnabled={preparationSettings.enabled}
+          bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+          sendingToTurbo={sendingToTurbo}
+          printingInvoices={printingInvoices}
+          onBulkStatusChange={uiActions.setBulkStatus}
+          onApply={() => void handleBulkUpdate()}
+          onApplyToAll={() => void handleBulkUpdateAll()}
+          onClear={uiActions.clearBulkControls}
+          onClearSelection={() => uiActions.clearBulkControls()}
+          onSendToTurbo={() => void handleOpenDispatchModal()}
+          onSendToShipping={() => void handleOpenDispatchModal()}
+          onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
+          onPrintInvoices={() => void handlePrintInvoices()}
+        />
 
         {loading ? (
           <div className="space-y-0">

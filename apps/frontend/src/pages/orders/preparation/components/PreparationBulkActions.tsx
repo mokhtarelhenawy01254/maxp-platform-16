@@ -218,4 +218,5 @@ const PreparationBulkActions = ({
   );
 };
 
+export { PreparationBulkActions };
 export default PreparationBulkActions;

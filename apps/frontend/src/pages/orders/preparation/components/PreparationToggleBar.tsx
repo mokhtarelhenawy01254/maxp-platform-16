@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { Search, ChevronDown } from "lucide-react";
 import type { NotPrintedFilter, NoShippingCodeFilter } from "../types";
 import type { ProductOption } from "./useProductFilterOptions";
 
@@ -30,6 +30,9 @@ export interface PreparationToggleBarProps {
   onProductColorFilterChange: (value: string) => void;
   onProductSizeFilterChange: (value: string) => void;
 }
+
+const selectStyle =
+  "h-9 w-full appearance-none rounded-xl border border-border/70 bg-background ps-3 pe-8 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-colors cursor-pointer";
 
 export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
   notPrintedFilter,
@@ -80,6 +83,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
     <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-3 py-2 bg-card/60">
       <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
         <button
+          type="button"
           onClick={() =>
             onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
           }
@@ -92,6 +96,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           {t("preparation.filters.notPrinted", { defaultValue: "غير مطبوعة" })}
         </button>
         <button
+          type="button"
           onClick={() =>
             onNoShippingCodeFilterChange(
               noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code"
@@ -108,6 +113,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
       </div>
 
       <div className="relative w-full sm:ms-auto sm:min-w-[200px] sm:max-w-[280px] max-sm:mt-1">
+        <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <input
           ref={productInputRef}
           value={localProductFilter}
@@ -123,13 +129,12 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           }}
           onFocus={() => setShowProductSuggestions(true)}
           placeholder={t("preparation.filters.productPlaceholder", { defaultValue: "بحث بالمنتج..." })}
-          className="h-9 w-full rounded-xl border border-border/70 bg-background/80 px-3 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+          className="h-9 w-full rounded-xl border border-border/70 bg-background/80 ps-8 pe-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
         />
-        <MagnifyingGlassIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         {showProductSuggestions && (
           <div
             ref={productSuggestionsRef}
-            className="absolute right-0 top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-border/80 bg-card p-1 shadow-xl text-xs"
+            className="absolute end-0 top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-border/80 bg-card p-1 shadow-xl text-xs"
           >
             {productsLoading && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -166,7 +171,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           <select
             value={variantIdFilter}
             onChange={(e) => onVariantIdFilterChange(e.target.value)}
-            className="h-9 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-colors"
+            className={selectStyle}
           >
             <option value="">{t("preparation.filters.allVariants", { defaultValue: "كل المتغيرات" })}</option>
             {selectedProductVariants.map((v) => (
@@ -175,6 +180,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         </div>
       )}
 
@@ -183,7 +189,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           <select
             value={productColorFilter}
             onChange={(e) => onProductColorFilterChange(e.target.value)}
-            className="h-9 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-colors"
+            className={selectStyle}
           >
             <option value="">{t("preparation.filters.productColorAll", { defaultValue: "كل الألوان" })}</option>
             {availableColors.map((color, idx) => (
@@ -192,6 +198,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         </div>
       )}
 
@@ -200,7 +207,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           <select
             value={productSizeFilter}
             onChange={(e) => onProductSizeFilterChange(e.target.value)}
-            className="h-9 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-colors"
+            className={selectStyle}
           >
             <option value="">{t("preparation.filters.productSizeAll", { defaultValue: "كل المقاسات" })}</option>
             {availableSizes.map((size, idx) => (
@@ -209,6 +216,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         </div>
       )}
     </div>

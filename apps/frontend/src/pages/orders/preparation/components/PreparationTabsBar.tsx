@@ -1,7 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { getStatusDisplay } from "../../../../utils/statusRegistry";
+import { ChevronDown, SlidersHorizontal, Search, X } from "lucide-react";
 import { normalizeStatusToStage } from "../helpers";
 import type { StageCounts } from "../types";
 
@@ -124,12 +123,12 @@ export const PreparationTabsBar: React.FC<PreparationTabsBarProps> = ({
       {visibleFilterSections.includes("search") && (
         <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
           <div className="relative flex-1 sm:w-56">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder={t("preparation.filters.quickSearchPlaceholder")}
-              className="h-9 w-full rounded-xl border border-border/70 bg-background/80 pl-2 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+              className="h-9 w-full rounded-xl border border-border/70 bg-background/80 ps-8 pe-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             />
           </div>
 
@@ -142,9 +141,9 @@ export const PreparationTabsBar: React.FC<PreparationTabsBarProps> = ({
                 : "border border-border/70 bg-background/80 text-foreground hover:bg-muted"
             }`}
           >
-            <FunnelIcon className="h-3.5 w-3.5" />
+            <SlidersHorizontal className="h-3.5 w-3.5" />
             <span>{t("preparation.filters.advancedFilters")}</span>
-            <ChevronDownIcon
+            <ChevronDown
               className={`h-3 w-3 transition-transform duration-200 ${
                 showAdvanced ? "rotate-180" : ""
               }`}
@@ -157,7 +156,7 @@ export const PreparationTabsBar: React.FC<PreparationTabsBarProps> = ({
               title={t("common.reset")}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted transition active:scale-95"
             >
-              <XMarkIcon className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
