@@ -217,10 +217,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
         <>
           {/* 1. Resting Hairline Border (0 layout shift via inset shadow) + Hover Border */}
           <div
-            style={{
-              boxShadow: "inset 0 0 0 1px rgba(15, 23, 42, 0.08)",
-            }}
-            className="pointer-events-none absolute inset-0 z-20 studio-section-hairline shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] transition-all group-hover:shadow-[inset_0_0_0_2px_rgba(43,108,246,0.55)] group-hover:bg-[#2b6cf6]/[0.015]"
+            className="pointer-events-none absolute inset-0 z-20 studio-section-hairline"
           />
 
           {/* 2. Hover Section Label Pill */}
