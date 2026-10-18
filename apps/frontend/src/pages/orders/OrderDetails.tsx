@@ -23,8 +23,7 @@ import OrderReturnCard from "./components/OrderReturnCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
 // Cards migrated into OrderDetailsSidebar
-import OrderActionModalsContainer from "./components/OrderActionModalsContainer";
-import OrderShipmentModals from "./components/OrderShipmentModals";
+import { OrderDetailsModalsHost } from "./components/OrderDetailsModalsHost";
 
 // Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
@@ -43,7 +42,6 @@ import { OrderDetailsType } from "./types";
 import {
   getOrderReturnDetails,
   isReturnStatusCode,
-  COMMON_RETURN_REASONS,
 } from "./utils/returnHelper";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
@@ -192,46 +190,20 @@ const OrderDetails: React.FC = () => {
     company,
   });
 
-  const {
-    showStatusModal,
-    setShowStatusModal,
-    newStatus,
-    setNewStatus,
-    statusNotes,
-    setStatusNotes,
-    returnReason,
-    setReturnReason,
-    returnAdditionalNotes,
-    setReturnAdditionalNotes,
-    isOverride,
-    setIsOverride,
-    cancellationReasonOptions,
-    cancellationReasonOptionsLoading,
-    cancellationAdditionalNotes,
-    setCancellationAdditionalNotes,
-    isModalCancellationStatus,
-    isModalReturnStatus,
-    onUpdateStatus,
-    handleQuickStatusSelect,
-  } = useOrderStatusOperations({
+  const statusOperations = useOrderStatusOperations({
     order,
     canUpdateOrderStatus,
     updateStatus,
   });
+  const { handleQuickStatusSelect, setNewStatus } = statusOperations;
 
-  const {
-    canUpdatePaymentStatus,
-    newPaymentStatus,
-    setNewPaymentStatus,
-    paymentNotes,
-    setPaymentNotes,
-    onUpdatePaymentStatus,
-  } = useOrderPaymentStatusOperations({
+  const paymentOperations = useOrderPaymentStatusOperations({
     isMerchant,
     isGuestOrder,
     updatePaymentStatus,
     setShowPaymentModal,
   });
+  const { canUpdatePaymentStatus } = paymentOperations;
 
   // Auth Check
   useEffect(() => {
@@ -262,16 +234,7 @@ const OrderDetails: React.FC = () => {
 
 
 
-  const {
-    showPostponeModal,
-    setShowPostponeModal,
-    postponing,
-    handlePostponeOrder,
-    showPartialDeliveryModal,
-    setShowPartialDeliveryModal,
-    partialDeliveryLoading,
-    handlePartialDelivery,
-  } = useOrderFulfillmentActions({
+  const fulfillmentActions = useOrderFulfillmentActions({
     order,
     fetchOrderDetails,
     updateStatus,
@@ -291,18 +254,7 @@ const OrderDetails: React.FC = () => {
     t,
   });
 
-  const {
-    showCancelShipmentModal,
-    setShowCancelShipmentModal,
-    showUnlinkShipmentModal,
-    setShowUnlinkShipmentModal,
-    showRecreateShipmentModal,
-    setShowRecreateShipmentModal,
-    handleCreateShipment,
-    handleRecreateShipment,
-    handlePrintWaybill,
-    handleCalculateShipping,
-  } = useOrderShippingActions({
+  const shippingActions = useOrderShippingActions({
     order,
     createShipment,
     getWaybill,
@@ -310,6 +262,12 @@ const OrderDetails: React.FC = () => {
     bostaShipment,
     printBostaAWB,
   });
+  const {
+    handleCreateShipment,
+    handleRecreateShipment,
+    handlePrintWaybill,
+    handleCalculateShipping,
+  } = shippingActions;
 
   const {
     effectiveStatus,
@@ -322,7 +280,7 @@ const OrderDetails: React.FC = () => {
     orderStatuses,
     allowedTransitions,
     workflowStatusDefs,
-    isOverride,
+    isOverride: statusOperations.isOverride,
   });
 
 
@@ -490,8 +448,8 @@ const OrderDetails: React.FC = () => {
         />
       </div>
 
-      {/* Action Modals */}
-      <OrderActionModalsContainer
+      {/* Action & Shipment Modals */}
+      <OrderDetailsModalsHost
         order={order}
         canEditOrderDetails={canEditOrderDetails}
         canUpdateOrderStatus={canUpdateOrderStatus}
@@ -499,62 +457,21 @@ const OrderDetails: React.FC = () => {
         showAddProductModal={showAddProductModal}
         setShowAddProductModal={setShowAddProductModal}
         handleProductSelect={handleProductSelect}
-        showStatusModal={showStatusModal}
-        setShowStatusModal={setShowStatusModal}
-        newStatus={newStatus}
-        setNewStatus={setNewStatus}
-        statusNotes={statusNotes}
-        setStatusNotes={setStatusNotes}
-        isOverride={isOverride}
-        setIsOverride={setIsOverride}
-        cancellationAdditionalNotes={cancellationAdditionalNotes}
-        setCancellationAdditionalNotes={setCancellationAdditionalNotes}
-        returnReason={returnReason}
-        setReturnReason={setReturnReason}
-        returnAdditionalNotes={returnAdditionalNotes}
-        setReturnAdditionalNotes={setReturnAdditionalNotes}
+        statusOperations={statusOperations}
+        paymentOperations={paymentOperations}
+        fulfillmentActions={fulfillmentActions}
+        shippingActions={shippingActions}
         filteredStatusOptions={filteredStatusOptions}
         workflowStatusDefs={workflowStatusDefs}
         hasWorkflowRestrictions={hasWorkflowRestrictions}
-        isModalCancellationStatus={isModalCancellationStatus}
-        isModalReturnStatus={isModalReturnStatus}
-        cancellationReasonOptions={cancellationReasonOptions}
-        cancellationReasonOptionsLoading={cancellationReasonOptionsLoading}
-        commonReturnReasons={COMMON_RETURN_REASONS}
-        updating={updating}
-        onUpdateStatus={onUpdateStatus}
+        paymentStatuses={paymentStatuses}
         showPaymentModal={showPaymentModal}
         setShowPaymentModal={setShowPaymentModal}
-        newPaymentStatus={newPaymentStatus}
-        setNewPaymentStatus={setNewPaymentStatus}
-        paymentNotes={paymentNotes}
-        setPaymentNotes={setPaymentNotes}
-        paymentStatuses={paymentStatuses}
-        onUpdatePaymentStatus={onUpdatePaymentStatus}
-        showPostponeModal={showPostponeModal}
-        setShowPostponeModal={setShowPostponeModal}
-        handlePostponeOrder={handlePostponeOrder}
-        postponing={postponing}
-        showPartialDeliveryModal={showPartialDeliveryModal}
-        setShowPartialDeliveryModal={setShowPartialDeliveryModal}
-        handlePartialDelivery={handlePartialDelivery}
-        partialDeliveryLoading={partialDeliveryLoading}
         showTicketModal={showTicketModal}
         setShowTicketModal={setShowTicketModal}
         fetchOrderDetails={fetchOrderDetails}
-      />
-
-      {/* Shipment Confirmation Modals */}
-      <OrderShipmentModals
-        showCancelShipmentModal={showCancelShipmentModal}
-        setShowCancelShipmentModal={setShowCancelShipmentModal}
-        showUnlinkShipmentModal={showUnlinkShipmentModal}
-        setShowUnlinkShipmentModal={setShowUnlinkShipmentModal}
-        showRecreateShipmentModal={showRecreateShipmentModal}
-        setShowRecreateShipmentModal={setShowRecreateShipmentModal}
         cancelShipment={cancelShipment}
         unlinkShipment={unlinkShipment}
-        handleRecreateShipment={handleRecreateShipment}
         turboLoading={turboLoading}
       />
     </div>
