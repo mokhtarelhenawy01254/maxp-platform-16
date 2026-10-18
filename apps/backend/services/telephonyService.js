@@ -60,6 +60,9 @@ class TelephonyService {
     }
 
     const isOnline = socketConnected !== undefined ? Boolean(socketConnected) : true;
+    if (socketId && isOnline && socketService.pubClient) {
+      socketService.pubClient.set(`socket:${socketId}`, userId, 'EX', 300).catch(() => {});
+    }
     return await prisma.employeeDevice.upsert({
       where: { deviceId },
       update: {
@@ -92,7 +95,7 @@ class TelephonyService {
     const prisma = getSharedPrismaClient();
     // يُعتبر الهاتف متصلاً إذا كان آخر ظهور خلال 3 دقائق
     const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
-    const device = await prisma.employeeDevice.findFirst({
+    let device = await prisma.employeeDevice.findFirst({
       where: {
         companyId,
         userId,
@@ -102,11 +105,21 @@ class TelephonyService {
       orderBy: { lastSeenAt: 'desc' }
     });
 
-    // الفيصل الحقيقي: السوكت الحي — التطبيق مقفول لا يرسل disconnect للعلم
-    // المخزن، فالعلم يظل true حتى 3 دقائق (نافذة الزومبي): الجلسة كانت تُفتح
-    // ويُبث أمر الاتصال لسوكت ميت فلا يرن الهاتف ويعلق الزر "مكالمة جارية".
+    // خطة بديلة: إذا لم يكن هناك جهاز مسجل مباشرة لهذا الموظف، ابحث عن جهاز نشط في نفس الشركة
+    if (!device) {
+      device = await prisma.employeeDevice.findFirst({
+        where: {
+          companyId,
+          isOnline: true,
+          lastSeenAt: { gte: threeMinutesAgo }
+        },
+        orderBy: { lastSeenAt: 'desc' }
+      });
+    }
+
+    // الفيصل الحقيقي: السوكت الحي عبر الكلاستر
     if (device) {
-      const socketAlive = socketService.isSocketConnected(device.socketId);
+      const socketAlive = await socketService.isSocketConnected(device.socketId);
       if (!socketAlive) {
         // شفاء ذاتي: ظبط العلم فورًا حتى لا تكرر الشبكة كلها نفس الوهم
         try {
@@ -260,14 +273,19 @@ class TelephonyService {
     // 7. إرسال أمر الاتصال لهاتف الموظف عبر Socket.IO
     const io = socketService.io;
     if (io) {
-      io.to(`user_${userId}`).emit('telephony:dial', {
+      const dialPayload = {
         sessionId,
         orderId: order.id,
         orderNumber,
         customerName,
         customerPhone: cleanPhone,
         deviceId: device.deviceId
-      });
+      };
+      io.to(`user_${device.userId}`).emit('telephony:dial', dialPayload);
+      if (userId !== device.userId) {
+        io.to(`user_${userId}`).emit('telephony:dial', dialPayload);
+      }
+      io.to(`company_${companyId}`).emit('telephony:dial', dialPayload);
     }
 
     return {

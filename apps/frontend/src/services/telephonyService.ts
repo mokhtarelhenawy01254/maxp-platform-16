@@ -158,37 +158,79 @@ class TelephonyClientService {
    * يتم استدعاؤها مرة واحدة عند إقلاع التطبيق على الموبايل
    */
   async initMobileTelephonyAgent(): Promise<void> {
-    if (!isCapacitorNative() || this.isAgentInitialized) {
+    const isMobileDevice =
+      isCapacitorNative() ||
+      (typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ""));
+
+    if (!isMobileDevice || this.isAgentInitialized) {
       return;
     }
 
     try {
       this.isAgentInitialized = true;
-      const deviceInfo = await MaxPTelephony.getDeviceInfo();
 
-      // الخدمة الأمامية: تُبقي عملية التطبيق (والسوكت والنبض) حية في الخلفية
-      // بإشعار دائم — بدونها أندرويد يقتل الاتصال بعد إغلاق الشاشة ولا يصل أمر الاتصال
-      try {
-        await MaxPTelephony.startTelephonyService();
-      } catch (svcErr) {
-        console.warn("Foreground telephony service failed to start:", svcErr);
-      }
+      // 1. استخراج معلومات الجهاز (مع خطة بديلة مرنة في حال عدم توفر الموديول الأصلي)
+      let deviceInfo: DeviceInfo;
+      let isNativePluginAvailable = false;
 
-      // إعفاء تحسين البطارية: يُطلب مرة واحدة فقط — أجهزة هواوي/شاومي/أوبو
-      // تقتل التطبيقات الخلفية مهما كانت الخدمة بدون هذه الموافقة اليدوية
-      const EXEMPTION_KEY = "maxp_battery_exemption_requested";
       try {
-        if (!localStorage.getItem(EXEMPTION_KEY)) {
-          const { exempted } = await MaxPTelephony.isBatteryExempted();
-          if (!exempted) {
-            await MaxPTelephony.requestBatteryExemption();
-          }
-          localStorage.setItem(EXEMPTION_KEY, "1");
+        deviceInfo = await MaxPTelephony.getDeviceInfo();
+        isNativePluginAvailable = true;
+      } catch (_nativeErr) {
+        let fallbackId = localStorage.getItem("maxp_telephony_device_id");
+        if (!fallbackId) {
+          fallbackId =
+            "dev_" +
+            Math.random().toString(36).substring(2, 10) +
+            "_" +
+            Date.now().toString(36);
+          localStorage.setItem("maxp_telephony_device_id", fallbackId);
         }
-      } catch (batteryErr) {
-        console.warn("Battery exemption request failed:", batteryErr);
+
+        const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+        let model = "Android Device";
+        if (/STK-L21|HUAWEI/i.test(ua)) {
+          model = "HUAWEI STK-L21";
+        } else {
+          const match = ua.match(/Android[^;]+; ([^;)]+)/);
+          if (match && match[1]) {
+            model = match[1].trim();
+          } else if (/iPhone/i.test(ua)) {
+            model = "iPhone";
+          }
+        }
+
+        deviceInfo = {
+          deviceId: fallbackId,
+          deviceName: model,
+          osVersion: "MaxP Mobile Agent",
+        };
       }
 
+      // إذا كان الموديول الأصلي متاحاً، تشغيل الخدمة الأمامية وإعفاء البطارية
+      if (isNativePluginAvailable) {
+        try {
+          await MaxPTelephony.startTelephonyService();
+        } catch (svcErr) {
+          console.warn("Foreground telephony service failed to start:", svcErr);
+        }
+
+        const EXEMPTION_KEY = "maxp_battery_exemption_requested";
+        try {
+          if (!localStorage.getItem(EXEMPTION_KEY)) {
+            const { exempted } = await MaxPTelephony.isBatteryExempted();
+            if (!exempted) {
+              await MaxPTelephony.requestBatteryExemption();
+            }
+            localStorage.setItem(EXEMPTION_KEY, "1");
+          }
+        } catch (batteryErr) {
+          console.warn("Battery exemption request failed:", batteryErr);
+        }
+      }
+
+      // 2. دالة نبض الاتصال الدورية (Heartbeat)
       const sendHeartbeat = async () => {
         try {
           const socket = socketService.getSocket();
@@ -207,47 +249,61 @@ class TelephonyClientService {
 
       await sendHeartbeat();
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = setInterval(sendHeartbeat, 60000);
+      this.heartbeatInterval = setInterval(sendHeartbeat, 45000);
 
-      // دالة لتسجيل مستمع أمر الاتصال على المقبس
+      // 3. دالة لتسجيل مستمع أمر الاتصال على المقبس
       const registerSocketDialListener = () => {
         socketService.off("telephony:dial");
         socketService.on("telephony:dial", async (data: any) => {
           try {
             if (!data?.customerPhone) return;
-            await MaxPTelephony.dialCustomer({
-              phone: data.customerPhone,
-              sessionId: data.sessionId,
-              orderId: data.orderId,
-            });
+            // تصفية الأجهزة: التحقق من أن أمر الاتصال موجه لهذا الجهاز تحديداً
+            if (data.deviceId && deviceInfo.deviceId && data.deviceId !== deviceInfo.deviceId) {
+              return;
+            }
+            if (isNativePluginAvailable) {
+              await MaxPTelephony.dialCustomer({
+                phone: data.customerPhone,
+                sessionId: data.sessionId,
+                orderId: data.orderId,
+              });
+            } else {
+              window.location.href = `tel:${data.customerPhone}`;
+            }
           } catch (error) {
-            console.error("Failed to execute native dial:", error);
+            console.error("Failed to execute native dial, falling back to tel:", error);
+            window.location.href = `tel:${data.customerPhone}`;
           }
         });
       };
 
-      // تسجيل المستمع فورياً وعند أي إعادة اتصال بالمقبس
       registerSocketDialListener();
       socketService.on("connect", () => {
         registerSocketDialListener();
-        sendHeartbeat(); // نبض فوري عند استعادة الاتصال
+        sendHeartbeat();
       });
 
-      // الاستماع لانتهاء المكالمة من الـ Native CallStateReceiver
-      await MaxPTelephony.addListener("callEnded", async (eventData) => {
+      // 4. الاستماع لانتهاء المكالمة
+      if (isNativePluginAvailable) {
         try {
-          await this.completeCall({
-            sessionId: eventData.sessionId,
-            durationSeconds: eventData.durationSeconds,
-            callStatus: eventData.durationSeconds > 0 ? "COMPLETED" : "NO_ANSWER",
-            callerPhone: undefined,
+          await MaxPTelephony.addListener("callEnded", async (eventData) => {
+            try {
+              await this.completeCall({
+                sessionId: eventData.sessionId,
+                durationSeconds: eventData.durationSeconds,
+                callStatus: eventData.durationSeconds > 0 ? "COMPLETED" : "NO_ANSWER",
+                callerPhone: undefined,
+              });
+            } catch (error) {
+              console.error("Failed to sync call completion to server:", error);
+            }
           });
-        } catch (error) {
-          console.error("Failed to sync call completion to server:", error);
+        } catch (_listenerErr) {
+          // ignore
         }
-      });
+      }
     } catch (error) {
-      console.warn("Telephony plugin not supported or error on mobile init:", error);
+      console.warn("Telephony agent initialization warning:", error);
     }
   }
 }

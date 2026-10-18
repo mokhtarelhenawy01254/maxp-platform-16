@@ -19,6 +19,12 @@ const getCompanyId = (req) =>
  */
 router.get('/device/presence', async (req, res) => {
   try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
     const companyId = getCompanyId(req);
     const userId = req.user?.id;
     if (!companyId || !userId) {

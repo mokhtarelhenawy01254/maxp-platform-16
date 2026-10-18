@@ -144,24 +144,50 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     }
   };
 
+  const [isRefreshingPresence, setIsRefreshingPresence] = useState(false);
+
+  const handleManualPresenceRefresh = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRefreshingPresence(true);
+    try {
+      const res = await refreshDevicePresence();
+      if (res.isOnline) {
+        toast.success(`الهاتف متصل: ${res.device?.deviceName || "متصل"}`);
+      } else {
+        toast.info("الهاتف غير متصل بعد — افتح تطبيق MaxP على الهاتف لربط الاتصال");
+      }
+    } catch {
+      toast.error("فشل تحديث حالة الهاتف");
+    } finally {
+      setIsRefreshingPresence(false);
+    }
+  };
+
   const deviceBadge = (
     <div
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border font-mono tabular-nums transition-colors ${
+      onClick={handleManualPresenceRefresh}
+      role="button"
+      tabIndex={0}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border font-mono tabular-nums transition-colors cursor-pointer hover:opacity-80 active:scale-95 ${
         presence.isOnline
           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
           : "bg-muted/50 text-muted-foreground border-border/60"
       }`}
       title={
         presence.isOnline
-          ? `الهاتف متصل: ${presence.device?.deviceName || "Android"}`
-          : "الهاتف غير متصل. افتح تطبيق MaxP على الهاتف لربط الاتصال."
+          ? `الهاتف متصل: ${presence.device?.deviceName || "Android"} (انقر لإعادة الفحص)`
+          : "الهاتف غير متصل. افتح تطبيق MaxP على الهاتف ثم انقر هنا للتحديث الفوري."
       }
     >
-      <span
-        className={`size-1.5 rounded-full ${
-          presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
-        }`}
-      />
+      {isRefreshingPresence ? (
+        <RotateCw className="size-3 shrink-0 animate-spin text-primary" />
+      ) : (
+        <span
+          className={`size-1.5 rounded-full ${
+            presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
+          }`}
+        />
+      )}
       <Smartphone className="size-3 shrink-0 text-muted-foreground" />
       <span className="truncate max-w-[110px]">
         {presence.isOnline ? presence.device?.deviceName || "متصل" : "غير متصل"}

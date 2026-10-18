@@ -234,6 +234,10 @@ class SocketService {
         }
         this.companyRooms.get(socket.companyId).add(socket.id);
 
+        if (this.pubClient) {
+          this.pubClient.set(`socket:${socket.id}`, socket.userId || '1', 'EX', 300).catch(() => {});
+        }
+
         this.logSecurityEvent('user_connected', {
           socketId: socket.id,
           userId: socket.userId,
@@ -733,6 +737,9 @@ class SocketService {
 
       // إزالة هذا المقبس المحدد
       this.userSockets.delete(socket.id);
+      if (this.pubClient) {
+        this.pubClient.del(`socket:${socket.id}`).catch(() => {});
+      }
 
       // التحقق مما إذا كان للمستخدم أي مقابس أخرى نشطة (مثل تبويب آخر أو خدمة أخرى)
       let remainingSocketId = null;
@@ -838,13 +845,22 @@ class SocketService {
    * (سوكت المتصفح نفس المستخدم متصل أيضًا — فحص userId وحده لا يثبت أن *الهاتف* حي).
    * ملاحظة: يفحص سوكتات هذا الـ instance — كافٍ لنشر الـ backend بعينة واحدة.
    */
-  isSocketConnected(socketId) {
+  async isSocketConnected(socketId) {
     if (!socketId || !this.io) return false;
     try {
-      return this.io.sockets.sockets.get(socketId) != null;
+      if (this.io.sockets?.sockets?.get(socketId) != null) return true;
     } catch {
-      return false;
+      // ignore
     }
+    if (this.pubClient) {
+      try {
+        const exists = await this.pubClient.exists(`socket:${socketId}`);
+        if (exists === 1 || exists === true) return true;
+      } catch {
+        // ignore
+      }
+    }
+    return false;
   }
 
   // Get users online in a specific company
