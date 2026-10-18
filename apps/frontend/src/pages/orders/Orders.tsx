@@ -28,6 +28,7 @@ import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
 import { useOrdersFetchOperations } from "./hooks/useOrdersFetchOperations";
 import { useOrdersUrlSync } from "./hooks/useOrdersUrlSync";
 import { useOrdersOperationPermissions } from "./hooks/useOrdersOperationPermissions";
+import { useOrdersTableSettings } from "./hooks/useOrdersTableSettings";
 import { useOrdersSocketListeners } from "./hooks/useOrdersSocketListeners";
 import { useOrdersFilterStats } from "./hooks/useOrdersFilterStats";
 import type { SocketOrderUpdate } from "./hooks/useOrdersSocketListeners";
@@ -351,9 +352,6 @@ const Orders: React.FC = () => {
   const [totalOrders, setTotalOrders] = useState(() => initialCachedData?.totalOrders || 0);
   const [totalPages, setTotalPages] = useState(() => initialCachedData?.totalPages || 0);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [visibleColumns, setVisibleColumns] = useState<OrderTableColumn[]>(
-    ORDER_TABLE_COLUMNS,
-  );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
@@ -443,35 +441,15 @@ const Orders: React.FC = () => {
     Array.isArray(filters.status) &&
     filters.status.some((s) => s.toLowerCase() === "trash");
 
-  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
-    try {
-      return localStorage.getItem("orders:table-density") === "compact"
-        ? "compact"
-        : "comfortable";
-    } catch {
-      return "comfortable";
-    }
+  const {
+    tableDensity,
+    changeTableDensity,
+    columnsToRender,
+    tableColumnCount,
+  } = useOrdersTableSettings({
+    companyOrdersTableColumns: company?.settings?.ordersTableColumns,
+    canSelectOrders,
   });
-  const changeTableDensity = (density: "comfortable" | "compact") => {
-    setTableDensity(density);
-    try {
-      localStorage.setItem("orders:table-density", density);
-    } catch {
-      // ignore storage errors
-    }
-  };
-
-  useEffect(() => {
-    const normalized = normalizeOrderTableColumns(
-      company?.settings?.ordersTableColumns,
-    );
-    setVisibleColumns(normalized);
-  }, [company?.settings?.ordersTableColumns]);
-
-  const columnsToRender = ORDER_TABLE_COLUMNS.filter((col) =>
-    visibleColumns.includes(col),
-  );
-  const tableColumnCount = (canSelectOrders ? 1 : 0) + columnsToRender.length;
   const fieldClassName =
     "theme-native-control w-full rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100";
   const {
