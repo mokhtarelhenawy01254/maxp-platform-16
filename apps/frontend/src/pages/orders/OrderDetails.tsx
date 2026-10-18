@@ -16,7 +16,6 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
 
 // Components
@@ -34,15 +33,12 @@ import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
 import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
-import PostponeOrderModal from "./components/PostponeOrderModal";
-import PartialDeliveryModal from "./components/PartialDeliveryModal";
-import { CreateTicketModal } from "./shipments/CreateTicketModal";
 import OrderConfirmationDistributionCard from "./components/OrderConfirmationDistributionCard";
-import OrderStatusUpdateModal from "./components/OrderStatusUpdateModal";
-import OrderPaymentStatusModal from "./components/OrderPaymentStatusModal";
 import WalletPaymentProofCard from "./components/WalletPaymentProofCard";
 import OrderScheduledDeliveryCard from "./components/OrderScheduledDeliveryCard";
 import OrderCancellationReturnBanner from "./components/OrderCancellationReturnBanner";
+import OrderReturnCollectionFeeCard from "./components/OrderReturnCollectionFeeCard";
+import OrderActionModalsContainer from "./components/OrderActionModalsContainer";
 import OrderShipmentModals from "./components/OrderShipmentModals";
 
 // Hooks & Utils
@@ -1187,25 +1183,7 @@ const OrderDetails: React.FC = () => {
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
 
-          {(() => {
-            const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
-            const returnAmt = meta.returnAmount || null;
-            const shippingCost = parseFloat(order.shipping || order.shippingCost || '0');
-            const displayAmount = returnAmt ? parseFloat(returnAmt) : shippingCost;
-            return displayAmount > 0 ? (
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("orderDetails.returnCollectionLabel")}</span>
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                    {t("orderDetails.returnAmount", { amount: displayAmount.toFixed(2) })}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
-                  {returnAmt ? t("orderDetails.returnCustomValue") : t("orderDetails.returnDefaultValue")} — {t("orderDetails.returnDescription")}
-                </p>
-              </div>
-            ) : null;
-          })()}
+          <OrderReturnCollectionFeeCard order={order} />
 
           {(order as any)?.walletPaymentProof ? (
             <WalletPaymentProofCard
@@ -1258,17 +1236,17 @@ const OrderDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      <SimplifiedProductSelectionModal
-        isOpen={canEditOrderDetails && showAddProductModal}
-        onClose={() => setShowAddProductModal(false)}
-        onProductSelected={handleProductSelect}
-      />
-
-      {/* Status Modal */}
-      <OrderStatusUpdateModal
-        isOpen={showStatusModal && canUpdateOrderStatus}
-        onClose={() => setShowStatusModal(false)}
+      {/* Action Modals */}
+      <OrderActionModalsContainer
+        order={order}
+        canEditOrderDetails={canEditOrderDetails}
+        canUpdateOrderStatus={canUpdateOrderStatus}
+        canUpdatePaymentStatus={canUpdatePaymentStatus}
+        showAddProductModal={showAddProductModal}
+        setShowAddProductModal={setShowAddProductModal}
+        handleProductSelect={handleProductSelect}
+        showStatusModal={showStatusModal}
+        setShowStatusModal={setShowStatusModal}
         newStatus={newStatus}
         setNewStatus={setNewStatus}
         statusNotes={statusNotes}
@@ -1291,64 +1269,26 @@ const OrderDetails: React.FC = () => {
         commonReturnReasons={COMMON_RETURN_REASONS}
         updating={updating}
         onUpdateStatus={onUpdateStatus}
-      />
-
-      {/* Payment Modal */}
-      <OrderPaymentStatusModal
-        isOpen={showPaymentModal && canUpdatePaymentStatus}
-        onClose={() => setShowPaymentModal(false)}
+        showPaymentModal={showPaymentModal}
+        setShowPaymentModal={setShowPaymentModal}
         newPaymentStatus={newPaymentStatus}
         setNewPaymentStatus={setNewPaymentStatus}
         paymentNotes={paymentNotes}
         setPaymentNotes={setPaymentNotes}
         paymentStatuses={paymentStatuses}
-        updating={updating}
         onUpdatePaymentStatus={onUpdatePaymentStatus}
+        showPostponeModal={showPostponeModal}
+        setShowPostponeModal={setShowPostponeModal}
+        handlePostponeOrder={handlePostponeOrder}
+        postponing={postponing}
+        showPartialDeliveryModal={showPartialDeliveryModal}
+        setShowPartialDeliveryModal={setShowPartialDeliveryModal}
+        handlePartialDelivery={handlePartialDelivery}
+        partialDeliveryLoading={partialDeliveryLoading}
+        showTicketModal={showTicketModal}
+        setShowTicketModal={setShowTicketModal}
+        fetchOrderDetails={fetchOrderDetails}
       />
-
-      {/* Postpone Order Modal */}
-      <PostponeOrderModal
-        isOpen={showPostponeModal}
-        onClose={() => setShowPostponeModal(false)}
-        onConfirm={handlePostponeOrder}
-        loading={postponing}
-        initialDate={
-          order?.scheduledDeliveryDate
-            ? new Date(order.scheduledDeliveryDate).toISOString().split("T")[0]
-            : ""
-        }
-        initialNotes={order?.scheduledNotes || ""}
-        initialAutoTransition={order?.autoTransitionEnabled !== false}
-      />
-
-      {/* Partial Delivery Modal */}
-      <PartialDeliveryModal
-        isOpen={showPartialDeliveryModal}
-        onClose={() => setShowPartialDeliveryModal(false)}
-        onConfirm={handlePartialDelivery}
-        order={order}
-        loading={partialDeliveryLoading}
-      />
-
-      {/* Support Ticket Modal */}
-      {showTicketModal && (
-        <CreateTicketModal
-          isOpen={showTicketModal}
-          onClose={() => setShowTicketModal(false)}
-          shipmentCode={
-            order.turboTrackingNumber ||
-            order.trackingNumber ||
-            order.shipment?.trackingNumber ||
-            (order.shipments && order.shipments[0]?.trackingNumber) ||
-            ""
-          }
-          orderNumber={order.orderNumber}
-          customerName={order.customerName || order.customer?.name}
-          onSuccess={() => {
-            fetchOrderDetails();
-          }}
-        />
-      )}
 
       {/* Shipment Confirmation Modals */}
       <OrderShipmentModals

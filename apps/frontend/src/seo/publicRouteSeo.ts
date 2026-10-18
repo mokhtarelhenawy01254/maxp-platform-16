@@ -71,11 +71,107 @@ export const NOINDEX_PATHS: string[] = ROUTES.filter(
 /** Thin auth pages — kept out of the index even if a path is missing from the JSON. */
 export const NOINDEX_PREFIXES = ["/auth/"];
 
-const normalizePath = (pathname: string): string => {
+/** Private authenticated backoffice and dashboard prefixes — must carry `<meta name="robots" content="noindex, nofollow">`. */
+export const PRIVATE_APP_PREFIXES = [
+  "/dashboard",
+  "/admin",
+  "/super-admin",
+  "/orders",
+  "/products",
+  "/customers",
+  "/conversations",
+  "/inbox",
+  "/unified-inbox",
+  "/analytics",
+  "/advertising",
+  "/inventory",
+  "/settings",
+  "/account",
+  "/procurement",
+  "/wholesale",
+  "/pos",
+  "/ai-agents",
+  "/agency",
+  "/accounting",
+  "/hr",
+  "/tasks",
+  "/developer",
+  "/partner-dashboard",
+  "/moderator-dashboard",
+  "/my-dashboard",
+  "/company-dashboard",
+  "/affiliates/dashboard",
+  "/wallet",
+  "/shipping",
+  "/courier",
+  "/dental-lab",
+  "/doctor",
+  "/patient",
+  "/lab",
+  "/radiology",
+];
+
+export const PRIVATE_ROUTE_TITLES: Record<string, string> = {
+  "/dashboard": "لوحة التحكم | MaxP",
+  "/admin": "لوحة الإدارة | MaxP",
+  "/super-admin": "لوحة تحكم السوبر أدمن | MaxP",
+  "/orders": "إدارة الطلبات | MaxP",
+  "/products": "إدارة المنتجات | MaxP",
+  "/customers": "إدارة العملاء | MaxP",
+  "/conversations": "المحادثات | MaxP",
+  "/inbox": "صندوق الوارد | MaxP",
+  "/unified-inbox": "صندوق الوارد الموحد | MaxP",
+  "/analytics": "التحليلات والتقارير | MaxP",
+  "/advertising": "إدارة الإعلانات | MaxP",
+  "/inventory": "إدارة المخزون | MaxP",
+  "/settings": "إعدادات المتجر | MaxP",
+  "/account": "الحساب الشخصي | MaxP",
+  "/procurement": "المشتريات والتوريدات | MaxP",
+  "/wholesale": "تجارة الجملة | MaxP",
+  "/pos": "نظام نقاط البيع (POS) | MaxP",
+  "/ai-agents": "أعوان الذكاء الاصطناعي | MaxP",
+  "/agency": "بوابة الوكالة الإعلانية | MaxP",
+  "/accounting": "المحاسبة والمالية | MaxP",
+  "/hr": "الموارد البشرية | MaxP",
+  "/tasks": "إدارة المهام | MaxP",
+  "/developer": "بوابة المطورين | MaxP",
+  "/partner-dashboard": "لوحة الشركاء | MaxP",
+  "/moderator-dashboard": "لوحة المشرفين | MaxP",
+  "/my-dashboard": "لوحتي الشخصية | MaxP",
+  "/company-dashboard": "لوحة الشركة | MaxP",
+  "/affiliates/dashboard": "لوحة المسوقين | MaxP",
+  "/wallet": "المحفظة والرصيد | MaxP",
+  "/shipping": "إدارة الشحن | MaxP",
+  "/courier": "بوابة المناديب | MaxP",
+  "/dental-lab": "معمل الأسنان | MaxP",
+  "/doctor": "بوابة الطبيب | MaxP",
+  "/patient": "بوابة المريض | MaxP",
+  "/lab": "بوابة المعمل | MaxP",
+  "/radiology": "بوابة الأشعة | MaxP",
+};
+
+export const normalizePath = (pathname: string): string => {
   const clean = (pathname || "/").split("?")[0].split("#")[0];
   if (!clean || clean === "/") return "/";
   return clean.replace(/\/+$/, "") || "/";
 };
+
+export function isPrivateAppRoute(pathname: string): boolean {
+  const path = normalizePath(pathname);
+  return PRIVATE_APP_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+}
+
+export function getPrivateAppTitle(pathname: string): string {
+  const path = normalizePath(pathname);
+  for (const prefix of PRIVATE_APP_PREFIXES) {
+    if (path === prefix || path.startsWith(`${prefix}/`)) {
+      return PRIVATE_ROUTE_TITLES[prefix] || "لوحة التحكم | MaxP";
+    }
+  }
+  return "لوحة التحكم | MaxP";
+}
 
 const upsertMeta = (
   attr: "name" | "property",
@@ -104,6 +200,13 @@ const upsertCanonical = (href: string): void => {
   el.setAttribute("href", href);
 };
 
+const removeCanonical = (): void => {
+  const el = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (el) {
+    el.remove();
+  }
+};
+
 export function buildCanonicalUrl(pathname: string): string {
   const path = normalizePath(pathname);
   const entry = ROUTE_SEO[path];
@@ -122,6 +225,15 @@ export function applyPublicRouteSeo(pathname: string): void {
   if (!APEX_HOSTS.includes(host)) return;
 
   const path = normalizePath(pathname);
+
+  // Private backoffice & dashboard handling: enforce noindex, nofollow, remove canonical, set intuitive tab title
+  if (isPrivateAppRoute(path)) {
+    document.title = getPrivateAppTitle(path);
+    removeCanonical();
+    upsertMeta("name", "robots", "noindex, nofollow");
+    return;
+  }
+
   const entry = ROUTE_SEO[path];
   const canonicalUrl = buildCanonicalUrl(path);
 

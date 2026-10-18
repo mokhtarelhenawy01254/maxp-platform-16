@@ -2,6 +2,7 @@
  * Validation Utilities
  * Simple validation for WooCommerce import/export operations
  */
+import { isProduction } from "../config/environment";
 
 type ValidationResult<T> =
   | {
@@ -417,7 +418,7 @@ export function formatValidationErrors(
 export function validateWebhookUrl(url: string): boolean {
   if (!isValidUrl(url)) return false;
 
-  if (import.meta.env.PROD && !url.startsWith("https://")) {
+  if (isProduction() && !url.startsWith("https://")) {
     return false;
   }
 

@@ -27,7 +27,12 @@ export const CustomerNotesSection: React.FC<CustomerNotesSectionProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  if (!((order.notes && order.notes.trim()) || (isEditing && editForm))) {
+  const hasNotes =
+    typeof order.notes === "string"
+      ? Boolean(order.notes.trim())
+      : Boolean(order.notes && Array.isArray(order.notes) ? order.notes.length : order.notes);
+
+  if (!(hasNotes || (isEditing && editForm))) {
     return null;
   }
 

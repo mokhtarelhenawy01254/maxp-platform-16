@@ -5,8 +5,10 @@
 User-agent: *
 Allow: /
 
-# Private application areas
+# Private application and backoffice areas
+Disallow: /admin
 Disallow: /admin/
+Disallow: /super-admin
 Disallow: /super-admin/
 Disallow: /api/
 Disallow: /dashboard
@@ -14,14 +16,35 @@ Disallow: /account
 Disallow: /settings
 Disallow: /orders
 Disallow: /products
+Disallow: /customers
 Disallow: /conversations
 Disallow: /inbox
+Disallow: /unified-inbox
 Disallow: /analytics
 Disallow: /advertising
 Disallow: /accounting
 Disallow: /hr
 Disallow: /inventory
+Disallow: /procurement
+Disallow: /wholesale
+Disallow: /pos
+Disallow: /ai-agents
+Disallow: /agency
+Disallow: /developer
+Disallow: /partner-dashboard
+Disallow: /moderator-dashboard
+Disallow: /my-dashboard
+Disallow: /company-dashboard
 Disallow: /affiliates/dashboard
+Disallow: /tasks
+Disallow: /shipping
+Disallow: /courier
+Disallow: /wallet
+Disallow: /dental-lab
+Disallow: /doctor
+Disallow: /patient
+Disallow: /lab
+Disallow: /radiology
 
 # Paid-ad landing pages are NOT disallowed on purpose: their static shells
 # carry <meta name="robots" content="noindex"> so the tag stays readable.
