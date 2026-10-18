@@ -45,10 +45,8 @@ import {
   isReturnStatusCode,
   COMMON_RETURN_REASONS,
 } from "./utils/returnHelper";
-import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
-import { apiClient } from "../../services/apiClient";
-import tokenManager from "../../utils/tokenManager";
+import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
   ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS,
@@ -360,92 +358,17 @@ const OrderDetails: React.FC = () => {
     return { subtotal, shipping, tax, discount, total };
   }, [isEditing, editForm.items, editForm.shipping, editForm.tax, editForm.discount, order]);
 
-  // Handlers
-  const handlePrintInvoice = async () => {
-    if (!order) return;
-
-    const printWindow = window.open("", "_blank");
-
-    if (!printWindow) {
-      alert(t("orderDetails.printWindowError"));
-      return;
-    }
-
-    const printDirectInvoice = async () => {
-      await printSingleShippingLabel({
-        order,
-        companyName: user?.company?.name,
-        companyLogoUrl: user?.company?.logo || null,
-        printWindow,
-        settings: invoiceSettings,
-      });
-    };
-
-    if (order.metadata?.isGuestOrder) {
-      try {
-        await printDirectInvoice();
-      } catch (error: any) {
-        console.error("Error printing guest order invoice:", error);
-        alert(t("orderDetails.invoicePrintError", { error: error.message }));
-      }
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/v1/order-invoices/generate/${order.id}`,
-        {
-          method: "POST",
-          headers: tokenManager.createAuthHeaders({
-            "Content-Type": "application/json",
-          }),
-        },
-      );
-
-      const result = await response.json().catch(() => null);
-
-      if (response.ok && result?.success && result?.data?.id) {
-        printWindow.location.href = `/orders/invoice/${result.data.id}?print=true`;
-        return;
-      }
-
-      console.warn("Falling back to direct invoice print:", result);
-      await printDirectInvoice();
-    } catch (error: any) {
-      console.error("Error generating invoice:", error);
-      try {
-        await printDirectInvoice();
-      } catch (fallbackError: any) {
-        console.error("Direct invoice print fallback failed:", fallbackError);
-        alert(
-          t("orderDetails.invoicePrintError", {
-            error: fallbackError?.message || error?.message || t("orderDetails.invoicePrintFallbackError"),
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePrintPreparationSlip = async () => {
-    if (!order) return;
-
-    try {
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        throw new Error("فشل في فتح نافذة جديدة للطباعة");
-      }
-      await printSingleShippingLabel({
-        order,
-        companyName: user?.company?.name,
-        companyLogoUrl: user?.company?.logo || null,
-        printWindow,
-        settings: invoiceSettings,
-      });
-    } catch (error: any) {
-      console.error("Error generating preparation slip HTML:", error);
-      alert(t("orderDetails.preparationSlipError", { error: error.message }));
-    }
-  };
+  // Header & Print Actions Hook
+  const {
+    handlePrintInvoice,
+    handlePrintPreparationSlip,
+    whatsappChatUrl,
+  } = useOrderHeaderActions({
+    order,
+    user,
+    invoiceSettings,
+    t,
+  });
 
 
 
@@ -511,32 +434,7 @@ const OrderDetails: React.FC = () => {
     [orderStatuses],
   );
 
-  const whatsappChatUrl = useMemo(() => {
-    const rawPhone = order?.customerPhone || order?.alternativePhone;
-    if (!rawPhone) return null;
-    let cleanPhone = String(rawPhone).replace(/\D/g, "");
-    if (cleanPhone.startsWith("01") && cleanPhone.length === 11) {
-      cleanPhone = "2" + cleanPhone;
-    }
-    const params = new URLSearchParams();
-    params.set("phone", cleanPhone);
-    if (order?.customerName) {
-      params.set("name", order.customerName);
-    }
-    if (order?.orderNumber) {
-      params.set("orderNumber", order.orderNumber);
-    }
-    if (order?.conversationId) {
-      params.set("conversationId", order.conversationId);
-    }
-    return `/whatsapp?${params.toString()}`;
-  }, [
-    order?.customerPhone,
-    order?.alternativePhone,
-    order?.customerName,
-    order?.orderNumber,
-    order?.conversationId,
-  ]);
+
 
   if (loading) {
     return (
