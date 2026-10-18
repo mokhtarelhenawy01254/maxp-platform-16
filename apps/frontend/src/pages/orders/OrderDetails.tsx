@@ -29,6 +29,7 @@ import OrderShipmentModals from "./components/OrderShipmentModals";
 
 // Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
+import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
@@ -618,196 +619,16 @@ const OrderDetails: React.FC = () => {
     }
   };
 
-  const handleProductSelect = (product: any, variant?: any) => {
-    // ✅ Extract variant data properly
-    let productColor = "";
-    let productSize = "";
-    let actualPrice = product.price;
-    let metadata: any = {};
-
-    if (variant) {
-      // Extract color and size from variant
-      if (variant.color) productColor = variant.color;
-      if (variant.size) productSize = variant.size;
-
-      // Use variant price if available
-      if (variant.price && parseFloat(variant.price) > 0) {
-        actualPrice = parseFloat(variant.price);
-      }
-
-      // Parse variant attributes from metadata
-      if (variant.metadata) {
-        try {
-          const variantMeta =
-            typeof variant.metadata === "string"
-              ? JSON.parse(variant.metadata)
-              : variant.metadata;
-
-          metadata = variantMeta;
-
-          // Extract from attributes array
-          if (variantMeta.attributes && Array.isArray(variantMeta.attributes)) {
-            variantMeta.attributes.forEach((attr: any) => {
-              if (attr.type === "color" && attr.option && !productColor) {
-                productColor = attr.option;
-              }
-              if (attr.type === "size" && attr.option && !productSize) {
-                productSize = attr.option;
-              }
-            });
-          }
-
-          // Extract from attributeValues or direct metadata
-          const vAttrs =
-            variantMeta.attributeValues ||
-            (typeof variantMeta.attributes === "object" && !Array.isArray(variantMeta.attributes)
-              ? variantMeta.attributes
-              : null) ||
-            variantMeta;
-          if (vAttrs && typeof vAttrs === "object") {
-            const c = vAttrs["اللون"] ?? vAttrs["لون"] ?? vAttrs["Color"] ?? vAttrs["color"];
-            const s = vAttrs["المقاس"] ?? vAttrs["مقاس"] ?? vAttrs["Size"] ?? vAttrs["size"];
-            if (c != null && !productColor) productColor = String(c);
-            if (s != null && !productSize) productSize = String(s);
-          }
-        } catch (e) {
-          console.error("Error parsing variant metadata:", e);
-        }
-      }
-
-      // Parse from variant name if still empty
-      if (variant.name && (!productColor || !productSize)) {
-        const name = variant.name;
-
-        // If explicit type is color and no separator
-        if (
-          variant.type === "color" &&
-          !name.includes("-") &&
-          !name.includes("|") &&
-          !name.includes("/")
-        ) {
-          if (!productColor) productColor = name.trim();
-        } else {
-          // Handle hyphen, en-dash, pipe, and slash separators
-          const parts = name.split(/\s*[-–|\/]\s*/).filter((p: any) => p.trim());
-
-          if (parts.length >= 2) {
-            // Assumption: Color is often first, Size is often last
-            if (!productColor) productColor = parts[0].trim();
-            if (!productSize) productSize = parts[parts.length - 1].trim();
-          } else if (parts.length === 1) {
-            // Logic for single part found
-            const val = parts[0].trim();
-            // If it looks like a number, it might be size? If text, might be color?
-            if (isNaN(parseFloat(val)) && !productColor) {
-              productColor = val;
-            } else if (!productSize) {
-              productSize = val;
-            }
-          }
-        }
-      }
-    }
-
-    // ✅ Validate price
-    if (actualPrice <= 0) {
-      alert(t("orderDetails.priceMustBeGreaterThanZero"));
-      return;
-    }
-
-    // ✅ Check for duplicates
-    const isDuplicate = editForm.items.some(
-      (item: any) =>
-        item.productId === product.id &&
-        item.productColor === productColor &&
-        item.productSize === productSize,
-    );
-
-    if (isDuplicate) {
-      alert(t("orderDetails.productAlreadyExists"));
-      return;
-    }
-
-    // ✅ Extract Image
-    let productImage = "";
-
-    // Helper to get first image from string or array
-    const getFirstImage = (imgData: any) => {
-      if (!imgData) return "";
-      if (Array.isArray(imgData)) return imgData[0];
-      if (typeof imgData === "string") {
-        if (imgData.startsWith("[")) {
-          try {
-            const parsed = JSON.parse(imgData);
-            return Array.isArray(parsed) ? parsed[0] : parsed;
-          } catch (e) {
-            return imgData;
-          }
-        }
-        return imgData;
-      }
-      return "";
-    };
-
-    productImage =
-      getFirstImage(variant?.images) ||
-      getFirstImage(variant?.image) ||
-      getFirstImage(product.images) ||
-      getFirstImage(product.image) ||
-      "";
-
-    const itemSku = variant?.sku || product.sku;
-
-    const newItem = {
-      productId: product.id,
-      variantId: variant?.id || null,
-      productName: product.name,
-      price: actualPrice,
-      quantity: 1,
-      total: actualPrice,
-      productColor,
-      productSize: productSize != null ? String(productSize) : "",
-      productImage, // ✅ ADDED: Image field
-      productSku: itemSku,
-      metadata: {
-        ...metadata,
-        image: productImage, // Add to metadata as backup
-        variantId: variant?.id || null,
-        sku: itemSku,
-        originalProductId: product.id,
-      },
-    };
-
-    setEditForm((prev) => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
-    setShowAddProductModal(false);
-    // تم إضافة المنتج بنجاح
-  };
-
-  const handleItemChange = (index: number, field: string, value: any) => {
-    setEditForm((prev) => {
-      const newItems = [...prev.items];
-      newItems[index] = { ...newItems[index], [field]: value };
-
-      // Recalculate total for item
-      if (field === "price" || field === "quantity") {
-        const price = parseFloat(newItems[index].price) || 0;
-        const qty = parseInt(newItems[index].quantity) || 1;
-        newItems[index].total = price * qty;
-      }
-      return { ...prev, items: newItems };
-    });
-  };
-
-  const handleRemoveItem = (index: number) => {
-    setEditForm((prev) => {
-      const newItems = [...prev.items];
-      newItems.splice(index, 1);
-      return { ...prev, items: newItems };
-    });
-  };
+  const {
+    handleProductSelect,
+    handleItemChange,
+    handleRemoveItem,
+  } = useOrderEditItemsOperations({
+    editForm,
+    setEditForm,
+    setShowAddProductModal,
+    t,
+  });
 
   const handleCreateShipment = async () => {
     await createShipment();
