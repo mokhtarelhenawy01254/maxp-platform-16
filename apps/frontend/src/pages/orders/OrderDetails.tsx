@@ -16,17 +16,13 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
-
 // Components
 import OrderHeader from "./components/OrderHeader";
-import OrderDiscountApprovalBanner from "./components/OrderDiscountApprovalBanner";
-import OrderItemsCard from "./components/OrderItemsCard";
+import OrderDetailsMainContent from "./components/OrderDetailsMainContent";
 import OrderDetailsSidebar from "./components/OrderDetailsSidebar";
 import OrderReturnCard from "./components/OrderReturnCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
-import UnifiedShippingCard from "./components/UnifiedShippingCard";
 // Cards migrated into OrderDetailsSidebar
 import OrderActionModalsContainer from "./components/OrderActionModalsContainer";
 import OrderShipmentModals from "./components/OrderShipmentModals";
@@ -1059,57 +1055,24 @@ const OrderDetails: React.FC = () => {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-flow-col-dense lg:grid-cols-3">
         {/* RIGHT COLUMN (Main Info) */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Discount Approval Banner */}
-          <OrderDiscountApprovalBanner
-            order={order}
-            onApprove={() => handleDiscountApproval("APPROVE")}
-            onReject={(reason) => handleDiscountApproval("REJECT", reason)}
-            loading={updating}
-          />
-
-          {/* Items Card */}
-          <OrderItemsCard
-            isEditing={canEditOrderDetails && isEditing}
-            items={canEditOrderDetails && isEditing ? editForm.items : order.items}
-            currency={order.currency}
-            totals={calculatedTotals}
-            discountReason={order.discountReason}
-            editDiscountReason={editForm.discountReason}
-            onDiscountChange={(val) =>
-              setEditForm((prev) => ({ ...prev, discount: val }))
-            }
-            onDiscountReasonChange={(val) =>
-              setEditForm((prev) => ({ ...prev, discountReason: val }))
-            }
-            onAddItem={() => {
-              if (canEditOrderDetails) setShowAddProductModal(true);
-            }}
-            onItemChange={handleItemChange}
-            onRemoveItem={handleRemoveItem}
-            onShippingChange={(val) =>
-              setEditForm((prev) => ({ ...prev, shipping: val }))
-            }
-            onTaxChange={(val) =>
-              setEditForm((prev) => ({ ...prev, tax: val }))
-            }
-          />
-
-          {showPartnerOperationsCard && (
-            <OrderPartnerOperationsCard
-              affiliate={order.affiliate}
-              merchantOrder={merchantOrderScope}
-            />
-          )}
-
-          {/* Unified Multi-Carrier Shipping Panel */}
-          <UnifiedShippingCard
-            order={order}
-            onOrderUpdated={fetchOrderDetails}
-            canManageShipments={canManageTurboShipping}
-            onOpenTicket={() => setShowTicketModal(true)}
-          />
-        </div>
+        <OrderDetailsMainContent
+          order={order}
+          canEditOrderDetails={canEditOrderDetails}
+          isEditing={isEditing}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          calculatedTotals={calculatedTotals}
+          updating={updating}
+          handleDiscountApproval={handleDiscountApproval}
+          handleItemChange={handleItemChange}
+          handleRemoveItem={handleRemoveItem}
+          setShowAddProductModal={setShowAddProductModal}
+          showPartnerOperationsCard={showPartnerOperationsCard}
+          merchantOrderScope={merchantOrderScope}
+          fetchOrderDetails={fetchOrderDetails}
+          canManageTurboShipping={canManageTurboShipping}
+          setShowTicketModal={setShowTicketModal}
+        />
 
         {/* LEFT COLUMN (Sidebar) */}
         <OrderDetailsSidebar
