@@ -55,4 +55,23 @@ router.post('/customer-orders/:id/payments/generate', controller.generateDefault
 router.post('/customer-orders/:id/payments', controller.createCustomerOrderPayment);
 router.patch('/customer-orders/:id/payments/:paymentId', controller.updateCustomerOrderPayment);
 
+// ============================================================================
+// 5. Partner Factories & External Subcontracting (Wave 2)
+// ============================================================================
+router.get('/partner-factories/performance', controller.getPartnerFactoriesPerformance);
+router.get('/partner-factories', controller.listPartnerFactories);
+router.post('/partner-factories', controller.createPartnerFactory);
+router.get('/partner-factories/:id', controller.getPartnerFactoryById);
+router.patch('/partner-factories/:id', controller.updatePartnerFactory);
+router.delete('/partner-factories/:id', controller.deletePartnerFactory);
+
+// Stage External Execution & Factory Events
+router.patch('/orders/:orderId/stages/:stageId/assignment', controller.assignStageExecution);
+router.post('/orders/:orderId/stages/:stageId/factory-events', controller.recordStageFactoryEvent);
+
+// Manufacturing Attachments
+router.get('/orders/:id/attachments', controller.listOrderAttachments);
+router.post('/attachments', controller.createAttachment);
+router.delete('/attachments/:id', controller.deleteAttachment);
+
 module.exports = router;

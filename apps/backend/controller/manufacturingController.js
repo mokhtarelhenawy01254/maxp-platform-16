@@ -6,6 +6,7 @@
 
 const ManufacturingService = require('../services/manufacturingService');
 const ManufacturingContractService = require('../services/manufacturingContractService');
+const ManufacturingSubcontractService = require('../services/manufacturingSubcontractService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -389,6 +390,149 @@ class ManufacturingController {
       res.json({ success: true, data: result, message: 'تم تحديث الدفعة بنجاح' });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // 5. Partner Factories & Subcontracting (Wave 2)
+  // ==========================================================================
+
+  static async listPartnerFactories(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const factories = await ManufacturingSubcontractService.listPartnerFactories(companyId, req.query);
+      res.json({ success: true, data: factories });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getPartnerFactoryById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const factory = await ManufacturingSubcontractService.getPartnerFactoryById(companyId, req.params.id);
+      res.json({ success: true, data: factory });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createPartnerFactory(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const factory = await ManufacturingSubcontractService.createPartnerFactory(companyId, req.body);
+      res.status(201).json({ success: true, data: factory, message: 'تم إنشاء المصنع الشريك بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updatePartnerFactory(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const factory = await ManufacturingSubcontractService.updatePartnerFactory(
+        companyId,
+        req.params.id,
+        req.body
+      );
+      res.json({ success: true, data: factory, message: 'تم تحديث بيانات المصنع الشريك بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deletePartnerFactory(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingSubcontractService.deletePartnerFactory(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async assignStageExecution(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const stage = await ManufacturingSubcontractService.assignStageExecution(
+        companyId,
+        req.params.orderId,
+        req.params.stageId,
+        req.body
+      );
+      res.json({ success: true, data: stage, message: 'تم تحديث جهة تنفيذ المرحلة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async recordStageFactoryEvent(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const stage = await ManufacturingSubcontractService.recordStageFactoryEvent(
+        companyId,
+        req.params.orderId,
+        req.params.stageId,
+        req.body
+      );
+      res.json({ success: true, data: stage, message: 'تم تسجيل حدث المصنع للمرحلة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createAttachment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const attachment = await ManufacturingSubcontractService.createAttachment(
+        companyId,
+        req.body,
+        req.user?.id
+      );
+      res.status(201).json({ success: true, data: attachment, message: 'تم حفظ المرفق بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async listOrderAttachments(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const attachments = await ManufacturingSubcontractService.listOrderAttachments(
+        companyId,
+        req.params.id,
+        req.query
+      );
+      res.json({ success: true, data: attachments });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteAttachment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingSubcontractService.deleteAttachment(
+        companyId,
+        req.params.id,
+        req.user
+      );
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getPartnerFactoriesPerformance(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const performance = await ManufacturingSubcontractService.getPartnerFactoriesPerformance(
+        companyId,
+        req.query
+      );
+      res.json({ success: true, data: performance });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
     }
   }
 }

@@ -89,6 +89,17 @@ enum CustomerOrderPaymentStatus {
   CANCELLED
 }
 
+enum StageExecutionEntity {
+  INTERNAL
+  EXTERNAL
+}
+
+enum AttachmentKind {
+  IMAGE
+  VIDEO
+  DOC
+}
+
 /// Bill of Materials Header (قائمة مكونات ومواد التصنيع)
 model BillOfMaterials {
   id                  String             @id @default(cuid())
@@ -203,6 +214,7 @@ model ProductionOrder {
   scrapRecords       ScrapRecord[]
   customerOrder      CustomerOrder?                @relation(fields: [customerOrderId], references: [id], onDelete: SetNull)
   customer           Customer?                     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  attachments        ManufacturingAttachment[]
 
   @@unique([companyId, orderNumber])
   @@index([companyId, status])
@@ -251,13 +263,22 @@ model ProductionStage {
   notes             String?
   startedAt         DateTime?
   completedAt       DateTime?
+  executionEntity   StageExecutionEntity  @default(INTERNAL)
+  partnerFactoryId  String?
+  sentToFactoryAt   DateTime?
+  factoryAckReceiptAt DateTime?
+  factoryCompletedAt DateTime?
+  factoryNotes      String?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
   order             ProductionOrder       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  partnerFactory    PartnerFactory?       @relation(fields: [partnerFactoryId], references: [id], onDelete: SetNull)
+  attachments       ManufacturingAttachment[]
 
   @@index([orderId, sequence])
   @@index([orderId, status])
+  @@index([partnerFactoryId])
   @@map("production_stages")
 }
 
@@ -446,4 +467,48 @@ model CustomerOrderPayment {
 
   @@index([customerOrderId])
   @@map("customer_order_payments")
+}
+
+/// Partner Factory / Subcontractor (المصانع الشركاء وجهات التشغيل الخارجية)
+model PartnerFactory {
+  id            String            @id @default(cuid())
+  companyId     String
+  name          String
+  code          String?
+  specialty     String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  notes         String?
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  stages        ProductionStage[]
+
+  @@unique([companyId, name])
+  @@index([companyId, isActive])
+  @@map("partner_factories")
+}
+
+/// Manufacturing Attachment for Orders & Stages (مرفقات أوامر ومراحل التشغيل)
+model ManufacturingAttachment {
+  id           String           @id @default(cuid())
+  companyId    String
+  orderId      String?
+  stageId      String?
+  url          String
+  kind         AttachmentKind   @default(IMAGE)
+  caption      String?
+  uploadedById String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  order        ProductionOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage        ProductionStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, orderId])
+  @@index([stageId])
+  @@map("manufacturing_attachments")
 }
