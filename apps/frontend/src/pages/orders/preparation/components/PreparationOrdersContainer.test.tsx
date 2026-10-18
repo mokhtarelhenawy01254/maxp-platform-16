@@ -15,13 +15,32 @@ jest.mock("react-i18next", () => ({
 }));
 
 jest.mock("./PreparationOrderCard", () => ({
+  __esModule: true,
+  default: ({ order }: any) => (
+    <div data-testid={`order-card-${order.orderNumber}`}>{order.customerName}</div>
+  ),
   PreparationOrderCard: ({ order }: any) => (
     <div data-testid={`order-card-${order.orderNumber}`}>{order.customerName}</div>
   ),
 }));
 
 jest.mock("./PreparationOrdersTable", () => ({
+  __esModule: true,
+  default: ({ orders }: any) => (
+    <div data-testid="orders-table">
+      {orders.map((o: any) => (
+        <span key={o.orderNumber}>{o.orderNumber}</span>
+      ))}
+    </div>
+  ),
   PreparationOrdersTable: ({ orders }: any) => (
+    <div data-testid="orders-table">
+      {orders.map((o: any) => (
+        <span key={o.orderNumber}>{o.orderNumber}</span>
+      ))}
+    </div>
+  ),
+  MemoizedPreparationOrdersTable: ({ orders }: any) => (
     <div data-testid="orders-table">
       {orders.map((o: any) => (
         <span key={o.orderNumber}>{o.orderNumber}</span>
@@ -31,6 +50,10 @@ jest.mock("./PreparationOrdersTable", () => ({
 }));
 
 jest.mock("./PreparationPaginationBar", () => ({
+  __esModule: true,
+  default: ({ page, totalPages }: any) => (
+    <div data-testid="pagination-bar" data-page={page} data-total-pages={totalPages} />
+  ),
   PreparationPaginationBar: ({ page, totalPages }: any) => (
     <div data-testid="pagination-bar" data-page={page} data-total-pages={totalPages} />
   ),
