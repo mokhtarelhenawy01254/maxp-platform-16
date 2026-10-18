@@ -12,15 +12,7 @@ import { apiClient } from "../../services/apiClient";
 import { queryClient } from "../../config/queryClient";
 import { toast } from "sonner";
 import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
-import {
-  AFFILIATE_OPERATION_APP_SLUGS,
-  MERCHANT_OPERATION_APP_SLUGS,
-  ORDER_SOURCE_TRACKING_APP_SLUGS,
-  AGENT_WORKSPACE_APP_SLUGS,
-  getCurrentCompanyActiveApps,
-  hasAnyCompanyAppSlug,
-  normalizeCompanyAppSlug,
-} from "../../utils/companyApps";
+
 import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
@@ -35,6 +27,7 @@ import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
 import { useOrdersFetchOperations } from "./hooks/useOrdersFetchOperations";
 import { useOrdersUrlSync } from "./hooks/useOrdersUrlSync";
+import { useOrdersOperationPermissions } from "./hooks/useOrdersOperationPermissions";
 import { useOrdersSocketListeners } from "./hooks/useOrdersSocketListeners";
 import { useOrdersFilterStats } from "./hooks/useOrdersFilterStats";
 import type { SocketOrderUpdate } from "./hooks/useOrdersSocketListeners";
@@ -481,55 +474,25 @@ const Orders: React.FC = () => {
   const tableColumnCount = (canSelectOrders ? 1 : 0) + columnsToRender.length;
   const fieldClassName =
     "theme-native-control w-full rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100";
-  const activeCompanyAppSlugSet = useMemo(
-    () =>
-      new Set(
-        getCurrentCompanyActiveApps(user, company)
-          .map(normalizeCompanyAppSlug)
-          .filter(Boolean),
-      ),
-    [company, user],
-  );
-  const hasAffiliateOperationsApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    AFFILIATE_OPERATION_APP_SLUGS,
-  );
-  const hasMerchantOperationsApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    MERCHANT_OPERATION_APP_SLUGS,
-  );
-  const hasAgentWorkspace = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    AGENT_WORKSPACE_APP_SLUGS,
-  );
-  const merchantOperationFilterIsActive = Boolean(
-    filters.merchantId.length > 0 ||
-      filters.fulfillmentSource.length > 0 ||
-      filters.merchantOperationStatus.length > 0 ||
-      filters.merchantSettlementStatus.length > 0,
-  );
-  const affiliateFilterIsActive = filters.affiliateId.length > 0;
-  const canShowUnifiedOperationFilters = isAdmin && !isMerchant;
-  const sourceFilterIsActive = filters.sourceType.length > 0;
-  const hasOrderSourceTrackingApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    ORDER_SOURCE_TRACKING_APP_SLUGS,
-  );
-  const showOrderSourceFilter =
-    canShowUnifiedOperationFilters &&
-    (hasOrderSourceTrackingApp || sourceFilterIsActive);
-  const showMerchantOperationFilters =
-    canShowUnifiedOperationFilters &&
-    (merchantOptions.length > 0 ||
-      merchantOperationFilterIsActive ||
-      hasMerchantOperationsApp);
-  const showAffiliateOperationFilter =
-    canShowUnifiedOperationFilters &&
-    (hasAffiliateOperationsApp ||
-      affiliateOptions.length > 0 ||
-      affiliateFilterIsActive);
-  const showUnifiedOperationFilters =
-    showMerchantOperationFilters || showAffiliateOperationFilter;
+  const {
+    hasAgentWorkspace,
+    canShowUnifiedOperationFilters,
+    showOrderSourceFilter,
+    showMerchantOperationFilters,
+    showAffiliateOperationFilter,
+    showUnifiedOperationFilters,
+    merchantOperationFilterIsActive,
+    affiliateFilterIsActive,
+    sourceFilterIsActive,
+  } = useOrdersOperationPermissions({
+    user,
+    company,
+    isAdmin,
+    isMerchant,
+    filters,
+    merchantOptions,
+    affiliateOptions,
+  });
 
 
 
