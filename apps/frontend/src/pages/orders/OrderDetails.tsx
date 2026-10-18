@@ -30,6 +30,7 @@ import OrderShipmentModals from "./components/OrderShipmentModals";
 // Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
+import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
@@ -185,8 +186,6 @@ const OrderDetails: React.FC = () => {
   const [returnReason, setReturnReason] = useState("");
   const [returnAdditionalNotes, setReturnAdditionalNotes] = useState("");
   const [isOverride, setIsOverride] = useState(false);
-  const [newPaymentStatus, setNewPaymentStatus] = useState("");
-  const [paymentNotes, setPaymentNotes] = useState("");
   const [cancellationReasonOptions, setCancellationReasonOptions] = useState<
     CancellationReason[]
   >([]);
@@ -219,7 +218,19 @@ const OrderDetails: React.FC = () => {
     isMerchant && merchantFulfillmentSource === "MERCHANT";
   const canEditOrderDetails = true;
   const canUpdateOrderStatus = !isMerchant || isMerchantSelfFulfilledOrder;
-  const canUpdatePaymentStatus = !isMerchant && !isGuestOrder;
+  const {
+    canUpdatePaymentStatus,
+    newPaymentStatus,
+    setNewPaymentStatus,
+    paymentNotes,
+    setPaymentNotes,
+    onUpdatePaymentStatus,
+  } = useOrderPaymentStatusOperations({
+    isMerchant,
+    isGuestOrder,
+    updatePaymentStatus,
+    setShowPaymentModal,
+  });
   const canManageTurboShipping = !isMerchant;
   const activeCompanyAppSlugSet = useMemo(
     () =>
@@ -492,20 +503,6 @@ const OrderDetails: React.FC = () => {
       isMounted = false;
     };
   }, [showStatusModal, isModalCancellationStatus]);
-
-  const onUpdatePaymentStatus = async () => {
-    if (isGuestOrder) {
-      setShowPaymentModal(false);
-      return;
-    }
-
-    const success = await updatePaymentStatus(newPaymentStatus, paymentNotes);
-    if (success) {
-      setShowPaymentModal(false);
-      setNewPaymentStatus("");
-      setPaymentNotes("");
-    }
-  };
 
   const handlePostponeOrder = async (data: {
     scheduledDeliveryDate: string;
