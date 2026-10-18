@@ -2,13 +2,7 @@ import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ClipboardDocumentListIcon,
-  Cog6ToothIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
@@ -65,11 +59,12 @@ import PreparationBulkActions from "./preparation/components/PreparationBulkActi
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
-import PreparationStatusChangeDialog from "./preparation/components/PreparationStatusChangeDialog";
-import ProblemHoldReasonDialog from "./preparation/components/ProblemHoldReasonDialog";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
-import DispatchCarrierModal, { type ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
-import DispatchInternalCourierModal from "./preparation/components/DispatchInternalCourierModal";
+import type { ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
+import PreparationAlertBanners from "./preparation/components/PreparationAlertBanners";
+import PreparationColumnSettingsDropdown from "./preparation/components/PreparationColumnSettingsDropdown";
+import PreparationPaginationBar from "./preparation/components/PreparationPaginationBar";
+import PreparationQueueDialogsContainer from "./preparation/components/PreparationQueueDialogsContainer";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -2088,28 +2083,11 @@ const PreparationQueue: React.FC = () => {
         />
       ) : null}
 
-      {!preparationSettings.enabled ? (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-          <span className="font-semibold">{t('preparation.k_1')}</span>
-          <span className="text-amber-700">{t('preparation.k_2')}</span>
-        </div>
-      ) : null}
-
-      {allOverdueShortageFollowUpCount > 0 ? (
-        <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
-          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-400" />
-          <span className="font-semibold">{t('preparation.overdueBanner', { count: allOverdueShortageFollowUpCount })}</span>
-          <span className="text-orange-700">{t('preparation.k_3')}</span>
-        </div>
-      ) : null}
-
-      {allOverdueProblemFollowUpCount > 0 ? (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-          <span className="font-semibold">{t('preparation.problemOverdueBanner', { count: allOverdueProblemFollowUpCount })}</span>
-        </div>
-      ) : null}
+      <PreparationAlertBanners
+        preparationSettingsEnabled={Boolean(preparationSettings.enabled)}
+        allOverdueShortageFollowUpCount={allOverdueShortageFollowUpCount}
+        allOverdueProblemFollowUpCount={allOverdueProblemFollowUpCount}
+      />
 
       {showFilters && (
         <PreparationFilters
@@ -2186,80 +2164,17 @@ const PreparationQueue: React.FC = () => {
             <div className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
           )}
 
-          <div className="ms-auto flex items-center gap-1.5" data-column-settings>
-            <button
-              type="button"
-              onClick={() => setShowFilters((prev) => !prev)}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition active:scale-[0.98] ${
-                showFilters
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-blue-500 dark:bg-blue-600 dark:text-white"
-                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              }`}
-              title={showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => setColumnSettingsOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 active:scale-[0.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              title={t("preparation.table.columnSettings")}
-            >
-              <Cog6ToothIcon className="h-3.5 w-3.5" />
-            </button>
-            {columnSettingsOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-                <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400 dark:border-gray-700 dark:text-gray-500">
-                  {t("preparation.table.visibleColumns")}
-                </div>
-                {PREPARATION_TABLE_COLUMNS.map((col) => (
-                  <label
-                    key={col}
-                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.includes(col)}
-                      onChange={() => toggleColumn(col)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
-                    />
-                    {t(PREPARATION_COLUMN_LABEL_KEYS[col])}
-                  </label>
-                ))}
-
-                <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400 dark:border-gray-700 dark:text-gray-500">
-                  {t("preparation.table.showHideFilters")}
-                </div>
-                <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50">
-                  <input
-                    type="checkbox"
-                    checked={showFilters}
-                    onChange={() => setShowFilters((prev) => !prev)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  {t("preparation.table.showFilterBar")}
-                </label>
-                {PREPARATION_FILTER_SECTIONS.map((section) => (
-                  <label
-                    key={section}
-                    className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                      showFilters ? "text-gray-700 dark:text-gray-300" : "text-gray-300 dark:text-gray-600 pointer-events-none"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={showFilters && visibleFilterSections.includes(section)}
-                      onChange={() => toggleFilterSection(section)}
-                      disabled={!showFilters}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
-                    />
-                    {t(PREPARATION_FILTER_SECTION_LABEL_KEYS[section])}
-                  </label>
-                ))}
-              </div>
-            )}
+          <div className="ms-auto" data-column-settings>
+            <PreparationColumnSettingsDropdown
+              showFilters={showFilters}
+              setShowFilters={setShowFilters}
+              columnSettingsOpen={columnSettingsOpen}
+              setColumnSettingsOpen={setColumnSettingsOpen}
+              visibleColumns={visibleColumns}
+              toggleColumn={toggleColumn}
+              visibleFilterSections={visibleFilterSections}
+              toggleFilterSection={toggleFilterSection}
+            />
           </div>
         </div>
 
@@ -2486,136 +2401,52 @@ const PreparationQueue: React.FC = () => {
           </>
         )}
 
-        <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5 dark:border-gray-700">
-          <div className="flex flex-wrap items-center gap-3 max-sm:justify-center">
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              {t('preparation.pagination.pageInfo', { page: pagination.page, totalPages, count: currentPageCount })}
-            </p>
-
-            <label className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-              {t('preparation.pagination.show')}
-              <select
-                value={uiState.pageSize}
-                onChange={(e) =>
-                  uiActions.setPageSize(Number(e.target.value) as PageSize)
-                }
-                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:focus:border-amber-500"
-              >
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-              {t('preparation.pagination.perPage')}
-            </label>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 max-sm:w-full">
-            <button
-              onClick={uiActions.goToPreviousPage}
-              disabled={pagination.page === 1}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
-            >
-              <ChevronRightIcon className="h-3.5 w-3.5" />
-              {t('preparation.pagination.previous')}
-            </button>
-
-            <button
-              onClick={() => uiActions.goToNextPage(totalPages)}
-              disabled={pagination.page === totalPages}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
-            >
-              {t('preparation.pagination.next')}
-              <ChevronLeftIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <PreparationPaginationBar
+          page={pagination.page}
+          totalPages={totalPages}
+          currentPageCount={currentPageCount}
+          pageSize={uiState.pageSize}
+          onPageSizeChange={(size) => uiActions.setPageSize(size)}
+          onPreviousPage={uiActions.goToPreviousPage}
+          onNextPage={() => uiActions.goToNextPage(totalPages)}
+        />
       </section>
 
-      <PreparationStatusChangeDialog
-        isOpen={Boolean(statusChangeDialog)}
-        order={dialogOrder}
-        targetStatus={statusChangeDialog?.targetStatus || ""}
-        targetStatusLabel={
-          statusChangeDialog
-            ? statusLabelMap.get(statusChangeDialog.targetStatus) ||
-              statusChangeDialog.targetStatus
-            : ""
-        }
-        isHold={statusChangeDialog?.isHold || false}
-        initialHoldReason={dialogHoldReason}
-        busy={Boolean(
-          dialogOrder &&
-            (rowUpdatingId === dialogOrder.orderNumber ||
-              problemHoldSavingOrderId === dialogOrder.orderNumber),
-        )}
-        onClose={() => setStatusChangeDialog(null)}
-        onConfirm={(payload) => void handleConfirmStatusChange(payload)}
-      />
+      <PreparationQueueDialogsContainer
+        statusChangeDialog={statusChangeDialog}
+        setStatusChangeDialog={setStatusChangeDialog}
+        dialogOrder={dialogOrder}
+        statusLabelMap={statusLabelMap}
+        dialogHoldReason={dialogHoldReason}
+        rowUpdatingId={rowUpdatingId}
+        problemHoldSavingOrderId={problemHoldSavingOrderId}
+        handleConfirmStatusChange={handleConfirmStatusChange}
 
-      <PreparationStatusChangeDialog
-        isOpen={Boolean(bulkHoldDialog)}
-        order={
-          bulkHoldDialog
-            ? ({
-                orderNumber:
-                  t("preparation.bulkHoldOrderLabel", {
-                    count: bulkHoldDialog.count,
-                  }) || `المحدد (${bulkHoldDialog.count} طلب)`,
-              } as any)
-            : null
-        }
-        targetStatus={PROBLEM_HOLD_STATUS}
-        targetStatusLabel={
-          statusLabelMap.get(PROBLEM_HOLD_STATUS) ||
-          t("orders.onHoldPrep") ||
-          "تجهيز معلق"
-        }
-        isHold={true}
-        busy={bulkUpdating}
-        onClose={() => setBulkHoldDialog(null)}
-        onConfirm={(payload) => {
-          const reason = (payload.holdReason || payload.note || "").trim();
-          if (!reason) return;
-          if (bulkHoldDialog?.mode === "selected") {
-            void executeBulkUpdateSelected(bulkHoldDialog.validOrders, reason);
-          } else if (bulkHoldDialog?.mode === "all") {
-            void executeBulkUpdateAll(reason);
-          }
-          setBulkHoldDialog(null);
-        }}
-      />
+        bulkHoldDialog={bulkHoldDialog}
+        setBulkHoldDialog={setBulkHoldDialog}
+        bulkUpdating={bulkUpdating}
+        executeBulkUpdateSelected={executeBulkUpdateSelected}
+        executeBulkUpdateAll={executeBulkUpdateAll}
 
-      <ProblemHoldReasonDialog
-        isOpen={Boolean(editReasonOrder)}
-        order={editReasonOrderOrder}
-        initialReason={editReasonOrder?.reason || ""}
-        busy={Boolean(
-          editReasonOrderOrder &&
-            problemHoldSavingOrderId === editReasonOrderOrder.orderNumber,
-        )}
-        onClose={() => setEditReasonOrder(null)}
-        onConfirm={(reason) => void handleConfirmEditReason(reason)}
-      />
+        editReasonOrder={editReasonOrder}
+        setEditReasonOrder={setEditReasonOrder}
+        editReasonOrderOrder={editReasonOrderOrder}
+        handleConfirmEditReason={handleConfirmEditReason}
 
-      <DispatchCarrierModal
-        isOpen={showDispatchModal}
-        onClose={() => setShowDispatchModal(false)}
-        ordersCount={selectedOrders.length}
-        carriers={activeCarriers}
-        onConfirm={(carrier) => void handleDispatchToCarrier(carrier)}
-        loading={sendingToTurbo}
-      />
+        showDispatchModal={showDispatchModal}
+        setShowDispatchModal={setShowDispatchModal}
+        selectedOrdersCount={selectedOrders.length}
+        activeCarriers={activeCarriers}
+        handleDispatchToCarrier={handleDispatchToCarrier}
+        sendingToTurbo={sendingToTurbo}
 
-      <DispatchInternalCourierModal
-        isOpen={showInternalCourierModal}
-        onClose={() => setShowInternalCourierModal(false)}
-        orderIds={selectedOrders
+        showInternalCourierModal={showInternalCourierModal}
+        setShowInternalCourierModal={setShowInternalCourierModal}
+        internalCourierOrderIds={selectedOrders
           .map((orderNumber) => getOrderByNumber(orderNumber)?.id)
           .filter((id): id is string | number => id !== undefined && id !== null)
           .map(String)}
-        onSuccess={(runId, runNumber) => {
+        onInternalCourierSuccess={(runId, runNumber) => {
           setShowInternalCourierModal(false);
           toast.success(`تم إنشاء مأمورية التوزيع ${runNumber} وتكليف المندوب بنجاح`);
           uiActions.clearBulkControls();
