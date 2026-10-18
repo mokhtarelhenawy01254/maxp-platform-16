@@ -908,6 +908,40 @@ export function useAgentWorkspace() {
     }
   }, [activeSelectedOrder?.id, page, searchParams, setSearchParams]);
 
+  const handleUpdateRating = useCallback(
+    (orderId: string, newRating: string, customerPhone?: string, customerId?: string) => {
+      setOrders((prev) => {
+        const targetOrder = prev.find((o) => o.id === orderId);
+        const phone = customerPhone || targetOrder?.customerPhone;
+        const cId = customerId || targetOrder?.customerId;
+
+        return prev.map((o) => {
+          const isMatch =
+            o.id === orderId ||
+            Boolean(cId && o.customerId && o.customerId === cId) ||
+            Boolean(phone && o.customerPhone && o.customerPhone === phone);
+
+          if (!isMatch) return o;
+
+          return {
+            ...o,
+            customerRating: newRating,
+            customerStats: {
+              ...(o.customerStats || {
+                deliveryRate: null,
+                totalDelivered: 0,
+                totalOrdersCount: 0,
+                customerRating: newRating,
+              }),
+              customerRating: newRating,
+            },
+          };
+        });
+      });
+    },
+    []
+  );
+
   return {
     t,
     isArabic,
@@ -958,6 +992,7 @@ export function useAgentWorkspace() {
     handleConvertIncomplete,
     handleUpdateOrderItems,
     handleUpdateCustomer,
+    handleUpdateRating,
     selectedOrderForModal,
     setSelectedOrderForModal,
     isModalOpen,

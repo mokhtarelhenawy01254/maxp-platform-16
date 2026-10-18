@@ -58,6 +58,8 @@ export interface WorkspaceOrderItem {
 export interface WorkspaceOrder {
   id: string;
   orderNumber: string;
+  customerId?: string | null;
+  customerRating?: string | null;
   type?: OrderType;
   customerName: string;
   customerPhone: string;

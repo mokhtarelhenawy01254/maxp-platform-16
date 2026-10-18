@@ -160,37 +160,47 @@ export function computeHealthScore({
     if (deliveryRate !== null && deliveryRate !== undefined) {
       diagnosis = `نسبة الاستلام: ${Math.round(deliveryRate)}% — مؤشر موثوقية ${score.toFixed(1)}/10`;
     }
-  } else if (isDuplicate) {
-    score = 3.3;
-    diagnosis = "تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة";
   } else if (hasCompletedAttempts) {
     const delivered = totalDelivered ?? 0;
     const attempts = totalAttempts!;
     const returned = totalFailed ?? Math.max(0, attempts - delivered);
     const rate = delivered / attempts;
 
-    let s: number;
-    if (delivered === 0) {
-      s = Math.max(1.5, 2.8 - returned * 0.5);
-    } else if (returned === 0) {
-      s = ((delivered + 1.125) / (attempts + 1.5)) * 10;
-    } else {
-      const base = ((delivered + 1.125) / (attempts + 1.5)) * 10;
-      const penalty = (1 - rate) * 1.8;
-      s = base - penalty;
-    }
+    // Minimum 3 attempts needed to form an evaluation tier
+    if (attempts >= 3) {
+      let s: number;
+      if (delivered === 0) {
+        s = Math.max(1.5, 2.8 - returned * 0.5);
+      } else if (returned === 0) {
+        s = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+      } else {
+        const base = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+        const penalty = (1 - rate) * 1.8;
+        s = base - penalty;
+      }
 
-    score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
-    const pct = Math.round(rate * 100);
-    if (score >= 8.0) {
-      diagnosis = `سجل استلام ممتاز (${pct}%) — ${delivered} من ${attempts} طلب`;
-    } else if (score >= 7.0) {
-      diagnosis = `سجل استلام جيد (${pct}%) — ${delivered} من ${attempts} طلب`;
-    } else if (score >= 5.0) {
-      diagnosis = `سجل استلام متوسط (${pct}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ""}`;
+      score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
+      const pct = Math.round(rate * 100);
+      if (score >= 8.0) {
+        diagnosis = `سجل استلام ممتاز (${pct}%) — ${delivered} من ${attempts} طلب`;
+      } else if (score >= 7.0) {
+        diagnosis = `سجل استلام جيد (${pct}%) — ${delivered} من ${attempts} طلب`;
+      } else if (score >= 5.0) {
+        diagnosis = `سجل استلام متوسط (${pct}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ""}`;
+      } else {
+        diagnosis = `تحذير: مخاطرة مرتفعة (${pct}%) — ${returned} مرتجع سابق`;
+      }
     } else {
-      diagnosis = `تحذير: مخاطرة مرتفعة (${pct}%) — ${returned} مرتجع سابق`;
+      isNew = true;
+      score = 7.5;
+      diagnosis = isDuplicate
+        ? "طلب مكرر لنفس العميل — غير محسوب في التقييم"
+        : "عميل جديد — لم تكتمل له شحنات سابقة بعد";
     }
+  } else if (isDuplicate) {
+    isNew = true;
+    score = 7.5;
+    diagnosis = "طلب مكرر لنفس العميل — غير محسوب في التقييم";
   } else if (hasPositiveDeliveryRate) {
     const rateVal = Number(deliveryRate);
     if (rateVal >= 90) score = 9.2;
@@ -214,16 +224,15 @@ export function computeHealthScore({
       score = 3.3;
       diagnosis = "عميل ضعيف / مخاطرة";
     }
-  } else if (orderStatus === "RETURNED") {
-    score = 2.3;
-    diagnosis = "طلب مرتجع — مخاطرة عدم استلام";
   } else if (orderStatus === "DELIVERED") {
     score = 8.5;
     diagnosis = "تم استلام الطلب بنجاح";
   } else {
     isNew = true;
     score = 7.5;
-    diagnosis = "عميل جديد — لم تكتمل له شحنات سابقة بعد";
+    diagnosis = isDuplicate
+      ? "طلب مكرر لنفس العميل — غير محسوب في التقييم"
+      : "عميل جديد — لم تكتمل له شحنات سابقة بعد";
   }
 
   score = Math.min(9.9, Math.max(1.0, Math.round(score * 10) / 10));

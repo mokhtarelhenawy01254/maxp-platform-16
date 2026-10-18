@@ -287,4 +287,102 @@ describe('customerRatingService - Automated Classification Engine (2026 Standard
         expect(result.errorCount).toBe(0);
         expect(result.companyId).toBe(companyId);
     });
+
+    test('13. استبعاد الطلبات المكررة (DUPLICATE_ORDER) تماماً من حساب التقييم', async () => {
+        const orders = [
+            { id: 'ord-1', orderNumber: '1001', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-01') },
+            { id: 'ord-2', orderNumber: '1002', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-02') },
+            { id: 'ord-3', orderNumber: '1003', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-03') },
+            // طلب مكرر بحالة DUPLICATE_ORDER
+            { id: 'ord-dup-1', orderNumber: '1004', status: 'DUPLICATE_ORDER', returnRequests: [], createdAt: new Date('2026-01-04') },
+            // طلب به وسم duplicate في metadata
+            { id: 'ord-dup-2', orderNumber: '1005', status: 'CANCELLED', metadata: JSON.stringify({ duplicate: true }), returnRequests: [], createdAt: new Date('2026-01-05') },
+            // طلب في سبب الإرجاع طرد مكرر
+            { id: 'ord-dup-3', orderNumber: '1006', status: 'RETURNED', turboReturnReason: 'طرد مكرر لنفس العميل', returnRequests: [], createdAt: new Date('2026-01-06') },
+        ];
+        const prisma = buildMockPrisma(baseCustomer, orders);
+
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        // تم استبعاد الـ 3 طلبات المكررة تماماً -> فقط 3 طلبات مستلمة
+        expect(result.totalAttempts).toBe(3);
+        expect(result.totalDelivered).toBe(3);
+        expect(result.totalFailed).toBe(0);
+        expect(result.deliveryRate).toBe(100);
+        expect(result.rating).toBe('AVERAGE'); // 3 attempts >= 3 and 100%
+    });
+
+    test('14. مرتجع بسبب المتجر (مقاس غلط، لون غلط، غير مطابق، سوء خامة) لا يُخصم من العميل نهائياً', async () => {
+        const orders = [
+            { id: 'ord-1', orderNumber: '1001', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-01') },
+            { id: 'ord-2', orderNumber: '1002', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-02') },
+            { id: 'ord-3', orderNumber: '1003', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-03') },
+            // مرتجع بسبب مقاس غلط من التجهيز
+            { id: 'ord-ret-store', orderNumber: '1004', status: 'RETURNED', notes: 'مقاس غلط – تجهيز', returnRequests: [], createdAt: new Date('2026-01-04') },
+            // مرتجع تربو لأن المنتج غير مطابق للمواصفات
+            { id: 'ord-ret-turbo', orderNumber: '1005', status: 'RETURNED', turboReturnReason: 'المنتج غير مطابق للمواصفات ودفع مصاريف الشحن', returnRequests: [], createdAt: new Date('2026-01-05') },
+        ];
+        const prisma = buildMockPrisma(baseCustomer, orders);
+
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        // الطلبان المرتجعان بسبب خطأ المتجر/المنتج تم استبعادهما تماماً
+        expect(result.totalDelivered).toBe(3);
+        expect(result.totalFailed).toBe(0);
+        expect(result.totalAttempts).toBe(3);
+        expect(result.deliveryRate).toBe(100);
+    });
+
+    test('15. مرتجع بسبب شركة الشحن (المندوب لم يتصل، مرتجع بسبب الشحن، خارج التغطية) لا يُخصم من العميل', async () => {
+        const orders = [
+            { id: 'ord-1', orderNumber: '1001', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-01') },
+            { id: 'ord-2', orderNumber: '1002', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-02') },
+            { id: 'ord-3', orderNumber: '1003', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-03') },
+            // مرتجع بسبب الشحن
+            { id: 'ord-ret-ship', orderNumber: '1004', status: 'RETURNED', notes: 'مرتجع بسبب الشحن لم يتصل المندوب', returnRequests: [], createdAt: new Date('2026-01-04') },
+            // خارج التغطية
+            { id: 'ord-ret-cov', orderNumber: '1005', status: 'RETURNED', turboReturnReason: 'العنوان خارج تغطية الشركة', returnRequests: [], createdAt: new Date('2026-01-05') },
+        ];
+        const prisma = buildMockPrisma(baseCustomer, orders);
+
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        expect(result.totalDelivered).toBe(3);
+        expect(result.totalFailed).toBe(0);
+        expect(result.totalAttempts).toBe(3);
+        expect(result.deliveryRate).toBe(100);
+    });
+
+    test('16. مرتجع بسبب العميل (العميل لا يرد، رفض الاستلام بدون سبب، الموبايل مقفول) يُحسب كفشل للعميل', async () => {
+        const orders = [
+            { id: 'ord-1', orderNumber: '1001', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-01') },
+            { id: 'ord-2', orderNumber: '1002', status: 'DELIVERED', returnRequests: [], createdAt: new Date('2026-01-02') },
+            // العميل لا يرد
+            { id: 'ord-ret-cust', orderNumber: '1003', status: 'RETURNED', turboReturnReason: 'العميل لا يرد بعد الذهاب اليه', returnRequests: [], createdAt: new Date('2026-01-03') },
+        ];
+        const prisma = buildMockPrisma(baseCustomer, orders);
+
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        expect(result.totalDelivered).toBe(2);
+        expect(result.totalFailed).toBe(1);
+        expect(result.totalAttempts).toBe(3);
+        expect(result.deliveryRate).toBe(66.7);
+        expect(result.rating).toBe('AVERAGE');
+    });
+
+    test('17. عميل جديد لديه محاولة واحدة فقط فاشلة -> يظل UNKNOWN و healthScore=7.5 ولا يتحول لـ POOR أبداً', async () => {
+        const orders = [
+            // محاولة واحدة فقط فاشلة
+            { id: 'ord-1', orderNumber: '1001', status: 'RETURNED', turboReturnReason: 'العميل لا يرد', returnRequests: [], createdAt: new Date('2026-01-01') },
+        ];
+        const prisma = buildMockPrisma(baseCustomer, orders);
+
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        // عدد الطلبات < 3 -> UNKNOWN ودرجة 7.5
+        expect(result.totalAttempts).toBe(1);
+        expect(result.rating).toBe('UNKNOWN');
+        expect(result.healthScore).toBe(7.5);
+    });
 });

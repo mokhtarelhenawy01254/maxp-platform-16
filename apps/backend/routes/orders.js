@@ -4272,6 +4272,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
               SELECT "customerPhone", (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
               FROM "orders"
               WHERE "companyId" = $1 AND "customerPhone" = ANY($2::text[])
+                AND "status" != 'DUPLICATE_ORDER'
+                AND ("metadata" IS NULL OR "metadata"::text NOT LIKE '%"duplicate":true%')
               GROUP BY "customerPhone", (${effectiveOrderStatusSql()})
             `, companyId, allPhones).then(rows => {
               return (Array.isArray(rows) ? rows : []).map(r => ({
@@ -4285,7 +4287,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           console.warn('⚠️ [ORDERS] Raw phone group failed, fallback to prisma groupBy:', err.message);
           return prismaClient.order.groupBy({
             by: ['customerPhone', 'status'],
-            where: { companyId, customerPhone: { in: allPhones } },
+            where: { companyId, customerPhone: { in: allPhones }, status: { not: 'DUPLICATE_ORDER' } },
             _count: { id: true }
           });
         });
@@ -4294,13 +4296,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           queryPhones.then(groups => {
             groups.forEach(g => {
               if (!g.customerPhone) return;
+              const st = String(g.status || '').toUpperCase();
+              if (st === 'DUPLICATE_ORDER') return;
               if (!statsByPhone.has(g.customerPhone)) {
                 statsByPhone.set(g.customerPhone, { delivered: 0, returned: 0, cancelled: 0, inFlight: 0, total: 0 });
               }
               const rec = statsByPhone.get(g.customerPhone);
               const count = g._count.id;
               rec.total += count;
-              const st = String(g.status || '').toUpperCase();
               if (st === 'DELIVERED') rec.delivered += count;
               else if (st === 'PARTIALLY_DELIVERED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
               else if (st === 'RETURNED') rec.returned += count;
@@ -4318,6 +4321,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
               SELECT "customerId", (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
               FROM "orders"
               WHERE "companyId" = $1 AND "customerId" = ANY($2::text[])
+                AND "status" != 'DUPLICATE_ORDER'
+                AND ("metadata" IS NULL OR "metadata"::text NOT LIKE '%"duplicate":true%')
               GROUP BY "customerId", (${effectiveOrderStatusSql()})
             `, companyId, allCustomerIds).then(rows => {
               return (Array.isArray(rows) ? rows : []).map(r => ({
@@ -4331,7 +4336,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           console.warn('⚠️ [ORDERS] Raw customerId group failed, fallback to prisma groupBy:', err.message);
           return prismaClient.order.groupBy({
             by: ['customerId', 'status'],
-            where: { companyId, customerId: { in: allCustomerIds } },
+            where: { companyId, customerId: { in: allCustomerIds }, status: { not: 'DUPLICATE_ORDER' } },
             _count: { id: true }
           });
         });
@@ -4340,13 +4345,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           queryCustomerIds.then(groups => {
             groups.forEach(g => {
               if (!g.customerId) return;
+              const st = String(g.status || '').toUpperCase();
+              if (st === 'DUPLICATE_ORDER') return;
               if (!statsByCustomerId.has(g.customerId)) {
                 statsByCustomerId.set(g.customerId, { delivered: 0, returned: 0, cancelled: 0, inFlight: 0, total: 0 });
               }
               const rec = statsByCustomerId.get(g.customerId);
               const count = g._count.id;
               rec.total += count;
-              const st = String(g.status || '').toUpperCase();
               if (st === 'DELIVERED') rec.delivered += count;
               else if (st === 'PARTIALLY_DELIVERED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
               else if (st === 'RETURNED') rec.returned += count;
@@ -4367,7 +4373,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     // ⭐ الدالة المركزية لاحتساب مؤشر صحة العميل الحقيقي (0.0 - 10.0)
     const resolveOrderHealthStats = (order, customer) => {
-      const isDuplicate = order.status === 'DUPLICATE_ORDER' || Boolean(order.metadata?.duplicate);
+      const isDuplicate =
+        String(order.status || '').toUpperCase() === 'DUPLICATE_ORDER' ||
+        Boolean(order.metadata?.duplicate);
       const phone = order.customerPhone || customer?.phone || order.guestPhone;
       const custId = order.customerId || customer?.id;
 
@@ -4396,15 +4404,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       const attempts = delivered + returned;
       let deliveryRate = null;
-      let score = null;
-      let diagnosis = 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
+      let score = 7.5;
+      let diagnosis = isDuplicate
+        ? 'طلب مكرر لنفس العميل — غير محسوب في التقييم'
+        : 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
       let ratingTier = 'UNKNOWN';
 
-      if (isDuplicate) {
-        score = 3.3;
-        ratingTier = 'POOR';
-        diagnosis = 'تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة';
-      } else if (attempts > 0) {
+      // الحكم على العميل يتطلب على الأقل 3 طلبات منتهية (minOrdersForRating >= 3)
+      if (attempts >= 3) {
         const rate = delivered / attempts;
         deliveryRate = Math.round(rate * 1000) / 10;
 
@@ -4421,19 +4428,31 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
         score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
 
-        if (score >= 8.0) {
+        if (attempts >= 10 && deliveryRate >= 90) {
           ratingTier = 'EXCELLENT';
           diagnosis = `سجل استلام ممتاز (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
-        } else if (score >= 7.0) {
+        } else if (attempts >= 5 && deliveryRate >= 75) {
           ratingTier = 'GOOD';
           diagnosis = `سجل استلام جيد (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
-        } else if (score >= 5.0) {
+        } else if (deliveryRate >= 50) {
           ratingTier = 'AVERAGE';
           diagnosis = `سجل استلام متوسط (${Math.round(deliveryRate)}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ''}`;
         } else {
           ratingTier = 'POOR';
           diagnosis = `تحذير: مخاطرة مرتفعة (${Math.round(deliveryRate)}%) — ${returned} مرتجع سابق`;
         }
+
+        if (isDuplicate) {
+          diagnosis = `طلب مكرر لنفس العميل — ${diagnosis}`;
+        }
+      } else if (attempts > 0) {
+        const rate = delivered / attempts;
+        deliveryRate = Math.round(rate * 1000) / 10;
+        score = 7.5;
+        ratingTier = 'UNKNOWN';
+        diagnosis = isDuplicate
+          ? 'طلب مكرر لنفس العميل — عميل جديد تحت الملاحظة'
+          : `عميل جديد (${Math.round(deliveryRate)}% استلام) — لم يكتمل الحد الأدنى للتقييم (3 طلبات)`;
       }
 
       return {
@@ -8029,15 +8048,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       const total = Math.max(1, histStats.totalOrders || 1);
 
       let deliveryRate = null;
-      let score = null;
-      let diagnosis = 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
+      let score = 7.5;
+      let diagnosis = isDuplicate
+        ? 'طلب مكرر لنفس العميل — غير محسوب في التقييم'
+        : 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
       let ratingTier = 'UNKNOWN';
 
-      if (isDuplicate) {
-        score = 3.3;
-        ratingTier = 'POOR';
-        diagnosis = 'تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة';
-      } else if (attempts > 0) {
+      if (attempts >= 3) {
         const rate = delivered / attempts;
         deliveryRate = Math.round(rate * 1000) / 10;
 
@@ -8054,19 +8071,31 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
         score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
 
-        if (score >= 8.0) {
+        if (attempts >= 10 && deliveryRate >= 90) {
           ratingTier = 'EXCELLENT';
           diagnosis = `سجل استلام ممتاز (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
-        } else if (score >= 7.0) {
+        } else if (attempts >= 5 && deliveryRate >= 75) {
           ratingTier = 'GOOD';
           diagnosis = `سجل استلام جيد (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
-        } else if (score >= 5.0) {
+        } else if (deliveryRate >= 50) {
           ratingTier = 'AVERAGE';
           diagnosis = `سجل استلام متوسط (${Math.round(deliveryRate)}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ''}`;
         } else {
           ratingTier = 'POOR';
           diagnosis = `تحذير: مخاطرة مرتفعة (${Math.round(deliveryRate)}%) — ${returned} مرتجع سابق`;
         }
+
+        if (isDuplicate) {
+          diagnosis = `طلب مكرر لنفس العميل — ${diagnosis}`;
+        }
+      } else if (attempts > 0) {
+        const rate = delivered / attempts;
+        deliveryRate = Math.round(rate * 1000) / 10;
+        score = 7.5;
+        ratingTier = 'UNKNOWN';
+        diagnosis = isDuplicate
+          ? 'طلب مكرر لنفس العميل — عميل جديد تحت الملاحظة'
+          : `عميل جديد (${Math.round(deliveryRate)}% استلام) — لم يكتمل الحد الأدنى للتقييم (3 طلبات)`;
       }
 
       formattedOrder.customerRating = ratingTier;
@@ -9403,7 +9432,10 @@ const handleCustomerRatingRecalculate = async (req, res) => {
     if (!customerId) {
       // فحص طلب الضيف
       const guestOrder = await prisma.guestOrder.findFirst({
-        where: { companyId, orderNumber },
+        where: {
+          companyId,
+          OR: [{ id: orderNumber }, { orderNumber }]
+        },
         select: { guestPhone: true }
       });
       if (guestOrder?.guestPhone) {

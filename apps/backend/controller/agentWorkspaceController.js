@@ -561,6 +561,8 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
   return {
     id: order.id,
     orderNumber: order.orderNumber,
+    customerId: (!isGuest ? (order.customerId || order.customer?.id) : null) || null,
+    customerRating: order.customer?.customerRating || (customerStats?.customerRating || 'UNKNOWN'),
     type: isGuest ? 'GUEST' : 'REGULAR',
     customerName: isGuest ? order.guestName : (order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim()),
     customerPhone: isGuest ? order.guestPhone : (order.customerPhone || order.customer?.phone || ''),

@@ -61,6 +61,7 @@ export const AgentWorkspace: React.FC = () => {
     handleConvertIncomplete,
     handleUpdateOrderItems,
     handleUpdateCustomer,
+    handleUpdateRating,
     confirmationDisabled,
   } = useAgentWorkspace();
 
@@ -256,7 +257,7 @@ export const AgentWorkspace: React.FC = () => {
                 activeView === "intelligence"
                   ? "block w-full"
                   : isRailOpen
-                  ? "hidden md:block md:w-[250px] lg:w-[270px] xl:w-[300px]"
+                  ? "hidden md:block md:w-[270px] lg:w-[300px] xl:w-[330px]"
                   : "hidden"
               }`}
             >
@@ -265,6 +266,26 @@ export const AgentWorkspace: React.FC = () => {
                 perspective={perspective}
                 stats={stats}
                 onClose={() => setActiveView("inspector")}
+                onRatingChange={(newRating) => {
+                  if (selectedOrder) {
+                    handleUpdateRating(
+                      selectedOrder.id,
+                      newRating,
+                      selectedOrder.customerPhone,
+                      selectedOrder.customerId || undefined
+                    );
+                  }
+                }}
+                onSelectOrder={(orderNumberOrId) => {
+                  const inQueue = orders.find(
+                    (o) => o.id === orderNumberOrId || o.orderNumber === orderNumberOrId
+                  );
+                  if (inQueue) {
+                    handleSelectOrder(inQueue.id);
+                  } else {
+                    window.open(`/orders/${encodeURIComponent(orderNumberOrId)}`, '_blank');
+                  }
+                }}
               />
             </div>
           </>
