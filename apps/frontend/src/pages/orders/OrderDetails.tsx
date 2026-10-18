@@ -47,14 +47,7 @@ import {
 } from "./utils/returnHelper";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
-import {
-  ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
-  ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS,
-  ORDER_SOURCE_TRACKING_APP_SLUGS,
-  getCurrentCompanyActiveApps,
-  hasAnyCompanyAppSlug,
-  normalizeCompanyAppSlug,
-} from "../../utils/companyApps";
+import { useOrderPermissionsAndApps } from "./hooks/useOrderPermissionsAndApps";
 
 export { isCancellationStatus };
 
@@ -181,19 +174,23 @@ const OrderDetails: React.FC = () => {
     () => getOrderReturnDetails(order),
     [order],
   );
-  const isMerchant = user?.role === "MERCHANT";
-  const merchantOrderScope =
-    order?.merchantOrder ||
-    order?.metadata?.merchantOrder ||
-    order?.metadata?.merchantScope ||
-    null;
-  const merchantFulfillmentSource = String(
-    merchantOrderScope?.fulfillmentSource || "",
-  ).toUpperCase();
-  const isMerchantSelfFulfilledOrder =
-    isMerchant && merchantFulfillmentSource === "MERCHANT";
-  const canEditOrderDetails = true;
-  const canUpdateOrderStatus = !isMerchant || isMerchantSelfFulfilledOrder;
+  const {
+    isMerchant,
+    merchantOrderScope,
+    canEditOrderDetails,
+    canUpdateOrderStatus,
+    canManageTurboShipping,
+    showPartnerOperationsCard,
+    showOrderSourceCard,
+    showOrderAttributionCard,
+    showConfirmationDistributionCard,
+    showLateCancellationButton,
+  } = useOrderPermissionsAndApps({
+    order,
+    user,
+    company,
+  });
+
   const {
     showStatusModal,
     setShowStatusModal,
@@ -220,6 +217,7 @@ const OrderDetails: React.FC = () => {
     canUpdateOrderStatus,
     updateStatus,
   });
+
   const {
     canUpdatePaymentStatus,
     newPaymentStatus,
@@ -233,56 +231,6 @@ const OrderDetails: React.FC = () => {
     updatePaymentStatus,
     setShowPaymentModal,
   });
-  const canManageTurboShipping = !isMerchant;
-  const activeCompanyAppSlugSet = useMemo(
-    () =>
-      new Set(
-        getCurrentCompanyActiveApps(user, company)
-          .map(normalizeCompanyAppSlug)
-          .filter(Boolean),
-      ),
-    [company, user],
-  );
-  const hasOrderSourceTrackingApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    ORDER_SOURCE_TRACKING_APP_SLUGS,
-  );
-  const hasOrderCampaignAttributionApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
-  );
-  const hasOrderConfirmationDistributionApp = hasAnyCompanyAppSlug(
-    activeCompanyAppSlugSet,
-    ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS,
-  );
-  const showPartnerOperationsCard = !isMerchant;
-  const showOrderSourceCard = !isMerchant && (hasOrderSourceTrackingApp || Boolean(order?.conversationId));
-  const showOrderAttributionCard = !isMerchant && hasOrderCampaignAttributionApp;
-  const showConfirmationDistributionCard =
-    !isMerchant && hasOrderConfirmationDistributionApp;
-
-  // Late Cancellation Logic
-  const companySettings = useMemo(() => {
-    if (!company?.settings) return {};
-    try {
-      return typeof company.settings === "string"
-        ? JSON.parse(company.settings)
-        : company.settings;
-    } catch (e) {
-      return {};
-    }
-  }, [company?.settings]);
-
-  const lateCancellationInterceptEnabled =
-    companySettings?.lateCancellationInterceptEnabled || false;
-  const lateCancellationTargetStatuses =
-    companySettings?.lateCancellationTargetStatuses || [];
-  const showLateCancellationButton =
-    canUpdateOrderStatus &&
-    lateCancellationInterceptEnabled &&
-    lateCancellationTargetStatuses.includes(
-      order?.status?.toUpperCase() || "",
-    );
 
   // Auth Check
   useEffect(() => {
