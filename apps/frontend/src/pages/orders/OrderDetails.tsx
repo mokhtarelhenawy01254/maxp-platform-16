@@ -14,7 +14,6 @@ import {
   XCircleIcon,
   TicketIcon,
   ArrowTopRightOnSquareIcon,
-  ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
@@ -35,7 +34,6 @@ import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
 import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
-import ConfirmationModal from "./components/ConfirmationModal";
 import PostponeOrderModal from "./components/PostponeOrderModal";
 import PartialDeliveryModal from "./components/PartialDeliveryModal";
 import { CreateTicketModal } from "./shipments/CreateTicketModal";
@@ -43,6 +41,9 @@ import OrderConfirmationDistributionCard from "./components/OrderConfirmationDis
 import OrderStatusUpdateModal from "./components/OrderStatusUpdateModal";
 import OrderPaymentStatusModal from "./components/OrderPaymentStatusModal";
 import WalletPaymentProofCard from "./components/WalletPaymentProofCard";
+import OrderScheduledDeliveryCard from "./components/OrderScheduledDeliveryCard";
+import OrderCancellationReturnBanner from "./components/OrderCancellationReturnBanner";
+import OrderShipmentModals from "./components/OrderShipmentModals";
 
 // Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
@@ -1213,42 +1214,11 @@ const OrderDetails: React.FC = () => {
             />
           ) : null}
 
-          {isCancellationStatus(effectiveStatus) && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/50 dark:bg-red-950/20">
-              <h3 className="text-base font-semibold text-red-900 dark:text-red-100">
-                {t("orderDetails.cancellationReason")}
-              </h3>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-red-800 dark:text-red-200">
-                {latestCancellationReason ||
-                  t("orderDetails.noCancellationReason")}
-              </p>
-            </div>
-          )}
-
-          {returnDetails && returnDetails.isReturned && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-rose-900 dark:text-rose-100 font-bold text-sm">
-                  <ArrowPathRoundedSquareIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                  <span>{returnDetails.returnTypeLabel}</span>
-                </div>
-                {returnDetails.source && (
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {returnDetails.source}
-                  </span>
-                )}
-              </div>
-              <p className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-rose-950 dark:text-rose-100">
-                {returnDetails.reason || t("orderDetails.noReturnReason", { defaultValue: "لم يتم تسجيل سبب محدد للمرتجع" })}
-              </p>
-              {returnDetails.secondaryReason && returnDetails.secondaryReason !== returnDetails.reason && (
-                <div className="mt-2.5 pt-2 border-t border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
-                  <span className="font-semibold">ملاحظة الشحن: </span>
-                  <span>{returnDetails.secondaryReason}</span>
-                </div>
-              )}
-            </div>
-          )}
+          <OrderCancellationReturnBanner
+            isCancellation={Boolean(isCancellationStatus(effectiveStatus))}
+            latestCancellationReason={latestCancellationReason}
+            returnDetails={returnDetails}
+          />
 
           {/* Confirmation & Assignment Info */}
           {showConfirmationDistributionCard && (
@@ -1279,104 +1249,11 @@ const OrderDetails: React.FC = () => {
 
           {/* Scheduled Order Info */}
           {order.isScheduled && order.scheduledDeliveryDate && (
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                  <svg
-                    className="h-6 w-6 text-orange-600 dark:text-orange-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {t("orderDetails.scheduledSectionTitle")}
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="flex-1">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                            {t("orderDetails.scheduledDeliveryDateLabel")}
-                          </span>
-                        <span
-                          className="text-sm font-medium text-gray-900 dark:text-gray-100"
-                          dir="ltr"
-                        >
-                          {new Date(
-                            order.scheduledDeliveryDate,
-                          ).toLocaleDateString("ar-EG", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </span>
-                      </div>
-                      <div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                            {t("orderDetails.deliveryTimeLabel")}
-                          </span>
-                        <span
-                          className="text-sm font-medium text-gray-900 dark:text-gray-100"
-                          dir="ltr"
-                        >
-                          {new Date(
-                            order.scheduledDeliveryDate,
-                          ).toLocaleTimeString("ar-EG", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </span>
-                      </div>
-                    </div>
-
-                    {order.scheduledNotes && (
-                      <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800">
-                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                            {t("orderDetails.scheduledNotesLabel")}
-                          </span>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">
-                          {order.scheduledNotes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {order.autoTransitionEnabled && (
-                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 px-3">
-                    <svg
-                      className="h-4 w-4 text-green-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>
-                      {t("orderDetails.autoTransitionText")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <OrderScheduledDeliveryCard
+              scheduledDeliveryDate={order.scheduledDeliveryDate}
+              scheduledNotes={order.scheduledNotes}
+              autoTransitionEnabled={order.autoTransitionEnabled}
+            />
           )}
         </div>
       </div>
@@ -1473,49 +1350,18 @@ const OrderDetails: React.FC = () => {
         />
       )}
 
-      {/* Confirmation Modal for Cancellation */}
-      <ConfirmationModal
-        isOpen={showCancelShipmentModal}
-        onClose={() => setShowCancelShipmentModal(false)}
-        onConfirm={async () => {
-          const success = await cancelShipment();
-          if (success) setShowCancelShipmentModal(false);
-        }}
-        title={t("orderDetails.cancelShipment")}
-        message={t("orderDetails.cancelShipmentConfirm")}
-        confirmText={t("orderDetails.yesCancelShipment")}
-        cancelText={t("orderDetails.goBack")}
-        isDangerous={true}
-        isLoading={turboLoading}
-      />
-
-      {/* Confirmation Modal for Turbo Unlink */}
-      <ConfirmationModal
-        isOpen={showUnlinkShipmentModal}
-        onClose={() => setShowUnlinkShipmentModal(false)}
-        onConfirm={async () => {
-          const success = await unlinkShipment();
-          if (success) setShowUnlinkShipmentModal(false);
-        }}
-        title={t("orderDetails.unlinkTurboShipment")}
-        message={t("orderDetails.unlinkTurboShipmentConfirm")}
-        confirmText={t("orderDetails.yesUnlinkTurboShipment")}
-        cancelText={t("orderDetails.goBack")}
-        isDangerous={false}
-        isLoading={turboLoading}
-      />
-
-      {/* Confirmation Modal for Turbo Recreate */}
-      <ConfirmationModal
-        isOpen={showRecreateShipmentModal}
-        onClose={() => setShowRecreateShipmentModal(false)}
-        onConfirm={handleRecreateShipment}
-        title={t("orderDetails.recreateShipmentTitle")}
-        message={t("orderDetails.recreateShipmentMessage")}
-        confirmText={t("orderDetails.recreateShipmentConfirm")}
-        cancelText={t("orderDetails.goBack")}
-        isDangerous={false}
-        isLoading={turboLoading}
+      {/* Shipment Confirmation Modals */}
+      <OrderShipmentModals
+        showCancelShipmentModal={showCancelShipmentModal}
+        setShowCancelShipmentModal={setShowCancelShipmentModal}
+        showUnlinkShipmentModal={showUnlinkShipmentModal}
+        setShowUnlinkShipmentModal={setShowUnlinkShipmentModal}
+        showRecreateShipmentModal={showRecreateShipmentModal}
+        setShowRecreateShipmentModal={setShowRecreateShipmentModal}
+        cancelShipment={cancelShipment}
+        unlinkShipment={unlinkShipment}
+        handleRecreateShipment={handleRecreateShipment}
+        turboLoading={turboLoading}
       />
     </div>
   );
