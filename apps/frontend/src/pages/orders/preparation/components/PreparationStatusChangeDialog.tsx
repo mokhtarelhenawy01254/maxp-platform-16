@@ -22,7 +22,7 @@ interface PreparationStatusChangeDialogProps {
 const inputClass =
   "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30";
 
-const PreparationStatusChangeDialog = ({
+export const PreparationStatusChangeDialog = ({
   isOpen,
   order,
   targetStatusLabel,

@@ -18,7 +18,7 @@ interface DispatchInternalCourierModalProps {
   onSuccess: (runId: string, runNumber: string) => void;
 }
 
-const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModalProps> = ({
+export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModalProps> = ({
   isOpen,
   onClose,
   orderIds,

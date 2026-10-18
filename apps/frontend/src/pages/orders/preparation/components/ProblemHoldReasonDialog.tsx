@@ -13,7 +13,7 @@ interface ProblemHoldReasonDialogProps {
   onConfirm: (reason: string) => void;
 }
 
-const ProblemHoldReasonDialog = ({
+export const ProblemHoldReasonDialog = ({
   isOpen,
   order,
   initialReason,

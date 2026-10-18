@@ -26,7 +26,7 @@ interface DispatchCarrierModalProps {
   loading: boolean;
 }
 
-const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
+export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
   isOpen,
   onClose,
   ordersCount,
