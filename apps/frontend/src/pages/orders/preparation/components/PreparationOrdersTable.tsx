@@ -166,5 +166,7 @@ const PreparationOrdersTable = ({
   );
 };
 
+const MemoizedPreparationOrdersTable = memo(PreparationOrdersTable);
+
 export { PreparationOrdersTable, MemoizedPreparationOrdersTable };
 export default MemoizedPreparationOrdersTable;
