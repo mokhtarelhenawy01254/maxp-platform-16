@@ -21,7 +21,6 @@ import {
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
   SHORTAGE_FAILED_STATUS,
-  VISIBLE_COLUMNS_STORAGE_KEY,
   type PageSize,
   type PreparationFilterSection,
   type PreparationTableColumn,
@@ -71,6 +70,7 @@ import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTr
 import { usePreparationSlipPrint } from "./preparation/usePreparationSlipPrint";
 import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
 import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
+import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -323,63 +323,18 @@ const PreparationQueue: React.FC = () => {
     navigate,
   });
   setStatusChangeDialogRef.current = setStatusChangeDialog;
-  const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
-    if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
-    try {
-      const raw = window.localStorage.getItem(VISIBLE_COLUMNS_STORAGE_KEY);
-      if (!raw) return [...PREPARATION_TABLE_COLUMNS];
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.every((c: string) => PREPARATION_TABLE_COLUMNS.includes(c as PreparationTableColumn))) {
-        return parsed as PreparationTableColumn[];
-      }
-    } catch { /* ignore */ }
-    return [...PREPARATION_TABLE_COLUMNS];
-  });
-  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
-
-  const toggleColumn = (col: PreparationTableColumn) => {
-    setVisibleColumns((prev) =>
-      prev.includes(col)
-        ? prev.filter((c) => c !== col)
-        : [...prev, col],
-    );
-  };
-
-  const [visibleFilterSections, setVisibleFilterSections] = useState<PreparationFilterSection[]>(() => {
-    const defaults = [...PREPARATION_FILTER_SECTIONS];
-    if (typeof window === "undefined") return defaults;
-    try {
-      const raw = window.localStorage.getItem("preparation:queue:visible-filters-v1");
-      if (!raw) return defaults;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const stored = parsed.filter((s): s is PreparationFilterSection =>
-          PREPARATION_FILTER_SECTIONS.includes(s as PreparationFilterSection),
-        );
-        const merged = [...new Set([...defaults, ...stored])];
-        return merged;
-      }
-    } catch { /* ignore */ }
-    return defaults;
-  });
-  const [showFilters, setShowFilters] = useState(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      const raw = window.localStorage.getItem("preparation:queue:show-filters-v1");
-      if (raw === null) return true;
-      return JSON.parse(raw) === true;
-    } catch {
-      return true;
-    }
-  });
-
-  const toggleFilterSection = (section: PreparationFilterSection) => {
-    setVisibleFilterSections((prev) =>
-      prev.includes(section)
-        ? prev.filter((s) => s !== section)
-        : [...prev, section],
-    );
-  };
+  const {
+    visibleColumns,
+    setVisibleColumns,
+    toggleColumn,
+    columnSettingsOpen,
+    setColumnSettingsOpen,
+    visibleFilterSections,
+    setVisibleFilterSections,
+    toggleFilterSection,
+    showFilters,
+    setShowFilters,
+  } = usePreparationPreferences();
 
   const {
     activeStage,
@@ -511,26 +466,7 @@ const PreparationQueue: React.FC = () => {
     setSearchParams,
   ]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(VISIBLE_COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
-        window.localStorage.setItem("preparation:queue:visible-filters-v1", JSON.stringify(visibleFilterSections));
-        window.localStorage.setItem("preparation:queue:show-filters-v1", JSON.stringify(showFilters));
-      } catch { /* ignore */ }
-    }
-  }, [visibleColumns, visibleFilterSections, showFilters]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (columnSettingsOpen && !target.closest("[data-column-settings]")) {
-        setColumnSettingsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [columnSettingsOpen]);
 
   const statusLabelMap = useMemo(() => {
     const map = new Map<string, string>();
