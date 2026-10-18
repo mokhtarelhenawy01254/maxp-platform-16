@@ -22,22 +22,12 @@ import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOper
 import OrderHeader from "./components/OrderHeader";
 import OrderDiscountApprovalBanner from "./components/OrderDiscountApprovalBanner";
 import OrderItemsCard from "./components/OrderItemsCard";
-import CustomerInfoCard from "./components/CustomerInfoCard";
-import CustomerOrderHistoryCard from "./components/CustomerOrderHistoryCard";
-import OrderPaymentCard from "./components/OrderPaymentCard";
+import OrderDetailsSidebar from "./components/OrderDetailsSidebar";
 import OrderReturnCard from "./components/OrderReturnCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
 import UnifiedShippingCard from "./components/UnifiedShippingCard";
-import OrderActivityLog from "./components/OrderActivityLog";
-import OrderSourceCard from "./components/OrderSourceCard";
-import OrderAttributionCard from "./components/OrderAttributionCard";
-import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
-import OrderConfirmationDistributionCard from "./components/OrderConfirmationDistributionCard";
-import WalletPaymentProofCard from "./components/WalletPaymentProofCard";
-import OrderScheduledDeliveryCard from "./components/OrderScheduledDeliveryCard";
-import OrderCancellationReturnBanner from "./components/OrderCancellationReturnBanner";
-import OrderReturnCollectionFeeCard from "./components/OrderReturnCollectionFeeCard";
+// Cards migrated into OrderDetailsSidebar
 import OrderActionModalsContainer from "./components/OrderActionModalsContainer";
 import OrderShipmentModals from "./components/OrderShipmentModals";
 
@@ -1122,118 +1112,43 @@ const OrderDetails: React.FC = () => {
         </div>
 
         {/* LEFT COLUMN (Sidebar) */}
-        <div className="space-y-6 lg:col-span-1">
-          <CustomerInfoCard
-            order={order}
-            isEditing={canEditOrderDetails && isEditing}
-            editForm={editForm}
-            setEditForm={setEditForm}
-            governments={governments}
-            areas={areas}
-            loadingGovernments={loadingGovernments}
-            loadingAreas={loadingAreas}
-            selectedGovernmentId={selectedGovernmentId}
-            setSelectedGovernmentId={setSelectedGovernmentId}
-            handleGovernmentChange={handleGovernmentChange}
-            invoiceSettings={invoiceSettings}
-            onOrderUpdated={fetchOrderDetails}
-            onCustomerRatingChange={(newRating) => {
-              setOrder((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      customerRating: newRating,
-                      customer: prev.customer
-                        ? { ...prev.customer, customerRating: newRating }
-                        : prev.customer,
-                    }
-                  : prev
-              );
-            }}
-          />
-
-          <div id="customer-order-history-card">
-            <CustomerOrderHistoryCard
-              orderNumber={order.orderNumber}
-              initialHistory={order.customerHistory}
-              customerPhone={order.customerPhone}
-              customerEmail={order.customerEmail}
-              customerId={order.customerId}
-              currency={order.currency}
-            />
-          </div>
-
-          <OrderPaymentCard
-            order={order}
-            canUpdatePaymentStatus={canUpdatePaymentStatus}
-            onOpenPaymentModal={() => setShowPaymentModal(true)}
-          />
-
-          <OrderSessionDetailsCard
-            sessionDetails={order.sessionDetails || (order.metadata as any)?.sessionDetails}
-            firstOrderInfo={order.firstOrderInfo}
-            orderSource={order.orderSource}
-            sourceType={order.sourceType}
-            customerPhone={order.customerPhone}
-            createdAt={order.createdAt}
-            orderGovernorate={order.governorate || order.shippingAddress?.governorate || (order.shippingAddress as any)?.government}
-            orderCity={order.city || order.shippingAddress?.city}
-          />
-
-          {showOrderSourceCard && <OrderSourceCard order={order} />}
-          {showOrderAttributionCard && <OrderAttributionCard order={order} />}
-
-          <OrderReturnCollectionFeeCard order={order} />
-
-          {(order as any)?.walletPaymentProof ? (
-            <WalletPaymentProofCard
-              proof={(order as any).walletPaymentProof}
-              onVerify={verifyWalletProof}
-            />
-          ) : null}
-
-          <OrderCancellationReturnBanner
-            isCancellation={Boolean(isCancellationStatus(effectiveStatus))}
-            latestCancellationReason={latestCancellationReason}
-            returnDetails={returnDetails}
-          />
-
-          {/* Confirmation & Assignment Info */}
-          {showConfirmationDistributionCard && (
-            <OrderConfirmationDistributionCard
-              order={order}
-              effectiveStatus={effectiveStatus}
-              formatOptionalDate={formatOptionalDate}
-            />
-          )}
-
-          {/* Order Activity Log */}
-          <OrderActivityLog
-            order={{
-              ...order,
-              statusHistory: order.statusHistory || [],
-              orderNotes: orderNotes,
-            }}
-            onAddNote={addNote}
-            onUpdateNote={updateNote}
-            onDeleteNote={deleteNote}
-            addingNote={false}
-            updatingNote={updatingNote}
-            deletingNote={deletingNote}
-            canAddNote={!isMerchant}
-            currentUserId={user?.id}
-            statusNameMap={statusNameMap}
-          />
-
-          {/* Scheduled Order Info */}
-          {order.isScheduled && order.scheduledDeliveryDate && (
-            <OrderScheduledDeliveryCard
-              scheduledDeliveryDate={order.scheduledDeliveryDate}
-              scheduledNotes={order.scheduledNotes}
-              autoTransitionEnabled={order.autoTransitionEnabled}
-            />
-          )}
-        </div>
+        <OrderDetailsSidebar
+          order={order}
+          canEditOrderDetails={canEditOrderDetails}
+          isEditing={isEditing}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          governments={governments}
+          areas={areas}
+          loadingGovernments={loadingGovernments}
+          loadingAreas={loadingAreas}
+          selectedGovernmentId={selectedGovernmentId}
+          setSelectedGovernmentId={setSelectedGovernmentId}
+          handleGovernmentChange={handleGovernmentChange}
+          invoiceSettings={invoiceSettings}
+          fetchOrderDetails={fetchOrderDetails}
+          setOrder={setOrder}
+          canUpdatePaymentStatus={canUpdatePaymentStatus}
+          setShowPaymentModal={setShowPaymentModal}
+          showOrderSourceCard={showOrderSourceCard}
+          showOrderAttributionCard={showOrderAttributionCard}
+          verifyWalletProof={verifyWalletProof}
+          effectiveStatus={effectiveStatus}
+          latestCancellationReason={latestCancellationReason}
+          returnDetails={returnDetails}
+          showConfirmationDistributionCard={showConfirmationDistributionCard}
+          formatOptionalDate={formatOptionalDate}
+          orderNotes={orderNotes}
+          addNote={addNote}
+          updateNote={updateNote}
+          deleteNote={deleteNote}
+          updatingNote={updatingNote}
+          deletingNote={deletingNote}
+          isMerchant={isMerchant}
+          currentUserId={user?.id}
+          statusNameMap={statusNameMap}
+          isCancellationStatus={isCancellationStatus}
+        />
       </div>
 
       {/* Action Modals */}
