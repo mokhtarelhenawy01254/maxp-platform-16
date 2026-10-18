@@ -7,10 +7,7 @@ import { WorkspaceOrderQueue } from "./workspace/WorkspaceOrderQueue";
 import { WorkspaceInspector } from "./workspace/WorkspaceInspector";
 import { WorkspaceIntelligenceRail } from "./workspace/WorkspaceIntelligenceRail";
 import { WorkspaceReportsTab } from "./workspace/WorkspaceReportsTab";
-import {
-  WorkspaceMobileViewSwitcher,
-  type WorkspaceView,
-} from "./workspace/WorkspaceMobileViewSwitcher";
+import { type WorkspaceView } from "./workspace/WorkspaceMobileViewSwitcher";
 import { WorkspaceActiveModals } from "./workspace/WorkspaceActiveModals";
 import type { WorkspaceOrder } from "./workspace/types";
 
@@ -161,16 +158,6 @@ export const AgentWorkspace: React.FC = () => {
         />
       )}
 
-      {/* 2.5 Mobile / Narrow View Switcher (< md) */}
-      {activeTab !== "reports" && (
-        <WorkspaceMobileViewSwitcher
-          activeView={activeView}
-          onSelectView={setActiveView}
-          isArabic={isArabic}
-          totalOrdersCount={pagination.total || orders.length}
-          selectedOrder={selectedOrder}
-        />
-      )}
 
       {/* 3. Main Operational Cockpit Chassis */}
       <main className="flex min-h-0 flex-1 overflow-hidden">

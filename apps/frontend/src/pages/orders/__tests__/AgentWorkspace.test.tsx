@@ -795,32 +795,33 @@ describe("AgentWorkspace", () => {
     expect(reportsTab).toHaveAttribute("aria-selected", "true");
   });
 
-  it("renders 3-way view switcher and switches between queue, inspector, and intelligence", async () => {
+  it("allows switching views via inspector and intelligence navigation on mobile", async () => {
     const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Test Customer" });
     setMockOrdersData([order1]);
     renderWorkspace();
 
     await screen.findAllByText(/#?ORD-1/);
 
-    const queueBtn = screen.getByTestId("workspace-view-queue");
-    const inspectorBtn = screen.getByTestId("workspace-view-inspector");
-    const intelligenceBtn = screen.getByTestId("workspace-view-intelligence");
+    // Click order to open inspector
+    const orderItem = screen.getByText("Test Customer");
+    fireEvent.click(orderItem);
 
-    expect(queueBtn).toBeInTheDocument();
-    expect(inspectorBtn).toBeInTheDocument();
-    expect(intelligenceBtn).toBeInTheDocument();
+    // Inspector navigation buttons
+    const dossierNavBtn = screen.getByText(/Customer Dossier|سجل العميل والرادار/i);
+    expect(dossierNavBtn).toBeInTheDocument();
 
-    // Click inspector view
-    fireEvent.click(inspectorBtn);
-    expect(inspectorBtn).toHaveClass("bg-primary");
+    // Navigate to intelligence
+    fireEvent.click(dossierNavBtn);
 
-    // Click intelligence view
-    fireEvent.click(intelligenceBtn);
-    expect(intelligenceBtn).toHaveClass("bg-primary");
+    // Back to order details in intelligence rail
+    const backBtn = screen.getByText(/Back to Order Details|العودة إلى تفاصيل الطلب/i);
+    expect(backBtn).toBeInTheDocument();
+    fireEvent.click(backBtn);
 
-    // Click queue view
-    fireEvent.click(queueBtn);
-    expect(queueBtn).toHaveClass("bg-primary");
+    // Back to queue from inspector
+    const backToQueueBtn = screen.getByText(/orders\.workspaceSection|لوحة التحكم|الطلبات/i);
+    expect(backToQueueBtn).toBeInTheDocument();
+    fireEvent.click(backToQueueBtn);
   });
 
   it("toggles intelligence rail in inspector", async () => {
