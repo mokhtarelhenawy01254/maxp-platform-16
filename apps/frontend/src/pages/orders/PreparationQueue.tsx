@@ -7,9 +7,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
-import type { OrderDetailsType } from "./types";
 import {
   DEFAULT_PROBLEM_HOLD_DETAILS,
   DEFAULT_SHORTAGE_HOLD_DETAILS,
@@ -72,6 +70,7 @@ import { usePreparationSingleStatusOperations } from "./preparation/usePreparati
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
 import { usePreparationTransitions } from "./preparation/usePreparationTransitions";
 import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
+import { usePreparationSlipPrint } from "./preparation/usePreparationSlipPrint";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -280,9 +279,6 @@ const PreparationQueue: React.FC = () => {
   const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
 
   // transferingItemKey provided by usePreparationQuickTransfer
-  const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
-    null,
-  );
   const [statusChangeDialog, setStatusChangeDialog] = useState<{
     orderNumber: string;
     targetStatus: string;
@@ -922,35 +918,12 @@ const PreparationQueue: React.FC = () => {
 
   // handleShortageFieldChange provided by usePreparationShortageOperations
 
-  const handlePrintPreparationSlip = useCallback(async (orderNumber: string) => {
-    try {
-      setPrintingOrderNumber(orderNumber);
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      if (!order) {
-        toast.error(t('preparation.page.orderNotFound'));
-        return;
-      }
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast.error(t('preparation.page.printWindowBlocked'));
-        return;
-      }
-      const { toOrderDetailsType } = await import("../../utils/printShippingLabel");
-      await printSingleShippingLabel({
-        order: toOrderDetailsType(order),
-        companyName: user?.company?.name,
-        companyLogoUrl: user?.company?.logo || null,
-        printWindow,
-        settings: invoiceSettings,
-      });
-      toast.success(t('preparation.page.slipOpened'));
-    } catch (error: unknown) {
-      console.error("Failed to print preparation slip:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.slipFailed'));
-    } finally {
-      setPrintingOrderNumber(null);
-    }
-  }, [orders, user?.company?.name, user?.company?.logo, invoiceSettings, t]);
+  const { printingOrderNumber, handlePrintPreparationSlip } = usePreparationSlipPrint({
+    orders,
+    user,
+    invoiceSettings,
+    t,
+  });
 
   // saveShortageHoldDetails provided by usePreparationShortageOperations
   const {
