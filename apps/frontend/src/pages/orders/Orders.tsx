@@ -34,6 +34,7 @@ import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
 import { useOrdersFetchOperations } from "./hooks/useOrdersFetchOperations";
+import { useOrdersUrlSync } from "./hooks/useOrdersUrlSync";
 import { useOrdersSocketListeners } from "./hooks/useOrdersSocketListeners";
 import { useOrdersFilterStats } from "./hooks/useOrdersFilterStats";
 import type { SocketOrderUpdate } from "./hooks/useOrdersSocketListeners";
@@ -41,10 +42,7 @@ import {
   OrdersFilters,
   OrdersListViewState,
   DEFAULT_ORDERS_FILTERS,
-  ORDERS_LIST_STORAGE_KEY,
   ORDERS_LIST_QUERY_KEYS,
-  parsePositiveInt,
-  getFiltersFromSearchParams,
   sanitizeStoredFilters,
   readStoredOrdersListViewState,
   hasOrdersQueryState,
@@ -437,21 +435,16 @@ const Orders: React.FC = () => {
     setShowIncompleteInOrders,
   });
 
-  // Sync URL search parameters back to local filters state
-  useEffect(() => {
-    const newFilters = getFiltersFromSearchParams(searchParams);
-    setFilters((prev) => {
-      const isDifferent = Object.keys(newFilters).some(
-        (key) => String(newFilters[key as keyof OrdersFilters]) !== String(prev[key as keyof OrdersFilters])
-      );
-      return isDifferent ? newFilters : prev;
-    });
-
-    const newPage = parsePositiveInt(searchParams.get("page"), 1);
-    const newLimit = parsePositiveInt(searchParams.get("limit"), 20);
-    setPage((prev) => (prev !== newPage ? newPage : prev));
-    setLimit((prev) => (prev !== newLimit ? newLimit : prev));
-  }, [searchParams]);
+  useOrdersUrlSync({
+    filters,
+    setFilters,
+    page,
+    setPage,
+    limit,
+    setLimit,
+    searchParams,
+    setSearchParams,
+  });
 
   const isTrashView =
     Array.isArray(filters.status) &&
@@ -538,57 +531,7 @@ const Orders: React.FC = () => {
   const showUnifiedOperationFilters =
     showMerchantOperationFilters || showAffiliateOperationFilter;
 
-  useEffect(() => {
-    const params: Record<string, string> = {
-      page: page.toString(),
-      limit: limit.toString(),
-    };
 
-    (Object.entries(filters) as Array<
-      [keyof OrdersFilters, OrdersFilters[keyof OrdersFilters]]
-    >).forEach(([key, value]) => {
-      if (key === "onlyUnseen") {
-        if (value) {
-          params.onlyUnseen = "true";
-        }
-        return;
-      }
-
-      if (key === "onlyPostPurchaseOffer") {
-        if (value) {
-          params.onlyPostPurchaseOffer = "true";
-        }
-        return;
-      }
-
-      if (typeof value === "string" && value) {
-        params[key] = value;
-      } else if (Array.isArray(value) && value.length > 0) {
-        params[key] = value.join(",");
-      }
-    });
-
-    setSearchParams(params, { replace: true });
-  }, [filters, page, limit, setSearchParams]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(
-        ORDERS_LIST_STORAGE_KEY,
-        JSON.stringify({
-          page,
-          limit,
-          filters,
-        }),
-      );
-    } catch (error) {
-      console.warn("Failed to persist orders list state:", error);
-    }
-  }, [filters, page, limit]);
 
   // Stats State
 
