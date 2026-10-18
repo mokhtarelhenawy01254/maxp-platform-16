@@ -5,7 +5,6 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import {
   ArrowPathIcon,
   CreditCardIcon,
@@ -29,6 +28,7 @@ import OrderShipmentModals from "./components/OrderShipmentModals";
 
 // Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
+import { useOrderEditCalculation } from "./hooks/useOrderEditCalculation";
 import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
 import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
 import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
@@ -239,72 +239,13 @@ const OrderDetails: React.FC = () => {
     }
   }, [authLoading, isAuthenticated]);
 
-  // Track unsaved changes
-  const hasUnsavedChanges = useMemo(() => {
-    if (!canEditOrderDetails) return false;
-    if (!isEditing || !order) return false;
-
-    // Check if any field has changed
-    const hasChanges =
-      editForm.customerName !== order.customerName ||
-      editForm.customerPhone !== (order.customerPhone || "") ||
-      editForm.alternativePhone !== (order.alternativePhone || "") ||
-      editForm.customerAddress !== (order.customerAddress || "") ||
-      editForm.city !== (order.city || "") ||
-      editForm.notes !== (order.notes || "") ||
-      editForm.shipping !== (order.shipping || 0) ||
-      editForm.tax !== (order.tax || 0) ||
-      editForm.discount !== (order.discount || 0) ||
-      editForm.discountReason !== (order.discountReason || "") ||
-      JSON.stringify(editForm.items) !== JSON.stringify(order.items);
-
-    return hasChanges;
-  }, [canEditOrderDetails, isEditing, order, editForm]);
-
-  // Warn about unsaved changes
-  useUnsavedChanges({
-    hasUnsavedChanges,
-    message: t("orderDetails.unsavedChangesMessage"),
+  const { hasUnsavedChanges, calculatedTotals } = useOrderEditCalculation({
+    order,
+    editForm,
+    isEditing,
+    canEditOrderDetails,
+    t,
   });
-
-  // Calculate real-time totals during editing
-  const calculatedTotals = useMemo(() => {
-    if (!isEditing || !order) {
-      const subtotal = order?.subtotal || 0;
-      const shipping = order?.shipping || 0;
-      const tax = order?.tax || 0;
-      const discount = order?.discount || 0;
-      return {
-        subtotal,
-        shipping,
-        tax,
-        discount,
-        total: Math.max(0, subtotal + shipping + tax - discount),
-      };
-    }
-
-    const subtotal = editForm.items.reduce((sum: number, item: any) => {
-      const price = parseFloat(item.price) || 0;
-      const quantity = parseInt(item.quantity) || 1;
-      return sum + price * quantity;
-    }, 0);
-
-    const shipping =
-      typeof editForm.shipping === "number" && !isNaN(editForm.shipping)
-        ? editForm.shipping
-        : parseFloat(editForm.shipping) || 0;
-    const tax =
-      typeof editForm.tax === "number" && !isNaN(editForm.tax)
-        ? editForm.tax
-        : parseFloat(editForm.tax) || 0;
-    const discount =
-      typeof editForm.discount === "number" && !isNaN(editForm.discount)
-        ? editForm.discount
-        : parseFloat(editForm.discount) || 0;
-    const total = Math.max(0, subtotal + shipping + tax - discount);
-
-    return { subtotal, shipping, tax, discount, total };
-  }, [isEditing, editForm.items, editForm.shipping, editForm.tax, editForm.discount, order]);
 
   // Header & Print Actions Hook
   const {
@@ -433,28 +374,7 @@ const OrderDetails: React.FC = () => {
   const formatOptionalDate = (value?: string | null) =>
     value ? formatDate(value) : "—";
 
-  const confirmedByName = order.confirmedByUser
-    ? `${order.confirmedByUser.firstName || ""} ${order.confirmedByUser.lastName || ""}`.trim()
-    : order.confirmedBy || "—";
 
-  const assignedToName = order.assignedToUser
-    ? `${order.assignedToUser.firstName || ""} ${order.assignedToUser.lastName || ""}`.trim()
-    : order.assignedTo || "—";
-
-  const assignedByName = order.assignedByUser
-    ? `${order.assignedByUser.firstName || ""} ${order.assignedByUser.lastName || ""}`.trim()
-    : order.assignedBy || "—";
-
-  const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(effectiveStatus.toUpperCase());
-  const confirmationStatusLabel =
-    (!isCurrentlyPending && order.confirmedAt) || effectiveStatus === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
-  const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
-
-  console.log("🔍 Order Status Debug:", {
-    orderStatus: order.status,
-    orderStatuses: orderStatuses,
-    currentStatusConfig: currentStatusConfig,
-  });
 
   return (
     <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6">
