@@ -33,6 +33,7 @@ import { OrdersBulkCommandPalette } from "./components/OrdersBulkCommandPalette"
 import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
+import { useOrdersFetchOperations } from "./hooks/useOrdersFetchOperations";
 import {
   OrdersFilters,
   OrdersListViewState,
@@ -354,7 +355,6 @@ const Orders: React.FC = () => {
   const canSelectOrders = isAdmin && !isMerchant;
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const fetchOrdersRef = useRef<() => Promise<void>>(async () => undefined);
   const [page, setPage] = useState(restoredListViewState.page);
   const [limit, setLimit] = useState(restoredListViewState.limit);
   const [totalOrders, setTotalOrders] = useState(() => initialCachedData?.totalOrders || 0);
@@ -417,6 +417,25 @@ const Orders: React.FC = () => {
   }, [filters]);
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+
+  const { fetchOrders, fetchOrdersRef } = useOrdersFetchOperations({
+    companyId,
+    page,
+    limit,
+    filters,
+    effectiveFilters,
+    isMerchant,
+    ordersRef,
+    setOrders,
+    setTotalPages,
+    setTotalOrders,
+    setSelectedOrders,
+    setPage,
+    setLoading,
+    setOrdersLoadError,
+    setLastUpdatedAt,
+    setShowIncompleteInOrders,
+  });
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -699,227 +718,6 @@ const Orders: React.FC = () => {
       socket.off("order:deleted_bulk", handleBulkDelete);
     };
   }, [socket, isConnected, page]);
-
-  useEffect(() => {
-    void fetchOrdersRef.current();
-    // effectiveFilters (debounced search) — not raw filters — so typing fires
-    // one request per paused query instead of one per keystroke.
-  }, [page, limit, effectiveFilters]);
-
-  const fetchOrders = useCallback(async () => {
-    try {
-      const orderListCacheKey = [
-        "orders-page-cache",
-        companyId,
-        page,
-        limit,
-        effectiveFilters,
-      ];
-      const cached = queryClient.getQueryData<{
-        orders: Order[];
-        totalPages: number;
-        totalOrders: number;
-      }>(orderListCacheKey);
-
-      if (cached && cached.orders.length > 0) {
-        setOrders(cached.orders);
-        setTotalPages(cached.totalPages);
-        setTotalOrders(cached.totalOrders);
-        setLoading(false);
-      } else if (ordersRef.current.length === 0) {
-        setLoading(true);
-      }
-      setOrdersLoadError(null);
-
-      // Merchants use the same core Orders screen, scoped by the simple orders API.
-      const usesUnifiedOperationFilters = Boolean(
-        filters.merchantId.length > 0 ||
-          filters.affiliateId.length > 0 ||
-          filters.fulfillmentSource.length > 0 ||
-          filters.merchantOperationStatus.length > 0 ||
-          filters.merchantSettlementStatus.length > 0,
-      );
-      const useEnhanced =
-        !isMerchant &&
-        !usesUnifiedOperationFilters &&
-        (filters.extractionMethod || filters.minConfidence);
-
-      if (useEnhanced) {
-        // Use enhanced orders API with apiClient
-        const queryParams = {
-          page: page.toString(),
-          limit: limit.toString(),
-          ...(filters.status.length > 0 && {
-            status: filters.status.map((s) => s.toUpperCase()).join(","),
-          }),
-          ...(filters.paymentStatus.length > 0 && {
-            paymentStatus: filters.paymentStatus.map((s) => s.toUpperCase()).join(","),
-          }),
-          ...(filters.sourceType.length > 0 && {
-            sourceType: filters.sourceType.join(","),
-          }),
-          ...(filters.search && { search: filters.search }),
-          ...(filters.extractionMethod && {
-            extractionMethod: filters.extractionMethod,
-          }),
-          ...(filters.minConfidence && {
-            minConfidence: filters.minConfidence,
-          }),
-          ...(filters.startDate && { dateFrom: filters.startDate }),
-          ...(filters.endDate && { dateTo: filters.endDate }),
-          ...(filters.onlyUnseen && { onlyUnseen: "true" }),
-          ...(filters.onlyPostPurchaseOffer && { onlyPostPurchaseOffer: "true" }),
-        };
-
-        const response = await apiClient.get("/orders-enhanced", {
-          params: queryParams,
-          _skipErrorToast: true,
-        });
-
-        const data = response.data;
-
-        if (data.success) {
-          const transformedOrders = (
-            Array.isArray(data.data) ? data.data : []
-          ).map(transformOrder);
-          const nextTotalPages = Math.max(
-            Number(data.pagination?.pages) || 0,
-            transformedOrders.length > 0 ? 1 : 0,
-          );
-          const nextTotalOrders =
-            Number(data.pagination?.total) || transformedOrders.length;
-
-          if (nextTotalOrders === 0 && page !== 1) {
-            setOrders([]);
-            setTotalPages(0);
-            setTotalOrders(0);
-            setSelectedOrders([]);
-            setPage(1);
-            return;
-          }
-
-          if (nextTotalPages > 0 && page > nextTotalPages) {
-            setTotalPages(nextTotalPages);
-            setTotalOrders(nextTotalOrders);
-            setSelectedOrders([]);
-            setPage(nextTotalPages);
-            return;
-          }
-
-          setOrders(transformedOrders);
-          setTotalPages(nextTotalPages);
-          setTotalOrders(nextTotalOrders);
-          queryClient.setQueryData(orderListCacheKey, {
-            orders: transformedOrders,
-            totalPages: nextTotalPages,
-            totalOrders: nextTotalOrders,
-          });
-          setSelectedOrders([]);
-          setLastUpdatedAt(new Date());
-          setOrdersLoadError(null);
-        } else {
-          console.error("Failed to fetch enhanced orders:", data.message);
-          setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
-        }
-      } else {
-        // Use simple orders API
-        const queryParams: Record<string, string> = {
-          page: page.toString(),
-          limit: limit.toString(),
-        };
-
-        if (filters.status.length > 0) queryParams.status = filters.status.join(",");
-        if (filters.paymentStatus.length > 0)
-          queryParams.paymentStatus = filters.paymentStatus.join(",");
-        if (filters.sourceType.length > 0) queryParams.sourceType = filters.sourceType.join(",");
-        if (filters.merchantId.length > 0) queryParams.merchantId = filters.merchantId.join(",");
-        if (filters.affiliateId.length > 0) queryParams.affiliateId = filters.affiliateId.join(",");
-        if (filters.fulfillmentSource.length > 0)
-          queryParams.fulfillmentSource = filters.fulfillmentSource.join(",");
-        if (filters.merchantOperationStatus.length > 0)
-          queryParams.merchantOperationStatus = filters.merchantOperationStatus.join(",");
-        if (filters.merchantSettlementStatus.length > 0)
-          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus.join(",");
-        if (filters.search) queryParams.search = filters.search;
-        if (filters.startDate) queryParams.startDate = filters.startDate;
-        if (filters.endDate) queryParams.endDate = filters.endDate;
-        if (filters.onlyUnseen) queryParams.onlyUnseen = "true";
-        if (filters.onlyPostPurchaseOffer) queryParams.onlyPostPurchaseOffer = "true";
-
-        const response = await apiClient.get("/orders-new/simple", {
-          params: queryParams,
-          _skipErrorToast: true,
-        });
-
-        const data = response.data;
-
-        if (data.success) {
-          const transformedOrders = (
-            Array.isArray(data.data) ? data.data : []
-          ).map(transformOrder);
-          const nextTotalPages = Math.max(
-            Number(data.pagination?.pages) || 0,
-            transformedOrders.length > 0 ? 1 : 0,
-          );
-          const nextTotalOrders =
-            Number(data.pagination?.total) || transformedOrders.length;
-
-          if (nextTotalOrders === 0 && page !== 1) {
-            setOrders([]);
-            setTotalPages(0);
-            setTotalOrders(0);
-            setSelectedOrders([]);
-            setPage(1);
-            return;
-          }
-
-          if (nextTotalPages > 0 && page > nextTotalPages) {
-            setTotalPages(nextTotalPages);
-            setTotalOrders(nextTotalOrders);
-            setSelectedOrders([]);
-            setPage(nextTotalPages);
-            return;
-          }
-
-          setOrders(transformedOrders);
-          setTotalPages(nextTotalPages);
-          setTotalOrders(nextTotalOrders);
-          queryClient.setQueryData(orderListCacheKey, {
-            orders: transformedOrders,
-            totalPages: nextTotalPages,
-            totalOrders: nextTotalOrders,
-          });
-          setSelectedOrders([]);
-          setLastUpdatedAt(new Date());
-          setOrdersLoadError(null);
-          const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
-          if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
-            setShowIncompleteInOrders(metaFlag.showIncompleteCartsInOrders);
-          }
-        } else {
-          console.error("Failed to fetch orders:", data.message);
-          setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
-        }
-      }
-    } catch (error: unknown) {
-      console.error("Error fetching orders:", error);
-      if (
-        isRecord(error) &&
-        "response" in error &&
-        isRecord(error.response) &&
-        "data" in error.response &&
-        isRecord(error.response.data) &&
-        typeof error.response.data.message === "string"
-      ) {
-        console.error("Error message:", error.response.data.message);
-      }
-      setOrdersLoadError(getOrdersLoadErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, isMerchant, limit, page]);
-
-  fetchOrdersRef.current = fetchOrders;
 
   const getCustomerDisplayName = (order: Order) => {
     const isPlaceholderName = (name?: string | null) => {
