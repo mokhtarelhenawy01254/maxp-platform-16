@@ -31,6 +31,7 @@ import OrderShipmentModals from "./components/OrderShipmentModals";
 import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
 import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
+import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
@@ -170,14 +171,11 @@ const OrderDetails: React.FC = () => {
   // Local UI State (Modals)
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showPostponeModal, setShowPostponeModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showCancelShipmentModal, setShowCancelShipmentModal] = useState(false);
   const [showUnlinkShipmentModal, setShowUnlinkShipmentModal] = useState(false);
   const [showRecreateShipmentModal, setShowRecreateShipmentModal] =
     useState(false);
-  const [showPartialDeliveryModal, setShowPartialDeliveryModal] = useState(false);
-  const [partialDeliveryLoading, setPartialDeliveryLoading] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
   // Temporary Form State for Modals
@@ -192,7 +190,6 @@ const OrderDetails: React.FC = () => {
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
   const [cancellationAdditionalNotes, setCancellationAdditionalNotes] = useState("");
-  const [postponing, setPostponing] = useState(false);
 
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
   const isModalCancellationStatus = isCancellationStatus(newStatus);
@@ -504,89 +501,21 @@ const OrderDetails: React.FC = () => {
     };
   }, [showStatusModal, isModalCancellationStatus]);
 
-  const handlePostponeOrder = async (data: {
-    scheduledDeliveryDate: string;
-    scheduledNotes: string;
-    autoTransitionEnabled: boolean;
-  }) => {
-    if (!order) return;
-    setPostponing(true);
-    try {
-      const response = await apiClient.post(
-        `/orders-new/simple/${order.orderNumber}/schedule`,
-        {
-          scheduledDeliveryDate: data.scheduledDeliveryDate,
-          scheduledNotes: data.scheduledNotes,
-          autoTransitionEnabled: data.autoTransitionEnabled,
-          changeStatusToScheduled: true,
-        },
-      );
-      if (response.data.success) {
-        setShowPostponeModal(false);
-        await fetchOrderDetails();
-        toast.success(t("orderDetails.orderPostponed"));
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("orderDetails.postponeFailed"));
-    } finally {
-      setPostponing(false);
-    }
-  };
-
-  const handlePartialDelivery = async (deliveredItems: any[], returnedItems: any[]) => {
-    if (!order) return;
-    setPartialDeliveryLoading(true);
-    try {
-      // Step 1: Update the current order with only delivered items and change status
-      const deliveredSubtotal = deliveredItems.reduce(
-        (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
-        0,
-      );
-      await apiClient.put(`/orders-new/simple/${order.orderNumber}/items`, {
-        items: deliveredItems,
-        subtotal: deliveredSubtotal,
-        tax: order.tax || 0,
-        shipping: order.shipping || 0,
-        total: deliveredSubtotal + parseFloat(String(order.tax || 0)) + parseFloat(String(order.shipping || 0)),
-      });
-      await updateStatus("PARTIALLY_DELIVERED", t("orderDetails.partialDeliveryNote"));
-
-      // Step 2: If there are returned items, create a new order for them
-      if (returnedItems.length > 0) {
-        const returnedSubtotal = returnedItems.reduce(
-          (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
-          0,
-        );
-        await apiClient.post(`/orders-new/simple`, {
-          customerName: order.customerName,
-          customerPhone: order.customerPhone,
-          alternativePhone: order.alternativePhone,
-          customerAddress: order.customerAddress,
-          city: order.city,
-          government: order.government,
-          items: returnedItems,
-          subtotal: returnedSubtotal,
-          shipping: order.shipping || 0,
-          tax: order.tax || 0,
-          currency: order.currency,
-           notes: t("orderDetails.returnedFromOrder", { orderNumber: order.orderNumber }),
-          status: "PARTIALLY_RETURNED",
-          paymentMethod: order.paymentMethod,
-          paymentStatus: order.paymentStatus,
-        });
-        toast.success(t("orderDetails.partialDeliverySuccessWithReturn"));
-      } else {
-        toast.success(t("orderDetails.orderUpdated"));
-      }
-
-      setShowPartialDeliveryModal(false);
-      await fetchOrderDetails();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("orderDetails.partialDeliveryError"));
-    } finally {
-      setPartialDeliveryLoading(false);
-    }
-  };
+  const {
+    showPostponeModal,
+    setShowPostponeModal,
+    postponing,
+    handlePostponeOrder,
+    showPartialDeliveryModal,
+    setShowPartialDeliveryModal,
+    partialDeliveryLoading,
+    handlePartialDelivery,
+  } = useOrderFulfillmentActions({
+    order,
+    fetchOrderDetails,
+    updateStatus,
+    t,
+  });
 
   const handleQuickStatusSelect = async (statusCode: string) => {
     if (!canUpdateOrderStatus) return;
