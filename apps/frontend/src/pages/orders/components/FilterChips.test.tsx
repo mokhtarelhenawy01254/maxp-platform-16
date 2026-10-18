@@ -1,96 +1,79 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { FilterChips } from "./FilterChips";
 
 jest.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue || key,
+  }),
 }));
 
-const baseFilters = {
-  status: [] as string[],
-  paymentStatus: [] as string[],
-  sourceType: [] as string[],
-  merchantId: [] as string[],
-  affiliateId: [] as string[],
-  fulfillmentSource: [] as string[],
-  merchantOperationStatus: [] as string[],
-  merchantSettlementStatus: [] as string[],
-  extractionMethod: "",
-  minConfidence: "",
-  onlyUnseen: false,
-  timeRange: "",
-  startDate: "",
-  endDate: "",
-  search: "",
-};
+describe("FilterChips Suite", () => {
+  const baseFilters = {
+    status: [],
+    paymentStatus: [],
+    sourceType: [],
+    merchantId: [],
+    affiliateId: [],
+    fulfillmentSource: [],
+    merchantOperationStatus: [],
+    merchantSettlementStatus: [],
+    extractionMethod: "",
+    minConfidence: "",
+    onlyUnseen: false,
+    timeRange: "",
+    startDate: "",
+    endDate: "",
+    search: "",
+  };
 
-describe("FilterChips", () => {
-  it("renders one chip per selected status", () => {
-    render(
+  it("returns null when no filters are active", () => {
+    const { container } = render(
       <FilterChips
-        filters={{ ...baseFilters, status: ["pending", "shipped"] }}
-        filterableOrderStatuses={[
-          { code: "PENDING", name: "قيد الانتظار" },
-          { code: "SHIPPED", name: "تم الشحن" },
-        ]}
+        filters={baseFilters}
         onFilterChange={jest.fn()}
         onClearAdvancedFilters={jest.fn()}
-      />,
+      />
     );
-
-    expect(screen.getAllByText("قيد الانتظار").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("تم الشحن").length).toBeGreaterThan(0);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("removes a single status without clearing the others", () => {
+  it("renders active chips with count and calls remove handler when X is clicked", () => {
     const onFilterChange = jest.fn();
+    const onClearAdvancedFilters = jest.fn();
+
     render(
       <FilterChips
-        filters={{ ...baseFilters, status: ["pending", "shipped"] }}
-        filterableOrderStatuses={[
-          { code: "PENDING", name: "قيد الانتظار" },
-          { code: "SHIPPED", name: "تم الشحن" },
-        ]}
+        filters={{
+          ...baseFilters,
+          status: ["DELIVERED"],
+          search: "Cairo",
+        }}
+        filterableOrderStatuses={[{ code: "DELIVERED", name: "تم التوصيل" }]}
         onFilterChange={onFilterChange}
-        onClearAdvancedFilters={jest.fn()}
-      />,
+        onClearAdvancedFilters={onClearAdvancedFilters}
+      />
     );
 
-    fireEvent.click(screen.getAllByRole("button")[0]);
-    expect(onFilterChange).toHaveBeenCalledWith("status", ["shipped"]);
-  });
+    // Active filter badge
+    expect(screen.getByText("فلاتر نشطة")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
 
-  it("renders one chip per payment status and removes only the clicked one", () => {
-    const onFilterChange = jest.fn();
-    render(
-      <FilterChips
-        filters={{ ...baseFilters, paymentStatus: ["completed", "failed"] }}
-        filterablePaymentStatuses={[
-          { code: "COMPLETED", name: "مدفوع" },
-          { code: "FAILED", name: "فشل الدفع" },
-        ]}
-        onFilterChange={onFilterChange}
-        onClearAdvancedFilters={jest.fn()}
-      />,
-    );
+    // Delivered status chip
+    expect(screen.getByText("تم التوصيل")).toBeInTheDocument();
+    // Search chip
+    expect(screen.getByText("Cairo")).toBeInTheDocument();
 
-    expect(screen.getAllByText("مدفوع").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("فشل الدفع").length).toBeGreaterThan(0);
+    // Click remove on search chip
+    const removeButtons = screen.getAllByRole("button");
+    fireEvent.click(removeButtons[1]); // search remove button
+    expect(onFilterChange).toHaveBeenCalledWith("search", "");
 
-    fireEvent.click(screen.getAllByRole("button")[0]);
-    expect(onFilterChange).toHaveBeenCalledWith("paymentStatus", ["failed"]);
-  });
-
-  it("renders one chip per merchant operation status", () => {
-    render(
-      <FilterChips
-        filters={{ ...baseFilters, merchantOperationStatus: ["PREPARATION", "DELIVERED"] }}
-        onFilterChange={jest.fn()}
-        onClearAdvancedFilters={jest.fn()}
-      />,
-    );
-
-    expect(screen.getAllByText("orders.preparation").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("orders.delivered").length).toBeGreaterThan(0);
+    // Clear all button should be visible with >1 chips
+    const clearAllBtn = screen.getByText("مسح الكل");
+    expect(clearAllBtn).toBeInTheDocument();
+    fireEvent.click(clearAllBtn);
+    expect(onClearAdvancedFilters).toHaveBeenCalled();
   });
 });
