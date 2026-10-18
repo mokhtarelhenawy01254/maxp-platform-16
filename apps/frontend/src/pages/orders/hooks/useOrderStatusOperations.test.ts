@@ -1,5 +1,9 @@
 import { renderHook, act } from "@testing-library/react";
-import { useOrderStatusOperations } from "./useOrderStatusOperations";
+import {
+  useOrderStatusOperations,
+  isCancellationStatus,
+  getLatestCancellationReason,
+} from "./useOrderStatusOperations";
 import { cancellationService } from "../../../services/cancellationService";
 import type { OrderDetailsType } from "../types";
 
@@ -145,5 +149,45 @@ describe("useOrderStatusOperations", () => {
     });
 
     expect(cancellationService.getReasons).toHaveBeenCalled();
+  });
+
+  describe("getLatestCancellationReason", () => {
+    it("returns empty string when order is null or undefined", () => {
+      expect(getLatestCancellationReason(null)).toBe("");
+      expect(getLatestCancellationReason(undefined)).toBe("");
+    });
+
+    it("returns cancellationReason when present on order", () => {
+      const order = { cancellationReason: "Customer canceled via chat" } as any;
+      expect(getLatestCancellationReason(order)).toBe("Customer canceled via chat");
+    });
+
+    it("extracts reason from statusHistory when available", () => {
+      const order = {
+        statusHistory: [
+          { status: "PENDING", reason: "" },
+          { status: "CANCELLED", reason: "Out of area" },
+        ],
+      } as any;
+      expect(getLatestCancellationReason(order)).toBe("Out of area");
+    });
+
+    it("falls back to order.notes when order is in cancellation status", () => {
+      const order = {
+        status: "CANCELLED",
+        notes: "Delayed delivery refusal",
+      } as any;
+      expect(getLatestCancellationReason(order)).toBe("Delayed delivery refusal");
+    });
+  });
+
+  describe("isCancellationStatus", () => {
+    it("identifies CANCELLED and CANCELED accurately", () => {
+      expect(isCancellationStatus("CANCELLED")).toBe(true);
+      expect(isCancellationStatus("cancelled")).toBe(true);
+      expect(isCancellationStatus("CANCELED")).toBe(true);
+      expect(isCancellationStatus("DELIVERED")).toBe(false);
+      expect(isCancellationStatus(null)).toBe(false);
+    });
   });
 });

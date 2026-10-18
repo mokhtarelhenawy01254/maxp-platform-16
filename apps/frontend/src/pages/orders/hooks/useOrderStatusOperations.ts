@@ -9,6 +9,38 @@ export const isCancellationStatus = (status?: string | null): boolean => {
   return normalizedStatus === "CANCELLED" || normalizedStatus === "CANCELED";
 };
 
+export const getLatestCancellationReason = (
+  order?: OrderDetailsType | null,
+): string => {
+  if (!order) return "";
+  const directReason =
+    typeof order.cancellationReason === "string"
+      ? order.cancellationReason.trim()
+      : "";
+  if (directReason) return directReason;
+
+  const historyReason =
+    Array.isArray(order.statusHistory) &&
+    order.statusHistory
+      .slice()
+      .reverse()
+      .find(
+        (entry) =>
+          isCancellationStatus(entry.status) &&
+          typeof entry.reason === "string" &&
+          entry.reason.trim(),
+      )
+      ?.reason?.trim() || "";
+
+  if (historyReason) return historyReason;
+
+  if (isCancellationStatus((order as any).effectiveStatus || order.status) && typeof order.notes === "string") {
+    return order.notes.trim();
+  }
+
+  return "";
+};
+
 export interface UseOrderStatusOperationsParams {
   order: OrderDetailsType | null;
   canUpdateOrderStatus: boolean;

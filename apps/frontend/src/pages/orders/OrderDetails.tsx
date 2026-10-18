@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 // Components
-import OrderHeader from "./components/OrderHeader";
+import { OrderDetailsHeaderWrapper } from "./components/OrderDetailsHeaderWrapper";
 import OrderDetailsMainContent from "./components/OrderDetailsMainContent";
 import OrderDetailsSidebar from "./components/OrderDetailsSidebar";
 import OrderReturnCard from "./components/OrderReturnCard";
@@ -22,6 +22,7 @@ import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
 import { useOrderDetailsShipping } from "./hooks/useOrderDetailsShipping";
 import {
   isCancellationStatus,
+  getLatestCancellationReason,
   useOrderStatusOperations,
 } from "./hooks/useOrderStatusOperations";
 import { OrderDetailsType } from "./types";
@@ -31,35 +32,10 @@ import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
 import { useOrderPermissionsAndApps } from "./hooks/useOrderPermissionsAndApps";
 import { useOrderStatusOptions } from "./hooks/useOrderStatusOptions";
 
-export { isCancellationStatus };
-
-const getLatestCancellationReason = (
-  order?: OrderDetailsType | null,
-): string => {
-  if (!order) return "";
-
-  const historyReason =
-    order.statusHistory
-      ?.find(
-        (entry) =>
-          isCancellationStatus(entry.status) &&
-          typeof entry.reason === "string" &&
-          entry.reason.trim(),
-      )
-      ?.reason?.trim() || "";
-
-  if (historyReason) return historyReason;
-
-  if (isCancellationStatus((order as any).effectiveStatus || order.status) && typeof order.notes === "string") {
-    return order.notes.trim();
-  }
-
-  return "";
-};
+export { isCancellationStatus, getLatestCancellationReason };
 
 const OrderDetails: React.FC = () => {
   const { id: orderNumber } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
@@ -266,50 +242,30 @@ const OrderDetails: React.FC = () => {
   return (
     <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6">
       {/* Header */}
-      <OrderHeader
+      <OrderDetailsHeaderWrapper
         order={order}
+        canEditOrderDetails={canEditOrderDetails}
         isEditing={canEditOrderDetails && isEditing}
+        setIsEditing={setIsEditing}
         updating={updating}
-        onEdit={() => {
-          if (canEditOrderDetails) setIsEditing(true);
-        }}
-        onCancel={() => {
-          setIsEditing(false);
-          if (order) {
-            setEditForm({
-              ...editForm,
-              items: order.items,
-              shipping: order.shipping || 0,
-              tax: order.tax || 0,
-              discount: order.discount || 0,
-              discountReason: order.discountReason || "",
-            });
-          }
-        }}
-        onSave={saveChanges}
-        onPrint={handlePrintInvoice}
-        onPrintPreparationSlip={handlePrintPreparationSlip}
-        onOpenTicket={() => setShowTicketModal(true)}
-        onBack={() => navigate("/orders")}
-        canEditOrder={canEditOrderDetails}
-        canPrintPreparationSlip={!isMerchant}
-        canUpdateStatus={canUpdateOrderStatus}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        saveChanges={saveChanges}
+        handlePrintInvoice={handlePrintInvoice}
+        handlePrintPreparationSlip={handlePrintPreparationSlip}
+        setShowTicketModal={setShowTicketModal}
+        isMerchant={isMerchant}
+        canUpdateOrderStatus={canUpdateOrderStatus}
         currentStatusConfig={currentStatusConfig}
-        statusOptions={canUpdateOrderStatus ? filteredStatusOptions : []}
-        onStatusSelect={canUpdateOrderStatus ? handleQuickStatusSelect : undefined}
+        filteredStatusOptions={filteredStatusOptions}
+        handleQuickStatusSelect={handleQuickStatusSelect}
         whatsappChatUrl={whatsappChatUrl}
         canUpdatePaymentStatus={canUpdatePaymentStatus}
-        onUpdatePayment={() => setShowPaymentModal(true)}
-        canPostponeOrder={canUpdateOrderStatus}
-        onPostponeOrder={() => setShowPostponeModal(true)}
-        canPartialDelivery={Boolean(canUpdateOrderStatus && order.items && order.items.length > 0)}
-        onPartialDelivery={() => setShowPartialDeliveryModal(true)}
+        setShowPaymentModal={setShowPaymentModal}
+        setShowPostponeModal={fulfillmentActions.setShowPostponeModal}
+        setShowPartialDeliveryModal={fulfillmentActions.setShowPartialDeliveryModal}
         showLateCancellationButton={showLateCancellationButton}
-        onCancelRequest={() => {
-          if (confirm(t("orderDetails.cancelConfirmMessage"))) {
-            void updateStatus("PENDING_CANCELLATION", t("orderDetails.cancellationNote"), false);
-          }
-        }}
+        updateStatus={updateStatus}
       />
 
       {/* Return Alert Banner & Details Card */}
