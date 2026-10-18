@@ -32,6 +32,7 @@ import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
 import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
 import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
+import { useOrderShippingActions } from "./hooks/useOrderShippingActions";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
@@ -172,10 +173,6 @@ const OrderDetails: React.FC = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
-  const [showCancelShipmentModal, setShowCancelShipmentModal] = useState(false);
-  const [showUnlinkShipmentModal, setShowUnlinkShipmentModal] = useState(false);
-  const [showRecreateShipmentModal, setShowRecreateShipmentModal] =
-    useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
   // Temporary Form State for Modals
@@ -556,68 +553,25 @@ const OrderDetails: React.FC = () => {
     t,
   });
 
-  const handleCreateShipment = async () => {
-    await createShipment();
-  };
-
-  const handleRecreateShipment = async () => {
-    const result = await createShipment({ replaceExisting: true });
-    if (result?.success) {
-      setShowRecreateShipmentModal(false);
-    }
-  };
-
-  const handlePrintWaybill = async () => {
-    const isQp =
-      order?.carrierType === "QP_EXPRESS" ||
-      order?.shippingCompany?.providerKey === "QP_EXPRESS" ||
-      Boolean(order?.qpTrackingNumber);
-    const isBosta =
-      order?.carrierType === "BOSTA" ||
-      order?.shippingCompany?.providerKey === "BOSTA";
-    const tracking = order?.trackingNumber || order?.turboTrackingNumber;
-
-    if (isQp && tracking) {
-      window.open(`/api/v1/qp-express/waybill/${tracking}`, "_blank");
-      return;
-    }
-
-    if (isBosta && (bostaShipment?.trackingNumber || tracking)) {
-      if (printBostaAWB) {
-        printBostaAWB();
-      } else {
-        toast.info("جاري تجهيز بوليصة بوستا...");
-      }
-      return;
-    }
-
-    // Default Turbo or internal waybill
-    await getWaybill();
-  };
-
-  const handleCalculateShipping = async () => {
-    if (!order) return;
-    // Try to extract gov and city
-    let gov = "";
-    let city = order.city || "";
-
-    const addr = order.shippingAddress || order.customerAddress;
-    if (typeof addr === "string" && addr.startsWith("{")) {
-      try {
-        const parsed = JSON.parse(addr);
-        gov = parsed.governorate || parsed.government || "";
-        if (!city) city = parsed.city || parsed.area || "";
-      } catch (_e) {
-        // Ignore malformed saved address payloads and fall back to flat fields.
-      }
-    } else if (typeof addr === "object") {
-      const obj = addr as any;
-      gov = obj.governorate || obj.government || "";
-      if (!city) city = obj.city || obj.area || "";
-    }
-
-    await calculateShipping(gov, city);
-  };
+  const {
+    showCancelShipmentModal,
+    setShowCancelShipmentModal,
+    showUnlinkShipmentModal,
+    setShowUnlinkShipmentModal,
+    showRecreateShipmentModal,
+    setShowRecreateShipmentModal,
+    handleCreateShipment,
+    handleRecreateShipment,
+    handlePrintWaybill,
+    handleCalculateShipping,
+  } = useOrderShippingActions({
+    order,
+    createShipment,
+    getWaybill,
+    calculateShipping,
+    bostaShipment,
+    printBostaAWB,
+  });
 
   // 🛡️ (custom-status-persist): خريطة UPPER(code) → الاسم المعرّف لسجل النشاط
   // (فوق الـ early returns إلزاميًا — hooks شرطية بتعمل React #310)
