@@ -69,6 +69,7 @@ import { usePreparationShortageOperations } from "./preparation/usePreparationSh
 import { usePreparationProblemOperations } from "./preparation/usePreparationProblemOperations";
 import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
 import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
+import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -276,7 +277,7 @@ const PreparationQueue: React.FC = () => {
   const getOrderByNumberRef = useRef<(orderNumber: string) => PreparationOrder | null>(() => null);
   const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
 
-  const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
+  // transferingItemKey provided by usePreparationQuickTransfer
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
@@ -1105,57 +1106,13 @@ const PreparationQueue: React.FC = () => {
     t,
   });
 
-  const handleQuickTransfer = useCallback(
-    async (orderNumber: string, item: ItemInsight) => {
-      if (!selectedWarehouseId) {
-        toast.error(t('preparation.page.selectWarehouseFirst'));
-        return;
-      }
-
-      if (!item.productId || item.shortage <= 0) {
-        toast.error(t('preparation.page.transferNoShortage'));
-        return;
-      }
-
-      const productSummary = inventorySummaryByProduct.get(String(item.productId));
-      const sourceWarehouse = productSummary?.warehouses.find(
-        (warehouse) =>
-          warehouse.warehouseId !== selectedWarehouseId &&
-          warehouse.available >= item.shortage,
-      );
-
-      if (!sourceWarehouse) {
-        toast.error(t('preparation.page.transferNoSource'));
-        return;
-      }
-
-      const transferKey = `${orderNumber}-${item.productId}`;
-
-      try {
-        setTransferingItemKey(transferKey);
-        await apiClient.post("/inventory/transfer", {
-          productId: item.productId,
-          fromWarehouseId: sourceWarehouse.warehouseId,
-          toWarehouseId: selectedWarehouseId,
-          quantity: item.shortage,
-          notes: `Preparation transfer for order ${orderNumber}`,
-        });
-
-        toast.success(
-          t("preparation.toasts.transferSuccess", { qty: item.shortage, source: sourceWarehouse.warehouseName }),
-        );
-        await fetchInventory();
-      } catch (error: unknown) {
-        console.error("Failed quick transfer:", error);
-        toast.error(
-          getApiErrorMessage(error) || t('preparation.page.transferFailed'),
-        );
-      } finally {
-        setTransferingItemKey(null);
-      }
-    },
-    [fetchInventory, inventorySummaryByProduct, selectedWarehouseId],
-  );
+  const { transferingItemKey, handleQuickTransfer } = usePreparationQuickTransfer({
+    selectedWarehouseId,
+    inventorySummaryByProduct,
+    fetchInventory,
+    getApiErrorMessage,
+    t,
+  });
 
   const {
     activeCarriers,
