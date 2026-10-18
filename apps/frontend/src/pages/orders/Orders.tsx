@@ -5,7 +5,6 @@ import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import useSocket from "../../hooks/useSocket";
-import { format, subDays } from "date-fns";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
@@ -43,7 +42,7 @@ import {
   getInitialOrdersListViewState,
 } from "./ordersFilterTypes";
 import type { OrderDetailsType } from "./types";
-import { hasPostPurchaseOffer } from "../../utils/postPurchaseOfferBadge";
+import { useOrdersFilterActions } from "./hooks/useOrdersFilterActions";
 import { HeldOrdersBanner } from "./components/HeldOrdersBanner";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
@@ -592,149 +591,30 @@ const Orders: React.FC = () => {
     }
   };
 
-  const setQuickDate = (range: string) => {
-    const now = new Date();
-    let startDate: string = "";
-    let endDate: string = "";
-
-    if (range === "custom") {
-      setShowAdvancedFilters(true);
-      setFilters((prev) => ({ ...prev, timeRange: "custom" }));
-      return;
-    }
-
-    switch (range) {
-      case "today":
-        startDate = format(now, "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "yesterday": {
-        const yesterday = subDays(now, 1);
-        startDate = format(yesterday, "yyyy-MM-dd");
-        endDate = format(yesterday, "yyyy-MM-dd");
-        break;
-      }
-      case "last7":
-        startDate = format(subDays(now, 7), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "last30":
-        startDate = format(subDays(now, 30), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "last90":
-        startDate = format(subDays(now, 90), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "last180":
-        startDate = format(subDays(now, 180), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "last365":
-        startDate = format(subDays(now, 365), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "thisYear":
-        startDate = format(new Date(now.getFullYear(), 0, 1), "yyyy-MM-dd");
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "thisMonth":
-        startDate = format(
-          new Date(now.getFullYear(), now.getMonth(), 1),
-          "yyyy-MM-dd",
-        );
-        endDate = format(now, "yyyy-MM-dd");
-        break;
-      case "":
-      case "clear":
-        startDate = "";
-        endDate = "";
-        break;
-      default:
-        return;
-    }
-
-    setFilters((prev) => ({
-      ...prev,
-      startDate,
-      endDate,
-      timeRange: range === "clear" ? "" : range,
-    }));
-    setPage(1);
-  };
-
-  const clearAdvancedFilters = () => {
-    setFilters((prev) => ({
-      ...prev,
-      status: [],
-      paymentStatus: [],
-      sourceType: [],
-      merchantId: [],
-      affiliateId: [],
-      fulfillmentSource: [],
-      merchantOperationStatus: [],
-      merchantSettlementStatus: [],
-      startDate: "",
-      endDate: "",
-      extractionMethod: "",
-      minConfidence: "",
-      timeRange: "",
-    }));
-    setPage(1);
-  };
-
-  const handleFilterChange = <K extends keyof OrdersFilters>(
-    key: K,
-    value: OrdersFilters[K],
-  ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
-  };
-
-  // Apply a saved view: merge the saved filter subset into the current state
-  // (keeping any keys the saved view doesn't specify) and reset to page 1.
-  const applySavedFilters = (saved: Partial<OrdersFilters>) => {
-    setFilters((prev) => ({ ...prev, ...saved }));
-    setPage(1);
-  };
-
-  const clearAllFilters = () => {
-    clearAdvancedFilters();
-    setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false, onlyPostPurchaseOffer: false }));
-    setPage(1);
-  };
-
-  const displayedOrders = useMemo(() => {
-    if (!filters.onlyPostPurchaseOffer) return orders;
-    return orders.filter(hasPostPurchaseOffer);
-  }, [orders, filters.onlyPostPurchaseOffer]);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-    }
-  };
-
-  const handleLimitChange = (newLimit: number) => {
-    setLimit(newLimit);
-    setPage(1); // Reset to first page when changing limit
-  };
-
-  const toggleOrderSelection = (orderNumber: string) => {
-    setSelectedOrders((prev) =>
-      prev.includes(orderNumber)
-        ? prev.filter((id) => id !== orderNumber)
-        : [...prev, orderNumber],
-    );
-  };
-
-  const toggleAllSelection = () => {
-    if (displayedOrders.every((o) => selectedOrders.includes(o.orderNumber))) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(displayedOrders.map((o) => o.orderNumber));
-    }
-  };
+  const {
+    displayedOrders,
+    setQuickDate,
+    clearAdvancedFilters,
+    handleFilterChange,
+    applySavedFilters,
+    clearAllFilters,
+    handlePageChange,
+    handleLimitChange,
+    toggleOrderSelection,
+    toggleAllSelection,
+  } = useOrdersFilterActions({
+    orders,
+    filters,
+    setFilters,
+    page,
+    setPage,
+    totalPages,
+    limit,
+    setLimit,
+    selectedOrders,
+    setSelectedOrders,
+    setShowAdvancedFilters,
+  });
 
   const {
     bulkProcessing,
