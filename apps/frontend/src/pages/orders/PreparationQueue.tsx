@@ -65,6 +65,7 @@ import PreparationQueueDialogsContainer from "./preparation/components/Preparati
 import PreparationSelectionBar from "./preparation/components/PreparationSelectionBar";
 import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
 import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
+import { usePreparationShortageOperations } from "./preparation/usePreparationShortageOperations";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -247,9 +248,28 @@ const PreparationQueue: React.FC = () => {
   const [qcChecklistState, setQcChecklistState] = useState<
     Record<string, Partial<Record<QcCheckKey, boolean>>>
   >({});
-  const [shortageHoldDrafts, setShortageHoldDrafts] = useState<
-    Record<string, ShortageHoldDetails>
-  >({});
+  const handleSingleStatusUpdateRef = useRef<(orderNumber: string, status: string) => Promise<boolean | void>>(async () => {});
+  const updateLocalMetadataRef = useRef<(orderNumber: string, patch: Record<string, unknown>) => void>(() => {});
+
+  const {
+    shortageHoldDrafts,
+    setShortageHoldDrafts,
+    shortageSavingOrderId,
+    handleShortageFieldChange,
+    saveShortageHoldDetails,
+    handleMarkAsShortageHold,
+    handleReleaseShortageHold,
+    handleMarkAsShortageFailed,
+  } = usePreparationShortageOperations({
+    orders,
+    startingStatus: preparationSettings.startingStatus,
+    updateLocalMetadata: (orderNumber, patch) => updateLocalMetadataRef.current(orderNumber, patch),
+    fetchAll,
+    handleSingleStatusUpdate: (orderNumber, status) => handleSingleStatusUpdateRef.current(orderNumber, status),
+    getApiErrorMessage,
+    t,
+  });
+
   const [problemHoldDrafts, setProblemHoldDrafts] = useState<
     Record<string, ProblemHoldDetails>
   >({});
@@ -257,9 +277,7 @@ const PreparationQueue: React.FC = () => {
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
-  const [shortageSavingOrderId, setShortageSavingOrderId] = useState<
-    string | null
-  >(null);
+  // shortageSavingOrderId provided by usePreparationShortageOperations
   const [problemHoldSavingOrderId, setProblemHoldSavingOrderId] = useState<
     string | null
   >(null);
@@ -852,6 +870,7 @@ const PreparationQueue: React.FC = () => {
     },
     [setOrders],
   );
+  updateLocalMetadataRef.current = updateLocalMetadata;
 
   const getOrderByNumber = useCallback(
     (orderNumber: string) =>
@@ -964,23 +983,7 @@ const PreparationQueue: React.FC = () => {
     [],
   );
 
-  const handleShortageFieldChange = useCallback(
-    (
-      orderNumber: string,
-      field: keyof ShortageHoldDetails,
-      value: string | boolean,
-    ) => {
-      setShortageHoldDrafts((previous) => ({
-        ...previous,
-        [orderNumber]: {
-          ...DEFAULT_SHORTAGE_HOLD_DETAILS,
-          ...(previous[orderNumber] || {}),
-          [field]: value,
-        },
-      }));
-    },
-    [],
-  );
+  // handleShortageFieldChange provided by usePreparationShortageOperations
 
   const handlePrintPreparationSlip = useCallback(async (orderNumber: string) => {
     try {
@@ -1012,65 +1015,7 @@ const PreparationQueue: React.FC = () => {
     }
   }, [orders, user?.company?.name, user?.company?.logo, invoiceSettings, t]);
 
-  const saveShortageHoldDetails = useCallback(
-    async (
-      orderNumber: string,
-      overrides: Partial<ShortageHoldDetails> = {},
-      options?: { successMessage?: string | null; skipRefresh?: boolean },
-    ) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      if (!order) {
-        toast.error(t('preparation.page.orderNotFound'));
-        return false;
-      }
-
-      const currentDraft =
-        shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order.metadata);
-      const nextDraft: ShortageHoldDetails = {
-        ...DEFAULT_SHORTAGE_HOLD_DETAILS,
-        ...currentDraft,
-        ...overrides,
-      };
-      const metadataPatch = {
-        [SHORTAGE_HOLD_METADATA_KEY]: nextDraft,
-      };
-
-      try {
-        setShortageSavingOrderId(orderNumber);
-        await apiClient.put(`/orders-new/simple/${encodeURIComponent(orderNumber)}`, {
-          metadataPatch,
-        });
-        updateLocalMetadata(orderNumber, metadataPatch);
-        setShortageHoldDrafts((previous) => ({
-          ...previous,
-          [orderNumber]: nextDraft,
-        }));
-
-        if (options?.successMessage !== null) {
-          toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
-        }
-
-        // Skip refresh when the caller (e.g. handleMarkAsShortageHold /
-        // handleReleaseShortageHold) will trigger handleSingleStatusUpdate,
-        // which already calls fetchAll — avoids a double network round-trip.
-        if (!options?.skipRefresh) {
-          void fetchAll();
-        }
-
-        return true;
-      } catch (error: unknown) {
-        console.error("Failed to save shortage hold details:", error);
-        toast.error(
-          getApiErrorMessage(error) || t('preparation.page.shortageHoldFailed'),
-        );
-        return false;
-      } finally {
-        setShortageSavingOrderId(null);
-      }
-    },
-    [fetchAll, orders, shortageHoldDrafts, updateLocalMetadata],
-  );
-
+  // saveShortageHoldDetails provided by usePreparationShortageOperations
   const saveProblemHoldDetails = useCallback(
     async (
       orderNumber: string,
@@ -1295,6 +1240,7 @@ const PreparationQueue: React.FC = () => {
     },
     [getOrderByNumber, performStatusUpdate, t, validateTransition],
   );
+  handleSingleStatusUpdateRef.current = handleSingleStatusUpdate;
 
   const handleRequestStatusChange = useCallback(
     async (orderNumber: string, nextStatus: string) => {
@@ -1755,87 +1701,7 @@ const PreparationQueue: React.FC = () => {
     user,
   });
 
-  const handleMarkAsShortageHold = useCallback(
-    async (orderNumber: string) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      const currentDraft =
-        shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
-      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
-      const saved = await saveShortageHoldDetails(
-        orderNumber,
-        {
-          ...currentDraft,
-          heldAt: currentDraft.heldAt || new Date().toISOString(),
-          releasedAt: "",
-          state: "held",
-        },
-        { successMessage: null, skipRefresh: true },
-      );
-      if (!saved) return;
-
-      await handleSingleStatusUpdate(orderNumber, SHORTAGE_HOLD_STATUS);
-    },
-    [handleSingleStatusUpdate, orders, saveShortageHoldDetails, shortageHoldDrafts],
-  );
-
-  const handleReleaseShortageHold = useCallback(
-    async (orderNumber: string) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      const currentDraft =
-        shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
-      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
-      const saved = await saveShortageHoldDetails(
-        orderNumber,
-        {
-          ...currentDraft,
-          releasedAt: new Date().toISOString(),
-          state: "released",
-        },
-        { successMessage: null, skipRefresh: true },
-      );
-      if (!saved) return;
-
-      await handleSingleStatusUpdate(
-        orderNumber,
-        preparationSettings.startingStatus,
-      );
-    },
-    [
-      handleSingleStatusUpdate,
-      orders,
-      preparationSettings.startingStatus,
-      saveShortageHoldDetails,
-      shortageHoldDrafts,
-    ],
-  );
-
-  const handleMarkAsShortageFailed = useCallback(
-    async (orderNumber: string) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      const currentDraft =
-        shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
-      const confirmed = window.confirm(
-        t("preparation.shortagePanel.confirmShortageFailed"),
-      );
-      if (!confirmed) return;
-      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
-      const saved = await saveShortageHoldDetails(
-        orderNumber,
-        {
-          ...currentDraft,
-          heldAt: currentDraft.heldAt || new Date().toISOString(),
-          releasedAt: new Date().toISOString(),
-          state: "released",
-        },
-        { successMessage: null, skipRefresh: true },
-      );
-      if (!saved) return;
-
-      await handleSingleStatusUpdate(orderNumber, SHORTAGE_FAILED_STATUS);
-    },
-    [handleSingleStatusUpdate, orders, saveShortageHoldDetails, shortageHoldDrafts, t],
-  );
-
+  // handleMarkAsShortageHold, handleReleaseShortageHold, handleMarkAsShortageFailed provided by usePreparationShortageOperations
   const dialogOrder = useMemo(
     () =>
       statusChangeDialog
