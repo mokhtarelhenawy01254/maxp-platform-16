@@ -157,7 +157,7 @@ describe('WorkspaceIntelligenceRail', () => {
     expect(screen.getByText('الطلب الحالي')).toBeInTheDocument();
   });
 
-  it('renders live queue telemetry when in supervisor perspective', async () => {
+  it('renders team distribution when in supervisor perspective without queue telemetry', async () => {
     render(
       <BrowserRouter>
         <WorkspaceIntelligenceRail
@@ -168,10 +168,9 @@ describe('WorkspaceIntelligenceRail', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('تيليمتري الطابور الحي')).toBeInTheDocument();
-    expect(screen.getByText('الطلبات المعلقة')).toBeInTheDocument();
-    expect(screen.getByText('19')).toBeInTheDocument();
     expect(screen.getByText('إدارة توزيع الفريق')).toBeInTheDocument();
+    expect(screen.getByText('ضبط إعدادات التوزيع')).toBeInTheDocument();
+    expect(screen.queryByText('تيليمتري الطابور الحي')).not.toBeInTheDocument();
   });
 
   it('does not render supervisor telemetry or settings link when in operator perspective', () => {

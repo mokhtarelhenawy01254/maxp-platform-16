@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
   AlertTriangle,
-  BarChart2,
   Users,
   ArrowLeft,
   ArrowRight,
@@ -63,7 +62,6 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
   const [orderFilter, setOrderFilter] = useState<'all' | 'delivered' | 'failed'>('all');
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [supervisorTab, setSupervisorTab] = useState<'all' | 'dossier' | 'telemetry'>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -198,47 +196,8 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
         </div>
       )}
 
-      {/* ── Supervisor View Mode Tabs ── */}
-      {perspective === 'supervisor' && (
-        <div className="flex items-center gap-1 rounded-lg bg-muted/40 p-1 border border-border/40 text-[11px] shrink-0">
-          <button
-            type="button"
-            onClick={() => setSupervisorTab('all')}
-            className={`flex-1 rounded py-1 font-semibold transition text-center ${
-              supervisorTab === 'all'
-                ? 'bg-card text-foreground shadow-xs font-bold border border-border/60'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {isArabic ? 'عرض شامل' : 'All'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSupervisorTab('dossier')}
-            className={`flex-1 rounded py-1 font-semibold transition text-center ${
-              supervisorTab === 'dossier'
-                ? 'bg-card text-foreground shadow-xs font-bold border border-border/60'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {isArabic ? 'سجل العميل' : 'Customer'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSupervisorTab('telemetry')}
-            className={`flex-1 rounded py-1 font-semibold transition text-center ${
-              supervisorTab === 'telemetry'
-                ? 'bg-card text-foreground shadow-xs font-bold border border-border/60'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {isArabic ? 'الطابور الحي' : 'Telemetry'}
-          </button>
-        </div>
-      )}
-
-      {/* ── Empty State if no order selected and not in telemetry-only view ── */}
-      {!order && supervisorTab !== 'telemetry' && (
+      {/* ── Empty State if no order selected ── */}
+      {!order && (
         <div className="rounded-xl border border-dashed border-border/60 p-6 text-center text-muted-foreground space-y-2 my-auto">
           <ShoppingBag className="h-8 w-8 mx-auto text-muted-foreground/40" />
           <p className="font-semibold text-foreground">
@@ -253,7 +212,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
       )}
 
       {/* ── Customer Dossier Content (Rating & History) ── */}
-      {order && (supervisorTab === 'all' || supervisorTab === 'dossier') && (
+      {order && (
         <div className="space-y-3.5 divide-y divide-border/40">
           {/* 1. Customer Rating & Trust Dossier */}
           <section className="space-y-2.5">
@@ -634,59 +593,24 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
         </div>
       )}
 
-      {/* ── Supervisor Live Queue Telemetry Section (Supervisors Only) ── */}
-      {perspective === 'supervisor' &&
-        (supervisorTab === 'all' || supervisorTab === 'telemetry') && (
-          <div className="border-t border-border/40 pt-3.5 space-y-3">
-            <section>
-              <div className="flex items-center gap-1.5 font-bold text-foreground">
-                <BarChart2 className="h-4 w-4 text-primary" />
-                <span>{isArabic ? 'تيليمتري الطابور الحي' : 'Live Queue Telemetry'}</span>
-              </div>
-
-              <div className="mt-2.5 space-y-2 rounded-lg border border-border/50 bg-muted/15 p-2.5">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'الطلبات المعلقة' : 'Pending Queue'}</span>
-                  <span className="font-mono font-bold tabular-nums text-foreground">
-                    {stats?.pending || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'طلبات المتابعة' : 'Follow-up Due'}</span>
-                  <span className="font-mono font-bold tabular-nums text-foreground">
-                    {stats?.followup || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'إجمالي المؤكد' : 'Confirmed'}</span>
-                  <span className="font-mono font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {stats?.confirmed || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'الملغية' : 'Cancelled'}</span>
-                  <span className="font-mono font-bold tabular-nums text-destructive">
-                    {stats?.cancelled || 0}
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            <section className="pt-1">
-              <div className="flex items-center gap-1.5 font-bold text-foreground">
-                <Users className="h-4 w-4 text-primary" />
-                <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
-              </div>
-              <Link
-                to="/settings/orders?tab=confirmation"
-                className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-              >
-                <span>{isArabic ? 'ضبط إعدادات التوزيع' : 'Configure Assignment Rules'}</span>
-                {isArabic ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
-              </Link>
-            </section>
-          </div>
-        )}
+      {/* ── Supervisor Team Distribution Section (Supervisors Only) ── */}
+      {perspective === 'supervisor' && (
+        <div className="border-t border-border/40 pt-3">
+          <section>
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Users className="h-4 w-4 text-primary" />
+              <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
+            </div>
+            <Link
+              to="/settings/orders?tab=confirmation"
+              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+            >
+              <span>{isArabic ? 'ضبط إعدادات التوزيع' : 'Configure Assignment Rules'}</span>
+              {isArabic ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
+            </Link>
+          </section>
+        </div>
+      )}
     </aside>
   );
 };
