@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RotateCw } from "lucide-react";
+import { Search, RotateCw, ChevronDown } from "lucide-react";
 
 export type SortValue = "recent" | "value_desc" | "value_asc" | "priority";
 export type PhoneFilter = "all" | "with_phone" | "no_phone";
@@ -96,51 +96,60 @@ export const IncompleteOrdersFilterBar: React.FC<IncompleteOrdersFilterBarProps>
           </div>
 
           {/* Phone filter select */}
-          <label htmlFor="incomplete-orders-phone" className="sr-only">
-            {t("orders.incompletePhoneLabel")}
-          </label>
-          <select
-            id="incomplete-orders-phone"
-            value={phoneFilter}
-            onChange={(e) => onPhoneFilterChange(e.target.value as PhoneFilter)}
-            className="px-2.5 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer"
-          >
-            <option value="with_phone">{t("orders.incompletePhoneWith")}</option>
-            <option value="no_phone">{t("orders.incompletePhoneWithout")}</option>
-            <option value="all">{t("orders.incompletePhoneAll")}</option>
-          </select>
+          <div className="relative">
+            <label htmlFor="incomplete-orders-phone" className="sr-only">
+              {t("orders.incompletePhoneLabel")}
+            </label>
+            <select
+              id="incomplete-orders-phone"
+              value={phoneFilter}
+              onChange={(e) => onPhoneFilterChange(e.target.value as PhoneFilter)}
+              className="appearance-none ps-2.5 pe-7 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer"
+            >
+              <option value="with_phone">{t("orders.incompletePhoneWith")}</option>
+              <option value="no_phone">{t("orders.incompletePhoneWithout")}</option>
+              <option value="all">{t("orders.incompletePhoneAll")}</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          </div>
 
           {/* Sort select */}
-          <label htmlFor="incomplete-orders-sort" className="sr-only">
-            {t("orders.incompleteSort")}
-          </label>
-          <select
-            id="incomplete-orders-sort"
-            value={sortValue}
-            onChange={(e) => onSortValueChange(e.target.value as SortValue)}
-            className="px-2.5 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer"
-          >
-            <option value="priority">{t("orders.incompleteSortPriority")}</option>
-            <option value="recent">{t("orders.incompleteSortLastUpdated")}</option>
-            <option value="value_desc">{t("orders.incompleteSortValueDesc")}</option>
-            <option value="value_asc">{t("orders.incompleteSortValueAsc")}</option>
-          </select>
+          <div className="relative">
+            <label htmlFor="incomplete-orders-sort" className="sr-only">
+              {t("orders.incompleteSort")}
+            </label>
+            <select
+              id="incomplete-orders-sort"
+              value={sortValue}
+              onChange={(e) => onSortValueChange(e.target.value as SortValue)}
+              className="appearance-none ps-2.5 pe-7 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer"
+            >
+              <option value="priority">{t("orders.incompleteSortPriority")}</option>
+              <option value="recent">{t("orders.incompleteSortLastUpdated")}</option>
+              <option value="value_desc">{t("orders.incompleteSortValueDesc")}</option>
+              <option value="value_asc">{t("orders.incompleteSortValueAsc")}</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          </div>
 
           {/* Limit select */}
-          <label htmlFor="incomplete-orders-per-page" className="sr-only">
-            {t("orders.incompletePerPage")}
-          </label>
-          <select
-            id="incomplete-orders-per-page"
-            value={limit}
-            onChange={(e) => onLimitChange(Number(e.target.value))}
-            className="px-2 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer font-mono tabular-nums"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          <div className="relative">
+            <label htmlFor="incomplete-orders-per-page" className="sr-only">
+              {t("orders.incompletePerPage")}
+            </label>
+            <select
+              id="incomplete-orders-per-page"
+              value={limit}
+              onChange={(e) => onLimitChange(Number(e.target.value))}
+              className="appearance-none ps-2.5 pe-6 py-1.5 border border-border/70 rounded-lg bg-card text-xs font-medium text-foreground focus:border-border focus:ring-1 focus:ring-ring outline-none transition-all cursor-pointer font-mono tabular-nums"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          </div>
 
           {/* Refresh button */}
           <button

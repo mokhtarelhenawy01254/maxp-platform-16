@@ -1,5 +1,5 @@
 import React from "react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { Search } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -42,7 +42,7 @@ export const AvailabilityFilterBar: React.FC<AvailabilityFilterBarProps> = ({
     <div className="p-3 sm:p-4 border-b border-border/70 bg-muted/20">
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
         <div className="relative">
-          <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Search className="h-4 w-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -51,7 +51,7 @@ export const AvailabilityFilterBar: React.FC<AvailabilityFilterBarProps> = ({
               onResetPage();
             }}
             placeholder="بحث باسم المنتج أو SKU..."
-            className="w-full xl:w-64 pr-9 pl-3 h-9 text-xs sm:text-sm rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-colors"
+            className="w-full xl:w-64 ps-9 pe-3 h-9 text-xs sm:text-sm rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-colors text-start"
           />
         </div>
 
