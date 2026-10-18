@@ -1,9 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardList } from "lucide-react";
-import { PreparationOrderCard } from "./PreparationOrderCard";
-import { PreparationOrdersTable } from "./PreparationOrdersTable";
-import { PreparationPaginationBar } from "./PreparationPaginationBar";
+import PreparationOrderCard from "./PreparationOrderCard";
+import PreparationOrdersTable from "./PreparationOrdersTable";
+import PreparationPaginationBar from "./PreparationPaginationBar";
 import {
   buildProblemHoldDetails,
   buildShortageHoldDetails,

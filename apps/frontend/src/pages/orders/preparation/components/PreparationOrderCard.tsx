@@ -200,4 +200,5 @@ const PreparationOrderCard = ({
   );
 };
 
+export { PreparationOrderCard };
 export default PreparationOrderCard;
