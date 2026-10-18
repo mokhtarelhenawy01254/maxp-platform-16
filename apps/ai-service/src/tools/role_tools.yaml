@@ -81,6 +81,9 @@ roles:
     - shipping_company_toggle
     - shipping_companies_list
     - shipping_ticket_create
+    - affiliate_get_link
+    - affiliates_list
+    - affiliate_settings_read
 
   BROWSER_COPILOT:
     - product_search
@@ -103,6 +106,9 @@ roles:
     - competitor_price_compare
     - session_search
     - agent_handoff_to
+    - affiliate_get_link
+    - affiliates_list
+    - affiliate_settings_read
 
   SUPPORT:
     - product_search
@@ -510,6 +516,9 @@ roles:
     - hr_leaves_list
     - team_monitor_overview
     - employee_monitor_summary
+    - affiliate_get_link
+    - affiliates_list
+    - affiliate_settings_read
 
   HR_ASSISTANT:
     - hr_my_profile
@@ -555,6 +564,9 @@ roles:
     - record_learned_rule
     - manage_agent_skill
     - update_agent_identity
+    - affiliate_get_link
+    - affiliates_list
+    - affiliate_settings_read
 
   AOV_ANALYST:
     - order_summary

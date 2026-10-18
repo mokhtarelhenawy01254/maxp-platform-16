@@ -18,7 +18,13 @@ const uploadAffiliateIdentityDocument = require("../middleware/affiliateIdentity
 const { isProductVisibleToAffiliate } = require("../utils/affiliateProductVisibility");
 
 const canManageAffiliates = (userRole) =>
-  ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN"].includes(userRole);
+  ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "ADMIN"].includes(userRole);
+
+const canViewAffiliates = (user) => {
+  if (!user) return false;
+  if (user.scope === 'ai-bridge' || user.role === 'SERVICE' || user.role === 'AGENT') return true;
+  return ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "ADMIN"].includes(user.role);
+};
 
 const VALID_AFFILIATE_STATUSES = new Set(["PENDING", "ACTIVE", "SUSPENDED"]);
 const VALID_DOCUMENT_REVIEW_STATUSES = new Set([
@@ -1542,10 +1548,40 @@ router.get("/admin/payouts", verifyToken.authenticateToken, async (req, res) => 
 /**
  * قائمة المسوقين (للإدارة)
  */
+router.get("/", verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user.role === "SUPER_ADMIN"
+      ? (req.query.companyId || req.user.companyId)
+      : req.user.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+    }
+
+    if (!canViewAffiliates(req.user)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "ليس لديك صلاحية" });
+    }
+
+    const affiliates = await affiliateService.listAffiliates(companyId);
+    res.json({ success: true, data: affiliates });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get("/list", verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user.companyId;
-    if (!canManageAffiliates(req.user.role)) {
+    const companyId = req.user.role === "SUPER_ADMIN"
+      ? (req.query.companyId || req.user.companyId)
+      : req.user.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+    }
+
+    if (!canViewAffiliates(req.user)) {
       return res
         .status(403)
         .json({ success: false, message: "ليس لديك صلاحية" });

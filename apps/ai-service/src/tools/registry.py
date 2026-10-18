@@ -66,6 +66,7 @@ CORE_TOOL_NAMES: set[str] = {
     "agent_handoff_to",
     "unlock_advanced_tools",
     "knowledge_ask_merchant",
+    "affiliate_get_link",
 }
 
 ADVANCED_TOOL_NAMES: set[str] = {
@@ -105,6 +106,8 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "conversion_tools_read",
     "payment_settings_read",
     "shipping_companies_list",
+    "affiliates_list",
+    "affiliate_settings_read",
     # Target & Inventory monitoring
     "order_target_settings",
     "order_target_progress",

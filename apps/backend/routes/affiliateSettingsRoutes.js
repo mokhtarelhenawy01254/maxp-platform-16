@@ -9,6 +9,12 @@ router.use(verifyToken.authenticateToken);
 const canManageAffiliateSettings = (userRole) =>
     ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(userRole);
 
+const canViewAffiliateSettings = (user) => {
+    if (!user) return false;
+    if (user.scope === 'ai-bridge' || user.role === 'SERVICE' || user.role === 'AGENT') return true;
+    return ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(user.role);
+};
+
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_PLATFORM_MARGIN_TYPES = new Set(['FIXED', 'PERCENTAGE']);
 const VALID_COMMISSION_TRIGGER_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED', 'PROCESSING', 'SHIPPED', 'PAID']);
@@ -119,7 +125,7 @@ const ensureAffiliateRequiredApps = async (prisma, companyId, isActive) => {
  */
 router.get('/', async (req, res) => {
     try {
-        if (!canManageAffiliateSettings(req.user?.role)) {
+        if (!canViewAffiliateSettings(req.user)) {
             return res.status(403).json({
                 success: false,
                 message: 'ليس لديك صلاحية لإدارة إعدادات برنامج المسوقين'

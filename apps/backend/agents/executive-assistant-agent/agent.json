@@ -102,7 +102,10 @@
     "order_confirm",
     "order_cancel",
     "order_update_details",
-    "shipping_ticket_create"
+    "shipping_ticket_create",
+    "affiliate_get_link",
+    "affiliates_list",
+    "affiliate_settings_read"
   ],
   "allowedSkills": [
     "read-company-state",
