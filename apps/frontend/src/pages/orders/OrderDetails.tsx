@@ -33,6 +33,10 @@ import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations
 import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
 import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
 import { useOrderShippingActions } from "./hooks/useOrderShippingActions";
+import {
+  isCancellationStatus,
+  useOrderStatusOperations,
+} from "./hooks/useOrderStatusOperations";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
@@ -44,7 +48,6 @@ import {
 import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { apiClient } from "../../services/apiClient";
-import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import tokenManager from "../../utils/tokenManager";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
@@ -55,10 +58,7 @@ import {
   normalizeCompanyAppSlug,
 } from "../../utils/companyApps";
 
-const isCancellationStatus = (status?: string | null) => {
-  const normalizedStatus = String(status || "").trim().toUpperCase();
-  return normalizedStatus === "CANCELLED" || normalizedStatus === "CANCELED";
-};
+export { isCancellationStatus };
 
 const getLatestCancellationReason = (
   order?: OrderDetailsType | null,
@@ -170,27 +170,11 @@ const OrderDetails: React.FC = () => {
   }, [openInEditMode, order, isEditing, setIsEditing]);
 
   // Local UI State (Modals)
-  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  // Temporary Form State for Modals
-  const [newStatus, setNewStatus] = useState("");
-  const [statusNotes, setStatusNotes] = useState("");
-  const [returnReason, setReturnReason] = useState("");
-  const [returnAdditionalNotes, setReturnAdditionalNotes] = useState("");
-  const [isOverride, setIsOverride] = useState(false);
-  const [cancellationReasonOptions, setCancellationReasonOptions] = useState<
-    CancellationReason[]
-  >([]);
-  const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
-    useState(false);
-  const [cancellationAdditionalNotes, setCancellationAdditionalNotes] = useState("");
-
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
-  const isModalCancellationStatus = isCancellationStatus(newStatus);
-  const isModalReturnStatus = isReturnStatusCode(newStatus);
   const latestCancellationReason = useMemo(
     () => getLatestCancellationReason(order),
     [order],
@@ -212,6 +196,32 @@ const OrderDetails: React.FC = () => {
     isMerchant && merchantFulfillmentSource === "MERCHANT";
   const canEditOrderDetails = true;
   const canUpdateOrderStatus = !isMerchant || isMerchantSelfFulfilledOrder;
+  const {
+    showStatusModal,
+    setShowStatusModal,
+    newStatus,
+    setNewStatus,
+    statusNotes,
+    setStatusNotes,
+    returnReason,
+    setReturnReason,
+    returnAdditionalNotes,
+    setReturnAdditionalNotes,
+    isOverride,
+    setIsOverride,
+    cancellationReasonOptions,
+    cancellationReasonOptionsLoading,
+    cancellationAdditionalNotes,
+    setCancellationAdditionalNotes,
+    isModalCancellationStatus,
+    isModalReturnStatus,
+    onUpdateStatus,
+    handleQuickStatusSelect,
+  } = useOrderStatusOperations({
+    order,
+    canUpdateOrderStatus,
+    updateStatus,
+  });
   const {
     canUpdatePaymentStatus,
     newPaymentStatus,
@@ -437,66 +447,7 @@ const OrderDetails: React.FC = () => {
     }
   };
 
-  const onUpdateStatus = async () => {
-    const trimmedReason = statusNotes.trim();
-    if (isCancellationStatus(newStatus) && !trimmedReason) return;
-    if (isModalReturnStatus && !returnReason.trim() && !trimmedReason) return;
 
-    let notesToSend = statusNotes.trim();
-    if (isCancellationStatus(newStatus)) {
-      notesToSend = cancellationAdditionalNotes.trim()
-        ? trimmedReason + '\n' + cancellationAdditionalNotes.trim()
-        : trimmedReason;
-    } else if (isModalReturnStatus) {
-      const primary = returnReason.trim() && returnReason !== "other" ? returnReason.trim() : trimmedReason;
-      notesToSend = returnAdditionalNotes.trim()
-        ? primary + (primary ? '\n' : '') + returnAdditionalNotes.trim()
-        : primary;
-    }
-
-    const success = await updateStatus(newStatus, notesToSend, isOverride);
-    if (success) {
-      setShowStatusModal(false);
-      setNewStatus("");
-      setStatusNotes("");
-      setReturnReason("");
-      setReturnAdditionalNotes("");
-      setCancellationAdditionalNotes("");
-      setIsOverride(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!showStatusModal || !isModalCancellationStatus) {
-      return;
-    }
-
-    let isMounted = true;
-    setCancellationReasonOptionsLoading(true);
-
-    void cancellationService
-      .getReasons()
-      .then((res) => {
-        if (isMounted) {
-          setCancellationReasonOptions(res.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to load cancellation reasons:", error);
-        if (isMounted) {
-          setCancellationReasonOptions([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setCancellationReasonOptionsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [showStatusModal, isModalCancellationStatus]);
 
   const {
     showPostponeModal,
@@ -514,33 +465,7 @@ const OrderDetails: React.FC = () => {
     t,
   });
 
-  const handleQuickStatusSelect = async (statusCode: string) => {
-    if (!canUpdateOrderStatus) return;
-    const normalizedStatusCode = statusCode.toUpperCase();
-    if (
-      !order ||
-      !normalizedStatusCode ||
-      normalizedStatusCode === (order.status || "").toUpperCase()
-    )
-      return;
 
-    if (isCancellationStatus(normalizedStatusCode) || isReturnStatusCode(normalizedStatusCode)) {
-      setNewStatus(normalizedStatusCode);
-      setStatusNotes("");
-      setReturnReason("");
-      setReturnAdditionalNotes("");
-      setShowStatusModal(true);
-      return;
-    }
-
-    const success = await updateStatus(normalizedStatusCode, "", isOverride);
-    if (success) {
-      setNewStatus("");
-      setStatusNotes("");
-      setReturnReason("");
-      setReturnAdditionalNotes("");
-    }
-  };
 
   const {
     handleProductSelect,
