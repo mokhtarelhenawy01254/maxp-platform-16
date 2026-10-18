@@ -261,30 +261,84 @@ async function syncTurboStatusToOrder({
       }
     }
 
-    await safeQuery(() => prisma.guestOrder.update({
-      where: { id: existingGuestOrder.id },
-      data: updateData
-    }), 3);
+    await safeQuery(async () => {
+      return prisma.$transaction(async (tx) => {
+        const updatedGuest = await tx.guestOrder.update({
+          where: { id: existingGuestOrder.id },
+          data: updateData
+        });
 
-    // 🛡️ Sync to twin regular order if exists
-    if (existingGuestOrder.orderNumber) {
-      await safeQuery(() => prisma.order.updateMany({
-        where: { orderNumber: existingGuestOrder.orderNumber, companyId: existingGuestOrder.companyId },
-        data: {
-          turboShipmentStatus: canonicalTurboStatus,
-          turboMetadata: JSON.stringify(updatedMetadata),
-          turboCaptainName: updateData.turboCaptainName,
-          turboCaptainPhone: updateData.turboCaptainPhone,
-          turboBranchName: updateData.turboBranchName,
-          turboBranchPhone: updateData.turboBranchPhone,
-          turboDelayReason: updateData.turboDelayReason,
-          turboReturnReason: updateData.turboReturnReason,
-          turboExpectedBranch: updateData.turboExpectedBranch,
-          ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
-          ...(updateData.status ? { status: updateData.status } : {})
+        let linkedOrderId = null;
+        if (existingGuestOrder.orderNumber) {
+          const twin = await tx.order.findFirst({
+            where: { orderNumber: existingGuestOrder.orderNumber, companyId: existingGuestOrder.companyId },
+            select: { id: true }
+          });
+          if (twin) {
+            linkedOrderId = twin.id;
+            await tx.order.update({
+              where: { id: twin.id },
+              data: {
+                turboShipmentStatus: canonicalTurboStatus,
+                turboMetadata: JSON.stringify(updatedMetadata),
+                turboCaptainName: updateData.turboCaptainName,
+                turboCaptainPhone: updateData.turboCaptainPhone,
+                turboBranchName: updateData.turboBranchName,
+                turboBranchPhone: updateData.turboBranchPhone,
+                turboDelayReason: updateData.turboDelayReason,
+                turboReturnReason: updateData.turboReturnReason,
+                turboExpectedBranch: updateData.turboExpectedBranch,
+                ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
+                ...(updateData.status ? { status: updateData.status } : {})
+              }
+            });
+          }
         }
-      }), 3).catch(e => console.warn('⚠️ [TURBO-SYNC] Order twin sync warning:', e.message));
-    }
+
+        const trackingToSet = updateData.turboTrackingNumber || existingGuestOrder.turboTrackingNumber || null;
+        const shipmentIdToSet = updateData.turboShipmentId || existingGuestOrder.turboShipmentId || null;
+
+        if (linkedOrderId || trackingToSet || shipmentIdToSet) {
+          const existingShipment = await tx.shipment.findFirst({
+            where: {
+              companyId: existingGuestOrder.companyId,
+              OR: [
+                ...(linkedOrderId ? [{ orderId: linkedOrderId }] : []),
+                ...(trackingToSet ? [{ trackingNumber: String(trackingToSet) }] : []),
+                ...(shipmentIdToSet ? [{ externalShipmentId: String(shipmentIdToSet) }] : []),
+              ],
+            },
+            select: { id: true, metadata: true }
+          });
+
+          if (existingShipment) {
+            let mergedShipmentMeta = {};
+            try {
+              if (existingShipment.metadata) {
+                mergedShipmentMeta = typeof existingShipment.metadata === 'object'
+                  ? existingShipment.metadata
+                  : JSON.parse(existingShipment.metadata);
+              }
+            } catch (_) {}
+            mergedShipmentMeta = { ...mergedShipmentMeta, ...updatedMetadata };
+
+            await tx.shipment.update({
+              where: { id: existingShipment.id },
+              data: {
+                ...(linkedOrderId ? { orderId: linkedOrderId } : {}),
+                status: canonicalTurboStatus,
+                ...(trackingToSet ? { trackingNumber: String(trackingToSet) } : {}),
+                ...(shipmentIdToSet ? { externalShipmentId: String(shipmentIdToSet) } : {}),
+                metadata: JSON.stringify(mergedShipmentMeta),
+                updatedAt: new Date()
+              }
+            });
+          }
+        }
+
+        return updatedGuest;
+      });
+    }, 3);
 
     // Emit Socket.IO
     emitSocketEvent(existingGuestOrder.companyId, {
@@ -488,38 +542,109 @@ async function syncTurboStatusToOrder({
     }
   }
 
-  await safeQuery(() => prisma.order.update({
-    where: { id: existingOrder.id },
-    data: {
-      ...updateData,
-      // 🛡️ PRODUCTION-FIX (custom-status-persist): المسار الاحتياطي المباشر لما
-      // يغيّر status (بعد فشل مسار orderService) لازم يمسح أي كود مخصص قديم —
-      // وإلا الطلب هيفضل يعرض الحالة المخصصة الميتة بعد ما الحالة الفعلية اتغيرت.
-      ...(updateData.status && updateData.status !== existingOrder.status
-        ? { customStatusCode: null }
-        : {}),
-    }
-  }), 3);
+  await safeQuery(async () => {
+    return prisma.$transaction(async (tx) => {
+      // 1. Update Order
+      const updatedOrder = await tx.order.update({
+        where: { id: existingOrder.id },
+        data: {
+          ...updateData,
+          // 🛡️ PRODUCTION-FIX (custom-status-persist): المسار الاحتياطي المباشر لما
+          // يغيّر status (بعد فشل مسار orderService) لازم يمسح أي كود مخصص قديم —
+          // وإلا الطلب هيفضل يعرض الحالة المخصصة الميتة بعد ما الحالة الفعلية اتغيرت.
+          ...(updateData.status && updateData.status !== existingOrder.status
+            ? { customStatusCode: null }
+            : {}),
+        }
+      });
 
-  // 🛡️ Sync to twin guest order if exists
-  if (existingOrder.orderNumber) {
-    await safeQuery(() => prisma.guestOrder.updateMany({
-      where: { orderNumber: existingOrder.orderNumber, companyId: existingOrder.companyId },
-      data: {
-        turboShipmentStatus: canonicalTurboStatus,
-        turboMetadata: JSON.stringify(turboMetaObj),
-        turboCaptainName: updateData.turboCaptainName,
-        turboCaptainPhone: updateData.turboCaptainPhone,
-        turboBranchName: updateData.turboBranchName,
-        turboBranchPhone: updateData.turboBranchPhone,
-        turboDelayReason: updateData.turboDelayReason,
-        turboReturnReason: updateData.turboReturnReason,
-        turboExpectedBranch: updateData.turboExpectedBranch,
-        ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
-        ...(updateData.status ? { status: updateData.status } : {})
+      // 2. Dual-Table Sync: Update or Create Shipment in same transaction
+      const trackingToSet = updateData.turboTrackingNumber || existingOrder.turboTrackingNumber || null;
+      const shipmentIdToSet = updateData.turboShipmentId || existingOrder.turboShipmentId || null;
+
+      const existingShipment = await tx.shipment.findFirst({
+        where: {
+          companyId: existingOrder.companyId,
+          OR: [
+            { orderId: existingOrder.id },
+            ...(trackingToSet ? [{ trackingNumber: String(trackingToSet) }] : []),
+            ...(shipmentIdToSet ? [{ externalShipmentId: String(shipmentIdToSet) }] : []),
+          ],
+        },
+        select: { id: true, metadata: true }
+      });
+
+      if (existingShipment) {
+        let mergedShipmentMeta = {};
+        try {
+          if (existingShipment.metadata) {
+            mergedShipmentMeta = typeof existingShipment.metadata === 'object'
+              ? existingShipment.metadata
+              : JSON.parse(existingShipment.metadata);
+          }
+        } catch (_) {}
+        mergedShipmentMeta = { ...mergedShipmentMeta, ...turboMetaObj };
+
+        await tx.shipment.update({
+          where: { id: existingShipment.id },
+          data: {
+            orderId: existingOrder.id,
+            status: canonicalTurboStatus,
+            ...(trackingToSet ? { trackingNumber: String(trackingToSet) } : {}),
+            ...(shipmentIdToSet ? { externalShipmentId: String(shipmentIdToSet) } : {}),
+            metadata: JSON.stringify(mergedShipmentMeta),
+            updatedAt: new Date()
+          }
+        });
+      } else if (trackingToSet || shipmentIdToSet) {
+        const turboCarrier = await tx.shippingCompany.findFirst({
+          where: { companyId: existingOrder.companyId, providerKey: 'TURBO' },
+          select: { id: true }
+        });
+
+        await tx.shipment.create({
+          data: {
+            companyId: existingOrder.companyId,
+            orderId: existingOrder.id,
+            shippingCompanyId: turboCarrier?.id || null,
+            carrierType: 'TURBO',
+            status: canonicalTurboStatus,
+            trackingNumber: trackingToSet ? String(trackingToSet) : null,
+            externalShipmentId: shipmentIdToSet ? String(shipmentIdToSet) : null,
+            destinationGovernorate: existingOrder.governorate || null,
+            destinationCity: existingOrder.city || null,
+            destinationAddress: existingOrder.customerAddress || existingOrder.shippingAddress || null,
+            cost: existingOrder.shipping !== null && existingOrder.shipping !== undefined ? Number(existingOrder.shipping) : null,
+            currency: existingOrder.currency || 'EGP',
+            metadata: JSON.stringify(turboMetaObj),
+            createdAt: existingOrder.createdAt || new Date()
+          }
+        });
       }
-    }), 3).catch(e => console.warn('⚠️ [TURBO-SYNC] Guest twin sync warning:', e.message));
-  }
+
+      // 3. Sync to twin guest order if exists
+      if (existingOrder.orderNumber) {
+        await tx.guestOrder.updateMany({
+          where: { orderNumber: existingOrder.orderNumber, companyId: existingOrder.companyId },
+          data: {
+            turboShipmentStatus: canonicalTurboStatus,
+            turboMetadata: JSON.stringify(turboMetaObj),
+            turboCaptainName: updateData.turboCaptainName,
+            turboCaptainPhone: updateData.turboCaptainPhone,
+            turboBranchName: updateData.turboBranchName,
+            turboBranchPhone: updateData.turboBranchPhone,
+            turboDelayReason: updateData.turboDelayReason,
+            turboReturnReason: updateData.turboReturnReason,
+            turboExpectedBranch: updateData.turboExpectedBranch,
+            ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
+            ...(updateData.status ? { status: updateData.status } : {})
+          }
+        }).catch(e => console.warn('⚠️ [TURBO-SYNC] Guest twin sync warning:', e.message));
+      }
+
+      return updatedOrder;
+    });
+  }, 3);
 
   console.log(`✅ [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
 

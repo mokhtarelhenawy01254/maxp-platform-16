@@ -77,7 +77,8 @@ const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; color
 
 /** Map any raw turbo alias → canonical code */
 const TURBO_ALIASES: Record<string, string> = {
-  '1': 'turbo_saved', 'created': 'turbo_saved', 'turbo_saved': 'turbo_saved', 'status_1': 'turbo_saved',
+  '1': 'turbo_sent', 'status_1': 'turbo_sent', 'booked': 'turbo_sent',
+  'created': 'turbo_saved', 'turbo_saved': 'turbo_saved',
   '2': 'turbo_sent', 'sent': 'turbo_sent', 'turbo_sent': 'turbo_sent', 'status_2': 'turbo_sent', 'waiting': 'turbo_sent', 'pending': 'turbo_sent', 'قيد الانتظار': 'turbo_sent', 'انتظار': 'turbo_sent', 'بانتظار الاستلام': 'turbo_sent',
   '3': 'processing', 'processing': 'processing', 'underway': 'processing', 'accepted': 'processing', 'status_3': 'processing', 'preparing': 'processing', 'قيد التنفيذ': 'processing', 'تنفيذ': 'processing', 'قيد التنفيذ بالفرع': 'processing',
   '4': 'out_for_delivery', 'out_for_delivery': 'out_for_delivery', 'under delivery': 'out_for_delivery',

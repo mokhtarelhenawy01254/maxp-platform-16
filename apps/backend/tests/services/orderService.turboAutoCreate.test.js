@@ -1,27 +1,41 @@
+const mockFormatOrderForTurbo = jest.fn().mockReturnValue({ orderNumber: 'ORD-123' });
+const mockCreateShipment = jest.fn().mockResolvedValue({
+  success: true,
+  shipmentId: 'TURBO-SHP-001',
+  trackingNumber: 'TRK-998877',
+  status: 'turbo_sent',
+  labelUrl: 'https://turbo-eg.com/label/001',
+  data: { code: 'TURBO-SHP-001', bar_code: 'TRK-998877' }
+});
+
+const mockTurboInstance = {
+  createShipment: mockCreateShipment,
+  formatOrderForTurbo: mockFormatOrderForTurbo,
+  translateTurboErrorToArabic: jest.fn(msg => msg)
+};
+
+jest.mock('../../services/turboService', () => {
+  return jest.fn().mockImplementation(() => mockTurboInstance);
+});
+
 const orderService = require('../../services/orderService');
 const TurboService = require('../../services/turboService');
 
-jest.mock('../../services/turboService');
-
 describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
   let mockPrisma;
-  let mockTurboInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockTurboInstance = {
-      formatOrderForTurbo: jest.fn().mockReturnValue({ orderNumber: 'ORD-123' }),
-      createShipment: jest.fn().mockResolvedValue({
-        success: true,
-        shipmentId: 'TURBO-SHP-001',
-        trackingNumber: 'TRK-998877',
-        status: 'created',
-        labelUrl: 'https://turbo-eg.com/label/001',
-        data: { code: 'TURBO-SHP-001', bar_code: 'TRK-998877' }
-      })
-    };
-    TurboService.mockImplementation(() => mockTurboInstance);
+    mockFormatOrderForTurbo.mockReturnValue({ orderNumber: 'ORD-123' });
+    mockCreateShipment.mockResolvedValue({
+      success: true,
+      shipmentId: 'TURBO-SHP-001',
+      trackingNumber: 'TRK-998877',
+      status: 'turbo_sent',
+      labelUrl: 'https://turbo-eg.com/label/001',
+      data: { code: 'TURBO-SHP-001', bar_code: 'TRK-998877' }
+    });
 
     mockPrisma = {
       order: {
@@ -195,7 +209,7 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
           data: expect.objectContaining({
             turboShipmentId: 'TURBO-SHP-001',
             turboTrackingNumber: 'TRK-998877',
-            turboShipmentStatus: 'created',
+            turboShipmentStatus: 'turbo_sent',
             turboLabelUrl: 'https://turbo-eg.com/label/001'
           })
         })

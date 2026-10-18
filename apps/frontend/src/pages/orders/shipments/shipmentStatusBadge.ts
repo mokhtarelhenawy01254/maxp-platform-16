@@ -11,16 +11,25 @@ export interface ShipmentStatusBadgeResult {
 export function getShipmentStatusBadge(status: string, shipment?: ShipmentRowItem): ShipmentStatusBadgeResult {
   const s = String(shipment?.order?.turboShipmentStatus || status || "").toLowerCase().trim();
 
-  if (["incomplete", "turbo_saved", "created", "status_1", "status_18", "1", "18"].includes(s)) {
+  if (["incomplete", "status_18", "status_99", "18", "99"].includes(s) || s.includes("غير مكتمل")) {
     return {
       label: "غير مكتملة",
       className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
     };
   }
-  if (["turbo_sent", "sent", "waiting", "pending", "status_2", "2"].includes(s) || s.includes("انتظار")) {
+  if (
+    ["turbo_sent", "sent", "waiting", "pending", "status_1", "status_2", "1", "2", "booked"].includes(s) ||
+    s.includes("انتظار") || s.includes("بانتظار")
+  ) {
     return {
       label: "قيد الإنتظار",
       className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20",
+    };
+  }
+  if (["turbo_saved", "created", "draft"].includes(s)) {
+    return {
+      label: "مسودة محلية",
+      className: "bg-slate-500/10 text-slate-700 dark:text-slate-400 border border-slate-500/20",
     };
   }
   if (["processing", "underway", "accepted", "status_3", "3"].includes(s) || s.includes("تنفيذ")) {

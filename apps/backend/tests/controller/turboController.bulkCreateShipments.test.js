@@ -35,6 +35,7 @@ jest.mock('../../services/turboService', () => {
 jest.mock('../../services/orderService', () => ({
   updateOrderStatus: jest.fn(),
   updateGuestOrderStatus: jest.fn(),
+  checkDuplicateActiveTurboShipment: jest.fn().mockResolvedValue(null),
 }));
 
 const turboController = require('../../controller/turboController');

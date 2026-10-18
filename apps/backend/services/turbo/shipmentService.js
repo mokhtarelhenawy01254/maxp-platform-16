@@ -230,7 +230,7 @@ class ShipmentService {
       if (!shipment.code && !shipment.bar_code) throw new Error('Invalid response from Turbo API: missing code or bar_code');
       const trackingNumber = shipment.bar_code || shipment.code;
 
-      return { success: true, shipmentId: shipment.code || shipment.bar_code, trackingNumber, labelUrl: null, status: 'created', estimatedDelivery: shipment.expected_branch || null, cost: null, data: shipment };
+      return { success: true, shipmentId: shipment.code || shipment.bar_code, trackingNumber, labelUrl: null, status: 'turbo_sent', estimatedDelivery: shipment.expected_branch || null, cost: null, data: shipment };
     } catch (error) {
       handleError(error, 'Create Shipment');
     }

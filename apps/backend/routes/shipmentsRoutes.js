@@ -7,6 +7,7 @@ const TurboService = require('../services/turboService');
 const BostaService = require('../services/bostaService');
 const QpExpressService = require('../services/qpExpressService');
 const { STATUS_FILTER_ALIASES } = require('../utils/turbo/constants');
+const { classifyCarrierShipmentStage } = require('../utils/statusNormalizer');
 
 // 🛡️ Courier mobile share-link tokens are scoped to the internal fleet module (/api/v1/couriers).
 // They must never reach external-carrier operations: creating, cancelling, or syncing shipments
@@ -111,9 +112,6 @@ router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (r
       dateFrom,
       dateTo,
     } = req.query;
-
-    // Background sync of Turbo orders to ensure UnifiedShipments reflects them
-    await syncTurboOrdersToShipments(prisma, companyId);
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
@@ -339,24 +337,7 @@ router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (r
       cancelled: 0,
     };
 
-    const classifyShipmentStage = (rawStatus, turboStatus) => {
-      const s = String(turboStatus || rawStatus || '').toLowerCase().trim();
-      if (!s) return 'incomplete';
-      if (['incomplete', 'turbo_saved', 'created', 'status_1', 'status_18', '1', '18'].includes(s) || s.includes('غير مكتمل')) return 'incomplete';
-      if (['turbo_sent', 'sent', 'waiting', 'pending', 'status_2', '2'].includes(s) || s.includes('انتظار') || s.includes('بانتظار')) return 'turbo_sent';
-      if (['processing', 'underway', 'accepted', 'status_3', '3', 'preparing'].includes(s) || s.includes('تنفيذ')) return 'processing';
-      if (['out_for_delivery', 'under delivery', 'with captain', 'in transit', 'shipped', 'delivering', 'status_4', '4'].includes(s) || s.includes('مسلمة للمندوب') || s.includes('توصيل') || s.includes('شحن')) return 'out_for_delivery';
-      if (['delayed', 'on hold', 'on_hold', 'status_13', '13'].includes(s) || s.includes('مؤجل')) return 'delayed';
-      if (['delivered', 'completed', 'status_7', '7'].includes(s) || s.includes('تسليم')) return 'delivered';
-      if (['returned_to_company', 'returned with company', 'returned', 'status_5', 'status_14', '5', '14'].includes(s) || (s.includes('مرتجع') && !s.includes('وصلتني') && !s.includes('معدوم') && !s.includes('مفقود') && !s.includes('ارسال') && !s.includes('عميل'))) return 'returned_to_company';
-      if (['returned_destroyed', 'status_12', 'status_17', '12', '17'].includes(s) || s.includes('معدوم')) return 'returned_destroyed';
-      if (['returned_missing', 'lost', 'status_11', 'status_16', '11', '16'].includes(s) || s.includes('مفقود')) return 'returned_missing';
-      if (['returned_resent', 'status_10', 'status_15', '10', '15'].includes(s) || s.includes('ارسال') || s.includes('إرسال')) return 'returned_resent';
-      if (['remitted', 'supplied', 'status_8', 'status_19', '8', '19'].includes(s) || s.includes('توريد')) return 'remitted';
-      if (['returned_received', 'status_20', '20'].includes(s) || s.includes('وصلتني')) return 'returned_received';
-      if (['cancelled', 'canceled', 'status_6', '6'].includes(s) || s.includes('ملغي')) return 'cancelled';
-      return 'incomplete';
-    };
+    const classifyShipmentStage = (rawStatus, turboStatus) => classifyCarrierShipmentStage(rawStatus, turboStatus);
 
     allCarrierShipments.forEach((item) => {
       const stage = classifyShipmentStage(item.status, item.order?.turboShipmentStatus);

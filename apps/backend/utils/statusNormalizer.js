@@ -8,6 +8,7 @@ const CANONICAL_TURBO_MAP = {
   // Saved locally / Created (تجهيز التاجر) — لم يُسلَّم لتربو بعد
   'created': 'turbo_saved',
   'turbo_saved': 'turbo_saved',
+  'booked': 'turbo_sent',
 
   // Turbo status_code 1 = "قيد الانتظار" (البوليصة حُجِزت وبانتظار استلام المندوب).
   // PRODUCTION-FIX (turbo-code1-unify): كان بين,map لـ turbo_saved بينما النص العربي
@@ -255,11 +256,108 @@ const TURBO_STATUS_DEFINITIONS = {
   archived: { labelAr: 'مؤرشفة', labelEn: 'Archived' }
 };
 
+/**
+ * 🎯 Unified Carrier Shipment Stage Classifier
+ * Classifies any shipment status string or Turbo status into one of the 13 canonical operational carrier stages.
+ * Guaranteed consistent across UI filters, shipment statements, and stage metrics cards.
+ *
+ * @param {string|null} rawStatus - Shipment status (e.g. from prisma.shipment.status)
+ * @param {string|null} [turboStatus] - Order Turbo shipment status (from order.turboShipmentStatus)
+ * @returns {string} One of: incomplete, turbo_sent, processing, out_for_delivery, delayed,
+ *                   delivered, returned_to_company, returned_destroyed, returned_missing,
+ *                   returned_resent, remitted, returned_received, cancelled
+ */
+const classifyCarrierShipmentStage = (rawStatus, turboStatus = null) => {
+  const s = String(turboStatus || rawStatus || '').toLowerCase().trim();
+  if (!s) return 'incomplete';
+
+  // Specific incomplete codes
+  if (['incomplete', 'status_18', 'status_99', '18', '99'].includes(s) || s.includes('غير مكتمل')) {
+    return 'incomplete';
+  }
+
+  // Waiting / Sent to carrier (Code 1, Code 2, turbo_sent, booked)
+  if (
+    ['turbo_sent', 'sent', 'waiting', 'pending', 'status_1', 'status_2', '1', '2', 'booked'].includes(s) ||
+    s.includes('انتظار') || s.includes('بانتظار') || s.includes('التسليم لتربو')
+  ) {
+    return 'turbo_sent';
+  }
+
+  // Branch Processing (Code 3)
+  if (
+    ['processing', 'underway', 'accepted', 'status_3', '3', 'preparing'].includes(s) ||
+    s.includes('تنفيذ') || s.includes('المقبوله')
+  ) {
+    return 'processing';
+  }
+
+  // Out for delivery / With Courier (Code 4)
+  if (
+    ['out_for_delivery', 'under delivery', 'with captain', 'in transit', 'shipped', 'delivering', 'status_4', '4'].includes(s) ||
+    s.includes('مسلمة للمندوب') || s.includes('توصيل') || s.includes('في الطريق')
+  ) {
+    return 'out_for_delivery';
+  }
+
+  // Delayed / On Hold (Code 13)
+  if (
+    ['delayed', 'on hold', 'on_hold', 'status_13', '13'].includes(s) ||
+    s.includes('مؤجل') || s.includes('تأجيل') || s.includes('معلق')
+  ) {
+    return 'delayed';
+  }
+
+  // Delivered (Code 7)
+  if (
+    ['delivered', 'completed', 'status_7', '7'].includes(s) ||
+    s.includes('تسليم') || s.includes('استلام')
+  ) {
+    return 'delivered';
+  }
+
+  // Returned - Subtypes
+  if (['returned_destroyed', 'status_12', 'status_17', '12', '17'].includes(s) || s.includes('معدوم') || s.includes('تالف')) {
+    return 'returned_destroyed';
+  }
+  if (['returned_missing', 'lost', 'status_11', 'status_16', '11', '16'].includes(s) || s.includes('مفقود') || s.includes('ضائع')) {
+    return 'returned_missing';
+  }
+  if (['returned_resent', 'status_10', 'status_15', '10', '15'].includes(s) || s.includes('ارسال') || s.includes('إرسال')) {
+    return 'returned_resent';
+  }
+  if (['remitted', 'supplied', 'status_8', 'status_19', '8', '19'].includes(s) || s.includes('توريد') || s.includes('تحصيل')) {
+    return 'remitted';
+  }
+  if (['returned_received', 'status_20', '20'].includes(s) || s.includes('وصلتني')) {
+    return 'returned_received';
+  }
+  if (
+    ['returned_to_company', 'returned with company', 'returned', 'status_5', 'status_14', '5', '14', 'returned_to_customer'].includes(s) ||
+    s.includes('مرتجع') || s.includes('راجع')
+  ) {
+    return 'returned_to_company';
+  }
+
+  // Cancelled (Code 6)
+  if (['cancelled', 'canceled', 'status_6', '6'].includes(s) || s.includes('ملغي') || s.includes('إلغاء')) {
+    return 'cancelled';
+  }
+
+  // Local drafts (created / turbo_saved) with tracking are waiting pickup
+  if (['turbo_saved', 'created', 'draft'].includes(s)) {
+    return 'turbo_sent';
+  }
+
+  return 'turbo_sent';
+};
+
 module.exports = {
   CANONICAL_TURBO_MAP,
   SYSTEM_STATUS_MAPPING,
   TURBO_STATUS_DEFINITIONS,
   normalizeTurboStatus,
   getSystemStatusFromTurbo,
-  getSystemStatusFromTurboWithCustomMapping
+  getSystemStatusFromTurboWithCustomMapping,
+  classifyCarrierShipmentStage
 };

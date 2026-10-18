@@ -72,7 +72,7 @@ describe('ShipmentService', () => {
       expect(result.success).toBe(true);
       expect(result.shipmentId).toBe('TURBO-001');
       expect(result.trackingNumber).toBe('BAR-001');
-      expect(result.status).toBe('created');
+      expect(result.status).toBe('turbo_sent');
     });
 
     test('sends correct payload to /add-order', async () => {

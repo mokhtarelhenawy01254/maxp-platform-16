@@ -3136,7 +3136,7 @@ class OrderService {
       if (shipmentResult && shipmentResult.success && (shipmentResult.shipmentId || shipmentResult.trackingNumber)) {
         const shipmentId = String(shipmentResult.shipmentId || '');
         const trackingNumber = String(shipmentResult.trackingNumber || '');
-        const shipmentStatus = shipmentResult.status || 'created';
+        const shipmentStatus = shipmentResult.status || 'turbo_sent';
         const labelUrl = shipmentResult.labelUrl || null;
         const serializedMeta = serializeTurboMetadata(order.turboMetadata, shipmentResult.data);
         const cleanMeta = clearShippingErrorFromMetadata(order.metadata);
@@ -3359,7 +3359,7 @@ class OrderService {
       if (result && result.success && (result.shipmentId || result.trackingNumber)) {
         const shipmentId = String(result.shipmentId || '');
         const trackingNumber = String(result.trackingNumber || '');
-        const shipmentStatus = result.status || 'created';
+        const shipmentStatus = result.status || 'turbo_sent';
         const labelUrl = result.labelUrl || null;
         const serializedMeta = serializeTurboMetadata(guest.turboMetadata, result.data);
         const cleanMeta = clearShippingErrorFromMetadata(guest.metadata);

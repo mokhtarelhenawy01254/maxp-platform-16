@@ -12,11 +12,13 @@ const { addTurboWebhook } = require('../services/turboWebhookQueue');
  * POST /api/turbo/webhook
  * استقبال webhooks من Turbo
  */
-router.post('/webhook', async (req, res) => {
+router.post(['/webhook', '/'], async (req, res) => {
   try {
     const webhookData = req.body;
-    const authHeader = req.headers.authorization || req.headers['authorization'] || req.headers['Authorization'];
-    const webhookToken = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : null;
+    const authHeader = req.headers.authorization || req.headers['authorization'] || req.headers['Authorization'] || req.headers['x-webhook-token'];
+    const webhookToken = authHeader
+      ? authHeader.replace(/^Bearer\s+/i, '').trim()
+      : (req.query.token || req.query.secret || null);
     
     console.log('📨 [TURBO-WEBHOOK] Received webhook:', JSON.stringify(webhookData, null, 2));
     console.log('🔑 [TURBO-WEBHOOK] Webhook token:', webhookToken ? `Token: ${webhookToken.substring(0, 4)}...` : 'No token');
@@ -98,7 +100,13 @@ router.post('/webhook', async (req, res) => {
         console.warn(`⚠️ [TURBO-WEBHOOK] Token ${webhookToken} not directly matched to company, will search order globally`);
       }
     } else {
-      console.log('ℹ️ [TURBO-WEBHOOK] No token provided, will search in all companies');
+      console.log('ℹ️ [TURBO-WEBHOOK] No token provided with webhook');
+    }
+
+    // Security Gate: Reject untrusted payloads that match neither an existing tenant order nor a valid company token
+    if (!matchedOrder && !companyId) {
+      console.warn(`🔒 [TURBO-WEBHOOK] Dropping untrusted webhook for order "${searchOrderNumber}": no matching order and no valid tenant token.`);
+      return;
     }
 
     console.log(`📦 [TURBO-WEBHOOK] Processing webhook for order: ${searchOrderNumber}, Turbo order: ${turboOrderNumber}, Status: ${statusCode}`);

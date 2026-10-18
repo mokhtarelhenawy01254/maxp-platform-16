@@ -285,7 +285,7 @@ const updateShipmentFromProviderResult = async (prisma, shipment, provider, resu
             ? {
                 turboTrackingNumber: String(finalTrackingNumber),
                 turboShipmentId: result.externalShipmentId || result.shipmentId || shipment.externalShipmentId || null,
-                turboShipmentStatus: 'created',
+                turboShipmentStatus: 'turbo_sent',
               }
             : {}),
           statusHistory: {
