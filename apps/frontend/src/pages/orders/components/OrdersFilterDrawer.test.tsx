@@ -96,9 +96,17 @@ describe("OrdersFilterDrawer", () => {
   it("triggers onFilterChange when unseen toggle is clicked", () => {
     const onFilterChange = jest.fn();
     render(<OrdersFilterDrawer {...makeDrawerProps({ onFilterChange })} />);
-    const switchBtn = screen.getByRole("switch");
-    fireEvent.click(switchBtn);
+    const switches = screen.getAllByRole("switch");
+    fireEvent.click(switches[0]);
     expect(onFilterChange).toHaveBeenCalledWith("onlyUnseen", true);
+  });
+
+  it("triggers onFilterChange when post-purchase offer toggle is clicked", () => {
+    const onFilterChange = jest.fn();
+    render(<OrdersFilterDrawer {...makeDrawerProps({ onFilterChange })} />);
+    const switches = screen.getAllByRole("switch");
+    fireEvent.click(switches[1]);
+    expect(onFilterChange).toHaveBeenCalledWith("onlyPostPurchaseOffer", true);
   });
 
   it("calls onClearAdvancedFilters when clear button is clicked", () => {

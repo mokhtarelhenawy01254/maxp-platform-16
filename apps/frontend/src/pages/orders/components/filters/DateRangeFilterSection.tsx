@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, RotateCcw } from "lucide-react";
+import { Calendar, RotateCcw, ChevronDown } from "lucide-react";
 import type { OrdersFilters } from "../../Orders";
 
 export interface DateRangeFilterSectionProps {
@@ -68,24 +68,27 @@ export const DateRangeFilterSection: React.FC<DateRangeFilterSectionProps> = ({
       </div>
 
       {/* Main Select Dropdown */}
-      <select
-        aria-label={String(t("orders.allDates", { defaultValue: "النطاق الزمني" }))}
-        value={filters.timeRange}
-        onChange={(e) => onSetQuickDate(e.target.value)}
-        className="w-full h-10 rounded-xl border border-border/70 bg-background px-3 py-2 text-xs sm:text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
-      >
-        <option value="">{t("orders.allDates", { defaultValue: "جميع الأوقات" })}</option>
-        <option value="today">{t("orders.today", { defaultValue: "اليوم" })}</option>
-        <option value="yesterday">{t("orders.yesterday", { defaultValue: "أمس" })}</option>
-        <option value="last7">{t("orders.last7Days", { defaultValue: "آخر 7 أيام" })}</option>
-        <option value="last30">{t("orders.last30Days", { defaultValue: "آخر 30 يوم" })}</option>
-        <option value="last90">{t("orders.last90Days", { defaultValue: "آخر 90 يوم" })}</option>
-        <option value="last180">{t("orders.last6Months", { defaultValue: "آخر 6 أشهر" })}</option>
-        <option value="last365">{t("orders.lastYear", { defaultValue: "آخر سنة" })}</option>
-        <option value="thisMonth">{t("orders.thisMonth", { defaultValue: "هذا الشهر" })}</option>
-        <option value="thisYear">{t("orders.thisYear", { defaultValue: "هذه السنة" })}</option>
-        <option value="custom">{t("orders.customPeriod", { defaultValue: "فترة مخصصة" })}</option>
-      </select>
+      <div className="relative">
+        <select
+          aria-label={String(t("orders.allDates", { defaultValue: "النطاق الزمني" }))}
+          value={filters.timeRange}
+          onChange={(e) => onSetQuickDate(e.target.value)}
+          className="w-full h-10 appearance-none rounded-xl border border-border/70 bg-background pe-9 ps-3 py-2 text-xs sm:text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
+        >
+          <option value="">{t("orders.allDates", { defaultValue: "جميع الأوقات" })}</option>
+          <option value="today">{t("orders.today", { defaultValue: "اليوم" })}</option>
+          <option value="yesterday">{t("orders.yesterday", { defaultValue: "أمس" })}</option>
+          <option value="last7">{t("orders.last7Days", { defaultValue: "آخر 7 أيام" })}</option>
+          <option value="last30">{t("orders.last30Days", { defaultValue: "آخر 30 يوم" })}</option>
+          <option value="last90">{t("orders.last90Days", { defaultValue: "آخر 90 يوم" })}</option>
+          <option value="last180">{t("orders.last6Months", { defaultValue: "آخر 6 أشهر" })}</option>
+          <option value="last365">{t("orders.lastYear", { defaultValue: "آخر سنة" })}</option>
+          <option value="thisMonth">{t("orders.thisMonth", { defaultValue: "هذا الشهر" })}</option>
+          <option value="thisYear">{t("orders.thisYear", { defaultValue: "هذه السنة" })}</option>
+          <option value="custom">{t("orders.customPeriod", { defaultValue: "فترة مخصصة" })}</option>
+        </select>
+        <ChevronDown className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
 
       {/* Custom Date Pickers */}
       {hasCustomDateFilters && (

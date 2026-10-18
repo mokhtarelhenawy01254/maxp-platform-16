@@ -146,10 +146,12 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
             />
           )}
 
-          {/* Section: Unseen toggle */}
+          {/* Section: Unseen & Post-Purchase Toggles */}
           <UnseenFilterSection
             onlyUnseen={Boolean(filters.onlyUnseen)}
             onToggleUnseen={(next) => onFilterChange("onlyUnseen", next)}
+            onlyPostPurchaseOffer={Boolean(filters.onlyPostPurchaseOffer)}
+            onToggleOnlyPostPurchaseOffer={(next) => onFilterChange("onlyPostPurchaseOffer", next)}
           />
         </div>
 
