@@ -2,7 +2,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import ar from "../locales/ar/translation.json";
-import { getBackendUrl } from "../config/environment";
+import { getBackendUrl, isProduction } from "../config/environment";
 
 let enPromise: Promise<void> | null = null;
 export const loadEnglishTranslations = async (): Promise<void> => {
@@ -49,7 +49,7 @@ const ARABIC_COUNTRIES = [
 
 // دالة للكشف عن الدولة من خلال IP
 const detectCountryByIP = async (): Promise<string | null> => {
-  if (import.meta.env.DEV || import.meta.env.MODE === "development") {
+  if (!isProduction()) {
     return null;
   }
 
