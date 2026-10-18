@@ -30,6 +30,8 @@ import { isReturnStatusCode, isTurboReturnStatus } from "./utils/returnHelper";
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
 import { OrdersBulkCommandPalette } from "./components/OrdersBulkCommandPalette";
+import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
+import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import {
   OrdersFilters,
   OrdersListViewState,
@@ -228,10 +230,7 @@ type SocketOrderUpdate = Partial<Order> & {
   _refetch?: boolean;
 };
 
-type GeneratedInvoice = {
-  id: string;
-  [key: string]: unknown;
-};
+export type { GeneratedInvoice };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -820,8 +819,6 @@ const Orders: React.FC = () => {
   const [totalOrders, setTotalOrders] = useState(() => initialCachedData?.totalOrders || 0);
   const [totalPages, setTotalPages] = useState(() => initialCachedData?.totalPages || 0);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [printingInvoices, setPrintingInvoices] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<OrderTableColumn[]>(
     ORDER_TABLE_COLUMNS,
   );
@@ -1871,361 +1868,30 @@ const Orders: React.FC = () => {
     }
   };
 
-  const handleBulkStatusUpdate = async (newStatus: string) => {
-    if (!newStatus) return;
-    const normalizedStatus = normalizeStatusCode(newStatus);
-    let notes = "";
-
-    if (isCancellationStatus(normalizedStatus)) {
-      const cancellationReason = window.prompt(
-        t("orders.cancellationReasonPrompt"),
-      );
-      if (cancellationReason === null) return;
-
-      notes = cancellationReason.trim();
-      if (!notes) {
-        alert(t("orders.cancellationReasonRequired"));
-        return;
-      }
-    }
-
-    if (
-      !window.confirm(
-        t("orders.confirmBulkUpdate", {
-          count: selectedOrders.length,
-          status: getStatusDisplay(normalizedStatus).label,
-        }),
-      )
-    )
-      return;
-
-    try {
-      setBulkProcessing(true);
-      const response = await apiClient.post("/orders-new/bulk/status", {
-        orderIds: selectedOrders,
-        status: normalizedStatus,
-        notes,
-      });
-
-      const data = response.data;
-      const results = data.data?.results ?? [];
-      const failedResults = results.filter((r: Record<string, unknown>) => !r.success);
-      const failedCount = failedResults.length;
-      const successCount = data.data?.successCount ?? 0;
-      const totalRequested = data.data?.totalRequested ?? selectedOrders.length;
-
-      if (successCount > 0) {
-        if (failedCount === 0) {
-          alert(t("orders.ordersUpdated"));
-        } else {
-          const errorSummary = failedResults
-            .slice(0, 5)
-            .map((r: Record<string, unknown>) => `${t("orders.orderLabel")} ${r.id}: ${r.error || t('orders.unknownError')}`)
-            .join('\n');
-          const moreText = failedCount > 5 ? `\n${t('orders.moreErrors', { count: failedCount - 5 })}` : '';
-          alert(`${t('orders.updatedOrdersSummary', { success: successCount, total: totalRequested })}\n\n${t('orders.failedOrdersLabel')}:\n${errorSummary}${moreText}`);
-        }
-        await fetchOrders();
-        const failedIds: string[] = failedResults.map((r: Record<string, unknown>) => String(r.id));
-        setSelectedOrders(failedIds.length > 0 ? failedIds : []);
-      } else {
-        const errors: string[] = failedResults.map((r: Record<string, unknown>) => String(r.error ?? ''));
-        alert(errors.length > 0 ? errors.join('\n') : data.message || t("orders.updateFailed"));
-      }
-    } catch (error: unknown) {
-      console.error("Error bulk updating:", error);
-      const errorMessage = getApiErrorMessage(
-        error,
-        t("orders.bulkUpdateError"),
-      );
-      alert(t("orders.updateFailedMsg", { error: errorMessage }));
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    const confirmKey = isTrashView
-      ? "orders.confirmBulkPermanentDelete"
-      : "orders.confirmBulkDelete";
-    const successKey = isTrashView
-      ? "orders.ordersPermanentlyDeleted"
-      : "orders.ordersDeleted";
-    const failedKey = isTrashView
-      ? "orders.permanentDeleteFailed"
-      : "orders.deleteFailed";
-    const errorKey = isTrashView
-      ? "orders.bulkPermanentDeleteError"
-      : "orders.bulkDeleteError";
-    const failedMessageKey = isTrashView
-      ? "orders.permanentDeleteFailedMsg"
-      : "orders.deleteFailedMsg";
-
-    if (
-      !window.confirm(
-        t(confirmKey, { count: selectedOrders.length }),
-      )
-    )
-      return;
-
-    try {
-      setBulkProcessing(true);
-      const response = await apiClient.post("/orders-new/bulk/delete", {
-        orderIds: selectedOrders,
-        permanent: isTrashView,
-      });
-
-      const data = response.data;
-      const results = data.data?.results ?? [];
-      const failedResults = results.filter((r: Record<string, unknown>) => !r.success);
-      const failedCount = failedResults.length;
-      const successCount = data.data?.successCount ?? 0;
-      const totalRequested = data.data?.totalRequested ?? selectedOrders.length;
-
-      if (successCount > 0) {
-        if (failedCount === 0) {
-          alert(t(successKey));
-        } else {
-          const errorSummary = failedResults
-            .slice(0, 5)
-            .map((r: Record<string, unknown>) => `${t("orders.orderLabel", { defaultValue: "طلب" })} ${r.id}: ${r.error || t('orders.unknownError', { defaultValue: "خطأ غير معروف" })}`)
-            .join('\n');
-          const moreText = failedCount > 5 ? `\n${t('orders.moreErrors', { count: failedCount - 5, defaultValue: `و ${failedCount - 5} أخطاء أخرى` })}` : '';
-          alert(`${t(isTrashView ? 'orders.permanentDeletedOrdersSummary' : 'orders.deletedOrdersSummary', {
-            success: successCount,
-            total: totalRequested,
-            defaultValue: `تمت معالجة ${successCount} من ${totalRequested} بنجاح`
-          })}\n\n${t('orders.failedOrdersLabel', { defaultValue: 'الطلبات التي تعذر حذفها' })}:\n${errorSummary}${moreText}`);
-        }
-        await fetchOrders();
-        const failedIds: string[] = failedResults.map((r: Record<string, unknown>) => String(r.id));
-        setSelectedOrders(failedIds.length > 0 ? failedIds : []);
-      } else {
-        const errors: string[] = failedResults.map((r: Record<string, unknown>) => String(r.error ?? ''));
-        alert(errors.length > 0 ? errors.join('\n') : data.message || t(failedKey));
-      }
-    } catch (error: unknown) {
-      console.error("Error bulk deleting:", error);
-      const errorMessage = getApiErrorMessage(
-        error,
-        t(errorKey),
-      );
-      alert(t(failedMessageKey, { error: errorMessage }));
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<GeneratedInvoice | null>(null);
-
-  const handleBulkPrintInvoices = async () => {
-    if (selectedOrders.length === 0) {
-      alert(t("orders.pleaseSelectOrders"));
-      return;
-    }
-
-    // للطباعة الجماعية، نفتح صفحة منفصلة
-    if (selectedOrders.length > 1) {
-      if (!window.confirm(t("orders.confirmPrintInvoices", { count: selectedOrders.length })))
-        return;
-
-      try {
-        setPrintingInvoices(true);
-        const response = await apiClient.post("/order-invoices/bulk-generate", {
-          orderIds: selectedOrders,
-        });
-
-        if (response.data.success) {
-          const { success, existing, failed, invoices, guestOrders } = response.data.data;
-          const invoiceList = (invoices as GeneratedInvoice[]) || [];
-          const guestList = (guestOrders as Array<{ orderId: string; order: OrderDetailsType }>) || [];
-
-          if (invoiceList.length === 0 && guestList.length === 0) {
-            alert(t("orders.invoicePrintError"));
-          } else {
-            // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
-            // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
-            const params = new URLSearchParams();
-            if (invoiceList.length > 0) {
-              params.set("ids", invoiceList.map((inv) => inv.id).join(","));
-            }
-            if (guestList.length > 0) {
-              const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
-              const guestKey = storeGuestPrintPayload({
-                company: {
-                  companyName: user?.company?.name || "",
-                  companyPhone: user?.company?.phone || null,
-                  companyLogo: user?.company?.logo || null,
-                },
-                orders: guestList.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
-              });
-              params.set("guestKey", guestKey);
-            }
-            window.open(`/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`, "_blank");
-          }
-
-          alert(
-            t("orders.invoicesGenerated", { success: success.length, existing: existing.length, failed: failed.length }),
-          );
-          setSelectedOrders([]);
-        }
-      } catch (error: unknown) {
-        console.error("Error bulk printing invoices:", error);
-        alert(t("orders.invoicePrintError"));
-      } finally {
-        setPrintingInvoices(false);
-      }
-    } else {
-      // لفاتورة واحدة، نعرضها في modal
-      try {
-        setPrintingInvoices(true);
-        // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
-        const printWindow = window.open("", "_blank");
-        if (!printWindow) {
-          alert(t("orders.invoiceGenerationError"));
-          return;
-        }
-        const response = await apiClient.post("/order-invoices/bulk-generate", {
-          orderIds: selectedOrders,
-        });
-
-        if (response.data.success) {
-          const data = response.data.data as {
-            invoices?: GeneratedInvoice[];
-            guestOrders?: Array<{ orderId: string; order: OrderDetailsType }>;
-          };
-          const { invoices, guestOrders } = data;
-
-          if (invoices && invoices.length > 0) {
-            printWindow.close();
-            setSelectedInvoice(invoices[0]);
-          } else if (guestOrders && guestOrders.length > 0) {
-            // طلب ضيف واحد: اعرضه في صفحة print-multiple الموحّدة (بنفس شريط التقسيم والأكواد)
-            printWindow.close();
-            const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
-            const guestKey = storeGuestPrintPayload({
-              company: {
-                companyName: user?.company?.name || "",
-                companyPhone: user?.company?.phone || null,
-                companyLogo: user?.company?.logo || null,
-              },
-              orders: guestOrders.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
-            });
-            navigate(`/orders/invoices/print-multiple?guestKey=${encodeURIComponent(guestKey)}`);
-          } else {
-            printWindow.close();
-          }
-        } else {
-          printWindow.close();
-        }
-      } catch (error: unknown) {
-        console.error("Error generating invoice:", error);
-        alert(t("orders.invoiceGenerationError"));
-      } finally {
-        setPrintingInvoices(false);
-      }
-    }
-  };
-
-  const handleBulkCreateTurboShipments = async () => {
-    if (
-      !window.confirm(
-        t("orders.confirmTurboShipments", { count: selectedOrders.length }),
-      )
-    )
-      return;
-
-    try {
-      setBulkProcessing(true);
-      const response = await apiClient.post("/turbo/bulk/create-shipments", {
-        orderIds: selectedOrders,
-      });
-
-      if (response.data.success) {
-        const { success, failed, skipped } = response.data.data;
-        let message = t("orders.shipmentsCreated", { success });
-        if (failed > 0)
-          message += `\n${t("orders.shipmentsFailed", { failed })}`;
-        if (skipped > 0)
-          message += `\n${t("orders.shipmentsSkipped", { skipped })}`;
-        alert(message);
-        setSelectedOrders([]);
-        await fetchOrders();
-      }
-    } catch (error: unknown) {
-      console.error("Error bulk creating shipments:", error);
-      alert(getApiErrorMessage(error, t("orders.createShipmentsFailed")));
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const handleBulkCreateQpExpressShipments = async () => {
-    if (
-      !window.confirm(
-        `هل تريد تأكيد إرسال ${selectedOrders.length} طلب إلى شركة كيو بي إكسبريس (QP Express) وتوليد البوالص آلياً؟`
-      )
-    )
-      return;
-
-    try {
-      setBulkProcessing(true);
-      const response: any = await apiClient.post("/qp-express/bulk/create-shipments", {
-        orderIds: selectedOrders,
-      });
-
-      if (response.data?.success) {
-        const { success, failed, skipped } = response.data.data;
-        let message = `تم إنشاء ${success} بوليصة شحن لدى QP Express بنجاح`;
-        if (failed > 0) message += `\nفشل: ${failed}`;
-        if (skipped > 0) message += `\nتم تخطيها (مشحونة مسبقاً): ${skipped}`;
-        alert(message);
-        setSelectedOrders([]);
-        await fetchOrders();
-      } else {
-        alert(response.data?.error || "تعذر الشحن الجماعي لدى QP Express");
-      }
-    } catch (error: unknown) {
-      console.error("Error bulk creating QP Express shipments:", error);
-      alert(getApiErrorMessage(error, "فشل إنشاء شحنات QP Express المجمعة"));
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const handleBulkCreateBostaShipments = async () => {
-    if (
-      !window.confirm(
-        `هل تريد تأكيد إرسال ${selectedOrders.length} طلب إلى شركة بوستا (Bosta) وتوليد البوالص آلياً؟`
-      )
-    )
-      return;
-
-    try {
-      setBulkProcessing(true);
-      const response: any = await apiClient.post("/bosta/bulk/create-shipments", {
-        orderIds: selectedOrders,
-      });
-
-      if (response.data?.success) {
-        const { success, failed, skipped } = response.data.data;
-        let message = `تم إنشاء ${success} بوليصة شحن لدى بوستا بنجاح`;
-        if (failed > 0) message += `\nفشل: ${failed}`;
-        if (skipped > 0) message += `\nتم تخطيها (مشحونة مسبقاً): ${skipped}`;
-        alert(message);
-        setSelectedOrders([]);
-        await fetchOrders();
-      } else {
-        alert(response.data?.error || "تعذر الشحن الجماعي لدى بوستا");
-      }
-    } catch (error: unknown) {
-      console.error("Error bulk creating Bosta shipments:", error);
-      alert(getApiErrorMessage(error, "فشل إنشاء شحنات بوستا المجمعة"));
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
+  const {
+    bulkProcessing,
+    printingInvoices,
+    selectedInvoice,
+    setSelectedInvoice,
+    handleBulkStatusUpdate,
+    handleBulkDelete,
+    handleBulkPrintInvoices,
+    handleBulkCreateTurboShipments,
+    handleBulkCreateQpExpressShipments,
+    handleBulkCreateBostaShipments,
+  } = useOrdersBulkOperations({
+    selectedOrders,
+    setSelectedOrders,
+    isTrashView,
+    fetchOrders,
+    user,
+    navigate,
+    t,
+    getStatusDisplay,
+    normalizeStatusCode,
+    isCancellationStatus,
+    getApiErrorMessage,
+  });
 
   const hasActiveTurbo = useMemo(() => {
     return activeCarriers.some(
