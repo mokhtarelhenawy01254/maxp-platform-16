@@ -5,23 +5,11 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
-import {
-  ArrowPathIcon,
-  CreditCardIcon,
-  CalendarDaysIcon,
-  TruckIcon,
-  XCircleIcon,
-  TicketIcon,
-  ArrowTopRightOnSquareIcon,
-} from "@heroicons/react/24/outline";
-import { toast } from "sonner";
 // Components
 import OrderHeader from "./components/OrderHeader";
 import OrderDetailsMainContent from "./components/OrderDetailsMainContent";
 import OrderDetailsSidebar from "./components/OrderDetailsSidebar";
 import OrderReturnCard from "./components/OrderReturnCard";
-import TurboShippingPanel from "./components/TurboShippingPanel";
-import BostaShippingPanel from "./components/BostaShippingPanel";
 // Cards migrated into OrderDetailsSidebar
 import { OrderDetailsModalsHost } from "./components/OrderDetailsModalsHost";
 
@@ -31,18 +19,13 @@ import { useOrderEditCalculation } from "./hooks/useOrderEditCalculation";
 import { useOrderEditItemsOperations } from "./hooks/useOrderEditItemsOperations";
 import { useOrderPaymentStatusOperations } from "./hooks/useOrderPaymentStatusOperations";
 import { useOrderFulfillmentActions } from "./hooks/useOrderFulfillmentActions";
-import { useOrderShippingActions } from "./hooks/useOrderShippingActions";
+import { useOrderDetailsShipping } from "./hooks/useOrderDetailsShipping";
 import {
   isCancellationStatus,
   useOrderStatusOperations,
 } from "./hooks/useOrderStatusOperations";
-import { useTurboShipping } from "./hooks/useTurboShipping";
-import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
-import {
-  getOrderReturnDetails,
-  isReturnStatusCode,
-} from "./utils/returnHelper";
+import { getOrderReturnDetails } from "./utils/returnHelper";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
 import { useOrderPermissionsAndApps } from "./hooks/useOrderPermissionsAndApps";
@@ -118,34 +101,9 @@ const OrderDetails: React.FC = () => {
     fetchOrderDetails,
   } = useOrderDetails(orderNumber);
 
-  const {
-    turboLoading,
-    turboTrackingData,
-    shippingComparison,
-    createShipment,
-    updateShipment,
-    syncStatus,
-    getWaybill,
-    cancelShipment,
-    unlinkShipment,
-    calculateShipping,
-    setTurboTrackingData,
-  } = useTurboShipping(order, setOrder);
-
-  const {
-    bostaLoading,
-    bostaShipment,
-    fetchShipment: fetchBostaShipment,
-    createShipment: createBostaShipment,
-    printAWB: printBostaAWB,
-    cancelShipment: cancelBostaShipment,
-  } = useBostaShipping(order, setOrder);
-
   const { settings: invoiceSettings } = useInvoiceSettings();
-
-  useEffect(() => {
-    if (order?.id) fetchBostaShipment();
-  }, [order?.id]);
+  const { turboLoading, cancelShipment, unlinkShipment, shippingActions } =
+    useOrderDetailsShipping(order, setOrder);
 
   // Auto-enter edit mode when opened with ?edit=1 (e.g. from WhatsApp chat order code)
   const [searchParams] = useSearchParams();
@@ -254,20 +212,7 @@ const OrderDetails: React.FC = () => {
     t,
   });
 
-  const shippingActions = useOrderShippingActions({
-    order,
-    createShipment,
-    getWaybill,
-    calculateShipping,
-    bostaShipment,
-    printBostaAWB,
-  });
-  const {
-    handleCreateShipment,
-    handleRecreateShipment,
-    handlePrintWaybill,
-    handleCalculateShipping,
-  } = shippingActions;
+
 
   const {
     effectiveStatus,
@@ -375,10 +320,10 @@ const OrderDetails: React.FC = () => {
             onEditReason={
               canUpdateOrderStatus
                 ? () => {
-                    setNewStatus(order.status || "RETURNED");
-                    setStatusNotes(returnDetails.reason || "");
-                    setReturnReason(returnDetails.reason || "");
-                    setShowStatusModal(true);
+                    statusOperations.setNewStatus(order.status || "RETURNED");
+                    statusOperations.setStatusNotes(returnDetails.reason || "");
+                    statusOperations.setReturnReason(returnDetails.reason || "");
+                    statusOperations.setShowStatusModal(true);
                   }
                 : undefined
             }
