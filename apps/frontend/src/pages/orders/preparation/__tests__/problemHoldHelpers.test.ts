@@ -6,6 +6,7 @@ jest.mock("../../../../i18n", () => ({
 import {
   buildProblemHoldDetails,
   getActiveHoldDetails,
+  getDateInputValueWithOffset,
   getShortageFollowUpState,
   isProblemHoldStage,
   isShortageFollowUpOverdue,
@@ -76,7 +77,7 @@ describe("preparation problem hold helpers", () => {
   });
 
   test("follow-up state works for ON_HOLD_PREP orders", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getDateInputValueWithOffset(0);
     expect(getShortageFollowUpState(today, "ON_HOLD_PREP")).toBe("today");
     expect(getShortageFollowUpState("2020-01-01", "ON_HOLD_PREP")).toBe("overdue");
     expect(getShortageFollowUpState("", "ON_HOLD_PREP")).toBe("without_date");

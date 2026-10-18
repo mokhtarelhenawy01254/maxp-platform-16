@@ -83,12 +83,20 @@ export const mergePlainObjects = (
 export const normalizeDateInputValue = (value: unknown) => {
   if (typeof value !== "string" || !value.trim()) return "";
 
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value.slice(0, 10);
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
   }
 
-  return parsed.toISOString().slice(0, 10);
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return trimmed.slice(0, 10);
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export const buildShortageHoldDetails = (
@@ -199,7 +207,10 @@ export const getShortageReasonLabel = (reason: ShortageReason) => {
 export const getDateInputValueWithOffset = (offsetDays = 0) => {
   const date = new Date();
   date.setDate(date.getDate() + offsetDays);
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export const isShortageFollowUpToday = (
