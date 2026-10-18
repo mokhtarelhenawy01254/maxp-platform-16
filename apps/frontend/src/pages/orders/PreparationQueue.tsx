@@ -70,6 +70,7 @@ import { usePreparationProblemOperations } from "./preparation/usePreparationPro
 import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
 import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
+import { usePreparationTransitions } from "./preparation/usePreparationTransitions";
 import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
 
 type BulkStatusResult = {
@@ -906,110 +907,18 @@ const PreparationQueue: React.FC = () => {
   );
   getOrderByNumberRef.current = getOrderByNumber;
 
-  const isQcComplete = useCallback(
-    (orderNumber: string) => {
-      if (!preparationSettings.enableQcChecklist || enabledQcChecks.length === 0) {
-        return true;
-      }
-
-      return enabledQcChecks.every(
-        (key) => qcChecklistState[orderNumber]?.[key] === true,
-      );
-    },
-    [enabledQcChecks, preparationSettings.enableQcChecklist, qcChecklistState],
-  );
-
-  const validateTransition = useCallback(
-    (order: PreparationOrder, nextStatus: string) => {
-      const normalizedNextStatus = toUpper(nextStatus);
-
-      if (!preparationSettings.enabled) {
-        return {
-          valid: false,
-          message: t('preparation.page.disabled'),
-        };
-      }
-
-      if (
-        preparationSettings.requireStockBeforePreparing &&
-        !preparationSettings.allowPartialPreparation &&
-        !order.isReady &&
-        order.stage !== "WAITING" &&
-        [
-          "QUALITY_CHECK",
-          "PACKAGED",
-          preparationSettings.handoffStatus,
-        ].includes(normalizedNextStatus)
-      ) {
-        return {
-          valid: false,
-          message: preparationSettings.allowCrossWarehouseTransfer
-            ? t('preparation.page.transferNoSource')
-            : t('preparation.page.stockMustBeComplete'),
-        };
-      }
-
-      if (
-        order.stage === "QUALITY_CHECK" &&
-        ["PACKAGED", preparationSettings.handoffStatus].includes(normalizedNextStatus) &&
-        !isQcComplete(order.orderNumber)
-      ) {
-        return {
-          valid: false,
-          message: t('preparation.page.qcChecklistRequired'),
-        };
-      }
-
-      // A held-for-problem order (ON_HOLD_PREP) cannot move directly to a
-      // forward preparation stage — it must be released first.
-      const forwardStages = new Set([
-        "PREPARING",
-        "PROCESSING",
-        "QUALITY_CHECK",
-        "PACKAGED",
-        "PACKED",
-        "READY",
-        "READY_TO_SHIP",
-        toUpper(preparationSettings.handoffStatus),
-      ]);
-      if (
-        order.stage === "ON_HOLD_PREP" &&
-        forwardStages.has(normalizedNextStatus) &&
-        !["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(
-          user?.role || "",
-        )
-      ) {
-        return {
-          valid: false,
-          message: t("preparation.page.holdBlocksForward"),
-        };
-      }
-
-      return { valid: true, message: "" };
-    },
-    [
-      isQcComplete,
-      preparationSettings.allowCrossWarehouseTransfer,
-      preparationSettings.allowPartialPreparation,
-      preparationSettings.enabled,
-      preparationSettings.handoffStatus,
-      preparationSettings.requireStockBeforePreparing,
-      user?.role,
-    ],
-  );
-
-  const handleQcCheckToggle = useCallback(
-    (orderNumber: string, key: QcCheckKey, checked: boolean) => {
-      setQcChecklistState((previous) => ({
-        ...previous,
-        [orderNumber]: {
-          ...previous[orderNumber],
-          [key]: checked,
-        },
-      }));
-    },
-    [],
-  );
+  const {
+    isQcComplete,
+    validateTransition,
+    handleQcCheckToggle,
+  } = usePreparationTransitions({
+    preparationSettings,
+    enabledQcChecks,
+    qcChecklistState,
+    setQcChecklistState,
+    userRole: user?.role,
+    t,
+  });
 
   // handleShortageFieldChange provided by usePreparationShortageOperations
 
