@@ -153,7 +153,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
             </div>
           )}
 
-          {(advancedFilterCount > 0 || filters.onlyUnseen) && (
+          {(advancedFilterCount > 0 || filters.onlyUnseen || filters.onlyPostPurchaseOffer) && (
             <FilterChips
               filters={filters}
               filterableOrderStatuses={filterableOrderStatuses}

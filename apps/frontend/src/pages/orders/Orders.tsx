@@ -30,16 +30,10 @@ import { isReturnStatusCode, isTurboReturnStatus } from "./utils/returnHelper";
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
 import { CommandPalette } from "../../components/common/CommandPalette";
-import ErrorBoundary from "../../components/common/ErrorBoundary";
 import type { OrderDetailsType } from "./types";
 import { hasPostPurchaseOffer } from "../../utils/postPurchaseOfferBadge";
-
-const EnhancedOrderModal = React.lazy(
-  () => import("../../components/orders/EnhancedOrderModal"),
-);
-const InvoiceModal = React.lazy(
-  () => import("../../components/orders/InvoiceModal"),
-);
+import { HeldOrdersBanner } from "./components/HeldOrdersBanner";
+import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
 import {
   InformationCircleIcon,
@@ -760,6 +754,8 @@ const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
   minConfidence: "",
   onlyUnseen: false,
   timeRange: "",
+      onlyUnseen: false,
+      onlyPostPurchaseOffer: false,
   onlyPostPurchaseOffer: false,
 };
 const ORDERS_LIST_QUERY_KEYS = [
@@ -953,218 +949,6 @@ const getInitialOrdersListViewState = (
       limit: 20,
       filters: DEFAULT_ORDERS_FILTERS,
     }
-  );
-};
-
-interface BillingHoldOrder {
-  id: string;
-  orderNumber: string;
-  createdAt: string;
-  itemCount: number;
-  billingHoldAmount: number | null;
-  holdReason: "insufficient_balance" | "subscription_expired";
-  customerName: string;
-  customerPhone: string;
-}
-
-const HELD_REASON_LABEL: Record<string, string> = {
-  insufficient_balance: "رصيد المحفظة",
-  subscription_expired: "اشتراك الطلبات اليدوية",
-};
-
-const HeldOrdersBanner: React.FC = () => {
-  const { user } = useAuth();
-  const [held, setHeld] = useState<{
-    count: number;
-    amount: number;
-    subscriptionCount: number;
-  } | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [heldOrders, setHeldOrders] = useState<BillingHoldOrder[]>([]);
-  const [heldTotal, setHeldTotal] = useState(0);
-  const [loadingHeld, setLoadingHeld] = useState(false);
-  const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
-    user?.role || "",
-  );
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    apiClient
-      .get("/wallet/billing/summary")
-      .then(
-        (res: {
-          data?: {
-            data?: {
-              heldOrders?: { count?: number; amount?: number; subscriptionCount?: number };
-            };
-          };
-        }) => {
-          const data = res?.data?.data;
-          const count = Number(data?.heldOrders?.count || 0);
-          if (count > 0) {
-            setHeld({
-              count,
-              amount: Number(data?.heldOrders?.amount || 0),
-              subscriptionCount: Number(data?.heldOrders?.subscriptionCount || 0),
-            });
-          }
-        },
-      )
-      .catch(() => {
-        /* تجاهل - البانر اختياري */
-      });
-  }, [isAdmin]);
-
-  const openMoreInfo = async () => {
-    setModalOpen(true);
-    setLoadingHeld(true);
-    try {
-      const res = await apiClient.get("/orders-new/billing-holds");
-      const data = (res as {
-        data?: {
-          data?: {
-            orders?: BillingHoldOrder[];
-            totalAmount?: number;
-            subscriptionCount?: number;
-          };
-        };
-      })?.data?.data;
-      setHeldOrders(data?.orders || []);
-      setHeldTotal(Number(data?.totalAmount || 0));
-    } catch {
-      setHeldOrders([]);
-    } finally {
-      setLoadingHeld(false);
-    }
-  };
-
-  if (!held) return null;
-
-  return (
-    <>
-      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
-        <span className="font-semibold">
-          لديك {held.count} طلب معلّق
-          {held.subscriptionCount > 0 && held.subscriptionCount === held.count
-            ? " بسبب انتهاء اشتراك الطلبات اليدوية"
-            : held.subscriptionCount > 0
-              ? " (رصيد + اشتراك)"
-              : " بسبب انخفاض رصيد المحفظة"}
-          .
-        </span>
-        <span className="text-sm">
-          {held.amount > 0
-            ? `المبلغ المستحق ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — `
-            : ""}
-          اشحن رصيدك أو جدّد اشتراكك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
-        </span>
-        <button
-          onClick={openMoreInfo}
-          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
-        >
-          مزيد المعلومات
-        </button>
-        <Link
-          to="/payments"
-          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
-        >
-          شحن الرصيد
-        </Link>
-      </div>
-
-      {modalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                الطلبات المعلّقة ({heldOrders.length})
-              </h3>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-              >
-                إغلاق
-              </button>
-            </div>
-
-            {loadingHeld ? (
-              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                جاري التحميل...
-              </div>
-            ) : heldOrders.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                لا توجد طلبات معلّقة.
-              </div>
-            ) : (
-              <>
-                <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  {heldTotal > 0 ? (
-                    <>
-                      المبلغ المستحق الإجمالي:{" "}
-                      <b className="font-semibold">
-                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
-                      </b>
-                    </>
-                  ) : (
-                    "لا توجد رسوم مستحقة — الطلبات معلّقة بسبب انتهاء الاشتراك."
-                  )}
-                </div>
-                <div className="max-h-96 space-y-2 overflow-y-auto">
-                  {heldOrders.map((o) => (
-                    <div
-                      key={o.id}
-                      className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {o.orderNumber}
-                        </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            o.holdReason === "subscription_expired"
-                              ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                          }`}
-                        >
-                          {HELD_REASON_LABEL[o.holdReason] || "معلّق"}
-                        </span>
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} • عدد القطع:{" "}
-                        {o.itemCount}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-200">
-                        <span>العميل: {o.customerName || "-"}</span>
-                        <span>الهاتف: {o.customerPhone || "-"}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {o.holdReason === "subscription_expired"
-                          ? "معلّق حتى تجديد اشتراك الطلبات اليدوية"
-                          : `رسوم الاستخدام المستحقة: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <Link
-                    to="/payments"
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-                  >
-                    شحن الرصيد / تجديد الاشتراك لإظهار الطلبات
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </>
   );
 };
 
@@ -3304,95 +3088,26 @@ const Orders: React.FC = () => {
       )}
       </div>
 
-      {/* Enhanced Order Modal */}
-      {selectedOrder && (
-        <ErrorBoundary
-          fallback={
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
-              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {t("orders.modalLoadFailed")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowOrderModal(false)}
-                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t("orders.close")}
-                </button>
-              </div>
-            </div>
-          }
-        >
-          <React.Suspense
-            fallback={
-              <div className="flex items-center justify-center p-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
-              </div>
-            }
-          >
-            <EnhancedOrderModal
-              order={selectedOrder}
-              isOpen={showOrderModal}
-              canManagePaymentStatus={!isMerchant}
-              orderStatuses={orderStatuses}
-              onClose={() => {
-                setShowOrderModal(false);
-                setSelectedOrder(null);
-              }}
-              onOrderUpdate={(updatedOrder) => {
-                setSelectedOrder(updatedOrder);
-                setOrders(
-                  orders.map((o) =>
-                    o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
-                  ),
-                );
-              }}
-            />
-          </React.Suspense>
-        </ErrorBoundary>
-      )}
-
-      {selectedInvoice && (
-        <ErrorBoundary
-          fallback={
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
-              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {t("orders.modalLoadFailed")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setSelectedInvoice(null)}
-                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t("orders.close")}
-                </button>
-              </div>
-            </div>
-          }
-        >
-          <React.Suspense
-            fallback={
-              <div className="flex items-center justify-center p-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
-              </div>
-            }
-          >
-            <InvoiceModal
-              invoice={selectedInvoice}
-              onClose={() => setSelectedInvoice(null)}
-            />
-          </React.Suspense>
-        </ErrorBoundary>
-      )}
-
-
+      <OrdersModalsContainer
+        selectedOrder={selectedOrder}
+        setSelectedOrder={setSelectedOrder}
+        showOrderModal={showOrderModal}
+        setShowOrderModal={setShowOrderModal}
+        isMerchant={isMerchant}
+        orderStatuses={orderStatuses}
+        onOrderUpdate={(updatedOrder) => {
+          setSelectedOrder(updatedOrder);
+          setOrders(
+            orders.map((o) =>
+              o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
+            ),
+          );
+        }}
+        selectedInvoice={selectedInvoice}
+        setSelectedInvoice={setSelectedInvoice}
+      />
     </div>
   );
 };
 
 export default Orders;
-
-
-

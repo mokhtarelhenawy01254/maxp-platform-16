@@ -15,7 +15,7 @@ export interface StatusFilterSectionProps {
     selectAllLabel: string;
     noResultsLabel: string;
     clearAllLabel: string;
-    fieldClassName: string;
+    fieldClassName?: string;
   };
   onFilterChange: (key: keyof OrdersFilters, value: OrdersFilters[keyof OrdersFilters]) => void;
 }

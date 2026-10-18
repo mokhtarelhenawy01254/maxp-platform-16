@@ -159,6 +159,7 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
         <FilterDrawerFooter
           advancedFilterCount={advancedFilterCount}
           onlyUnseen={Boolean(filters.onlyUnseen)}
+          onlyPostPurchaseOffer={Boolean(filters.onlyPostPurchaseOffer)}
           onClearAdvancedFilters={onClearAdvancedFilters}
           onClose={onClose}
         />
