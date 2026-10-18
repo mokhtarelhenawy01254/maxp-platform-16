@@ -19,7 +19,7 @@ interface MultiSelectFilterProps {
   options: MultiSelectOption[];
   value: string[];
   onChange: (next: string[]) => void;
-  fieldClassName: string;
+  fieldClassName?: string;
 }
 
 export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
@@ -32,7 +32,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   options,
   value,
   onChange,
-  fieldClassName,
+  fieldClassName = "",
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -81,57 +81,67 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
-        className={`${fieldClassName} flex items-center justify-between gap-1.5 text-start`}
+        className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-border/70 bg-background px-3.5 py-2 text-start text-xs sm:text-sm transition-all hover:bg-muted/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 ${fieldClassName}`}
       >
         <span
-          className={`truncate ${value.length === 0 ? "text-muted-foreground" : "text-foreground"}`}
+          className={`truncate font-medium ${value.length === 0 ? "text-muted-foreground" : "text-foreground"}`}
         >
           {triggerText}
         </span>
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="flex shrink-0 items-center gap-1.5">
           {value.length > 0 && (
-            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-primary-foreground">
+            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-primary-foreground shadow-xs">
               {value.length}
             </span>
           )}
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+              open ? "rotate-180 text-foreground" : ""
+            }`}
+          />
         </span>
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="z-50 w-72 border border-border/70 bg-card p-2 text-card-foreground shadow-lg rounded-xl"
+        dir="rtl"
+        className="z-[120] w-[var(--radix-popover-trigger-width)] min-w-[280px] max-w-[420px] rounded-2xl border border-border/70 bg-card p-2.5 text-card-foreground shadow-2xl animate-in fade-in-50 zoom-in-95 duration-150"
       >
         <div className="flex flex-col gap-2">
+          {/* Search Bar */}
           <div className="relative">
-            <Search className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               aria-label={searchPlaceholder}
               placeholder={searchPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="theme-native-control w-full rounded-lg border border-border/70 bg-background px-3 py-1.5 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
+              className="w-full rounded-xl border border-border/70 bg-background py-1.5 pe-3 ps-9 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-start"
             />
           </div>
-          <div className="flex items-center justify-between px-1">
+
+          {/* Quick Actions (Select All / Clear All) */}
+          <div className="flex items-center justify-between border-b border-border/50 px-1 pb-1.5 pt-0.5">
             <button
               type="button"
               onClick={() => onChange(normalized.map((option) => option.code))}
-              className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-primary transition hover:bg-primary/10"
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-primary transition-all hover:bg-primary/10 active:scale-95"
             >
               {selectAllLabel}
             </button>
             <button
               type="button"
               onClick={() => onChange([])}
-              className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-destructive transition hover:bg-destructive/10"
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-destructive transition-all hover:bg-destructive/10 active:scale-95"
             >
               {clearAllLabel}
             </button>
           </div>
-          <div className="max-h-64 overflow-y-auto">
+
+          {/* Options List */}
+          <div className="max-h-60 overflow-y-auto space-y-0.5 px-0.5">
             {visible.length === 0 ? (
-              <div className="px-2 py-4 text-center text-xs text-muted-foreground">
+              <div className="px-3 py-6 text-center text-xs text-muted-foreground font-medium">
                 {noResultsLabel}
               </div>
             ) : (
@@ -140,7 +150,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                 return (
                   <label
                     key={option.code}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-muted/50"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all hover:bg-muted/60 active:scale-[0.99] select-none"
                   >
                     <Checkbox
                       checked={isChecked}
@@ -149,11 +159,11 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                     />
                     {option.color && (
                       <span
-                        className="h-2 w-2 shrink-0 rounded-full"
+                        className="h-2.5 w-2.5 shrink-0 rounded-full shadow-xs"
                         style={{ backgroundColor: option.color }}
                       />
                     )}
-                    <span className="truncate text-xs font-medium text-foreground">
+                    <span className="truncate text-xs sm:text-sm font-medium text-foreground">
                       {option.name}
                     </span>
                   </label>
