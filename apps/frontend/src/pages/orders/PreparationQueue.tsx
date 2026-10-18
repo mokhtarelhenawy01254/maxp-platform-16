@@ -69,6 +69,7 @@ import { usePreparationShortageOperations } from "./preparation/usePreparationSh
 import { usePreparationProblemOperations } from "./preparation/usePreparationProblemOperations";
 import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
 import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
+import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
 import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
 
 type BulkStatusResult = {
@@ -853,10 +854,16 @@ const PreparationQueue: React.FC = () => {
     uiActions.clearBulkControls();
   }, [selectionResetKey, uiActions]);
 
-  const selectedSet = useMemo(() => new Set(selectedOrders), [selectedOrders]);
-  const allVisibleSelected =
-    enrichedOrders.length > 0 &&
-    enrichedOrders.every((order) => selectedSet.has(order.orderNumber));
+  const {
+    selectedSet,
+    allVisibleSelected,
+    toggleOrderSelection,
+    toggleSelectAllVisible,
+  } = usePreparationOrderSelection({
+    selectedOrders,
+    enrichedOrders,
+    uiActions,
+  });
 
   const updateLocalStatuses = useCallback(
     (orderNumbers: string[], nextStatus: string) => {
@@ -1156,20 +1163,7 @@ const PreparationQueue: React.FC = () => {
   const dialogHoldReason = dialogHoldDetails.reason || "";
   // handleConfirmStatusChange provided by usePreparationSingleStatusOperations
 
-  const toggleOrderSelection = (orderNumber: string) => {
-    uiActions.toggleOrderSelection(orderNumber);
-  };
-  const toggleSelectAllVisible = () => {
-    if (allVisibleSelected) {
-      uiActions.clearVisibleSelection(
-        enrichedOrders.map((order) => order.orderNumber),
-      );
-      return;
-    }
 
-    const visibleIds = enrichedOrders.map((order) => order.orderNumber);
-    uiActions.selectVisibleOrders(visibleIds);
-  };
 
   return (
     <div className="space-y-3">
