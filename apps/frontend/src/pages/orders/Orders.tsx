@@ -280,132 +280,37 @@ const BULK_UPDATABLE_STATUS_CODES = [
   "SHORTAGE_FAILED",
 ] as const;
 
-const ORDER_TABLE_COLUMNS = [
-  "orderNumber",
-  "customer",
-  "customerRating",
-  "amount",
-  "status",
-  "payment",
-  "date",
-  "actions",
-] as const;
-type OrderTableColumn = (typeof ORDER_TABLE_COLUMNS)[number];
-const ORDER_TABLE_COLUMN_SET = new Set<string>(ORDER_TABLE_COLUMNS);
+import {
+  ORDER_TABLE_COLUMNS,
+  normalizeOrderTableColumns,
+  getOrderAmount,
+  getOrdersLoadErrorMessage,
+  getApiErrorMessage,
+  EMPTY_MERCHANT_OPERATIONS_TOTALS,
+  formatMerchantPieces,
+  payoutStatusLabels,
+  getMerchantOperationsTotals,
+  type OrderTableColumn,
+  type MerchantOperationsTotals,
+  type MerchantOperationsSummary,
+} from "./utils/ordersTableHelpers";
 
-const normalizeOrderTableColumns = (value: unknown): OrderTableColumn[] => {
-  if (!Array.isArray(value)) return ORDER_TABLE_COLUMNS;
-  const filtered = value.filter(
-    (col): col is OrderTableColumn =>
-      typeof col === "string" && ORDER_TABLE_COLUMN_SET.has(col),
-  );
-  if (filtered.length === 0) return ORDER_TABLE_COLUMNS;
-  if (!filtered.includes("orderNumber")) {
-    filtered.unshift("orderNumber");
-  }
-  return filtered as OrderTableColumn[];
+export {
+  ORDER_TABLE_COLUMNS,
+  normalizeOrderTableColumns,
+  getOrderAmount,
+  getOrdersLoadErrorMessage,
+  getApiErrorMessage,
+  EMPTY_MERCHANT_OPERATIONS_TOTALS,
+  formatMerchantPieces,
+  payoutStatusLabels,
+  getMerchantOperationsTotals,
 };
-
-const getOrderAmount = (order: Order) => {
-  if (typeof order.total === "number" && order.total > 0) {
-    return order.total;
-  }
-  const subtotal = typeof order.subtotal === "number" ? order.subtotal : 0;
-  const shipping = typeof order.shipping === "number" ? order.shipping : 0;
-  const tax = typeof order.tax === "number" ? order.tax : 0;
-  const discount = typeof order.discount === "number" ? order.discount : 0;
-
-  return Math.max(0, subtotal + shipping + tax - discount);
+export type {
+  OrderTableColumn,
+  MerchantOperationsTotals,
+  MerchantOperationsSummary,
 };
-
-const getOrdersLoadErrorMessage = (error: unknown) => {
-  const apiError = error as {
-    response?: { status?: number; data?: { message?: string } };
-    message?: string;
-  };
-
-  if (apiError?.response?.status && apiError.response.status >= 500) {
-    return i18n.t('orders.failedToLoadOrdersDesc');
-  }
-
-  if (apiError?.message?.includes("Network")) {
-    return i18n.t('orders.networkError');
-  }
-
-  return (
-    apiError?.response?.data?.message ||
-    apiError?.message ||
-    i18n.t('orders.genericLoadError')
-  );
-};
-
-const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
-  if (
-    isRecord(error) &&
-    "response" in error &&
-    isRecord(error.response) &&
-    "data" in error.response &&
-    isRecord(error.response.data)
-  ) {
-    if (typeof error.response.data.message === "string") {
-      return error.response.data.message;
-    }
-
-    if (typeof error.response.data.error === "string") {
-      return error.response.data.error;
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallbackMessage;
-};
-
-// Filter constants and parsePositiveInt imported from ./ordersFilterTypes
-
-const EMPTY_MERCHANT_OPERATIONS_TOTALS: MerchantOperationsTotals = {
-  assignedOrdersCount: 0,
-  assignedPieces: 0,
-  preparationOrdersCount: 0,
-  preparationPieces: 0,
-  inShippingOrdersCount: 0,
-  inShippingPieces: 0,
-  deliveredOrdersCount: 0,
-  deliveredPieces: 0,
-  notDeliveredOrdersCount: 0,
-  notDeliveredPieces: 0,
-  payablePieces: 0,
-  pendingPayablePieces: 0,
-  expectedReceivableAmount: 0,
-  inShippingAmount: 0,
-  deliveredPayableAmount: 0,
-  notDeliveredAmount: 0,
-  shippingCostAmount: 0,
-  confirmedCommissionAmount: 0,
-  pendingCommissionAmount: 0,
-  paidAmount: 0,
-};
-
-export const formatMerchantPieces = (value: string | number | undefined | null) =>
-  Number(value || 0).toLocaleString("ar-EG", {
-    maximumFractionDigits: 0,
-  });
-
-export const payoutStatusLabels: Record<string, string> = {
-  PENDING: i18n.t('orders.pendingWithdrawal'),
-  PROCESSED: i18n.t('orders.transferred'),
-  FAILED: i18n.t('orders.transferFailed'),
-  CANCELLED: i18n.t('orders.cancelled'),
-};
-
-export const getMerchantOperationsTotals = (
-  summary?: MerchantOperationsSummary | null,
-): MerchantOperationsTotals => ({
-  ...EMPTY_MERCHANT_OPERATIONS_TOTALS,
-  ...(summary?.summary || {}),
-});
 
 // Filter search and state helpers imported from ./ordersFilterTypes
 
