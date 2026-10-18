@@ -48,6 +48,7 @@ import {
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { useOrderHeaderActions } from "./hooks/useOrderHeaderActions";
 import { useOrderPermissionsAndApps } from "./hooks/useOrderPermissionsAndApps";
+import { useOrderStatusOptions } from "./hooks/useOrderStatusOptions";
 
 export { isCancellationStatus };
 
@@ -310,18 +311,19 @@ const OrderDetails: React.FC = () => {
     printBostaAWB,
   });
 
-  // 🛡️ (custom-status-persist): خريطة UPPER(code) → الاسم المعرّف لسجل النشاط
-  // (فوق الـ early returns إلزاميًا — hooks شرطية بتعمل React #310)
-  const statusNameMap = useMemo(
-    () =>
-      Object.fromEntries(
-        orderStatuses.map((s) => [
-          String(s.code || "").trim().toUpperCase(),
-          s.name,
-        ]),
-      ),
-    [orderStatuses],
-  );
+  const {
+    effectiveStatus,
+    currentStatusConfig,
+    hasWorkflowRestrictions,
+    filteredStatusOptions,
+    statusNameMap,
+  } = useOrderStatusOptions({
+    order,
+    orderStatuses,
+    allowedTransitions,
+    workflowStatusDefs,
+    isOverride,
+  });
 
 
 
@@ -351,25 +353,7 @@ const OrderDetails: React.FC = () => {
     );
   }
 
-  const effectiveStatus = (order as any).effectiveStatus || order.status || 'PENDING';
-  const currentStatusConfig = orderStatuses.find(
-    (s) => (s.code || "").toUpperCase() === String(effectiveStatus || "").toUpperCase(),
-  ) || {
-    code: effectiveStatus,
-    name: effectiveStatus.replace(/_/g, " "),
-    color: "#6B7280",
-  };
 
-  const hasWorkflowRestrictions = allowedTransitions.length > 0;
-  const filteredStatusOptions = hasWorkflowRestrictions
-    ? orderStatuses.filter((s) => {
-        if (s.code === order.status) return true;
-        if (!allowedTransitions.includes(s.code)) return false;
-        const wfStatus = workflowStatusDefs.find((ws) => ws.code === s.code);
-        if (wfStatus?.requiresOverride && !isOverride) return false;
-        return true;
-      })
-    : orderStatuses;
 
   const formatOptionalDate = (value?: string | null) =>
     value ? formatDate(value) : "—";
