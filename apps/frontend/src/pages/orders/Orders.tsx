@@ -32,6 +32,7 @@ import { BulkActionBar } from "./components/BulkActionBar";
 import { OrdersBulkCommandPalette } from "./components/OrdersBulkCommandPalette";
 import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
+import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
 import {
   OrdersFilters,
   OrdersListViewState,
@@ -823,32 +824,38 @@ const Orders: React.FC = () => {
     ORDER_TABLE_COLUMNS,
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [orderStatuses, setOrderStatuses] = useState<OrderStatusDefinition[]>(
-    DEFAULT_ORDER_STATUSES,
-  );
-
-
-  const [paymentStatuses, setPaymentStatuses] = useState<OrderStatusDefinition[]>(
-    DEFAULT_PAYMENT_STATUSES,
-  );
-  const [merchantOptions, setMerchantOptions] = useState<MerchantFilterOption[]>(
-    [],
-  );
-  const [affiliateOptions, setAffiliateOptions] = useState<AffiliateFilterOption[]>(
-    [],
-  );
-  const [merchantSettlementSummary, setMerchantSettlementSummary] =
-    useState<MerchantSettlementSummary | null>(null);
-  const [merchantSettlementLoading, setMerchantSettlementLoading] =
-    useState(false);
-  const [merchantSettlementError, setMerchantSettlementError] = useState("");
-  const [activeCarriers, setActiveCarriers] = useState<
-    Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }>
-  >([]);
-
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
   );
+
+  const companyId = user?.companyId || company?.id || "default";
+
+  const {
+    orderStatuses,
+    paymentStatuses,
+    orderStatusMap,
+    paymentStatusMap,
+    merchantOptions,
+    affiliateOptions,
+    merchantSettlementSummary,
+    merchantSettlementLoading,
+    merchantSettlementError,
+    activeCarriers,
+    hasActiveTurbo,
+    hasActiveQpExpress,
+    hasActiveBosta,
+  } = useOrdersLookupData({
+    companyId,
+    isAdmin,
+    isMerchant,
+    canSelectOrders,
+    merchantFilterId: filters.merchantId[0] || "",
+    merchantFilterLength: filters.merchantId.length,
+    defaultOrderStatuses: DEFAULT_ORDER_STATUSES,
+    defaultPaymentStatuses: DEFAULT_PAYMENT_STATUSES,
+    normalizeStatusCode,
+    getApiErrorMessage,
+  });
   // Debounced search: the input updates filters.search instantly (responsive
   // typing) while list fetches wait for a 300ms pause — one request per query
   // instead of one per keystroke.
@@ -1029,32 +1036,7 @@ const Orders: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
-  const orderStatusMap = useMemo(
-    () =>
-      new Map(
-        orderStatuses.map((status) => [
-          normalizeStatusCode(status.code),
-          {
-            ...status,
-            code: normalizeStatusCode(status.code),
-          },
-        ]),
-      ),
-    [orderStatuses],
-  );
-  const paymentStatusMap = useMemo(
-    () =>
-      new Map(
-        paymentStatuses.map((status) => [
-          normalizeStatusCode(status.code),
-          {
-            ...status,
-            code: normalizeStatusCode(status.code),
-          },
-        ]),
-      ),
-    [paymentStatuses],
-  );
+  // orderStatusMap and paymentStatusMap are provided by useOrdersLookupData
   const activeFilterCount = useMemo(
     () =>
       Object.entries(filters).reduce((count, [key, value]) => {
@@ -1098,246 +1080,7 @@ const Orders: React.FC = () => {
   // Socket.IO Integration
   const { socket, isConnected } = useSocket();
 
-  const companyId = user?.companyId || company?.id || "default";
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchOrderStatuses = async () => {
-      try {
-        const cacheKey = ["order-statuses", companyId];
-        let fetchedStatuses = queryClient.getQueryData<Array<Partial<OrderStatusDefinition> & { statusType?: string }>>(cacheKey);
-
-        if (!fetchedStatuses || fetchedStatuses.length === 0) {
-          const response = await apiClient.get("/order-status", {
-            _skipErrorToast: true,
-          });
-          if (!response.data?.success) {
-            return;
-          }
-          fetchedStatuses = Array.isArray(response.data.data)
-            ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
-            : [];
-          if (fetchedStatuses.length > 0) {
-            queryClient.setQueryData(cacheKey, fetchedStatuses);
-          }
-        }
-
-        // 🛡️ (deleted-status-dropdowns): رد الـ API هو مصدر الحقيقة — الحالات
-        // الافتراضية المدمجة كانت بترجّع حالات التاجر حذفها من إدارة الحالات.
-        // الـ defaults دلوقتي rescue فقط لو الرد فاضي (فشل/شركة جديدة).
-        const useDefaults = fetchedStatuses.length === 0;
-        const mergedOrderStatuses = new Map(
-          useDefaults
-            ? DEFAULT_ORDER_STATUSES.map((status) => [status.code, status])
-            : [],
-        );
-        const mergedPaymentStatuses = new Map(
-          useDefaults
-            ? DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status])
-            : [],
-        );
-
-        fetchedStatuses.forEach((status) => {
-          const normalizedCode = normalizeStatusCode(status?.code);
-          if (!normalizedCode) return;
-
-          const def: OrderStatusDefinition = {
-            ...status,
-            code: normalizedCode,
-            name: typeof status.name === "string" ? status.name : normalizedCode,
-          };
-
-          if (status.statusType === "payment") {
-            mergedPaymentStatuses.set(normalizedCode, def);
-          } else {
-            mergedOrderStatuses.set(normalizedCode, def);
-          }
-        });
-
-        if (isMounted) {
-          setOrderStatuses(Array.from(mergedOrderStatuses.values()));
-          setPaymentStatuses(Array.from(mergedPaymentStatuses.values()));
-        }
-      } catch (error) {
-        console.error("Failed to fetch order and payment statuses for list view:", error);
-      }
-    };
-
-    fetchOrderStatuses();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [companyId]);
-
-  useEffect(() => {
-    if (!isAdmin || isMerchant) {
-      setMerchantOptions([]);
-      setAffiliateOptions([]);
-      return;
-    }
-
-    let isMounted = true;
-
-    const fetchUnifiedOperationOptions = async () => {
-      const cacheKey = ["unified-operation-options", companyId];
-      const cached = queryClient.getQueryData<{ merchants: MerchantFilterOption[]; affiliates: AffiliateFilterOption[] }>(cacheKey);
-      if (cached) {
-        if (isMounted) {
-          setMerchantOptions(cached.merchants || []);
-          setAffiliateOptions(cached.affiliates || []);
-        }
-        return;
-      }
-
-      const [merchantsResult, affiliatesResult] = await Promise.allSettled([
-        apiClient.get<{ success: boolean; data?: MerchantFilterOption[] }>(
-          "/merchants",
-          { _skipErrorToast: true },
-        ),
-        apiClient.get<{ success: boolean; data?: AffiliateFilterOption[] }>(
-          "/affiliates/list",
-          { _skipErrorToast: true },
-        ),
-      ]);
-
-      if (!isMounted) return;
-
-      const merchants =
-        merchantsResult.status === "fulfilled" &&
-        merchantsResult.value.data.success &&
-        Array.isArray(merchantsResult.value.data.data)
-          ? merchantsResult.value.data.data
-          : [];
-      const affiliates =
-        affiliatesResult.status === "fulfilled" &&
-        affiliatesResult.value.data.success &&
-        Array.isArray(affiliatesResult.value.data.data)
-          ? affiliatesResult.value.data.data
-          : [];
-
-      queryClient.setQueryData(cacheKey, { merchants, affiliates });
-      setMerchantOptions(merchants);
-      setAffiliateOptions(affiliates);
-
-      if (
-        merchantsResult.status === "rejected" ||
-        affiliatesResult.status === "rejected"
-      ) {
-        console.warn("Failed to load some unified order operation filters:", {
-          merchantsError:
-            merchantsResult.status === "rejected"
-              ? merchantsResult.reason
-              : undefined,
-          affiliatesError:
-            affiliatesResult.status === "rejected"
-              ? affiliatesResult.reason
-              : undefined,
-        });
-      }
-    };
-
-    void fetchUnifiedOperationOptions();
-
-  }, [isAdmin, isMerchant, companyId]);
- 
-  useEffect(() => {
-    if (!canSelectOrders) return;
-    let isMounted = true;
-    const fetchActiveCarriers = async () => {
-      const cacheKey = ["active-carriers", companyId];
-      const cached = queryClient.getQueryData<Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }>>(cacheKey);
-      if (cached && cached.length > 0) {
-        if (isMounted) setActiveCarriers(cached);
-        return;
-      }
-
-      try {
-        let activeList: Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }> = [];
-        try {
-          const res = await apiClient.get<{ success: boolean; data?: typeof activeList }>(
-            "/shipping-companies/active-carriers",
-            { _skipErrorToast: true } as any,
-          );
-          if (res.data?.success && Array.isArray(res.data.data)) {
-            activeList = res.data.data;
-          }
-        } catch {
-          const fallbackRes = await apiClient.get<{ success: boolean; data?: typeof activeList }>(
-            "/shipping-companies?status=active&all=true",
-            { _skipErrorToast: true } as any,
-          );
-          if (fallbackRes.data?.success && Array.isArray(fallbackRes.data.data)) {
-            activeList = fallbackRes.data.data.filter((c) => c.isActive);
-          }
-        }
-        if (!isMounted) return;
-        queryClient.setQueryData(cacheKey, activeList);
-        setActiveCarriers(activeList);
-      } catch {
-        // Silently ignore
-      }
-    };
-    void fetchActiveCarriers();
-    return () => {
-      isMounted = false;
-    };
-  }, [canSelectOrders, companyId]);
-
-  useEffect(() => {
-    const selectedMerchantId = filters.merchantId[0] || "";
-    if (!isAdmin || isMerchant || filters.merchantId.length !== 1 || !selectedMerchantId) {
-      setMerchantSettlementSummary(null);
-      setMerchantSettlementError("");
-      setMerchantSettlementLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    const fetchMerchantSettlementSummary = async () => {
-      try {
-        setMerchantSettlementLoading(true);
-        setMerchantSettlementError("");
-        const response = await apiClient.get<{
-          success?: boolean;
-          data?: MerchantSettlementSummary;
-          message?: string;
-        }>(`/merchants/${selectedMerchantId}/settlement-summary`, {
-          _skipErrorToast: true,
-        });
-
-        if (!isMounted) return;
-
-        if (response.data?.success && response.data.data) {
-          setMerchantSettlementSummary(response.data.data);
-        } else {
-          setMerchantSettlementSummary(null);
-          setMerchantSettlementError(
-            response.data?.message || i18n.t("orders.merchantLoadError"),
-          );
-        }
-      } catch (error: unknown) {
-        if (!isMounted) return;
-        console.warn("Failed to load merchant settlement summary:", error);
-        setMerchantSettlementSummary(null);
-        setMerchantSettlementError(
-          getApiErrorMessage(error, i18n.t("orders.merchantLoadError")),
-        );
-      } finally {
-        if (isMounted) {
-          setMerchantSettlementLoading(false);
-        }
-      }
-    };
-
-    void fetchMerchantSettlementSummary();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [filters.merchantId, isAdmin, isMerchant]);
+  // Lookup data and filter effects managed by useOrdersLookupData hook
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -1893,38 +1636,7 @@ const Orders: React.FC = () => {
     getApiErrorMessage,
   });
 
-  const hasActiveTurbo = useMemo(() => {
-    return activeCarriers.some(
-      (c) =>
-        c.isActive &&
-        (c.providerKey === "TURBO" ||
-          c.slug === "turbo" ||
-          c.name?.toLowerCase().includes("turbo") ||
-          c.name?.includes("تربو")),
-    );
-  }, [activeCarriers]);
-
-  const hasActiveQpExpress = useMemo(() => {
-    return activeCarriers.some(
-      (c) =>
-        c.isActive &&
-        (c.providerKey === "QP_EXPRESS" ||
-          c.slug === "qp-express" ||
-          c.name?.toLowerCase().includes("qp") ||
-          c.name?.includes("كيو بي")),
-    );
-  }, [activeCarriers]);
-
-  const hasActiveBosta = useMemo(() => {
-    return activeCarriers.some(
-      (c) =>
-        c.isActive &&
-        (c.providerKey === "BOSTA" ||
-          c.slug === "bosta" ||
-          c.name?.toLowerCase().includes("bosta") ||
-          c.name?.includes("بوستا")),
-    );
-  }, [activeCarriers]);
+  // hasActiveTurbo, hasActiveQpExpress, hasActiveBosta provided by useOrdersLookupData
 
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     // 🛡️ لو شحنة الطلب مرتجعة في شركة الشحن، نعرض حالة الإرجاع بوضوح حتى لو حالة الطلب الداخلية مختلفة
