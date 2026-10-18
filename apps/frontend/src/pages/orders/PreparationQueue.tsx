@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -9,7 +8,6 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import {
-  DEFAULT_PROBLEM_HOLD_DETAILS,
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
   PREPARATION_COLUMN_LABELS,
@@ -72,6 +70,7 @@ import { usePreparationTransitions } from "./preparation/usePreparationTransitio
 import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
 import { usePreparationSlipPrint } from "./preparation/usePreparationSlipPrint";
 import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
+import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -278,13 +277,7 @@ const PreparationQueue: React.FC = () => {
 
   const getOrderByNumberRef = useRef<(orderNumber: string) => PreparationOrder | null>(() => null);
   const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
-
-  // transferingItemKey provided by usePreparationQuickTransfer
-  const [statusChangeDialog, setStatusChangeDialog] = useState<{
-    orderNumber: string;
-    targetStatus: string;
-    isHold?: boolean;
-  } | null>(null);
+  const setStatusChangeDialogRef = useRef<(dialog: any) => void>(() => {});
 
   const {
     problemHoldDrafts,
@@ -307,12 +300,29 @@ const PreparationQueue: React.FC = () => {
     updateLocalMetadata: (orderNumber, patch) => updateLocalMetadataRef.current(orderNumber, patch),
     updateLocalStatuses: (orderNumbers, status) => updateLocalStatusesRef.current(orderNumbers, status),
     fetchAll,
-    setStatusChangeDialog,
+    setStatusChangeDialog: (dialog) => setStatusChangeDialogRef.current(dialog),
     getApiErrorMessage,
     t,
   });
-  // bulkHoldDialog provided by usePreparationBulkStatusOperations
-  const [showInternalCourierModal, setShowInternalCourierModal] = useState(false);
+
+  const {
+    statusChangeDialog,
+    setStatusChangeDialog,
+    showInternalCourierModal,
+    setShowInternalCourierModal,
+    dialogOrder,
+    dialogHoldReason,
+    internalCourierOrderIds,
+    handleInternalCourierSuccess,
+  } = usePreparationDialogState({
+    getOrderByNumber: (orderNumber) => getOrderByNumberRef.current(orderNumber),
+    problemHoldDrafts,
+    selectedOrders,
+    clearBulkControls: uiActions.clearBulkControls,
+    fetchAll,
+    navigate,
+  });
+  setStatusChangeDialogRef.current = setStatusChangeDialog;
   const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
     if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
     try {
@@ -900,24 +910,6 @@ const PreparationQueue: React.FC = () => {
   });
 
   // handleMarkAsShortageHold, handleReleaseShortageHold, handleMarkAsShortageFailed provided by usePreparationShortageOperations
-  const dialogOrder = useMemo(
-    () =>
-      statusChangeDialog
-        ? getOrderByNumber(statusChangeDialog.orderNumber)
-        : null,
-    [getOrderByNumber, statusChangeDialog],
-  );
-
-  const dialogHoldDetails = useMemo(
-    () =>
-      statusChangeDialog && dialogOrder
-        ? problemHoldDrafts[statusChangeDialog.orderNumber] ||
-          buildProblemHoldDetails(dialogOrder.metadata)
-        : DEFAULT_PROBLEM_HOLD_DETAILS,
-    [dialogOrder, problemHoldDrafts, statusChangeDialog],
-  );
-
-  const dialogHoldReason = dialogHoldDetails.reason || "";
   // handleConfirmStatusChange provided by usePreparationSingleStatusOperations
 
 
@@ -1095,17 +1087,8 @@ const PreparationQueue: React.FC = () => {
 
         showInternalCourierModal={showInternalCourierModal}
         setShowInternalCourierModal={setShowInternalCourierModal}
-        internalCourierOrderIds={selectedOrders
-          .map((orderNumber) => getOrderByNumber(orderNumber)?.id)
-          .filter((id): id is string | number => id !== undefined && id !== null)
-          .map(String)}
-        onInternalCourierSuccess={(runId, runNumber) => {
-          setShowInternalCourierModal(false);
-          toast.success(`تم إنشاء مأمورية التوزيع ${runNumber} وتكليف المندوب بنجاح`);
-          uiActions.clearBulkControls();
-          void fetchAll();
-          navigate('/shipping/delivery-runs');
-        }}
+        internalCourierOrderIds={internalCourierOrderIds}
+        onInternalCourierSuccess={handleInternalCourierSuccess}
       />
     </div>
   );
