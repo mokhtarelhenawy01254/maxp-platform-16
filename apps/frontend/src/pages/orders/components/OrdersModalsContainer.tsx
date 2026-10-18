@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ErrorBoundary } from "../../../components/common/ErrorBoundary";
+import ErrorBoundary from "../../../components/common/ErrorBoundary";
 import type { Order, OrderStatusDefinition } from "../Orders";
 
 const EnhancedOrderModal = React.lazy(
