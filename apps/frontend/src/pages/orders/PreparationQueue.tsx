@@ -66,6 +66,7 @@ import PreparationSelectionBar from "./preparation/components/PreparationSelecti
 import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
 import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
 import { usePreparationShortageOperations } from "./preparation/usePreparationShortageOperations";
+import { usePreparationProblemOperations } from "./preparation/usePreparationProblemOperations";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -270,26 +271,44 @@ const PreparationQueue: React.FC = () => {
     t,
   });
 
-  const [problemHoldDrafts, setProblemHoldDrafts] = useState<
-    Record<string, ProblemHoldDetails>
-  >({});
+  const getOrderByNumberRef = useRef<(orderNumber: string) => PreparationOrder | null>(() => null);
+  const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
+
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
-  // shortageSavingOrderId provided by usePreparationShortageOperations
-  const [problemHoldSavingOrderId, setProblemHoldSavingOrderId] = useState<
-    string | null
-  >(null);
   const [statusChangeDialog, setStatusChangeDialog] = useState<{
     orderNumber: string;
     targetStatus: string;
-    isHold: boolean;
+    isHold?: boolean;
   } | null>(null);
-  const [editReasonOrder, setEditReasonOrder] = useState<{
-    orderNumber: string;
-    reason: string;
-  } | null>(null);
+
+  const {
+    problemHoldDrafts,
+    setProblemHoldDrafts,
+    problemHoldSavingOrderId,
+    setProblemHoldSavingOrderId,
+    editReasonOrder,
+    setEditReasonOrder,
+    editReasonOrderOrder,
+    saveProblemHoldDetails,
+    handleHoldAsProblem,
+    handleEditProblemReason,
+    handleConfirmEditReason,
+    handleReleaseProblemHold,
+  } = usePreparationProblemOperations({
+    orders,
+    user,
+    startingStatus: preparationSettings.startingStatus,
+    getOrderByNumber: (orderNumber) => getOrderByNumberRef.current(orderNumber),
+    updateLocalMetadata: (orderNumber, patch) => updateLocalMetadataRef.current(orderNumber, patch),
+    updateLocalStatuses: (orderNumbers, status) => updateLocalStatusesRef.current(orderNumbers, status),
+    fetchAll,
+    setStatusChangeDialog,
+    getApiErrorMessage,
+    t,
+  });
   const [bulkHoldDialog, setBulkHoldDialog] = useState<{
     mode: "selected" | "all";
     validOrders: PreparationOrder[];
@@ -852,6 +871,7 @@ const PreparationQueue: React.FC = () => {
     },
     [setOrders],
   );
+  updateLocalStatusesRef.current = updateLocalStatuses;
 
   const updateLocalMetadata = useCallback(
     (orderNumber: string, metadataPatch: Record<string, unknown>) => {
@@ -877,6 +897,7 @@ const PreparationQueue: React.FC = () => {
       preparationOrders.find((order) => order.orderNumber === orderNumber) || null,
     [preparationOrders],
   );
+  getOrderByNumberRef.current = getOrderByNumber;
 
   const isQcComplete = useCallback(
     (orderNumber: string) => {
@@ -1016,62 +1037,7 @@ const PreparationQueue: React.FC = () => {
   }, [orders, user?.company?.name, user?.company?.logo, invoiceSettings, t]);
 
   // saveShortageHoldDetails provided by usePreparationShortageOperations
-  const saveProblemHoldDetails = useCallback(
-    async (
-      orderNumber: string,
-      overrides: Partial<ProblemHoldDetails> = {},
-      options?: { successMessage?: string | null },
-    ) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      if (!order) {
-        toast.error(t('preparation.page.orderNotFound'));
-        return false;
-      }
-
-      const currentDraft =
-        problemHoldDrafts[orderNumber] || buildProblemHoldDetails(order.metadata);
-      const nextDraft: ProblemHoldDetails = {
-        ...DEFAULT_PROBLEM_HOLD_DETAILS,
-        ...currentDraft,
-        ...overrides,
-      };
-      const metadataPatch = {
-        [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
-      };
-
-      try {
-        setProblemHoldSavingOrderId(orderNumber);
-        await apiClient.put(`/orders-new/simple/${encodeURIComponent(orderNumber)}`, {
-          metadataPatch,
-        });
-        updateLocalMetadata(orderNumber, metadataPatch);
-        setProblemHoldDrafts((previous) => ({
-          ...previous,
-          [orderNumber]: nextDraft,
-        }));
-
-        if (options?.successMessage !== null) {
-          toast.success(options?.successMessage || t('preparation.page.problemHoldSaved'));
-        }
-
-        if (!options?.skipRefresh) {
-          void fetchAll();
-        }
-
-        return true;
-      } catch (error: unknown) {
-        console.error("Failed to save problem hold details:", error);
-        toast.error(
-          getApiErrorMessage(error) || t('preparation.page.problemHoldFailed'),
-        );
-        return false;
-      } finally {
-        setProblemHoldSavingOrderId(null);
-      }
-    },
-    [fetchAll, orders, problemHoldDrafts, t, updateLocalMetadata],
-  );
-
+  // saveProblemHoldDetails provided by usePreparationProblemOperations
   const performStatusUpdate = useCallback(
     async (
       orderNumber: string,
@@ -1265,113 +1231,7 @@ const PreparationQueue: React.FC = () => {
     [getOrderByNumber, t, validateTransition],
   );
 
-  const handleHoldAsProblem = useCallback(
-    async (orderNumber: string) => {
-      const order = getOrderByNumber(orderNumber);
-      if (!order) return;
-      setStatusChangeDialog({
-        orderNumber,
-        targetStatus: PROBLEM_HOLD_STATUS,
-        isHold: true,
-      });
-    },
-    [getOrderByNumber],
-  );
-
-  const handleEditProblemReason = useCallback(
-    (orderNumber: string) => {
-      const order = getOrderByNumber(orderNumber);
-      if (!order) return;
-      const details =
-        problemHoldDrafts[orderNumber] ||
-        buildProblemHoldDetails(order.metadata);
-      setEditReasonOrder({ orderNumber, reason: details.reason });
-    },
-    [getOrderByNumber, problemHoldDrafts],
-  );
-
-  const editReasonOrderOrder = useMemo(
-    () =>
-      editReasonOrder ? getOrderByNumber(editReasonOrder.orderNumber) : null,
-    [editReasonOrder, getOrderByNumber],
-  );
-
-  const handleConfirmEditReason = useCallback(
-    async (reason: string) => {
-      if (!editReasonOrder) return;
-      const ok = await saveProblemHoldDetails(editReasonOrder.orderNumber, {
-        reason,
-      });
-      if (ok) setEditReasonOrder(null);
-    },
-    [editReasonOrder, saveProblemHoldDetails],
-  );
-
-  const handleReleaseProblemHold = useCallback(
-    async (orderNumber: string) => {
-      const order = getOrderByNumber(orderNumber);
-      const currentDraft =
-        problemHoldDrafts[orderNumber] || buildProblemHoldDetails(order?.metadata);
-      const nextDraft: ProblemHoldDetails = {
-        ...currentDraft,
-        releasedAt: new Date().toISOString(),
-        state: "released",
-      };
-      if (user?.firstName || user?.lastName) {
-        nextDraft.releasedBy =
-          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
-          nextDraft.releasedBy;
-      }
-
-      try {
-        setProblemHoldSavingOrderId(orderNumber);
-        await apiClient.put(
-          `/orders-new/simple/${encodeURIComponent(orderNumber)}`,
-          { metadataPatch: { [PROBLEM_HOLD_METADATA_KEY]: nextDraft } },
-        );
-        updateLocalMetadata(orderNumber, {
-          [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
-        });
-        setProblemHoldDrafts((previous) => ({
-          ...previous,
-          [orderNumber]: nextDraft,
-        }));
-
-        await apiClient.post(
-          `/orders-new/simple/${encodeURIComponent(orderNumber)}/status`,
-          {
-            status: preparationSettings.startingStatus,
-            notes: t("preparation.problemPanel.releasedNote"),
-            isOverride: ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(
-              user?.role || "",
-            ),
-          },
-        );
-
-        updateLocalStatuses([orderNumber], preparationSettings.startingStatus);
-        toast.success(t("preparation.problemPanel.releasedSuccess"));
-        void fetchAll();
-      } catch (error: unknown) {
-        console.error("Failed to release problem hold:", error);
-        toast.error(
-          getApiErrorMessage(error) || t("preparation.problemPanel.releasedError"),
-        );
-      } finally {
-        setProblemHoldSavingOrderId(null);
-      }
-    },
-    [
-      fetchAll,
-      getOrderByNumber,
-      preparationSettings.startingStatus,
-      problemHoldDrafts,
-      t,
-      updateLocalMetadata,
-      updateLocalStatuses,
-      user,
-    ],
-  );
-
+  // Problem hold handlers provided by usePreparationProblemOperations
   const executeBulkUpdateSelected = useCallback(
     async (validOrders: PreparationOrder[], reason?: string) => {
       try {
