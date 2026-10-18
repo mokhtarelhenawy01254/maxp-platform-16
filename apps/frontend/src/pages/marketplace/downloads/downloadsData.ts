@@ -132,21 +132,21 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "سطح المكتب",
     platform: "ويندوز (Windows 10 / 11 x64)",
     platformEn: "Windows 64-bit",
-    version: "v1.0.16",
-    releaseDate: "2026-09",
+    version: "v1.0.95",
+    releaseDate: "2026-10",
     icon: Monitor,
     summary: "تسجيل دقيق لساعات العمل والإنتاجية مع طابور تخزين محلي يعمل دون اتصال بالإنترنت وتحديثات تلقائية صامتة.",
     primaryActionLabel: "تحميل مثبت البرنامج",
     telemetry: {
       targetSystem: "Windows 10 / 11 (x64)",
-      primarySize: "83.8 MB",
+      primarySize: "80.1 MB",
       ramConsumption: "< 45 MB RAM",
     },
     files: [
       {
         id: "win-setup",
         label: "مثبت البرنامج (Setup .exe)",
-        size: "83.8 MB",
+        size: "80.1 MB",
         url: "https://maxp.online/download/MaxP-Workspace-Setup.exe",
         extension: ".exe",
         isPrimary: true,
@@ -183,6 +183,14 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       pairingNotes: "بعد تثبيت البرنامج، افتح نافذة الإعدادات وألصق معرّف المنشأة المرجعي لحسابك لتفعيل المزامنة التلقائية فوراً.",
       sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       changelog: [
+        {
+          version: "v1.0.95",
+          date: "2026-10",
+          changes: [
+            "تحديث أداء واستقرار النواة، تسريع المزامنة التلقائية اللحظية وحل مشكلات الجلسات العالقة.",
+            "تحسين دقة عداد الوقت الحقيقي واحتساب ساعات العمل للمهام.",
+          ],
+        },
         {
           version: "v1.0.16",
           date: "2026-09",
@@ -248,8 +256,8 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "أندرويد",
     platform: "أندرويد (Android 8.0+)",
     platformEn: "Android APK",
-    version: "v2.1.0",
-    releaseDate: "2026-03",
+    version: "v1.1.0",
+    releaseDate: "2026-10",
     icon: Smartphone,
     summary: "تسجيل حضور بالبصمة الحيوية والنطاق الجغرافي، مع تنبيهات فورية للمهام والمبيعات وتوصيل الطلبات.",
     primaryActionLabel: "تحميل تطبيق أندرويد (APK)",
@@ -289,8 +297,17 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
       changelog: [
         {
-          version: "v2.1.0",
-          date: "2026-03",
+          version: "v1.1.0",
+          date: "2026-10",
+          changes: [
+            "تحديث رئيسي: خدمة المكالمات في الخلفية، تحسينات شاملة في الأداء والاستقرار.",
+            "تسريع فتح الصفحات والمزامنة الفورية مع السيرفر.",
+            "إصلاحات لاستقرار التنبيهات وإشعارات الدفع وتحسين تجربة التصفح والطباعة المحمولة.",
+          ],
+        },
+        {
+          version: "v1.0.8",
+          date: "2026-09",
           changes: [
             "تحديث محرك التنبيهات اللحظية وتقليل استهلاك بطارية الهاتف بنسبة 35%.",
             "تحسين دقة النطاق الجغرافي لمستودعات وفروع المنشأة.",
@@ -308,8 +325,8 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "آبل iOS",
     platform: "آيفون وآيباد (Apple iOS 14.0+)",
     platformEn: "iOS Safari & PWA Web Clip",
-    version: "v2.1.0",
-    releaseDate: "2026-03",
+    version: "v1.1.0",
+    releaseDate: "2026-10",
     icon: Apple,
     summary: "تطبيق متكامل للآيفون يثبت مباشرة على الشاشة الرئيسية عبر متصفح Safari مع إشعارات فورية.",
     primaryActionLabel: "تثبيت للآيفون (iOS)",
@@ -354,11 +371,11 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       },
       changelog: [
         {
-          version: "v2.1.0",
-          date: "2026-03",
+          version: "v1.1.0",
+          date: "2026-10",
           changes: [
-            "دعم كامل لإشعارات Web Push على iOS 16.4+.",
-            "تحسين سلاسة الواجهة والتمرير لتطابق التطبيقات الأصيلة بنسبة 100%.",
+            "دعم كامل لإشعارات Web Push اللحظية.",
+            "تحسينات شاملة في سرعة المزامنة والربط مع الحساب وسلاسة الواجهة.",
           ],
         },
       ],
