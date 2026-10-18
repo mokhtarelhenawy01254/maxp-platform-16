@@ -14,8 +14,9 @@ import { manufacturingApi, ProductionOrder } from '../manufacturingApi';
 import { ReportOrdersTab } from './tabs/ReportOrdersTab';
 import { ReportUnitCostTab } from './tabs/ReportUnitCostTab';
 import { ReportVariancesTab } from './tabs/ReportVariancesTab';
+import { ReportPartnerFactoriesTab } from './tabs/ReportPartnerFactoriesTab';
 
-type ReportTab = 'orders' | 'unit_cost' | 'variances';
+type ReportTab = 'orders' | 'unit_cost' | 'variances' | 'subcontract';
 
 export const ManufacturingReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('orders');
@@ -319,6 +320,16 @@ export const ManufacturingReportsPage: React.FC = () => {
             >
               انحرافات التكاليف (3-Way)
             </button>
+            <button
+              onClick={() => setActiveTab('subcontract')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'subcontract'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              أداء المصانع الشركاء
+            </button>
           </div>
 
           {/* Quick Filters */}
@@ -397,6 +408,9 @@ export const ManufacturingReportsPage: React.FC = () => {
         {activeTab === 'orders' && <ReportOrdersTab orders={filteredOrders} formatEGP={formatEGP} />}
         {activeTab === 'unit_cost' && <ReportUnitCostTab orders={filteredOrders} formatEGP={formatEGP} />}
         {activeTab === 'variances' && <ReportVariancesTab metrics={metrics} formatEGP={formatEGP} />}
+        {activeTab === 'subcontract' && (
+          <ReportPartnerFactoriesTab dateFilter={dateFilter} formatEGP={formatEGP} />
+        )}
       </div>
     </div>
   );

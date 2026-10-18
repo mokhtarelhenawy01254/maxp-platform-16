@@ -6,6 +6,7 @@ import ManufacturingOrdersPage from './orders/ManufacturingOrdersPage';
 import ManufacturingOrderDetailPage from './orders/ManufacturingOrderDetailPage';
 import CustomerOrdersListPage from './customerOrders/CustomerOrdersListPage';
 import CustomerOrderDetailPage from './customerOrders/CustomerOrderDetailPage';
+import PartnerFactoriesPage from './partner-factories/PartnerFactoriesPage';
 import ManufacturingReportsPage from './reports/ManufacturingReportsPage';
 import ManufacturingSettingsPage from './settings/ManufacturingSettingsPage';
 
@@ -17,6 +18,7 @@ export const ManufacturingRoutes: React.FC = () => {
       <Route path="customer-orders/:id" element={<CustomerOrderDetailPage />} />
       <Route path="orders" element={<ManufacturingOrdersPage />} />
       <Route path="orders/:id" element={<ManufacturingOrderDetailPage />} />
+      <Route path="partner-factories" element={<PartnerFactoriesPage />} />
       <Route path="boms" element={<ManufacturingBomsPage />} />
       <Route path="reports" element={<ManufacturingReportsPage />} />
       <Route path="settings" element={<ManufacturingSettingsPage />} />

@@ -10,12 +10,13 @@ import { OrderMaterialIssuesTab } from './tabs/OrderMaterialIssuesTab';
 import { OrderGoodsReceiptsTab } from './tabs/OrderGoodsReceiptsTab';
 import { OrderCostAnalysisTab } from './tabs/OrderCostAnalysisTab';
 import { OrderJournalEntriesTab } from './tabs/OrderJournalEntriesTab';
+import { OrderAttachmentsTab } from './tabs/OrderAttachmentsTab';
 
 // Modals & Header
 import { OrderCockpitHeader } from './cockpit/OrderCockpitHeader';
 import { OrderLifecycleModals } from './cockpit/OrderLifecycleModals';
 
-type OrderTab = 'stages' | 'issues' | 'receipts' | 'costing' | 'entries';
+type OrderTab = 'stages' | 'issues' | 'receipts' | 'costing' | 'entries' | 'attachments';
 
 export const ManufacturingOrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -235,6 +236,16 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
           >
             القيود المحاسبية لـ WIP
           </button>
+          <button
+            onClick={() => setActiveTab('attachments')}
+            className={`px-4 py-2.5 border-b-2 transition ${
+              activeTab === 'attachments'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            الصور والملفات
+          </button>
         </div>
 
         {/* Tab 1: Stages Progress */}
@@ -257,6 +268,9 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
 
         {/* Tab 5: Linked Journal Entries */}
         {activeTab === 'entries' && <OrderJournalEntriesTab order={order} />}
+
+        {/* Tab 6: Attachments & Gallery */}
+        {activeTab === 'attachments' && <OrderAttachmentsTab order={order} onRefresh={loadOrder} />}
       </div>
 
       {/* Lifecycle Dialogs */}

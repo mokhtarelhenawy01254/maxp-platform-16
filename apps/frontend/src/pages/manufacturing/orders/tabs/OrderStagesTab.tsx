@@ -4,10 +4,12 @@ import {
   Clock,
   Play,
   User,
-  Wrench,
   Edit2,
-  AlertTriangle,
+  Building2,
+  Truck,
+  PackageCheck,
   RotateCw,
+  FileText,
 } from 'lucide-react';
 import {
   ProductionOrder,
@@ -15,6 +17,8 @@ import {
   ProductionStageStatus,
   manufacturingApi,
 } from '../../manufacturingApi';
+import { StageAssignmentModal } from './StageAssignmentModal';
+import { StageEventModal } from './StageEventModal';
 
 interface OrderStagesTabProps {
   order: ProductionOrder;
@@ -23,6 +27,13 @@ interface OrderStagesTabProps {
 
 export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh }) => {
   const [editingStage, setEditingStage] = useState<ProductionStage | null>(null);
+  const [assigningStage, setAssigningStage] = useState<ProductionStage | null>(null);
+  const [eventModalData, setEventModalData] = useState<{
+    stage: ProductionStage;
+    event: 'SENT' | 'ACK_RECEIPT' | 'COMPLETED';
+  } | null>(null);
+
+  // Edit stage form state
   const [completedQty, setCompletedQty] = useState(0);
   const [scrapQty, setScrapQty] = useState(0);
   const [actualMinutes, setActualMinutes] = useState(0);
@@ -63,7 +74,7 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
       setEditingStage(null);
       onRefresh();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'فشل تحديث المرحلة');
+      setError(err?.response?.data?.message || err?.message || 'فشل تحديث المرحلة');
     } finally {
       setSaving(false);
     }
@@ -101,14 +112,18 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
     }
   };
 
+  const isOrderClosed = order.status === 'COMPLETED' || order.status === 'CANCELLED';
+
   return (
     <div className="space-y-4 text-xs">
       {/* Stages Summary Bar */}
       <div className="p-3.5 rounded-xl bg-card border border-border/70 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-xs font-bold text-foreground">مراحل صالة الإنتاج والتشغيل (Shop Floor Stages)</h3>
+          <h3 className="text-xs font-bold text-foreground">
+            مراحل صالة الإنتاج والتشغيل (Shop Floor & Subcontract Stages)
+          </h3>
           <p className="text-[11px] text-muted-foreground">
-            تسجيل إنتاجية العمال والأجور المباشرة بالقطعة لكل مرحلة صناعية
+            تتبع مراحل التشغيل الداخلي والخارجي، إسناد المصانع الشركاء، وأجور العمالة المحققة
           </p>
         </div>
         <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">
@@ -122,72 +137,164 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
 
       {/* Stages Table */}
       <div className="rounded-xl bg-card border border-border/70 overflow-hidden shadow-xs">
-        <table className="w-full text-right text-xs">
-          <thead className="bg-muted/40 text-muted-foreground border-b border-border/60">
-            <tr>
-              <th className="p-3 w-12 text-center font-semibold">#</th>
-              <th className="p-3 font-semibold">اسم المرحلة</th>
-              <th className="p-3 font-semibold">نوع المرحلة</th>
-              <th className="p-3 font-semibold text-center">الحالة</th>
-              <th className="p-3 font-semibold text-center">الكمية المنجزة</th>
-              <th className="p-3 font-semibold">الفني / العامل</th>
-              <th className="p-3 font-semibold">أجر القطعة</th>
-              <th className="p-3 font-semibold">تكلفة المرحلة</th>
-              <th className="p-3 font-semibold text-center w-24">إجراء</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {stages.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead className="bg-muted/40 text-muted-foreground border-b border-border/60">
               <tr>
-                <td colSpan={9} className="py-8 text-center text-muted-foreground">
-                  لا توجد مراحل مسجلة لهذا الأمر
-                </td>
+                <th className="p-3 w-10 text-center font-semibold">#</th>
+                <th className="p-3 font-semibold">اسم المرحلة</th>
+                <th className="p-3 font-semibold">نوع المرحلة</th>
+                <th className="p-3 font-semibold">جهة التنفيذ والمصنع</th>
+                <th className="p-3 font-semibold text-center">حالة التشغيل</th>
+                <th className="p-3 font-semibold text-center">الكمية المنجزة</th>
+                <th className="p-3 font-semibold">مسار المصنع الخارجي</th>
+                <th className="p-3 font-semibold">أجر القطعة</th>
+                <th className="p-3 font-semibold">التكلفة</th>
+                <th className="p-3 font-semibold text-center w-28">إجراء</th>
               </tr>
-            ) : (
-              stages.map((st) => (
-                <tr key={st.id} className="hover:bg-muted/20 transition">
-                  <td className="p-3 text-center font-mono text-muted-foreground">{st.sequence}</td>
-                  <td className="p-3 font-bold text-foreground">{st.name}</td>
-                  <td className="p-3">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/60">
-                      {st.stageType}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">{getStatusBadge(st.status)}</td>
-                  <td className="p-3 text-center font-mono font-bold text-foreground">
-                    {st.completedQuantity} / {order.plannedQuantity}
-                  </td>
-                  <td className="p-3">
-                    {st.assignedWorker ? (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <User className="w-3 h-3" />
-                        <span>{st.assignedWorker}</span>
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 font-mono tabular-nums text-muted-foreground">
-                    {Number(st.ratePerPiece).toFixed(2)} ج.م
-                  </td>
-                  <td className="p-3 font-mono font-bold tabular-nums text-emerald-600">
-                    {Number(st.stageLaborCost).toFixed(2)} ج.م
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => handleOpenEdit(st)}
-                      disabled={order.status === 'COMPLETED' || order.status === 'CANCELLED'}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 transition"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      <span>تسجيل</span>
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {stages.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                    لا توجد مراحل مسجلة لهذا الأمر
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                stages.map((st) => {
+                  const isExternal = st.executionEntity === 'EXTERNAL';
+                  const isCompleted = st.status === 'COMPLETED';
+
+                  return (
+                    <tr key={st.id} className="hover:bg-muted/20 transition">
+                      <td className="p-3 text-center font-mono text-muted-foreground">{st.sequence}</td>
+                      <td className="p-3">
+                        <div className="font-bold text-foreground">{st.name}</div>
+                        {st.factoryNotes && (
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[180px] mt-0.5" title={st.factoryNotes}>
+                            {st.factoryNotes}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/60">
+                          {st.stageType}
+                        </span>
+                      </td>
+
+                      {/* Execution Entity & Partner Factory */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-1.5">
+                          {isExternal ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
+                              <Building2 className="w-3 h-3" />
+                              <span>خارجي: {st.partnerFactory?.name || 'مصنع شريك'}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
+                              <span>داخلي (صالتنا)</span>
+                            </span>
+                          )}
+
+                          {!isOrderClosed && !isCompleted && (
+                            <button
+                              onClick={() => setAssigningStage(st)}
+                              title="تعديل جهة التنفيذ والمصنع الشريك"
+                              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="p-3 text-center">{getStatusBadge(st.status)}</td>
+
+                      <td className="p-3 text-center font-mono font-bold text-foreground">
+                        {st.completedQuantity} / {order.plannedQuantity}
+                      </td>
+
+                      {/* External Factory Sequential Events */}
+                      <td className="p-3">
+                        {isExternal ? (
+                          <div className="space-y-1">
+                            {/* SENT step */}
+                            {!st.sentToFactoryAt ? (
+                              <button
+                                onClick={() => setEventModalData({ stage: st, event: 'SENT' })}
+                                disabled={isOrderClosed || isCompleted}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 disabled:opacity-40"
+                              >
+                                <Truck className="w-3 h-3" />
+                                <span>إرسال للمصنع</span>
+                              </button>
+                            ) : !st.factoryAckReceiptAt ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <Truck className="w-3 h-3 text-blue-500" />
+                                  <span>أرسلت</span>
+                                </span>
+                                <button
+                                  onClick={() => setEventModalData({ stage: st, event: 'ACK_RECEIPT' })}
+                                  disabled={isOrderClosed || isCompleted}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 disabled:opacity-40"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>تأكيد استلام</span>
+                                </button>
+                              </div>
+                            ) : !st.factoryCompletedAt ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-amber-500" />
+                                  <span>استلمها المصنع</span>
+                                </span>
+                                <button
+                                  onClick={() => setEventModalData({ stage: st, event: 'COMPLETED' })}
+                                  disabled={isOrderClosed || isCompleted}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 disabled:opacity-40"
+                                >
+                                  <PackageCheck className="w-3 h-3" />
+                                  <span>تأكيد إتمام</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>تم الإنجاز بالمصنع</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/60 text-[11px]">— تشغيل داخلي —</span>
+                        )}
+                      </td>
+
+                      <td className="p-3 font-mono tabular-nums text-muted-foreground">
+                        {Number(st.ratePerPiece).toFixed(2)} ج.م
+                      </td>
+
+                      <td className="p-3 font-mono font-bold tabular-nums text-emerald-600">
+                        {Number(st.stageLaborCost).toFixed(2)} ج.م
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => handleOpenEdit(st)}
+                          disabled={isOrderClosed}
+                          className="flex items-center justify-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40 transition"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>تسجيل</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Stage Progress Update Modal */}
@@ -302,6 +409,27 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
             </form>
           </div>
         </div>
+      )}
+
+      {/* Stage Execution Assignment Modal */}
+      {assigningStage && (
+        <StageAssignmentModal
+          orderId={order.id}
+          stage={assigningStage}
+          onClose={() => setAssigningStage(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+
+      {/* Stage Factory Event Modal */}
+      {eventModalData && (
+        <StageEventModal
+          orderId={order.id}
+          stage={eventModalData.stage}
+          event={eventModalData.event}
+          onClose={() => setEventModalData(null)}
+          onSuccess={onRefresh}
+        />
       )}
     </div>
   );

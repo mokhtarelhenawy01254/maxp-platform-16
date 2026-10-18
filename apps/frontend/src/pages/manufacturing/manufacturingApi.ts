@@ -180,6 +180,76 @@ export interface ProductionStage {
   notes?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
+  executionEntity?: 'INTERNAL' | 'EXTERNAL';
+  partnerFactoryId?: string | null;
+  partnerFactory?: PartnerFactory | null;
+  sentToFactoryAt?: string | null;
+  factoryAckReceiptAt?: string | null;
+  factoryCompletedAt?: string | null;
+  factoryNotes?: string | null;
+}
+
+export type StageExecutionEntity = 'INTERNAL' | 'EXTERNAL';
+export type AttachmentKind = 'IMAGE' | 'VIDEO' | 'DOC';
+
+export interface PartnerFactory {
+  id: string;
+  companyId: string;
+  name: string;
+  code?: string | null;
+  specialty?: string | null;
+  contactPerson?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  metrics?: {
+    totalStagesCount: number;
+    activeStagesCount: number;
+    completedStagesCount: number;
+    totalLaborCost: number;
+  };
+}
+
+export interface ManufacturingAttachment {
+  id: string;
+  companyId: string;
+  orderId?: string | null;
+  stageId?: string | null;
+  url: string;
+  kind: AttachmentKind;
+  caption?: string | null;
+  uploadedById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  stage?: {
+    id: string;
+    name: string;
+    sequence: number;
+  } | null;
+}
+
+export interface PartnerFactoryPerformance {
+  id: string;
+  name: string;
+  code?: string | null;
+  specialty?: string | null;
+  contactPerson?: string | null;
+  phone?: string | null;
+  isActive: boolean;
+  assignedStagesCount: number;
+  assignedOrdersCount: number;
+  completedStagesCount: number;
+  inProgressStagesCount: number;
+  onTimeCount: number;
+  lateCount: number;
+  onTimeRate: number;
+  avgExecutionDays: number;
+  totalLaborCost: number;
+  attachmentsCount: number;
 }
 
 export interface MaterialIssueItem {
@@ -742,5 +812,94 @@ export const manufacturingApi = {
     } catch {
       return [];
     }
+  },
+
+  // ==========================================================================
+  // Partner Factories & Subcontracting (Wave 2)
+  // ==========================================================================
+
+  listPartnerFactories: async (filters?: {
+    search?: string;
+    isActive?: boolean | string;
+    specialty?: string;
+  }): Promise<PartnerFactory[]> => {
+    const res = await apiClient.get('/manufacturing/partner-factories', { params: filters });
+    return res.data?.data || [];
+  },
+
+  getPartnerFactoryById: async (id: string): Promise<PartnerFactory> => {
+    const res = await apiClient.get(`/manufacturing/partner-factories/${id}`);
+    return res.data?.data;
+  },
+
+  createPartnerFactory: async (data: Partial<PartnerFactory>): Promise<PartnerFactory> => {
+    const res = await apiClient.post('/manufacturing/partner-factories', data);
+    return res.data?.data;
+  },
+
+  updatePartnerFactory: async (id: string, data: Partial<PartnerFactory>): Promise<PartnerFactory> => {
+    const res = await apiClient.patch(`/manufacturing/partner-factories/${id}`, data);
+    return res.data?.data;
+  },
+
+  deletePartnerFactory: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/partner-factories/${id}`);
+    return res.data;
+  },
+
+  assignStageExecution: async (
+    orderId: string,
+    stageId: string,
+    data: { executionEntity: 'INTERNAL' | 'EXTERNAL'; partnerFactoryId?: string | null }
+  ): Promise<ProductionStage> => {
+    const res = await apiClient.patch(
+      `/manufacturing/orders/${orderId}/stages/${stageId}/assignment`,
+      data
+    );
+    return res.data?.data;
+  },
+
+  recordStageFactoryEvent: async (
+    orderId: string,
+    stageId: string,
+    data: { event: 'SENT' | 'ACK_RECEIPT' | 'COMPLETED'; at?: string; notes?: string }
+  ): Promise<ProductionStage> => {
+    const res = await apiClient.post(
+      `/manufacturing/orders/${orderId}/stages/${stageId}/factory-events`,
+      data
+    );
+    return res.data?.data;
+  },
+
+  listOrderAttachments: async (
+    orderId: string,
+    filters?: { stageId?: string; kind?: string }
+  ): Promise<ManufacturingAttachment[]> => {
+    const res = await apiClient.get(`/manufacturing/orders/${orderId}/attachments`, { params: filters });
+    return res.data?.data || [];
+  },
+
+  createAttachment: async (data: {
+    url: string;
+    kind?: 'IMAGE' | 'VIDEO' | 'DOC';
+    orderId?: string;
+    stageId?: string;
+    caption?: string;
+  }): Promise<ManufacturingAttachment> => {
+    const res = await apiClient.post('/manufacturing/attachments', data);
+    return res.data?.data;
+  },
+
+  deleteAttachment: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/attachments/${id}`);
+    return res.data;
+  },
+
+  getPartnerFactoriesPerformance: async (filters?: {
+    from?: string;
+    to?: string;
+  }): Promise<PartnerFactoryPerformance[]> => {
+    const res = await apiClient.get('/manufacturing/partner-factories/performance', { params: filters });
+    return res.data?.data || [];
   },
 };
