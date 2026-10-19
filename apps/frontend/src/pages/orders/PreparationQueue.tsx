@@ -43,6 +43,7 @@ import { usePreparationStatusOptions } from "./preparation/usePreparationStatusO
 import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
 import { usePreparationFilterDerived } from "./preparation/usePreparationFilterDerived";
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
+import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -61,17 +62,6 @@ const PreparationQueue: React.FC = () => {
   const {
     activeStage,
     selectedWarehouseId,
-    stockFilter,
-    shortageReasonFilter,
-    shortageFollowUpFilter,
-    shortageOwnerFilter,
-    productFilter,
-    itemCountFilter,
-    notPrintedFilter,
-    noShippingCodeFilter,
-    search,
-    sortBy,
-    sortOrder,
     selectedOrders,
     statusSelections,
     bulkStatus,
@@ -263,17 +253,17 @@ const PreparationQueue: React.FC = () => {
       serverShortageOwnerOptions,
       preparationOrders,
       shortageHoldDrafts,
-      activeStage,
-      selectedWarehouseId,
-      stockFilter,
-      shortageReasonFilter,
-      shortageFollowUpFilter,
-      shortageOwnerFilter,
+      activeStage: uiState.activeStage,
+      selectedWarehouseId: uiState.selectedWarehouseId,
+      stockFilter: uiState.stockFilter,
+      shortageReasonFilter: uiState.shortageReasonFilter,
+      shortageFollowUpFilter: uiState.shortageFollowUpFilter,
+      shortageOwnerFilter: uiState.shortageOwnerFilter,
       deferredSearch,
-      notPrintedFilter,
-      noShippingCodeFilter,
-      sortBy,
-      sortOrder,
+      notPrintedFilter: uiState.notPrintedFilter,
+      noShippingCodeFilter: uiState.noShippingCodeFilter,
+      sortBy: uiState.sortBy,
+      sortOrder: uiState.sortOrder,
       currentCompanyId,
       clearBulkControls: uiActions.clearBulkControls,
     });
@@ -420,10 +410,69 @@ const PreparationQueue: React.FC = () => {
     user,
   });
 
-  // handleMarkAsShortageHold, handleReleaseShortageHold, handleMarkAsShortageFailed provided by usePreparationShortageOperations
-  // handleConfirmStatusChange provided by usePreparationSingleStatusOperations
-
-
+  const { selectionBarProps, ordersContainerProps } =
+    usePreparationTableSectionProps({
+      allVisibleSelected,
+      toggleSelectAllVisible,
+      totalVisibleOrders: pagination.total,
+      inventoryLoading,
+      loading,
+      showFilters,
+      setShowFilters,
+      columnSettingsOpen,
+      setColumnSettingsOpen,
+      visibleColumns,
+      toggleColumn,
+      visibleFilterSections,
+      toggleFilterSection,
+      selectedOrdersCount: selectedOrders.length,
+      bulkStatus,
+      statusOptions,
+      statusLabelMap,
+      bulkUpdating,
+      preparationSettings,
+      sendingToTurbo,
+      printingInvoices,
+      uiActions,
+      handleBulkUpdate,
+      handleBulkUpdateAll,
+      handleOpenDispatchModal,
+      isInternalCourierActive,
+      setShowInternalCourierModal,
+      handlePrintInvoices,
+      enrichedOrders,
+      pagination,
+      totalPages,
+      currentPageCount,
+      uiState,
+      statusSelections,
+      selectedSet,
+      rowUpdatingId,
+      shortageSavingOrderId,
+      problemHoldSavingOrderId,
+      selectedWarehouseId,
+      enabledQcChecks,
+      qcChecklistState,
+      shortageHoldDrafts,
+      problemHoldDrafts,
+      transferingItemKey,
+      printingOrderNumber,
+      formatPrice,
+      formatDate,
+      toggleOrderSelection,
+      handleQuickTransfer,
+      handleShortageFieldChange,
+      saveShortageHoldDetails,
+      handleQcCheckToggle,
+      handleRequestStatusChange,
+      handleMarkAsShortageHold,
+      handleReleaseShortageHold,
+      handleMarkAsShortageFailed,
+      handleHoldAsProblem,
+      handleReleaseProblemHold,
+      handleEditProblemReason,
+      handlePrintPreparationSlip,
+    });
 
   return (
     <div className="space-y-3">
@@ -442,128 +491,20 @@ const PreparationQueue: React.FC = () => {
 
       <PreparationQueueFiltersContainer
         showFilters={showFilters}
-        activeFilter={activeStage}
+        uiState={uiState}
+        uiActions={uiActions}
         statusCounts={statusCounts}
         stageCounts={summary.stageCounts}
         filterTabs={filterTabs}
         visibleOrdersCount={visibleOrdersCount}
-        search={search}
-        selectedWarehouseId={selectedWarehouseId}
-        stockFilter={stockFilter}
-        shortageReasonFilter={shortageReasonFilter}
-        shortageOwnerFilter={shortageOwnerFilter}
+        warehouseOptions={warehouses}
         shortageOwnerOptions={shortageOwnerOptions}
-        shortageFollowUpFilter={shortageFollowUpFilter}
-        productFilter={productFilter}
-        productColorFilter={uiState.productColorFilter}
-        productSizeFilter={uiState.productSizeFilter}
-        productIdFilter={uiState.productIdFilter}
-        variantIdFilter={uiState.variantIdFilter}
         productSuggestions={productSuggestions}
-        products={products}
-        productsLoading={productsLoading}
-        itemCountFilter={itemCountFilter}
-        notPrintedFilter={notPrintedFilter}
-        noShippingCodeFilter={noShippingCodeFilter}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        warehouses={warehouses}
-        visibleFilterSections={visibleFilterSections}
-        onFilterChange={uiActions.setActiveStage}
-        onSearchChange={uiActions.setSearch}
-        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-        onStockFilterChange={uiActions.setStockFilter}
-        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-        onProductFilterChange={uiActions.setProductFilter}
-        onProductColorFilterChange={uiActions.setProductColorFilter}
-        onProductSizeFilterChange={uiActions.setProductSizeFilter}
-        onProductIdFilterChange={uiActions.setProductIdFilter}
-        onVariantIdFilterChange={uiActions.setVariantIdFilter}
-        onItemCountFilterChange={uiActions.setItemCountFilter}
-        onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
-        onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
-        onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
       />
 
       <PreparationQueueTableSection
-        selectionBarProps={{
-          allVisibleSelected,
-          toggleSelectAllVisible,
-          totalVisibleOrders: pagination.total,
-          inventoryLoading,
-          loading,
-          showFilters,
-          setShowFilters,
-          columnSettingsOpen,
-          setColumnSettingsOpen,
-          visibleColumns,
-          toggleColumn,
-          visibleFilterSections,
-          toggleFilterSection,
-          selectedOrdersCount: selectedOrders.length,
-          bulkStatus,
-          statusOptions,
-          statusLabelMap,
-          bulkUpdating,
-          preparationEnabled: preparationSettings.enabled,
-          bulkStatusUpdateEnabled: preparationSettings.enableBulkStatusUpdate,
-          sendingToTurbo,
-          printingInvoices,
-          onBulkStatusChange: uiActions.setBulkStatus,
-          onApply: () => void handleBulkUpdate(),
-          onApplyToAll: () => void handleBulkUpdateAll(),
-          onClear: uiActions.clearBulkControls,
-          onClearSelection: () => uiActions.clearBulkControls(),
-          onSendToTurbo: () => void handleOpenDispatchModal(),
-          onSendToShipping: () => void handleOpenDispatchModal(),
-          onSendToInternalCourier: isInternalCourierActive ? () => setShowInternalCourierModal(true) : undefined,
-          onPrintInvoices: () => void handlePrintInvoices(),
-        }}
-        ordersContainerProps={{
-          loading,
-          enrichedOrders,
-          pagination,
-          totalPages,
-          currentPageCount,
-          pageSize: uiState.pageSize,
-          statusSelections,
-          statusOptions,
-          statusLabelMap,
-          selectedSet,
-          rowUpdatingId,
-          shortageSavingOrderId,
-          problemHoldSavingOrderId,
-          selectedWarehouseId,
-          enabledQcChecks,
-          qcChecklistState,
-          shortageHoldDrafts,
-          problemHoldDrafts,
-          transferingItemKey,
-          printingOrderNumber,
-          preparationSettings,
-          visibleColumns,
-          formatPrice,
-          formatDate,
-          toggleOrderSelection,
-          handleQuickTransfer,
-          handleShortageFieldChange,
-          saveShortageHoldDetails,
-          handleQcCheckToggle,
-          onStatusSelectionChange: uiActions.setStatusSelection,
-          handleRequestStatusChange,
-          handleMarkAsShortageHold,
-          handleReleaseShortageHold,
-          handleMarkAsShortageFailed,
-          handleHoldAsProblem,
-          handleReleaseProblemHold,
-          handleEditProblemReason,
-          handlePrintPreparationSlip,
-          onPageSizeChange: uiActions.setPageSize,
-          onPreviousPage: uiActions.goToPreviousPage,
-          onNextPage: () => uiActions.goToNextPage(totalPages),
-        }}
+        selectionBarProps={selectionBarProps}
+        ordersContainerProps={ordersContainerProps}
       />
 
       <PreparationQueueDialogsContainer
