@@ -39,6 +39,8 @@ import { useOrdersStatusDisplays } from "./hooks/useOrdersStatusDisplays";
 import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
 import { useOrdersEntityFormatters } from "./hooks/useOrdersEntityFormatters";
 import { useOrdersViewHelpers } from "./hooks/useOrdersViewHelpers";
+import { useOrdersToolbarSectionProps } from "./hooks/useOrdersToolbarSectionProps";
+import { useOrdersTableSectionProps } from "./hooks/useOrdersTableSectionProps";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
 
@@ -466,94 +468,88 @@ const Orders: React.FC = () => {
     getConfidenceIcon,
   });
 
+  const toolbarSectionProps = useOrdersToolbarSectionProps({
+    filters,
+    advancedFilterCount,
+    ordersLoadError,
+    showAdvancedFilters,
+    setShowAdvancedFilters,
+    fieldClassName,
+    filterableOrderStatuses,
+    filterablePaymentStatuses,
+    merchantOptions,
+    affiliateOptions,
+    showOrderSourceFilter,
+    showUnifiedOperationFilters,
+    showMerchantOperationFilters,
+    showAffiliateOperationFilter,
+    hasCustomDateFilters,
+    getAffiliateDisplayName,
+    handleFilterChange,
+    applySavedFilters,
+    clearAdvancedFilters,
+    setQuickDate,
+    fetchOrders,
+    isAdmin,
+    isMerchant,
+    merchantSettlementSummary,
+    merchantSettlementLoading,
+    merchantSettlementError,
+    formatPrice,
+    getFulfillmentSourceText,
+  });
+
+  const tableSectionProps = useOrdersTableSectionProps({
+    canSelectOrders,
+    selectedOrders,
+    bulkUpdatableStatuses,
+    isTrashView,
+    bulkProcessing,
+    printingInvoices,
+    setSelectedOrders,
+    handleBulkStatusUpdate,
+    handleBulkPrintInvoices,
+    handleBulkDelete,
+    hasActiveTurbo,
+    hasActiveQpExpress,
+    hasActiveBosta,
+    handleBulkCreateTurboShipments,
+    handleBulkCreateQpExpressShipments,
+    handleBulkCreateBostaShipments,
+    displayedOrders,
+    loading,
+    ordersLoadError,
+    isMerchant,
+    activeFilterCount,
+    search: filters.search,
+    columnsToRender,
+    tableColumnCount,
+    tableDensity,
+    page,
+    totalPages,
+    totalOrders,
+    limit,
+    mobileListHelpers,
+    tableHelpers,
+    handleOpenOrder,
+    toggleOrderSelection,
+    toggleAllSelection,
+    handleMarkAsViewed,
+    clearAllFilters,
+    handleCustomerRatingChange,
+    handlePageChange,
+    handleLimitChange,
+    changeTableDensity,
+  });
+
   return (
     <div
       data-orders-page="true"
       className="orders-page-root flex-1 h-full min-h-0 overflow-y-auto bg-slate-50/60 dark:bg-zinc-950 px-2 py-2 sm:px-3 sm:py-2.5"
     >
       <div className="w-full max-w-none">
-        <OrdersToolbarSection
-          filters={filters}
-          advancedFilterCount={advancedFilterCount}
-          ordersLoadError={ordersLoadError}
-          showAdvancedFilters={showAdvancedFilters}
-          fieldClassName={fieldClassName}
-          filterableOrderStatuses={filterableOrderStatuses}
-          filterablePaymentStatuses={filterablePaymentStatuses}
-          merchantOptions={merchantOptions}
-          affiliateOptions={affiliateOptions}
-          showOrderSourceFilter={showOrderSourceFilter}
-          showUnifiedOperationFilters={showUnifiedOperationFilters}
-          showMerchantOperationFilters={showMerchantOperationFilters}
-          showAffiliateOperationFilter={showAffiliateOperationFilter}
-          hasCustomDateFilters={hasCustomDateFilters}
-          getAffiliateDisplayName={getAffiliateDisplayName}
-          onFilterChange={handleFilterChange}
-          onApplyFilters={applySavedFilters}
-          onClearAdvancedFilters={clearAdvancedFilters}
-          onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
-          onSetQuickDate={setQuickDate}
-          onRetry={fetchOrders}
-          onRefresh={fetchOrders}
-          isAdmin={isAdmin}
-          isMerchant={isMerchant}
-          merchantSettlementSummary={merchantSettlementSummary}
-          merchantSettlementLoading={merchantSettlementLoading}
-          merchantSettlementError={merchantSettlementError}
-          formatPrice={formatPrice}
-          getFulfillmentSourceText={getFulfillmentSourceText}
-          onClearMerchantFilters={() => {
-            handleFilterChange("merchantOperationStatus", []);
-            handleFilterChange("merchantSettlementStatus", []);
-          }}
-          onShowDueOrders={() => {
-            handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
-            handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
-          }}
-        />
-
-      <OrdersTableSection
-        canSelectOrders={canSelectOrders}
-        selectedOrders={selectedOrders}
-        bulkUpdatableStatuses={bulkUpdatableStatuses}
-        isTrashView={isTrashView}
-        bulkProcessing={bulkProcessing}
-        printingInvoices={printingInvoices}
-        onClearSelection={() => setSelectedOrders([])}
-        onBulkStatusUpdate={handleBulkStatusUpdate}
-        onBulkPrintInvoices={handleBulkPrintInvoices}
-        onBulkDelete={handleBulkDelete}
-        hasActiveTurbo={hasActiveTurbo}
-        hasActiveQpExpress={hasActiveQpExpress}
-        hasActiveBosta={hasActiveBosta}
-        handleBulkCreateTurboShipments={handleBulkCreateTurboShipments}
-        handleBulkCreateQpExpressShipments={handleBulkCreateQpExpressShipments}
-        handleBulkCreateBostaShipments={handleBulkCreateBostaShipments}
-        displayedOrders={displayedOrders}
-        loading={loading}
-        ordersLoadError={ordersLoadError}
-        isMerchant={isMerchant}
-        activeFilterCount={activeFilterCount}
-        search={filters.search}
-        columnsToRender={columnsToRender}
-        tableColumnCount={tableColumnCount}
-        tableDensity={tableDensity}
-        page={page}
-        totalPages={totalPages}
-        totalOrders={totalOrders}
-        limit={limit}
-        mobileListHelpers={mobileListHelpers}
-        tableHelpers={tableHelpers}
-        onOpenOrder={handleOpenOrder}
-        toggleOrderSelection={toggleOrderSelection}
-        toggleAllSelection={toggleAllSelection}
-        onMarkAsViewed={handleMarkAsViewed}
-        clearAllFilters={clearAllFilters}
-        handleCustomerRatingChange={handleCustomerRatingChange}
-        handlePageChange={handlePageChange}
-        handleLimitChange={handleLimitChange}
-        changeTableDensity={changeTableDensity}
-      />
+        <OrdersToolbarSection {...toolbarSectionProps} />
+        <OrdersTableSection {...tableSectionProps} />
       </div>
 
       <OrdersModalsContainer
