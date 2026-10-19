@@ -28,10 +28,8 @@ import {
   getInitialOrdersListViewState,
 } from "./ordersFilterTypes";
 import { useOrdersFilterActions } from "./hooks/useOrdersFilterActions";
-import { useOrdersStatusDisplays } from "./hooks/useOrdersStatusDisplays";
 import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
-import { useOrdersEntityFormatters } from "./hooks/useOrdersEntityFormatters";
-import { useOrdersViewHelpers } from "./hooks/useOrdersViewHelpers";
+import { useOrdersViewDecorators } from "./hooks/useOrdersViewDecorators";
 import { useOrdersToolbarSectionProps } from "./hooks/useOrdersToolbarSectionProps";
 import { useOrdersTableSectionProps } from "./hooks/useOrdersTableSectionProps";
 import { useOrdersModalsContainerProps } from "./hooks/useOrdersModalsContainerProps";
@@ -314,18 +312,6 @@ const Orders: React.FC = () => {
   });
 
   const {
-    getCustomerDisplayName,
-    getConfidenceColor,
-    getConfidenceIcon,
-    getRelativeTime,
-    getAffiliateDisplayName,
-    getFulfillmentSourceText,
-  } = useOrdersEntityFormatters({
-    t,
-    formatDate,
-  });
-
-  const {
     displayedOrders,
     setQuickDate,
     clearAdvancedFilters,
@@ -378,27 +364,6 @@ const Orders: React.FC = () => {
   // hasActiveTurbo, hasActiveQpExpress, hasActiveBosta provided by useOrdersLookupData
 
   const {
-    getStatusBadgeStyle,
-    getUnifiedStatusDisplay,
-    getPaymentStatusColor,
-    getPaymentStatusText,
-    getPaymentStatusBadgeStyle,
-    filterableOrderStatuses,
-    filterablePaymentStatuses,
-    bulkUpdatableStatuses,
-    getOrderSourceText,
-  } = useOrdersStatusDisplays({
-    orderStatuses,
-    paymentStatuses,
-    orderStatusMap,
-    paymentStatusMap,
-    filters,
-    showIncompleteInOrders,
-    normalizeStatusCode,
-    t,
-  });
-
-  const {
     handleUpdateStatus,
     handleUpdatePaymentStatus,
     handleMarkAsViewed,
@@ -414,28 +379,41 @@ const Orders: React.FC = () => {
   });
 
   const {
+    getCustomerDisplayName,
+    getConfidenceColor,
+    getConfidenceIcon,
+    getRelativeTime,
+    getAffiliateDisplayName,
+    getFulfillmentSourceText,
+    getStatusBadgeStyle,
+    getUnifiedStatusDisplay,
+    getPaymentStatusColor,
+    getPaymentStatusText,
+    getPaymentStatusBadgeStyle,
+    filterableOrderStatuses,
+    filterablePaymentStatuses,
+    bulkUpdatableStatuses,
+    getOrderSourceText,
     handleOpenOrder,
     handleCustomerRatingChange,
     mobileListHelpers,
     tableHelpers,
-  } = useOrdersViewHelpers({
+  } = useOrdersViewDecorators({
+    t,
+    formatDate,
+    formatPrice,
+    orderStatuses,
+    paymentStatuses,
+    orderStatusMap,
+    paymentStatusMap,
+    filters,
+    showIncompleteInOrders,
+    normalizeStatusCode,
     navigate,
     setSelectedOrder,
     setShowOrderModal,
     handleMarkAsViewed,
     setOrders,
-    getCustomerDisplayName,
-    formatPrice,
-    getOrderAmount,
-    getOrderSourceText,
-    getRelativeTime,
-    formatDate,
-    getPaymentStatusBadgeStyle,
-    getPaymentStatusColor,
-    getPaymentStatusText,
-    getUnifiedStatusDisplay,
-    getConfidenceColor,
-    getConfidenceIcon,
   });
 
   const toolbarSectionProps = useOrdersToolbarSectionProps({
