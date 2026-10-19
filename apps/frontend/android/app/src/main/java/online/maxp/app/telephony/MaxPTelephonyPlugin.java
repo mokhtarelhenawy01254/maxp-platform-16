@@ -139,8 +139,23 @@ public class MaxPTelephonyPlugin extends Plugin {
         }
 
         if (!getPermissionState("phone").equals(com.getcapacitor.PermissionState.GRANTED)) {
-            requestPermissionForAlias("phone", call, "phonePermsCallback");
-            return;
+            // إذا لم تُمنح الصلاحية بعد، نفتح مسجل المكالمات مباشرة عبر ACTION_DIAL بدون تعطيل المكالمة
+            try {
+                CallSessionManager.getInstance().startSession(sessionId, orderId, phone);
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(dialIntent);
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("method", "ACTION_DIAL");
+                ret.put("sessionId", sessionId);
+                call.resolve(ret);
+                return;
+            } catch (Exception e) {
+                requestPermissionForAlias("phone", call, "phonePermsCallback");
+                return;
+            }
         }
 
         performDial(phone, sessionId, orderId, call);
@@ -148,13 +163,27 @@ public class MaxPTelephonyPlugin extends Plugin {
 
     @PermissionCallback
     private void phonePermsCallback(PluginCall call) {
+        String phone = call.getString("phone");
+        String sessionId = call.getString("sessionId");
+        String orderId = call.getString("orderId");
         if (getPermissionState("phone").equals(com.getcapacitor.PermissionState.GRANTED)) {
-            String phone = call.getString("phone");
-            String sessionId = call.getString("sessionId");
-            String orderId = call.getString("orderId");
             performDial(phone, sessionId, orderId, call);
         } else {
-            call.reject("تم رفض إذن الاتصال الهاتفي وقراءة الحالة");
+            // حتى في حال الرفض، نفتح مسجل المكالمات الأصلي حتى لا تفشل مكالمة العميل إطلاقاً
+            try {
+                CallSessionManager.getInstance().startSession(sessionId, orderId, phone);
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(dialIntent);
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("method", "ACTION_DIAL_FALLBACK");
+                ret.put("sessionId", sessionId);
+                call.resolve(ret);
+            } catch (Exception e) {
+                call.reject("تم رفض إذن الاتصال الهاتفي: " + e.getMessage());
+            }
         }
     }
 
@@ -168,12 +197,39 @@ public class MaxPTelephonyPlugin extends Plugin {
 
             JSObject ret = new JSObject();
             ret.put("success", true);
+            ret.put("method", "ACTION_CALL");
             ret.put("sessionId", sessionId);
             call.resolve(ret);
-        } catch (SecurityException e) {
-            call.reject("خطأ في الصلاحيات أثناء إجراء المكالمة: " + e.getMessage());
+        } catch (SecurityException secErr) {
+            Log.w(TAG, "ACTION_CALL blocked by system permissions, falling back to ACTION_DIAL: " + secErr.getMessage());
+            try {
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(dialIntent);
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("method", "ACTION_DIAL");
+                ret.put("sessionId", sessionId);
+                ret.put("warning", "Fell back to ACTION_DIAL: " + secErr.getMessage());
+                call.resolve(ret);
+            } catch (Exception dialErr) {
+                call.reject("خطأ في الصلاحيات أثناء إجراء المكالمة: " + secErr.getMessage());
+            }
         } catch (Exception e) {
-            call.reject("تعذر الاتصال بالرقم: " + e.getMessage());
+            try {
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(dialIntent);
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("method", "ACTION_DIAL");
+                ret.put("sessionId", sessionId);
+                call.resolve(ret);
+            } catch (Exception dialErr) {
+                call.reject("تعذر الاتصال بالرقم: " + e.getMessage());
+            }
         }
     }
 }

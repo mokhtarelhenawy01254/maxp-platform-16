@@ -514,6 +514,47 @@ class TelephonyService {
       startedAt: activeCall.startedAt
     };
   }
+
+  /**
+   * تسجيل أحداث التشخيص القادمة من تطبيق الموبايل أو السيرفر
+   */
+  recordDiagnosticLog({ companyId, userId, event, deviceId, deviceName, details, timestamp }) {
+    if (!companyId || !event) return null;
+    if (!this.diagnosticLogs) {
+      this.diagnosticLogs = [];
+    }
+
+    const entry = {
+      id: `diag_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: timestamp || new Date().toISOString(),
+      companyId: String(companyId),
+      userId: userId ? String(userId) : null,
+      event: String(event),
+      deviceId: deviceId || null,
+      deviceName: deviceName || null,
+      details: details || {}
+    };
+
+    this.diagnosticLogs.push(entry);
+    if (this.diagnosticLogs.length > 300) {
+      this.diagnosticLogs.shift();
+    }
+
+    console.log(`📱 [TELEPHONY-DIAGNOSTIC] [${event}] company=${companyId} user=${userId || 'none'} device=${deviceName || deviceId || 'unknown'}:`, details ? JSON.stringify(details) : '');
+    return entry;
+  }
+
+  /**
+   * استرجاع سجلات التشخيص لشركة محددة
+   */
+  getDiagnosticLogs({ companyId, limit = 50 }) {
+    if (!companyId) return [];
+    if (!this.diagnosticLogs) return [];
+    return this.diagnosticLogs
+      .filter(l => l.companyId === String(companyId))
+      .slice(-Math.min(limit, 100))
+      .reverse();
+  }
 }
 
 module.exports = new TelephonyService();

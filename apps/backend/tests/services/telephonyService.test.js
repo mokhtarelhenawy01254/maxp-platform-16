@@ -607,4 +607,69 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
       });
     });
   });
+
+  describe('Diagnostic Logging (recordDiagnosticLog & getDiagnosticLogs)', () => {
+    it('records and returns diagnostics scoped strictly to companyId', () => {
+      telephonyService.diagnosticLogs = [];
+
+      // Record logs for companyId
+      const entry1 = telephonyService.recordDiagnosticLog({
+        companyId,
+        userId,
+        event: 'AGENT_INIT',
+        deviceId: 'dev_huawei_1',
+        deviceName: 'HUAWEI STK-L21',
+        details: { mode: 'capacitor' }
+      });
+
+      const entry2 = telephonyService.recordDiagnosticLog({
+        companyId,
+        userId,
+        event: 'NATIVE_DIAL_SUCCESS',
+        deviceId: 'dev_huawei_1',
+        deviceName: 'HUAWEI STK-L21',
+        details: { phone: '01012345678' }
+      });
+
+      // Record log for another company
+      telephonyService.recordDiagnosticLog({
+        companyId: 'other_company_999',
+        userId: 'other_user',
+        event: 'NATIVE_DIAL_FAILED',
+        deviceId: 'dev_other',
+        deviceName: 'Other Phone'
+      });
+
+      expect(entry1).toBeDefined();
+      expect(entry1.event).toBe('AGENT_INIT');
+      expect(entry2.event).toBe('NATIVE_DIAL_SUCCESS');
+
+      const logs = telephonyService.getDiagnosticLogs({ companyId });
+      expect(logs.length).toBe(2);
+      expect(logs[0].event).toBe('NATIVE_DIAL_SUCCESS'); // latest first
+      expect(logs[1].event).toBe('AGENT_INIT');
+
+      // Check tenant isolation
+      const otherLogs = telephonyService.getDiagnosticLogs({ companyId: 'other_company_999' });
+      expect(otherLogs.length).toBe(1);
+      expect(otherLogs[0].event).toBe('NATIVE_DIAL_FAILED');
+    });
+
+    it('returns empty array if companyId is missing', () => {
+      expect(telephonyService.getDiagnosticLogs({ companyId: null })).toEqual([]);
+      expect(telephonyService.recordDiagnosticLog({ companyId: null, event: 'TEST' })).toBeNull();
+    });
+
+    it('preserves client-provided timestamp when supplied', () => {
+      telephonyService.diagnosticLogs = [];
+      const clientTs = '2026-10-19T10:00:00.000Z';
+      const entry = telephonyService.recordDiagnosticLog({
+        companyId,
+        userId,
+        event: 'TEST_EVENT',
+        timestamp: clientTs
+      });
+      expect(entry.timestamp).toBe(clientTs);
+    });
+  });
 });

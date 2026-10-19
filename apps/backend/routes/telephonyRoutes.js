@@ -166,4 +166,55 @@ router.get('/orders/:orderId/logs', async (req, res) => {
   }
 });
 
+/**
+ * استقبال تقارير وسجلات التشخيص من تطبيق الموبايل
+ */
+router.post('/diagnostic-log', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const userId = req.user?.id;
+    const { event, deviceId, deviceName, details, timestamp } = req.body || {};
+
+    if (!companyId || !event) {
+      return res.status(400).json({ success: false, message: 'companyId and event are required' });
+    }
+
+    const entry = telephonyService.recordDiagnosticLog({
+      companyId,
+      userId,
+      event,
+      deviceId,
+      deviceName,
+      details,
+      timestamp
+    });
+
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    respondError(res, error);
+  }
+});
+
+/**
+ * استرجاع سجلات التشخيص لشركة المستخدم
+ */
+router.get('/diagnostic-logs', async (req, res) => {
+  try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const logs = telephonyService.getDiagnosticLogs({ companyId });
+    res.json({ success: true, data: logs });
+  } catch (error) {
+    respondError(res, error);
+  }
+});
+
 module.exports = router;

@@ -4,12 +4,14 @@ import {
   PhoneCall,
   Smartphone,
   RotateCw,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { telephonyClientService } from "../../services/telephonyService";
 import { useDevicePresence, refreshDevicePresence } from "../../hooks/useDevicePresence";
 import { socketService } from "../../services/socketService";
 import { QuickCallDispositionModal } from "./QuickCallDispositionModal";
+import { TelephonyDiagnosticsModal } from "./TelephonyDiagnosticsModal";
 
 interface OrderCallButtonProps {
   orderId: string;
@@ -42,6 +44,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDialing, setIsDialing] = useState(false);
   const [showDisposition, setShowDisposition] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [lastDuration, setLastDuration] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [dialSeconds, setDialSeconds] = useState(0);
@@ -223,7 +226,22 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
 
   return (
     <div className="inline-flex items-center gap-1.5 flex-wrap">
-      {!compact && deviceBadge}
+      {!compact && (
+        <div className="inline-flex items-center gap-1">
+          {deviceBadge}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDiagnostics(true);
+            }}
+            title="سجل فحص وتشخيص الاتصال المباشر (Telephony Diagnostics)"
+            className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <Activity className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Primary Phone Call Button */}
       <button
@@ -307,6 +325,12 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           onCancel?.();
           onCallFinished?.();
         }}
+      />
+
+      {/* نافذة فحص وتشخيص الاتصال المباشر */}
+      <TelephonyDiagnosticsModal
+        isOpen={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
       />
     </div>
   );

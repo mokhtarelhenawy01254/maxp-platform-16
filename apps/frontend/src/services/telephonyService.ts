@@ -76,9 +76,55 @@ const MaxPTelephony = registerPlugin<MaxPTelephonyNativePlugin>("MaxPTelephony")
 
 class TelephonyClientService {
   private isAgentInitialized = false;
+  private listenersBound = false;
   private heartbeatInterval: any = null;
   private handledSessionIds = new Set<string>();
   private activeCallWatchdogInterval: any = null;
+  public currentDeviceInfo: DeviceInfo | null = null;
+
+  /**
+   * تسجيل وإرسال أحداث التشخيص لسيرفر MaxP وللوحدة المحلية
+   */
+  public logDiagnostic(event: string, details?: any): void {
+    const timestamp = new Date().toISOString();
+    const logItem = { timestamp, event, details };
+
+    if (typeof window !== "undefined") {
+      if (!(window as any).__MAXP_TELEPHONY_LOGS__) {
+        (window as any).__MAXP_TELEPHONY_LOGS__ = [];
+      }
+      (window as any).__MAXP_TELEPHONY_LOGS__.push(logItem);
+      if ((window as any).__MAXP_TELEPHONY_LOGS__.length > 150) {
+        (window as any).__MAXP_TELEPHONY_LOGS__.shift();
+      }
+    }
+
+    console.log(`📱 [TELEPHONY-LOG] [${event}]:`, details || "");
+
+    try {
+      apiClient.post("/telephony/diagnostic-log", {
+        event,
+        deviceId: this.currentDeviceInfo?.deviceId,
+        deviceName: this.currentDeviceInfo?.deviceName,
+        timestamp,
+        details,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * استرجاع سجلات التشخيص الحية
+   */
+  async getDiagnosticLogs(): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any>("/telephony/diagnostic-logs");
+      return res.data?.data || [];
+    } catch {
+      return [];
+    }
+  }
 
   /**
    * استعلام فوري عن أي مكالمة نشطة حالياً للموظف (Active Call Watchdog)
@@ -175,12 +221,18 @@ class TelephonyClientService {
     const isMobileDevice =
       isCapacitorNative() ||
       (typeof navigator !== "undefined" &&
-        (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "") ||
-         (/Linux/i.test(navigator.userAgent || "") && navigator.maxTouchPoints > 1)));
+        (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "") ||
+         (/Linux/i.test(navigator.userAgent || "") && navigator.maxTouchPoints > 0)));
 
-    if (!isMobileDevice || this.isAgentInitialized) {
+    if (!isMobileDevice) {
       return;
     }
+
+    this.logDiagnostic("AGENT_INIT_REQUESTED", {
+      isNative: isCapacitorNative(),
+      ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      alreadyInitialized: this.isAgentInitialized
+    });
 
     try {
       this.isAgentInitialized = true;
@@ -239,11 +291,21 @@ class TelephonyClientService {
         };
       }
 
+      this.currentDeviceInfo = deviceInfo;
+
+      this.logDiagnostic("DEVICE_READY", {
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName,
+        isNative: isNativePluginAvailable,
+      });
+
       // إذا كان الموديول الأصلي متاحاً، تشغيل الخدمة الأمامية وإعفاء البطارية
       if (isNativePluginAvailable) {
         try {
           await MaxPTelephony.startTelephonyService();
-        } catch (svcErr) {
+          this.logDiagnostic("FOREGROUND_SERVICE_STARTED");
+        } catch (svcErr: any) {
+          this.logDiagnostic("FOREGROUND_SERVICE_FAILED", { error: svcErr?.message || String(svcErr) });
           console.warn("Foreground telephony service failed to start:", svcErr);
         }
 
@@ -253,10 +315,12 @@ class TelephonyClientService {
             const { exempted } = await MaxPTelephony.isBatteryExempted();
             if (!exempted) {
               await MaxPTelephony.requestBatteryExemption();
+              this.logDiagnostic("BATTERY_EXEMPTION_REQUESTED");
             }
             localStorage.setItem(EXEMPTION_KEY, "1");
           }
-        } catch (batteryErr) {
+        } catch (batteryErr: any) {
+          this.logDiagnostic("BATTERY_EXEMPTION_ERROR", { error: batteryErr?.message || String(batteryErr) });
           console.warn("Battery exemption request failed:", batteryErr);
         }
       }
@@ -273,18 +337,31 @@ class TelephonyClientService {
             appVersion: deviceInfo.osVersion,
             socketConnected: true,
           });
+          this.logDiagnostic("HEARTBEAT_SENT_SUCCESS", {
+            socketId: socket?.id || null,
+            socketConnected: socket?.connected || false,
+          });
         } catch (err: any) {
+          this.logDiagnostic("HEARTBEAT_FAILED", {
+            status: err?.response?.status,
+            message: err?.message,
+          });
           // في حال كان التوكن ما زال قيد التهيئة (401)، أعد المحاولة بعد 3 ثوانٍ
           if (err?.response?.status === 401) {
-            setTimeout(() => {
-              const retrySocket = socketService.getSocket();
-              apiClient.post("/telephony/device/heartbeat", {
-                deviceId: deviceInfo.deviceId,
-                deviceName: deviceInfo.deviceName,
-                socketId: retrySocket?.id || null,
-                appVersion: deviceInfo.osVersion,
-                socketConnected: true,
-              }).catch(() => {});
+            setTimeout(async () => {
+              try {
+                const retrySocket = socketService.getSocket();
+                await apiClient.post("/telephony/device/heartbeat", {
+                  deviceId: deviceInfo.deviceId,
+                  deviceName: deviceInfo.deviceName,
+                  socketId: retrySocket?.id || null,
+                  appVersion: deviceInfo.osVersion,
+                  socketConnected: true,
+                });
+                this.logDiagnostic("HEARTBEAT_RETRY_SUCCESS");
+              } catch {
+                // ignore
+              }
             }, 3000);
           }
         }
@@ -317,6 +394,15 @@ class TelephonyClientService {
             customerPhone: data.customerPhone,
           });
 
+          this.logDiagnostic("INCOMING_DIAL_TRIGGERED", {
+            source,
+            sessionId: data.sessionId,
+            orderId: data.orderId,
+            orderNumber: data.orderNumber,
+            customerName: data.customerName,
+            customerPhone: data.customerPhone,
+          });
+
           // إشعار الخادم وشاشة الكمبيوتر بأن الهاتف استلم أمر الاتصال بنجاح
           try {
             const socket = socketService.getSocket();
@@ -326,8 +412,9 @@ class TelephonyClientService {
               customerPhone: data.customerPhone,
               deviceName: deviceInfo.deviceName,
             });
-          } catch {
-            // ignore ack error
+            this.logDiagnostic("ACK_SENT_TO_SERVER", { sessionId: data.sessionId });
+          } catch (ackErr: any) {
+            this.logDiagnostic("ACK_SEND_FAILED", { error: ackErr?.message });
           }
 
           // إطلاق حدث محلي لعرض شاشة الاتصال السريعة التفاعلية على شاشة الهاتف (MobileCallOverlay)
@@ -335,18 +422,22 @@ class TelephonyClientService {
             window.dispatchEvent(
               new CustomEvent("telephony:incoming_dial", { detail: data })
             );
+            this.logDiagnostic("OVERLAY_DISPATCHED", { sessionId: data.sessionId });
           }
 
           // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
           if (isNativePluginAvailable) {
             try {
-              await MaxPTelephony.dialCustomer({
+              this.logDiagnostic("NATIVE_DIAL_ATTEMPTED", { phone: data.customerPhone });
+              const dialRes = await MaxPTelephony.dialCustomer({
                 phone: data.customerPhone,
                 sessionId: data.sessionId,
                 orderId: data.orderId,
               });
+              this.logDiagnostic("NATIVE_DIAL_SUCCESS", dialRes);
               return;
-            } catch (nativeErr) {
+            } catch (nativeErr: any) {
+              this.logDiagnostic("NATIVE_DIAL_FAILED", { error: nativeErr?.message || String(nativeErr) });
               console.warn("Native dialCustomer failed or background restricted:", nativeErr);
             }
           }
@@ -354,11 +445,14 @@ class TelephonyClientService {
           // محاولة إطلاق رابط tel: السريع
           try {
             const safePhone = String(data.customerPhone || "").replace(/[^\d+*#]/g, "");
+            this.logDiagnostic("TEL_PROTOCOL_ATTEMPTED", { phone: safePhone });
             window.location.href = `tel:${safePhone}`;
-          } catch (telErr) {
+          } catch (telErr: any) {
+            this.logDiagnostic("TEL_PROTOCOL_FAILED", { error: telErr?.message || String(telErr) });
             console.warn("Direct tel: navigation blocked, user can tap the overlay button:", telErr);
           }
-        } catch (error) {
+        } catch (error: any) {
+          this.logDiagnostic("INCOMING_DIAL_FATAL_ERROR", { error: error?.message || String(error) });
           console.error("Failed to execute incoming dial handler:", error);
         }
       };
@@ -377,6 +471,11 @@ class TelephonyClientService {
         try {
           const activeCall = await this.getActiveCall();
           if (activeCall && activeCall.sessionId && !this.handledSessionIds.has(activeCall.sessionId)) {
+            this.logDiagnostic("WATCHDOG_ACTIVE_CALL_FOUND", {
+              sessionId: activeCall.sessionId,
+              orderNumber: activeCall.orderNumber,
+              customerPhone: activeCall.customerPhone,
+            });
             await handleIncomingDial(activeCall, "HTTP Watchdog");
           }
         } catch {
@@ -385,11 +484,6 @@ class TelephonyClientService {
       };
 
       registerSocketDialListener();
-      socketService.on("connect", () => {
-        registerSocketDialListener();
-        sendHeartbeat();
-        checkAndHandleActiveCall();
-      });
 
       if (this.activeCallWatchdogInterval) clearInterval(this.activeCallWatchdogInterval);
       this.activeCallWatchdogInterval = setInterval(() => {
@@ -400,41 +494,52 @@ class TelephonyClientService {
 
       // تنبيه فوري ومزامنة وإعادة اتصال عند إضاءة الشاشة أو عودة الاتصال
       const triggerImmediateSync = () => {
+        this.logDiagnostic("SCREEN_WAKEUP_TRIGGERED");
         socketService.connect();
         registerSocketDialListener();
         sendHeartbeat();
         checkAndHandleActiveCall();
       };
 
-      if (typeof document !== "undefined") {
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") {
-            triggerImmediateSync();
-          }
-        });
-      }
-      if (typeof window !== "undefined") {
-        window.addEventListener("focus", triggerImmediateSync);
-        window.addEventListener("online", triggerImmediateSync);
-      }
+      if (!this.listenersBound) {
+        this.listenersBound = true;
 
-      // 4. الاستماع لانتهاء المكالمة
-      if (isNativePluginAvailable) {
-        try {
-          await MaxPTelephony.addListener("callEnded", async (eventData) => {
-            try {
-              await this.completeCall({
-                sessionId: eventData.sessionId,
-                durationSeconds: eventData.durationSeconds,
-                callStatus: eventData.durationSeconds > 0 ? "COMPLETED" : "NO_ANSWER",
-                callerPhone: undefined,
-              });
-            } catch (error) {
-              console.error("Failed to sync call completion to server:", error);
+        socketService.on("connect", () => {
+          registerSocketDialListener();
+          sendHeartbeat();
+          checkAndHandleActiveCall();
+        });
+
+        if (typeof document !== "undefined") {
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+              triggerImmediateSync();
             }
           });
-        } catch (_listenerErr) {
-          // ignore
+        }
+        if (typeof window !== "undefined") {
+          window.addEventListener("focus", triggerImmediateSync);
+          window.addEventListener("online", triggerImmediateSync);
+        }
+
+        // 4. الاستماع لانتهاء المكالمة
+        if (isNativePluginAvailable) {
+          try {
+            await MaxPTelephony.addListener("callEnded", async (eventData) => {
+              try {
+                await this.completeCall({
+                  sessionId: eventData.sessionId,
+                  durationSeconds: eventData.durationSeconds,
+                  callStatus: eventData.durationSeconds > 0 ? "COMPLETED" : "NO_ANSWER",
+                  callerPhone: undefined,
+                });
+              } catch (error) {
+                console.error("Failed to sync call completion to server:", error);
+              }
+            });
+          } catch (_listenerErr) {
+            // ignore
+          }
         }
       }
     } catch (error) {
