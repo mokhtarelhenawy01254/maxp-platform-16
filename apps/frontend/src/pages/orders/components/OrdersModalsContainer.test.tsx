@@ -2,6 +2,8 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 
 jest.mock("../../../components/common/ErrorBoundary", () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 

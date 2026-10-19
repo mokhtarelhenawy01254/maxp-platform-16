@@ -11,14 +11,9 @@ import { queryClient } from "../../config/queryClient";
 import { toast } from "sonner";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
-import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
-import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
-
-import { OrdersPagination } from "./components/OrdersPagination";
-import { BulkActionBar } from "./components/BulkActionBar";
-import { OrdersBulkCommandPalette } from "./components/OrdersBulkCommandPalette";
+import { OrdersTableSection } from "./components/OrdersTableSection";
 import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
@@ -526,98 +521,48 @@ const Orders: React.FC = () => {
         }}
       />
 
-      {/* Bulk Toolbar */}
-      {canSelectOrders && (
-        <BulkActionBar
-          count={selectedOrders.length}
-          statuses={bulkUpdatableStatuses}
-          isTrashView={isTrashView}
-          busy={bulkProcessing}
-          printing={printingInvoices}
-          onClearSelection={() => setSelectedOrders([])}
-          onStatusChange={handleBulkStatusUpdate}
-          onPrintInvoices={handleBulkPrintInvoices}
-          onCreateTurboShipments={hasActiveTurbo ? handleBulkCreateTurboShipments : undefined}
-          onCreateQpExpressShipments={hasActiveQpExpress ? handleBulkCreateQpExpressShipments : undefined}
-          onCreateBostaShipments={hasActiveBosta ? handleBulkCreateBostaShipments : undefined}
-          onDelete={handleBulkDelete}
-        />
-      )}
-
-      {/* Hidden command palette that registers the page-level bulk actions.
-          The toolbar already has its own palette trigger; this one is mount-only
-          (no trigger button) and just contributes commands to the same global
-          keyboard shortcut handler. */}
-      <OrdersBulkCommandPalette
+      <OrdersTableSection
+        canSelectOrders={canSelectOrders}
+        selectedOrders={selectedOrders}
+        bulkUpdatableStatuses={bulkUpdatableStatuses}
+        isTrashView={isTrashView}
+        bulkProcessing={bulkProcessing}
+        printingInvoices={printingInvoices}
+        onClearSelection={() => setSelectedOrders([])}
+        onBulkStatusUpdate={handleBulkStatusUpdate}
+        onBulkPrintInvoices={handleBulkPrintInvoices}
+        onBulkDelete={handleBulkDelete}
         hasActiveTurbo={hasActiveTurbo}
         hasActiveQpExpress={hasActiveQpExpress}
         hasActiveBosta={hasActiveBosta}
-        handleBulkPrintInvoices={handleBulkPrintInvoices}
         handleBulkCreateTurboShipments={handleBulkCreateTurboShipments}
         handleBulkCreateQpExpressShipments={handleBulkCreateQpExpressShipments}
         handleBulkCreateBostaShipments={handleBulkCreateBostaShipments}
-        handleBulkDelete={handleBulkDelete}
-      />
-
-      <OrdersMobileList
-        orders={displayedOrders}
+        displayedOrders={displayedOrders}
         loading={loading}
         ordersLoadError={ordersLoadError}
-        selectedOrders={selectedOrders}
-        canSelectOrders={canSelectOrders}
         isMerchant={isMerchant}
         activeFilterCount={activeFilterCount}
         search={filters.search}
-        density={tableDensity}
-        helpers={mobileListHelpers}
-        onOpenOrder={handleOpenOrder}
-        onToggleSelection={toggleOrderSelection}
-        onMarkAsViewed={handleMarkAsViewed}
-        onClearFilters={clearAllFilters}
-        onCustomerRatingChange={handleCustomerRatingChange}
-      />
-
-      <OrdersTable
-        orders={displayedOrders}
-        loading={loading}
-        ordersLoadError={ordersLoadError}
-        selectedOrders={selectedOrders}
-        canSelectOrders={canSelectOrders}
-        isMerchant={isMerchant}
-        activeFilterCount={activeFilterCount}
-        search={filters.search}
-        columns={columnsToRender}
-        columnCount={tableColumnCount}
-        density={tableDensity}
+        columnsToRender={columnsToRender}
+        tableColumnCount={tableColumnCount}
+        tableDensity={tableDensity}
         page={page}
         totalPages={totalPages}
         totalOrders={totalOrders}
         limit={limit}
-        helpers={tableHelpers}
+        mobileListHelpers={mobileListHelpers}
+        tableHelpers={tableHelpers}
         onOpenOrder={handleOpenOrder}
-        onToggleSelection={toggleOrderSelection}
-        onToggleAllSelection={toggleAllSelection}
+        toggleOrderSelection={toggleOrderSelection}
+        toggleAllSelection={toggleAllSelection}
         onMarkAsViewed={handleMarkAsViewed}
-        onClearFilters={clearAllFilters}
-        onPageChange={handlePageChange}
-        onLimitChange={handleLimitChange}
-        onDensityChange={changeTableDensity}
-        onCustomerRatingChange={handleCustomerRatingChange}
+        clearAllFilters={clearAllFilters}
+        handleCustomerRatingChange={handleCustomerRatingChange}
+        handlePageChange={handlePageChange}
+        handleLimitChange={handleLimitChange}
+        changeTableDensity={changeTableDensity}
       />
-
-      {!loading && displayedOrders.length > 0 && (
-        <OrdersPagination
-          variant="mobile"
-          page={page}
-          totalPages={totalPages}
-          totalOrders={totalOrders}
-          limit={limit}
-          density={tableDensity}
-          onPageChange={handlePageChange}
-          onLimitChange={handleLimitChange}
-          onDensityChange={changeTableDensity}
-        />
-      )}
       </div>
 
       <OrdersModalsContainer
