@@ -108,10 +108,18 @@ export const BomDetailDrawer: React.FC<BomDetailDrawerProps> = ({
                     bom.components!.map((comp, idx) => (
                       <tr key={idx} className="hover:bg-muted/20 transition">
                         <td className="p-2.5 font-medium text-foreground">
-                          {comp.rawMaterialName || comp.rawMaterialId}
+                          <div>{comp.rawMaterialName || comp.rawMaterialId}</div>
+                          {(comp.composition || comp.fabricWidthM || comp.targetGsm || comp.purchaseUnit) && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5 flex flex-wrap gap-1.5 font-normal">
+                              {comp.composition && <span className="text-foreground/80 font-medium">{comp.composition}</span>}
+                              {comp.fabricWidthM && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">عرض: {comp.fabricWidthM} م</span>}
+                              {comp.targetGsm && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">{comp.targetGsm} GSM</span>}
+                              {comp.purchaseUnit && <span className="text-primary font-medium">شراء: {comp.purchaseUnit}</span>}
+                            </div>
+                          )}
                         </td>
                         <td className="p-2.5 font-mono tabular-nums text-foreground">
-                          {comp.consumptionPerUnit} {comp.unit}
+                          {comp.consumptionPerUnit} {comp.consumptionUnit || comp.unit}
                         </td>
                         <td className="p-2.5 font-mono tabular-nums text-amber-600">
                           {comp.scrapRate}%

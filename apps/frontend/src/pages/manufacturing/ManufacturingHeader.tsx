@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   FileText,
   Building2,
+  Calculator,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { to: '/manufacturing/orders', label: 'أوامر الإنتاج والتشغيل', icon: ClipboardList },
   { to: '/manufacturing/partner-factories', label: 'المصانع الشركاء', icon: Building2 },
   { to: '/manufacturing/boms', label: 'قوائم المكونات (BOM)', icon: ListTree },
+  { to: '/manufacturing/fabric-calculator', label: 'حاسبة القماش', icon: Calculator },
   { to: '/manufacturing/reports', label: 'تقارير الإنتاج والتكاليف', icon: LineChart },
   { to: '/manufacturing/settings', label: 'إعدادات التصنيع', icon: Settings },
 ];
