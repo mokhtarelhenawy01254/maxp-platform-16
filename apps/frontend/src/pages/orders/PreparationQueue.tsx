@@ -24,9 +24,7 @@ import {
   type PreparationTableColumn,
 } from "./preparation/constants";
 import {
-  buildProblemHoldDetails,
   getApiErrorMessage,
-  buildShortageHoldDetails,
   getEffectivePreparationStatus,
   getNextStatus,
   getQuickActionLabel,
@@ -70,6 +68,7 @@ import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrich
 import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
 import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
 import { usePreparationStatusOptions } from "./preparation/usePreparationStatusOptions";
+import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -279,45 +278,16 @@ const PreparationQueue: React.FC = () => {
     setShowFilters,
   } = usePreparationPreferences();
 
-  useEffect(() => {
-    if (preparationSettings.defaultWarehouseId) {
-      uiActions.applyDefaultWarehouse(preparationSettings.defaultWarehouseId);
-    }
-  }, [preparationSettings.defaultWarehouseId, uiActions]);
-
-  useEffect(() => {
-    if (orders.length > 0 && inventory.length === 0 && !inventoryLoading) {
-      ensureInventory();
-    }
-  }, [orders.length, inventory.length, inventoryLoading, ensureInventory]);
-
-  useEffect(() => {
-    setShortageHoldDrafts((previous) => {
-      const nextDrafts = { ...previous };
-
-      orders.forEach((order) => {
-        if (!nextDrafts[order.orderNumber]) {
-          nextDrafts[order.orderNumber] = buildShortageHoldDetails(order.metadata);
-        }
-      });
-
-      return nextDrafts;
-    });
-  }, [orders]);
-
-  useEffect(() => {
-    setProblemHoldDrafts((previous) => {
-      const nextDrafts = { ...previous };
-
-      orders.forEach((order) => {
-        if (!nextDrafts[order.orderNumber]) {
-          nextDrafts[order.orderNumber] = buildProblemHoldDetails(order.metadata);
-        }
-      });
-
-      return nextDrafts;
-    });
-  }, [orders]);
+  usePreparationDraftSync({
+    orders,
+    setShortageHoldDrafts,
+    setProblemHoldDrafts,
+    defaultWarehouseId: preparationSettings.defaultWarehouseId,
+    uiActions,
+    inventoryLength: inventory.length,
+    inventoryLoading,
+    ensureInventory,
+  });
 
   usePreparationUrlSync({
     uiState,
