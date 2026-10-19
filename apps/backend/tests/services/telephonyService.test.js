@@ -593,7 +593,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           where: expect.objectContaining({
             companyId,
             callStatus: 'INITIATED',
-            OR: [{ userId }, { userId: null }]
+            userId
           })
         })
       );

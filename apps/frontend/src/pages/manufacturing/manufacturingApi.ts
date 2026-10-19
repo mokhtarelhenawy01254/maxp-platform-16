@@ -114,6 +114,11 @@ export interface BomComponentItem {
   rawMaterialName?: string | null;
   consumptionPerUnit: number;
   unit: string;
+  purchaseUnit?: string | null;
+  consumptionUnit?: string | null;
+  fabricWidthM?: number | null;
+  targetGsm?: number | null;
+  composition?: string | null;
   appliesToSizes?: string[];
   appliesToColors?: string[];
   scrapRate: number;
@@ -901,5 +906,96 @@ export const manufacturingApi = {
   }): Promise<PartnerFactoryPerformance[]> => {
     const res = await apiClient.get('/manufacturing/partner-factories/performance', { params: filters });
     return res.data?.data || [];
+  },
+
+  // --------------------------------------------------------------------------
+  // Fabric Calculator (Wave 2.5) API
+  // --------------------------------------------------------------------------
+  convertFabric: async (data: {
+    mode?: 'both' | 'kg' | 'm';
+    widthM: number;
+    gsm: number;
+    lengthM?: number | null;
+    weightKg?: number | null;
+  }): Promise<{
+    mode: string;
+    widthM: number;
+    gsm: number;
+    weightPerMeter: number;
+    computedWeight?: number | null;
+    computedLength?: number | null;
+    weightDiff?: number | null;
+    display: {
+      weightPerMeter: number;
+      computedWeight?: number | null;
+      computedLength?: number | null;
+      weightDiff?: number | null;
+    };
+  }> => {
+    const res = await apiClient.post('/manufacturing/fabric/convert', data);
+    return res.data?.data;
+  },
+
+  calculateActualGsm: async (data: {
+    weightKg: number;
+    lengthM: number;
+    widthM: number;
+  }): Promise<{
+    weightKg: number;
+    lengthM: number;
+    widthM: number;
+    actualGsm: number;
+    actualGsmRaw: number;
+    note?: string;
+  }> => {
+    const res = await apiClient.post('/manufacturing/fabric/actual-gsm', data);
+    return res.data?.data;
+  },
+
+  calculateFabricRequirements: async (data: {
+    pieces?: number | null;
+    metersPerPiece?: number | null;
+    totalBaseMeters?: number | null;
+    wastePercent: number;
+    widthM: number;
+    gsm: number;
+    pricePerKg?: number | null;
+    pricePerM?: number | null;
+  }): Promise<{
+    pieces?: number | null;
+    metersPerPiece?: number | null;
+    baseMeters: number;
+    wastePercent: number;
+    widthM: number;
+    gsm: number;
+    metersWithWaste: number;
+    expectedWeightKg: number;
+    pricePerKg?: number | null;
+    pricePerM?: number | null;
+    costByKg?: number | null;
+    costByM?: number | null;
+    totalCost?: number | null;
+    costPerPiece?: number | null;
+    formulas: Record<string, string>;
+  }> => {
+    const res = await apiClient.post('/manufacturing/fabric/requirements', data);
+    return res.data?.data;
+  },
+
+  calculateActualWaste: async (data: {
+    issuedTotal: number;
+    consumedInAccepted: number;
+    returnedGood?: number;
+  }): Promise<{
+    issuedTotal: number;
+    consumedInAccepted: number;
+    returnedGood: number;
+    actualWaste: number;
+    actualWasteRaw: number;
+    wastePercentFromIssued: number;
+    note: string;
+  }> => {
+    const res = await apiClient.post('/manufacturing/fabric/actual-waste', data);
+    return res.data?.data;
   },
 };

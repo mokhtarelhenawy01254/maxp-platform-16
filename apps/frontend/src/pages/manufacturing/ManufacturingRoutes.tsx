@@ -9,6 +9,7 @@ import CustomerOrderDetailPage from './customerOrders/CustomerOrderDetailPage';
 import PartnerFactoriesPage from './partner-factories/PartnerFactoriesPage';
 import ManufacturingReportsPage from './reports/ManufacturingReportsPage';
 import ManufacturingSettingsPage from './settings/ManufacturingSettingsPage';
+import FabricCalculatorPage from './fabric/FabricCalculatorPage';
 
 export const ManufacturingRoutes: React.FC = () => {
   return (
@@ -20,6 +21,7 @@ export const ManufacturingRoutes: React.FC = () => {
       <Route path="orders/:id" element={<ManufacturingOrderDetailPage />} />
       <Route path="partner-factories" element={<PartnerFactoriesPage />} />
       <Route path="boms" element={<ManufacturingBomsPage />} />
+      <Route path="fabric-calculator" element={<FabricCalculatorPage />} />
       <Route path="reports" element={<ManufacturingReportsPage />} />
       <Route path="settings" element={<ManufacturingSettingsPage />} />
       <Route path="*" element={<Navigate to="/manufacturing" replace />} />
