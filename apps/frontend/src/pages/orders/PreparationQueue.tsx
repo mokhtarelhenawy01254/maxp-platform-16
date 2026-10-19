@@ -17,9 +17,7 @@ import {
   PREPARATION_FILTER_SECTIONS,
   PREPARATION_TABLE_COLUMNS,
   PROBLEM_HOLD_METADATA_KEY,
-  PROBLEM_HOLD_STATUS,
   SHORTAGE_HOLD_METADATA_KEY,
-  SHORTAGE_HOLD_STATUS,
   SHORTAGE_FAILED_STATUS,
   type PageSize,
   type PreparationFilterSection,
@@ -71,6 +69,7 @@ import { usePreparationSlipPrint } from "./preparation/usePreparationSlipPrint";
 import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
 import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
 import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
+import { usePreparationStatusOptions } from "./preparation/usePreparationStatusOptions";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -329,108 +328,17 @@ const PreparationQueue: React.FC = () => {
 
 
 
-  const statusLabelMap = useMemo(() => {
-    const map = new Map<string, string>();
-
-    statusConfigs.forEach((status) => {
-      map.set(toUpper(status.code), status.name);
-    });
-
-    return map;
-  }, [statusConfigs]);
-
-  const statusOptions = useMemo<PreparationStatusOption[]>(() => {
-    const seen = new Set<string>();
-    const dynamicOptions: PreparationStatusOption[] = [];
-
-    const addOption = (code: string, fallbackName: string) => {
-      const upper = toUpper(code);
-      if (!upper || seen.has(upper)) return;
-      seen.add(upper);
-      dynamicOptions.push({ code: upper, fallbackName });
-    };
-
-    preparationStatuses.forEach((status) => {
-      addOption(status.code, status.name);
-    });
-
-    addOption("PREPARING", t('preparation.page.stages.PREPARING'));
-    addOption("QUALITY_CHECK", t('preparation.page.stages.QUALITY_CHECK'));
-    addOption("PACKAGED", t('preparation.page.stages.PACKAGED'));
-    addOption(SHORTAGE_HOLD_STATUS, t('preparation.page.stages.STOCK_SHORTAGE'));
-    addOption(preparationSettings.handoffStatus || "READY_TO_SHIP", t('preparation.page.stages.READY_TO_SHIP'));
-
-    if (preparationSettings.startingStatus) {
-      addOption(preparationSettings.startingStatus, t('preparation.page.stages.WAITING'));
-    }
-
-    const problemHoldCode = toUpper(PROBLEM_HOLD_STATUS);
-    addOption(
-      problemHoldCode,
-      statusLabelMap.get(problemHoldCode) || t('orders.onHoldPrep') || 'تجهيز معلق'
-    );
-
-    return dynamicOptions;
-  }, [
-    preparationStatuses,
-    preparationSettings.handoffStatus,
-    preparationSettings.startingStatus,
+  const {
     statusLabelMap,
+    statusOptions,
+    filterTabs,
+    enabledQcChecks,
+  } = usePreparationStatusOptions({
+    statusConfigs,
+    preparationStatuses,
+    preparationSettings,
     t,
-  ]);
-
-  const filterTabs = useMemo(() => {
-    const seen = new Set<string>();
-    const tabs: { statusCode: string; name: string }[] = [];
-
-    preparationStatuses.forEach((status) => {
-      const code = toUpper(status.code);
-      if (!seen.has(code)) {
-        seen.add(code);
-        tabs.push({ statusCode: code, name: status.name });
-      }
-    });
-
-    const forcedStatuses: { code: string; name: string }[] = [
-      { code: "CONFIRMED", name: t("orders.confirmed") },
-    ];
-
-    forcedStatuses.forEach((s) => {
-      const code = toUpper(s.code);
-      if (!seen.has(code) && !seen.has("PENDING_PREPARATION")) {
-        seen.add(code);
-        tabs.push({ statusCode: code, name: s.name });
-      }
-    });
-
-    const shortageCode = toUpper(SHORTAGE_HOLD_STATUS);
-    if (!seen.has(shortageCode)) {
-      seen.add(shortageCode);
-      tabs.push({
-        statusCode: shortageCode,
-        name: statusLabelMap.get(shortageCode) || t('preparation.k_9'),
-      });
-    }
-
-    const problemHoldCode = toUpper(PROBLEM_HOLD_STATUS);
-    if (!seen.has(problemHoldCode)) {
-      seen.add(problemHoldCode);
-      tabs.push({
-        statusCode: problemHoldCode,
-        name: statusLabelMap.get(problemHoldCode) || t('orders.onHoldPrep') || 'تجهيز معلق',
-      });
-    }
-
-    return tabs;
-  }, [preparationStatuses, statusLabelMap]);
-
-  const enabledQcChecks = useMemo(
-    () =>
-      (
-        Object.keys(preparationSettings.qcChecks) as QcCheckKey[]
-      ).filter((key) => preparationSettings.qcChecks[key]),
-    [preparationSettings.qcChecks],
-  );
+  });
 
   const { inventorySummaryByProduct, preparationOrders } = usePreparationEnrichedOrders({
     orders,
