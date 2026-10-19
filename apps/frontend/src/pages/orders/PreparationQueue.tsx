@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import React, { useCallback, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -26,15 +26,12 @@ import PreparationAlertBanners from "./preparation/components/PreparationAlertBa
 import PreparationQueueDialogsContainer from "./preparation/components/PreparationQueueDialogsContainer";
 import { isInternalCourierAppActive } from "./preparation/helpers/internalCourierHelper";
 import { buildPreparationFiltersPayload } from "./preparation/helpers/preparationFiltersPayload";
-import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
-import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
+import { usePreparationFulfillmentOperations } from "./preparation/usePreparationFulfillmentOperations";
 import { usePreparationHoldOperations } from "./preparation/usePreparationHoldOperations";
 import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
 import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
 import { usePreparationTransitions } from "./preparation/usePreparationTransitions";
-import { usePreparationQuickTransfer } from "./preparation/usePreparationQuickTransfer";
-import { usePreparationSlipPrint } from "./preparation/usePreparationSlipPrint";
 import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
 import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
 import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
@@ -43,6 +40,7 @@ import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
 import { usePreparationFilterDerived } from "./preparation/usePreparationFilterDerived";
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
 import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
+import { usePreparationDerivedState } from "./preparation/usePreparationDerivedState";
 import { usePreparationDialogOperations } from "./preparation/usePreparationDialogOperations";
 import { usePreparationFilterSectionProps } from "./preparation/usePreparationFilterSectionProps";
 import {
@@ -134,28 +132,7 @@ const PreparationQueue: React.FC = () => {
   const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
   const setStatusChangeDialogRef = useRef<(dialog: any) => void>(() => {});
 
-  const {
-    shortageHoldDrafts,
-    setShortageHoldDrafts,
-    shortageSavingOrderId,
-    handleShortageFieldChange,
-    saveShortageHoldDetails,
-    handleMarkAsShortageHold,
-    handleReleaseShortageHold,
-    handleMarkAsShortageFailed,
-    problemHoldDrafts,
-    setProblemHoldDrafts,
-    problemHoldSavingOrderId,
-    setProblemHoldSavingOrderId,
-    editReasonOrder,
-    setEditReasonOrder,
-    editReasonOrderOrder,
-    saveProblemHoldDetails,
-    handleHoldAsProblem,
-    handleEditProblemReason,
-    handleConfirmEditReason,
-    handleReleaseProblemHold,
-  } = usePreparationHoldOperations({
+  const holdOps = usePreparationHoldOperations({
     orders,
     user,
     startingStatus: preparationSettings.startingStatus,
@@ -168,6 +145,19 @@ const PreparationQueue: React.FC = () => {
     getApiErrorMessage,
     t,
   });
+
+  const {
+    shortageHoldDrafts,
+    setShortageHoldDrafts,
+    problemHoldDrafts,
+    setProblemHoldDrafts,
+    problemHoldSavingOrderId,
+    setProblemHoldSavingOrderId,
+    editReasonOrder,
+    setEditReasonOrder,
+    editReasonOrderOrder,
+    handleConfirmEditReason,
+  } = holdOps;
 
   const {
     statusChangeDialog,
@@ -259,21 +249,20 @@ const PreparationQueue: React.FC = () => {
       clearBulkControls: uiActions.clearBulkControls,
     });
 
-  const stageCounts = summary.stageCounts;
-  const totalPages = Math.max(1, pagination.pages);
-  // NOTE: server-side pagination already ran; this is just the inventory-enriched
-  // version of the current page's orders — not a client-side slice.
-  const enrichedOrders = preparationOrders;
-  const visibleOrdersCount = summary.filteredTotal;
-  const currentPageCount = enrichedOrders.length;
-  const allOverdueShortageFollowUpCount =
-    summary.allOverdueShortageFollowUpCount;
-  const allOverdueProblemFollowUpCount =
-    summary.allOverdueProblemFollowUpCount;
-
-  useEffect(() => {
-    uiActions.clampPage(totalPages);
-  }, [totalPages, uiActions]);
+  const {
+    stageCounts,
+    totalPages,
+    enrichedOrders,
+    visibleOrdersCount,
+    currentPageCount,
+    allOverdueShortageFollowUpCount,
+    allOverdueProblemFollowUpCount,
+  } = usePreparationDerivedState({
+    summary,
+    pagination,
+    preparationOrders,
+    clampPage: uiActions.clampPage,
+  });
 
   const {
     selectedSet,
@@ -313,12 +302,7 @@ const PreparationQueue: React.FC = () => {
 
   // handleShortageFieldChange provided by usePreparationShortageOperations
 
-  const { printingOrderNumber, handlePrintPreparationSlip } = usePreparationSlipPrint({
-    orders,
-    user,
-    invoiceSettings,
-    t,
-  });
+
 
   // saveShortageHoldDetails provided by usePreparationShortageOperations
   const {
@@ -372,10 +356,19 @@ const PreparationQueue: React.FC = () => {
     t,
   });
 
-  const { transferingItemKey, handleQuickTransfer } = usePreparationQuickTransfer({
+  const fulfillmentOps = usePreparationFulfillmentOperations({
+    orders,
+    user,
+    invoiceSettings,
     selectedWarehouseId,
     inventorySummaryByProduct,
     fetchInventory,
+    selectedOrders,
+    activeStage,
+    getOrderByNumber,
+    fetchAll,
+    clearBulkControls: uiActions.clearBulkControls,
+    navigate,
     getApiErrorMessage,
     t,
   });
@@ -385,21 +378,8 @@ const PreparationQueue: React.FC = () => {
     showDispatchModal,
     setShowDispatchModal,
     sendingToTurbo,
-    handleOpenDispatchModal,
     handleDispatchToCarrier,
-  } = usePreparationCarrierDispatch({
-    selectedOrders,
-    activeStage,
-    getOrderByNumber,
-    fetchAll,
-    clearBulkControls: uiActions.clearBulkControls,
-  });
-
-  const { printingInvoices, handlePrintInvoices } = usePreparationInvoicePrinting({
-    selectedOrders,
-    navigate,
-    user,
-  });
+  } = fulfillmentOps;
 
   const { selectionBarProps, ordersContainerProps } =
     usePreparationTableSectionProps({
@@ -422,15 +402,11 @@ const PreparationQueue: React.FC = () => {
       statusLabelMap,
       bulkUpdating,
       preparationSettings,
-      sendingToTurbo,
-      printingInvoices,
       uiActions,
       handleBulkUpdate,
       handleBulkUpdateAll,
-      handleOpenDispatchModal,
       isInternalCourierActive,
       setShowInternalCourierModal,
-      handlePrintInvoices,
       enrichedOrders,
       pagination,
       totalPages,
@@ -439,30 +415,16 @@ const PreparationQueue: React.FC = () => {
       statusSelections,
       selectedSet,
       rowUpdatingId,
-      shortageSavingOrderId,
-      problemHoldSavingOrderId,
       selectedWarehouseId,
       enabledQcChecks,
       qcChecklistState,
-      shortageHoldDrafts,
-      problemHoldDrafts,
-      transferingItemKey,
-      printingOrderNumber,
       formatPrice,
       formatDate,
       toggleOrderSelection,
-      handleQuickTransfer,
-      handleShortageFieldChange,
-      saveShortageHoldDetails,
       handleQcCheckToggle,
       handleRequestStatusChange,
-      handleMarkAsShortageHold,
-      handleReleaseShortageHold,
-      handleMarkAsShortageFailed,
-      handleHoldAsProblem,
-      handleReleaseProblemHold,
-      handleEditProblemReason,
-      handlePrintPreparationSlip,
+      ...holdOps,
+      ...fulfillmentOps,
     });
 
   const dialogsProps = usePreparationDialogOperations({
@@ -503,7 +465,7 @@ const PreparationQueue: React.FC = () => {
     uiState,
     uiActions,
     statusCounts,
-    stageCounts: summary.stageCounts,
+    stageCounts,
     filterTabs,
     visibleOrdersCount,
     warehouseOptions: warehouses,
