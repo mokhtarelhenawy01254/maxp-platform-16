@@ -11,8 +11,7 @@ import { queryClient } from "../../config/queryClient";
 import { toast } from "sonner";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
-import { OrdersToolbar } from "./components/OrdersToolbar";
-import { OrdersStatsBar } from "./components/OrdersStatsBar";
+import { OrdersToolbarSection } from "./components/OrdersToolbarSection";
 import { OrdersTableSection } from "./components/OrdersTableSection";
 import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
@@ -40,7 +39,6 @@ import { useOrdersStatusDisplays } from "./hooks/useOrdersStatusDisplays";
 import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
 import { useOrdersEntityFormatters } from "./hooks/useOrdersEntityFormatters";
 import { useOrdersViewHelpers } from "./hooks/useOrdersViewHelpers";
-import { HeldOrdersBanner } from "./components/HeldOrdersBanner";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
 
@@ -474,52 +472,45 @@ const Orders: React.FC = () => {
       className="orders-page-root flex-1 h-full min-h-0 overflow-y-auto bg-slate-50/60 dark:bg-zinc-950 px-2 py-2 sm:px-3 sm:py-2.5"
     >
       <div className="w-full max-w-none">
-        <HeldOrdersBanner />
-
-        <OrdersToolbar
-        filters={filters}
-        advancedFilterCount={advancedFilterCount}
-        ordersLoadError={ordersLoadError}
-        showAdvancedFilters={showAdvancedFilters}
-        fieldClassName={fieldClassName}
-        filterableOrderStatuses={filterableOrderStatuses}
-        filterablePaymentStatuses={filterablePaymentStatuses}
-        merchantOptions={merchantOptions}
-        affiliateOptions={affiliateOptions}
-        showOrderSourceFilter={showOrderSourceFilter}
-        showUnifiedOperationFilters={showUnifiedOperationFilters}
-        showMerchantOperationFilters={showMerchantOperationFilters}
-        showAffiliateOperationFilter={showAffiliateOperationFilter}
-        hasCustomDateFilters={hasCustomDateFilters}
-        getAffiliateDisplayName={getAffiliateDisplayName}
-        onFilterChange={handleFilterChange}
-        onApplyFilters={applySavedFilters}
-        onClearAdvancedFilters={clearAdvancedFilters}
-        onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
-        onSetQuickDate={setQuickDate}
-        onRetry={fetchOrders}
-        onRefresh={fetchOrders}
-      />
-
-      <OrdersStatsBar
-        isAdmin={isAdmin}
-        isMerchant={isMerchant}
-        merchantId={filters.merchantId[0] || ""}
-        merchantSettlementSummary={merchantSettlementSummary}
-        merchantSettlementLoading={merchantSettlementLoading}
-        merchantSettlementError={merchantSettlementError}
-        merchantOptions={merchantOptions}
-        formatPrice={formatPrice}
-        getFulfillmentSourceText={getFulfillmentSourceText}
-        onClearMerchantFilters={() => {
-          handleFilterChange("merchantOperationStatus", []);
-          handleFilterChange("merchantSettlementStatus", []);
-        }}
-        onShowDueOrders={() => {
-          handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
-          handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
-        }}
-      />
+        <OrdersToolbarSection
+          filters={filters}
+          advancedFilterCount={advancedFilterCount}
+          ordersLoadError={ordersLoadError}
+          showAdvancedFilters={showAdvancedFilters}
+          fieldClassName={fieldClassName}
+          filterableOrderStatuses={filterableOrderStatuses}
+          filterablePaymentStatuses={filterablePaymentStatuses}
+          merchantOptions={merchantOptions}
+          affiliateOptions={affiliateOptions}
+          showOrderSourceFilter={showOrderSourceFilter}
+          showUnifiedOperationFilters={showUnifiedOperationFilters}
+          showMerchantOperationFilters={showMerchantOperationFilters}
+          showAffiliateOperationFilter={showAffiliateOperationFilter}
+          hasCustomDateFilters={hasCustomDateFilters}
+          getAffiliateDisplayName={getAffiliateDisplayName}
+          onFilterChange={handleFilterChange}
+          onApplyFilters={applySavedFilters}
+          onClearAdvancedFilters={clearAdvancedFilters}
+          onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
+          onSetQuickDate={setQuickDate}
+          onRetry={fetchOrders}
+          onRefresh={fetchOrders}
+          isAdmin={isAdmin}
+          isMerchant={isMerchant}
+          merchantSettlementSummary={merchantSettlementSummary}
+          merchantSettlementLoading={merchantSettlementLoading}
+          merchantSettlementError={merchantSettlementError}
+          formatPrice={formatPrice}
+          getFulfillmentSourceText={getFulfillmentSourceText}
+          onClearMerchantFilters={() => {
+            handleFilterChange("merchantOperationStatus", []);
+            handleFilterChange("merchantSettlementStatus", []);
+          }}
+          onShowDueOrders={() => {
+            handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
+            handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
+          }}
+        />
 
       <OrdersTableSection
         canSelectOrders={canSelectOrders}
