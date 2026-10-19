@@ -157,7 +157,7 @@ public class MaxPTelephonyPlugin extends Plugin {
             // حتى في حال الرفض، نفتح مسجل المكالمات الأصلي حتى لا تفشل مكالمة العميل إطلاقاً
             try {
                 CallSessionManager.getInstance().startSession(sessionId, orderId, phone);
-                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, buildPhoneUri(phone));
                 dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 getContext().startActivity(dialIntent);
 
@@ -172,11 +172,26 @@ public class MaxPTelephonyPlugin extends Plugin {
         }
     }
 
+    private Uri buildPhoneUri(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return Uri.parse("tel:");
+        }
+        String clean = phone.trim();
+        // للأرقام المصرية: تحويل +20 إلى 0 المحلية لتوافق فوري مع كافة شبكات المحمول وهواتف هواوي وشريحة الاتصال
+        if (clean.startsWith("+20")) {
+            clean = "0" + clean.substring(3);
+        } else if (clean.startsWith("20") && clean.length() == 12) {
+            clean = "0" + clean.substring(2);
+        }
+        return Uri.fromParts("tel", clean, null);
+    }
+
     private void performDial(String phone, String sessionId, String orderId, PluginCall call) {
         try {
             CallSessionManager.getInstance().startSession(sessionId, orderId, phone);
 
-            Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + Uri.encode(phone)));
+            Uri phoneUri = buildPhoneUri(phone);
+            Intent dialIntent = new Intent(Intent.ACTION_CALL, phoneUri);
             dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(dialIntent);
 
@@ -184,11 +199,12 @@ public class MaxPTelephonyPlugin extends Plugin {
             ret.put("success", true);
             ret.put("method", "ACTION_CALL");
             ret.put("sessionId", sessionId);
+            ret.put("uri", phoneUri.toString());
             call.resolve(ret);
         } catch (SecurityException secErr) {
             Log.w(TAG, "ACTION_CALL blocked by system permissions, falling back to ACTION_DIAL: " + secErr.getMessage());
             try {
-                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, buildPhoneUri(phone));
                 dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 getContext().startActivity(dialIntent);
 
@@ -203,7 +219,7 @@ public class MaxPTelephonyPlugin extends Plugin {
             }
         } catch (Exception e) {
             try {
-                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL, buildPhoneUri(phone));
                 dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 getContext().startActivity(dialIntent);
 
