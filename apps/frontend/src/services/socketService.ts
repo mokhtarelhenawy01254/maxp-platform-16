@@ -116,11 +116,39 @@ class SocketService {
   private isConnecting: boolean = false;
   private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
   private alarmSources: Array<{ stop: () => void }> = [];
+  private registeredListeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+  private isAutoReconnectSetup: boolean = false;
   private audioBufferCache: Map<string, AudioBuffer> = new Map();
 
   constructor() {
     // Audio Context is initialized lazily on connect() or alarm playback,
     // preventing main-thread lag for unauthenticated storefront visitors.
+    this.setupAutoReconnect();
+  }
+
+  /**
+   * إعداد مستمعات إعادة الاتصال التلقائي الفوري عند إضاءة الشاشة أو عودة الاتصال
+   */
+  private setupAutoReconnect() {
+    if (this.isAutoReconnectSetup || typeof window === "undefined") return;
+    this.isAutoReconnectSetup = true;
+
+    const handleWakeup = () => {
+      if (!this.isConnected() && !this.isConnecting) {
+        console.log("🔄 [SOCKET] Auto-reconnecting on window wakeup/online event");
+        this.connect();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          handleWakeup();
+        }
+      });
+    }
+    window.addEventListener("focus", handleWakeup);
+    window.addEventListener("online", handleWakeup);
   }
 
   public ensureAudioSetup() {
@@ -627,13 +655,15 @@ class SocketService {
       this.disconnect();
     }
 
-    // Configure Socket.IO with authentication
+    // Configure Socket.IO with authentication & resilient mobile reconnection
     const socketConfig: any = {
       transports: ["websocket", "polling"],
       timeout: 20000,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      randomizationFactor: 0.5,
     };
 
     // 🔐 Use a function for auth so each reconnection gets a fresh token
@@ -656,7 +686,10 @@ class SocketService {
 
     this.socket.on("connect", () => {
       this.isConnecting = false;
-      console.log("✅ [SOCKET] Connected to server");
+      console.log("✅ [SOCKET] Connected to server (id: " + this.socket?.id + ")");
+
+      // إعادة ربط كافة المستمعين المسجلين مسبقاً (مهم جداً للهواتف بعد انقطاع الاتصال)
+      this.rebindAllListeners();
 
       // 🔐 إرسال معلومات المستخدم مع دعم عزل الشركات
       this.sendUserJoinEvent();
@@ -769,25 +802,19 @@ class SocketService {
   }
 
   onMessage(callback: (message: Message) => void) {
-    if (this.socket) {
-      this.socket.on("new_message", callback);
-    }
+    this.on("new_message", callback);
   }
 
   onMessageDelivered(
     callback: (data: { messageId: string; conversationId: string }) => void,
   ) {
-    if (this.socket) {
-      this.socket.on("message:delivered", callback);
-    }
+    this.on("message:delivered", callback);
   }
 
   onMessageRead(
     callback: (data: { messageId: string; conversationId: string }) => void,
   ) {
-    if (this.socket) {
-      this.socket.on("message:read", callback);
-    }
+    this.on("message:read", callback);
   }
 
   onTypingStart(
@@ -797,66 +824,88 @@ class SocketService {
       userName: string;
     }) => void,
   ) {
-    if (this.socket) {
-      this.socket.on("typing:start", callback);
-    }
+    this.on("typing:start", callback);
   }
 
   onTypingStop(
     callback: (data: { conversationId: string; userId: string }) => void,
   ) {
-    if (this.socket) {
-      this.socket.on("typing:stop", callback);
-    }
+    this.on("typing:stop", callback);
   }
 
   onUserOnline(callback: (data: { userId: string }) => void) {
-    if (this.socket) {
-      this.socket.on("user:online", callback);
-    }
+    this.on("user:online", callback);
   }
 
   onUserOffline(callback: (data: { userId: string }) => void) {
-    if (this.socket) {
-      this.socket.on("user:offline", callback);
-    }
+    this.on("user:offline", callback);
   }
 
   onConversationUpdated(callback: (conversation: Conversation) => void) {
-    if (this.socket) {
-      this.socket.on("conversation:updated", callback);
-    }
+    this.on("conversation:updated", callback);
   }
 
   onNewConversation(callback: (conversation: Conversation) => void) {
-    if (this.socket) {
-      this.socket.on("conversation:new", callback);
-    }
+    this.on("conversation:new", callback);
   }
 
   onNotification(
     callback: (data: { message: Message; conversation: Conversation }) => void,
   ) {
-    if (this.socket) {
-      this.socket.on("notification:new", callback);
-    }
+    this.on("notification:new", callback);
   }
 
   onCampaignProgress(callback: (data: any) => void) {
-    if (this.socket) {
-      this.socket.on("campaign:progress", callback);
+    this.on("campaign:progress", callback);
+  }
+
+  /**
+   * إعادة تسجيل كافة مستمعي الأحداث عند الاتصال أو إعادة الاتصال
+   */
+  private rebindAllListeners() {
+    if (!this.socket) return;
+    try {
+      this.registeredListeners.forEach((callbacks, event) => {
+        if (event === "connect" || event === "disconnect" || event === "connect_error") return;
+        callbacks.forEach((cb) => {
+          this.socket?.off(event as any, cb as any);
+          this.socket?.on(event as any, cb as any);
+        });
+      });
+      console.log(`🔌 [SOCKET] Re-bound ${this.registeredListeners.size} persistent event listener categories`);
+    } catch (err) {
+      console.warn("⚠️ [SOCKET] Failed to rebind listeners:", err);
     }
   }
 
   on(event: string, callback: (...args: any[]) => void) {
+    if (!this.registeredListeners.has(event)) {
+      this.registeredListeners.set(event, new Set());
+    }
+    this.registeredListeners.get(event)!.add(callback);
+
     if (this.socket) {
-      this.socket.on(event, callback);
+      this.socket.on(event as any, callback as any);
     }
   }
 
   off(event: string, callback?: (...args: any[]) => void) {
-    if (this.socket) {
-      this.socket.off(event, callback);
+    if (callback) {
+      const set = this.registeredListeners.get(event);
+      if (set) {
+        set.delete(callback);
+        if (set.size === 0) {
+          this.registeredListeners.delete(event);
+        }
+      }
+      if (this.socket) {
+        this.socket.off(event as any, callback as any);
+      }
+    } else {
+      this.registeredListeners.delete(event);
+      if (this.socket) {
+        this.socket.off(event as any);
+      }
     }
   }
 
@@ -865,10 +914,16 @@ class SocketService {
   }
 
   getSocket() {
-    if (!this.socket) {
+    if (!this.socket || (!this.socket.connected && !this.isConnecting)) {
       this.connect();
     }
     return this.socket;
+  }
+
+  reconnect() {
+    console.log("🔄 [SOCKET] Explicit reconnect requested");
+    this.disconnect();
+    return this.connect();
   }
 }
 

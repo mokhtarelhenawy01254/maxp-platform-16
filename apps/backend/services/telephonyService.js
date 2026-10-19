@@ -286,7 +286,13 @@ class TelephonyService {
         io.to(`user_${userId}`).emit('telephony:dial', dialPayload);
         io.to(`user:${userId}`).emit('telephony:dial', dialPayload);
       }
-      io.to(`company_${companyId}`).emit('telephony:dial', dialPayload);
+      if (order.assignedToId) {
+        io.to(`user_${order.assignedToId}`).emit('telephony:dial', dialPayload);
+        io.to(`user:${order.assignedToId}`).emit('telephony:dial', dialPayload);
+      }
+      if (!device.userId) {
+        io.to(`company_${companyId}`).emit('telephony:dial', dialPayload);
+      }
       if (device.socketId) {
         io.to(device.socketId).emit('telephony:dial', dialPayload);
       }
@@ -437,6 +443,76 @@ class TelephonyService {
       },
       orderBy: { createdAt: 'desc' }
     });
+  }
+
+  /**
+   * استعلام سريع عن أي مكالمة نشطة قيد الرنين للشركة أو المستخدم (Watchdog Fallback)
+   * يضمن استلام الهاتف للمكالمة فورا حتى لو كان السوكت منقطعاً أو في وضع الاستعداد
+   */
+  async getActiveCall({ companyId, userId }) {
+    if (!companyId) return null;
+    const prisma = getSharedPrismaClient();
+    const cutoff = new Date(Date.now() - 25000); // آخر 25 ثانية فقط
+
+    const activeCall = await prisma.callAttemptLog.findFirst({
+      where: {
+        companyId,
+        callStatus: 'INITIATED',
+        startedAt: { gte: cutoff },
+        ...(userId ? {
+          OR: [
+            { userId },
+            { userId: null }
+          ]
+        } : {})
+      },
+      orderBy: { startedAt: 'desc' }
+    });
+
+    if (!activeCall) return null;
+
+    let orderNumber = activeCall.orderId || '';
+    let customerName = 'عميل';
+
+    if (activeCall.orderId) {
+      try {
+        const order = await prisma.order.findFirst({
+          where: {
+            companyId,
+            OR: [{ id: activeCall.orderId }, { orderNumber: activeCall.orderId }]
+          },
+          select: { orderNumber: true, customerName: true }
+        });
+        if (order) {
+          orderNumber = order.orderNumber || activeCall.orderId;
+          customerName = order.customerName || 'عميل';
+        }
+      } catch {
+        // ignore
+      }
+    } else if (activeCall.guestOrderId && prisma.guestOrder?.findFirst) {
+      try {
+        const gOrder = await prisma.guestOrder.findFirst({
+          where: { id: activeCall.guestOrderId },
+          select: { orderNumber: true, guestName: true }
+        });
+        if (gOrder) {
+          orderNumber = gOrder.orderNumber || activeCall.guestOrderId;
+          customerName = gOrder.guestName || 'عميل';
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return {
+      sessionId: activeCall.sessionId,
+      orderId: activeCall.orderId || activeCall.guestOrderId,
+      orderNumber,
+      customerName,
+      customerPhone: activeCall.customerPhone,
+      startedAt: activeCall.startedAt
+    };
   }
 }
 

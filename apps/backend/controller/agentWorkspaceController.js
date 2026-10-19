@@ -439,25 +439,73 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
 
   let items = [];
   if (!isGuest && order.orderItems?.length > 0) {
-    items = order.orderItems.map((item) => ({
-      productName: item.productName || item.product?.name || 'منتج',
-      name: item.productName || item.product?.name || 'منتج',
-      quantity: item.quantity || 1,
-      price: parseFloat(item.price || 0),
-      total: parseFloat(item.total || (item.price * item.quantity) || 0),
-      productColor: item.productColor,
-      productSize: item.productSize,
-    }));
+    items = order.orderItems.map((item) => {
+      const parsedVariants = (item.product?.productVariants || []).map((v) => {
+        let meta = {};
+        if (typeof v.metadata === 'string') {
+          try { meta = JSON.parse(v.metadata); } catch {}
+        } else if (v.metadata && typeof v.metadata === 'object') {
+          meta = v.metadata;
+        }
+        const attrs = meta.attributeValues || {};
+        return {
+          id: v.id,
+          name: v.name,
+          sku: v.sku,
+          price: parseFloat(v.price || item.product?.price || 0),
+          stock: v.stock,
+          color: attrs['اللون'] || attrs['Color'] || v.color || null,
+          size: attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(attrs['المقاس'] || attrs['Size'] || v.size) : null),
+          images: v.images,
+          image: v.images ? (typeof v.images === 'string' ? JSON.parse(v.images)[0] : v.images[0]) : null,
+          metadata: v.metadata
+        };
+      });
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        variantId: item.variantId,
+        productName: item.productName || item.product?.name || 'منتج',
+        name: item.productName || item.product?.name || 'منتج',
+        quantity: item.quantity || 1,
+        price: parseFloat(item.price || 0),
+        total: parseFloat(item.total || (item.price * item.quantity) || 0),
+        productColor: item.productColor,
+        productSize: item.productSize != null ? String(item.productSize) : null,
+        productImage: item.productImage || item.productVariant?.images || item.product?.mainImage || (item.product?.images ? (typeof item.product.images === 'string' ? JSON.parse(item.product.images)[0] : item.product.images[0]) : null),
+        productSku: item.productSku || item.productVariant?.sku || item.product?.sku,
+        sku: item.productSku || item.productVariant?.sku || item.product?.sku,
+        metadata: item.metadata,
+        product: item.product ? {
+          id: item.product.id,
+          name: item.product.name,
+          price: parseFloat(item.product.price || 0),
+          variants: parsedVariants,
+          productVariants: parsedVariants
+        } : undefined,
+        variants: parsedVariants
+      };
+    });
   } else if (isGuest && order.items) {
     try {
       const parsed = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
       if (Array.isArray(parsed)) {
-        items = parsed.map((item) => ({
+        items = parsed.map((item, idx) => ({
+          id: item.id || `guest-item-${idx}`,
+          productId: item.productId,
+          variantId: item.variantId,
           productName: item.productName || item.name || 'منتج',
           name: item.productName || item.name || 'منتج',
           quantity: item.quantity || 1,
           price: parseFloat(item.price || item.unitPrice || 0),
           total: parseFloat(item.total || (item.price * item.quantity) || 0),
+          productColor: item.productColor || item.color || null,
+          productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
+          productImage: item.productImage || item.image || null,
+          productSku: item.productSku || item.sku || null,
+          sku: item.productSku || item.sku || null,
+          metadata: item.metadata
         }));
       }
     } catch {
@@ -718,7 +766,19 @@ const getMyOrders = async (req, res) => {
                     deliveryRate: true, totalDelivered: true, totalOrdersCount: true, customerRating: true,
                   }
                 },
-                orderItems: { include: { product: true } },
+                orderItems: {
+                  include: {
+                    product: {
+                      include: {
+                        productVariants: {
+                          where: { isActive: true },
+                          orderBy: { sortOrder: 'asc' }
+                        }
+                      }
+                    },
+                    productVariant: true
+                  }
+                },
                 callAttemptLogs: {
                   include: { user: { select: { firstName: true, lastName: true } } },
                   orderBy: { createdAt: 'desc' },
@@ -808,7 +868,19 @@ const getMyOrders = async (req, res) => {
                   customerRating: true,
                 }
               },
-              orderItems: { include: { product: true } },
+              orderItems: {
+                include: {
+                  product: {
+                    include: {
+                      productVariants: {
+                        where: { isActive: true },
+                        orderBy: { sortOrder: 'asc' }
+                      }
+                    }
+                  },
+                  productVariant: true
+                }
+              },
               callAttemptLogs: {
                 include: { user: { select: { firstName: true, lastName: true } } },
                 orderBy: { createdAt: 'desc' },
@@ -1377,6 +1449,9 @@ const updateOrderItems = async (req, res) => {
       const regularOrder = await prisma.order.findFirst({ where: { id, companyId } });
       if (!regularOrder) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
+      let savedOrderItems = [];
+      let updatedNotes = notes;
+
       await prisma.$transaction(async (tx) => {
         await tx.orderItem.deleteMany({ where: { orderId: regularOrder.id } });
 
@@ -1410,8 +1485,6 @@ const updateOrderItems = async (req, res) => {
           const candidateVariantId = item.variantId || item.metadata?.variantId;
           if (candidateVariantId && !validVariantId) {
             try {
-              // عزل المستأجرين: لا ربط متغير إلا لمنتج تابع لنفس الشركة
-              // (مسار productId فوقه يتحقق — هذا كان الناقص)
               const v = await tx.productVariant.findUnique({
                 where: { id: candidateVariantId },
                 include: { product: { select: { companyId: true } } }
@@ -1425,11 +1498,71 @@ const updateOrderItems = async (req, res) => {
             }
           }
 
+          const resolvedColor = item.productColor ? String(item.productColor).trim() : (item.color ? String(item.color).trim() : null);
+          const resolvedSize = item.productSize != null && String(item.productSize).trim() !== ''
+            ? String(item.productSize).trim()
+            : (item.size != null && String(item.size).trim() !== '' ? String(item.size).trim() : null);
+
+          // مطابقة المتغير التابع للمنتج بناءً على اللون والمقاس الجديد
+          if (validProductId && (resolvedColor || resolvedSize)) {
+            try {
+              const allVariants = await tx.productVariant.findMany({
+                where: { productId: validProductId, isActive: true }
+              });
+
+              const matched = allVariants.find((v) => {
+                let meta = {};
+                try {
+                  meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : (v.metadata || {});
+                } catch {}
+                const attrs = meta.attributeValues || {};
+                const vColor = attrs['اللون'] || attrs['Color'] || v.color;
+                const vSize = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+
+                const colorMatch = !resolvedColor || (vColor && vColor.trim() === resolvedColor) || (v.name && v.name.includes(resolvedColor));
+                const sizeMatch = !resolvedSize || (vSize && String(vSize).trim() === resolvedSize) || (v.name && v.name.includes(resolvedSize));
+
+                return colorMatch && sizeMatch;
+              });
+
+              if (matched) {
+                validVariantId = matched.id;
+                if (!item.productSku || item.productSku === item.sku) {
+                  item.productSku = matched.sku;
+                }
+                if (!item.productImage && matched.images) {
+                  try {
+                    const parsedImgs = typeof matched.images === 'string' ? JSON.parse(matched.images) : matched.images;
+                    item.productImage = Array.isArray(parsedImgs) ? parsedImgs[0] : parsedImgs;
+                  } catch {}
+                }
+              }
+            } catch (_lookupErr) {
+              // ignore variant matching lookup errors
+            }
+          }
+
           const itemQty = Math.max(1, parseInt(item.quantity, 10) || 1);
           const itemPrice = Math.max(0, parseFloat(item.price) || 0);
           const itemTotal = itemQty * itemPrice;
 
-          await tx.orderItem.create({
+          let itemMetadata = {};
+          if (typeof item.metadata === 'string') {
+            try { itemMetadata = JSON.parse(item.metadata); } catch {}
+          } else if (item.metadata && typeof item.metadata === 'object') {
+            itemMetadata = { ...item.metadata };
+          }
+          if (!itemMetadata.attributeValues) itemMetadata.attributeValues = {};
+          if (resolvedColor) {
+            itemMetadata.attributeValues['اللون'] = resolvedColor;
+            itemMetadata.attributeValues['Color'] = resolvedColor;
+          }
+          if (resolvedSize) {
+            itemMetadata.attributeValues['المقاس'] = resolvedSize;
+            itemMetadata.attributeValues['Size'] = resolvedSize;
+          }
+
+          const createdItem = await tx.orderItem.create({
             data: {
               orderId: regularOrder.id,
               productId: validProductId,
@@ -1438,13 +1571,55 @@ const updateOrderItems = async (req, res) => {
               price: itemPrice,
               total: itemTotal,
               productName: item.productName || item.name || null,
-              productColor: item.productColor || item.color || null,
-              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
+              productColor: resolvedColor,
+              productSize: resolvedSize,
               productImage: item.productImage || item.image || null,
               productSku: item.productSku || item.sku || null,
-              metadata: typeof item.metadata === 'object' ? JSON.stringify(item.metadata) : (item.metadata || null)
+              metadata: JSON.stringify(itemMetadata)
             }
           });
+
+          savedOrderItems.push({
+            id: createdItem.id,
+            productId: validProductId,
+            variantId: validVariantId,
+            productName: item.productName || item.name || null,
+            name: item.productName || item.name || null,
+            quantity: itemQty,
+            price: itemPrice,
+            total: itemTotal,
+            productColor: resolvedColor,
+            productSize: resolvedSize,
+            productImage: item.productImage || item.image || null,
+            productSku: item.productSku || item.sku || null,
+            sku: item.productSku || item.sku || null,
+            metadata: JSON.stringify(itemMetadata)
+          });
+        }
+
+        // تحديث ملاحظات الطلب بذكاء إذا كانت تتضمن اختيار المنتج القديم
+        if (updatedNotes === undefined && regularOrder.notes) {
+          const lines = regularOrder.notes.split('\n');
+          const hasProductSelectionLine = lines.some((l) => l.includes('اختيار المنتج:') || (l.includes('اللون:') && l.includes('المقاس:')));
+          if (hasProductSelectionLine) {
+            const newSelectionText = savedOrderItems
+              .map((it) => {
+                const details = [];
+                if (it.productColor) details.push(`اللون: ${it.productColor}`);
+                if (it.productSize) details.push(`المقاس: ${it.productSize}`);
+                return `اختيار المنتج: ${it.productName ? `${it.productName} - ` : ''}${details.join(' - ')}`;
+              })
+              .join('\n');
+
+            updatedNotes = lines
+              .map((line) => {
+                if (line.includes('اختيار المنتج:') || (line.includes('اللون:') && line.includes('المقاس:'))) {
+                  return newSelectionText;
+                }
+                return line;
+              })
+              .join('\n');
+          }
         }
 
         const orderUpdateData = {
@@ -1454,7 +1629,7 @@ const updateOrderItems = async (req, res) => {
           total: calculatedTotal,
           updatedAt: new Date()
         };
-        if (notes !== undefined) orderUpdateData.notes = notes;
+        if (updatedNotes !== undefined) orderUpdateData.notes = updatedNotes;
 
         await tx.order.update({
           where: { id: regularOrder.id },
@@ -1466,14 +1641,14 @@ const updateOrderItems = async (req, res) => {
         });
         if (twinGuest) {
           const guestUpdateData = {
-            items: JSON.stringify(items),
+            items: JSON.stringify(savedOrderItems),
             total: calculatedSubtotal,
             shippingCost: parsedShipping,
             discountAmount: parsedDiscount,
             finalTotal: calculatedTotal,
             updatedAt: new Date()
           };
-          if (notes !== undefined) guestUpdateData.notes = notes;
+          if (updatedNotes !== undefined) guestUpdateData.notes = updatedNotes;
 
           await tx.guestOrder.update({
             where: { id: twinGuest.id },
@@ -1489,15 +1664,33 @@ const updateOrderItems = async (req, res) => {
           subtotal: calculatedSubtotal,
           shipping: parsedShipping,
           discount: parsedDiscount,
-          total: calculatedTotal
+          total: calculatedTotal,
+          items: savedOrderItems,
+          notes: updatedNotes !== undefined ? updatedNotes : regularOrder.notes
         }
       });
     } else {
       const guestOrder = await prisma.guestOrder.findFirst({ where: { id, companyId } });
       if (!guestOrder) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
+      const guestItems = items.map((it, idx) => ({
+        id: it.id || `guest-${idx}`,
+        productId: it.productId,
+        variantId: it.variantId,
+        productName: it.productName || it.name,
+        name: it.productName || it.name,
+        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+        price: Math.max(0, parseFloat(it.price) || 0),
+        total: (Math.max(1, parseInt(it.quantity, 10) || 1)) * (Math.max(0, parseFloat(it.price) || 0)),
+        productColor: it.productColor || it.color || null,
+        productSize: it.productSize != null ? String(it.productSize) : (it.size != null ? String(it.size) : null),
+        productImage: it.productImage || it.image || null,
+        productSku: it.productSku || it.sku || null,
+        sku: it.productSku || it.sku || null,
+      }));
+
       const guestUpdateData = {
-        items: JSON.stringify(items),
+        items: JSON.stringify(guestItems),
         total: calculatedSubtotal,
         shippingCost: parsedShipping,
         discountAmount: parsedDiscount,
@@ -1518,13 +1711,74 @@ const updateOrderItems = async (req, res) => {
           subtotal: calculatedSubtotal,
           shipping: parsedShipping,
           discount: parsedDiscount,
-          total: calculatedTotal
+          total: calculatedTotal,
+          items: guestItems,
+          notes: notes !== undefined ? notes : guestOrder.notes
         }
       });
     }
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in updateOrderItems:', error);
     res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في تحديث منتجات الطلب' });
+  }
+};
+
+const getProductVariants = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const prisma = getSharedPrismaClient();
+
+    const product = await prisma.product.findFirst({
+      where: { id, companyId },
+      include: {
+        productVariants: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' }
+        }
+      }
+    });
+
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'المنتج غير موجود' });
+    }
+
+    const variants = (product.productVariants || []).map((v) => {
+      let meta = {};
+      if (typeof v.metadata === 'string') {
+        try { meta = JSON.parse(v.metadata); } catch {}
+      } else if (v.metadata && typeof v.metadata === 'object') {
+        meta = v.metadata;
+      }
+      const attrs = meta.attributeValues || {};
+      return {
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: parseFloat(v.price || product.price || 0),
+        stock: v.stock,
+        color: attrs['اللون'] || attrs['Color'] || v.color || null,
+        size: attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(attrs['المقاس'] || attrs['Size'] || v.size) : null),
+        image: v.images ? (typeof v.images === 'string' ? JSON.parse(v.images)[0] : v.images[0]) : null,
+        metadata: v.metadata
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        product: {
+          id: product.id,
+          name: product.name,
+          price: parseFloat(product.price || 0),
+          image: product.mainImage
+        },
+        variants
+      }
+    });
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in getProductVariants:', error);
+    res.status(500).json({ success: false, error: 'خطأ في جلب متغيرات المنتج' });
   }
 };
 
@@ -2150,6 +2404,7 @@ module.exports = {
   assignOrder,
   updateOrderItems,
   updateOrderCustomer,
+  getProductVariants,
   getWorkspaceReports,
   requireManager
 };

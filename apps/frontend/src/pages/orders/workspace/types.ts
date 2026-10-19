@@ -52,7 +52,10 @@ export interface WorkspaceOrderItem {
   productColor?: string | null;
   productSize?: string | null;
   productImage?: string | null;
+  productSku?: string | null;
   sku?: string | null;
+  product?: any;
+  variants?: any[];
 }
 
 export interface WorkspaceOrder {

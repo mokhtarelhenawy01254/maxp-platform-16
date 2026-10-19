@@ -39,6 +39,29 @@ router.get('/device/presence', async (req, res) => {
 });
 
 /**
+ * استعلام سريع عن أي مكالمة نشطة حالياً للشركة/المستخدم (Active Call Watchdog)
+ */
+router.get('/active-call', async (req, res) => {
+  try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    const companyId = getCompanyId(req);
+    const userId = req.user?.id;
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const call = await telephonyService.getActiveCall({ companyId, userId });
+    res.json({ success: true, data: call });
+  } catch (error) {
+    respondError(res, error);
+  }
+});
+
+/**
  * تسجيل هاتف الموظف أو إرسال نبض اتصال دوري (Heartbeat)
  */
 router.post('/device/heartbeat', async (req, res) => {

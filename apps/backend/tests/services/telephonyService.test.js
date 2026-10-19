@@ -560,4 +560,51 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
       );
     });
   });
+
+  describe('Active Call Watchdog (getActiveCall)', () => {
+    it('returns null when companyId is missing or no initiated call exists', async () => {
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      const res = await telephonyService.getActiveCall({ companyId, userId });
+      expect(res).toBeNull();
+
+      const noComp = await telephonyService.getActiveCall({ companyId: null, userId });
+      expect(noComp).toBeNull();
+    });
+
+    it('returns active call details when a call was initiated recently', async () => {
+      const startedAt = new Date();
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue({
+        id: 'active_log_1',
+        sessionId: 'call_active_123',
+        orderId: 'ORD-999',
+        customerPhone: '+201012345678',
+        callStatus: 'INITIATED',
+        startedAt
+      });
+      mockPrisma.order.findFirst.mockResolvedValue({
+        id: 'ORD-999',
+        orderNumber: 'ORD-999',
+        customerName: 'أحمد محمود'
+      });
+
+      const res = await telephonyService.getActiveCall({ companyId, userId });
+      expect(mockPrisma.callAttemptLog.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            companyId,
+            callStatus: 'INITIATED',
+            OR: [{ userId }, { userId: null }]
+          })
+        })
+      );
+      expect(res).toEqual({
+        sessionId: 'call_active_123',
+        orderId: 'ORD-999',
+        orderNumber: 'ORD-999',
+        customerName: 'أحمد محمود',
+        customerPhone: '+201012345678',
+        startedAt
+      });
+    });
+  });
 });

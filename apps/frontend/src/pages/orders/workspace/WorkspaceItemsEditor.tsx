@@ -10,6 +10,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { useCurrency } from '../../../hooks/useCurrency';
+import { apiClient } from '../../../services/apiClient';
 import { WorkspaceOrder, WorkspaceOrderItem } from './types';
 
 const SimplifiedProductSelectionModal = React.lazy(
@@ -51,6 +52,9 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
   const [shipping, setShipping] = useState<number>(Number(order.shipping) || 0);
   const [discount, setDiscount] = useState<number>(Number(order.discount) || 0);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [customColorMode, setCustomColorMode] = useState<Record<number, boolean>>({});
+  const [customSizeMode, setCustomSizeMode] = useState<Record<number, boolean>>({});
+  const [productVariantsMap, setProductVariantsMap] = useState<Record<string, any[]>>({});
 
   // إعادة التهيئة عند تبديل الطلب — بدونها يستمر المحرر ببنود الطلب السابق
   // ويحفظها فوق الطلب الجديد عندما يستبدل الـ poll الطلب المفتوح
@@ -58,8 +62,125 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
     setItems(toEditableItems(order.items));
     setShipping(Number(order.shipping) || 0);
     setDiscount(Number(order.discount) || 0);
+    setCustomColorMode({});
+    setCustomSizeMode({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.id]);
+
+  // جلب متغيرات المنتجات إذا لم تكن محملة مسبقاً
+  useEffect(() => {
+    items.forEach((item) => {
+      const pId = item.productId;
+      if (pId && !item.variants?.length && !productVariantsMap[pId]) {
+        apiClient
+          .get(`/agent-workspace/products/${pId}/variants`)
+          .then((res) => {
+            if (res.data?.success && res.data?.data?.variants) {
+              setProductVariantsMap((prev) => ({
+                ...prev,
+                [pId]: res.data.data.variants,
+              }));
+            }
+          })
+          .catch(() => {});
+      }
+    });
+  }, [items, productVariantsMap]);
+
+  const getItemOptions = (item: WorkspaceOrderItem) => {
+    const vars =
+      item.variants ||
+      item.product?.variants ||
+      item.product?.productVariants ||
+      (item.productId ? productVariantsMap[item.productId] : undefined) ||
+      [];
+
+    const colors = new Set<string>();
+    const sizes = new Set<string>();
+
+    vars.forEach((v: any) => {
+      let meta: any = {};
+      if (typeof v.metadata === 'string') {
+        try { meta = JSON.parse(v.metadata); } catch {}
+      } else if (v.metadata && typeof v.metadata === 'object') {
+        meta = v.metadata;
+      }
+      const attrs = meta.attributeValues || {};
+      const c = attrs['اللون'] || attrs['Color'] || v.color;
+      const s = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+
+      if (c) colors.add(String(c).trim());
+      if (s) sizes.add(String(s).trim());
+
+      if ((!c || !s) && v.name && v.name.includes('-')) {
+        const parts = v.name.split('-').map((p: string) => p.trim());
+        if (parts.length >= 2) {
+          if (!c && parts[0]) colors.add(parts[0]);
+          if (!s && parts[1]) sizes.add(parts[1]);
+        }
+      }
+    });
+
+    return {
+      colors: Array.from(colors),
+      sizes: Array.from(sizes),
+      variants: vars,
+    };
+  };
+
+  const handleVariantAttributeChange = (index: number, newColor: string, newSize: string) => {
+    setItems((prev) =>
+      prev.map((item, idx) => {
+        if (idx !== index) return item;
+        const { variants: vars } = getItemOptions(item);
+
+        // Find matching variant
+        const matched = vars.find((v: any) => {
+          let meta: any = {};
+          try { meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : (v.metadata || {}); } catch {}
+          const attrs = meta.attributeValues || {};
+          const vColor = attrs['اللون'] || attrs['Color'] || v.color;
+          const vSize = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+
+          const colorMatch = !newColor || (vColor && vColor.trim() === newColor.trim()) || (v.name && v.name.includes(newColor.trim()));
+          const sizeMatch = !newSize || (vSize && String(vSize).trim() === String(newSize).trim()) || (v.name && v.name.includes(String(newSize).trim()));
+          return colorMatch && sizeMatch;
+        });
+
+        const updatedImage =
+          matched?.image ||
+          (matched?.images
+            ? Array.isArray(matched.images)
+              ? matched.images[0]
+              : typeof matched.images === 'string'
+              ? (() => {
+                  try {
+                    const arr = JSON.parse(matched.images);
+                    return Array.isArray(arr) ? arr[0] : arr;
+                  } catch {
+                    return matched.images;
+                  }
+                })()
+              : null
+            : null);
+
+        const updatedSku = matched?.sku || item.productSku || item.sku;
+        const updatedPrice = matched?.price ? Number(matched.price) : item.price;
+
+        return {
+          ...item,
+          productColor: newColor,
+          productSize: newSize,
+          variantId: matched ? matched.id : item.variantId,
+          productSku: updatedSku,
+          sku: updatedSku,
+          productImage: updatedImage || item.productImage,
+          price: updatedPrice,
+          total: updatedPrice * item.quantity,
+        };
+      })
+    );
+  };
 
   const subtotal = items.reduce(
     (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
@@ -103,6 +224,8 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
       productSize: variant?.size,
       productImage: variant?.image || product.image,
       sku: variant?.sku || product.sku,
+      product: product,
+      variants: product.variants,
     };
 
     setItems((prev) => [...prev, newItem]);
@@ -135,70 +258,192 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
       </div>
 
       {/* Items list */}
-      <div className="max-h-60 space-y-1.5 overflow-y-auto pe-1">
-        {items.map((item, idx) => (
-          <div
-            key={item.id || idx}
-            className="flex items-center justify-between gap-2 rounded-md border border-border/40 bg-muted/20 px-2.5 py-1.5 text-xs"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-bold text-foreground">
-                {item.productName || item.name}
-              </p>
-              <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                {item.productColor && (
-                  <span className="rounded bg-muted px-1 py-0.5">{item.productColor}</span>
-                )}
-                {item.productSize && (
-                  <span className="rounded bg-muted px-1 py-0.5">{item.productSize}</span>
-                )}
-                <span className="font-mono tabular-nums text-foreground/80">
-                  {formatPrice(item.price)}
-                </span>
+      <div className="max-h-72 space-y-2 overflow-y-auto pe-1">
+        {items.map((item, idx) => {
+          const { colors, sizes } = getItemOptions(item);
+          const isCustomColor =
+            customColorMode[idx] ||
+            (colors.length > 0 && item.productColor && !colors.includes(item.productColor));
+          const isCustomSize =
+            customSizeMode[idx] ||
+            (sizes.length > 0 && item.productSize && !sizes.includes(item.productSize));
+
+          return (
+            <div
+              key={item.id || idx}
+              className="rounded-md border border-border/40 bg-muted/20 p-2 text-xs space-y-2"
+            >
+              {/* Row 1: Image, Name, Price, Stepper & Actions */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {item.productImage && (
+                    <img
+                      src={item.productImage}
+                      alt=""
+                      className="h-8 w-8 rounded object-cover border border-border/40 shrink-0"
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-foreground">
+                      {item.productName || item.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                      <span>{formatPrice(item.price)}</span>
+                      {item.productSku && <span className="opacity-70 truncate">({item.productSku})</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stepper & Actions */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center rounded border border-border/60 bg-background">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateQuantity(idx, -1)}
+                      disabled={item.quantity <= 1}
+                      className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40"
+                      title={isArabic ? 'تقليل' : 'Decrease'}
+                    >
+                      <MinusIcon className="h-3 w-3" />
+                    </button>
+                    <span className="min-w-[20px] text-center font-mono text-xs font-bold tabular-nums">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateQuantity(idx, 1)}
+                      className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                      title={isArabic ? 'زيادة' : 'Increase'}
+                    >
+                      <PlusIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  <span className="min-w-[50px] text-end font-mono font-bold tabular-nums text-foreground">
+                    {formatPrice(item.quantity * item.price)}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(idx)}
+                    disabled={items.length <= 1}
+                    className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"
+                    title={isArabic ? 'حذف البند' : 'Remove item'}
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Color and Size Editor Controls */}
+              <div className="flex flex-wrap items-center gap-2 rounded bg-background/70 p-1.5 border border-border/40 text-[11px]">
+                {/* Color Selector / Input */}
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                    {isArabic ? 'اللون:' : 'Color:'}
+                  </span>
+                  {colors.length > 0 && !isCustomColor ? (
+                    <div className="flex items-center gap-0.5">
+                      <select
+                        value={item.productColor || ''}
+                        onChange={(e) => {
+                          if (e.target.value === '__CUSTOM__') {
+                            setCustomColorMode((prev) => ({ ...prev, [idx]: true }));
+                          } else {
+                            handleVariantAttributeChange(idx, e.target.value, item.productSize || '');
+                          }
+                        }}
+                        className="h-6 max-w-[130px] rounded border border-border/60 bg-background px-1 text-[11px] font-medium text-foreground focus:border-primary focus:outline-none"
+                      >
+                        <option value="">{isArabic ? '-- اختر اللون --' : '-- Select --'}</option>
+                        {colors.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM__">{isArabic ? '✏️ كتابة لون آخر...' : '✏️ Other...'}</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-0.5">
+                      <input
+                        type="text"
+                        value={item.productColor || ''}
+                        onChange={(e) =>
+                          handleVariantAttributeChange(idx, e.target.value, item.productSize || '')
+                        }
+                        placeholder={isArabic ? 'اللون...' : 'Color...'}
+                        className="h-6 w-24 rounded border border-border/60 bg-background px-1.5 text-[11px] text-foreground focus:border-primary focus:outline-none"
+                      />
+                      {colors.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomColorMode((prev) => ({ ...prev, [idx]: false }))}
+                          className="px-1 text-[10px] text-primary hover:underline"
+                          title={isArabic ? 'اختيار من القائمة' : 'Select from list'}
+                        >
+                          ↩
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Size Selector / Input */}
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                    {isArabic ? 'المقاس:' : 'Size:'}
+                  </span>
+                  {sizes.length > 0 && !isCustomSize ? (
+                    <div className="flex items-center gap-0.5">
+                      <select
+                        value={item.productSize || ''}
+                        onChange={(e) => {
+                          if (e.target.value === '__CUSTOM__') {
+                            setCustomSizeMode((prev) => ({ ...prev, [idx]: true }));
+                          } else {
+                            handleVariantAttributeChange(idx, item.productColor || '', e.target.value);
+                          }
+                        }}
+                        className="h-6 max-w-[110px] rounded border border-border/60 bg-background px-1 text-[11px] font-medium text-foreground focus:border-primary focus:outline-none"
+                      >
+                        <option value="">{isArabic ? '-- اختر المقاس --' : '-- Select --'}</option>
+                        {sizes.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM__">{isArabic ? '✏️ مقاس آخر...' : '✏️ Other...'}</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-0.5">
+                      <input
+                        type="text"
+                        value={item.productSize || ''}
+                        onChange={(e) =>
+                          handleVariantAttributeChange(idx, item.productColor || '', e.target.value)
+                        }
+                        placeholder={isArabic ? 'المقاس...' : 'Size...'}
+                        className="h-6 w-20 rounded border border-border/60 bg-background px-1.5 text-[11px] text-foreground focus:border-primary focus:outline-none"
+                      />
+                      {sizes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomSizeMode((prev) => ({ ...prev, [idx]: false }))}
+                          className="px-1 text-[10px] text-primary hover:underline"
+                          title={isArabic ? 'اختيار من القائمة' : 'Select from list'}
+                        >
+                          ↩
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-
-            {/* Stepper & Actions */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center rounded border border-border/60 bg-background">
-                <button
-                  type="button"
-                  onClick={() => handleUpdateQuantity(idx, -1)}
-                  disabled={item.quantity <= 1}
-                  className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40"
-                  title={isArabic ? 'تقليل' : 'Decrease'}
-                >
-                  <MinusIcon className="h-3 w-3" />
-                </button>
-                <span className="min-w-[20px] text-center font-mono text-xs font-bold tabular-nums">
-                  {item.quantity}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleUpdateQuantity(idx, 1)}
-                  className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
-                  title={isArabic ? 'زيادة' : 'Increase'}
-                >
-                  <PlusIcon className="h-3 w-3" />
-                </button>
-              </div>
-
-              <span className="min-w-[50px] text-end font-mono font-bold tabular-nums text-foreground">
-                {formatPrice(item.quantity * item.price)}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => handleRemoveItem(idx)}
-                disabled={items.length <= 1}
-                className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"
-                title={isArabic ? 'حذف البند' : 'Remove item'}
-              >
-                <TrashIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Financials Controls */}

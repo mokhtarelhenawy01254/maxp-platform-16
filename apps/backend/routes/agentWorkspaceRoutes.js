@@ -78,4 +78,11 @@ router.put('/orders/:id/items', createEndpointRateLimiter('AGENT_ACTIONS'), agen
  */
 router.put('/orders/:id/customer', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.updateOrderCustomer);
 
+/**
+ * @route GET /api/v1/agent-workspace/products/:id/variants
+ * @desc Get product variants and options for workspace order editing
+ * @access Private
+ */
+router.get('/products/:id/variants', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.getProductVariants);
+
 module.exports = router;

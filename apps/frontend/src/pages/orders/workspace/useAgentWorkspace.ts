@@ -690,17 +690,19 @@ export function useAgentWorkspace() {
 
       if (response.data?.success) {
         toast.success(isArabic ? 'تم تحديث منتجات الطلب بنجاح' : 'Order items updated');
-        const updatedTotals = response.data?.data;
+        const updatedData = response.data?.data;
+        const resolvedItems = updatedData?.items || newItems;
         setOrders((prev) =>
           prev.map((o) => {
             if (o.id !== orderId) return o;
             return {
               ...o,
-              items: newItems,
-              subtotal: updatedTotals?.subtotal ?? o.subtotal,
-              shipping: updatedTotals?.shipping ?? o.shipping,
-              discount: updatedTotals?.discount ?? o.discount,
-              total: updatedTotals?.total ?? o.total,
+              items: resolvedItems,
+              notes: updatedData?.notes ?? o.notes,
+              subtotal: updatedData?.subtotal ?? o.subtotal,
+              shipping: updatedData?.shipping ?? o.shipping,
+              discount: updatedData?.discount ?? o.discount,
+              total: updatedData?.total ?? o.total,
             };
           }),
         );

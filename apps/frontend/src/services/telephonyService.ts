@@ -77,6 +77,20 @@ const MaxPTelephony = registerPlugin<MaxPTelephonyNativePlugin>("MaxPTelephony")
 class TelephonyClientService {
   private isAgentInitialized = false;
   private heartbeatInterval: any = null;
+  private handledSessionIds = new Set<string>();
+  private activeCallWatchdogInterval: any = null;
+
+  /**
+   * استعلام فوري عن أي مكالمة نشطة حالياً للموظف (Active Call Watchdog)
+   */
+  async getActiveCall(): Promise<any> {
+    try {
+      const response = await apiClient.get<any>("/telephony/active-call");
+      return response.data?.data || null;
+    } catch {
+      return null;
+    }
+  }
 
   /**
    * فحص حالة اتصال هاتف الموظف (Presence Check)
@@ -280,88 +294,128 @@ class TelephonyClientService {
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = setInterval(sendHeartbeat, 30000);
 
-      // 3. دالة لتسجيل مستمع أمر الاتصال على المقبس
+      // 3. دالة معالجة أمر الاتصال سواء وصل عبر المقبس أو مراقب الـ HTTP
+      const handleIncomingDial = async (data: any, source: string) => {
+        try {
+          if (!data?.customerPhone) return;
+
+          if (data.sessionId) {
+            if (this.handledSessionIds.has(data.sessionId)) {
+              return;
+            }
+            if (this.handledSessionIds.size > 200) {
+              const first = this.handledSessionIds.values().next().value;
+              if (first) this.handledSessionIds.delete(first);
+            }
+            this.handledSessionIds.add(data.sessionId);
+          }
+
+          console.log(`📞 [Telephony] Incoming dial received via ${source}:`, {
+            orderId: data.orderId,
+            orderNumber: data.orderNumber,
+            customerName: data.customerName,
+            customerPhone: data.customerPhone,
+          });
+
+          // إشعار الخادم وشاشة الكمبيوتر بأن الهاتف استلم أمر الاتصال بنجاح
+          try {
+            const socket = socketService.getSocket();
+            socket?.emit("telephony:dial_received", {
+              sessionId: data.sessionId,
+              orderId: data.orderId,
+              customerPhone: data.customerPhone,
+              deviceName: deviceInfo.deviceName,
+            });
+          } catch {
+            // ignore ack error
+          }
+
+          // إطلاق حدث محلي لعرض شاشة الاتصال السريعة التفاعلية على شاشة الهاتف (MobileCallOverlay)
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("telephony:incoming_dial", { detail: data })
+            );
+          }
+
+          // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
+          if (isNativePluginAvailable) {
+            try {
+              await MaxPTelephony.dialCustomer({
+                phone: data.customerPhone,
+                sessionId: data.sessionId,
+                orderId: data.orderId,
+              });
+              return;
+            } catch (nativeErr) {
+              console.warn("Native dialCustomer failed or background restricted:", nativeErr);
+            }
+          }
+
+          // محاولة إطلاق رابط tel: السريع
+          try {
+            const safePhone = String(data.customerPhone || "").replace(/[^\d+*#]/g, "");
+            window.location.href = `tel:${safePhone}`;
+          } catch (telErr) {
+            console.warn("Direct tel: navigation blocked, user can tap the overlay button:", telErr);
+          }
+        } catch (error) {
+          console.error("Failed to execute incoming dial handler:", error);
+        }
+      };
+
+      // 4. دالة لتسجيل مستمع أمر الاتصال على المقبس
       const registerSocketDialListener = () => {
         socketService.off("telephony:dial");
         socketService.on("telephony:dial", async (data: any) => {
-          try {
-            if (!data?.customerPhone) return;
-
-            // 🛡️ تصفية الأجهزة: تسجيل ملاحظة إن وُجد اختلاف، مع عدم حجب الاتصال نهائياً
-            // لأن المقبس منضم لغرفة الموظف نفسه user_${userId} وأي أمر يصل هو حتماً له
-            if (data.deviceId && deviceInfo?.deviceId && data.deviceId !== deviceInfo.deviceId) {
-              console.warn(
-                `[Telephony] DeviceId note: order specified ${data.deviceId}, current is ${deviceInfo.deviceId}. Alerting phone for current user.`
-              );
-            }
-
-            // إشعار الخادم وشاشة الكمبيوتر بأن الهاتف استلم أمر الاتصال بنجاح
-            try {
-              const socket = socketService.getSocket();
-              socket?.emit("telephony:dial_received", {
-                sessionId: data.sessionId,
-                orderId: data.orderId,
-                customerPhone: data.customerPhone,
-                deviceName: deviceInfo.deviceName,
-              });
-            } catch {
-              // ignore ack error
-            }
-
-            // إطلاق حدث محلي لعرض شاشة الاتصال السريعة التفاعلية على شاشة الهاتف (MobileCallOverlay)
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("telephony:incoming_dial", { detail: data })
-              );
-            }
-
-            // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
-            if (isNativePluginAvailable) {
-              try {
-                await MaxPTelephony.dialCustomer({
-                  phone: data.customerPhone,
-                  sessionId: data.sessionId,
-                  orderId: data.orderId,
-                });
-                return;
-              } catch (nativeErr) {
-                console.warn("Native dialCustomer failed or background restricted:", nativeErr);
-              }
-            }
-
-            // محاولة إطلاق رابط tel: السريع
-            try {
-              const safePhone = String(data.customerPhone || "").replace(/[^\d+*#]/g, "");
-              window.location.href = `tel:${safePhone}`;
-            } catch (telErr) {
-              console.warn("Direct tel: navigation blocked, user can tap the overlay button:", telErr);
-            }
-          } catch (error) {
-            console.error("Failed to execute telephony:dial listener:", error);
-          }
+          await handleIncomingDial(data, "Socket.IO");
         });
+      };
+
+      // 5. مراقب المكالمات النشطة عالي الاعتمادية (Active Call Watchdog)
+      // يفحص كل 3.5 ثانية أثناء وجود التطبيق لضمان رنين الهاتف حتى لو كان السوكت نائماً أو في وضع السبات
+      const checkAndHandleActiveCall = async () => {
+        try {
+          const activeCall = await this.getActiveCall();
+          if (activeCall && activeCall.sessionId && !this.handledSessionIds.has(activeCall.sessionId)) {
+            await handleIncomingDial(activeCall, "HTTP Watchdog");
+          }
+        } catch {
+          // ignore watchdog poll error
+        }
       };
 
       registerSocketDialListener();
       socketService.on("connect", () => {
         registerSocketDialListener();
         sendHeartbeat();
+        checkAndHandleActiveCall();
       });
 
-      // إرسال نبض فوري بمجرد إضاءة الشاشة أو عودة المستخدم للتطبيق
+      if (this.activeCallWatchdogInterval) clearInterval(this.activeCallWatchdogInterval);
+      this.activeCallWatchdogInterval = setInterval(() => {
+        if (typeof document === "undefined" || document.visibilityState === "visible") {
+          checkAndHandleActiveCall();
+        }
+      }, 3500);
+
+      // تنبيه فوري ومزامنة وإعادة اتصال عند إضاءة الشاشة أو عودة الاتصال
+      const triggerImmediateSync = () => {
+        socketService.connect();
+        registerSocketDialListener();
+        sendHeartbeat();
+        checkAndHandleActiveCall();
+      };
+
       if (typeof document !== "undefined") {
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") {
-            registerSocketDialListener();
-            sendHeartbeat();
+            triggerImmediateSync();
           }
         });
       }
       if (typeof window !== "undefined") {
-        window.addEventListener("focus", () => {
-          registerSocketDialListener();
-          sendHeartbeat();
-        });
+        window.addEventListener("focus", triggerImmediateSync);
+        window.addEventListener("online", triggerImmediateSync);
       }
 
       // 4. الاستماع لانتهاء المكالمة
