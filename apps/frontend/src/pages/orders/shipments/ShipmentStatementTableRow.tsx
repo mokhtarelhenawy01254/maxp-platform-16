@@ -14,8 +14,8 @@ import {
   UserIcon,
   TicketIcon,
 } from "@heroicons/react/24/outline";
-import { ShipmentRowItem } from "./ShipmentStatementTable";
-import { ShipmentStatusBadgeResult } from "./shipmentStatusBadge";
+import type { ShipmentRowItem } from "./ShipmentStatementTable";
+import type { ShipmentStatusBadgeResult } from "./shipmentStatusBadge";
 
 interface ShipmentStatementTableRowProps {
   shipment: ShipmentRowItem;

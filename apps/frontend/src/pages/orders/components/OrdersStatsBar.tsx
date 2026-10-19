@@ -13,11 +13,11 @@ import {
   getMerchantOperationsTotals,
   formatMerchantPieces,
   payoutStatusLabels,
-} from "../Orders";
+} from "../utils/ordersTableHelpers";
 import type {
   MerchantSettlementSummary,
   MerchantFilterOption,
-} from "../Orders";
+} from "../ordersConstants";
 
 interface OrdersStatsBarProps {
   isAdmin: boolean;

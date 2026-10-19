@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
-import type { Order, OrderStatusDefinition } from "../Orders";
+import type { Order } from "../utils/orderTransformer";
+import type { OrderStatusDefinition } from "../ordersConstants";
 import type { OrdersModalsContainerProps } from "../components/OrdersModalsContainer";
 
 export interface UseOrdersModalsContainerPropsOptions {

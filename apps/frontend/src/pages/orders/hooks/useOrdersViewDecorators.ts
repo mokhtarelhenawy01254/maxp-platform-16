@@ -1,4 +1,5 @@
-import type { Order, OrderStatusDefinition } from "../Orders";
+import type { Order } from "../utils/orderTransformer";
+import type { OrderStatusDefinition } from "../ordersConstants";
 import type { OrdersFilters } from "../ordersFilterTypes";
 import { useOrdersEntityFormatters } from "./useOrdersEntityFormatters";
 import { useOrdersStatusDisplays } from "./useOrdersStatusDisplays";

@@ -72,4 +72,49 @@ describe("useOrdersToolbarSectionProps", () => {
       ["PAYABLE"],
     );
   });
+
+  it("handles filter changes, saved filter applications, quick dates, and refresh triggers", () => {
+    const { result } = renderHook(() =>
+      useOrdersToolbarSectionProps(defaultParams as any),
+    );
+
+    act(() => {
+      result.current.onFilterChange("search", "query");
+      result.current.onApplyFilters({ search: "applied" });
+      result.current.onClearAdvancedFilters();
+      result.current.onSetQuickDate(7);
+      result.current.onRetry();
+      result.current.onRefresh();
+    });
+
+    expect(defaultParams.handleFilterChange).toHaveBeenCalledWith("search", "query");
+    expect(defaultParams.applySavedFilters).toHaveBeenCalledWith({ search: "applied" });
+    expect(defaultParams.clearAdvancedFilters).toHaveBeenCalled();
+    expect(defaultParams.setQuickDate).toHaveBeenCalledWith(7);
+    expect(defaultParams.fetchOrders).toHaveBeenCalledTimes(2);
+  });
+
+  it("supports merchant role with loaded settlement summary and loading states", () => {
+    const merchantParams = {
+      ...defaultParams,
+      isAdmin: false,
+      isMerchant: true,
+      merchantSettlementSummary: {
+        merchant: { id: "m1", name: "Merchant One" },
+        inventorySummary: { availableForSale: 10 },
+      },
+      merchantSettlementLoading: true,
+      merchantSettlementError: "Temporary fetch error",
+    };
+
+    const { result } = renderHook(() =>
+      useOrdersToolbarSectionProps(merchantParams as any),
+    );
+
+    expect(result.current.isAdmin).toBe(false);
+    expect(result.current.isMerchant).toBe(true);
+    expect(result.current.merchantSettlementLoading).toBe(true);
+    expect(result.current.merchantSettlementError).toBe("Temporary fetch error");
+    expect(result.current.merchantSettlementSummary?.merchant?.id).toBe("m1");
+  });
 });

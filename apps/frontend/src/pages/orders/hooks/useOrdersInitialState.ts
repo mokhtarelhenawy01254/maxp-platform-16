@@ -5,7 +5,7 @@ import {
   type OrdersListViewState,
   getInitialOrdersListViewState,
 } from "../ordersFilterTypes";
-import type { Order } from "../Orders";
+import type { Order } from "../utils/orderTransformer";
 
 export interface UseOrdersInitialStateOptions {
   searchParams: URLSearchParams;

@@ -1,4 +1,4 @@
-import { ShipmentRowItem } from "./ShipmentStatementTable";
+import type { ShipmentRowItem } from "./ShipmentStatementTable";
 
 export interface ShipmentStatusBadgeResult {
   label: string;

@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { usePreparationDialogOperations } from "./usePreparationDialogOperations";
 
 describe("usePreparationDialogOperations", () => {
@@ -61,5 +61,65 @@ describe("usePreparationDialogOperations", () => {
 
     result.current.handleConfirmStatusChange({ action: "CONFIRM" });
     expect(handleConfirmStatusChange).toHaveBeenCalledWith({ action: "CONFIRM" });
+  });
+
+  it("correctly delegates bulk operations, edit reason, and carrier dispatch actions", () => {
+    const executeBulkUpdateSelected = jest.fn();
+    const executeBulkUpdateAll = jest.fn();
+    const handleConfirmEditReason = jest.fn();
+    const handleDispatchToCarrier = jest.fn();
+    const onInternalCourierSuccess = jest.fn();
+
+    const { result } = renderHook(() =>
+      usePreparationDialogOperations({
+        statusChangeDialog: null,
+        setStatusChangeDialog: jest.fn(),
+        dialogOrder: null,
+        statusLabelMap: new Map(),
+        dialogHoldReason: "",
+        rowUpdatingId: null,
+        problemHoldSavingOrderId: null,
+        handleConfirmStatusChange: jest.fn(),
+
+        bulkHoldDialog: { count: 3, mode: "selected", validOrders: [{ id: "1" }] },
+        setBulkHoldDialog: jest.fn(),
+        bulkUpdating: true,
+        executeBulkUpdateSelected,
+        executeBulkUpdateAll,
+
+        editReasonOrder: { reason: "Delayed item" },
+        setEditReasonOrder: jest.fn(),
+        editReasonOrderOrder: { orderNumber: "ORD-55" },
+        handleConfirmEditReason,
+
+        showDispatchModal: false,
+        setShowDispatchModal: jest.fn(),
+        selectedOrdersCount: 0,
+        activeCarriers: [],
+        handleDispatchToCarrier,
+        sendingToTurbo: true,
+
+        showInternalCourierModal: true,
+        setShowInternalCourierModal: jest.fn(),
+        internalCourierOrderIds: ["ORD-55"],
+        onInternalCourierSuccess,
+      }),
+    );
+
+    act(() => {
+      result.current.executeBulkUpdateSelected([{ id: "1" }], "Need check");
+      result.current.executeBulkUpdateAll("Global hold");
+      result.current.handleConfirmEditReason("Updated reason");
+      result.current.handleDispatchToCarrier({ id: "qp_express" });
+      result.current.onInternalCourierSuccess("run-10", "RUN-001");
+    });
+
+    expect(executeBulkUpdateSelected).toHaveBeenCalledWith([{ id: "1" }], "Need check");
+    expect(executeBulkUpdateAll).toHaveBeenCalledWith("Global hold");
+    expect(handleConfirmEditReason).toHaveBeenCalledWith("Updated reason");
+    expect(handleDispatchToCarrier).toHaveBeenCalledWith({ id: "qp_express" });
+    expect(onInternalCourierSuccess).toHaveBeenCalledWith("run-10", "RUN-001");
+    expect(result.current.bulkUpdating).toBe(true);
+    expect(result.current.sendingToTurbo).toBe(true);
   });
 });

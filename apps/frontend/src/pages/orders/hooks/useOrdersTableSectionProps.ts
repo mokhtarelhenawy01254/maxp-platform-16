@@ -1,9 +1,7 @@
 import { useMemo } from "react";
 import type { OrdersTableSectionProps } from "../components/OrdersTableSection";
-import type {
-  Order,
-  OrderStatusDefinition,
-} from "../Orders";
+import type { Order } from "../utils/orderTransformer";
+import type { OrderStatusDefinition } from "../ordersConstants";
 import type { OrdersMobileListHelpers } from "../components/OrdersMobileList";
 import type { OrdersTableHelpers } from "../components/OrdersTable";
 import type { TableDensity } from "./useOrdersTableSettings";

@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { useOrdersViewDecorators } from "./useOrdersViewDecorators";
-import type { OrderStatusDefinition } from "../Orders";
+import type { OrderStatusDefinition } from "../ordersConstants";
 import { DEFAULT_ORDERS_FILTERS } from "../ordersFilterTypes";
 
 describe("useOrdersViewDecorators", () => {

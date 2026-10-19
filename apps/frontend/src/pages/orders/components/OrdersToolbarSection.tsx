@@ -3,12 +3,12 @@ import { HeldOrdersBanner } from "./HeldOrdersBanner";
 import { OrdersToolbar } from "./OrdersToolbar";
 import { OrdersStatsBar } from "./OrdersStatsBar";
 import type {
-  OrdersFilters,
   OrderStatusDefinition,
   MerchantFilterOption,
-  AffiliateFilterOption,
   MerchantSettlementSummary,
-} from "../Orders";
+} from "../ordersConstants";
+import type { OrdersFilters } from "../ordersFilterTypes";
+import type { AffiliateFilterOption } from "../utils/orderTransformer";
 
 export interface OrdersToolbarSectionProps {
   filters: OrdersFilters;

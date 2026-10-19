@@ -7,7 +7,7 @@ jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock("../Orders", () => ({
+jest.mock("../utils/ordersTableHelpers", () => ({
   __esModule: true,
   getMerchantOperationsTotals: (summary: { summary?: Record<string, number> } | null | undefined) => ({
     inShippingAmount: 0,

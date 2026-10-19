@@ -2,19 +2,33 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { OrdersToolbarSection } from "./OrdersToolbarSection";
 
+let capturedToolbarProps: any = null;
+let capturedStatsBarProps: any = null;
+
 jest.mock("./HeldOrdersBanner", () => ({
   HeldOrdersBanner: () => <div data-testid="held-orders-banner" />,
 }));
 
 jest.mock("./OrdersToolbar", () => ({
-  OrdersToolbar: () => <div data-testid="orders-toolbar" />,
+  OrdersToolbar: (props: any) => {
+    capturedToolbarProps = props;
+    return <div data-testid="orders-toolbar" />;
+  },
 }));
 
 jest.mock("./OrdersStatsBar", () => ({
-  OrdersStatsBar: () => <div data-testid="orders-stats-bar" />,
+  OrdersStatsBar: (props: any) => {
+    capturedStatsBarProps = props;
+    return <div data-testid="orders-stats-bar" />;
+  },
 }));
 
 describe("OrdersToolbarSection", () => {
+  beforeEach(() => {
+    capturedToolbarProps = null;
+    capturedStatsBarProps = null;
+  });
+
   const defaultProps = {
     filters: { search: "", status: [] } as any,
     advancedFilterCount: 0,
@@ -55,5 +69,42 @@ describe("OrdersToolbarSection", () => {
     expect(screen.getByTestId("held-orders-banner")).toBeInTheDocument();
     expect(screen.getByTestId("orders-toolbar")).toBeInTheDocument();
     expect(screen.getByTestId("orders-stats-bar")).toBeInTheDocument();
+  });
+
+  it("passes advanced filter states and load error down to OrdersToolbar", () => {
+    render(
+      <OrdersToolbarSection
+        {...defaultProps}
+        showAdvancedFilters={true}
+        advancedFilterCount={3}
+        ordersLoadError="Server is unavailable"
+      />,
+    );
+    expect(capturedToolbarProps.showAdvancedFilters).toBe(true);
+    expect(capturedToolbarProps.advancedFilterCount).toBe(3);
+    expect(capturedToolbarProps.ordersLoadError).toBe("Server is unavailable");
+  });
+
+  it("passes merchant settlement data and callbacks down to OrdersStatsBar", () => {
+    const summary = {
+      merchant: { id: "merchant-9", name: "M9 Store" },
+      inventorySummary: {},
+      operationsSummary: {},
+      payoutSummary: {},
+    };
+
+    render(
+      <OrdersToolbarSection
+        {...defaultProps}
+        isAdmin={false}
+        isMerchant={true}
+        merchantSettlementSummary={summary as any}
+        merchantSettlementLoading={false}
+      />,
+    );
+
+    expect(capturedStatsBarProps.isAdmin).toBe(false);
+    expect(capturedStatsBarProps.isMerchant).toBe(true);
+    expect(capturedStatsBarProps.merchantSettlementSummary).toBe(summary);
   });
 });
