@@ -37,7 +37,7 @@ import type {
 } from "./preparation/types";
 import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState, type PreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
-import PreparationFilters from "./preparation/components/PreparationFilters";
+import PreparationQueueFiltersContainer from "./preparation/components/PreparationQueueFiltersContainer";
 import { PreparationOrdersContainer } from "./preparation/components/PreparationOrdersContainer";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 import type { ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
@@ -66,14 +66,6 @@ import {
   getInitialPreparationState,
   usePreparationUrlSync,
 } from "./preparation/usePreparationUrlSync";
-
-type BulkStatusResult = {
-  id?: string | number | null;
-  success?: boolean;
-  orderType?: string;
-  workflowStatus?: string;
-  error?: string;
-};
 
 const PreparationQueue: React.FC = () => {
   const { t } = useTranslation();
@@ -506,53 +498,52 @@ const PreparationQueue: React.FC = () => {
         allOverdueProblemFollowUpCount={allOverdueProblemFollowUpCount}
       />
 
-      {showFilters && (
-        <PreparationFilters
-          activeFilter={activeStage}
-          statusCounts={statusCounts}
-          stageCounts={summary.stageCounts}
-          filterTabs={filterTabs}
-          visibleOrdersCount={visibleOrdersCount}
-          search={search}
-          selectedWarehouseId={selectedWarehouseId}
-          stockFilter={stockFilter}
-          shortageReasonFilter={shortageReasonFilter}
-          shortageOwnerFilter={shortageOwnerFilter}
-          shortageOwnerOptions={shortageOwnerOptions}
-          shortageFollowUpFilter={shortageFollowUpFilter}
-          productFilter={productFilter}
-          productColorFilter={uiState.productColorFilter}
-          productSizeFilter={uiState.productSizeFilter}
-          productIdFilter={uiState.productIdFilter}
-          variantIdFilter={uiState.variantIdFilter}
-          productSuggestions={productSuggestions}
-          products={products}
-          productsLoading={productsLoading}
-          itemCountFilter={itemCountFilter}
-          notPrintedFilter={notPrintedFilter}
-          noShippingCodeFilter={noShippingCodeFilter}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          warehouses={warehouses}
-          visibleFilterSections={visibleFilterSections}
-          onFilterChange={uiActions.setActiveStage}
-          onSearchChange={uiActions.setSearch}
-          onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-          onStockFilterChange={uiActions.setStockFilter}
-          onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-          onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-          onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-          onProductFilterChange={uiActions.setProductFilter}
-          onProductColorFilterChange={uiActions.setProductColorFilter}
-          onProductSizeFilterChange={uiActions.setProductSizeFilter}
-          onProductIdFilterChange={uiActions.setProductIdFilter}
-          onVariantIdFilterChange={uiActions.setVariantIdFilter}
-          onItemCountFilterChange={uiActions.setItemCountFilter}
-          onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
-          onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
-          onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
-        />
-      )}
+      <PreparationQueueFiltersContainer
+        showFilters={showFilters}
+        activeFilter={activeStage}
+        statusCounts={statusCounts}
+        stageCounts={summary.stageCounts}
+        filterTabs={filterTabs}
+        visibleOrdersCount={visibleOrdersCount}
+        search={search}
+        selectedWarehouseId={selectedWarehouseId}
+        stockFilter={stockFilter}
+        shortageReasonFilter={shortageReasonFilter}
+        shortageOwnerFilter={shortageOwnerFilter}
+        shortageOwnerOptions={shortageOwnerOptions}
+        shortageFollowUpFilter={shortageFollowUpFilter}
+        productFilter={productFilter}
+        productColorFilter={uiState.productColorFilter}
+        productSizeFilter={uiState.productSizeFilter}
+        productIdFilter={uiState.productIdFilter}
+        variantIdFilter={uiState.variantIdFilter}
+        productSuggestions={productSuggestions}
+        products={products}
+        productsLoading={productsLoading}
+        itemCountFilter={itemCountFilter}
+        notPrintedFilter={notPrintedFilter}
+        noShippingCodeFilter={noShippingCodeFilter}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        warehouses={warehouses}
+        visibleFilterSections={visibleFilterSections}
+        onFilterChange={uiActions.setActiveStage}
+        onSearchChange={uiActions.setSearch}
+        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+        onStockFilterChange={uiActions.setStockFilter}
+        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+        onProductFilterChange={uiActions.setProductFilter}
+        onProductColorFilterChange={uiActions.setProductColorFilter}
+        onProductSizeFilterChange={uiActions.setProductSizeFilter}
+        onProductIdFilterChange={uiActions.setProductIdFilter}
+        onVariantIdFilterChange={uiActions.setVariantIdFilter}
+        onItemCountFilterChange={uiActions.setItemCountFilter}
+        onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
+        onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
+        onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
+      />
 
       <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
         <PreparationSelectionBar
