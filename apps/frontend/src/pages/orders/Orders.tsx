@@ -1,18 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import React, { useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import useSocket from "../../hooks/useSocket";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
-import { apiClient } from "../../services/apiClient";
-import { queryClient } from "../../config/queryClient";
-import { toast } from "sonner";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
 import { OrdersToolbarSection } from "./components/OrdersToolbarSection";
 import { OrdersTableSection } from "./components/OrdersTableSection";
+import { useOrdersInitialState } from "./hooks/useOrdersInitialState";
 import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
@@ -27,13 +25,8 @@ import {
   OrdersFilters,
   OrdersListViewState,
   DEFAULT_ORDERS_FILTERS,
-  ORDERS_LIST_QUERY_KEYS,
-  sanitizeStoredFilters,
-  readStoredOrdersListViewState,
-  hasOrdersQueryState,
   getInitialOrdersListViewState,
 } from "./ordersFilterTypes";
-import type { OrderDetailsType } from "./types";
 import { useOrdersFilterActions } from "./hooks/useOrdersFilterActions";
 import { useOrdersStatusDisplays } from "./hooks/useOrdersStatusDisplays";
 import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
@@ -150,51 +143,48 @@ const Orders: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const initialListViewState = useRef<OrdersListViewState | null>(null);
-  if (!initialListViewState.current) {
-    initialListViewState.current = getInitialOrdersListViewState(searchParams);
-  }
-  const restoredListViewState = initialListViewState.current!;
-
-  const initialCacheKey = useMemo(
-    () => [
-      "orders-page-cache",
-      user?.companyId || company?.id || "default",
-      restoredListViewState.page,
-      restoredListViewState.limit,
-      { ...restoredListViewState.filters, search: restoredListViewState.filters.search },
-    ],
-    [user?.companyId, company?.id, restoredListViewState]
-  );
-  const initialCachedData = queryClient.getQueryData<{
-    orders: Order[];
-    totalPages: number;
-    totalOrders: number;
-  }>(initialCacheKey);
-
-  const [orders, setOrders] = useState<Order[]>(() => initialCachedData?.orders || []);
-  const ordersRef = useRef(orders);
-  ordersRef.current = orders;
-  const [loading, setLoading] = useState(() => !initialCachedData?.orders?.length);
-  const [ordersLoadError, setOrdersLoadError] = useState<string | null>(null);
-  const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
-    user?.role || "",
-  );
-  const isMerchant = user?.role === "MERCHANT";
-  const canSelectOrders = isAdmin && !isMerchant;
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const [page, setPage] = useState(restoredListViewState.page);
-  const [limit, setLimit] = useState(restoredListViewState.limit);
-  const [totalOrders, setTotalOrders] = useState(() => initialCachedData?.totalOrders || 0);
-  const [totalPages, setTotalPages] = useState(() => initialCachedData?.totalPages || 0);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [filters, setFilters] = useState<OrdersFilters>(
-    restoredListViewState.filters,
-  );
-
   const companyId = user?.companyId || company?.id || "default";
+
+  const {
+    orders,
+    setOrders,
+    ordersRef,
+    loading,
+    setLoading,
+    ordersLoadError,
+    setOrdersLoadError,
+    isAdmin,
+    isMerchant,
+    canSelectOrders,
+    selectedOrder,
+    setSelectedOrder,
+    showOrderModal,
+    setShowOrderModal,
+    page,
+    setPage,
+    limit,
+    setLimit,
+    totalOrders,
+    setTotalOrders,
+    totalPages,
+    setTotalPages,
+    selectedOrders,
+    setSelectedOrders,
+    showAdvancedFilters,
+    setShowAdvancedFilters,
+    filters,
+    setFilters,
+    effectiveFilters,
+    filtersRef,
+    showIncompleteInOrders,
+    setShowIncompleteInOrders,
+    lastUpdatedAt,
+    setLastUpdatedAt,
+  } = useOrdersInitialState({
+    searchParams,
+    companyId,
+    userRole: user?.role,
+  });
 
   const {
     orderStatuses,
@@ -215,34 +205,13 @@ const Orders: React.FC = () => {
     isAdmin,
     isMerchant,
     canSelectOrders,
-    merchantFilterId: filters.merchantId[0] || "",
-    merchantFilterLength: filters.merchantId.length,
+    merchantFilterId: filters.merchantId?.[0] || "",
+    merchantFilterLength: filters.merchantId?.length || 0,
     defaultOrderStatuses: DEFAULT_ORDER_STATUSES,
     defaultPaymentStatuses: DEFAULT_PAYMENT_STATUSES,
     normalizeStatusCode,
     getApiErrorMessage,
   });
-  // Debounced search: the input updates filters.search instantly (responsive
-  // typing) while list fetches wait for a 300ms pause — one request per query
-  // instead of one per keystroke.
-  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(filters.search), 300);
-    return () => clearTimeout(timer);
-  }, [filters.search]);
-  const effectiveFilters = useMemo<OrdersFilters>(
-    () => ({ ...filters, search: debouncedSearch }),
-    [filters, debouncedSearch],
-  );
-  // Keep a ref to the latest filters so the socket listeners (which only
-  // re-subscribe on [socket, isConnected, page]) can read current filter
-  // state without re-binding the listeners on every filter change.
-  const filtersRef = useRef<OrdersFilters>(filters);
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-  const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   const { fetchOrders, fetchOrdersRef } = useOrdersFetchOperations({
     companyId,
