@@ -28,8 +28,7 @@ import { isInternalCourierAppActive } from "./preparation/helpers/internalCourie
 import { buildPreparationFiltersPayload } from "./preparation/helpers/preparationFiltersPayload";
 import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
 import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
-import { usePreparationShortageOperations } from "./preparation/usePreparationShortageOperations";
-import { usePreparationProblemOperations } from "./preparation/usePreparationProblemOperations";
+import { usePreparationHoldOperations } from "./preparation/usePreparationHoldOperations";
 import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
 import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
@@ -131,6 +130,10 @@ const PreparationQueue: React.FC = () => {
   const handleSingleStatusUpdateRef = useRef<(orderNumber: string, status: string) => Promise<boolean | void>>(async () => {});
   const updateLocalMetadataRef = useRef<(orderNumber: string, patch: Record<string, unknown>) => void>(() => {});
 
+  const getOrderByNumberRef = useRef<(orderNumber: string) => PreparationOrder | null>(() => null);
+  const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
+  const setStatusChangeDialogRef = useRef<(dialog: any) => void>(() => {});
+
   const {
     shortageHoldDrafts,
     setShortageHoldDrafts,
@@ -140,21 +143,6 @@ const PreparationQueue: React.FC = () => {
     handleMarkAsShortageHold,
     handleReleaseShortageHold,
     handleMarkAsShortageFailed,
-  } = usePreparationShortageOperations({
-    orders,
-    startingStatus: preparationSettings.startingStatus,
-    updateLocalMetadata: (orderNumber, patch) => updateLocalMetadataRef.current(orderNumber, patch),
-    fetchAll,
-    handleSingleStatusUpdate: (orderNumber, status) => handleSingleStatusUpdateRef.current(orderNumber, status),
-    getApiErrorMessage,
-    t,
-  });
-
-  const getOrderByNumberRef = useRef<(orderNumber: string) => PreparationOrder | null>(() => null);
-  const updateLocalStatusesRef = useRef<(orderNumbers: string[], status: string) => void>(() => {});
-  const setStatusChangeDialogRef = useRef<(dialog: any) => void>(() => {});
-
-  const {
     problemHoldDrafts,
     setProblemHoldDrafts,
     problemHoldSavingOrderId,
@@ -167,14 +155,15 @@ const PreparationQueue: React.FC = () => {
     handleEditProblemReason,
     handleConfirmEditReason,
     handleReleaseProblemHold,
-  } = usePreparationProblemOperations({
+  } = usePreparationHoldOperations({
     orders,
     user,
     startingStatus: preparationSettings.startingStatus,
-    getOrderByNumber: (orderNumber) => getOrderByNumberRef.current(orderNumber),
     updateLocalMetadata: (orderNumber, patch) => updateLocalMetadataRef.current(orderNumber, patch),
     updateLocalStatuses: (orderNumbers, status) => updateLocalStatusesRef.current(orderNumbers, status),
+    getOrderByNumber: (orderNumber) => getOrderByNumberRef.current(orderNumber),
     fetchAll,
+    handleSingleStatusUpdate: (orderNumber, status) => handleSingleStatusUpdateRef.current(orderNumber, status),
     setStatusChangeDialog: (dialog) => setStatusChangeDialogRef.current(dialog),
     getApiErrorMessage,
     t,
