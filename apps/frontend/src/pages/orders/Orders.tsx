@@ -11,7 +11,7 @@ import { getStatusDisplay } from "../../utils/statusRegistry";
 import { OrdersToolbarSection } from "./components/OrdersToolbarSection";
 import { OrdersTableSection } from "./components/OrdersTableSection";
 import { useOrdersInitialState } from "./hooks/useOrdersInitialState";
-import { useOrdersBulkOperations } from "./hooks/useOrdersBulkOperations";
+import { useOrdersOperations } from "./hooks/useOrdersOperations";
 import type { GeneratedInvoice } from "./hooks/useOrdersBulkOperations";
 import { useOrdersLookupData } from "./hooks/useOrdersLookupData";
 import { useOrdersFetchOperations } from "./hooks/useOrdersFetchOperations";
@@ -27,8 +27,6 @@ import {
   DEFAULT_ORDERS_FILTERS,
   getInitialOrdersListViewState,
 } from "./ordersFilterTypes";
-import { useOrdersFilterActions } from "./hooks/useOrdersFilterActions";
-import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
 import { useOrdersViewDecorators } from "./hooks/useOrdersViewDecorators";
 import { useOrdersToolbarSectionProps } from "./hooks/useOrdersToolbarSectionProps";
 import { useOrdersTableSectionProps } from "./hooks/useOrdersTableSectionProps";
@@ -322,21 +320,6 @@ const Orders: React.FC = () => {
     handleLimitChange,
     toggleOrderSelection,
     toggleAllSelection,
-  } = useOrdersFilterActions({
-    orders,
-    filters,
-    setFilters,
-    page,
-    setPage,
-    totalPages,
-    limit,
-    setLimit,
-    selectedOrders,
-    setSelectedOrders,
-    setShowAdvancedFilters,
-  });
-
-  const {
     bulkProcessing,
     printingInvoices,
     selectedInvoice,
@@ -347,9 +330,22 @@ const Orders: React.FC = () => {
     handleBulkCreateTurboShipments,
     handleBulkCreateQpExpressShipments,
     handleBulkCreateBostaShipments,
-  } = useOrdersBulkOperations({
+    handleUpdateStatus,
+    handleUpdatePaymentStatus,
+    handleMarkAsViewed,
+  } = useOrdersOperations({
+    orders,
+    setOrders,
+    filters,
+    setFilters,
+    page,
+    setPage,
+    totalPages,
+    limit,
+    setLimit,
     selectedOrders,
     setSelectedOrders,
+    setShowAdvancedFilters,
     isTrashView,
     fetchOrders,
     user,
@@ -359,23 +355,8 @@ const Orders: React.FC = () => {
     normalizeStatusCode,
     isCancellationStatus,
     getApiErrorMessage,
-  });
-
-  // hasActiveTurbo, hasActiveQpExpress, hasActiveBosta provided by useOrdersLookupData
-
-  const {
-    handleUpdateStatus,
-    handleUpdatePaymentStatus,
-    handleMarkAsViewed,
-  } = useOrdersSingleMutations({
-    orders,
-    setOrders,
     selectedOrder,
     setSelectedOrder,
-    normalizeStatusCode,
-    isCancellationStatus,
-    getApiErrorMessage,
-    t,
   });
 
   const {
