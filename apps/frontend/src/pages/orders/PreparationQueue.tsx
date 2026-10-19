@@ -36,10 +36,8 @@ import { usePreparationPreferences } from "./preparation/usePreparationPreferenc
 import { usePreparationFilterMetadata } from "./preparation/usePreparationFilterMetadata";
 import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
-import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
+import { usePreparationSectionsProps } from "./preparation/usePreparationSectionsProps";
 import { usePreparationDerivedState } from "./preparation/usePreparationDerivedState";
-import { usePreparationDialogOperations } from "./preparation/usePreparationDialogOperations";
-import { usePreparationFilterSectionProps } from "./preparation/usePreparationFilterSectionProps";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -150,10 +148,6 @@ const PreparationQueue: React.FC = () => {
     setProblemHoldDrafts,
     problemHoldSavingOrderId,
     setProblemHoldSavingOrderId,
-    editReasonOrder,
-    setEditReasonOrder,
-    editReasonOrderOrder,
-    handleConfirmEditReason,
   } = holdOps;
 
   const {
@@ -174,18 +168,8 @@ const PreparationQueue: React.FC = () => {
     navigate,
   });
   setStatusChangeDialogRef.current = setStatusChangeDialog;
-  const {
-    visibleColumns,
-    setVisibleColumns,
-    toggleColumn,
-    columnSettingsOpen,
-    setColumnSettingsOpen,
-    visibleFilterSections,
-    setVisibleFilterSections,
-    toggleFilterSection,
-    showFilters,
-    setShowFilters,
-  } = usePreparationPreferences();
+
+  const preferences = usePreparationPreferences();
 
   usePreparationDraftSync({
     orders,
@@ -330,86 +314,20 @@ const PreparationQueue: React.FC = () => {
   });
 
   const {
-    activeCarriers,
-    showDispatchModal,
-    setShowDispatchModal,
-    sendingToTurbo,
-    handleDispatchToCarrier,
-  } = fulfillmentOps;
-
-  const { selectionBarProps, ordersContainerProps } =
-    usePreparationTableSectionProps({
-      allVisibleSelected,
-      toggleSelectAllVisible,
-      totalVisibleOrders: pagination.total,
-      inventoryLoading,
-      loading,
-      showFilters,
-      setShowFilters,
-      columnSettingsOpen,
-      setColumnSettingsOpen,
-      visibleColumns,
-      toggleColumn,
-      visibleFilterSections,
-      toggleFilterSection,
-      selectedOrdersCount: selectedOrders.length,
-      bulkStatus,
-      statusOptions,
-      statusLabelMap,
-      preparationSettings,
-      uiActions,
-      isInternalCourierActive,
-      setShowInternalCourierModal,
-      enrichedOrders,
-      pagination,
-      totalPages,
-      currentPageCount,
-      uiState,
-      statusSelections,
-      selectedSet,
-      selectedWarehouseId,
-      enabledQcChecks,
-      qcChecklistState,
-      formatPrice,
-      formatDate,
-      toggleOrderSelection,
-      handleQcCheckToggle,
-      ...statusOps,
-      ...holdOps,
-      ...fulfillmentOps,
-    });
-
-  const dialogsProps = usePreparationDialogOperations({
-    statusChangeDialog,
-    setStatusChangeDialog,
-    dialogOrder,
-    statusLabelMap,
-    dialogHoldReason,
-    problemHoldSavingOrderId,
-    editReasonOrder,
-    setEditReasonOrder,
-    editReasonOrderOrder,
-    handleConfirmEditReason,
-    showDispatchModal,
-    setShowDispatchModal,
-    selectedOrdersCount: selectedOrders.length,
-    activeCarriers,
-    handleDispatchToCarrier,
-    sendingToTurbo,
-    showInternalCourierModal,
-    setShowInternalCourierModal,
-    internalCourierOrderIds,
-    onInternalCourierSuccess: handleInternalCourierSuccess,
-    ...statusOps,
-  });
-
-  const { alertBannersProps, filtersContainerProps } = usePreparationFilterSectionProps({
-    preparationSettingsEnabled: Boolean(preparationSettings.enabled),
-    allOverdueShortageFollowUpCount,
-    allOverdueProblemFollowUpCount,
-    showFilters,
+    alertBannersProps,
+    filtersContainerProps,
+    selectionBarProps,
+    ordersContainerProps,
+    dialogsProps,
+  } = usePreparationSectionsProps({
+    preparationSettings,
     uiState,
     uiActions,
+    preferences,
+    formatPrice,
+    formatDate,
+    allOverdueShortageFollowUpCount,
+    allOverdueProblemFollowUpCount,
     statusCounts,
     stageCounts,
     filterTabs,
@@ -417,6 +335,35 @@ const PreparationQueue: React.FC = () => {
     warehouseOptions: warehouses,
     shortageOwnerOptions,
     productSuggestions,
+    allVisibleSelected,
+    toggleSelectAllVisible,
+    inventoryLoading,
+    loading,
+    statusOptions,
+    statusLabelMap,
+    isInternalCourierActive,
+    setShowInternalCourierModal,
+    showInternalCourierModal,
+    enrichedOrders,
+    pagination,
+    totalPages,
+    currentPageCount,
+    statusSelections,
+    selectedSet,
+    selectedWarehouseId,
+    enabledQcChecks,
+    qcChecklistState,
+    toggleOrderSelection,
+    handleQcCheckToggle,
+    statusChangeDialog,
+    setStatusChangeDialog,
+    dialogOrder,
+    dialogHoldReason,
+    internalCourierOrderIds,
+    onInternalCourierSuccess: handleInternalCourierSuccess,
+    statusOps,
+    holdOps,
+    fulfillmentOps,
   });
 
   return (
