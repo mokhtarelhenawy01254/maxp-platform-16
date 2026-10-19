@@ -866,7 +866,7 @@ class SocketService {
     if (!this.socket) return;
     try {
       this.registeredListeners.forEach((callbacks, event) => {
-        if (event === "connect" || event === "disconnect" || event === "connect_error") return;
+        if (event === "disconnect" || event === "connect_error") return;
         callbacks.forEach((cb) => {
           this.socket?.off(event as any, cb as any);
           this.socket?.on(event as any, cb as any);

@@ -22,11 +22,14 @@ interface StudioSortableSectionProps {
   showSpacingOverlay?: boolean;
   actualPadding?: string | number;
   settings?: Record<string, any>;
+  libraryDropSlot?: number | null;
   onSelect: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onLibraryDragOver?: (targetSlot: number) => void;
+  onLibraryDrop?: (sectionType: string, targetSlot: number) => void;
   children: React.ReactNode;
 }
 
@@ -41,11 +44,14 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   showSpacingOverlay = true,
   actualPadding,
   settings,
+  libraryDropSlot,
   onSelect,
   onMoveUp,
   onMoveDown,
   onDuplicate,
   onDelete,
+  onLibraryDragOver,
+  onLibraryDrop,
   children,
 }) => {
   const resolvedPadding =
@@ -68,6 +74,14 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   const isDropAbove =
     Boolean(isOver && active && active.id !== id && (active.data.current?.sortable?.index ?? 0) > index);
 
+  const isLibraryDropHere =
+    typeof libraryDropSlot === "number" &&
+    (libraryDropSlot === index || (libraryDropSlot === totalSections && index === totalSections - 1));
+  const libraryDropPos = libraryDropSlot === index ? "-top-1" : "-bottom-1";
+
+  const showIndicator = Boolean((isOver && active && active.id !== id) || isLibraryDropHere);
+  const indicatorPos = isLibraryDropHere ? libraryDropPos : isDropAbove ? "-top-1" : "-bottom-1";
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -79,24 +93,60 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      data-studio-sortable-section="true"
+      data-studio-section-index={index}
+      data-section-type={sectionType}
       onClick={(e) => {
         e.stopPropagation();
         onSelect();
+      }}
+      onDragOver={(e) => {
+        const types = Array.from(e.dataTransfer.types || []);
+        if (
+          types.includes("application/x-storefront-section") ||
+          types.includes("text/plain")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "copy";
+          const rect = e.currentTarget.getBoundingClientRect();
+          const isTopHalf = e.clientY < rect.top + rect.height / 2;
+          const targetSlot = isTopHalf ? index : index + 1;
+          onLibraryDragOver?.(targetSlot);
+        }
+      }}
+      onDrop={(e) => {
+        const types = Array.from(e.dataTransfer.types || []);
+        if (
+          types.includes("application/x-storefront-section") ||
+          types.includes("text/plain")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          const secType =
+            e.dataTransfer.getData("application/x-storefront-section") ||
+            e.dataTransfer.getData("text/plain");
+          const rect = e.currentTarget.getBoundingClientRect();
+          const isTopHalf = e.clientY < rect.top + rect.height / 2;
+          const targetSlot = isTopHalf ? index : index + 1;
+          if (secType) {
+            onLibraryDrop?.(secType, targetSlot);
+          }
+        }
       }}
       className={`group relative transition-all cursor-pointer ${
         selected ? "z-20" : "z-10 hover:z-15"
       }`}
     >
-      {/* Drop insertion line indicator during drag */}
-      {isOver && active && active.id !== id && (
+      {/* Drop insertion line indicator during drag (Sortable or Library) */}
+      {showIndicator && (
         <div
-          className={`pointer-events-none absolute inset-x-0 z-50 flex items-center ${
-            isDropAbove ? "-top-1" : "-bottom-1"
-          }`}
+          data-studio-drop-indicator="true"
+          className={`pointer-events-none absolute inset-x-0 z-50 flex items-center ${indicatorPos}`}
         >
           <div className="h-1 w-full bg-[#2b6cf6] shadow-[0_0_8px_rgba(43,108,246,0.8)]" />
           <span className="absolute start-3 -top-2.5 rounded-full bg-[#2b6cf6] px-2 py-0.5 text-[9px] font-bold text-white shadow-md">
-            إفلات هنا
+            أفلت هنا
           </span>
         </div>
       )}

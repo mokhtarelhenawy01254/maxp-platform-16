@@ -52,16 +52,20 @@ export interface InitiateCallResponse {
 }
 
 interface MaxPTelephonyNativePlugin {
-  getDeviceInfo(): Promise<DeviceInfo>;
+  getDeviceInfo(): Promise<DeviceInfo & { overlayGranted?: boolean }>;
   dialCustomer(options: {
     phone: string;
     sessionId: string;
     orderId: string;
-  }): Promise<{ success: boolean; sessionId: string }>;
+    simSlot?: number;
+  }): Promise<{ success: boolean; sessionId: string; method?: string }>;
   startTelephonyService(): Promise<{ running: boolean }>;
   stopTelephonyService(): Promise<void>;
   isBatteryExempted(): Promise<{ exempted: boolean }>;
   requestBatteryExemption(): Promise<void>;
+  isOverlayPermissionGranted?(): Promise<{ granted: boolean }>;
+  requestOverlayPermission?(): Promise<void>;
+  setPreferredSim?(options: { simSlot: number }): Promise<void>;
   addListener(
     eventName: "callEnded",
     listenerFunc: (data: {
@@ -362,7 +366,22 @@ class TelephonyClientService {
             }
           }
         } catch (permErr: any) {
-          console.warn("Phone permissions check/request failed:", permErr);
+          console.warn("Phone permissions check/request warning:", permErr);
+        }
+
+        // فحص وطلب إذن الظهور فوق التطبيقات الأخرى (SYSTEM_ALERT_WINDOW) لتمكين إطلاق شاشة الاتصال في الخلفية
+        const OVERLAY_KEY = "maxp_overlay_permission_requested";
+        try {
+          if (typeof MaxPTelephony.isOverlayPermissionGranted === "function") {
+            const res = await MaxPTelephony.isOverlayPermissionGranted();
+            if (res && !res.granted && !localStorage.getItem(OVERLAY_KEY)) {
+              await MaxPTelephony.requestOverlayPermission?.();
+              localStorage.setItem(OVERLAY_KEY, "1");
+              this.logDiagnostic("OVERLAY_PERMISSION_REQUESTED");
+            }
+          }
+        } catch (overlayErr: any) {
+          console.warn("Overlay permission check/request warning:", overlayErr);
         }
       }
 

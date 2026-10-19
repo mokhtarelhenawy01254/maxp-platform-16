@@ -19,7 +19,10 @@ function normalizeEgyptianPhone(phone) {
   if (!phone || typeof phone !== 'string') {
     throw new Error('رقم الهاتف غير صالح أو مفقود');
   }
-  let cleaned = phone.replace(/[^\d+]/g, '');
+  // تحويل الأرقام العربية/الهندية (٠١٢٣٤٥٦٧٨٩) إلى أرقام إنجليزية (0-9)
+  const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  let cleaned = phone.replace(/[٠-٩]/g, d => arabicNumerals.indexOf(d).toString());
+  cleaned = cleaned.replace(/[^\d+]/g, '');
   if (cleaned.startsWith('002')) {
     cleaned = '+' + cleaned.slice(2);
   }
@@ -452,15 +455,30 @@ class TelephonyService {
     const prisma = getSharedPrismaClient();
     const cutoff = new Date(Date.now() - 25000); // آخر 25 ثانية فقط
 
-    const activeCall = await prisma.callAttemptLog.findFirst({
-      where: {
-        companyId,
-        callStatus: 'INITIATED',
-        startedAt: { gte: cutoff },
-        ...(userId ? { userId } : {})
-      },
-      orderBy: { startedAt: 'desc' }
-    });
+    // البحث أولاً عن مكالمة تخص نفس الموظف، فإن لم توجد نبحث عن أي مكالمة نشطة لشركة الموظف
+    let activeCall = null;
+    if (userId) {
+      activeCall = await prisma.callAttemptLog.findFirst({
+        where: {
+          companyId,
+          userId,
+          callStatus: 'INITIATED',
+          startedAt: { gte: cutoff }
+        },
+        orderBy: { startedAt: 'desc' }
+      });
+    }
+
+    if (!activeCall) {
+      activeCall = await prisma.callAttemptLog.findFirst({
+        where: {
+          companyId,
+          callStatus: 'INITIATED',
+          startedAt: { gte: cutoff }
+        },
+        orderBy: { startedAt: 'desc' }
+      });
+    }
 
     if (!activeCall) return null;
 

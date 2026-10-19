@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay,
@@ -34,6 +34,7 @@ import type { StorefrontThemeInput } from "../engine/themeResolver";
 import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import { useStorefrontStudioState, getSectionKey } from "./hooks/useStorefrontStudioState";
+import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
 
 interface StorefrontStudioShellProps {
   themeId: string;
@@ -65,6 +66,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
+  // Library Drag-and-Drop state
+  const [draggingLibraryItem, setDraggingLibraryItem] = useState<{ type: string; label: string } | null>(null);
+  const [libraryDropSlot, setLibraryDropSlot] = useState<number | null>(null);
+  const [isPointerDraggingLibrary, setIsPointerDraggingLibrary] = useState<boolean>(false);
+  const [pointerPos, setPointerPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(2.0, Math.round((prev + 0.1) * 10) / 10));
   };
@@ -79,7 +86,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
   const handleZoomFit = () => {
     if (typeof window === "undefined") return;
-    const leftPanelWidth = isLeftDrawerOpen ? (leftRailTab === "elements" ? 260 : 288) : 0;
+    const leftPanelWidth = isLeftDrawerOpen ? (leftRailTab === "elements" ? 280 : 288) : 0;
     const inspectorWidth = isInspectorOpen ? 320 : 0;
     const railWidth = 54;
     const availableWidth = window.innerWidth - railWidth - leftPanelWidth - inspectorWidth - 64;
@@ -220,6 +227,96 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     return { entry, label, type, index: foundIndex };
   }, [activeDragId, activeSections]);
 
+  const handleLibraryDragStart = useCallback((type: string, label: string) => {
+    setDraggingLibraryItem({ type, label });
+  }, []);
+
+  const handleLibraryDragEnd = useCallback(() => {
+    setDraggingLibraryItem(null);
+    setLibraryDropSlot(null);
+  }, []);
+
+  const handleLibraryPointerDown = useCallback(
+    (e: React.PointerEvent, type: string, label: string) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      const x0 = e.clientX;
+      const y0 = e.clientY;
+      let active = false;
+
+      const onMove = (moveEvent: PointerEvent) => {
+        const dx = moveEvent.clientX - x0;
+        const dy = moveEvent.clientY - y0;
+        if (!active) {
+          if (Math.hypot(dx, dy) < 6) return;
+          active = true;
+          setIsPointerDraggingLibrary(true);
+          setDraggingLibraryItem({ type, label });
+        }
+        setPointerPos({ x: moveEvent.clientX, y: moveEvent.clientY });
+
+        const elements = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY);
+        let foundSlot: number | null = null;
+        for (const el of elements) {
+          const sectionEl = el.closest<HTMLElement>("[data-studio-sortable-section]");
+          if (sectionEl) {
+            const idxStr = sectionEl.getAttribute("data-studio-section-index");
+            if (idxStr !== null) {
+              const idx = parseInt(idxStr, 10);
+              const rect = sectionEl.getBoundingClientRect();
+              const isTopHalf = moveEvent.clientY < rect.top + rect.height / 2;
+              foundSlot = isTopHalf ? idx : idx + 1;
+              break;
+            }
+          }
+          if (el.closest("[data-studio-empty-dropzone]")) {
+            foundSlot = 0;
+            break;
+          }
+        }
+        setLibraryDropSlot(foundSlot);
+      };
+
+      const onUp = (upEvent: PointerEvent) => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+
+        if (active) {
+          const elements = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
+          let finalSlot: number | null = null;
+          for (const el of elements) {
+            const sectionEl = el.closest<HTMLElement>("[data-studio-sortable-section]");
+            if (sectionEl) {
+              const idxStr = sectionEl.getAttribute("data-studio-section-index");
+              if (idxStr !== null) {
+                const idx = parseInt(idxStr, 10);
+                const rect = sectionEl.getBoundingClientRect();
+                const isTopHalf = upEvent.clientY < rect.top + rect.height / 2;
+                finalSlot = isTopHalf ? idx : idx + 1;
+                break;
+              }
+            }
+            if (el.closest("[data-studio-empty-dropzone]")) {
+              finalSlot = 0;
+              break;
+            }
+          }
+          if (typeof finalSlot === "number") {
+            handleAddSection(type, finalSlot);
+          }
+        }
+        setIsPointerDraggingLibrary(false);
+        setDraggingLibraryItem(null);
+        setLibraryDropSlot(null);
+      };
+
+      window.addEventListener("pointermove", onMove, { passive: false });
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+    },
+    [handleAddSection]
+  );
+
   const studioContent = (
     <div
       className="fixed inset-0 z-[100] flex h-screen w-full flex-col overflow-hidden bg-[#17181c] text-[#e8eaee]"
@@ -318,13 +415,16 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
               <div className="fixed inset-y-0 start-0 z-50 flex shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:shadow-none h-full shrink-0">
                 {leftRailTab === "elements" && (
                   <StudioElementsPanel
-                    onAddSection={(type) => {
-                      handleAddSection(type);
+                    onAddSection={(type, insertAtIndex) => {
+                      handleAddSection(type, insertAtIndex);
                       if (typeof window !== "undefined" && window.innerWidth < 1024) {
                         setIsLeftDrawerOpen(false);
                       }
                       setIsInspectorOpen(true);
                     }}
+                    onLibraryDragStart={handleLibraryDragStart}
+                    onLibraryDragEnd={handleLibraryDragEnd}
+                    onLibraryPointerDown={handleLibraryPointerDown}
                     onOpenFullCatalog={handleOpenCatalogModal}
                     onClose={() => setIsLeftDrawerOpen(false)}
                   />
@@ -377,7 +477,43 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           {/* Center Live Stage */}
           <StudioCanvasStage deviceMode={deviceMode} zoomLevel={zoomLevel}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-              <div className="relative min-h-[800px] bg-background">
+              <div
+                className="relative min-h-[800px] bg-background"
+                onDragOver={(e) => {
+                  const types = Array.from(e.dataTransfer.types || []);
+                  if (
+                    types.includes("application/x-storefront-section") ||
+                    types.includes("text/plain")
+                  ) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                    if (activeSections.length === 0) {
+                      setLibraryDropSlot(0);
+                    }
+                  }
+                }}
+                onDrop={(e) => {
+                  const types = Array.from(e.dataTransfer.types || []);
+                  if (
+                    types.includes("application/x-storefront-section") ||
+                    types.includes("text/plain")
+                  ) {
+                    e.preventDefault();
+                    const secType =
+                      e.dataTransfer.getData("application/x-storefront-section") ||
+                      e.dataTransfer.getData("text/plain") ||
+                      draggingLibraryItem?.type;
+                    if (secType) {
+                      handleAddSection(
+                        secType,
+                        typeof libraryDropSlot === "number" ? libraryDropSlot : activeSections.length
+                      );
+                    }
+                    setLibraryDropSlot(null);
+                    setDraggingLibraryItem(null);
+                  }
+                }}
+              >
                 <SortableContext items={sectionKeys} strategy={verticalListSortingStrategy}>
                   <PageComposer
                     pageConfig={activePageConfig}
@@ -414,6 +550,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           deviceMode={deviceMode}
                           showSpacingOverlay={showSpacingOverlay}
                           settings={sectionSettings}
+                          libraryDropSlot={libraryDropSlot}
                           onSelect={() => {
                             setSelectedSectionKey(stableKey);
                             setIsInspectorOpen(true);
@@ -422,6 +559,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           onMoveDown={() => handleMoveSection(index, "down")}
                           onDuplicate={() => handleDuplicateSection(index)}
                           onDelete={() => handleDeleteSection(stableKey)}
+                          onLibraryDragOver={(slot) => setLibraryDropSlot(slot)}
+                          onLibraryDrop={(secType, slot) => {
+                            handleAddSection(secType, slot);
+                            setLibraryDropSlot(null);
+                            setDraggingLibraryItem(null);
+                          }}
                         >
                           {element}
                         </StudioSortableSection>
@@ -429,6 +572,44 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                     }}
                   />
                 </SortableContext>
+
+                {/* Empty page drop target zone */}
+                {activeSections.length === 0 && (
+                  <div
+                    data-studio-empty-dropzone="true"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "copy";
+                      setLibraryDropSlot(0);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const secType =
+                        e.dataTransfer.getData("application/x-storefront-section") ||
+                        e.dataTransfer.getData("text/plain") ||
+                        draggingLibraryItem?.type;
+                      if (secType) {
+                        handleAddSection(secType, 0);
+                      }
+                      setLibraryDropSlot(null);
+                      setDraggingLibraryItem(null);
+                    }}
+                    className="flex min-h-[380px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#2b6cf6]/50 bg-[#2b6cf6]/5 p-8 text-center m-6 select-none"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2b6cf6]/20 text-[#2b6cf6] mb-3">
+                      <span className="text-xl">✦</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-1">
+                      صفحة فارغة
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4 max-w-xs leading-relaxed">
+                      اسحب أي عنصر أو قسم من القائمة الجانبية وأفلته هنا للبدء
+                    </p>
+                    <div className="flex items-center gap-2 rounded-full bg-[#2b6cf6] px-4 py-1.5 text-xs font-bold text-white shadow-md">
+                      أفلت هنا لإضافة أول قسم
+                    </div>
+                  </div>
+                )}
               </div>
             </StorefrontThemeProvider>
           </StudioCanvasStage>
@@ -493,6 +674,39 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             </div>
           ) : null}
         </DragOverlay>
+
+        {/* Floating preview during pointer drag from library */}
+        {draggingLibraryItem && isPointerDraggingLibrary && (
+          <div
+            style={{
+              position: "fixed",
+              left: pointerPos.x + 16,
+              top: pointerPos.y + 16,
+              zIndex: 99999,
+              pointerEvents: "none",
+            }}
+            className="flex items-center gap-2.5 rounded-xl border-2 border-[#2b6cf6] bg-[#1a1c22]/95 p-2 shadow-2xl backdrop-blur-md text-white select-none ring-1 ring-black/30"
+            dir="rtl"
+          >
+            <div className="w-12 h-8 rounded-md overflow-hidden border border-slate-700 bg-black shrink-0">
+              <img
+                src={getStudioSectionThumbnail(draggingLibraryItem.type)}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex flex-col pe-2">
+              <span className="text-xs font-bold text-white truncate max-w-[120px]">
+                {draggingLibraryItem.label}
+              </span>
+              <span className="text-[9.5px] text-[#60a5fa] font-medium">
+                {typeof libraryDropSlot === "number"
+                  ? `الموضع ${libraryDropSlot + 1}`
+                  : "اسحب للكانفس"}
+              </span>
+            </div>
+          </div>
+        )}
       </DndContext>
 
       {/* 3. Pro Studio Status Bar */}
