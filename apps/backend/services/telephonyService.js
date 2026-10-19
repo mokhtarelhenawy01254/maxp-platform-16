@@ -290,9 +290,7 @@ class TelephonyService {
         io.to(`user_${order.assignedToId}`).emit('telephony:dial', dialPayload);
         io.to(`user:${order.assignedToId}`).emit('telephony:dial', dialPayload);
       }
-      if (!device.userId) {
-        io.to(`company_${companyId}`).emit('telephony:dial', dialPayload);
-      }
+      io.to(`company_${companyId}`).emit('telephony:dial', dialPayload);
       if (device.socketId) {
         io.to(device.socketId).emit('telephony:dial', dialPayload);
       }
