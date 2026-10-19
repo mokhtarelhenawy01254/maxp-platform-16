@@ -44,6 +44,7 @@ import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
 import { usePreparationFilterDerived } from "./preparation/usePreparationFilterDerived";
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
 import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
+import { usePreparationDialogOperations } from "./preparation/usePreparationDialogOperations";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -474,6 +475,36 @@ const PreparationQueue: React.FC = () => {
       handlePrintPreparationSlip,
     });
 
+  const dialogsProps = usePreparationDialogOperations({
+    statusChangeDialog,
+    setStatusChangeDialog,
+    dialogOrder,
+    statusLabelMap,
+    dialogHoldReason,
+    rowUpdatingId,
+    problemHoldSavingOrderId,
+    handleConfirmStatusChange,
+    bulkHoldDialog,
+    setBulkHoldDialog,
+    bulkUpdating,
+    executeBulkUpdateSelected,
+    executeBulkUpdateAll,
+    editReasonOrder,
+    setEditReasonOrder,
+    editReasonOrderOrder,
+    handleConfirmEditReason,
+    showDispatchModal,
+    setShowDispatchModal,
+    selectedOrdersCount: selectedOrders.length,
+    activeCarriers,
+    handleDispatchToCarrier,
+    sendingToTurbo,
+    showInternalCourierModal,
+    setShowInternalCourierModal,
+    internalCourierOrderIds,
+    onInternalCourierSuccess: handleInternalCourierSuccess,
+  });
+
   return (
     <div className="space-y-3">
       {isMerchantUser ? (
@@ -507,39 +538,7 @@ const PreparationQueue: React.FC = () => {
         ordersContainerProps={ordersContainerProps}
       />
 
-      <PreparationQueueDialogsContainer
-        statusChangeDialog={statusChangeDialog}
-        setStatusChangeDialog={setStatusChangeDialog}
-        dialogOrder={dialogOrder}
-        statusLabelMap={statusLabelMap}
-        dialogHoldReason={dialogHoldReason}
-        rowUpdatingId={rowUpdatingId}
-        problemHoldSavingOrderId={problemHoldSavingOrderId}
-        handleConfirmStatusChange={handleConfirmStatusChange}
-
-        bulkHoldDialog={bulkHoldDialog}
-        setBulkHoldDialog={setBulkHoldDialog}
-        bulkUpdating={bulkUpdating}
-        executeBulkUpdateSelected={executeBulkUpdateSelected}
-        executeBulkUpdateAll={executeBulkUpdateAll}
-
-        editReasonOrder={editReasonOrder}
-        setEditReasonOrder={setEditReasonOrder}
-        editReasonOrderOrder={editReasonOrderOrder}
-        handleConfirmEditReason={handleConfirmEditReason}
-
-        showDispatchModal={showDispatchModal}
-        setShowDispatchModal={setShowDispatchModal}
-        selectedOrdersCount={selectedOrders.length}
-        activeCarriers={activeCarriers}
-        handleDispatchToCarrier={handleDispatchToCarrier}
-        sendingToTurbo={sendingToTurbo}
-
-        showInternalCourierModal={showInternalCourierModal}
-        setShowInternalCourierModal={setShowInternalCourierModal}
-        internalCourierOrderIds={internalCourierOrderIds}
-        onInternalCourierSuccess={handleInternalCourierSuccess}
-      />
+      <PreparationQueueDialogsContainer {...dialogsProps} />
     </div>
   );
 };
