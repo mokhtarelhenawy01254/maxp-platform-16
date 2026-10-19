@@ -25,15 +25,6 @@ import {
 } from "./preparation/constants";
 import {
   getApiErrorMessage,
-  getEffectivePreparationStatus,
-  getNextStatus,
-  getQuickActionLabel,
-  getShortageFollowUpState,
-  getShortageFollowUpVisual,
-  mergePlainObjects,
-  parseMaybeJsonObject,
-  toNumber,
-  toUpper,
 } from "./preparation/helpers";
 import type {
   InventoryProductSummary,
@@ -69,6 +60,8 @@ import { usePreparationDialogState } from "./preparation/usePreparationDialogSta
 import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
 import { usePreparationStatusOptions } from "./preparation/usePreparationStatusOptions";
 import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
+import { usePreparationFilterDerived } from "./preparation/usePreparationFilterDerived";
+import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -184,11 +177,7 @@ const PreparationQueue: React.FC = () => {
     companyId: user?.companyId || undefined,
   });
 
-  // إلغاء تحديد طلبات الشركة السابقة عند تبديل الشركة
   const currentCompanyId = user?.companyId;
-  useEffect(() => {
-    uiActions.clearBulkControls();
-  }, [currentCompanyId, uiActions]);
 
   // rowUpdatingId provided by usePreparationSingleStatusOperations
   // bulkUpdating provided by usePreparationBulkStatusOperations
@@ -317,43 +306,25 @@ const PreparationQueue: React.FC = () => {
     t,
   });
 
-  const shortageOwnerOptions = useMemo(() => {
-    const uniqueOwners = new Set<string>();
-
-    serverShortageOwnerOptions.forEach((owner) => {
-      const normalizedOwner = (owner || "").trim();
-      if (normalizedOwner) {
-        uniqueOwners.add(normalizedOwner);
-      }
+  const { shortageOwnerOptions, productSuggestions } =
+    usePreparationFilterDerived({
+      serverShortageOwnerOptions,
+      preparationOrders,
+      shortageHoldDrafts,
+      activeStage,
+      selectedWarehouseId,
+      stockFilter,
+      shortageReasonFilter,
+      shortageFollowUpFilter,
+      shortageOwnerFilter,
+      deferredSearch,
+      notPrintedFilter,
+      noShippingCodeFilter,
+      sortBy,
+      sortOrder,
+      currentCompanyId,
+      clearBulkControls: uiActions.clearBulkControls,
     });
-
-    preparationOrders.forEach((order) => {
-      const effectiveShortageDetails =
-        shortageHoldDrafts[order.orderNumber] || order.shortageHoldDetails;
-      const owner = effectiveShortageDetails?.owner?.trim();
-      if (owner) {
-        uniqueOwners.add(owner);
-      }
-    });
-
-    return [...uniqueOwners].sort((left, right) => left.localeCompare(right, "ar"));
-  }, [preparationOrders, serverShortageOwnerOptions, shortageHoldDrafts]);
-
-  const productSuggestions = useMemo(() => {
-    const seen = new Set<string>();
-    return preparationOrders.flatMap((order) =>
-      order.itemInsights.map((item) => {
-        const key = `${item.displayName}|${item.color || ""}|${item.size || ""}`;
-        if (seen.has(key)) return null;
-        seen.add(key);
-        return {
-          displayName: item.displayName,
-          color: item.color || "",
-          size: item.size || "",
-        };
-      }),
-    ).filter((s): s is NonNullable<typeof s> => s !== null);
-  }, [preparationOrders]);
 
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
@@ -371,46 +342,6 @@ const PreparationQueue: React.FC = () => {
     uiActions.clampPage(totalPages);
   }, [totalPages, uiActions]);
 
-  const selectionResetKey = useMemo(
-    () =>
-      [
-        activeStage,
-        selectedWarehouseId,
-        stockFilter,
-        shortageReasonFilter,
-        shortageFollowUpFilter,
-        (shortageOwnerFilter || "").trim().toLowerCase(),
-        (deferredSearch || "").trim().toLowerCase(),
-        notPrintedFilter,
-        noShippingCodeFilter,
-        sortBy,
-        sortOrder,
-      ].join("|"),
-    [
-      activeStage,
-      deferredSearch,
-      selectedWarehouseId,
-      shortageFollowUpFilter,
-      shortageOwnerFilter,
-      shortageReasonFilter,
-      notPrintedFilter,
-      noShippingCodeFilter,
-      sortBy,
-      sortOrder,
-      stockFilter,
-    ],
-  );
-  const didInitSelectionReset = useRef(false);
-
-  useEffect(() => {
-    if (!didInitSelectionReset.current) {
-      didInitSelectionReset.current = true;
-      return;
-    }
-
-    uiActions.clearBulkControls();
-  }, [selectionResetKey, uiActions]);
-
   const {
     selectedSet,
     allVisibleSelected,
@@ -422,45 +353,16 @@ const PreparationQueue: React.FC = () => {
     uiActions,
   });
 
-  const updateLocalStatuses = useCallback(
-    (orderNumbers: string[], nextStatus: string) => {
-      const normalized = toUpper(nextStatus);
-      setOrders((previous) =>
-        previous.map((order) =>
-          orderNumbers.includes(order.orderNumber)
-            ? { ...order, status: normalized, updatedAt: new Date().toISOString() }
-            : order,
-        ),
-      );
-    },
-    [setOrders],
-  );
+  const {
+    updateLocalStatuses,
+    updateLocalMetadata,
+    getOrderByNumber,
+  } = usePreparationLocalMutations({
+    setOrders,
+    preparationOrders,
+  });
   updateLocalStatusesRef.current = updateLocalStatuses;
-
-  const updateLocalMetadata = useCallback(
-    (orderNumber: string, metadataPatch: Record<string, unknown>) => {
-      setOrders((previous) =>
-        previous.map((order) => {
-          if (order.orderNumber !== orderNumber) return order;
-
-          const currentMetadata = parseMaybeJsonObject(order.metadata);
-          return {
-            ...order,
-            metadata: mergePlainObjects(currentMetadata, metadataPatch),
-            updatedAt: new Date().toISOString(),
-          };
-        }),
-      );
-    },
-    [setOrders],
-  );
   updateLocalMetadataRef.current = updateLocalMetadata;
-
-  const getOrderByNumber = useCallback(
-    (orderNumber: string) =>
-      preparationOrders.find((order) => order.orderNumber === orderNumber) || null,
-    [preparationOrders],
-  );
   getOrderByNumberRef.current = getOrderByNumber;
 
   const {
