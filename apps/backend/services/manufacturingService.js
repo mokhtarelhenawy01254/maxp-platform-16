@@ -84,6 +84,11 @@ class ManufacturingService {
           "rawMaterialName" TEXT,
           "consumptionPerUnit" DECIMAL(10,4) NOT NULL,
           "unit" TEXT NOT NULL DEFAULT 'PIECE',
+          "purchaseUnit" TEXT,
+          "consumptionUnit" TEXT,
+          "fabricWidthM" DECIMAL(8,3),
+          "targetGsm" DECIMAL(8,2),
+          "composition" TEXT,
           "appliesToSizes" JSONB,
           "appliesToColors" JSONB,
           "scrapRate" DECIMAL(5,2) NOT NULL DEFAULT 0.0,
@@ -91,6 +96,11 @@ class ManufacturingService {
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        ALTER TABLE "bom_component_items" ADD COLUMN IF NOT EXISTS "purchaseUnit" TEXT;
+        ALTER TABLE "bom_component_items" ADD COLUMN IF NOT EXISTS "consumptionUnit" TEXT;
+        ALTER TABLE "bom_component_items" ADD COLUMN IF NOT EXISTS "fabricWidthM" DECIMAL(8,3);
+        ALTER TABLE "bom_component_items" ADD COLUMN IF NOT EXISTS "targetGsm" DECIMAL(8,2);
+        ALTER TABLE "bom_component_items" ADD COLUMN IF NOT EXISTS "composition" TEXT;
         CREATE INDEX IF NOT EXISTS "bom_component_items_bomId_idx" ON "bom_component_items"("bomId");
         CREATE INDEX IF NOT EXISTS "bom_component_items_rawMaterialId_idx" ON "bom_component_items"("rawMaterialId");
 
@@ -397,6 +407,11 @@ class ManufacturingService {
               rawMaterialName: item.rawMaterialName || null,
               consumptionPerUnit: round4(item.consumptionPerUnit || 0),
               unit: item.unit || 'PIECE',
+              purchaseUnit: item.purchaseUnit ? String(item.purchaseUnit).trim() : null,
+              consumptionUnit: item.consumptionUnit ? String(item.consumptionUnit).trim() : null,
+              fabricWidthM: item.fabricWidthM !== undefined && item.fabricWidthM !== null && item.fabricWidthM !== '' ? round4(item.fabricWidthM) : null,
+              targetGsm: item.targetGsm !== undefined && item.targetGsm !== null && item.targetGsm !== '' ? round2(item.targetGsm) : null,
+              composition: item.composition ? String(item.composition).trim() : null,
               appliesToSizes: item.appliesToSizes || ['ALL'],
               appliesToColors: item.appliesToColors || ['ALL'],
               scrapRate: round2(item.scrapRate || 0.0),
@@ -507,6 +522,11 @@ class ManufacturingService {
               rawMaterialName: item.rawMaterialName || null,
               consumptionPerUnit: round4(item.consumptionPerUnit || 0),
               unit: item.unit || 'PIECE',
+              purchaseUnit: item.purchaseUnit ? String(item.purchaseUnit).trim() : null,
+              consumptionUnit: item.consumptionUnit ? String(item.consumptionUnit).trim() : null,
+              fabricWidthM: item.fabricWidthM !== undefined && item.fabricWidthM !== null && item.fabricWidthM !== '' ? round4(item.fabricWidthM) : null,
+              targetGsm: item.targetGsm !== undefined && item.targetGsm !== null && item.targetGsm !== '' ? round2(item.targetGsm) : null,
+              composition: item.composition ? String(item.composition).trim() : null,
               appliesToSizes: item.appliesToSizes || ['ALL'],
               appliesToColors: item.appliesToColors || ['ALL'],
               scrapRate: round2(item.scrapRate || 0.0),
@@ -584,6 +604,11 @@ class ManufacturingService {
         rawMaterialName: c.rawMaterialName,
         consumptionPerUnit: c.consumptionPerUnit,
         unit: c.unit,
+        purchaseUnit: c.purchaseUnit,
+        consumptionUnit: c.consumptionUnit,
+        fabricWidthM: c.fabricWidthM,
+        targetGsm: c.targetGsm,
+        composition: c.composition,
         appliesToSizes: c.appliesToSizes,
         appliesToColors: c.appliesToColors,
         scrapRate: c.scrapRate,

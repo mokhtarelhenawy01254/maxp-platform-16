@@ -74,4 +74,12 @@ router.get('/orders/:id/attachments', controller.listOrderAttachments);
 router.post('/attachments', controller.createAttachment);
 router.delete('/attachments/:id', controller.deleteAttachment);
 
+// ============================================================================
+// 6. Fabric Calculator & Material Conversions (Wave 2.5)
+// ============================================================================
+router.post('/fabric/convert', controller.convertFabric);
+router.post('/fabric/actual-gsm', controller.calculateActualGsm);
+router.post('/fabric/requirements', controller.calculateFabricRequirements);
+router.post('/fabric/actual-waste', controller.calculateActualWaste);
+
 module.exports = router;

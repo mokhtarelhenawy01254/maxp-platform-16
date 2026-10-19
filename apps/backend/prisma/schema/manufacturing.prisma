@@ -135,6 +135,11 @@ model BomComponentItem {
   rawMaterialName    String?
   consumptionPerUnit Decimal         @db.Decimal(10, 4)
   unit               String          @default("PIECE")
+  purchaseUnit       String?
+  consumptionUnit    String?
+  fabricWidthM       Decimal?        @db.Decimal(8, 3)
+  targetGsm          Decimal?        @db.Decimal(8, 2)
+  composition        String?
   appliesToSizes     Json?
   appliesToColors    Json?
   scrapRate          Decimal         @default(0.0) @db.Decimal(5, 2)

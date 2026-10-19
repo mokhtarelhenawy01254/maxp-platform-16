@@ -7,6 +7,7 @@
 const ManufacturingService = require('../services/manufacturingService');
 const ManufacturingContractService = require('../services/manufacturingContractService');
 const ManufacturingSubcontractService = require('../services/manufacturingSubcontractService');
+const ManufacturingFabricService = require('../services/manufacturingFabricService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -533,6 +534,46 @@ class ManufacturingController {
       res.json({ success: true, data: performance });
     } catch (error) {
       res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Fabric Calculator & Material Conversions (Wave 2.5)
+  // ==========================================================================
+
+  static async convertFabric(req, res) {
+    try {
+      const result = ManufacturingFabricService.convert(req.body || {});
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async calculateActualGsm(req, res) {
+    try {
+      const result = ManufacturingFabricService.calculateActualGsm(req.body || {});
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async calculateFabricRequirements(req, res) {
+    try {
+      const result = ManufacturingFabricService.calculateRequirements(req.body || {});
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async calculateActualWaste(req, res) {
+    try {
+      const result = ManufacturingFabricService.calculateActualWaste(req.body || {});
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }
   }
 }
