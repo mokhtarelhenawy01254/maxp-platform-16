@@ -457,12 +457,7 @@ class TelephonyService {
         companyId,
         callStatus: 'INITIATED',
         startedAt: { gte: cutoff },
-        ...(userId ? {
-          OR: [
-            { userId },
-            { userId: null }
-          ]
-        } : {})
+        ...(userId ? { userId } : {})
       },
       orderBy: { startedAt: 'desc' }
     });
