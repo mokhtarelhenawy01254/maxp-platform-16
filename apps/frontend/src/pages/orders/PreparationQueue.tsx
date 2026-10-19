@@ -28,8 +28,7 @@ import { isInternalCourierAppActive } from "./preparation/helpers/internalCourie
 import { buildPreparationFiltersPayload } from "./preparation/helpers/preparationFiltersPayload";
 import { usePreparationFulfillmentOperations } from "./preparation/usePreparationFulfillmentOperations";
 import { usePreparationHoldOperations } from "./preparation/usePreparationHoldOperations";
-import { usePreparationBulkStatusOperations } from "./preparation/usePreparationBulkStatusOperations";
-import { usePreparationSingleStatusOperations } from "./preparation/usePreparationSingleStatusOperations";
+import { usePreparationStatusOperations } from "./preparation/usePreparationStatusOperations";
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
 import { usePreparationTransitions } from "./preparation/usePreparationTransitions";
 import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
@@ -304,14 +303,7 @@ const PreparationQueue: React.FC = () => {
 
 
 
-  // saveShortageHoldDetails provided by usePreparationShortageOperations
-  const {
-    rowUpdatingId,
-    performStatusUpdate,
-    handleSingleStatusUpdate,
-    handleRequestStatusChange,
-    handleConfirmStatusChange,
-  } = usePreparationSingleStatusOperations({
+  const statusOps = usePreparationStatusOperations({
     getOrderByNumber,
     validateTransition,
     problemHoldDrafts,
@@ -327,34 +319,14 @@ const PreparationQueue: React.FC = () => {
     setStatusChangeDialog,
     getApiErrorMessage,
     t,
-  });
-  handleSingleStatusUpdateRef.current = handleSingleStatusUpdate;
-
-  // Problem hold handlers provided by usePreparationProblemOperations
-  const {
-    bulkUpdating,
-    setBulkUpdating,
-    bulkHoldDialog,
-    setBulkHoldDialog,
-    executeBulkUpdateSelected,
-    handleBulkUpdate,
-    executeBulkUpdateAll,
-    handleBulkUpdateAll,
-  } = usePreparationBulkStatusOperations({
     bulkStatus,
     selectedOrders,
     enrichedOrders,
-    getOrderByNumber,
-    validateTransition,
-    updateLocalStatuses,
-    fetchAll,
     clearBulkControls: uiActions.clearBulkControls,
-    statusLabelMap,
     paginationTotal: pagination.total,
     getFiltersPayload: () => buildPreparationFiltersPayload({ uiState, deferredSearch }),
-    getApiErrorMessage,
-    t,
   });
+  handleSingleStatusUpdateRef.current = statusOps.handleSingleStatusUpdate;
 
   const fulfillmentOps = usePreparationFulfillmentOperations({
     orders,
@@ -400,11 +372,8 @@ const PreparationQueue: React.FC = () => {
       bulkStatus,
       statusOptions,
       statusLabelMap,
-      bulkUpdating,
       preparationSettings,
       uiActions,
-      handleBulkUpdate,
-      handleBulkUpdateAll,
       isInternalCourierActive,
       setShowInternalCourierModal,
       enrichedOrders,
@@ -414,7 +383,6 @@ const PreparationQueue: React.FC = () => {
       uiState,
       statusSelections,
       selectedSet,
-      rowUpdatingId,
       selectedWarehouseId,
       enabledQcChecks,
       qcChecklistState,
@@ -422,7 +390,7 @@ const PreparationQueue: React.FC = () => {
       formatDate,
       toggleOrderSelection,
       handleQcCheckToggle,
-      handleRequestStatusChange,
+      ...statusOps,
       ...holdOps,
       ...fulfillmentOps,
     });
@@ -433,14 +401,7 @@ const PreparationQueue: React.FC = () => {
     dialogOrder,
     statusLabelMap,
     dialogHoldReason,
-    rowUpdatingId,
     problemHoldSavingOrderId,
-    handleConfirmStatusChange,
-    bulkHoldDialog,
-    setBulkHoldDialog,
-    bulkUpdating,
-    executeBulkUpdateSelected,
-    executeBulkUpdateAll,
     editReasonOrder,
     setEditReasonOrder,
     editReasonOrderOrder,
@@ -455,6 +416,7 @@ const PreparationQueue: React.FC = () => {
     setShowInternalCourierModal,
     internalCourierOrderIds,
     onInternalCourierSuccess: handleInternalCourierSuccess,
+    ...statusOps,
   });
 
   const { alertBannersProps, filtersContainerProps } = usePreparationFilterSectionProps({
