@@ -477,6 +477,9 @@ const storefrontSitemapController = require("./controller/storefrontSitemapContr
 const storefrontRobotsController = require("./controller/storefrontRobotsController");
 const { handlePlatformSeo } = require("./middleware/platformSeoMiddleware");
 const {
+  handleCourseSubdomainRedirect,
+} = require("./middleware/courseSubdomainRedirectMiddleware");
+const {
   securityHeaders,
   sanitizeRequest,
   securityMonitoring,
@@ -1759,6 +1762,7 @@ app.get(
 app.get(
   "*",
   extractSubdomainMiddleware,
+  handleCourseSubdomainRedirect,
   handlePlatformSeo,
   storefrontHtmlController.handleStorefrontShell,
 );

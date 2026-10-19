@@ -55,6 +55,15 @@ const AcademyCatalogPublicPage: React.FC = () => {
     fetchCatalog();
   }, []);
 
+  const isApexHost = typeof window !== "undefined" && (window.location.hostname === "maxp.online" || window.location.hostname === "www.maxp.online");
+  const getCourseUrl = (cId: string, slug?: string) => {
+    if (isApexHost) {
+      const companySlug = slug || "max-p";
+      return `https://${companySlug}.maxp.online/portal/course/${cId}`;
+    }
+    return `/portal/course/${cId}`;
+  };
+
   return (
     <div className="space-y-6 text-right" dir="rtl">
       {/* Editorial Header */}
@@ -108,17 +117,31 @@ const AcademyCatalogPublicPage: React.FC = () => {
               >
                 {/* Course Card Thumbnail */}
                 {(course.thumbnailUrl || course.id === 'cmuzmwaxs07r2juml2v04xon5') && (
-                  <Link
-                    to={`/portal/course/${course.id}`}
-                    className="block relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-border/50"
-                  >
-                    <img
-                      src={course.thumbnailUrl || '/og/p1_course-path_1080x1080.png'}
-                      alt={course.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </Link>
+                  isApexHost ? (
+                    <a
+                      href={getCourseUrl(course.id, (course as any).companySlug)}
+                      className="block relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-border/50"
+                    >
+                      <img
+                        src={course.thumbnailUrl || '/og/p1_course-path_1080x1080.png'}
+                        alt={course.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </a>
+                  ) : (
+                    <Link
+                      to={`/portal/course/${course.id}`}
+                      className="block relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-border/50"
+                    >
+                      <img
+                        src={course.thumbnailUrl || '/og/p1_course-path_1080x1080.png'}
+                        alt={course.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </Link>
+                  )
                 )}
 
                 {/* Course Card Header */}
@@ -145,7 +168,11 @@ const AcademyCatalogPublicPage: React.FC = () => {
                   {/* Title & Description */}
                   <div className="space-y-2 flex-1">
                     <h2 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
-                      <Link to={`/portal/course/${course.id}`}>{course.title}</Link>
+                      {isApexHost ? (
+                        <a href={getCourseUrl(course.id, (course as any).companySlug)}>{course.title}</a>
+                      ) : (
+                        <Link to={`/portal/course/${course.id}`}>{course.title}</Link>
+                      )}
                     </h2>
                     <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                       {course.description || "مسار تطبيقي متكامل من أول فهم العميل وتظبيط العرض لحد قراءة الرقم وإطلاق الحملات الإعلانية."}
@@ -185,13 +212,23 @@ const AcademyCatalogPublicPage: React.FC = () => {
                         <span>معاينة</span>
                       </Link>
                     )}
-                    <Link
-                      to={`/portal/course/${course.id}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-xs"
-                    >
-                      <span>التفاصيل</span>
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                    </Link>
+                    {isApexHost ? (
+                      <a
+                        href={getCourseUrl(course.id, (course as any).companySlug)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-xs"
+                      >
+                        <span>التفاصيل</span>
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </a>
+                    ) : (
+                      <Link
+                        to={`/portal/course/${course.id}`}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-xs"
+                      >
+                        <span>التفاصيل</span>
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

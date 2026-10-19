@@ -464,6 +464,80 @@ exports.handleStorefrontShell = async (req, res, next) => {
       req.path === "/portal/course/cmuzmwaxs07r2juml2v04xon5"
     );
 
+    const isCoursePublicPage = /^\/(?:portal|academy)\/course\/[^\/]+$/i.test(req.path);
+    const isMaxpParentCompany = req.company?.slug === "max-p" || req.companyId === "cmopgxu3a07i4jujj6f1oh32h";
+    const isPrivatePortalRoute =
+      req.path.includes("/lesson/") ||
+      req.path.includes("/learn/") ||
+      req.path.includes("/watch/") ||
+      req.path.startsWith("/portal/login") ||
+      req.path.startsWith("/portal/my-courses") ||
+      req.path.startsWith("/portal/certificate") ||
+      req.path.startsWith("/academy/student/login") ||
+      req.path.startsWith("/academy/my-courses");
+
+    // Indexable conditions (قرار مختار 18-10):
+    // 1. Apex public portal catalog routes (/portal, /portal/catalog)
+    // 2. Parent company (max-p) course landing page (/portal/course/:id) is indexable
+    // 3. Other tenant portals (e.g. swan) and private student routes remain strictly noindex
+    const isIndexablePortal =
+      (isPublicApexPortal && !isPrivatePortalRoute) ||
+      (isMaxpParentCompany && isCoursePublicPage && !isPrivatePortalRoute);
+
+    let courseMeta = null;
+    if (isCoursePublicPage) {
+      const courseMatch = req.path.match(/^\/(?:portal|academy)\/course\/([^\/\?#]+)$/i);
+      const courseId = courseMatch ? courseMatch[1] : null;
+      if (courseId) {
+        if (courseId === "cmuzmwaxs07r2juml2v04xon5") {
+          courseMeta = {
+            title: "كورس MaxP — من أول إعلان لأول نظام",
+            description:
+              "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
+            image: "https://maxp.online/og/p1_course-path_1200x628.png",
+            price: 500,
+            currency: "EGP",
+            type: "product",
+            robots: isMaxpParentCompany ? "index, follow" : "noindex, follow",
+          };
+        } else {
+          try {
+            const academyCourse = await safeQuery(() =>
+              prisma.academyCourse.findFirst({
+                where: {
+                  companyId: req.companyId,
+                  OR: [{ id: courseId }, { slug: courseId }],
+                },
+                select: {
+                  title: true,
+                  description: true,
+                  thumbnailUrl: true,
+                  price: true,
+                },
+              })
+            );
+            if (academyCourse) {
+              courseMeta = {
+                title: `${academyCourse.title} | ${req.company?.name || "MaxP"}`,
+                description:
+                  academyCourse.description ||
+                  `دورة تدريبية متخصصة من ${req.company?.name || "MaxP"}.`,
+                image:
+                  academyCourse.thumbnailUrl ||
+                  "https://maxp.online/og/p1_course-path_1200x628.png",
+                price: Number(academyCourse.price) || null,
+                currency: req.company?.currency || "EGP",
+                type: "product",
+                robots: isMaxpParentCompany ? "index, follow" : "noindex, follow",
+              };
+            }
+          } catch (cErr) {
+            console.warn("⚠️ [StorefrontShell] Course metadata query error:", cErr.message);
+          }
+        }
+      }
+    }
+
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
       currentUrl,
@@ -475,8 +549,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
       article,
       storePage,
       landing: landingMeta,
+      course: courseMeta,
       reviews,
-      noIndex: isNotFound || landingMissing || (isPortalRoute && !isPublicApexPortal),
+      noIndex: isNotFound || landingMissing || (isPortalRoute && !isIndexablePortal),
+      robots: courseMeta?.robots || (isPortalRoute && !isIndexablePortal ? "noindex, follow" : null),
     });
 
     const indexHtml = await loadIndexHtml();

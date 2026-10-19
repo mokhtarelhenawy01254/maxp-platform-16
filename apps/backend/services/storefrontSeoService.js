@@ -375,8 +375,10 @@ const buildStorefrontSeoMetadata = ({
   article = null,
   storePage = null,
   landing = null,
+  course = null,
   reviews = null,
   noIndex = false,
+  robots = null,
 }) => {
   const routeContext = resolveRouteContext(pathname);
   const templateSettings = extractTemplateSettings(templateContent);
@@ -440,6 +442,60 @@ const buildStorefrontSeoMetadata = ({
     trimToNull(designTokens?.facebookDomainVerification) ||
     trimToNull(templateSeo?.facebookDomainVerification) ||
     null;
+
+  // Academy Course Landing Pages (/portal/course/:id or /academy/course/:id)
+  if (course) {
+    const courseTitle = trimToNull(course.title) || storeName;
+    title = courseTitle;
+    description = trimToNull(course.description) || fallbackDescription;
+    image = resolveAbsoluteUrl(course.image, currentUrl) || defaultImage;
+    type = course.type || "product";
+    price = course.price !== undefined ? course.price : null;
+    currency = course.currency || company?.currency || "EGP";
+    canonicalUrl = cleanCanonicalUrl(currentUrl);
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: title,
+      description,
+      provider: {
+        "@type": "Organization",
+        name: storeName,
+        sameAs: baseUrl,
+      },
+      ...(price
+        ? {
+            offers: {
+              "@type": "Offer",
+              price: String(price),
+              priceCurrency: currency,
+              category: "Paid",
+            },
+          }
+        : {}),
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      direction,
+      routeContext,
+      jsonLd,
+      price,
+      currency,
+      noIndex,
+      robots: robots || (noIndex ? "noindex, follow" : "index, follow"),
+      googleSiteVerification,
+      facebookDomainVerification,
+    };
+  }
 
   // Product landing pages (/store/lp/:slug): title/description/og-image come
   // from the landing's own seo field with product-derived fallbacks, and the
@@ -957,6 +1013,7 @@ const buildStorefrontSeoMetadata = ({
     availability,
     sku,
     noIndex,
+    robots: robots || (noIndex ? "noindex, follow" : "index, follow"),
     googleSiteVerification,
     facebookDomainVerification,
   };
@@ -1030,9 +1087,13 @@ const injectStorefrontSeoTags = (html, metadata) => {
     nextHtml = setMetaTag(nextHtml, "name", "facebook-domain-verification", metadata.facebookDomainVerification);
   }
 
-  // Robots noindex if requested (e.g. 404s, sensitive pages)
-  if (metadata.noIndex) {
+  // Robots indexing tag (support explicit robots directive, then noIndex flag, then index fallback)
+  if (metadata.robots) {
+    nextHtml = setMetaTag(nextHtml, "name", "robots", metadata.robots);
+  } else if (metadata.noIndex) {
     nextHtml = setMetaTag(nextHtml, "name", "robots", "noindex, follow");
+  } else {
+    nextHtml = setMetaTag(nextHtml, "name", "robots", "index, follow");
   }
 
   const allJsonLd = [

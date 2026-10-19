@@ -42,6 +42,20 @@ const AcademyCoursePublicPage: React.FC = () => {
     actionText?: string;
   } | null>(null);
 
+  // 🔀 Central Apex Subdomain Enforcement (قرار مختار 18-10)
+  // Ensure student operates on the dedicated company subdomain
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host === "maxp.online" || host === "www.maxp.online") {
+        const targetId = courseId || "cmuzmwaxs07r2juml2v04xon5";
+        window.location.replace(
+          `https://max-p.maxp.online/portal/course/${targetId}${window.location.search}`
+        );
+      }
+    }
+  }, [courseId]);
+
   const fetchOutline = async () => {
     try {
       setLoading(true);

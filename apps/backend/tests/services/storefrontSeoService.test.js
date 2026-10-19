@@ -532,5 +532,56 @@ describe("storefrontSeoService", () => {
     expect(updated).toContain('property="og:url" content="https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole"');
     expect(updated).toContain('"url":"https://swan.maxp.online/product/%C5%9E%C4%B1k-Sole"');
   });
+
+  test("builds indexable course SEO metadata on max-p subdomain", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/portal/course/cmuzmwaxs07r2juml2v04xon5",
+      currentUrl: "https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5",
+      company: { id: "cmopgxu3a07i4jujj6f1oh32h", name: "Max P", slug: "max-p" },
+      course: {
+        title: "كورس MaxP — من أول إعلان لأول نظام",
+        description: "25 درس لصاحب المحل المصري",
+        image: "https://maxp.online/og/p1_course-path_1200x628.png",
+        price: 500,
+        currency: "EGP",
+        type: "product",
+      },
+      noIndex: false,
+      robots: "index, follow",
+    });
+
+    expect(metadata.title).toBe("كورس MaxP — من أول إعلان لأول نظام");
+    expect(metadata.description).toBe("25 درس لصاحب المحل المصري");
+    expect(metadata.url).toBe("https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5");
+    expect(metadata.noIndex).toBe(false);
+    expect(metadata.robots).toBe("index, follow");
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+
+    expect(updated).toContain('<title>كورس MaxP — من أول إعلان لأول نظام</title>');
+    expect(updated).toContain('<meta name="robots" content="index, follow" />');
+    expect(updated).toContain('<link rel="canonical" href="https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5" />');
+    expect(updated).toContain('<meta property="og:title" content="كورس MaxP — من أول إعلان لأول نظام" />');
+    expect(updated).toContain('<meta property="og:image" content="https://maxp.online/og/p1_course-path_1200x628.png" />');
+  });
+
+  test("injects robots noindex on other tenant course or portal routes", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/portal/course/test-course",
+      currentUrl: "https://swan.maxp.online/portal/course/test-course",
+      company: { id: "cmopgxu3a07i4jujj6f1oh32h_swan", name: "Swan", slug: "swan" },
+      noIndex: true,
+      robots: "noindex, follow",
+    });
+
+    expect(metadata.noIndex).toBe(true);
+    expect(metadata.robots).toBe("noindex, follow");
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+
+    expect(updated).toContain('<meta name="robots" content="noindex, follow" />');
+  });
 });
 
