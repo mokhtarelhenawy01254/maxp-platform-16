@@ -139,23 +139,8 @@ public class MaxPTelephonyPlugin extends Plugin {
         }
 
         if (!getPermissionState("phone").equals(com.getcapacitor.PermissionState.GRANTED)) {
-            // إذا لم تُمنح الصلاحية بعد، نفتح مسجل المكالمات مباشرة عبر ACTION_DIAL بدون تعطيل المكالمة
-            try {
-                CallSessionManager.getInstance().startSession(sessionId, orderId, phone);
-                Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone)));
-                dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(dialIntent);
-
-                JSObject ret = new JSObject();
-                ret.put("success", true);
-                ret.put("method", "ACTION_DIAL");
-                ret.put("sessionId", sessionId);
-                call.resolve(ret);
-                return;
-            } catch (Exception e) {
-                requestPermissionForAlias("phone", call, "phonePermsCallback");
-                return;
-            }
+            requestPermissionForAlias("phone", call, "phonePermsCallback");
+            return;
         }
 
         performDial(phone, sessionId, orderId, call);

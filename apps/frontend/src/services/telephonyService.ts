@@ -332,6 +332,19 @@ class TelephonyClientService {
           this.logDiagnostic("BATTERY_EXEMPTION_ERROR", { error: batteryErr?.message || String(batteryErr) });
           console.warn("Battery exemption request failed:", batteryErr);
         }
+
+        // طلب إذن الاتصال الهاتفي وقراءة الحالة لتمكين الاتصال التلقائي المباشر ACTION_CALL
+        try {
+          if (typeof (MaxPTelephony as any).checkPermissions === "function") {
+            const permStatus = await (MaxPTelephony as any).checkPermissions();
+            if (permStatus?.phone !== "granted" && typeof (MaxPTelephony as any).requestPermissions === "function") {
+              await (MaxPTelephony as any).requestPermissions();
+              this.logDiagnostic("PHONE_PERMISSIONS_REQUESTED");
+            }
+          }
+        } catch (permErr: any) {
+          console.warn("Phone permissions check/request failed:", permErr);
+        }
       }
 
       // 2. دالة نبض الاتصال الدورية (Heartbeat)
