@@ -13,17 +13,24 @@ import {
   ChatBubbleBottomCenterTextIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
+import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
 
 interface StudioElementsPanelProps {
-  onAddSection: (sectionType: string) => void;
+  onAddSection: (sectionType: string, insertAtIndex?: number) => void;
   onOpenFullCatalog: () => void;
   onClose: () => void;
+  onLibraryDragStart?: (sectionType: string, label: string) => void;
+  onLibraryDragEnd?: () => void;
+  onLibraryPointerDown?: (e: React.PointerEvent, sectionType: string, label: string) => void;
 }
 
 export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
   onAddSection,
   onOpenFullCatalog,
   onClose,
+  onLibraryDragStart,
+  onLibraryDragEnd,
+  onLibraryPointerDown,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -42,15 +49,13 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       title: "شبكة منتجات",
       sub: "4 أعمدة مع فلاتر",
       type: "featured-products",
-      barColors: ["#b4552d", "#4b505a", "#4b505a"],
       icon: Squares2X2Icon,
     },
     {
       id: "preset-deal",
       title: "شريط عروض ومؤقت",
-      sub: "عرض كامل",
+      sub: "عرض كامل بمؤقت",
       type: "countdown-banner",
-      barColors: ["#b4552d", "#b4552d", "#4b505a"],
       icon: TagIcon,
     },
     {
@@ -58,7 +63,6 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       title: "واجهة البطل الرئيسية",
       sub: "نص + زر + صورة",
       type: "hero-banner",
-      barColors: ["#2b6cf6", "#4b505a", "#4b505a"],
       icon: SparklesIcon,
     },
     {
@@ -66,7 +70,6 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       title: "شريط الموثوقية والضمان",
       sub: "4 شارات أمان وشحن",
       type: "features-bar",
-      barColors: ["#3faa6f", "#4b505a", "#4b505a"],
       icon: ShieldCheckIcon,
     },
     {
@@ -74,23 +77,30 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       title: "آراء وتجارب العملاء",
       sub: "تقييمات بالنجوم",
       type: "reviews",
-      barColors: ["#7c5cff", "#4b505a", "#4b505a"],
       icon: ChatBubbleBottomCenterTextIcon,
     },
   ];
 
-  const filteredElements = quickElements.filter((el) =>
-    el.label.includes(searchQuery)
+  const filteredElements = quickElements.filter(
+    (el) => el.label.includes(searchQuery) || el.type.includes(searchQuery)
   );
   const filteredPresets = presets.filter(
-    (p) => p.title.includes(searchQuery) || p.sub.includes(searchQuery)
+    (p) =>
+      p.title.includes(searchQuery) ||
+      p.sub.includes(searchQuery) ||
+      p.type.includes(searchQuery)
   );
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-e border-[#0c0d0f] bg-[#202226] text-[#e8eaee] select-none z-10">
+    <div className="flex h-full w-[280px] shrink-0 flex-col border-e border-[#0c0d0f] bg-[#202226] text-[#e8eaee] select-none z-10">
       {/* Header */}
       <div className="flex items-center justify-between px-3.5 py-3 border-b border-[#2c2f35]">
-        <b className="text-[12.5px] font-bold text-[#f0f2f5]">إضافة عناصر وأقسام</b>
+        <div className="flex items-center gap-1.5">
+          <b className="text-[12.5px] font-bold text-[#f0f2f5]">إضافة عناصر وأقسام</b>
+          <span className="rounded-full bg-[#2b6cf6]/20 px-1.5 py-0.2 text-[9px] font-bold text-[#60a5fa]">
+            سحب وإفلات
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -119,22 +129,59 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       <div className="flex-1 overflow-y-auto px-3 space-y-3.5 [scrollbar-width:thin]">
         {/* Quick Elements Grid */}
         <div>
-          <span className="block text-[10px] font-bold tracking-wider text-[#8b9199] mb-2">
-            العناصر الأساسية
-          </span>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="block text-[10px] font-bold tracking-wider text-[#8b9199]">
+              العناصر الأساسية
+            </span>
+            <span className="text-[9px] text-[#707680]">اسحب أو انقر</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             {filteredElements.map((el) => {
-              const Icon = el.icon;
+              const thumbnail = getStudioSectionThumbnail(el.type);
               return (
-                <button
+                <div
                   key={el.id}
-                  type="button"
+                  draggable={true}
+                  data-studio-draggable="true"
+                  data-section-type={el.type}
+                  data-section-label={el.label}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("application/x-storefront-section", el.type);
+                    e.dataTransfer.setData("text/plain", el.type);
+                    e.dataTransfer.effectAllowed = "copy";
+                    onLibraryDragStart?.(el.type, el.label);
+                  }}
+                  onDragEnd={() => {
+                    onLibraryDragEnd?.();
+                  }}
+                  onPointerDown={(e) => {
+                    onLibraryPointerDown?.(e, el.type, el.label);
+                  }}
                   onClick={() => onAddSection(el.type)}
-                  className="group flex h-[62px] flex-col items-center justify-center gap-1 rounded-xl border border-[#33363c] bg-[#26292f] p-1 text-[10.5px] text-[#c3c7cd] transition-all hover:border-[#2b6cf6] hover:bg-[#2c313a] hover:text-white"
+                  className="group flex flex-col rounded-xl border border-[#33363c] bg-[#26292f] p-1.5 text-start cursor-grab active:cursor-grabbing transition-all hover:border-[#2b6cf6] hover:bg-[#2c313a] hover:shadow-md"
+                  title={`اسحب ${el.label} للكانفس أو انقر للإضافة`}
                 >
-                  <Icon className="h-4.5 w-4.5 text-[#d6dae0] group-hover:text-[#2b6cf6] transition-colors" />
-                  <span className="leading-tight">{el.label}</span>
-                </button>
+                  {/* Miniature Visual Layout Preview (>= 120x48) */}
+                  <div className="studio-element-preview-wrapper relative w-full h-[54px] overflow-hidden rounded-lg border border-[#333740] bg-[#1a1c22] pointer-events-none group-hover:border-[#2b6cf6] transition-colors mb-1 flex items-center justify-center">
+                    <img
+                      src={thumbnail}
+                      alt={el.label}
+                      data-studio-preview="true"
+                      className="studio-element-preview-img w-full h-full object-cover pointer-events-none select-none transition-transform duration-200 group-hover:scale-105"
+                      loading="eager"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between w-full px-1 pt-0.5">
+                    <span className="text-[11px] font-bold text-[#e6e8ec] group-hover:text-white truncate">
+                      {el.label}
+                    </span>
+                    <span className="text-[8.5px] font-mono text-[#7e8590] group-hover:text-[#60a5fa]">
+                      +{el.id}
+                    </span>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -155,40 +202,62 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
             </button>
           </div>
 
-          <div className="space-y-1.5">
-            {filteredPresets.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => onAddSection(preset.type)}
-                className="group w-full overflow-hidden rounded-xl border border-[#33363c] bg-[#26292f] text-start transition-all hover:border-[#2b6cf6] hover:bg-[#2b3038]"
-              >
-                {/* Visual miniature banner */}
-                <div className="flex h-10 w-full items-center justify-center gap-1.5 bg-gradient-to-r from-[#2d3037] to-[#3a3e46] px-2">
-                  {preset.barColors.map((color, i) => (
-                    <i
-                      key={i}
-                      style={{ backgroundColor: color }}
-                      className="h-3.5 w-6 rounded-sm opacity-90 group-hover:scale-105 transition-transform"
+          <div className="space-y-2">
+            {filteredPresets.map((preset) => {
+              const thumbnail =
+                getStudioSectionThumbnail(preset.id) ||
+                getStudioSectionThumbnail(preset.type);
+              return (
+                <div
+                  key={preset.id}
+                  draggable={true}
+                  data-studio-draggable="true"
+                  data-section-type={preset.type}
+                  data-section-label={preset.title}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("application/x-storefront-section", preset.type);
+                    e.dataTransfer.setData("text/plain", preset.type);
+                    e.dataTransfer.effectAllowed = "copy";
+                    onLibraryDragStart?.(preset.type, preset.title);
+                  }}
+                  onDragEnd={() => {
+                    onLibraryDragEnd?.();
+                  }}
+                  onPointerDown={(e) => {
+                    onLibraryPointerDown?.(e, preset.type, preset.title);
+                  }}
+                  onClick={() => onAddSection(preset.type)}
+                  className="group w-full overflow-hidden rounded-xl border border-[#33363c] bg-[#26292f] text-start cursor-grab active:cursor-grabbing transition-all hover:border-[#2b6cf6] hover:bg-[#2b3038] hover:shadow-md"
+                  title={`اسحب ${preset.title} للكانفس أو انقر للإضافة`}
+                >
+                  {/* Miniature Visual Layout Banner (>= 120x48) */}
+                  <div className="studio-element-preview-wrapper relative w-full h-[62px] overflow-hidden rounded-t-xl border-b border-[#333740] bg-[#1a1c22] pointer-events-none group-hover:border-[#2b6cf6] transition-colors flex items-center justify-center">
+                    <img
+                      src={thumbnail}
+                      alt={preset.title}
+                      data-studio-preview="true"
+                      className="studio-element-preview-img w-full h-full object-cover pointer-events-none select-none transition-transform duration-200 group-hover:scale-105"
+                      loading="eager"
                     />
-                  ))}
+                  </div>
+
+                  <div className="flex items-center justify-between p-2">
+                    <b className="text-[11px] font-bold text-[#e6e8ec] group-hover:text-white truncate">
+                      {preset.title}
+                    </b>
+                    <span className="text-[9.5px] text-[#98a0ab] shrink-0">{preset.sub}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between p-2">
-                  <b className="text-[11px] font-bold text-[#e6e8ec] group-hover:text-white">
-                    {preset.title}
-                  </b>
-                  <span className="text-[9.5px] text-[#98a0ab]">{preset.sub}</span>
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Bottom Hint */}
-      <div className="border-t border-dashed border-[#33363c] p-3 text-center">
-        <p className="text-[10px] leading-relaxed text-[#7e848d]">
-          انقر لإدراج العنصر مباشرة إلى الصفحة أو استعرض الكتالوج الموسّع
+      <div className="border-t border-dashed border-[#33363c] p-2.5 text-center bg-[#1c1d22]/50">
+        <p className="text-[10px] leading-relaxed text-[#8b9199]">
+          اسحب أي عنصر وأفلته مباشرة بين الأقسام، أو انقر للإدراج السريع
         </p>
       </div>
     </div>

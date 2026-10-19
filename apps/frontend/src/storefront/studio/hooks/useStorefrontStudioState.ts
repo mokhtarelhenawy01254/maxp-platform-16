@@ -315,7 +315,7 @@ export function useStorefrontStudioState({
     });
   };
 
-  const handleAddSection = (sectionType: string) => {
+  const handleAddSection = (sectionType: string, insertAtIndex?: number) => {
     if (!isStorefrontSectionKnown(sectionType)) {
       toast.error(`نوع القسم "${sectionType}" غير مدعوم في المتجر`);
       return;
@@ -325,14 +325,23 @@ export function useStorefrontStudioState({
     const starterSettings = STUDIO_STARTER_SETTINGS[sectionType] || {};
     const baseSections = activeSections;
 
-    const nextSections = [
-      ...baseSections,
-      {
-        type: sectionType,
-        key: newKey,
-        settings: { ...starterSettings },
-      },
-    ];
+    const newSection = {
+      type: sectionType,
+      key: newKey,
+      settings: { ...starterSettings },
+    };
+
+    let nextSections: any[];
+    if (
+      typeof insertAtIndex === "number" &&
+      insertAtIndex >= 0 &&
+      insertAtIndex <= baseSections.length
+    ) {
+      nextSections = [...baseSections];
+      nextSections.splice(insertAtIndex, 0, newSection);
+    } else {
+      nextSections = [...baseSections, newSection];
+    }
 
     const nextPages = {
       ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
