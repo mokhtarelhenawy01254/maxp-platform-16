@@ -1,34 +1,15 @@
 import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import {
-  DEFAULT_SHORTAGE_HOLD_DETAILS,
-  PAGE_SIZE_OPTIONS,
-  PREPARATION_COLUMN_LABELS,
-  PREPARATION_COLUMN_LABEL_KEYS,
-  PREPARATION_FILTER_SECTION_LABELS,
-  PREPARATION_FILTER_SECTION_LABEL_KEYS,
-  PREPARATION_FILTER_SECTIONS,
-  PREPARATION_TABLE_COLUMNS,
-  PROBLEM_HOLD_METADATA_KEY,
-  SHORTAGE_HOLD_METADATA_KEY,
-  SHORTAGE_FAILED_STATUS,
-  type PageSize,
-  type PreparationFilterSection,
-  type PreparationTableColumn,
-} from "./preparation/constants";
-import {
   getApiErrorMessage,
 } from "./preparation/helpers";
 import type {
-  InventoryProductSummary,
-  ItemInsight,
   PreparationOrder,
   PreparationStatusOption,
   ProblemHoldDetails,
@@ -38,13 +19,13 @@ import type {
 import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState, type PreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
 import PreparationQueueFiltersContainer from "./preparation/components/PreparationQueueFiltersContainer";
-import { PreparationOrdersContainer } from "./preparation/components/PreparationOrdersContainer";
+import PreparationQueueTableSection from "./preparation/components/PreparationQueueTableSection";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 import type { ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
 import PreparationAlertBanners from "./preparation/components/PreparationAlertBanners";
-import PreparationColumnSettingsDropdown from "./preparation/components/PreparationColumnSettingsDropdown";
 import PreparationQueueDialogsContainer from "./preparation/components/PreparationQueueDialogsContainer";
-import PreparationSelectionBar from "./preparation/components/PreparationSelectionBar";
+import { isInternalCourierAppActive } from "./preparation/helpers/internalCourierHelper";
+import { buildPreparationFiltersPayload } from "./preparation/helpers/preparationFiltersPayload";
 import { usePreparationCarrierDispatch } from "./preparation/usePreparationCarrierDispatch";
 import { usePreparationInvoicePrinting } from "./preparation/usePreparationInvoicePrinting";
 import { usePreparationShortageOperations } from "./preparation/usePreparationShortageOperations";
@@ -97,31 +78,10 @@ const PreparationQueue: React.FC = () => {
   } = uiState;
   const isMerchantUser = user?.role === "MERCHANT";
 
-  const isInternalCourierAppActive = useMemo(() => {
-    if (user?.role === 'SUPER_ADMIN') return true;
-    const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
-    const activeApps = Array.isArray(currentCompany?.activeApps)
-      ? currentCompany.activeApps
-      : Array.isArray(user?.company?.activeApps)
-        ? user.company.activeApps
-        : Array.isArray(user?.activeApps)
-          ? user.activeApps
-          : [];
-
-    const allowedSlugs = ['internal-courier-fleet'];
-    return allowedSlugs.some((slug) => {
-      const target = slug.toLowerCase();
-      return activeApps.some((a) => {
-        if (typeof a === 'string') return a.trim().toLowerCase() === target;
-        if (a && typeof a === 'object') {
-          const obj = a as { slug?: string; app?: { slug?: string } };
-          if (obj.slug?.trim().toLowerCase() === target) return true;
-          if (obj.app?.slug?.trim().toLowerCase() === target) return true;
-        }
-        return false;
-      });
-    });
-  }, [user]);
+  const isInternalCourierActive = useMemo(
+    () => isInternalCourierAppActive(user),
+    [user],
+  );
 
 
 
@@ -426,25 +386,7 @@ const PreparationQueue: React.FC = () => {
     clearBulkControls: uiActions.clearBulkControls,
     statusLabelMap,
     paginationTotal: pagination.total,
-    getFiltersPayload: () => ({
-      stage: activeStage,
-      warehouseId: selectedWarehouseId,
-      stockFilter,
-      shortageReason: shortageReasonFilter,
-      shortageFollowUp: shortageFollowUpFilter,
-      shortageOwner: shortageOwnerFilter,
-      productFilter,
-      colorFilter: uiState.productColorFilter || undefined,
-      sizeFilter: uiState.productSizeFilter || undefined,
-      productId: uiState.productIdFilter || undefined,
-      variantId: uiState.variantIdFilter || undefined,
-      itemCountFilter,
-      notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
-      noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
-      search: deferredSearch,
-      sortBy,
-      sortOrder,
-    }),
+    getFiltersPayload: () => buildPreparationFiltersPayload({ uiState, deferredSearch }),
     getApiErrorMessage,
     t,
   });
@@ -545,85 +487,84 @@ const PreparationQueue: React.FC = () => {
         onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
       />
 
-      <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
-        <PreparationSelectionBar
-          allVisibleSelected={allVisibleSelected}
-          toggleSelectAllVisible={toggleSelectAllVisible}
-          totalVisibleOrders={pagination.total}
-          inventoryLoading={inventoryLoading}
-          loading={loading}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-          columnSettingsOpen={columnSettingsOpen}
-          setColumnSettingsOpen={setColumnSettingsOpen}
-          visibleColumns={visibleColumns}
-          toggleColumn={toggleColumn}
-          visibleFilterSections={visibleFilterSections}
-          toggleFilterSection={toggleFilterSection}
-          selectedOrdersCount={selectedOrders.length}
-          bulkStatus={bulkStatus}
-          statusOptions={statusOptions}
-          statusLabelMap={statusLabelMap}
-          bulkUpdating={bulkUpdating}
-          preparationEnabled={preparationSettings.enabled}
-          bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
-          sendingToTurbo={sendingToTurbo}
-          printingInvoices={printingInvoices}
-          onBulkStatusChange={uiActions.setBulkStatus}
-          onApply={() => void handleBulkUpdate()}
-          onApplyToAll={() => void handleBulkUpdateAll()}
-          onClear={uiActions.clearBulkControls}
-          onClearSelection={() => uiActions.clearBulkControls()}
-          onSendToTurbo={() => void handleOpenDispatchModal()}
-          onSendToShipping={() => void handleOpenDispatchModal()}
-          onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
-          onPrintInvoices={() => void handlePrintInvoices()}
-        />
-
-        <PreparationOrdersContainer
-          loading={loading}
-          enrichedOrders={enrichedOrders}
-          pagination={pagination}
-          totalPages={totalPages}
-          currentPageCount={currentPageCount}
-          pageSize={uiState.pageSize}
-          statusSelections={statusSelections}
-          statusOptions={statusOptions}
-          statusLabelMap={statusLabelMap}
-          selectedSet={selectedSet}
-          rowUpdatingId={rowUpdatingId}
-          shortageSavingOrderId={shortageSavingOrderId}
-          problemHoldSavingOrderId={problemHoldSavingOrderId}
-          selectedWarehouseId={selectedWarehouseId}
-          enabledQcChecks={enabledQcChecks}
-          qcChecklistState={qcChecklistState}
-          shortageHoldDrafts={shortageHoldDrafts}
-          problemHoldDrafts={problemHoldDrafts}
-          transferingItemKey={transferingItemKey}
-          printingOrderNumber={printingOrderNumber}
-          preparationSettings={preparationSettings}
-          visibleColumns={visibleColumns}
-          formatPrice={formatPrice}
-          formatDate={formatDate}
-          toggleOrderSelection={toggleOrderSelection}
-          handleQuickTransfer={handleQuickTransfer}
-          handleShortageFieldChange={handleShortageFieldChange}
-          saveShortageHoldDetails={saveShortageHoldDetails}
-          handleQcCheckToggle={handleQcCheckToggle}
-          onStatusSelectionChange={uiActions.setStatusSelection}
-          handleRequestStatusChange={handleRequestStatusChange}
-          handleMarkAsShortageHold={handleMarkAsShortageHold}
-          handleReleaseShortageHold={handleReleaseShortageHold}
-          handleMarkAsShortageFailed={handleMarkAsShortageFailed}
-          handleHoldAsProblem={handleHoldAsProblem}
-          handleReleaseProblemHold={handleReleaseProblemHold}
-          handleEditProblemReason={handleEditProblemReason}
-          handlePrintPreparationSlip={handlePrintPreparationSlip}
-          onPageSizeChange={uiActions.setPageSize}
-          onPreviousPage={uiActions.goToPreviousPage}
-          onNextPage={() => uiActions.goToNextPage(totalPages)}
-        />
-      </section>
+      <PreparationQueueTableSection
+        selectionBarProps={{
+          allVisibleSelected,
+          toggleSelectAllVisible,
+          totalVisibleOrders: pagination.total,
+          inventoryLoading,
+          loading,
+          showFilters,
+          setShowFilters,
+          columnSettingsOpen,
+          setColumnSettingsOpen,
+          visibleColumns,
+          toggleColumn,
+          visibleFilterSections,
+          toggleFilterSection,
+          selectedOrdersCount: selectedOrders.length,
+          bulkStatus,
+          statusOptions,
+          statusLabelMap,
+          bulkUpdating,
+          preparationEnabled: preparationSettings.enabled,
+          bulkStatusUpdateEnabled: preparationSettings.enableBulkStatusUpdate,
+          sendingToTurbo,
+          printingInvoices,
+          onBulkStatusChange: uiActions.setBulkStatus,
+          onApply: () => void handleBulkUpdate(),
+          onApplyToAll: () => void handleBulkUpdateAll(),
+          onClear: uiActions.clearBulkControls,
+          onClearSelection: () => uiActions.clearBulkControls(),
+          onSendToTurbo: () => void handleOpenDispatchModal(),
+          onSendToShipping: () => void handleOpenDispatchModal(),
+          onSendToInternalCourier: isInternalCourierActive ? () => setShowInternalCourierModal(true) : undefined,
+          onPrintInvoices: () => void handlePrintInvoices(),
+        }}
+        ordersContainerProps={{
+          loading,
+          enrichedOrders,
+          pagination,
+          totalPages,
+          currentPageCount,
+          pageSize: uiState.pageSize,
+          statusSelections,
+          statusOptions,
+          statusLabelMap,
+          selectedSet,
+          rowUpdatingId,
+          shortageSavingOrderId,
+          problemHoldSavingOrderId,
+          selectedWarehouseId,
+          enabledQcChecks,
+          qcChecklistState,
+          shortageHoldDrafts,
+          problemHoldDrafts,
+          transferingItemKey,
+          printingOrderNumber,
+          preparationSettings,
+          visibleColumns,
+          formatPrice,
+          formatDate,
+          toggleOrderSelection,
+          handleQuickTransfer,
+          handleShortageFieldChange,
+          saveShortageHoldDetails,
+          handleQcCheckToggle,
+          onStatusSelectionChange: uiActions.setStatusSelection,
+          handleRequestStatusChange,
+          handleMarkAsShortageHold,
+          handleReleaseShortageHold,
+          handleMarkAsShortageFailed,
+          handleHoldAsProblem,
+          handleReleaseProblemHold,
+          handleEditProblemReason,
+          handlePrintPreparationSlip,
+          onPageSizeChange: uiActions.setPageSize,
+          onPreviousPage: uiActions.goToPreviousPage,
+          onNextPage: () => uiActions.goToNextPage(totalPages),
+        }}
+      />
 
       <PreparationQueueDialogsContainer
         statusChangeDialog={statusChangeDialog}
