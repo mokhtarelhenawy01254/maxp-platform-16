@@ -644,8 +644,8 @@ const PurchaseInvoiceForm: React.FC = () => {
           {/* Main Column (8 cols) */}
           <div className="lg:col-span-8 space-y-5">
             {/* Supplier & Header Metadata */}
-            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
-              <CardContent className="p-4 sm:p-5 space-y-4">
+            <Card className={`${glassClass} border-border/70 shadow-sm relative z-30 overflow-visible`} size="sm">
+              <CardContent className="p-4 sm:p-5 space-y-4 overflow-visible">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Searchable Combobox for Supplier */}
                   <div className="space-y-1.5 relative" ref={supplierDropdownRef}>
@@ -696,7 +696,7 @@ const PurchaseInvoiceForm: React.FC = () => {
 
                     {/* Dropdown Menu with Instant Search */}
                     {supplierSearchOpen && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border bg-popover shadow-xl p-2 space-y-2 text-popover-foreground animate-in fade-in-0 zoom-in-95">
+                      <div className="absolute top-full start-0 min-w-full sm:min-w-[380px] md:min-w-[420px] max-w-[calc(100vw-2rem)] z-50 mt-1.5 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-2xl p-2 space-y-2 text-popover-foreground animate-in fade-in-0 zoom-in-95">
                         <div className="relative">
                           <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                           <Input
@@ -709,21 +709,39 @@ const PurchaseInvoiceForm: React.FC = () => {
                           />
                         </div>
 
-                        <div className="max-h-56 overflow-y-auto space-y-1">
+                        <div className="max-h-64 overflow-y-auto space-y-1 overscroll-contain">
                           {filteredSuppliers.length === 0 ? (
                             <div className="text-center py-4 text-xs text-muted-foreground">
-                              لا يوجد مورد مطابق للبحث.
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSupplierSearchOpen(false);
-                                  setQuickSupplierName(supplierSearchQuery);
-                                  setIsQuickSupplierOpen(true);
-                                }}
-                                className="block mx-auto mt-2 text-primary font-semibold hover:underline"
-                              >
-                                + إضافة &quot;{supplierSearchQuery}&quot; كمورد جديد
-                              </button>
+                              {suppliers.length === 0 ? (
+                                <>
+                                  <p>لا يوجد أي مورد مسجل حالياً.</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSupplierSearchOpen(false);
+                                      setIsQuickSupplierOpen(true);
+                                    }}
+                                    className="block mx-auto mt-2 text-primary font-semibold hover:underline"
+                                  >
+                                    + إضافة مورد جديد الآن
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <p>لا يوجد مورد مطابق للبحث.</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSupplierSearchOpen(false);
+                                      setQuickSupplierName(supplierSearchQuery);
+                                      setIsQuickSupplierOpen(true);
+                                    }}
+                                    className="block mx-auto mt-2 text-primary font-semibold hover:underline"
+                                  >
+                                    + إضافة &quot;{supplierSearchQuery}&quot; كمورد جديد
+                                  </button>
+                                </>
+                              )}
                             </div>
                           ) : (
                             filteredSuppliers.map((s) => {
@@ -884,8 +902,8 @@ const PurchaseInvoiceForm: React.FC = () => {
             </Card>
 
             {/* Invoice Items Table */}
-            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
-              <CardContent className="p-4 sm:p-5 space-y-3.5">
+            <Card className={`${glassClass} border-border/70 shadow-sm relative z-20 overflow-visible`} size="sm">
+              <CardContent className="p-4 sm:p-5 space-y-3.5 overflow-visible">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <PackageCheck className="size-5 text-primary" />
@@ -965,7 +983,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                   item.productName &&
                                   filteredCatalog.length > 0 && (
                                     <div
-                                      className="absolute top-full left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-popover shadow-xl p-1.5 text-popover-foreground"
+                                      className="absolute top-full start-0 min-w-full sm:min-w-[320px] z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-2xl p-1.5 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
                                       onMouseLeave={() => setActiveSearchRowIndex(null)}
                                     >
                                       {filteredCatalog.slice(0, 8).map((catItem) => (
@@ -1146,7 +1164,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                             item.productName &&
                             filteredCatalog.length > 0 && (
                               <div
-                                className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover shadow-xl p-1 text-popover-foreground"
+                                className="absolute top-full start-0 min-w-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover shadow-2xl p-1 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
                                 onMouseLeave={() => setActiveSearchRowIndex(null)}
                               >
                                 {filteredCatalog.slice(0, 8).map((catItem) => (
