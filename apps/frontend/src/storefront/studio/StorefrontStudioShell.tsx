@@ -20,12 +20,13 @@ import { StudioPagesPanel } from "./StudioPagesPanel";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 import "./storefront-studio.css";
 
-import type {
-  StudioDeviceMode,
-  StudioLeftRailTab,
-  StudioLeftPanelTab,
-  StudioZoomLevel,
-  StudioInspectorTab,
+import {
+  STUDIO_PAGES,
+  type StudioDeviceMode,
+  type StudioLeftRailTab,
+  type StudioLeftPanelTab,
+  type StudioZoomLevel,
+  type StudioInspectorTab,
 } from "./StudioTypes";
 import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
@@ -183,13 +184,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [inspectorTab, setInspectorTab] = useState<StudioInspectorTab>("design");
 
   const pageSectionCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      home: 0,
-      shop: 0,
-      pdp: 0,
-      cart: 0,
-      checkout: 0,
-    };
+    const counts: Record<string, number> = {};
+    STUDIO_PAGES.forEach((p) => {
+      counts[p.id] = 0;
+    });
     if (previewTheme && previewTheme.pages) {
       Object.entries(previewTheme.pages).forEach(([key, page]: [string, any]) => {
         counts[key] = Array.isArray(page?.sections) ? page.sections.length : 0;

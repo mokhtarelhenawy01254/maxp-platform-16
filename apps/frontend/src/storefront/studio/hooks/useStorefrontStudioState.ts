@@ -79,7 +79,7 @@ export function useStorefrontStudioState({
   onChange,
   onSave,
 }: UseStorefrontStudioStateProps) {
-  const [activePageKey, setActivePageKey] = useState<string>("home");
+  const [activePageKey, setActivePageKeyInternal] = useState<string>("home");
   const [selectedSectionKey, setSelectedSectionKey] = useState<string>("");
 
   // Seed cart items for preview
@@ -145,28 +145,39 @@ export function useStorefrontStudioState({
     });
   }, [themeId, currentDesignTokens]);
 
+  const setActivePageKey = useCallback(
+    (pageKey: string) => {
+      if (!previewTheme.pages || !previewTheme.pages[pageKey]) {
+        toast.error(`الصفحة "${pageKey}" غير متوفرة في هذا الثيم`);
+        return;
+      }
+      setActivePageKeyInternal(pageKey);
+      setSelectedSectionKey("");
+    },
+    [previewTheme]
+  );
+
   const activePageConfig = useMemo(() => {
-    const page = previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
+    const page = previewTheme.pages?.[activePageKey];
+    if (!page) {
+      return { sections: [] };
+    }
     const fromPages = (currentDesignTokens?.pages as Record<string, any>)?.[activePageKey];
     const fromOverrides = (currentDesignTokens?.pageOverrides as Record<string, any>)?.[activePageKey];
 
     const themeSecs = Array.isArray(page?.sections) ? page.sections : [];
-    const pagesSecs = Array.isArray(fromPages?.sections) ? fromPages.sections : [];
-    const overSecs = Array.isArray(fromOverrides?.sections) ? fromOverrides.sections : [];
-
-    let bestSections = themeSecs;
-    if (pagesSecs.length > bestSections.length) {
-      bestSections = pagesSecs;
-    }
-    if (overSecs.length > bestSections.length) {
-      bestSections = overSecs;
-    }
+    const userSections =
+      Array.isArray(fromOverrides?.sections)
+        ? fromOverrides.sections
+        : Array.isArray(fromPages?.sections)
+        ? fromPages.sections
+        : null;
 
     return {
       ...page,
       ...(fromPages || {}),
       ...(fromOverrides || {}),
-      sections: bestSections,
+      sections: userSections !== null ? userSections : themeSecs,
     };
   }, [previewTheme, activePageKey, currentDesignTokens]);
 
@@ -312,10 +323,7 @@ export function useStorefrontStudioState({
 
     const newKey = `${sectionType}-${Date.now()}`;
     const starterSettings = STUDIO_STARTER_SETTINGS[sectionType] || {};
-    const baseSections =
-      activeSections.length >= (activePageConfig.sections?.length || 0)
-        ? activeSections
-        : activePageConfig.sections || [];
+    const baseSections = activeSections;
 
     const nextSections = [
       ...baseSections,

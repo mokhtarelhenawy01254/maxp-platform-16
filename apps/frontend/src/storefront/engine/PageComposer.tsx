@@ -437,6 +437,7 @@ export const PageComposer: React.FC<PageComposerProps> = ({
 
   let rawSections = pageConfig.sections;
   if (
+    !renderSectionFrame &&
     rawSections.length >= 2 &&
     typeof rawSections[0] !== 'string' &&
     rawSections[0]?.type === 'promo-strip' &&
@@ -619,9 +620,13 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
     return (
       <div className="storefront-page-composer w-full px-4 md:px-6 py-8">
-        <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
+        {!renderSectionFrame && (
+          <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-8">
-          <aside className="hidden lg:block">{renderSection(sidebarSection, sidebarIndex)}</aside>
+          <aside className={renderSectionFrame ? "block" : "hidden lg:block"}>
+            {renderSection(sidebarSection, sidebarIndex)}
+          </aside>
           <div className="flex flex-col w-full">
             {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
           </div>
@@ -642,12 +647,14 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
     return (
       <div className="storefront-page-composer w-full px-4 py-8 md:px-6">
-        <div className="mb-6 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
+        {!renderSectionFrame && (
+          <div className="mb-6 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
+        )}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="flex flex-col w-full">
             {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
           </div>
-          <aside className="hidden lg:block">
+          <aside className={renderSectionFrame ? "block" : "hidden lg:block"}>
             {renderSection(sidebarSection, sidebarIndex)}
           </aside>
         </div>

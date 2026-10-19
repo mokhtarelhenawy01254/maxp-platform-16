@@ -8,6 +8,12 @@ import {
   CreditCardIcon,
   CheckCircleIcon,
   ChevronLeftIcon,
+  TagIcon,
+  FolderIcon,
+  SparklesIcon,
+  TruckIcon,
+  ShieldCheckIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_PAGES } from "./StudioTypes";
 
@@ -24,6 +30,13 @@ const PAGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   pdp: CubeIcon,
   cart: ShoppingCartIcon,
   checkout: CreditCardIcon,
+  "thank-you": CheckCircleIcon,
+  sale: TagIcon,
+  collections: FolderIcon,
+  "size-guide": SparklesIcon,
+  shipping: TruckIcon,
+  privacy: ShieldCheckIcon,
+  terms: DocumentTextIcon,
 };
 
 export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
