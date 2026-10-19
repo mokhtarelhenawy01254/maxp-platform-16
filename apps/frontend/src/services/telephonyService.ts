@@ -2,6 +2,7 @@ import { registerPlugin } from "@capacitor/core";
 import { apiClient } from "./apiClient";
 import { socketService } from "./socketService";
 import { isCapacitorNative } from "../config/environment";
+import { tokenManager } from "../utils/tokenManager";
 
 export interface DeviceInfo {
   deviceId: string;
@@ -101,6 +102,9 @@ class TelephonyClientService {
 
     console.log(`📱 [TELEPHONY-LOG] [${event}]:`, details || "");
 
+    const token = tokenManager.getAccessToken();
+    if (!token) return;
+
     try {
       apiClient.post("/telephony/diagnostic-log", {
         event,
@@ -118,6 +122,8 @@ class TelephonyClientService {
    * استرجاع سجلات التشخيص الحية
    */
   async getDiagnosticLogs(): Promise<any[]> {
+    const token = tokenManager.getAccessToken();
+    if (!token) return [];
     try {
       const res = await apiClient.get<any>("/telephony/diagnostic-logs");
       return res.data?.data || [];
@@ -130,6 +136,8 @@ class TelephonyClientService {
    * استعلام فوري عن أي مكالمة نشطة حالياً للموظف (Active Call Watchdog)
    */
   async getActiveCall(): Promise<any> {
+    const token = tokenManager.getAccessToken();
+    if (!token) return null;
     try {
       const response = await apiClient.get<any>("/telephony/active-call");
       return response.data?.data || null;
@@ -236,6 +244,7 @@ class TelephonyClientService {
 
     try {
       this.isAgentInitialized = true;
+      await tokenManager.restoreNativeTokens();
 
       // 1. استخراج معلومات الجهاز (مع خطة بديلة مرنة في حال عدم توفر الموديول الأصلي)
       let deviceInfo: DeviceInfo;
