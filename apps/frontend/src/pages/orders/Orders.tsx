@@ -34,6 +34,7 @@ import { useOrdersEntityFormatters } from "./hooks/useOrdersEntityFormatters";
 import { useOrdersViewHelpers } from "./hooks/useOrdersViewHelpers";
 import { useOrdersToolbarSectionProps } from "./hooks/useOrdersToolbarSectionProps";
 import { useOrdersTableSectionProps } from "./hooks/useOrdersTableSectionProps";
+import { useOrdersModalsContainerProps } from "./hooks/useOrdersModalsContainerProps";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
 
@@ -511,6 +512,19 @@ const Orders: React.FC = () => {
     changeTableDensity,
   });
 
+  const modalsContainerProps = useOrdersModalsContainerProps({
+    selectedOrder,
+    setSelectedOrder,
+    showOrderModal,
+    setShowOrderModal,
+    isMerchant,
+    orderStatuses,
+    orders,
+    setOrders,
+    selectedInvoice,
+    setSelectedInvoice,
+  });
+
   return (
     <div
       data-orders-page="true"
@@ -521,24 +535,7 @@ const Orders: React.FC = () => {
         <OrdersTableSection {...tableSectionProps} />
       </div>
 
-      <OrdersModalsContainer
-        selectedOrder={selectedOrder}
-        setSelectedOrder={setSelectedOrder}
-        showOrderModal={showOrderModal}
-        setShowOrderModal={setShowOrderModal}
-        isMerchant={isMerchant}
-        orderStatuses={orderStatuses}
-        onOrderUpdate={(updatedOrder) => {
-          setSelectedOrder(updatedOrder);
-          setOrders(
-            orders.map((o) =>
-              o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
-            ),
-          );
-        }}
-        selectedInvoice={selectedInvoice}
-        setSelectedInvoice={setSelectedInvoice}
-      />
+      <OrdersModalsContainer {...modalsContainerProps} />
     </div>
   );
 };
