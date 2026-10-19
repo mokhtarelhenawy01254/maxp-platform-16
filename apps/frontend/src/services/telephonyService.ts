@@ -284,12 +284,31 @@ class TelephonyClientService {
         let model = "Android Device";
         if (/STK-L21|HUAWEI/i.test(ua)) {
           model = "HUAWEI STK-L21";
+        } else if (/iPhone/i.test(ua)) {
+          model = "iPhone";
+        } else if (/iPad/i.test(ua)) {
+          model = "iPad";
+        } else if (/SM-|Samsung/i.test(ua)) {
+          const sMatch = ua.match(/SM-[A-Z0-9]+/i);
+          model = sMatch ? `Samsung ${sMatch[0]}` : "Samsung Galaxy";
         } else {
           const match = ua.match(/Android[^;]+; ([^;)]+)/);
-          if (match && match[1]) {
+          if (match && match[1] && match[1].trim() !== "K") {
             model = match[1].trim();
-          } else if (/iPhone/i.test(ua)) {
-            model = "iPhone";
+          } else {
+            model = "Samsung / Android";
+          }
+        }
+
+        // استخدام Client Hints لقراءة طراز الهاتف الحقيقي بدقة في متصفح كروم
+        if (typeof (navigator as any)?.userAgentData?.getHighEntropyValues === "function") {
+          try {
+            const hints = await (navigator as any).userAgentData.getHighEntropyValues(["model"]);
+            if (hints?.model && hints.model !== "K") {
+              model = hints.model.startsWith("SM-") ? `Samsung ${hints.model}` : hints.model;
+            }
+          } catch {
+            // ignore
           }
         }
 
