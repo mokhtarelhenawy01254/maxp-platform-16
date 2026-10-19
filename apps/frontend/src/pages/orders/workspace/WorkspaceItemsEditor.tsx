@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon,
@@ -12,6 +12,20 @@ import {
 import { useCurrency } from '../../../hooks/useCurrency';
 import { apiClient } from '../../../services/apiClient';
 import { WorkspaceOrder, WorkspaceOrderItem } from './types';
+
+const COLOR_KEYS = ['اللون', 'الوان', 'Color', 'color', 'pa_color', 'لون'];
+const SIZE_KEYS = ['المقاس', 'مقاس', 'Size', 'size', 'pa_size', 'الحجم', 'القياس'];
+
+const getAttrValue = (metaAttrs: any, keys: string[]) => {
+  if (!metaAttrs || typeof metaAttrs !== 'object') return null;
+  for (const k of keys) {
+    if (metaAttrs[k] != null && String(metaAttrs[k]).trim()) return String(metaAttrs[k]).trim();
+  }
+  return null;
+};
+
+const normalizeText = (s?: string | null) =>
+  (s || '').toLowerCase().replace(/[إأآا]/g, 'ا').replace(/[ىي]/g, 'ي').replace(/[ةه]/g, 'ه').trim();
 
 const SimplifiedProductSelectionModal = React.lazy(
   () => import('../components/SimplifiedProductSelectionModal')
@@ -55,6 +69,7 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
   const [customColorMode, setCustomColorMode] = useState<Record<number, boolean>>({});
   const [customSizeMode, setCustomSizeMode] = useState<Record<number, boolean>>({});
   const [productVariantsMap, setProductVariantsMap] = useState<Record<string, any[]>>({});
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   // إعادة التهيئة عند تبديل الطلب — بدونها يستمر المحرر ببنود الطلب السابق
   // ويحفظها فوق الطلب الجديد عندما يستبدل الـ poll الطلب المفتوح
@@ -71,7 +86,13 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
   useEffect(() => {
     items.forEach((item) => {
       const pId = item.productId;
-      if (pId && !item.variants?.length && !productVariantsMap[pId]) {
+      if (
+        pId &&
+        (!item.variants || item.variants.length === 0) &&
+        !productVariantsMap[pId] &&
+        !inFlightRef.current.has(pId)
+      ) {
+        inFlightRef.current.add(pId);
         apiClient
           .get(`/agent-workspace/products/${pId}/variants`)
           .then((res) => {
@@ -82,17 +103,28 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
               }));
             }
           })
-          .catch(() => {});
+          .catch(() => {
+            // حفظ مصفوفة فارغة لتجنب التكرار اللانهائي في حال فشل الطلب
+            setProductVariantsMap((prev) => ({
+              ...prev,
+              [pId]: [],
+            }));
+          })
+          .finally(() => {
+            inFlightRef.current.delete(pId);
+          });
       }
     });
   }, [items, productVariantsMap]);
 
   const getItemOptions = (item: WorkspaceOrderItem) => {
     const vars =
-      item.variants ||
-      item.product?.variants ||
-      item.product?.productVariants ||
-      (item.productId ? productVariantsMap[item.productId] : undefined) ||
+      (item.variants && item.variants.length > 0 ? item.variants : null) ||
+      (item.product?.variants && item.product.variants.length > 0 ? item.product.variants : null) ||
+      (item.product?.productVariants && item.product.productVariants.length > 0 ? item.product.productVariants : null) ||
+      (item.productId && productVariantsMap[item.productId] && productVariantsMap[item.productId].length > 0
+        ? productVariantsMap[item.productId]
+        : null) ||
       [];
 
     const colors = new Set<string>();
@@ -106,8 +138,8 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
         meta = v.metadata;
       }
       const attrs = meta.attributeValues || {};
-      const c = attrs['اللون'] || attrs['Color'] || v.color;
-      const s = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+      const c = getAttrValue(attrs, COLOR_KEYS) || v.color;
+      const s = getAttrValue(attrs, SIZE_KEYS) || (v.size != null ? String(v.size) : null);
 
       if (c) colors.add(String(c).trim());
       if (s) sizes.add(String(s).trim());
@@ -134,18 +166,27 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
         if (idx !== index) return item;
         const { variants: vars } = getItemOptions(item);
 
-        // Find matching variant
-        const matched = vars.find((v: any) => {
-          let meta: any = {};
-          try { meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : (v.metadata || {}); } catch {}
-          const attrs = meta.attributeValues || {};
-          const vColor = attrs['اللون'] || attrs['Color'] || v.color;
-          const vSize = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+        const normColor = normalizeText(newColor);
+        const normSize = normalizeText(newSize);
 
-          const colorMatch = !newColor || (vColor && vColor.trim() === newColor.trim()) || (v.name && v.name.includes(newColor.trim()));
-          const sizeMatch = !newSize || (vSize && String(vSize).trim() === String(newSize).trim()) || (v.name && v.name.includes(String(newSize).trim()));
-          return colorMatch && sizeMatch;
-        });
+        // Find matching variant only if color or size is specified
+        const matched = (normColor || normSize)
+          ? vars.find((v: any) => {
+              let meta: any = {};
+              try { meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : (v.metadata || {}); } catch {}
+              const attrs = meta.attributeValues || {};
+              const vColor = getAttrValue(attrs, COLOR_KEYS) || v.color;
+              const vSize = getAttrValue(attrs, SIZE_KEYS) || (v.size != null ? String(v.size) : null);
+
+              const normVColor = normalizeText(vColor);
+              const normVSize = normalizeText(vSize);
+              const variantNameTokens = (v.name || '').split(/[\s\-_/]+/).map(normalizeText);
+
+              const colorMatch = !normColor || (normVColor && normVColor === normColor) || variantNameTokens.includes(normColor);
+              const sizeMatch = !normSize || (normVSize && normVSize === normSize) || variantNameTokens.includes(normSize);
+              return colorMatch && sizeMatch;
+            })
+          : null;
 
         const updatedImage =
           matched?.image ||
@@ -171,7 +212,7 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
           ...item,
           productColor: newColor,
           productSize: newSize,
-          variantId: matched ? matched.id : item.variantId,
+          variantId: matched ? matched.id : null,
           productSku: updatedSku,
           sku: updatedSku,
           productImage: updatedImage || item.productImage,
@@ -378,7 +419,10 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
                       {colors.length > 0 && (
                         <button
                           type="button"
-                          onClick={() => setCustomColorMode((prev) => ({ ...prev, [idx]: false }))}
+                          onClick={() => {
+                            setCustomColorMode((prev) => ({ ...prev, [idx]: false }));
+                            handleVariantAttributeChange(idx, '', item.productSize || '');
+                          }}
                           className="px-1 text-[10px] text-primary hover:underline"
                           title={isArabic ? 'اختيار من القائمة' : 'Select from list'}
                         >
@@ -430,7 +474,10 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
                       {sizes.length > 0 && (
                         <button
                           type="button"
-                          onClick={() => setCustomSizeMode((prev) => ({ ...prev, [idx]: false }))}
+                          onClick={() => {
+                            setCustomSizeMode((prev) => ({ ...prev, [idx]: false }));
+                            handleVariantAttributeChange(idx, item.productColor || '', '');
+                          }}
                           className="px-1 text-[10px] text-primary hover:underline"
                           title={isArabic ? 'اختيار من القائمة' : 'Select from list'}
                         >

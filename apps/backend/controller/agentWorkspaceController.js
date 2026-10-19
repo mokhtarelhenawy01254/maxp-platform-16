@@ -83,6 +83,41 @@ const normalizeDigits = (value) => {
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776));
 };
 
+const safeFirstImage = (img) => {
+  if (!img) return null;
+  if (Array.isArray(img)) return img[0] || null;
+  if (typeof img === 'string') {
+    const trimmed = img.trim();
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed[0] || null : (typeof parsed === 'string' ? parsed : null);
+      } catch (_e) {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+  return null;
+};
+
+const extractAttributeValue = (metaAttrs, aliases = []) => {
+  if (!metaAttrs || typeof metaAttrs !== 'object') return null;
+  for (const alias of aliases) {
+    if (metaAttrs[alias] != null && String(metaAttrs[alias]).trim()) {
+      return String(metaAttrs[alias]).trim();
+    }
+  }
+  return null;
+};
+
+const COLOR_ATTR_ALIASES = ['اللون', 'الوان', 'Color', 'color', 'pa_color', 'لون'];
+const SIZE_ATTR_ALIASES = ['المقاس', 'مقاس', 'Size', 'size', 'pa_size', 'الحجم', 'القياس'];
+
+const normalizeTextMatch = (s) =>
+  s ? String(s).toLowerCase().replace(/[إأآا]/g, 'ا').replace(/[ىي]/g, 'ي').replace(/[ةه]/g, 'ه').trim() : '';
+
+
 const getPhoneSearchVariants = (raw) => {
   const normalized = normalizeDigits(raw);
   const digits = normalized.replace(/\D/g, '');
@@ -448,19 +483,27 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
           meta = v.metadata;
         }
         const attrs = meta.attributeValues || {};
+        const variantColor = extractAttributeValue(attrs, COLOR_ATTR_ALIASES) || v.color || null;
+        const variantSize = extractAttributeValue(attrs, SIZE_ATTR_ALIASES) || (v.size != null ? String(v.size) : null);
         return {
           id: v.id,
           name: v.name,
           sku: v.sku,
           price: parseFloat(v.price || item.product?.price || 0),
           stock: v.stock,
-          color: attrs['اللون'] || attrs['Color'] || v.color || null,
-          size: attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(attrs['المقاس'] || attrs['Size'] || v.size) : null),
+          color: variantColor,
+          size: variantSize,
           images: v.images,
-          image: v.images ? (typeof v.images === 'string' ? JSON.parse(v.images)[0] : v.images[0]) : null,
+          image: safeFirstImage(v.images),
           metadata: v.metadata
         };
       });
+
+      const resolvedItemImage =
+        item.productImage ||
+        safeFirstImage(item.productVariant?.images) ||
+        item.product?.mainImage ||
+        safeFirstImage(item.product?.images);
 
       return {
         id: item.id,
@@ -473,7 +516,7 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
         total: parseFloat(item.total || (item.price * item.quantity) || 0),
         productColor: item.productColor,
         productSize: item.productSize != null ? String(item.productSize) : null,
-        productImage: item.productImage || item.productVariant?.images || item.product?.mainImage || (item.product?.images ? (typeof item.product.images === 'string' ? JSON.parse(item.product.images)[0] : item.product.images[0]) : null),
+        productImage: resolvedItemImage,
         productSku: item.productSku || item.productVariant?.sku || item.product?.sku,
         sku: item.productSku || item.productVariant?.sku || item.product?.sku,
         metadata: item.metadata,
@@ -1510,17 +1553,24 @@ const updateOrderItems = async (req, res) => {
                 where: { productId: validProductId, isActive: true }
               });
 
+              const normColor = normalizeTextMatch(resolvedColor);
+              const normSize = normalizeTextMatch(resolvedSize);
+
               const matched = allVariants.find((v) => {
                 let meta = {};
                 try {
                   meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : (v.metadata || {});
                 } catch {}
                 const attrs = meta.attributeValues || {};
-                const vColor = attrs['اللون'] || attrs['Color'] || v.color;
-                const vSize = attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(v.size) : null);
+                const vColor = extractAttributeValue(attrs, COLOR_ATTR_ALIASES) || v.color;
+                const vSize = extractAttributeValue(attrs, SIZE_ATTR_ALIASES) || (v.size != null ? String(v.size) : null);
 
-                const colorMatch = !resolvedColor || (vColor && vColor.trim() === resolvedColor) || (v.name && v.name.includes(resolvedColor));
-                const sizeMatch = !resolvedSize || (vSize && String(vSize).trim() === resolvedSize) || (v.name && v.name.includes(resolvedSize));
+                const normVColor = normalizeTextMatch(vColor);
+                const normVSize = normalizeTextMatch(vSize);
+                const variantNameTokens = (v.name || '').split(/[\s\-_/]+/).map(normalizeTextMatch);
+
+                const colorMatch = !normColor || (normVColor && normVColor === normColor) || variantNameTokens.includes(normColor);
+                const sizeMatch = !normSize || (normVSize && normVSize === normSize) || variantNameTokens.includes(normSize);
 
                 return colorMatch && sizeMatch;
               });
@@ -1530,12 +1580,12 @@ const updateOrderItems = async (req, res) => {
                 if (!item.productSku || item.productSku === item.sku) {
                   item.productSku = matched.sku;
                 }
-                if (!item.productImage && matched.images) {
-                  try {
-                    const parsedImgs = typeof matched.images === 'string' ? JSON.parse(matched.images) : matched.images;
-                    item.productImage = Array.isArray(parsedImgs) ? parsedImgs[0] : parsedImgs;
-                  } catch {}
+                const firstImg = safeFirstImage(matched.images);
+                if (firstImg && !item.productImage) {
+                  item.productImage = firstImg;
                 }
+              } else {
+                validVariantId = null;
               }
             } catch (_lookupErr) {
               // ignore variant matching lookup errors
@@ -1602,23 +1652,25 @@ const updateOrderItems = async (req, res) => {
           const lines = regularOrder.notes.split('\n');
           const hasProductSelectionLine = lines.some((l) => l.includes('اختيار المنتج:') || (l.includes('اللون:') && l.includes('المقاس:')));
           if (hasProductSelectionLine) {
-            const newSelectionText = savedOrderItems
+            const newSelectionLines = savedOrderItems
               .map((it) => {
                 const details = [];
                 if (it.productColor) details.push(`اللون: ${it.productColor}`);
                 if (it.productSize) details.push(`المقاس: ${it.productSize}`);
-                return `اختيار المنتج: ${it.productName ? `${it.productName} - ` : ''}${details.join(' - ')}`;
+                const detailsText = details.length > 0 ? (it.productName ? ` - ${details.join(' - ')}` : details.join(' - ')) : '';
+                return `اختيار المنتج: ${it.productName || ''}${detailsText}`;
               })
-              .join('\n');
+              .filter(Boolean);
 
-            updatedNotes = lines
-              .map((line) => {
-                if (line.includes('اختيار المنتج:') || (line.includes('اللون:') && line.includes('المقاس:'))) {
-                  return newSelectionText;
-                }
-                return line;
-              })
-              .join('\n');
+            const nonSelectionLines = lines.filter((l) => !l.includes('اختيار المنتج:') && !(l.includes('اللون:') && l.includes('المقاس:')));
+            const firstIdx = lines.findIndex((l) => l.includes('اختيار المنتج:') || (l.includes('اللون:') && l.includes('المقاس:')));
+            if (firstIdx >= 0) {
+              const before = lines.slice(0, firstIdx).filter((l) => !l.includes('اختيار المنتج:') && !(l.includes('اللون:') && l.includes('المقاس:')));
+              const after = lines.slice(firstIdx + 1).filter((l) => !l.includes('اختيار المنتج:') && !(l.includes('اللون:') && l.includes('المقاس:')));
+              updatedNotes = [...before, ...newSelectionLines, ...after].join('\n');
+            } else {
+              updatedNotes = [...newSelectionLines, ...nonSelectionLines].join('\n');
+            }
           }
         }
 
@@ -1673,21 +1725,45 @@ const updateOrderItems = async (req, res) => {
       const guestOrder = await prisma.guestOrder.findFirst({ where: { id, companyId } });
       if (!guestOrder) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
-      const guestItems = items.map((it, idx) => ({
-        id: it.id || `guest-${idx}`,
-        productId: it.productId,
-        variantId: it.variantId,
-        productName: it.productName || it.name,
-        name: it.productName || it.name,
-        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
-        price: Math.max(0, parseFloat(it.price) || 0),
-        total: (Math.max(1, parseInt(it.quantity, 10) || 1)) * (Math.max(0, parseFloat(it.price) || 0)),
-        productColor: it.productColor || it.color || null,
-        productSize: it.productSize != null ? String(it.productSize) : (it.size != null ? String(it.size) : null),
-        productImage: it.productImage || it.image || null,
-        productSku: it.productSku || it.sku || null,
-        sku: it.productSku || it.sku || null,
-      }));
+      const guestItems = items.map((it, idx) => {
+        const resolvedColor = it.productColor || it.color || null;
+        const resolvedSize = it.productSize != null && String(it.productSize).trim() !== ''
+          ? String(it.productSize).trim()
+          : (it.size != null && String(it.size).trim() !== '' ? String(it.size).trim() : null);
+
+        let itemMetadata = {};
+        if (typeof it.metadata === 'string') {
+          try { itemMetadata = JSON.parse(it.metadata); } catch {}
+        } else if (it.metadata && typeof it.metadata === 'object') {
+          itemMetadata = { ...it.metadata };
+        }
+        if (!itemMetadata.attributeValues) itemMetadata.attributeValues = {};
+        if (resolvedColor) {
+          itemMetadata.attributeValues['اللون'] = resolvedColor;
+          itemMetadata.attributeValues['Color'] = resolvedColor;
+        }
+        if (resolvedSize) {
+          itemMetadata.attributeValues['المقاس'] = resolvedSize;
+          itemMetadata.attributeValues['Size'] = resolvedSize;
+        }
+
+        return {
+          id: it.id || `guest-${idx}`,
+          productId: it.productId,
+          variantId: it.variantId,
+          productName: it.productName || it.name,
+          name: it.productName || it.name,
+          quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+          price: Math.max(0, parseFloat(it.price) || 0),
+          total: (Math.max(1, parseInt(it.quantity, 10) || 1)) * (Math.max(0, parseFloat(it.price) || 0)),
+          productColor: resolvedColor,
+          productSize: resolvedSize,
+          productImage: it.productImage || it.image || null,
+          productSku: it.productSku || it.sku || null,
+          sku: it.productSku || it.sku || null,
+          metadata: JSON.stringify(itemMetadata)
+        };
+      });
 
       const guestUpdateData = {
         items: JSON.stringify(guestItems),
@@ -1751,15 +1827,17 @@ const getProductVariants = async (req, res) => {
         meta = v.metadata;
       }
       const attrs = meta.attributeValues || {};
+      const variantColor = extractAttributeValue(attrs, COLOR_ATTR_ALIASES) || v.color || null;
+      const variantSize = extractAttributeValue(attrs, SIZE_ATTR_ALIASES) || (v.size != null ? String(v.size) : null);
       return {
         id: v.id,
         name: v.name,
         sku: v.sku,
         price: parseFloat(v.price || product.price || 0),
         stock: v.stock,
-        color: attrs['اللون'] || attrs['Color'] || v.color || null,
-        size: attrs['المقاس'] || attrs['Size'] || (v.size != null ? String(attrs['المقاس'] || attrs['Size'] || v.size) : null),
-        image: v.images ? (typeof v.images === 'string' ? JSON.parse(v.images)[0] : v.images[0]) : null,
+        color: variantColor,
+        size: variantSize,
+        image: safeFirstImage(v.images),
         metadata: v.metadata
       };
     });

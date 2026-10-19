@@ -176,4 +176,93 @@ describe('agentWorkspaceController.updateOrderItems — color and size editing',
     expect(res.payload.data.variants[0].color).toBe('ابيض بتطعيم اسود');
     expect(res.payload.data.variants[0].size).toBe('38');
   });
+
+  test('clears variantId to null when custom color/size does not match any variant', async () => {
+    const createdItems = [];
+    const tx = {
+      orderItem: {
+        deleteMany: jest.fn().mockResolvedValue({}),
+        create: jest.fn(({ data }) => {
+          createdItems.push(data);
+          return Promise.resolve({ id: 'item-custom-1', ...data });
+        })
+      },
+      product: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'prod-dash', companyId: 'company-1' })
+      },
+      productVariant: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'var-black-37',
+            productId: 'prod-dash',
+            sku: 'SW210-BLACK-37',
+            name: 'ابيض بتطعيم اسود - 37',
+            metadata: JSON.stringify({ attributeValues: { 'اللون': 'ابيض بتطعيم اسود', 'المقاس': '37' } })
+          }
+        ])
+      },
+      order: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'order-1',
+          companyId: 'company-1',
+          orderNumber: 'ORD-972252-594',
+          shippingAddress: 'القاهرة',
+          notes: ''
+        }),
+        update: jest.fn().mockResolvedValue({})
+      },
+      guestOrder: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    getSharedPrismaClient.mockReturnValue({
+      order: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'order-1',
+          companyId: 'company-1',
+          orderNumber: 'ORD-972252-594',
+          shippingAddress: 'القاهرة',
+          notes: ''
+        })
+      },
+      guestOrder: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1', isActive: true })
+      },
+      $transaction: jest.fn((cb) => cb(tx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.updateOrderItems({
+      params: { id: 'order-1' },
+      user: { id: 'user-1', role: 'ADMIN', effectiveCompanyId: 'company-1', companyId: 'company-1' },
+      body: {
+        items: [
+          {
+            productId: 'prod-dash',
+            variantId: 'var-black-37', // Old variant id
+            productName: 'Dash',
+            quantity: 1,
+            price: 620,
+            productColor: 'بنفسجي خاص', // custom unmatched color
+            productSize: '45' // custom unmatched size
+          }
+        ],
+        shipping: 70,
+        discount: 0
+      }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(createdItems).toHaveLength(1);
+    // Variant ID should be nullified since custom color/size doesn't match the old variant
+    expect(createdItems[0].variantId).toBeNull();
+    expect(createdItems[0].productColor).toBe('بنفسجي خاص');
+    expect(createdItems[0].productSize).toBe('45');
+  });
 });
