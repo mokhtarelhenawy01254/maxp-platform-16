@@ -45,6 +45,7 @@ import { usePreparationFilterDerived } from "./preparation/usePreparationFilterD
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
 import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
 import { usePreparationDialogOperations } from "./preparation/usePreparationDialogOperations";
+import { usePreparationFilterSectionProps } from "./preparation/usePreparationFilterSectionProps";
 import {
   getInitialPreparationState,
   usePreparationUrlSync,
@@ -505,6 +506,22 @@ const PreparationQueue: React.FC = () => {
     onInternalCourierSuccess: handleInternalCourierSuccess,
   });
 
+  const { alertBannersProps, filtersContainerProps } = usePreparationFilterSectionProps({
+    preparationSettingsEnabled: Boolean(preparationSettings.enabled),
+    allOverdueShortageFollowUpCount,
+    allOverdueProblemFollowUpCount,
+    showFilters,
+    uiState,
+    uiActions,
+    statusCounts,
+    stageCounts: summary.stageCounts,
+    filterTabs,
+    visibleOrdersCount,
+    warehouseOptions: warehouses,
+    shortageOwnerOptions,
+    productSuggestions,
+  });
+
   return (
     <div className="space-y-3">
       {isMerchantUser ? (
@@ -514,30 +531,12 @@ const PreparationQueue: React.FC = () => {
         />
       ) : null}
 
-      <PreparationAlertBanners
-        preparationSettingsEnabled={Boolean(preparationSettings.enabled)}
-        allOverdueShortageFollowUpCount={allOverdueShortageFollowUpCount}
-        allOverdueProblemFollowUpCount={allOverdueProblemFollowUpCount}
-      />
-
-      <PreparationQueueFiltersContainer
-        showFilters={showFilters}
-        uiState={uiState}
-        uiActions={uiActions}
-        statusCounts={statusCounts}
-        stageCounts={summary.stageCounts}
-        filterTabs={filterTabs}
-        visibleOrdersCount={visibleOrdersCount}
-        warehouseOptions={warehouses}
-        shortageOwnerOptions={shortageOwnerOptions}
-        productSuggestions={productSuggestions}
-      />
-
+      <PreparationAlertBanners {...alertBannersProps} />
+      <PreparationQueueFiltersContainer {...filtersContainerProps} />
       <PreparationQueueTableSection
         selectionBarProps={selectionBarProps}
         ordersContainerProps={ordersContainerProps}
       />
-
       <PreparationQueueDialogsContainer {...dialogsProps} />
     </div>
   );
