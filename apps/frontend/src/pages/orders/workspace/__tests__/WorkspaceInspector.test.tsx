@@ -3,6 +3,13 @@ jest.mock("../../../../i18n", () => ({
   default: { t: (key: string) => key },
 }));
 
+jest.mock("../../../../services/apiClient", () => ({
+  apiClient: {
+    get: jest.fn().mockResolvedValue({ data: {} }),
+    post: jest.fn().mockResolvedValue({ data: {} }),
+  },
+}));
+
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
