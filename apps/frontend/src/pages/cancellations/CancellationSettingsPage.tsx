@@ -16,6 +16,8 @@ import {
   XCircle,
   Sparkles,
 } from "lucide-react";
+import { CategoryModal } from "./components/CategoryModal";
+import { ReasonModal } from "./components/ReasonModal";
 
 const getDefaultData = (t: any) => [
   {
@@ -332,117 +334,29 @@ const CancellationSettingsPage: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedd
       </div>
 
       {/* Category Modal */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              {editingCategory ? t('cancellations.k_38') : t('cancellations.k_39')}
-            </h3>
-            <form onSubmit={handleSaveCategory}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('cancellations.k_52')}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
-                    className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                >
-                  {t('cancellations.k_53')}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {t('cancellations.k_54')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSave={handleSaveCategory}
+        isEditing={Boolean(editingCategory)}
+        categoryName={categoryName}
+        setCategoryName={setCategoryName}
+      />
 
       {/* Reason Modal */}
-      {isReasonModalOpen && (
-        <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              {editingReason ? t('cancellations.k_40') : t('cancellations.k_41')}
-            </h3>
-            <form onSubmit={handleSaveReason}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('cancellations.k_55')}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={reasonText}
-                    onChange={(e) => setReasonText(e.target.value)}
-                    className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('cancellations.k_33')}
-                  </label>
-                  <select
-                    required
-                    value={selectedCategoryId}
-                    onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">{t('cancellations.k_42')}</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('cancellations.k_56')}
-                  </label>
-                  <textarea
-                    value={reasonDesc}
-                    onChange={(e) => setReasonDesc(e.target.value)}
-                    className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsReasonModalOpen(false)}
-                  className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                >
-                  {t('cancellations.k_53')}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {t('cancellations.k_54')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ReasonModal
+        isOpen={isReasonModalOpen}
+        onClose={() => setIsReasonModalOpen(false)}
+        onSave={handleSaveReason}
+        isEditing={Boolean(editingReason)}
+        reasonText={reasonText}
+        setReasonText={setReasonText}
+        reasonDesc={reasonDesc}
+        setReasonDesc={setReasonDesc}
+        selectedCategoryId={selectedCategoryId}
+        setSelectedCategoryId={setSelectedCategoryId}
+        categories={categories}
+      />
     </div>
   );
 };
