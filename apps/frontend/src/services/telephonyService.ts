@@ -299,7 +299,8 @@ class TelephonyClientService {
 
             // محاولة إطلاق رابط tel: السريع
             try {
-              window.location.href = `tel:${data.customerPhone}`;
+              const safePhone = String(data.customerPhone || "").replace(/[^\d+*#]/g, "");
+              window.location.href = `tel:${safePhone}`;
             } catch (telErr) {
               console.warn("Direct tel: navigation blocked, user can tap the overlay button:", telErr);
             }

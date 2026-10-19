@@ -92,7 +92,8 @@ export const MobileCallOverlay: React.FC = () => {
         orderId: call.orderId,
       });
     } catch {
-      window.location.href = `tel:${call.customerPhone}`;
+      const safePhone = String(call.customerPhone || "").replace(/[^\d+*#]/g, "");
+      window.location.href = `tel:${safePhone}`;
     }
   };
 

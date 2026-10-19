@@ -324,18 +324,27 @@ class SocketService {
         this.handleStopTyping(socket, data);
       });
 
-      // معالج إشعار استلام أمر الاتصال على الهاتف (تأكيد الاتصال من الموبايل)
+      // معالج إشعار استلام أمر الاتصال على الهاتف (تأكيد الاتصال من الموبايل مع عزل الشركات وحماية التدفق)
       socket.on('telephony:dial_received', (data) => {
-        if (this.io && data) {
-          let target = this.io;
-          if (socket.companyId) {
-            target = target.to(`company_${socket.companyId}`);
-          }
-          if (socket.userId) {
-            target = target.to(`user_${socket.userId}`);
-          }
-          target.emit('telephony:dial_received', data);
-        }
+        // 1. عزل صارم للشركات: رفض المقابس غير المصرح لها
+        if (!this.io || !socket.companyId || !data) return;
+
+        // 2. حماية من تكرار الرسائل والفيضان: حد أقصى رسالة كل ثانية للمقبس
+        const now = Date.now();
+        if (socket._lastDialAck && now - socket._lastDialAck < 1000) return;
+        socket._lastDialAck = now;
+
+        // 3. تطهير البيانات وحصرها في الحقول المسموح بها فقط
+        const sanitizedData = {
+          sessionId: typeof data.sessionId === 'string' ? data.sessionId.slice(0, 100) : undefined,
+          orderId: typeof data.orderId === 'string' ? data.orderId.slice(0, 100) : undefined,
+          customerPhone: typeof data.customerPhone === 'string' ? data.customerPhone.slice(0, 30) : undefined,
+          deviceName: typeof data.deviceName === 'string' ? data.deviceName.slice(0, 100) : undefined,
+          receivedAt: now
+        };
+
+        // 4. بث الإشعار فقط لغرفة الشركة التابع لها المستخدم
+        this.io.to(`company_${socket.companyId}`).emit('telephony:dial_received', sanitizedData);
       });
 
       // معالج تمييز الرسائل كمقروءة
