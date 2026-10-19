@@ -44,6 +44,7 @@ import { useOrdersFilterActions } from "./hooks/useOrdersFilterActions";
 import { useOrdersStatusDisplays } from "./hooks/useOrdersStatusDisplays";
 import { useOrdersSingleMutations } from "./hooks/useOrdersSingleMutations";
 import { useOrdersEntityFormatters } from "./hooks/useOrdersEntityFormatters";
+import { useOrdersViewHelpers } from "./hooks/useOrdersViewHelpers";
 import { HeldOrdersBanner } from "./components/HeldOrdersBanner";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
 
@@ -447,89 +448,30 @@ const Orders: React.FC = () => {
     t,
   });
 
-  const handleOpenOrder = (order: Order) => {
-    if (order.metadata?.isIncompleteCart) {
-      navigate(`/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`);
-      return;
-    }
-    setSelectedOrder(order);
-    setShowOrderModal(true);
-    if (!order.isViewed) {
-      handleMarkAsViewed(order.orderNumber);
-    }
-  };
-
-  const mobileListHelpers = useMemo(
-    () => ({
-      getCustomerDisplayName,
-      formatPrice,
-      getOrderAmount,
-      getOrderSourceText,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-    }),
-    [
-      getCustomerDisplayName,
-      formatPrice,
-      getOrderAmount,
-      getOrderSourceText,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-    ],
-  );
-
-  const tableHelpers = useMemo(
-    () => ({
-      getCustomerDisplayName,
-      formatPrice,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-      getConfidenceColor,
-      getConfidenceIcon,
-      getOrderSourceText,
-    }),
-    [
-      getCustomerDisplayName,
-      formatPrice,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-      getConfidenceColor,
-      getConfidenceIcon,
-      getOrderSourceText,
-    ],
-  );
-
-  const handleCustomerRatingChange = (orderNumber: string, newRating: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.orderNumber === orderNumber || o.id === orderNumber
-          ? {
-              ...o,
-              customerRating: newRating,
-              customer: o.customer
-                ? { ...o.customer, customerRating: newRating }
-                : undefined,
-            }
-          : o
-      )
-    );
-  };
+  const {
+    handleOpenOrder,
+    handleCustomerRatingChange,
+    mobileListHelpers,
+    tableHelpers,
+  } = useOrdersViewHelpers({
+    navigate,
+    setSelectedOrder,
+    setShowOrderModal,
+    handleMarkAsViewed,
+    setOrders,
+    getCustomerDisplayName,
+    formatPrice,
+    getOrderAmount,
+    getOrderSourceText,
+    getRelativeTime,
+    formatDate,
+    getPaymentStatusBadgeStyle,
+    getPaymentStatusColor,
+    getPaymentStatusText,
+    getUnifiedStatusDisplay,
+    getConfidenceColor,
+    getConfidenceIcon,
+  });
 
   return (
     <div
