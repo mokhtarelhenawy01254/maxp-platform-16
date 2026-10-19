@@ -31,12 +31,10 @@ import { usePreparationHoldOperations } from "./preparation/usePreparationHoldOp
 import { usePreparationStatusOperations } from "./preparation/usePreparationStatusOperations";
 import { usePreparationOrderSelection } from "./preparation/usePreparationOrderSelection";
 import { usePreparationTransitions } from "./preparation/usePreparationTransitions";
-import { usePreparationEnrichedOrders } from "./preparation/usePreparationEnrichedOrders";
 import { usePreparationDialogState } from "./preparation/usePreparationDialogState";
 import { usePreparationPreferences } from "./preparation/usePreparationPreferences";
-import { usePreparationStatusOptions } from "./preparation/usePreparationStatusOptions";
+import { usePreparationFilterMetadata } from "./preparation/usePreparationFilterMetadata";
 import { usePreparationDraftSync } from "./preparation/usePreparationDraftSync";
-import { usePreparationFilterDerived } from "./preparation/usePreparationFilterDerived";
 import { usePreparationLocalMutations } from "./preparation/usePreparationLocalMutations";
 import { usePreparationTableSectionProps } from "./preparation/usePreparationTableSectionProps";
 import { usePreparationDerivedState } from "./preparation/usePreparationDerivedState";
@@ -214,39 +212,25 @@ const PreparationQueue: React.FC = () => {
     statusOptions,
     filterTabs,
     enabledQcChecks,
-  } = usePreparationStatusOptions({
+    inventorySummaryByProduct,
+    preparationOrders,
+    shortageOwnerOptions,
+    productSuggestions,
+  } = usePreparationFilterMetadata({
     statusConfigs,
     preparationStatuses,
     preparationSettings,
-    t,
-  });
-
-  const { inventorySummaryByProduct, preparationOrders } = usePreparationEnrichedOrders({
     orders,
     inventory,
     selectedWarehouseId,
+    serverShortageOwnerOptions,
+    shortageHoldDrafts,
+    uiState,
+    deferredSearch,
+    currentCompanyId,
+    clearBulkControls: uiActions.clearBulkControls,
     t,
   });
-
-  const { shortageOwnerOptions, productSuggestions } =
-    usePreparationFilterDerived({
-      serverShortageOwnerOptions,
-      preparationOrders,
-      shortageHoldDrafts,
-      activeStage: uiState.activeStage,
-      selectedWarehouseId: uiState.selectedWarehouseId,
-      stockFilter: uiState.stockFilter,
-      shortageReasonFilter: uiState.shortageReasonFilter,
-      shortageFollowUpFilter: uiState.shortageFollowUpFilter,
-      shortageOwnerFilter: uiState.shortageOwnerFilter,
-      deferredSearch,
-      notPrintedFilter: uiState.notPrintedFilter,
-      noShippingCodeFilter: uiState.noShippingCodeFilter,
-      sortBy: uiState.sortBy,
-      sortOrder: uiState.sortOrder,
-      currentCompanyId,
-      clearBulkControls: uiActions.clearBulkControls,
-    });
 
   const {
     stageCounts,
