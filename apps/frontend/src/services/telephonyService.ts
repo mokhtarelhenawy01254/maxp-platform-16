@@ -161,7 +161,8 @@ class TelephonyClientService {
     const isMobileDevice =
       isCapacitorNative() ||
       (typeof navigator !== "undefined" &&
-        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ""));
+        (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "") ||
+         (/Linux/i.test(navigator.userAgent || "") && navigator.maxTouchPoints > 1)));
 
     if (!isMobileDevice || this.isAgentInitialized) {
       return;
@@ -175,10 +176,26 @@ class TelephonyClientService {
       let isNativePluginAvailable = false;
 
       try {
-        deviceInfo = await MaxPTelephony.getDeviceInfo();
+        const pluginPromise = MaxPTelephony.getDeviceInfo();
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout getting native device info")), 2000)
+        );
+        deviceInfo = await Promise.race([pluginPromise, timeoutPromise]);
         isNativePluginAvailable = true;
       } catch (_nativeErr) {
         let fallbackId = localStorage.getItem("maxp_telephony_device_id");
+        if (!fallbackId) {
+          try {
+            // Adopt existing registered device for this employee if available
+            const presence = await this.getDevicePresence();
+            if (presence?.device?.deviceId) {
+              fallbackId = presence.device.deviceId;
+              localStorage.setItem("maxp_telephony_device_id", fallbackId);
+            }
+          } catch {
+            // ignore
+          }
+        }
         if (!fallbackId) {
           fallbackId =
             "dev_" +
@@ -234,22 +251,34 @@ class TelephonyClientService {
       const sendHeartbeat = async () => {
         try {
           const socket = socketService.getSocket();
-          const socketConnected = socketService.isConnected();
+          // نبض الاتصال يُرسل دائماً كمتصل لأن الجهاز يُجري طلب الـ HTTP بنشاط وحيوية
           await apiClient.post("/telephony/device/heartbeat", {
             deviceId: deviceInfo.deviceId,
             deviceName: deviceInfo.deviceName,
             socketId: socket?.id || null,
             appVersion: deviceInfo.osVersion,
-            socketConnected,
+            socketConnected: true,
           });
-        } catch {
-          // ignore heartbeat errors
+        } catch (err: any) {
+          // في حال كان التوكن ما زال قيد التهيئة (401)، أعد المحاولة بعد 3 ثوانٍ
+          if (err?.response?.status === 401) {
+            setTimeout(() => {
+              const retrySocket = socketService.getSocket();
+              apiClient.post("/telephony/device/heartbeat", {
+                deviceId: deviceInfo.deviceId,
+                deviceName: deviceInfo.deviceName,
+                socketId: retrySocket?.id || null,
+                appVersion: deviceInfo.osVersion,
+                socketConnected: true,
+              }).catch(() => {});
+            }, 3000);
+          }
         }
       };
 
       await sendHeartbeat();
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = setInterval(sendHeartbeat, 45000);
+      this.heartbeatInterval = setInterval(sendHeartbeat, 30000);
 
       // 3. دالة لتسجيل مستمع أمر الاتصال على المقبس
       const registerSocketDialListener = () => {
@@ -258,9 +287,12 @@ class TelephonyClientService {
           try {
             if (!data?.customerPhone) return;
 
-            // تصفية الأجهزة: التحقق من أن أمر الاتصال موجه لهذا الجهاز تحديداً
+            // 🛡️ تصفية الأجهزة: تسجيل ملاحظة إن وُجد اختلاف، مع عدم حجب الاتصال نهائياً
+            // لأن المقبس منضم لغرفة الموظف نفسه user_${userId} وأي أمر يصل هو حتماً له
             if (data.deviceId && deviceInfo?.deviceId && data.deviceId !== deviceInfo.deviceId) {
-              return;
+              console.warn(
+                `[Telephony] DeviceId note: order specified ${data.deviceId}, current is ${deviceInfo.deviceId}. Alerting phone for current user.`
+              );
             }
 
             // إشعار الخادم وشاشة الكمبيوتر بأن الهاتف استلم أمر الاتصال بنجاح
@@ -315,6 +347,22 @@ class TelephonyClientService {
         registerSocketDialListener();
         sendHeartbeat();
       });
+
+      // إرسال نبض فوري بمجرد إضاءة الشاشة أو عودة المستخدم للتطبيق
+      if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            registerSocketDialListener();
+            sendHeartbeat();
+          }
+        });
+      }
+      if (typeof window !== "undefined") {
+        window.addEventListener("focus", () => {
+          registerSocketDialListener();
+          sendHeartbeat();
+        });
+      }
 
       // 4. الاستماع لانتهاء المكالمة
       if (isNativePluginAvailable) {

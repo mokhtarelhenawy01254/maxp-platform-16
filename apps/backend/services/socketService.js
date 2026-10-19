@@ -343,8 +343,15 @@ class SocketService {
           receivedAt: now
         };
 
-        // 4. بث الإشعار فقط لغرفة الشركة التابع لها المستخدم
-        this.io.to(`company_${socket.companyId}`).emit('telephony:dial_received', sanitizedData);
+        // 4. بث الإشعار لغرفة الشركة والمستخدم
+        const io = this.getIO() || this.io;
+        if (io) {
+          io.to(`company_${socket.companyId}`).emit('telephony:dial_received', sanitizedData);
+          if (socket.userId) {
+            io.to(`user_${socket.userId}`).emit('telephony:dial_received', sanitizedData);
+            io.to(`user:${socket.userId}`).emit('telephony:dial_received', sanitizedData);
+          }
+        }
       });
 
       // معالج تمييز الرسائل كمقروءة
@@ -931,6 +938,15 @@ class SocketService {
     if (io) {
       io.to(`company_${companyId}`).emit(event, data);
       //console.log(`📤 [COMPANY-BROADCAST] Sent ${event} to company ${companyId}`);
+    }
+  }
+
+  // Send message to specific user across cluster
+  sendToUser(userId, event, data) {
+    const io = this.getIO();
+    if (io && userId) {
+      io.to(`user_${userId}`).emit(event, data);
+      io.to(`user:${userId}`).emit(event, data);
     }
   }
 
