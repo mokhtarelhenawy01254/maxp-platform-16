@@ -257,22 +257,54 @@ class TelephonyClientService {
         socketService.on("telephony:dial", async (data: any) => {
           try {
             if (!data?.customerPhone) return;
+
             // تصفية الأجهزة: التحقق من أن أمر الاتصال موجه لهذا الجهاز تحديداً
-            if (data.deviceId && deviceInfo.deviceId && data.deviceId !== deviceInfo.deviceId) {
+            if (data.deviceId && deviceInfo?.deviceId && data.deviceId !== deviceInfo.deviceId) {
               return;
             }
-            if (isNativePluginAvailable) {
-              await MaxPTelephony.dialCustomer({
-                phone: data.customerPhone,
+
+            // إشعار الخادم وشاشة الكمبيوتر بأن الهاتف استلم أمر الاتصال بنجاح
+            try {
+              const socket = socketService.getSocket();
+              socket?.emit("telephony:dial_received", {
                 sessionId: data.sessionId,
                 orderId: data.orderId,
+                customerPhone: data.customerPhone,
+                deviceName: deviceInfo.deviceName,
               });
-            } else {
+            } catch {
+              // ignore ack error
+            }
+
+            // إطلاق حدث محلي لعرض شاشة الاتصال السريعة التفاعلية على شاشة الهاتف (MobileCallOverlay)
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("telephony:incoming_dial", { detail: data })
+              );
+            }
+
+            // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
+            if (isNativePluginAvailable) {
+              try {
+                await MaxPTelephony.dialCustomer({
+                  phone: data.customerPhone,
+                  sessionId: data.sessionId,
+                  orderId: data.orderId,
+                });
+                return;
+              } catch (nativeErr) {
+                console.warn("Native dialCustomer failed or background restricted:", nativeErr);
+              }
+            }
+
+            // محاولة إطلاق رابط tel: السريع
+            try {
               window.location.href = `tel:${data.customerPhone}`;
+            } catch (telErr) {
+              console.warn("Direct tel: navigation blocked, user can tap the overlay button:", telErr);
             }
           } catch (error) {
-            console.error("Failed to execute native dial, falling back to tel:", error);
-            window.location.href = `tel:${data.customerPhone}`;
+            console.error("Failed to execute telephony:dial listener:", error);
           }
         });
       };

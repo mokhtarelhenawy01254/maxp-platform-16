@@ -46,6 +46,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   const [cooldown, setCooldown] = useState(0);
   const [dialSeconds, setDialSeconds] = useState(0);
   const dialWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDialToastTimeRef = useRef<number>(0);
 
   // 20-second cooldown timer between call attempts
   useEffect(() => {
@@ -101,9 +102,22 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       }
     };
 
+    const handleDialReceived = (data: any) => {
+      if (data?.orderId === orderId) {
+        const now = Date.now();
+        if (now - lastDialToastTimeRef.current > 4000) {
+          lastDialToastTimeRef.current = now;
+          toast.info("📱 الهاتف استلم أمر الاتصال بنجاح وجاري فتح المكالمة...");
+        }
+        armDialWatchdog();
+      }
+    };
+
     socketService.on("telephony:call_ended", handleCallEnded);
+    socketService.on("telephony:dial_received", handleDialReceived);
     return () => {
       socketService.off("telephony:call_ended", handleCallEnded);
+      socketService.off("telephony:dial_received", handleDialReceived);
     };
   }, [orderId, onCallFinished]);
 

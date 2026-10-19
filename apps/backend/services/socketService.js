@@ -324,6 +324,20 @@ class SocketService {
         this.handleStopTyping(socket, data);
       });
 
+      // معالج إشعار استلام أمر الاتصال على الهاتف (تأكيد الاتصال من الموبايل)
+      socket.on('telephony:dial_received', (data) => {
+        if (this.io && data) {
+          let target = this.io;
+          if (socket.companyId) {
+            target = target.to(`company_${socket.companyId}`);
+          }
+          if (socket.userId) {
+            target = target.to(`user_${socket.userId}`);
+          }
+          target.emit('telephony:dial_received', data);
+        }
+      });
+
       // معالج تمييز الرسائل كمقروءة
       socket.on('mark_as_read', (data) => {
         this.handleMarkAsRead(socket, data);

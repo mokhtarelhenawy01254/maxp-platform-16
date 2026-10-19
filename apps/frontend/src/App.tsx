@@ -21,6 +21,7 @@ import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
 import { AndroidAppUpdateModal } from "./components/mobile/AndroidAppUpdateModal";
+import { MobileCallOverlay } from "./components/telephony/MobileCallOverlay";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 import { AppAccessRoute } from "./components/protection/AppAccessRoute";
 import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
@@ -8992,6 +8993,7 @@ const AppContent = () => {
           </Routes>
         </Suspense>
         <AndroidAppUpdateModal />
+        <MobileCallOverlay />
       </div>
     </PerformanceOptimizer>
   );
