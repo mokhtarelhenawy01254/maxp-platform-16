@@ -100,3 +100,5 @@ export function useOrdersOperations({
     ...singleMutations,
   };
 }
+
+export type UseOrdersOperationsReturn = ReturnType<typeof useOrdersOperations>;

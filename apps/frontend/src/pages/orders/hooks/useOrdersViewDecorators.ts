@@ -121,3 +121,5 @@ export function useOrdersViewDecorators({
     tableHelpers,
   };
 }
+
+export type UseOrdersViewDecoratorsReturn = ReturnType<typeof useOrdersViewDecorators>;
