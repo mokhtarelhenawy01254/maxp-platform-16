@@ -483,7 +483,7 @@ const Categories: React.FC = () => {
 
                     <td className="py-2.5 px-3.5 font-mono tabular-nums text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                       <span>{cat._count?.products || 0}</span>
-                      <span className="text-[10px] text-zinc-400 font-sans mr-1">
+                      <span className="text-[10px] text-zinc-400 font-sans ms-1">
                         {t("categories.management.table.productsUnit")}
                       </span>
                     </td>

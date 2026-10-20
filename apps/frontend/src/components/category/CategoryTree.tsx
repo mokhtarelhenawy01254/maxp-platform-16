@@ -156,7 +156,7 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
       <div key={node.id} className="border-b border-zinc-100/80 dark:border-zinc-800/60 last:border-b-0">
         <div
           className="group flex items-center gap-2 py-2 pr-2 pl-3 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
-          style={{ paddingInlineStart: 10 + depth * 22 }}
+          style={{ paddingInlineStart: 10 + depth * 28 }}
         >
           {hasChildren ? (
             <button
@@ -284,8 +284,8 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
 
         {hasChildren && open && (
           <div
-            className="border-s border-zinc-200/70 dark:border-zinc-800/70"
-            style={{ marginInlineStart: 21 + depth * 22 }}
+            className="border-s-2 border-zinc-200 dark:border-zinc-700"
+            style={{ marginInlineStart: 21 + depth * 28 }}
           >
             {node.children.map((child) => renderNode(child, depth + 1))}
           </div>
