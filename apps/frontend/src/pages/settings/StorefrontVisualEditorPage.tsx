@@ -365,14 +365,16 @@ const StorefrontVisualEditorPage: React.FC = () => {
       onBack={handleBack}
       onOpenPreview={handleOpenPreview}
       onChange={(nextDesignTokens) => {
-        setStorefrontSettings((cur) =>
-          cur
+        setStorefrontSettings((cur) => {
+          const next = cur
             ? {
                 ...cur,
                 designTokens: nextDesignTokens,
               }
-            : cur,
-        );
+            : cur;
+          storefrontSettingsRef.current = next;
+          return next;
+        });
       }}
     />
   );

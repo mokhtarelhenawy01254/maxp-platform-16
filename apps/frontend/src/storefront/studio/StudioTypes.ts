@@ -23,6 +23,19 @@ export interface StudioDimensions {
   h: number;
 }
 
+export interface StudioSelectedElement {
+  sectionKey: string;
+  type: "heading" | "subtitle" | "button" | "image" | "badge" | "custom";
+  label: string;
+  field: string;
+  linkField?: string;
+  altField?: string;
+  currentText?: string;
+  currentLink?: string;
+  currentImage?: string;
+}
+
+
 export interface StudioQuickElement {
   id: string;
   label: string;
