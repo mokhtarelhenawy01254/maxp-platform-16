@@ -10,6 +10,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
 import { PurchaseOrderReportRow } from './reportTypes';
 
 interface OrdersReportTabProps {
@@ -49,7 +50,7 @@ export const OrdersReportTab: React.FC<OrdersReportTabProps> = ({ orders, summar
               >
                 <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
                 <span className="font-bold tabular-nums">{val.count}</span>
-                <span className="text-muted-foreground">({(Number(val.amount) || 0).toLocaleString()} ج.م)</span>
+                <span className="text-muted-foreground">({formatCurrency(val.amount || 0)})</span>
               </div>
             );
           })}
@@ -61,12 +62,12 @@ export const OrdersReportTab: React.FC<OrdersReportTabProps> = ({ orders, summar
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="text-right font-semibold">رقم الأمر</TableHead>
-                <TableHead className="text-right font-semibold">المورد</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ الطلب</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ التسليم</TableHead>
+                <TableHead className="text-start font-semibold">رقم الأمر</TableHead>
+                <TableHead className="text-start font-semibold">المورد</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ الطلب</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ التسليم</TableHead>
                 <TableHead className="text-center font-semibold">الأصناف</TableHead>
-                <TableHead className="text-left font-semibold">الإجمالي</TableHead>
+                <TableHead className="text-end font-semibold">الإجمالي</TableHead>
                 <TableHead className="text-center font-semibold">الحالة</TableHead>
               </TableRow>
             </TableHeader>
@@ -86,23 +87,23 @@ export const OrdersReportTab: React.FC<OrdersReportTabProps> = ({ orders, summar
                       className="hover:bg-muted/20 cursor-pointer transition-colors"
                       onClick={() => navigate(`/procurement/purchase-orders/${order.id}`)}
                     >
-                      <TableCell className="font-mono text-xs font-medium text-primary">
+                      <TableCell className="font-mono text-xs font-medium text-primary text-start">
                         {order.orderNumber}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-start">
                         {order.supplier?.name || '—'}
                       </TableCell>
-                      <TableCell className="text-xs tabular-nums text-muted-foreground">
-                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString('ar-EG') : '—'}
+                      <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                        {formatProcurementDate(order.orderDate, 'ar')}
                       </TableCell>
-                      <TableCell className="text-xs tabular-nums text-muted-foreground">
-                        {order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate).toLocaleDateString('ar-EG') : '—'}
+                      <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                        {formatProcurementDate(order.expectedDeliveryDate, 'ar')}
                       </TableCell>
                       <TableCell className="text-center tabular-nums text-xs">
                         {order.purchaseOrderItems?.length || 0}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums font-semibold">
-                        {(Number(order.totalAmount) || 0).toLocaleString()} ج.م
+                      <TableCell className="text-end tabular-nums font-semibold">
+                        {formatCurrency(order.totalAmount || 0)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={`text-xs ${cfg.className}`}>
@@ -117,11 +118,11 @@ export const OrdersReportTab: React.FC<OrdersReportTabProps> = ({ orders, summar
             {orders.length > 0 && (
               <TableFooter className="bg-muted/30 border-t border-border/60">
                 <TableRow className="font-bold text-xs">
-                  <TableCell colSpan={5} className="text-right">
+                  <TableCell colSpan={5} className="text-start">
                     الإجمالي العام ({totalCount} أمر شراء):
                   </TableCell>
-                  <TableCell className="text-left font-bold tabular-nums">
-                    {totalAmount.toLocaleString()} ج.م
+                  <TableCell className="text-end font-bold tabular-nums">
+                    {formatCurrency(totalAmount)}
                   </TableCell>
                   <TableCell />
                 </TableRow>

@@ -7,10 +7,12 @@ import {
   Search,
   Eye,
   Star,
+  AlertCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { formatCurrency } from "../../lib/formatCurrency";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -100,6 +102,7 @@ const Suppliers: React.FC = () => {
   const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -131,6 +134,7 @@ const Suppliers: React.FC = () => {
   const fetchSuppliers = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await apiClient.get<{
         suppliers: Supplier[];
         pagination: { totalPages: number };
@@ -139,12 +143,13 @@ const Suppliers: React.FC = () => {
       });
       setSuppliers(response.data.suppliers);
       setTotalPages(response.data.pagination.totalPages);
-    } catch (error) {
-      console.error("Error fetching suppliers:", error);
+    } catch (err: any) {
+      console.error("Error fetching suppliers:", err);
+      setError(err?.response?.data?.message || t("procurement.suppliers.fetchError", "تعذر تحميل قائمة الموردين"));
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm]);
+  }, [page, searchTerm, t]);
 
   useEffect(() => {
     fetchSuppliers();
@@ -244,15 +249,27 @@ const Suppliers: React.FC = () => {
         </Button>
       </div>
 
+      {error && (
+        <div className="flex items-center justify-between p-3.5 mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={fetchSuppliers} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-xl border bg-card text-card-foreground mb-3">
         <div className="p-4">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder={tr("procurement.suppliers.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
+              className="ps-8"
             />
           </div>
         </div>
@@ -262,37 +279,41 @@ const Suppliers: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnName")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnContact")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnPhone")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnEmail")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnBalance")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnRating")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnStatus")}</TableHead>
-              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnActions")}</TableHead>
+              <TableHead className="text-start">{t("procurement.suppliers.columnName")}</TableHead>
+              <TableHead className="text-start">{t("procurement.suppliers.columnContact")}</TableHead>
+              <TableHead className="text-start">{t("procurement.suppliers.columnPhone")}</TableHead>
+              <TableHead className="text-start">{t("procurement.suppliers.columnEmail")}</TableHead>
+              <TableHead className="text-end">{t("procurement.suppliers.columnBalance")}</TableHead>
+              <TableHead className="text-center">{t("procurement.suppliers.columnRating")}</TableHead>
+              <TableHead className="text-center">{t("procurement.suppliers.columnStatus")}</TableHead>
+              <TableHead className="text-center">{t("procurement.suppliers.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center">
-                  {t("common.loading")}
-                </TableCell>
-              </TableRow>
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={8}>
+                    <div className="h-4 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : suppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
-                  {t("common.noData")}
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? "لا توجد نتائج مطابقة لبحثك" : "لا يوجد موردون مسجلون حالياً"}
                 </TableCell>
               </TableRow>
             ) : (
               suppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell>{supplier.name}</TableCell>
-                  <TableCell>{supplier.contactPerson || "-"}</TableCell>
-                  <TableCell>{supplier.phone || supplier.mobile || "-"}</TableCell>
-                  <TableCell>{supplier.email || "-"}</TableCell>
-                  <TableCell>{Number(supplier.currentBalance).toFixed(2)} EGP</TableCell>
+                  <TableCell className="font-medium text-start">{supplier.name}</TableCell>
+                  <TableCell className="text-start">{supplier.contactPerson || "-"}</TableCell>
+                  <TableCell className="text-start">{supplier.phone || supplier.mobile || "-"}</TableCell>
+                  <TableCell className="text-start">{supplier.email || "-"}</TableCell>
+                  <TableCell className="text-end tabular-nums font-medium">
+                    {formatCurrency(supplier.currentBalance, { locale: i18n.language })}
+                  </TableCell>
                   <TableCell>
                     <StarRating value={supplier.rating || 0} readonly />
                   </TableCell>
@@ -364,7 +385,7 @@ const Suppliers: React.FC = () => {
                 },
                 {
                   label: t("procurement.suppliers.columnBalance"),
-                  value: `${Number(supplier.currentBalance).toFixed(2)} EGP`,
+                  value: formatCurrency(supplier.currentBalance, { locale: i18n.language }),
                   emphasis: true,
                 },
                 {
@@ -592,7 +613,7 @@ const Suppliers: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnBalance")}</p>
-                <p className="text-sm">{Number(selectedSupplier.currentBalance).toFixed(2)} EGP</p>
+                <p className="text-sm font-medium tabular-nums">{formatCurrency(selectedSupplier.currentBalance, { locale: i18n.language })}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnRating")}</p>

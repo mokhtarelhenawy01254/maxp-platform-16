@@ -11,6 +11,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
 import { AgingReportData, AgingInvoice } from './reportTypes';
 
 interface AgingReportTabProps {
@@ -74,7 +75,7 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
             <CardContent className="p-3.5 space-y-1">
               <span className="text-xs font-medium text-muted-foreground">{b.label}</span>
               <div className={`text-lg font-bold tabular-nums ${b.color}`}>
-                {(Number(b.data?.amount) || 0).toLocaleString()} <span className="text-xs font-normal">ج.م</span>
+                {formatCurrency(b.data?.amount || 0)}
               </div>
               <div className="text-xs text-muted-foreground tabular-nums">
                 {b.data?.count || 0} فاتورة
@@ -90,12 +91,12 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="text-right font-semibold">رقم الفاتورة</TableHead>
-                <TableHead className="text-right font-semibold">المورد</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ الاستحقاق</TableHead>
+                <TableHead className="text-start font-semibold">رقم الفاتورة</TableHead>
+                <TableHead className="text-start font-semibold">المورد</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ الاستحقاق</TableHead>
                 <TableHead className="text-center font-semibold">أيام التأخير</TableHead>
                 <TableHead className="text-center font-semibold">الفئة</TableHead>
-                <TableHead className="text-left font-semibold">المبلغ المتبقي</TableHead>
+                <TableHead className="text-end font-semibold">المبلغ المتبقي</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -112,12 +113,12 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
                     className="hover:bg-muted/20 cursor-pointer transition-colors"
                     onClick={() => navigate(`/procurement/purchase-invoices/${inv.id}`)}
                   >
-                    <TableCell className="font-mono text-xs font-medium text-primary">
+                    <TableCell className="font-mono text-xs font-medium text-primary text-start">
                       {inv.invoiceNumber}
                     </TableCell>
-                    <TableCell className="font-medium">{inv.supplierName || '—'}</TableCell>
-                    <TableCell className="text-xs tabular-nums text-muted-foreground">
-                      {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('ar-EG') : '—'}
+                    <TableCell className="font-medium text-start">{inv.supplierName || '—'}</TableCell>
+                    <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                      {formatProcurementDate(inv.dueDate, 'ar')}
                     </TableCell>
                     <TableCell className="text-center tabular-nums text-xs">
                       {inv.daysPastDue > 0 ? (
@@ -131,8 +132,8 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
                         {inv.bucketLabel}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-left font-bold tabular-nums">
-                      {(Number(inv.remainingAmount) || 0).toLocaleString()} ج.م
+                    <TableCell className="text-end font-bold tabular-nums">
+                      {formatCurrency(inv.remainingAmount || 0)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -141,11 +142,11 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
             {allInvoices.length > 0 && (
               <TableFooter className="bg-muted/30 border-t border-border/60">
                 <TableRow className="font-bold">
-                  <TableCell colSpan={5} className="text-right">
+                  <TableCell colSpan={5} className="text-start">
                     إجمالي الديون المعلقة ({totalCount} فاتورة):
                   </TableCell>
-                  <TableCell className="text-left font-bold tabular-nums text-rose-500">
-                    {totalOutstanding.toLocaleString()} ج.م
+                  <TableCell className="text-end font-bold tabular-nums text-rose-500">
+                    {formatCurrency(totalOutstanding)}
                   </TableCell>
                 </TableRow>
               </TableFooter>

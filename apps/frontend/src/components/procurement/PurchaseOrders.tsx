@@ -6,11 +6,13 @@ import {
   CheckCircle,
   XCircle,
   Search,
+  AlertCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -62,9 +64,11 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 };
 
 const PurchaseOrders: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -93,6 +97,8 @@ const PurchaseOrders: React.FC = () => {
 
   const fetchOrders = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await apiClient.get<{
         orders: PurchaseOrder[];
         pagination: { totalPages: number };
@@ -101,10 +107,13 @@ const PurchaseOrders: React.FC = () => {
       });
       setOrders(response.data.orders);
       setTotalPages(response.data.pagination.totalPages);
-    } catch (error) {
-      console.error("Error fetching purchase orders:", error);
+    } catch (err: any) {
+      console.error("Error fetching purchase orders:", err);
+      setError(err?.response?.data?.message || t("procurement.purchaseOrders.fetchError", "تعذر تحميل أوامر الشراء"));
+    } finally {
+      setLoading(false);
     }
-  }, [page, searchTerm, statusFilter]);
+  }, [page, searchTerm, statusFilter, t]);
 
   useEffect(() => {
     fetchOrders();
@@ -157,16 +166,28 @@ const PurchaseOrders: React.FC = () => {
         </Button>
       </div>
 
+      {error && (
+        <div className="flex items-center justify-between p-3.5 mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={fetchOrders} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
+        </div>
+      )}
+
       <Card className="mb-3">
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder={t("procurement.purchaseOrders.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="ps-8"
               />
             </div>
             <div className="min-w-[200px]">
@@ -192,31 +213,50 @@ const PurchaseOrders: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("procurement.purchaseOrders.columnOrderNumber")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnSupplier")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnOrderDate")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnExpectedDelivery")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnItemCount")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnTotalAmount")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnStatus")}</TableHead>
-              <TableHead>{t("procurement.purchaseOrders.columnActions")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseOrders.columnOrderNumber")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseOrders.columnSupplier")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseOrders.columnOrderDate")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseOrders.columnExpectedDelivery")}</TableHead>
+              <TableHead className="text-center">{t("procurement.purchaseOrders.columnItemCount")}</TableHead>
+              <TableHead className="text-end">{t("procurement.purchaseOrders.columnTotalAmount")}</TableHead>
+              <TableHead className="text-center">{t("procurement.purchaseOrders.columnStatus")}</TableHead>
+              <TableHead className="text-center">{t("procurement.purchaseOrders.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{order.orderNumber}</TableCell>
-                <TableCell>{order.supplier.name}</TableCell>
-                <TableCell>
-                  {new Date(order.orderDate).toLocaleDateString("ar-EG")}
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={8}>
+                    <div className="h-4 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  {searchTerm || statusFilter
+                    ? "لا توجد أوامر شراء مطابقة لمعايير البحث"
+                    : t("procurement.purchaseOrders.emptyState", "لا توجد أوامر شراء مسجلة")}
                 </TableCell>
-                <TableCell>
-                  {order.expectedDelivery
-                    ? new Date(order.expectedDelivery).toLocaleDateString("ar-EG")
-                    : "-"}
-                </TableCell>
-                <TableCell>{order._count.items}</TableCell>
-                <TableCell>{Number(order.totalAmount).toFixed(2)} EGP</TableCell>
+              </TableRow>
+            ) : (
+              orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-mono text-xs font-medium text-primary text-start">
+                    {order.orderNumber}
+                  </TableCell>
+                  <TableCell className="text-start">{order.supplier.name}</TableCell>
+                  <TableCell className="text-xs tabular-nums text-start">
+                    {formatProcurementDate(order.orderDate, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-start">
+                    {formatProcurementDate(order.expectedDelivery, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-center tabular-nums">{order._count.items}</TableCell>
+                  <TableCell className="text-end tabular-nums font-medium">
+                    {formatCurrency(order.totalAmount, { locale: i18n.language })}
+                  </TableCell>
                 <TableCell>
                   <Badge variant={statusColors[order.status] || "outline"}>
                     {statusLabels[order.status] ?? order.status}
@@ -270,14 +310,26 @@ const PurchaseOrders: React.FC = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )))}
           </TableBody>
         </Table>
       </div>
 
       <div className="grid md:hidden gap-2">
-        {orders.length === 0 ? (
-          <ProcurementMobileState>{t("procurement.purchaseOrders.emptyState")}</ProcurementMobileState>
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse space-y-2">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+          ))
+        ) : orders.length === 0 ? (
+          <ProcurementMobileState>
+            {searchTerm || statusFilter
+              ? "لا توجد أوامر شراء مطابقة لمعايير البحث"
+              : t("procurement.purchaseOrders.emptyState")}
+          </ProcurementMobileState>
         ) : (
           orders.map((order) => (
             <ProcurementMobileCard
@@ -293,17 +345,15 @@ const PurchaseOrders: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.purchaseOrders.mobileOrderDate"),
-                  value: new Date(order.orderDate).toLocaleDateString("ar-EG"),
+                  value: formatProcurementDate(order.orderDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseOrders.mobileExpectedDelivery"),
-                  value: order.expectedDelivery
-                    ? new Date(order.expectedDelivery).toLocaleDateString("ar-EG")
-                    : "-",
+                  value: formatProcurementDate(order.expectedDelivery, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseOrders.mobileTotalAmount"),
-                  value: `${Number(order.totalAmount).toFixed(2)} EGP`,
+                  value: formatCurrency(order.totalAmount, { locale: i18n.language }),
                   emphasis: true,
                 },
                 {

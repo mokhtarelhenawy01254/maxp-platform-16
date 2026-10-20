@@ -10,6 +10,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
 import { InvoiceReportRow } from './reportTypes';
 
 interface InvoicesReportTabProps {
@@ -56,7 +57,7 @@ export const InvoicesReportTab: React.FC<InvoicesReportTabProps> = ({ invoices, 
               >
                 <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
                 <span className="font-bold tabular-nums">{val.count}</span>
-                <span className="text-muted-foreground">({(Number(val.amount) || 0).toLocaleString()} ج.م)</span>
+                <span className="text-muted-foreground">({formatCurrency(val.amount || 0)})</span>
               </div>
             );
           })}
@@ -68,13 +69,13 @@ export const InvoicesReportTab: React.FC<InvoicesReportTabProps> = ({ invoices, 
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="text-right font-semibold">رقم الفاتورة</TableHead>
-                <TableHead className="text-right font-semibold">المورد</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ الفاتورة</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ الاستحقاق</TableHead>
-                <TableHead className="text-left font-semibold">الإجمالي</TableHead>
-                <TableHead className="text-left font-semibold">المدفوع</TableHead>
-                <TableHead className="text-left font-semibold">المتبقي</TableHead>
+                <TableHead className="text-start font-semibold">رقم الفاتورة</TableHead>
+                <TableHead className="text-start font-semibold">المورد</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ الفاتورة</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ الاستحقاق</TableHead>
+                <TableHead className="text-end font-semibold">الإجمالي</TableHead>
+                <TableHead className="text-end font-semibold">المدفوع</TableHead>
+                <TableHead className="text-end font-semibold">المتبقي</TableHead>
                 <TableHead className="text-center font-semibold">الحالة</TableHead>
               </TableRow>
             </TableHeader>
@@ -94,26 +95,26 @@ export const InvoicesReportTab: React.FC<InvoicesReportTabProps> = ({ invoices, 
                       className="hover:bg-muted/20 cursor-pointer transition-colors"
                       onClick={() => navigate(`/procurement/purchase-invoices/${inv.id}`)}
                     >
-                      <TableCell className="font-mono text-xs font-medium text-primary">
+                      <TableCell className="font-mono text-xs font-medium text-primary text-start">
                         {inv.invoiceNumber}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-start">
                         {inv.supplier?.name || '—'}
                       </TableCell>
-                      <TableCell className="text-xs tabular-nums text-muted-foreground">
-                        {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('ar-EG') : '—'}
+                      <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                        {formatProcurementDate(inv.invoiceDate, 'ar')}
                       </TableCell>
-                      <TableCell className="text-xs tabular-nums text-muted-foreground">
-                        {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('ar-EG') : '—'}
+                      <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                        {formatProcurementDate(inv.dueDate, 'ar')}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums font-semibold">
-                        {(Number(inv.totalAmount) || 0).toLocaleString()} ج.م
+                      <TableCell className="text-end tabular-nums font-semibold">
+                        {formatCurrency(inv.totalAmount || 0)}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums text-emerald-600 dark:text-emerald-400">
-                        {(Number(inv.paidAmount) || 0).toLocaleString()} ج.م
+                      <TableCell className="text-end tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(inv.paidAmount || 0)}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums font-bold text-rose-500">
-                        {(Number(inv.remainingAmount) || 0).toLocaleString()} ج.م
+                      <TableCell className="text-end tabular-nums font-bold text-rose-500">
+                        {formatCurrency(inv.remainingAmount || 0)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={`text-xs ${cfg.className}`}>
@@ -128,12 +129,12 @@ export const InvoicesReportTab: React.FC<InvoicesReportTabProps> = ({ invoices, 
             {invoices.length > 0 && (
               <TableFooter className="bg-muted/30 border-t border-border/60">
                 <TableRow className="font-bold text-xs">
-                  <TableCell colSpan={4} className="text-right">
+                  <TableCell colSpan={4} className="text-start">
                     الإجمالي العام ({totalCount} فاتورة):
                   </TableCell>
-                  <TableCell className="text-left tabular-nums">{totalAmount.toLocaleString()} ج.م</TableCell>
-                  <TableCell className="text-left tabular-nums text-emerald-600 dark:text-emerald-400">{totalPaid.toLocaleString()} ج.م</TableCell>
-                  <TableCell className="text-left tabular-nums text-rose-500">{totalPending.toLocaleString()} ج.م</TableCell>
+                  <TableCell className="text-end tabular-nums">{formatCurrency(totalAmount)}</TableCell>
+                  <TableCell className="text-end tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(totalPaid)}</TableCell>
+                  <TableCell className="text-end tabular-nums text-rose-500">{formatCurrency(totalPending)}</TableCell>
                   <TableCell />
                 </TableRow>
               </TableFooter>

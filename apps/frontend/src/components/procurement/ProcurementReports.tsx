@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { downloadCsv } from '../../utils/procurementCsvExport';
+import { formatProcurementDate } from '../../lib/formatCurrency';
 
 import { AgingReportTab } from './reports/AgingReportTab';
 import { SuppliersReportTab } from './reports/SuppliersReportTab';
@@ -174,7 +175,7 @@ export default function ProcurementReports() {
           rows.push([
             inv.invoiceNumber,
             inv.supplierName || '—',
-            inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('ar-EG') : '—',
+            inv.dueDate ? formatProcurementDate(inv.dueDate, 'ar') : '—',
             inv.daysPastDue,
             Number(inv.remainingAmount) || 0,
           ]);
@@ -201,8 +202,8 @@ export default function ProcurementReports() {
       const rows = ordersData.orders.map((o) => [
         o.orderNumber,
         o.supplier?.name || '—',
-        o.orderDate ? new Date(o.orderDate).toLocaleDateString('ar-EG') : '—',
-        o.expectedDeliveryDate ? new Date(o.expectedDeliveryDate).toLocaleDateString('ar-EG') : '—',
+        o.orderDate ? formatProcurementDate(o.orderDate, 'ar') : '—',
+        o.expectedDeliveryDate ? formatProcurementDate(o.expectedDeliveryDate, 'ar') : '—',
         o.purchaseOrderItems?.length || 0,
         Number(o.totalAmount) || 0,
         o.status,
@@ -213,8 +214,8 @@ export default function ProcurementReports() {
       const rows = invoicesData.invoices.map((inv) => [
         inv.invoiceNumber,
         inv.supplier?.name || '—',
-        inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('ar-EG') : '—',
-        inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('ar-EG') : '—',
+        inv.invoiceDate ? formatProcurementDate(inv.invoiceDate, 'ar') : '—',
+        inv.dueDate ? formatProcurementDate(inv.dueDate, 'ar') : '—',
         Number(inv.totalAmount) || 0,
         Number(inv.paidAmount) || 0,
         Number(inv.remainingAmount) || 0,
@@ -227,7 +228,7 @@ export default function ProcurementReports() {
         p.paymentNumber,
         p.supplier?.name || '—',
         p.purchaseInvoice?.invoiceNumber || '',
-        p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('ar-EG') : '—',
+        p.paymentDate ? formatProcurementDate(p.paymentDate, 'ar') : '—',
         p.paymentMethod,
         p.referenceNumber || '',
         Number(p.amount) || 0,

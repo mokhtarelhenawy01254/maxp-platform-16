@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Eye, Search } from "lucide-react";
+import { Plus, Eye, Search, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -44,9 +45,11 @@ interface SupplierPayment {
 }
 
 const SupplierPayments: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [payments, setPayments] = useState<SupplierPayment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [methodFilter, setMethodFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -62,15 +65,23 @@ const SupplierPayments: React.FC = () => {
 
   const fetchPayments = useCallback(async () => {
     try {
-      const response = await apiClient.get("/procurement/supplier-payments", {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get<{
+        payments: SupplierPayment[];
+        pagination: { totalPages: number };
+      }>("/procurement/supplier-payments", {
         params: { page, limit: 20, search: searchTerm, paymentMethod: methodFilter },
       });
       setPayments(response.data.payments);
       setTotalPages(response.data.pagination.totalPages);
-    } catch (error) {
-      console.error("Error fetching payments:", error);
+    } catch (err: any) {
+      console.error("Error fetching payments:", err);
+      setError(err?.response?.data?.message || t("procurement.supplierPayments.fetchError", "تعذر تحميل سجل المدفوعات"));
+    } finally {
+      setLoading(false);
     }
-  }, [methodFilter, page, searchTerm]);
+  }, [methodFilter, page, searchTerm, t]);
 
   useEffect(() => {
     fetchPayments();
@@ -85,20 +96,32 @@ const SupplierPayments: React.FC = () => {
         </Button>
       </div>
 
+      {error && (
+        <div className="flex items-center justify-between p-3.5 mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={fetchPayments} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
+        </div>
+      )}
+
       <Card className="mb-3">
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder={t("procurement.supplierPayments.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="ps-8"
               />
             </div>
             <div className="min-w-[200px]">
-              <Select value={methodFilter} onValueChange={setMethodFilter}>
+              <Select value={methodFilter} onValueChange={(val) => setMethodFilter(val || "")}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("procurement.supplierPayments.filterPaymentMethod")} />
                 </SelectTrigger>
@@ -118,53 +141,87 @@ const SupplierPayments: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("procurement.supplierPayments.columnPaymentNumber")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnSupplier")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnInvoiceNumber")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnPaymentDate")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnAmount")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnPaymentMethod")}</TableHead>
-              <TableHead>{t("procurement.supplierPayments.columnActions")}</TableHead>
+              <TableHead className="text-start">{t("procurement.supplierPayments.columnPaymentNumber")}</TableHead>
+              <TableHead className="text-start">{t("procurement.supplierPayments.columnSupplier")}</TableHead>
+              <TableHead className="text-start">{t("procurement.supplierPayments.columnInvoiceNumber")}</TableHead>
+              <TableHead className="text-start">{t("procurement.supplierPayments.columnPaymentDate")}</TableHead>
+              <TableHead className="text-end">{t("procurement.supplierPayments.columnAmount")}</TableHead>
+              <TableHead className="text-center">{t("procurement.supplierPayments.columnPaymentMethod")}</TableHead>
+              <TableHead className="text-center">{t("procurement.supplierPayments.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>{payment.paymentNumber}</TableCell>
-                <TableCell>{payment.supplier.name}</TableCell>
-                <TableCell>
-                  {payment.purchaseInvoice?.invoiceNumber || t("procurement.supplierPayments.advancePayment")}
-                </TableCell>
-                <TableCell>
-                  {new Date(payment.paymentDate).toLocaleDateString("ar-EG")}
-                </TableCell>
-                <TableCell>{Number(payment.amount).toFixed(2)} EGP</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {paymentMethodLabels[payment.paymentMethod]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      navigate(`/procurement/supplier-payments/${payment.id}`)
-                    }
-                    title={t("procurement.supplierPayments.viewDetails")}
-                  >
-                    <Eye className="size-4" />
-                  </Button>
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={7}>
+                    <div className="h-4 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : payments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  {searchTerm || methodFilter
+                    ? "لا توجد مدفوعات مطابقة لمعايير البحث"
+                    : t("procurement.supplierPayments.emptyState", "لا توجد مدفوعات مسجلة")}
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              payments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell className="font-mono text-xs font-medium text-primary text-start">
+                    {payment.paymentNumber}
+                  </TableCell>
+                  <TableCell className="text-start">{payment.supplier.name}</TableCell>
+                  <TableCell className="font-mono text-xs text-start">
+                    {payment.purchaseInvoice?.invoiceNumber || t("procurement.supplierPayments.advancePayment")}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-start">
+                    {formatProcurementDate(payment.paymentDate, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-end tabular-nums font-medium text-emerald-600">
+                    {formatCurrency(payment.amount, { locale: i18n.language })}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">
+                      {paymentMethodLabels[payment.paymentMethod]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        navigate(`/procurement/supplier-payments/${payment.id}`)
+                      }
+                      title={t("procurement.supplierPayments.viewDetails")}
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       <div className="grid md:hidden gap-2">
-        {payments.length === 0 ? (
-          <ProcurementMobileState>{t("procurement.supplierPayments.emptyState")}</ProcurementMobileState>
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse space-y-2">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+          ))
+        ) : payments.length === 0 ? (
+          <ProcurementMobileState>
+            {searchTerm || methodFilter
+              ? "لا توجد مدفوعات مطابقة لمعايير البحث"
+              : t("procurement.supplierPayments.emptyState")}
+          </ProcurementMobileState>
         ) : (
           payments.map((payment) => (
             <ProcurementMobileCard
@@ -180,11 +237,11 @@ const SupplierPayments: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.supplierPayments.mobilePaymentDate"),
-                  value: new Date(payment.paymentDate).toLocaleDateString("ar-EG"),
+                  value: formatProcurementDate(payment.paymentDate, i18n.language),
                 },
                 {
                   label: t("procurement.supplierPayments.mobileAmount"),
-                  value: `${Number(payment.amount).toFixed(2)} EGP`,
+                  value: formatCurrency(payment.amount, { locale: i18n.language }),
                   emphasis: true,
                 },
                 {

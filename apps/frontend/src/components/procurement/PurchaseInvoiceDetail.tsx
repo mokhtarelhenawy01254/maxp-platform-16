@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
+import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -285,12 +286,12 @@ export const PurchaseInvoiceDetail: React.FC = () => {
           <CardContent className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.invoiceDate", "تاريخ الفاتورة")}:</span>
-              <span className="font-semibold">{new Date(invoice.invoiceDate).toLocaleDateString("ar-EG")}</span>
+              <span className="font-semibold tabular-nums">{formatProcurementDate(invoice.invoiceDate, i18n.language)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.dueDate", "تاريخ الاستحقاق")}:</span>
-              <span className={`font-semibold ${isOverdue ? "text-destructive" : ""}`}>
-                {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("ar-EG") : "-"}
+              <span className={`font-semibold tabular-nums ${isOverdue ? "text-destructive" : ""}`}>
+                {formatProcurementDate(invoice.dueDate, i18n.language)}
               </span>
             </div>
             <div className="flex justify-between items-center pt-1 border-t border-border/50">
@@ -324,17 +325,17 @@ export const PurchaseInvoiceDetail: React.FC = () => {
           <CardContent className="space-y-1">
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-muted-foreground">الإجمالي:</span>
-              <span className="text-lg font-bold font-mono text-foreground">
-                {Number(invoice.totalAmount).toFixed(2)} EGP
+              <span className="text-lg font-bold font-mono text-foreground tabular-nums">
+                {formatCurrency(invoice.totalAmount, { locale: i18n.language })}
               </span>
             </div>
             <div className="flex justify-between items-baseline text-xs text-emerald-600">
               <span>المدفوع:</span>
-              <span className="font-bold font-mono">{Number(invoice.paidAmount).toFixed(2)} EGP</span>
+              <span className="font-bold font-mono tabular-nums">{formatCurrency(invoice.paidAmount, { locale: i18n.language })}</span>
             </div>
             <div className="flex justify-between items-baseline text-xs text-destructive pt-1 border-t border-border/50">
               <span className="font-semibold">المتبقي:</span>
-              <span className="text-sm font-bold font-mono">{Number(invoice.remainingAmount).toFixed(2)} EGP</span>
+              <span className="text-sm font-bold font-mono tabular-nums">{formatCurrency(invoice.remainingAmount, { locale: i18n.language })}</span>
             </div>
           </CardContent>
         </Card>
@@ -371,15 +372,15 @@ export const PurchaseInvoiceDetail: React.FC = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-center font-mono font-semibold">{item.quantity}</TableCell>
-                    <TableCell className="text-center font-mono">{Number(item.unitPrice).toFixed(2)} EGP</TableCell>
+                    <TableCell className="text-center font-mono tabular-nums">{formatCurrency(item.unitPrice, { locale: i18n.language })}</TableCell>
                     <TableCell className="text-center font-mono text-muted-foreground">
                       {Number(item.taxRate || 0)}%
                     </TableCell>
                     <TableCell className="text-center font-mono text-muted-foreground">
                       {Number(item.discountRate || 0)}%
                     </TableCell>
-                    <TableCell className="text-end font-mono font-bold text-foreground">
-                      {Number(item.totalPrice).toFixed(2)} EGP
+                    <TableCell className="text-end font-mono font-bold text-foreground tabular-nums">
+                      {formatCurrency(item.totalPrice, { locale: i18n.language })}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -415,37 +416,37 @@ export const PurchaseInvoiceDetail: React.FC = () => {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.subtotal", "المجموع:")}</span>
-              <span className="font-mono font-medium">{Number(invoice.subtotal).toFixed(2)} EGP</span>
+              <span className="font-mono font-medium tabular-nums">{formatCurrency(invoice.subtotal, { locale: i18n.language })}</span>
             </div>
             {Number(invoice.discountAmount) > 0 && (
               <div className="flex justify-between text-destructive">
                 <span>{t("procurement.purchaseInvoiceDetail.discountAmount", "الخصم:")}</span>
-                <span className="font-mono font-medium">-{Number(invoice.discountAmount).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">-{formatCurrency(invoice.discountAmount, { locale: i18n.language })}</span>
               </div>
             )}
             {Number(invoice.taxAmount) > 0 && (
               <div className="flex justify-between text-emerald-600">
                 <span>{t("procurement.purchaseInvoiceDetail.taxAmount", "الضرائب:")}</span>
-                <span className="font-mono font-medium">+{Number(invoice.taxAmount).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">+{formatCurrency(invoice.taxAmount, { locale: i18n.language })}</span>
               </div>
             )}
             {Number(invoice.shippingCost) > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.shippingCost", "الشحن:")}</span>
-                <span className="font-mono font-medium">+{Number(invoice.shippingCost).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">+{formatCurrency(invoice.shippingCost, { locale: i18n.language })}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-border font-bold">
               <span>{t("procurement.purchaseInvoiceDetail.totalAmount", "المبلغ الإجمالي:")}</span>
-              <span className="font-mono text-primary">{Number(invoice.totalAmount).toFixed(2)} EGP</span>
+              <span className="font-mono text-primary tabular-nums">{formatCurrency(invoice.totalAmount, { locale: i18n.language })}</span>
             </div>
             <div className="flex justify-between text-emerald-600 font-semibold">
               <span>{t("procurement.purchaseInvoiceDetail.paidAmount", "المدفوع:")}</span>
-              <span className="font-mono">{Number(invoice.paidAmount).toFixed(2)} EGP</span>
+              <span className="font-mono tabular-nums">{formatCurrency(invoice.paidAmount, { locale: i18n.language })}</span>
             </div>
             <div className="flex justify-between text-destructive font-bold text-base">
               <span>{t("procurement.purchaseInvoiceDetail.remainingAmount", "المتبقي:")}</span>
-              <span className="font-mono">{Number(invoice.remainingAmount).toFixed(2)} EGP</span>
+              <span className="font-mono tabular-nums">{formatCurrency(invoice.remainingAmount, { locale: i18n.language })}</span>
             </div>
           </CardContent>
         </Card>
@@ -486,9 +487,9 @@ export const PurchaseInvoiceDetail: React.FC = () => {
                   {payments.map((pmt) => (
                     <TableRow key={pmt.id}>
                       <TableCell className="font-mono font-semibold">{pmt.paymentNumber}</TableCell>
-                      <TableCell>{new Date(pmt.paymentDate).toLocaleDateString("ar-EG")}</TableCell>
-                      <TableCell className="text-center font-mono font-bold text-emerald-600">
-                        {Number(pmt.amount).toFixed(2)} EGP
+                      <TableCell className="tabular-nums">{formatProcurementDate(pmt.paymentDate, i18n.language)}</TableCell>
+                      <TableCell className="text-center font-mono font-bold text-emerald-600 tabular-nums">
+                        {formatCurrency(pmt.amount, { locale: i18n.language })}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline">

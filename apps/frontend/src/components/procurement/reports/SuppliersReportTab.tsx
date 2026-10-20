@@ -9,6 +9,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency } from '../../../lib/formatCurrency';
 import { SupplierReportRow } from './reportTypes';
 
 interface SuppliersReportTabProps {
@@ -37,15 +38,15 @@ export const SuppliersReportTab: React.FC<SuppliersReportTabProps> = ({ data, lo
         <Table>
           <TableHeader className="bg-muted/40">
             <TableRow>
-              <TableHead className="text-right font-semibold">المورد</TableHead>
-              <TableHead className="text-right font-semibold">التواصل</TableHead>
+              <TableHead className="text-start font-semibold">المورد</TableHead>
+              <TableHead className="text-start font-semibold">التواصل</TableHead>
               <TableHead className="text-center font-semibold">الأوامر</TableHead>
-              <TableHead className="text-left font-semibold">إجمالي الأوامر</TableHead>
+              <TableHead className="text-end font-semibold">إجمالي الأوامر</TableHead>
               <TableHead className="text-center font-semibold">الفواتير</TableHead>
-              <TableHead className="text-left font-semibold">إجمالي الفواتير</TableHead>
+              <TableHead className="text-end font-semibold">إجمالي الفواتير</TableHead>
               <TableHead className="text-center font-semibold">السدادات</TableHead>
-              <TableHead className="text-left font-semibold">إجمالي المسدد</TableHead>
-              <TableHead className="text-left font-semibold">الرصيد الحالي</TableHead>
+              <TableHead className="text-end font-semibold">إجمالي المسدد</TableHead>
+              <TableHead className="text-end font-semibold">الرصيد الحالي</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,34 +63,34 @@ export const SuppliersReportTab: React.FC<SuppliersReportTabProps> = ({ data, lo
                   className="hover:bg-muted/20 cursor-pointer transition-colors"
                   onClick={() => navigate(`/procurement/suppliers/${row.supplierId}`)}
                 >
-                  <TableCell className="font-medium text-primary">
+                  <TableCell className="font-medium text-primary text-start">
                     {row.supplierName}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-xs text-muted-foreground text-start">
                     <div>{row.contactPerson || '—'}</div>
                     <div className="font-mono text-[11px]">{row.phone || ''}</div>
                   </TableCell>
                   <TableCell className="text-center tabular-nums text-xs">
                     {row.totalOrders}
                   </TableCell>
-                  <TableCell className="text-left tabular-nums text-xs font-medium">
-                    {(Number(row.totalOrderAmount) || 0).toLocaleString()} ج.م
+                  <TableCell className="text-end tabular-nums text-xs font-medium">
+                    {formatCurrency(row.totalOrderAmount || 0)}
                   </TableCell>
                   <TableCell className="text-center tabular-nums text-xs">
                     {row.totalInvoices}
                   </TableCell>
-                  <TableCell className="text-left tabular-nums text-xs font-medium">
-                    {(Number(row.totalInvoiceAmount) || 0).toLocaleString()} ج.م
+                  <TableCell className="text-end tabular-nums text-xs font-medium">
+                    {formatCurrency(row.totalInvoiceAmount || 0)}
                   </TableCell>
                   <TableCell className="text-center tabular-nums text-xs">
                     {row.totalPayments}
                   </TableCell>
-                  <TableCell className="text-left tabular-nums text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                    {(Number(row.totalPaidAmount) || 0).toLocaleString()} ج.م
+                  <TableCell className="text-end tabular-nums text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(row.totalPaidAmount || 0)}
                   </TableCell>
-                  <TableCell className="text-left tabular-nums font-bold">
+                  <TableCell className="text-end tabular-nums font-bold">
                     <span className={Number(row.currentBalance) > 0 ? 'text-rose-500' : 'text-emerald-500'}>
-                      {(Number(row.currentBalance) || 0).toLocaleString()} ج.م
+                      {formatCurrency(row.currentBalance || 0)}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -99,16 +100,16 @@ export const SuppliersReportTab: React.FC<SuppliersReportTabProps> = ({ data, lo
           {data.length > 0 && (
             <TableFooter className="bg-muted/30 border-t border-border/60">
               <TableRow className="font-bold text-xs">
-                <TableCell colSpan={2} className="text-right">
+                <TableCell colSpan={2} className="text-start">
                   الإجمالي العام ({data.length} مورد):
                 </TableCell>
                 <TableCell className="text-center tabular-nums">{totalOrders}</TableCell>
-                <TableCell className="text-left tabular-nums">{totalOrderAmount.toLocaleString()} ج.م</TableCell>
+                <TableCell className="text-end tabular-nums">{formatCurrency(totalOrderAmount)}</TableCell>
                 <TableCell className="text-center tabular-nums">{totalInvoices}</TableCell>
-                <TableCell className="text-left tabular-nums">{totalInvoiceAmount.toLocaleString()} ج.م</TableCell>
+                <TableCell className="text-end tabular-nums">{formatCurrency(totalInvoiceAmount)}</TableCell>
                 <TableCell className="text-center tabular-nums">{totalPayments}</TableCell>
-                <TableCell className="text-left tabular-nums text-emerald-600 dark:text-emerald-400">{totalPaidAmount.toLocaleString()} ج.م</TableCell>
-                <TableCell className="text-left tabular-nums">{totalBalance.toLocaleString()} ج.م</TableCell>
+                <TableCell className="text-end tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(totalPaidAmount)}</TableCell>
+                <TableCell className="text-end tabular-nums">{formatCurrency(totalBalance)}</TableCell>
               </TableRow>
             </TableFooter>
           )}

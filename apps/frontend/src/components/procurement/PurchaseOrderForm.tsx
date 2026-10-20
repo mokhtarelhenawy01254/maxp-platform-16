@@ -17,6 +17,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { formatCurrency } from "../../lib/formatCurrency";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
 import "../../styles/dashboard-enhanced.css";
@@ -571,13 +572,13 @@ const PurchaseOrderForm: React.FC = () => {
                     {supplierSearchOpen && (
                       <div className="absolute top-full start-0 min-w-full sm:min-w-[380px] md:min-w-[420px] max-w-[calc(100vw-2rem)] z-50 mt-1.5 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-2xl p-2 space-y-2 text-popover-foreground animate-in fade-in-0 zoom-in-95">
                         <div className="relative">
-                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                          <Search className="absolute end-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                           <Input
                             autoFocus
                             placeholder="اكتب اسم أو رقم هاتف المورد..."
                             value={supplierSearchQuery}
                             onChange={(e) => setSupplierSearchQuery(e.target.value)}
-                            className="pr-9 h-9 text-xs rounded-lg"
+                            className="pe-9 h-9 text-xs rounded-lg"
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
@@ -935,7 +936,7 @@ const PurchaseOrderForm: React.FC = () => {
                             onClick={() => removeItem(index)}
                             className="text-red-500 hover:bg-red-500/10 h-7 px-2"
                           >
-                            <Trash2 className="size-3.5 mr-1" /> حذف
+                            <Trash2 className="size-3.5 me-1" /> حذف
                           </Button>
                         </div>
 
@@ -1186,15 +1187,12 @@ const PurchaseOrderForm: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md"
-                    style={{
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    }}
+                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {saving ? (
                       <LoadingSpinner size="sm" />
                     ) : (
-                      <Save className="size-4 mr-1.5" />
+                      <Save className="size-4 me-1.5" />
                     )}
                     {isEdit
                       ? t("procurement.purchaseOrderForm.updateBtn", "تحديث أمر الشراء")
@@ -1216,11 +1214,11 @@ const PurchaseOrderForm: React.FC = () => {
         </div>
 
         {/* Sticky Action Bar for Mobile (< 768px) */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/80 p-3 flex items-center justify-between shadow-2xl md:hidden">
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/80 p-3 flex items-center justify-between shadow-2xl md:hidden">
           <div className="flex flex-col">
             <span className="text-[11px] text-muted-foreground">الإجمالي التقديري:</span>
             <span className="text-lg font-black font-mono text-primary">
-              {totals.grandTotal.toFixed(2)} ج.م
+              {formatCurrency(totals.grandTotal)}
             </span>
           </div>
 
@@ -1237,12 +1235,9 @@ const PurchaseOrderForm: React.FC = () => {
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-xl px-5 font-bold shadow-md"
-              style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              }}
+              className="rounded-xl px-5 font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {saving ? <LoadingSpinner size="sm" /> : <Save className="size-4 mr-1" />}
+              {saving ? <LoadingSpinner size="sm" /> : <Save className="size-4 me-1" />}
               حفظ
             </Button>
           </div>

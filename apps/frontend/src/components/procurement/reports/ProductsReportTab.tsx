@@ -10,6 +10,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
 import { ProductReportRow } from './reportTypes';
 
 interface ProductsReportTabProps {
@@ -38,11 +39,11 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
           <TableHeader className="bg-muted/40">
             <TableRow>
               <TableHead className="w-10" />
-              <TableHead className="text-right font-semibold">المنتج / الصنف</TableHead>
+              <TableHead className="text-start font-semibold">المنتج / الصنف</TableHead>
               <TableHead className="text-center font-semibold">عدد الطلبيات</TableHead>
               <TableHead className="text-center font-semibold">إجمالي الكمية</TableHead>
-              <TableHead className="text-left font-semibold">متوسط السعر</TableHead>
-              <TableHead className="text-left font-semibold">إجمالي المشتريات</TableHead>
+              <TableHead className="text-end font-semibold">متوسط السعر</TableHead>
+              <TableHead className="text-end font-semibold">إجمالي المشتريات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -72,7 +73,7 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
                           </Button>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-start">
                         {prod.productName || 'منتج غير مسمى'}
                       </TableCell>
                       <TableCell className="text-center tabular-nums text-xs">
@@ -81,11 +82,11 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
                       <TableCell className="text-center tabular-nums font-semibold">
                         {(Number(prod.totalQuantity) || 0).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums text-xs text-muted-foreground">
-                        {avgPrice.toFixed(2)} ج.م
+                      <TableCell className="text-end tabular-nums text-xs text-muted-foreground">
+                        {formatCurrency(avgPrice)}
                       </TableCell>
-                      <TableCell className="text-left tabular-nums font-bold">
-                        {(Number(prod.totalAmount) || 0).toLocaleString()} ج.م
+                      <TableCell className="text-end tabular-nums font-bold">
+                        {formatCurrency(prod.totalAmount || 0)}
                       </TableCell>
                     </TableRow>
 
@@ -102,15 +103,15 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
                                   <div className="flex items-center gap-2">
                                     <span className="font-mono text-primary font-medium">{ord.orderNumber}</span>
                                     <span className="text-muted-foreground">({ord.supplierName})</span>
-                                    <span className="text-muted-foreground text-[11px]">
-                                      {ord.orderDate ? new Date(ord.orderDate).toLocaleDateString('ar-EG') : ''}
+                                    <span className="text-muted-foreground text-[11px] tabular-nums">
+                                      {formatProcurementDate(ord.orderDate, 'ar')}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-4 tabular-nums">
                                     <span>الكمية: <strong>{ord.quantity}</strong></span>
-                                    <span>السعر: <strong>{(Number(ord.unitPrice) || 0).toLocaleString()} ج.م</strong></span>
+                                    <span>السعر: <strong>{formatCurrency(ord.unitPrice || 0)}</strong></span>
                                     <span className="font-semibold text-primary">
-                                      {(Number(ord.totalPrice) || 0).toLocaleString()} ج.م
+                                      {formatCurrency(ord.totalPrice || 0)}
                                     </span>
                                   </div>
                                 </div>
@@ -128,15 +129,15 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
           {products.length > 0 && (
             <TableFooter className="bg-muted/30 border-t border-border/60">
               <TableRow className="font-bold text-xs">
-                <TableCell colSpan={3} className="text-right">
+                <TableCell colSpan={3} className="text-start">
                   الإجمالي العام ({products.length} صنف):
                 </TableCell>
                 <TableCell className="text-center tabular-nums font-bold">
                   {totalQuantity.toLocaleString()}
                 </TableCell>
                 <TableCell />
-                <TableCell className="text-left font-bold tabular-nums">
-                  {totalAmount.toLocaleString()} ج.م
+                <TableCell className="text-end font-bold tabular-nums">
+                  {formatCurrency(totalAmount)}
                 </TableCell>
               </TableRow>
             </TableFooter>

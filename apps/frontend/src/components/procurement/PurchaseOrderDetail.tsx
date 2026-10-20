@@ -19,6 +19,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { ReceiveItemsDialog } from "./ReceiveItemsDialog";
+import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -353,18 +354,18 @@ export const PurchaseOrderDetail: React.FC = () => {
           <CardContent className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.orderDate", "تاريخ الأمر")}:</span>
-              <span className="font-semibold">{new Date(order.orderDate).toLocaleDateString("ar-EG")}</span>
+              <span className="font-semibold tabular-nums">{formatProcurementDate(order.orderDate, i18n.language)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.expectedDelivery", "التسليم المتوقع")}:</span>
-              <span className="font-semibold">
-                {order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString("ar-EG") : "-"}
+              <span className="font-semibold tabular-nums">
+                {formatProcurementDate(order.expectedDelivery, i18n.language)}
               </span>
             </div>
             {order.receivedDate && (
               <div className="flex justify-between text-emerald-600">
                 <span>{t("procurement.purchaseOrderDetail.receivedDate", "تاريخ الاستلام")}:</span>
-                <span className="font-semibold">{new Date(order.receivedDate).toLocaleDateString("ar-EG")}</span>
+                <span className="font-semibold tabular-nums">{formatProcurementDate(order.receivedDate, i18n.language)}</span>
               </div>
             )}
           </CardContent>
@@ -379,8 +380,8 @@ export const PurchaseOrderDetail: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="text-2xl font-bold font-mono text-primary">
-              {Number(order.totalAmount).toFixed(2)} EGP
+            <div className="text-2xl font-bold font-mono text-primary tabular-nums">
+              {formatCurrency(order.totalAmount, { locale: i18n.language })}
             </div>
             <div className="text-xs text-muted-foreground">
               {items.length} أصناف في هذا الأمر
@@ -426,9 +427,9 @@ export const PurchaseOrderDetail: React.FC = () => {
                       <TableCell className="text-center font-mono font-semibold">{qty}</TableCell>
                       <TableCell className="text-center font-mono text-emerald-600 font-semibold">{rec}</TableCell>
                       <TableCell className="text-center font-mono text-muted-foreground">{rem}</TableCell>
-                      <TableCell className="text-center font-mono">{Number(item.unitPrice).toFixed(2)} EGP</TableCell>
-                      <TableCell className="text-end font-mono font-bold text-foreground">
-                        {Number(item.totalPrice).toFixed(2)} EGP
+                      <TableCell className="text-center font-mono tabular-nums">{formatCurrency(item.unitPrice, { locale: i18n.language })}</TableCell>
+                      <TableCell className="text-end font-mono font-bold text-foreground tabular-nums">
+                        {formatCurrency(item.totalPrice, { locale: i18n.language })}
                       </TableCell>
                     </TableRow>
                   );
@@ -478,29 +479,29 @@ export const PurchaseOrderDetail: React.FC = () => {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.subtotal", "المجموع قبل الخصم:")}</span>
-              <span className="font-mono font-medium">{Number(order.subtotal).toFixed(2)} EGP</span>
+              <span className="font-mono font-medium tabular-nums">{formatCurrency(order.subtotal, { locale: i18n.language })}</span>
             </div>
             {Number(order.discountAmount) > 0 && (
               <div className="flex justify-between text-destructive">
                 <span>{t("procurement.purchaseOrderDetail.additionalDiscount", "خصم إضافي:")}</span>
-                <span className="font-mono font-medium">-{Number(order.discountAmount).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">-{formatCurrency(order.discountAmount, { locale: i18n.language })}</span>
               </div>
             )}
             {Number(order.taxAmount) > 0 && (
               <div className="flex justify-between text-emerald-600">
                 <span>{t("procurement.purchaseOrderDetail.taxAmount", "إجمالي الضرائب:")}</span>
-                <span className="font-mono font-medium">+{Number(order.taxAmount).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">+{formatCurrency(order.taxAmount, { locale: i18n.language })}</span>
               </div>
             )}
             {Number(order.shippingCost) > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.shippingCost", "مصاريف الشحن:")}</span>
-                <span className="font-mono font-medium">+{Number(order.shippingCost).toFixed(2)} EGP</span>
+                <span className="font-mono font-medium tabular-nums">+{formatCurrency(order.shippingCost, { locale: i18n.language })}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-border font-bold text-base">
               <span>{t("procurement.purchaseOrderDetail.grandTotal", "الإجمالي النهائي:")}</span>
-              <span className="font-mono text-primary">{Number(order.totalAmount).toFixed(2)} EGP</span>
+              <span className="font-mono text-primary tabular-nums">{formatCurrency(order.totalAmount, { locale: i18n.language })}</span>
             </div>
           </CardContent>
         </Card>
@@ -543,11 +544,11 @@ export const PurchaseOrderDetail: React.FC = () => {
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-mono font-semibold">{inv.invoiceNumber}</TableCell>
-                      <TableCell>{new Date(inv.invoiceDate).toLocaleDateString("ar-EG")}</TableCell>
-                      <TableCell>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("ar-EG") : "-"}</TableCell>
-                      <TableCell className="text-center font-mono font-medium">{Number(inv.totalAmount).toFixed(2)} EGP</TableCell>
-                      <TableCell className="text-center font-mono text-emerald-600">{Number(inv.paidAmount).toFixed(2)} EGP</TableCell>
-                      <TableCell className="text-center font-mono text-destructive">{Number(inv.remainingAmount).toFixed(2)} EGP</TableCell>
+                      <TableCell className="tabular-nums">{formatProcurementDate(inv.invoiceDate, i18n.language)}</TableCell>
+                      <TableCell className="tabular-nums">{formatProcurementDate(inv.dueDate, i18n.language)}</TableCell>
+                      <TableCell className="text-center font-mono font-medium tabular-nums">{formatCurrency(inv.totalAmount, { locale: i18n.language })}</TableCell>
+                      <TableCell className="text-center font-mono text-emerald-600 tabular-nums">{formatCurrency(inv.paidAmount, { locale: i18n.language })}</TableCell>
+                      <TableCell className="text-center font-mono text-destructive tabular-nums">{formatCurrency(inv.remainingAmount, { locale: i18n.language })}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant={inv.status === "PAID" ? "default" : "secondary"}>
                           {invoiceStatusLabels[inv.status] ?? inv.status}

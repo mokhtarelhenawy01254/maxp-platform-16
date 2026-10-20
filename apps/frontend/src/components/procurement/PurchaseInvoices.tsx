@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Eye, CreditCard, Search } from "lucide-react";
+import { Plus, Eye, CreditCard, Search, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -53,9 +54,11 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 };
 
 const PurchaseInvoices: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -87,6 +90,8 @@ const PurchaseInvoices: React.FC = () => {
 
   const fetchInvoices = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await apiClient.get<{
         invoices: PurchaseInvoice[];
         pagination: { totalPages: number };
@@ -95,10 +100,13 @@ const PurchaseInvoices: React.FC = () => {
       });
       setInvoices(response.data.invoices);
       setTotalPages(response.data.pagination.totalPages);
-    } catch (error) {
-      console.error("Error fetching invoices:", error);
+    } catch (err: any) {
+      console.error("Error fetching invoices:", err);
+      setError(err?.response?.data?.message || t("procurement.purchaseInvoices.fetchError", "تعذر تحميل فواتير الشراء"));
+    } finally {
+      setLoading(false);
     }
-  }, [page, searchTerm, statusFilter]);
+  }, [page, searchTerm, statusFilter, t]);
 
   useEffect(() => {
     fetchInvoices();
@@ -113,16 +121,28 @@ const PurchaseInvoices: React.FC = () => {
         </Button>
       </div>
 
+      {error && (
+        <div className="flex items-center justify-between p-3.5 mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={fetchInvoices} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
+        </div>
+      )}
+
       <Card className="mb-3">
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder={t("procurement.purchaseInvoices.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="ps-8"
               />
             </div>
             <div className="min-w-[200px]">
@@ -147,82 +167,118 @@ const PurchaseInvoices: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("procurement.purchaseInvoices.columnInvoiceNumber")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnSupplier")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnInvoiceDate")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnDueDate")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnTotalAmount")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnPaidAmount")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnRemainingAmount")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnStatus")}</TableHead>
-              <TableHead>{t("procurement.purchaseInvoices.columnActions")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseInvoices.columnInvoiceNumber")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseInvoices.columnSupplier")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseInvoices.columnInvoiceDate")}</TableHead>
+              <TableHead className="text-start">{t("procurement.purchaseInvoices.columnDueDate")}</TableHead>
+              <TableHead className="text-end">{t("procurement.purchaseInvoices.columnTotalAmount")}</TableHead>
+              <TableHead className="text-end">{t("procurement.purchaseInvoices.columnPaidAmount")}</TableHead>
+              <TableHead className="text-end">{t("procurement.purchaseInvoices.columnRemainingAmount")}</TableHead>
+              <TableHead className="text-center">{t("procurement.purchaseInvoices.columnStatus")}</TableHead>
+              <TableHead className="text-center">{t("procurement.purchaseInvoices.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>{invoice.invoiceNumber}</TableCell>
-                <TableCell>{invoice.supplier.name}</TableCell>
-                <TableCell>
-                  {new Date(invoice.invoiceDate).toLocaleDateString("ar-EG")}
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={9}>
+                    <div className="h-4 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : invoices.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  {searchTerm || statusFilter
+                    ? "لا توجد فواتير مطابقة لمعايير البحث"
+                    : t("procurement.purchaseInvoices.emptyState", "لا توجد فواتير مسجلة")}
                 </TableCell>
-                <TableCell>
-                  {invoice.dueDate
-                    ? new Date(invoice.dueDate).toLocaleDateString("ar-EG")
-                    : "-"}
-                </TableCell>
-                <TableCell>{Number(invoice.totalAmount).toFixed(2)} EGP</TableCell>
-                <TableCell>{Number(invoice.paidAmount).toFixed(2)} EGP</TableCell>
-                <TableCell>{Number(invoice.remainingAmount).toFixed(2)} EGP</TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1 items-start">
-                    <Badge variant={statusColors[invoice.status] || "outline"}>
-                      {statusLabels[invoice.status] ?? invoice.status}
-                    </Badge>
-                    {isInvoiceOverdue(invoice) && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                        {t("procurement.purchaseInvoices.statusOverdue", "متأخر")}
+              </TableRow>
+            ) : (
+              invoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-mono text-xs font-medium text-primary text-start">
+                    {invoice.invoiceNumber}
+                  </TableCell>
+                  <TableCell className="text-start">{invoice.supplier.name}</TableCell>
+                  <TableCell className="text-xs tabular-nums text-start">
+                    {formatProcurementDate(invoice.invoiceDate, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-start">
+                    {formatProcurementDate(invoice.dueDate, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-end tabular-nums font-medium">
+                    {formatCurrency(invoice.totalAmount, { locale: i18n.language })}
+                  </TableCell>
+                  <TableCell className="text-end tabular-nums font-medium text-emerald-600">
+                    {formatCurrency(invoice.paidAmount, { locale: i18n.language })}
+                  </TableCell>
+                  <TableCell className="text-end tabular-nums font-medium text-destructive">
+                    {formatCurrency(invoice.remainingAmount, { locale: i18n.language })}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex flex-col gap-1 items-center">
+                      <Badge variant={statusColors[invoice.status] || "outline"}>
+                        {statusLabels[invoice.status] ?? invoice.status}
                       </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        navigate(`/procurement/purchase-invoices/${invoice.id}`)
-                      }
-                      title={t("procurement.purchaseInvoices.viewDetails")}
-                    >
-                      <Eye className="size-4" />
-                    </Button>
-                    {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+                      {isInvoiceOverdue(invoice) && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                          {t("procurement.purchaseInvoices.statusOverdue", "متأخر")}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() =>
-                          navigate(
-                            `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
-                          )
+                          navigate(`/procurement/purchase-invoices/${invoice.id}`)
                         }
-                        title={t("procurement.purchaseInvoices.recordPayment")}
+                        title={t("procurement.purchaseInvoices.viewDetails")}
                       >
-                        <CreditCard className="size-4" />
+                        <Eye className="size-4" />
                       </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                      {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            navigate(
+                              `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
+                            )
+                          }
+                          title={t("procurement.purchaseInvoices.recordPayment")}
+                        >
+                          <CreditCard className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       <div className="grid md:hidden gap-2">
-        {invoices.length === 0 ? (
-          <ProcurementMobileState>{t("procurement.purchaseInvoices.emptyState")}</ProcurementMobileState>
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse space-y-2">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+          ))
+        ) : invoices.length === 0 ? (
+          <ProcurementMobileState>
+            {searchTerm || statusFilter
+              ? "لا توجد فواتير مطابقة لمعايير البحث"
+              : t("procurement.purchaseInvoices.emptyState")}
+          </ProcurementMobileState>
         ) : (
           invoices.map((invoice) => (
             <ProcurementMobileCard
@@ -245,26 +301,24 @@ const PurchaseInvoices: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.purchaseInvoices.mobileInvoiceDate"),
-                  value: new Date(invoice.invoiceDate).toLocaleDateString("ar-EG"),
+                  value: formatProcurementDate(invoice.invoiceDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobileDueDate"),
-                  value: invoice.dueDate
-                    ? new Date(invoice.dueDate).toLocaleDateString("ar-EG")
-                    : "-",
+                  value: formatProcurementDate(invoice.dueDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobileTotal"),
-                  value: `${Number(invoice.totalAmount).toFixed(2)} EGP`,
+                  value: formatCurrency(invoice.totalAmount, { locale: i18n.language }),
                   emphasis: true,
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobilePaid"),
-                  value: `${Number(invoice.paidAmount).toFixed(2)} EGP`,
+                  value: formatCurrency(invoice.paidAmount, { locale: i18n.language }),
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobileRemaining"),
-                  value: `${Number(invoice.remainingAmount).toFixed(2)} EGP`,
+                  value: formatCurrency(invoice.remainingAmount, { locale: i18n.language }),
                   emphasis: invoice.remainingAmount > 0,
                 },
               ]}

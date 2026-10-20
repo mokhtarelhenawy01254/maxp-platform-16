@@ -10,6 +10,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
 import { PaymentReportRow } from './reportTypes';
 
 interface PaymentsReportTabProps {
@@ -52,7 +53,7 @@ export const PaymentsReportTab: React.FC<PaymentsReportTabProps> = ({ payments, 
                 {methodMap[m] || m}
               </Badge>
               <span className="font-bold tabular-nums">{val.count}</span>
-              <span className="text-muted-foreground">({(Number(val.amount) || 0).toLocaleString()} ج.م)</span>
+              <span className="text-muted-foreground">({formatCurrency(val.amount || 0)})</span>
             </div>
           ))}
         </div>
@@ -63,13 +64,13 @@ export const PaymentsReportTab: React.FC<PaymentsReportTabProps> = ({ payments, 
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="text-right font-semibold">رقم الدفعة</TableHead>
-                <TableHead className="text-right font-semibold">المورد</TableHead>
-                <TableHead className="text-right font-semibold">الفاتورة المسددة</TableHead>
-                <TableHead className="text-right font-semibold">تاريخ الدفع</TableHead>
+                <TableHead className="text-start font-semibold">رقم الدفعة</TableHead>
+                <TableHead className="text-start font-semibold">المورد</TableHead>
+                <TableHead className="text-start font-semibold">الفاتورة المسددة</TableHead>
+                <TableHead className="text-start font-semibold">تاريخ الدفع</TableHead>
                 <TableHead className="text-center font-semibold">طريقة الدفع</TableHead>
-                <TableHead className="text-right font-semibold">المرجع</TableHead>
-                <TableHead className="text-left font-semibold">المبلغ</TableHead>
+                <TableHead className="text-start font-semibold">المرجع</TableHead>
+                <TableHead className="text-end font-semibold">المبلغ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,28 +91,28 @@ export const PaymentsReportTab: React.FC<PaymentsReportTabProps> = ({ payments, 
                       }
                     }}
                   >
-                    <TableCell className="font-mono text-xs font-medium text-primary">
+                    <TableCell className="font-mono text-xs font-medium text-primary text-start">
                       {p.paymentNumber}
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-start">
                       {p.supplier?.name || '—'}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
+                    <TableCell className="font-mono text-xs text-muted-foreground text-start">
                       {p.purchaseInvoice?.invoiceNumber || 'سداد مباشر / على الحساب'}
                     </TableCell>
-                    <TableCell className="text-xs tabular-nums text-muted-foreground">
-                      {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('ar-EG') : '—'}
+                    <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
+                      {formatProcurementDate(p.paymentDate, 'ar')}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">
                         {methodMap[p.paymentMethod] || p.paymentMethod}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">
+                    <TableCell className="text-xs font-mono text-muted-foreground text-start">
                       {p.referenceNumber || '—'}
                     </TableCell>
-                    <TableCell className="text-left tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
-                      {(Number(p.amount) || 0).toLocaleString()} ج.م
+                    <TableCell className="text-end tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(p.amount || 0)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -120,11 +121,11 @@ export const PaymentsReportTab: React.FC<PaymentsReportTabProps> = ({ payments, 
             {payments.length > 0 && (
               <TableFooter className="bg-muted/30 border-t border-border/60">
                 <TableRow className="font-bold text-xs">
-                  <TableCell colSpan={6} className="text-right">
+                  <TableCell colSpan={6} className="text-start">
                     الإجمالي العام ({totalCount} سداد):
                   </TableCell>
-                  <TableCell className="text-left font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {totalAmount.toLocaleString()} ج.م
+                  <TableCell className="text-end font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(totalAmount)}
                   </TableCell>
                 </TableRow>
               </TableFooter>

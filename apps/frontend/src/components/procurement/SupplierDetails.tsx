@@ -5,6 +5,7 @@ import {
   Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import { formatCurrency, formatProcurementDate } from '../../lib/formatCurrency';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -182,8 +183,8 @@ export default function SupplierDetails() {
             margin: 15mm 10mm;
           }
           body {
-            background: #ffffff !important;
-            color: #000000 !important;
+            background: white !important;
+            color: black !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -204,12 +205,12 @@ export default function SupplierDetails() {
             border-collapse: collapse !important;
           }
           th, td {
-            border: 1px solid #d1d5db !important;
+            border: 1px solid rgb(209, 213, 219) !important;
             padding: 6px 8px !important;
-            color: #000000 !important;
+            color: black !important;
           }
           th {
-            background-color: #f3f4f6 !important;
+            background-color: rgb(243, 244, 246) !important;
           }
           tr {
             page-break-inside: avoid;
@@ -234,9 +235,9 @@ export default function SupplierDetails() {
             </div>
           </div>
           <div className="text-left text-xs space-y-1">
-            <div>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</div>
-            <div className="font-semibold">الرصيد الافتتاحي: {(Number(supplier.openingBalance) || 0).toLocaleString()} ج.م</div>
-            <div className="font-bold text-sm">الرصيد الختامي: {(Number(supplier.currentBalance) || 0).toLocaleString()} ج.م</div>
+            <div>تاريخ الطباعة: {formatProcurementDate(new Date(), 'ar')}</div>
+            <div className="font-semibold">الرصيد الافتتاحي: {formatCurrency(supplier.openingBalance || 0)}</div>
+            <div className="font-bold text-sm">الرصيد الختامي: {formatCurrency(supplier.currentBalance || 0)}</div>
           </div>
         </div>
       </div>
@@ -315,7 +316,7 @@ export default function SupplierDetails() {
         <div className="rounded-xl border border-border/60 bg-card p-4 flex flex-col justify-between">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">الرصيد الافتتاحي</span>
           <div className="mt-2 text-2xl font-bold tabular-nums">
-            {(supplier.openingBalance || 0).toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ج.م</span>
+            {formatCurrency(supplier.openingBalance || 0)}
           </div>
           <span className="text-xs text-muted-foreground mt-1">الرصيد عند بدء التعامل بالنظام</span>
         </div>
@@ -324,7 +325,7 @@ export default function SupplierDetails() {
         <div className="rounded-xl border border-border/60 bg-card p-4 flex flex-col justify-between border-l-4 border-l-primary">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">الرصيد الحالي المستحق</span>
           <div className={`mt-2 text-2xl font-bold tabular-nums ${supplier.currentBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-            {(supplier.currentBalance || 0).toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ج.م</span>
+            {formatCurrency(supplier.currentBalance || 0)}
           </div>
           <span className="text-xs text-muted-foreground mt-1">
             {supplier.currentBalance > 0 ? 'مستحق للمورد' : 'لا توجد مستحقات'}
@@ -341,25 +342,25 @@ export default function SupplierDetails() {
           <div className="rounded-lg border border-border/50 bg-card/60 p-3">
             <span className="text-xs text-muted-foreground">1 - 30 يوم</span>
             <div className="text-lg font-semibold tabular-nums mt-1">
-              {(aging?.days1To30 || 0).toLocaleString()} ج.م
+              {formatCurrency(aging?.days1To30 || 0)}
             </div>
           </div>
           <div className="rounded-lg border border-border/50 bg-card/60 p-3">
             <span className="text-xs text-muted-foreground">31 - 60 يوم</span>
             <div className="text-lg font-semibold tabular-nums mt-1 text-amber-500">
-              {(aging?.days31To60 || 0).toLocaleString()} ج.م
+              {formatCurrency(aging?.days31To60 || 0)}
             </div>
           </div>
           <div className="rounded-lg border border-border/50 bg-card/60 p-3">
             <span className="text-xs text-muted-foreground">61 - 90 يوم</span>
             <div className="text-lg font-semibold tabular-nums mt-1 text-orange-500">
-              {(aging?.days61To90 || 0).toLocaleString()} ج.م
+              {formatCurrency(aging?.days61To90 || 0)}
             </div>
           </div>
           <div className="rounded-lg border border-border/50 bg-card/60 p-3">
             <span className="text-xs text-muted-foreground">+90 يوم</span>
             <div className="text-lg font-semibold tabular-nums mt-1 text-rose-500">
-              {(aging?.days90Plus || 0).toLocaleString()} ج.م
+              {formatCurrency(aging?.days90Plus || 0)}
             </div>
           </div>
         </div>
@@ -412,7 +413,7 @@ export default function SupplierDetails() {
                   statement.map((entry, idx) => (
                     <tr key={idx} className="hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 tabular-nums whitespace-nowrap text-xs">
-                        {entry.date ? new Date(entry.date).toLocaleDateString('ar-EG') : '—'}
+                        {entry.date ? formatProcurementDate(entry.date, 'ar') : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {entry.type === 'INVOICE' && (
@@ -438,13 +439,13 @@ export default function SupplierDetails() {
                         {entry.description || '—'}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-left font-medium">
-                        {entry.debit > 0 ? `${entry.debit.toLocaleString()} ج.م` : '—'}
+                        {entry.debit > 0 ? formatCurrency(entry.debit) : '—'}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-left font-medium text-emerald-500">
-                        {entry.credit > 0 ? `${entry.credit.toLocaleString()} ج.م` : '—'}
+                        {entry.credit > 0 ? formatCurrency(entry.credit) : '—'}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-left font-bold">
-                        {entry.balance.toLocaleString()} ج.م
+                        {formatCurrency(entry.balance)}
                       </td>
                     </tr>
                   ))
@@ -519,7 +520,7 @@ export default function SupplierDetails() {
                   <SelectContent>
                     {treasuryAccounts.map(acc => (
                       <SelectItem key={acc.id} value={acc.id}>
-                        {acc.name} ({acc.balance.toLocaleString()} ج.م)
+                        {acc.name} ({formatCurrency(acc.balance)})
                       </SelectItem>
                     ))}
                   </SelectContent>
