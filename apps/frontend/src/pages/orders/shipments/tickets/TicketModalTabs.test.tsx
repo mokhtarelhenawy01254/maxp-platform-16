@@ -1,10 +1,13 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import { TicketModalTabs } from "./TicketModalTabs";
 
 describe("TicketModalTabs", () => {
   it("renders tabs and triggers tab switching", () => {
-    const setActiveTab = jest.fn();
+    const setActiveTab = vi.fn();
     const { rerender } = render(
       <TicketModalTabs
         activeTab="new"

@@ -1,9 +1,16 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { TicketDetailTab } from "./TicketDetailTab";
 import type { OrderTicketItem } from "./ticketTypes";
 
 describe("TicketDetailTab", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   const mockTicket: OrderTicketItem = {
     id: 101,
     status: "in_progress",
@@ -17,13 +24,13 @@ describe("TicketDetailTab", () => {
   const defaultProps = {
     ticketDetail: mockTicket,
     loadingDetail: false,
-    onRefreshDetail: jest.fn(),
+    onRefreshDetail: vi.fn(),
     replyContent: "",
-    setReplyContent: jest.fn(),
+    setReplyContent: vi.fn(),
     replyImage: null,
-    setReplyImage: jest.fn(),
+    setReplyImage: vi.fn(),
     sendingReply: false,
-    onSendReply: jest.fn((e) => e.preventDefault()),
+    onSendReply: vi.fn((e) => e.preventDefault()),
   };
 
   it("renders ticket header, messages thread, and reply input", () => {
@@ -37,7 +44,7 @@ describe("TicketDetailTab", () => {
   });
 
   it("calls setReplyContent when typing reply", () => {
-    const setReplyContent = jest.fn();
+    const setReplyContent = vi.fn();
     render(<TicketDetailTab {...defaultProps} setReplyContent={setReplyContent} />);
 
     const input = screen.getByPlaceholderText(/اكتب رداً على التذكرة/i);
@@ -46,7 +53,7 @@ describe("TicketDetailTab", () => {
   });
 
   it("calls onRefreshDetail when clicking refresh button", () => {
-    const onRefreshDetail = jest.fn();
+    const onRefreshDetail = vi.fn();
     render(<TicketDetailTab {...defaultProps} onRefreshDetail={onRefreshDetail} />);
 
     const refreshBtn = screen.getByRole("button", { name: /تحديث/i });

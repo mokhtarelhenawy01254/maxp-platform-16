@@ -1,34 +1,37 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, it, expect, vi } from "vitest";
 import PreparationQueue from "../PreparationQueue";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock("../../../i18n", () => ({
+vi.mock("../../../i18n", () => ({
   __esModule: true,
   default: { t: (key: string) => key },
 }));
 
-jest.mock("react-router-dom", () => {
-  const actual = jest.requireActual("react-router-dom");
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
   return {
     ...actual,
-    useSearchParams: () => [new URLSearchParams(), jest.fn()],
-    useNavigate: () => jest.fn(),
+    useSearchParams: () => [new URLSearchParams(), vi.fn()],
+    useNavigate: () => vi.fn(),
   };
 });
 
-jest.mock("../../../hooks/useAuthSimple", () => ({
+vi.mock("../../../hooks/useAuthSimple", () => ({
   useAuth: () => ({
     user: { id: "admin-1", role: "COMPANY_ADMIN", companyId: "company-1" },
   }),
 }));
 
-jest.mock("../../../hooks/useCurrency", () => ({
+vi.mock("../../../hooks/useCurrency", () => ({
   useCurrency: () => ({
     currency: "EGP",
     formatPrice: (amount: number | null | undefined) => `${amount ?? 0} EGP`,
@@ -37,26 +40,26 @@ jest.mock("../../../hooks/useCurrency", () => ({
   }),
 }));
 
-jest.mock("../../../hooks/useDateFormat", () => ({
+vi.mock("../../../hooks/useDateFormat", () => ({
   useDateFormat: () => ({
     formatDate: (date: Date | string | number) => String(date).slice(0, 10),
     formatDateTime: (date: Date | string | number) => String(date),
   }),
 }));
 
-jest.mock("../../../hooks/useInvoiceSettings", () => ({
+vi.mock("../../../hooks/useInvoiceSettings", () => ({
   useInvoiceSettings: () => ({
     settings: {},
     loading: false,
   }),
 }));
 
-jest.mock("../../../services/apiClient", () => ({
+vi.mock("../../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({
+    get: vi.fn().mockResolvedValue({
       data: { success: true, data: [], pagination: { pages: 0, total: 0 } },
     }),
-    post: jest.fn().mockResolvedValue({ data: { success: true } }),
+    post: vi.fn().mockResolvedValue({ data: { success: true } }),
   },
 }));
 
