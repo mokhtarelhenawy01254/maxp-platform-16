@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRightLeft,
@@ -143,7 +143,9 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
   const isEn = i18n.language?.startsWith("en");
   const dir = getDirection();
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-  const [zoom, setZoom] = useState(1);
+  const [zoomOverride, setZoomOverride] = useState<number | null>(null);
+  const [fitScale, setFitScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const fullTree = useMemo(() => buildCategoryTree(categories), [categories]);
 
@@ -292,6 +294,23 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
     };
   }, [visibleTree, collapsedIds, searching, dir]);
 
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    const compute = () => {
+      const available = element.clientWidth - 8;
+      const needed = layout.width + PAD * 2;
+      if (needed <= 0 || available <= 0) return;
+      setFitScale(Math.min(1, Math.max(0.4, available / needed)));
+    };
+    compute();
+    const observer = new ResizeObserver(compute);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [layout.width]);
+
+  const scale = zoomOverride ?? fitScale;
+
   const totalProducts = categories.reduce(
     (sum, category) => sum + (category._count?.products || 0),
     0,
@@ -328,7 +347,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
           <span className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.min(1.4, Number((z + 0.1).toFixed(2))))}
+            onClick={() => setZoomOverride(Math.min(1.4, Number((scale + 0.1).toFixed(2))))}
             aria-label={t("categories.management.flow.zoomIn") as string}
             className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors"
           >
@@ -336,7 +355,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
+            onClick={() => setZoomOverride(Math.max(0.3, Number((scale - 0.1).toFixed(2))))}
             aria-label={t("categories.management.flow.zoomOut") as string}
             className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors"
           >
@@ -344,7 +363,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setZoom(1)}
+            onClick={() => setZoomOverride(null)}
             aria-label={t("categories.management.flow.zoomReset") as string}
             className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors"
           >
@@ -363,13 +382,25 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
           </p>
         </div>
       ) : (
-        <div className="overflow-auto bg-[radial-gradient(circle_at_1px_1px,rgba(120,120,120,0.16)_1px,transparent_0)] [background-size:22px_22px]">
+        <div
+          ref={containerRef}
+          className="overflow-auto bg-[radial-gradient(circle_at_1px_1px,rgba(120,120,120,0.16)_1px,transparent_0)] [background-size:22px_22px]"
+        >
+          <div
+            style={{
+              width: (layout.width + PAD * 2) * scale,
+              height: (layout.height + PAD * 2) * scale,
+              position: "relative",
+            }}
+          >
           <div
             style={{
               width: layout.width + PAD * 2,
               height: layout.height + PAD * 2,
-              position: "relative",
-              transform: `scale(${zoom})`,
+              position: "absolute",
+              top: 0,
+              ...(dir === "rtl" ? { right: 0 } : { left: 0 }),
+              transform: `scale(${scale})`,
               transformOrigin: dir === "rtl" ? "top right" : "top left",
             }}
           >
@@ -384,10 +415,10 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
                   d={edge.d}
                   fill="none"
                   stroke={edge.color}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   strokeLinecap="round"
                   transform={`translate(${PAD}, ${PAD})`}
-                  opacity={0.85}
+                  opacity={1}
                 />
               ))}
             </svg>
@@ -585,6 +616,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
                 </div>
               );
             })}
+          </div>
           </div>
         </div>
       )}
