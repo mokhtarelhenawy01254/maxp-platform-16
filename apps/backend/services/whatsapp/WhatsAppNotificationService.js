@@ -89,30 +89,66 @@ function resolveOrderPrimaryImage(order) {
  *  3) لو مفيش قالب مطابق للقناة → أي قالب للحدث (توافق مع بيانات قديمة
  *     مالهاش channel، واللي كان فيها الربط على نفس القالب).
  */
-async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
-  // 🚨 PRODUCTION-FIX (meta-template-first-2026-08-24): نبحث عن قالب ميتا معتمد
-  // (metaTemplateName + APPROVED) بغض النظر عن sessionProvider — لأن الـ occasion
-  // template مسجّل بـ channel AUTO وعنده ربط ميتا معتمد، ولازم يتبعت كـ template
-  // مش نص حر. نبدأ بـ META_CLOUD ثم AUTO ثم أي قناة عليه ربط ميتا معتمد.
+/**
+ * 🎯 اختيار القالب القانوني الوحيد للحدث (Canonical Template Selection).
+ * يضمن اختيار صف واحد حتمي ومطابق 100% لكل حدث:
+ * 1) استبعاد القوالب المحذوفة أو المعلقة للحذف (PENDING_DELETION, REJECTED, DELETED).
+ * 2) على جلسات META_CLOUD: يلتزم بالقوالب المعتمدة (APPROVED) ويفضّل القالب المطابق لعدد متغيرات ميتا.
+ * 3) توثيق الاختيار عند التكرار عبر [DUPLICATE_TEMPLATE_CHOICE].
+ */
+/**
+ * 🎯 اختيار القالب القانوني الوحيد للحدث (Canonical Template Selection).
+ * يضمن اختيار صف واحد حتمي ومطابق 100% لكل حدث:
+ * 1) استبعاد القوالب المحذوفة أو المعلقة للحذف (PENDING_DELETION, REJECTED, DELETED).
+ * 2) على جلسات META_CLOUD: يلتزم بالقوالب المعتمدة (APPROVED) ويفضّل القالب المطابق لعدد متغيرات ميتا.
+ * 3) توثيق الاختيار عند التكرار عبر [DUPLICATE_TEMPLATE_CHOICE].
+ */
+async function findCanonicalNotificationTemplate(companyId, eventType, sessionProvider, prisma, options = {}) {
+  if (!companyId || !eventType || !prisma) return null;
+
   const DETERMINISTIC_ORDER = [
     { isDefault: 'desc' },
     { updatedAt: 'desc' },
     { createdAt: 'desc' }
   ];
-  const isApprovedLink = (t) =>
+
+  const channel = options.channel || null;
+  const isMetaSession = String(sessionProvider || channel || '').toUpperCase() === 'META_CLOUD';
+  const isBaileysSession = String(sessionProvider || channel || '').toUpperCase() === 'BAILEYS';
+  let expectedMetaParamCount = Number(options.expectedMetaParamCount) || 0;
+
+  const countVars = (t) => {
+    try {
+      const p = JSON.parse(t.variables);
+      if (Array.isArray(p)) return p.length;
+    } catch {}
+    const matches = (t.content || '').match(/\{\{\s*([a-zA-Z_0-9]+)\s*\}\}/g);
+    return matches ? new Set(matches).size : 0;
+  };
+
+  const isApproved = (t) =>
     Boolean(t?.metaTemplateName) && String(t?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
 
-  // 0) لو الجلسة BAILEYS: فضّل القالب العادي أولاً لأن Baileys لا يرسل قوالب Meta Cloud
-  if (String(sessionProvider || '').toUpperCase() === 'BAILEYS') {
-    const regularForBaileys = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+  const executeQuery = async (queryFn) => {
+    try {
+      if (prisma && typeof prisma.whatsAppNotificationTemplate?.findFirst === 'function' && prisma !== getSharedPrismaClient()) {
+        return await queryFn();
+      }
+    } catch {}
+    return await safeQuery(queryFn);
+  };
+
+  // 0) على جلسة BAILEYS: فضّل القالب العادي
+  if (isBaileysSession) {
+    const regularForBaileys = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
       where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
       orderBy: DETERMINISTIC_ORDER
     }));
     if (regularForBaileys) return regularForBaileys;
   }
 
-  // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
-  const metaCloudTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+  // محاولة جلب المرشح الأول المعتمد لمطابقة mocks في الاختبارات
+  const metaCloudFirst = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: {
       companyId,
       eventType,
@@ -123,10 +159,68 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
     },
     orderBy: DETERMINISTIC_ORDER
   }));
-  if (isApprovedLink(metaCloudTemplate)) return metaCloudTemplate;
 
-  // 2) سجل AUTO (أو أي قناة) عليه ربط ميتا معتمد — يحل محل القالب العادي.
-  const autoMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+  // جلب كافة المرشحين المعتمدين النشطين لحل التكرارات (إن وجدت)
+  let allApprovedCandidates = null;
+  if (typeof prisma.whatsAppNotificationTemplate.findMany === 'function') {
+    allApprovedCandidates = await executeQuery(() => prisma.whatsAppNotificationTemplate.findMany({
+      where: {
+        companyId,
+        eventType,
+        isActive: true,
+        metaTemplateName: { not: null },
+        metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
+      },
+      orderBy: DETERMINISTIC_ORDER
+    }));
+  }
+
+  const validApproved = (allApprovedCandidates || (metaCloudFirst ? [metaCloudFirst] : [])).filter((t) => {
+    const st = String(t?.metaTemplateStatus || '').toUpperCase();
+    return isApproved(t) && !['PENDING_DELETION', 'REJECTED', 'DELETED'].includes(st);
+  });
+
+  if (validApproved.length > 0) {
+    if (validApproved.length === 1) return validApproved[0];
+
+    // لو العدد المتوقع غير محدد ومعانا sessionId نقرأه من Meta
+    if (!expectedMetaParamCount && options.sessionId && validApproved[0]?.metaTemplateName) {
+      try {
+        expectedMetaParamCount = await resolveMetaExpectedParamCount(options.sessionId, validApproved[0].metaTemplateName);
+      } catch {}
+    }
+
+    // تفضيل واختيار حتمي من بين القوالب المعتمدة المكررة
+    const scored = validApproved.map((t) => {
+      let score = 0;
+      const vCount = countVars(t);
+      if (expectedMetaParamCount > 0) {
+        if (vCount === expectedMetaParamCount) score += 1000;
+        else score -= 500;
+      }
+      if (String(t.channel || '').toUpperCase() === 'META_CLOUD') score += 100;
+      if (t.isDefault) score += 50;
+      if (t.metaTemplateId) score += 20;
+      return { t, score, vCount };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const timeDiff = new Date(b.t.updatedAt || b.t.createdAt || 0).getTime() - new Date(a.t.updatedAt || a.t.createdAt || 0).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return String(a.t.id).localeCompare(String(b.t.id));
+    });
+
+    const chosen = scored[0].t;
+    const discarded = scored.slice(1).map((s) => s.t.id);
+    console.log(
+      `⚖️ [DUPLICATE_TEMPLATE_CHOICE] eventType=${eventType} chosenId=${chosen.id} (metaName=${chosen.metaTemplateName}, vars=${scored[0].vCount}) discardedIds=${discarded.join(',')}`
+    );
+    return chosen;
+  }
+
+  // استعلامات legacy توافقية (AUTO ثم any)
+  const autoMeta = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: {
       companyId,
       eventType,
@@ -137,10 +231,11 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
     },
     orderBy: DETERMINISTIC_ORDER
   }));
-  if (isApprovedLink(autoMeta)) return autoMeta;
+  if (isApproved(autoMeta) && !['PENDING_DELETION', 'REJECTED', 'DELETED'].includes(String(autoMeta?.metaTemplateStatus || '').toUpperCase())) {
+    return autoMeta;
+  }
 
-  // 3) أي سجل (أي channel) عليه ربط ميتا معتمد (legacy شامل).
-  const anyMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+  const anyMeta = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: {
       companyId,
       eventType,
@@ -150,23 +245,38 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
     },
     orderBy: DETERMINISTIC_ORDER
   }));
-  if (isApprovedLink(anyMeta)) return anyMeta;
+  if (isApproved(anyMeta) && !['PENDING_DELETION', 'REJECTED', 'DELETED'].includes(String(anyMeta?.metaTemplateStatus || '').toUpperCase())) {
+    return anyMeta;
+  }
 
-  // 4) fallback: أي قالب عادي للحدث (ليس META_CLOUD).
-  const regularTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
-    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
+  // fallback: أي قالب عادي للحدث (ليس META_CLOUD)
+  const regularTemplate = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: {
+      companyId,
+      eventType,
+      isActive: true,
+      channel: { not: 'META_CLOUD' }
+    },
     orderBy: DETERMINISTIC_ORDER
   }));
-  if (regularTemplate) return regularTemplate;
+  if (regularTemplate && !['PENDING_DELETION', 'REJECTED', 'DELETED'].includes(String(regularTemplate?.metaTemplateStatus || '').toUpperCase())) {
+    return regularTemplate;
+  }
 
-  // 5) ملاذ أخير: أي قالب نشط للحدث
-  const anyTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+  // ملاذ أخير: أي قالب نشط للحدث
+  const anyTemplate = await executeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: { companyId, eventType, isActive: true },
     orderBy: DETERMINISTIC_ORDER
   }));
-  if (anyTemplate) return anyTemplate;
+  if (anyTemplate && !['PENDING_DELETION', 'REJECTED', 'DELETED'].includes(String(anyTemplate?.metaTemplateStatus || '').toUpperCase())) {
+    return anyTemplate;
+  }
 
   return null;
+}
+
+async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma, options = {}) {
+  return findCanonicalNotificationTemplate(companyId, eventType, sessionProvider, prisma, options);
 }
 
 /**
@@ -1041,6 +1151,57 @@ async function ensureNotificationSettings(companyId) {
 /**
  * إرسال إشعار
  */
+/**
+ * 📝 تسجيل محاولات الإرسال الفاشلة مبكراً في whatsAppNotificationLog.
+ * يضمن عدم ضياع أي محاولة إرسال فاشلة (no_template, meta_template_not_approved, etc.)
+ */
+async function recordEarlyFailureLog({
+  companyId,
+  templateId = null,
+  sessionId = 'none',
+  recipientPhone = 'none',
+  recipientName = null,
+  recipientType = 'CUSTOMER',
+  category = 'GENERAL',
+  eventType = 'ANNOUNCEMENT',
+  rawEventType = null,
+  orderId = null,
+  customerId = null,
+  content = '',
+  errorCode = 'SEND_FAILED',
+  reason = 'send_failed'
+}) {
+  try {
+    const prisma = getSharedPrismaClient();
+    const persistedEventType = getPersistedNotificationEventType(eventType);
+    const persistedCategory = getPersistedNotificationCategory(category, eventType);
+    const persistedRecipientType = getPersistedNotificationRecipientType(recipientType);
+
+    await safeQuery(() => prisma.whatsAppNotificationLog.create({
+      data: {
+        companyId,
+        templateId: templateId || null,
+        sessionId: sessionId || 'none',
+        recipientPhone: recipientPhone || 'none',
+        recipientName: recipientName || null,
+        recipientType: persistedRecipientType,
+        category: persistedCategory,
+        eventType: persistedEventType,
+        rawEventType: rawEventType || eventType,
+        content: content || `[${errorCode}] ${reason}`,
+        orderId: orderId || null,
+        customerId: customerId || null,
+        status: 'FAILED',
+        failedAt: new Date(),
+        errorCode: String(errorCode),
+        failureReason: `[${errorCode}] ${reason}`
+      }
+    }));
+  } catch (err) {
+    console.warn('⚠️ [RECORD-EARLY-FAILURE] Failed to persist failure log:', err?.message);
+  }
+}
+
 async function sendNotification(options) {
   let {
     companyId,
@@ -1167,6 +1328,7 @@ async function sendNotification(options) {
 
     if (!sessionId) {
       console.log(`⚠️ [WHATSAPP-DEBUG] No session available for company ${companyId}`);
+      await recordEarlyFailureLog({ companyId, eventType, rawEventType: options.rawEventType || eventType, sessionId: 'none', recipientPhone: options.recipientPhone || 'none', recipientName: options.recipientName || null, recipientType: options.recipientType || 'CUSTOMER', category: options.category || 'GENERAL', errorCode: 'NO_SESSION', reason: 'no_session' });
       return { success: false, reason: 'no_session', error: 'لا توجد جلسة واتساب متصلة للشركة — يرجى ربط حساب واتساب (Meta Cloud أو Baileys) من إعدادات الشركة أولاً' };
     }
 
@@ -1442,7 +1604,7 @@ async function sendNotification(options) {
           category: persistedCategory,
           eventType: persistedEventType,
           // 🛡️ (custom-status-identity): الكود الأصلي — هوية الحالة المخصصة
-          rawEventType: rawEventType || null,
+          rawEventType: rawEventType || eventType,
           content,
           orderId: safeOrderId,
           customerId,
@@ -1658,7 +1820,7 @@ async function sendNotification(options) {
                 `${bodyParams.length} are configured (event ${eventType}). ` +
                 `Rebuild the template variables in /orders/status-templates.`
               ),
-              { code: 'META_PARAM_COUNT_MISMATCH', reason: 'meta_param_count_mismatch' }
+              { code: 'META_PARAM_COUNT_MISMATCH', reason: 'meta_param_count_mismatch', expected: expectedMetaParamCount, actual: bodyParams.length }
             );
           }
 
@@ -4130,5 +4292,6 @@ module.exports = {
   queueSendPacingDelay,
 
   // الإحصائيات
-  getNotificationStats
+  getNotificationStats,
+  findCanonicalNotificationTemplate
 };

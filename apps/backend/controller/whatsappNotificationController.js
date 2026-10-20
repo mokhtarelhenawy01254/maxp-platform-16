@@ -599,7 +599,8 @@ async function getStatusReport(req, res) {
           || null;
         return {
           id: log.id,
-          eventType: log.eventType,
+          eventType: log.rawEventType || log.eventType,
+          rawEventType: log.rawEventType || null,
           orderId: log.orderId,
           orderNumber: log.order?.orderNumber || null,
           customerName,
@@ -621,7 +622,7 @@ async function getStatusReport(req, res) {
       const summary = { total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 };
       const byEventMap = new Map();
       for (const log of logs || []) {
-        const ev = log.eventType || 'OTHER';
+        const ev = log.rawEventType || log.eventType || 'OTHER';
         if (!byEventMap.has(ev)) {
           byEventMap.set(ev, { eventType: ev, total: 0, meta: 0, regular: 0, delivered: 0, sent: 0, read: 0, failed: 0, pending: 0 });
         }
@@ -1994,6 +1995,156 @@ async function getTemplatesDeliveryPreview(req, res) {
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
 
+
+/**
+ * 🏥 فحص صحة القوالب (Template Health Check - Read Only)
+ * يتحقق لكل حدث إشعار من:
+ * 1) القالب المختار قانونياً (findCanonicalNotificationTemplate)
+ * 2) مطابقة عدد المتغيرات في الداتابيز مع placeholders ميتا
+ * 3) حالة الاعتماد في ميتا (APPROVED / PENDING_APPROVAL / MISMATCH)
+ */
+async function getTemplateHealth(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    // 1. البحث عن جلسة Meta Cloud المتصلة للشركة
+    const session = await safeQuery(() => prisma.whatsAppSession.findFirst({
+      where: {
+        companyId,
+        provider: 'META_CLOUD',
+        status: 'CONNECTED',
+      },
+      select: { id: true, provider: true },
+      orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }],
+    }));
+
+    const sessionId = session?.id || null;
+
+    const CHECK_EVENTS = [
+      { eventType: 'LOYALTY_POINTS_AWARDED', label: 'كسب نقاط ولاء', expectedVars: ['customerName', 'points'], location: 'services/hr/customerLoyaltyService.js:800' },
+      { eventType: 'LOYALTY_TIER_UPGRADED', label: 'ترقية مستوى الولاء', expectedVars: ['customerName', 'tierName'], location: 'services/hr/customerLoyaltyService.js:2181' },
+      { eventType: 'LOYALTY_TIER_DOWNGRADED', label: 'انخفاض مستوى الولاء', expectedVars: ['customerName', 'tierName'], location: 'services/hr/customerLoyaltyService.js:2205' },
+      { eventType: 'LOYALTY_POINTS_EXPIRY_WARNING', label: 'تنبيه قرب انتهاء النقاط', expectedVars: ['customerName', 'points', 'days', 'expiryDate'], location: 'services/hr/customerNotificationScheduleService.js:210' },
+      { eventType: 'LOYALTY_POINTS_EXPIRED', label: 'انتهاء صلاحية النقاط', expectedVars: ['customerName', 'points', 'date', 'currentBalance'], location: 'services/hr/customerNotificationScheduleService.js:240' },
+      { eventType: 'LOYALTY_POINTS_REDEEMED', label: 'استبدال النقاط', expectedVars: ['customerName', 'points', 'reason', 'currentPoints'], location: 'services/hr/customerLoyaltyService.js:1250' },
+      { eventType: 'CASHBACK_CREDITED', label: 'إيداع كاش باك', expectedVars: ['customerName', 'cashAmount', 'currency', 'balance'], location: 'services/hr/customerNotificationScheduleService.js:180' },
+      { eventType: 'CASHBACK_REVERSED', label: 'خصم كاش باك', expectedVars: ['customerName', 'cashAmount', 'currency', 'balance'], location: 'services/hr/customerNotificationScheduleService.js:195' },
+      { eventType: 'CUSTOMER_QUALITY_UPGRADED', label: 'ارتفاع تصنيف الجودة', expectedVars: ['customerName', 'qualityTier', 'score'], location: 'services/hr/customerNotificationScheduleService.js:160' },
+      { eventType: 'CUSTOMER_QUALITY_DOWNGRADED', label: 'انخفاض تصنيف الجودة', expectedVars: ['qualityTier'], location: 'services/hr/customerNotificationScheduleService.js:160' },
+      { eventType: 'AUTO_DISCOUNT_COUPON_GRANTED', label: 'منح كوبون الخصم التلقائي', expectedVars: ['customerName', 'discountPercent', 'couponCode', 'validityDays'], location: 'services/hr/customerNotificationScheduleService.js:320' },
+      { eventType: 'AUTO_DISCOUNT_COUPON_EXPIRING', label: 'تنبيه قرب انتهاء كوبون الخصم', expectedVars: ['customerName', 'discountPercent', 'validityDays'], location: 'services/hr/customerNotificationScheduleService.js:340' },
+      { eventType: 'AUTO_DISCOUNT_CASHBACK_CONVERTED', label: 'تحويل الكوبون المنتهي لكاش باك', expectedVars: ['customerName', 'couponCode', 'cashAmount', 'currency', 'balance'], location: 'services/hr/customerNotificationScheduleService.js:355' },
+    ];
+
+    const results = [];
+    let matchCount = 0;
+    let mismatchCount = 0;
+    let pendingApprovalCount = 0;
+    let noTemplateCount = 0;
+
+    for (const item of CHECK_EVENTS) {
+      const canonicalTemplate = await WhatsAppNotificationService.findCanonicalNotificationTemplate(
+        companyId,
+        item.eventType,
+        'META_CLOUD',
+        prisma,
+        {
+          fallbackEventType: item.fallbackEventType || null,
+          sessionId,
+          expectedMetaParamCount: item.expectedVars.length,
+        }
+      );
+
+      let dbVarCount = 0;
+      let dbVars = [];
+      if (canonicalTemplate) {
+        try {
+          const parsed = JSON.parse(canonicalTemplate.variables);
+          if (Array.isArray(parsed)) {
+            dbVars = parsed.map(v => typeof v === 'string' ? v : v?.name).filter(Boolean);
+            dbVarCount = dbVars.length;
+          }
+        } catch {}
+        if (dbVarCount === 0 && canonicalTemplate.content) {
+          const matches = canonicalTemplate.content.match(/\{\{\s*([a-zA-Z_0-9]+)\s*\}\}/g);
+          if (matches) {
+            dbVars = [...new Set(matches.map(m => m.replace(/\{\{|\}\}/g, '').trim()))];
+            dbVarCount = dbVars.length;
+          }
+        }
+      }
+
+      let wabaPlaceholderCount = 0;
+      if (sessionId && canonicalTemplate?.metaTemplateName) {
+        try {
+          const { countMetaPlaceholders } = require('../../utils/metaTemplateVariables');
+          const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+          const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+          const metaObj = Array.isArray(metaTemplates)
+            ? metaTemplates.find((t) => t.name === canonicalTemplate.metaTemplateName)
+            : null;
+          const bodyComp = (metaObj?.components || []).find((c) => String(c.type || '').toUpperCase() === 'BODY');
+          wabaPlaceholderCount = countMetaPlaceholders(bodyComp?.text);
+        } catch {}
+      }
+
+      let status = 'MATCH';
+      let statusReason = 'القالب متطابق وجاهز للإرسال';
+
+      if (!canonicalTemplate || !canonicalTemplate.metaTemplateName) {
+        status = 'NO_META_TEMPLATE';
+        statusReason = 'لا يوجد قالب ميتا مربوط بالحدث';
+        noTemplateCount++;
+      } else if (String(canonicalTemplate.metaTemplateStatus || '').toUpperCase() !== 'APPROVED') {
+        status = 'PENDING_APPROVAL';
+        statusReason = `قالب ميتا (${canonicalTemplate.metaTemplateName}) بحاجة لاعتماد من ميتا (${canonicalTemplate.metaTemplateStatus || 'غير معروف'})`;
+        pendingApprovalCount++;
+      } else if (wabaPlaceholderCount > 0 && dbVarCount !== wabaPlaceholderCount) {
+        status = 'MISMATCH';
+        statusReason = `عدد متغيرات القالب (${dbVarCount}) لا يطابق عدد متغيرات ميتا (${wabaPlaceholderCount})`;
+        mismatchCount++;
+      } else {
+        matchCount++;
+      }
+
+      results.push({
+        eventType: item.eventType,
+        label: item.label,
+        templateId: canonicalTemplate?.id || null,
+        templateName: canonicalTemplate?.name || null,
+        metaTemplateName: canonicalTemplate?.metaTemplateName || null,
+        metaTemplateId: canonicalTemplate?.metaTemplateId || null,
+        metaTemplateStatus: canonicalTemplate?.metaTemplateStatus || null,
+        dbVarCount,
+        dbVars,
+        wabaPlaceholderCount,
+        codeExpectedCount: item.expectedVars.length,
+        codeExpectedVars: item.expectedVars,
+        status,
+        statusReason,
+      });
+    }
+
+    return res.json({
+      success: true,
+      companyId,
+      sessionId,
+      summary: {
+        total: CHECK_EVENTS.length,
+        match: matchCount,
+        mismatch: mismatchCount,
+        pendingApproval: pendingApprovalCount,
+        noMetaTemplate: noTemplateCount,
+      },
+      results,
+    });
+  } catch (error) {
+    console.error('❌ [TEMPLATE-HEALTH] Error checking template health:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   getNotificationSettings,
   updateNotificationSettings,
@@ -2017,5 +2168,6 @@ module.exports = {
   syncTemplateStatuses,
   listAvailableMetaTemplates,
   bindMetaTemplate,
-  getTemplatesDeliveryPreview
+  getTemplatesDeliveryPreview,
+  getTemplateHealth
 };
