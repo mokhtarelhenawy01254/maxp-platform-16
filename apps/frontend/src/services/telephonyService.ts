@@ -102,7 +102,8 @@ class TelephonyClientService {
   private heartbeatInterval: any = null;
   private handledSessionIds = new Set<string>();
   private activeCallWatchdogInterval: any = null;
-  public currentDeviceInfo: DeviceInfo | null = null;
+  public currentDeviceInfo: DeviceInfo | null = null;
+
   public isNativeTelephonyAvailable = false;
 
   /**
@@ -313,14 +314,25 @@ class TelephonyClientService {
         }
       }
 
+      let currentUserId = "default";
+      try {
+        const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("user") : null;
+        if (userStr) {
+          const u = JSON.parse(userStr);
+          if (u && (u.id || u.userId)) currentUserId = u.id || u.userId;
+        }
+      } catch {}
+      const userDeviceKey = `maxp_telephony_device_id_${currentUserId}`;
+
       if (!deviceInfo) {
-        let fallbackId = localStorage.getItem("maxp_telephony_device_id");
+        let fallbackId = localStorage.getItem(userDeviceKey) || localStorage.getItem("maxp_telephony_device_id");
         if (!fallbackId) {
           try {
             // Adopt existing registered device for this employee if available
             const presence = await this.getDevicePresence();
             if (presence?.device?.deviceId) {
               fallbackId = presence.device.deviceId;
+              localStorage.setItem(userDeviceKey, fallbackId);
               localStorage.setItem("maxp_telephony_device_id", fallbackId);
             }
           } catch {
@@ -333,6 +345,7 @@ class TelephonyClientService {
             Math.random().toString(36).substring(2, 10) +
             "_" +
             Date.now().toString(36);
+          localStorage.setItem(userDeviceKey, fallbackId);
           localStorage.setItem("maxp_telephony_device_id", fallbackId);
         }
 
@@ -442,13 +455,16 @@ class TelephonyClientService {
         try {
           const socket = socketService.getSocket();
           // نبض الاتصال يُرسل دائماً كمتصل لأن الجهاز يُجري طلب الـ HTTP بنشاط وحيوية
+          // إضافة _skipErrorToast لمنع إزعاج المستخدم بأي رسائل تنبيهية في الخلفية
           await apiClient.post("/telephony/device/heartbeat", {
             deviceId: deviceInfo.deviceId,
             deviceName: deviceInfo.deviceName,
             socketId: socket?.id || null,
             appVersion: deviceInfo.osVersion,
             socketConnected: true,
-          });
+          }, {
+            _skipErrorToast: true,
+          } as any);
           this.logDiagnostic("HEARTBEAT_SENT_SUCCESS", {
             socketId: socket?.id || null,
             socketConnected: socket?.connected || false,
@@ -458,6 +474,51 @@ class TelephonyClientService {
             status: err?.response?.status,
             message: err?.message,
           });
+
+          // التعافي التلقائي الذكي في حال تصادم معرّف الجهاز مع موظف آخر (403)
+          if (
+            err?.response?.status === 403 ||
+            err?.response?.data?.message?.includes("لموظف آخر") ||
+            err?.response?.data?.message?.includes("مسجل")
+          ) {
+            this.logDiagnostic("HEARTBEAT_DEVICE_COLLISION_SELF_HEAL", {
+              staleDeviceId: deviceInfo.deviceId,
+              error: err?.response?.data?.message,
+            });
+            try {
+              localStorage.removeItem("maxp_telephony_device_id");
+              localStorage.removeItem(userDeviceKey);
+              const healedId =
+                "dev_" +
+                Math.random().toString(36).substring(2, 10) +
+                "_" +
+                Date.now().toString(36);
+              deviceInfo.deviceId = healedId;
+              this.currentDeviceInfo = deviceInfo;
+              localStorage.setItem("maxp_telephony_device_id", healedId);
+              localStorage.setItem(userDeviceKey, healedId);
+
+              setTimeout(async () => {
+                try {
+                  const retrySocket = socketService.getSocket();
+                  await apiClient.post("/telephony/device/heartbeat", {
+                    deviceId: healedId,
+                    deviceName: deviceInfo.deviceName,
+                    socketId: retrySocket?.id || null,
+                    appVersion: deviceInfo.osVersion,
+                    socketConnected: true,
+                  }, { _skipErrorToast: true } as any);
+                  this.logDiagnostic("HEARTBEAT_HEALED_SUCCESS", { deviceId: healedId });
+                } catch {
+                  // ignore
+                }
+              }, 400);
+            } catch {
+              // ignore
+            }
+            return;
+          }
+
           // في حال كان التوكن ما زال قيد التهيئة (401)، أعد المحاولة بعد 3 ثوانٍ
           if (err?.response?.status === 401) {
             setTimeout(async () => {
@@ -469,7 +530,7 @@ class TelephonyClientService {
                   socketId: retrySocket?.id || null,
                   appVersion: deviceInfo.osVersion,
                   socketConnected: true,
-                });
+                }, { _skipErrorToast: true } as any);
                 this.logDiagnostic("HEARTBEAT_RETRY_SUCCESS");
               } catch {
                 // ignore

@@ -288,7 +288,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
       );
     });
 
-    test('rejects heartbeat claiming a device registered to another employee', async () => {
+    test('rejects heartbeat claiming a device registered to another employee in a different company', async () => {
       mockPrisma.employeeDevice.findUnique.mockResolvedValue({
         id: 'dev_hijack',
         deviceId,
@@ -300,6 +300,35 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
         telephonyService.registerOrHeartbeatDevice({ companyId, userId, deviceId })
       ).rejects.toMatchObject({ statusCode: 403 });
       expect(mockPrisma.employeeDevice.upsert).not.toHaveBeenCalled();
+    });
+
+    test('allows seamless reassignment of a device within the same company', async () => {
+      mockPrisma.employeeDevice.findUnique.mockResolvedValue({
+        id: 'dev_shared',
+        deviceId,
+        companyId,
+        userId: 'colleague_user'
+      });
+      mockPrisma.employeeDevice.upsert.mockImplementation(({ update }) =>
+        Promise.resolve({ id: 'dev_shared', ...update })
+      );
+
+      const device = await telephonyService.registerOrHeartbeatDevice({
+        companyId,
+        userId,
+        deviceId,
+        socketConnected: true
+      });
+      expect(device.isOnline).toBe(true);
+      expect(mockPrisma.employeeDevice.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { deviceId },
+          update: expect.objectContaining({
+            userId,
+            companyId
+          })
+        })
+      );
     });
 
     test('allows the same employee to re-heartbeat their own device', async () => {

@@ -55,11 +55,25 @@ class TelephonyService {
     }
     const prisma = getSharedPrismaClient();
 
-    // حماية من خطف الأجهزة: deviceId فريد عالميًا — أي موظف يعرف معرّف جهاز
-    // زميله (في أي شركة) كان يستطيع الاستحواذ على سجلّه عبر upsert
+    // حماية عزل المؤسسات: منع أي حساب من شركة أخرى من الاستحواذ على معرّف جهاز شركة ثانية
+    // أما داخل نفس الشركة: يُسمح بنقل ملكية الجهاز بسلاسة للموظف الذي سجّل دخوله عليه حالياً (مثل تبديل الورديات أو هواتف العمل المشتركة)
     const existing = await prisma.employeeDevice.findUnique({ where: { deviceId } });
-    if (existing && (existing.userId !== userId || String(existing.companyId) !== String(companyId))) {
+    if (existing && String(existing.companyId) !== String(companyId)) {
       throw telephonyError('هذا الجهاز مسجل لموظف آخر', 403);
+    }
+
+    if (existing && existing.userId !== userId) {
+      this.recordDiagnosticLog({
+        companyId,
+        event: 'DEVICE_REASSIGNED_TO_USER',
+        deviceId,
+        deviceName: deviceName || existing.deviceName,
+        details: {
+          previousUserId: existing.userId,
+          newUserId: userId,
+          reason: 'Active session re-bound to logged-in employee'
+        }
+      }).catch?.(() => {});
     }
 
     const isOnline = socketConnected !== undefined ? Boolean(socketConnected) : true;
