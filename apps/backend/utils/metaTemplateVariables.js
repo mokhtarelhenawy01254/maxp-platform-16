@@ -129,39 +129,84 @@ function pickOrderForExpectedCount(expectedCount, sources = []) {
 }
 
 /**
- * 🚨 PRODUCTION-FIX (2026-10-20 — بقايا #132000 في LOYALTY_POINTS_AWARDED / CASHBACK_CREDITED):
- * نفس منطق pickOrderForExpectedCount، لكن لو مفيش مصدر مطابق بالضبط بنقصّ أطول
- * مصدر أقرب لعدد بارامترات ميتا (من الآخر). السبب: الانحراف الواقعي هو متغيّر
- * زيادة اتضاف في الـUI/الـservice بعد اعتماد قالب ميتا — الباراميترات الزيادة
- * بتقع في آخر القائمة، فحذفها بيخلي المراكز 1..N متطابقة مع القالب المعتمد.
- * (الحشو لسه ممنوع: بيزحزح الباراميترات ويطلع رسالة بمحتوى مبدّل.)
+ * 📐 مصدر الحقيقة لمتغيرات قالب الشركة = صف القالب المستخدَم فعلًا (templateId).
  *
- * @returns {{order: Array<{position:number,name:string}>, source: string, trimmed?: boolean, dropped?: string[]}|null}
+ * الترتيب المُخزَّن في `variables` هو اللي بيحدد مين {{1}} ومين {{2}} — لأن أسماء
+ * placeholders في ميتا موضعية ({1},{2}…) ومحمّلة في صف الشركة. لو `variables`
+ * فاضي/تالف بنرجع لنص القالب المحلي `content` (نفس أسماء البلاسهولدرز).
+ *
+ * @param {Object|null} template صف WhatsAppNotificationTemplate
+ * @returns {{names: string[], source: string}} source = db_variables | local_content | none
  */
-function fitOrderForExpectedCount(expectedCount, sources = []) {
-  const exact = pickOrderForExpectedCount(expectedCount, sources);
-  if (exact) return exact;
-
-  const expected = Number(expectedCount) || 0;
-  if (expected <= 0) return null;
-
-  const candidates = [];
-  for (const src of sources) {
-    const raw = Array.isArray(src) ? src : src?.names;
-    const label = Array.isArray(src) ? 'unspecified' : (src?.label || 'unspecified');
-    const names = normalizeVariableNames(raw);
-    if (names.length > expected) candidates.push({ names, label });
+function resolveTemplateVariableOrder(template) {
+  let parsed = template?.variables;
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { parsed = null; }
   }
-  if (candidates.length === 0) return null;
+  const dbNames = normalizeVariableNames(parsed);
+  if (dbNames.length > 0) return { names: dbNames, source: 'db_variables' };
 
-  // أقرب مصدر (أقل زيادة) — يحافظ على أكبر قدر من الترتيب المخزّن
-  candidates.sort((a, b) => a.names.length - b.names.length);
-  const chosen = candidates[0];
+  const contentNames = extractLocalVariableOrder(template?.content);
+  if (contentNames.length > 0) return { names: contentNames, source: 'local_content' };
+
+  return { names: [], source: 'none' };
+}
+
+/**
+ * 🚨 PRODUCTION-FIX (2026-10-20 — بارامترات إشعارات الولاء/الكاش باك):
+ * البارامترات بتُبنى من **قالب الشركة الفعلي** فقط. مفيش قصّ أعمى ومفيش حشو:
+ *  - expected = عدد متغيرات القالب (من Meta Graph API لو التوكن متاح، وإلا صف القالب).
+ *  - actual   = عدد البارامترات اللي الصف يقدر يبنيها فعلًا.
+ *  - لو الاتنين مختلفين → `ok:false` والمتصل عليه يمنع الإرسال تمامًا ويكتب سطر
+ *    `TEMPLATE_PARAM_MISMATCH` واحد (eventType · templateId · expected · actual).
+ * القصّ القديم كان بيبعت رسالة بمراكز مزحزحة (قيمة في مكان قيمة تانية) أو
+ * يرجّع 132000/132018 من ميتا — أسوأ من عدم الإرسال بخطأ واضح.
+ *
+ * @param {Object} params
+ * @param {Object|null} params.template صف القالب
+ * @param {number} [params.metaParamCount] عدد placeholders في القالب المعتمد (Graph API) — 0 = غير معروف
+ * @returns {{ok:boolean, reason:string|null, expected:number, actual:number, names:string[], order:Array<{position:number,name:string}>, source:string}}
+ */
+function planMetaBodyParams({ template, metaParamCount = 0 } = {}) {
+  const { names, source } = resolveTemplateVariableOrder(template);
+  const actual = names.length;
+  const expected = Number(metaParamCount) > 0 ? Number(metaParamCount) : actual;
+
+  if (actual === 0) {
+    return { ok: false, reason: 'no_template_variables', expected, actual: 0, names, order: [], source };
+  }
+  if (actual < expected) {
+    // القالب المعتمد عنده متغيرات أكتر من اللي صف الشركة يعرفها — مستحيل نختلق قيم.
+    return { ok: false, reason: 'template_param_mismatch', expected, actual, names, order: [], source, trimmed: false, dropped: [] };
+  }
+  if (actual > expected) {
+    // صف الشركة فيه متغيرات زيادة (اتضافت بعد اعتماد القالب) — بنسقط الذيل
+    // (مش القصّ الأعمى: الترتيب محفوظ والزيادة آخر القائمة) وبنعلّم trimmed
+    // عشان المتصل يسجل تحذير واحد يوضح اللي اتسقط.
+    const kept = names.slice(0, expected);
+    const dropped = names.slice(expected);
+    return {
+      ok: true,
+      reason: null,
+      expected,
+      actual,
+      names: kept,
+      order: kept.map((name, idx) => ({ position: idx + 1, name })),
+      source,
+      trimmed: true,
+      dropped,
+    };
+  }
   return {
-    order: chosen.names.slice(0, expected).map((name, idx) => ({ position: idx + 1, name })),
-    source: `${chosen.label}:trimmed`,
-    trimmed: true,
-    dropped: chosen.names.slice(expected),
+    ok: true,
+    reason: null,
+    expected,
+    actual,
+    names,
+    order: names.map((name, idx) => ({ position: idx + 1, name })),
+    source,
+    trimmed: false,
+    dropped: [],
   };
 }
 
@@ -188,6 +233,7 @@ module.exports = {
   buildMetaBodyParams,
   countMetaPlaceholders,
   pickOrderForExpectedCount,
-  fitOrderForExpectedCount,
+  resolveTemplateVariableOrder,
+  planMetaBodyParams,
   normalizeVariableNames,
 };

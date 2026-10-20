@@ -300,11 +300,11 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
       });
 
       expect(res.success).toBe(false);
-      expect(res.errorCode).toBe('META_PARAM_COUNT_MISMATCH');
+      expect(res.errorCode).toBe('TEMPLATE_PARAM_MISMATCH');
+      expect(res.expected).toBe(3);
+      expect(res.actual).toBe(2);
       expect(WhatsAppMessageHandler.sendTemplateMessage).not.toHaveBeenCalled();
-      const errorLog = createdLogs.find((l) => l.errorCode === 'META_PARAM_COUNT_MISMATCH');
-      expect(errorLog).toBeDefined();
-      expect(errorLog.failureReason).toContain('expects 3 BODY param(s)');
+      expect(res.message).toContain('expected=3 actual=2');
     });
   });
 

@@ -1045,11 +1045,10 @@ const { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBailey
 const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
 const {
   buildMetaBodyParams,
-  extractLocalVariableOrder,
   countMetaPlaceholders,
-  fitOrderForExpectedCount,
+  resolveTemplateVariableOrder,
+  planMetaBodyParams,
 } = require('../../utils/metaTemplateVariables');
-const { META_ORDER_BLUEPRINTS } = require('../orderTemplateSeeding');
 
 // 🛡️ حارس الإرسال المركزي (2026-10-20): بوابة واحدة قبل أي لوج/أي نداء لميتا +
 // سطر لوج واحد لكل دفعة + قفل 24 ساعة لكل (companyId+eventType+templateId).
@@ -1063,29 +1062,64 @@ const NotificationSendGuard = require('./notificationSendGuard');
 const META_PARAM_COUNT_CACHE = new Map();
 const META_PARAM_COUNT_TTL_MS = 10 * 60 * 1000;
 
-async function resolveMetaExpectedParamCount(sessionId, templateName) {
-  if (!sessionId || !templateName) return 0;
-  const key = `${sessionId}::${templateName}`;
+/**
+ * عدد placeholders الـBODY في قالب ميتا معتمد — من صف قالب الشركة نفسه:
+ *  1) لو الصف فيه `metaTemplateId` → Graph API على القالب بالـid مباشرة (أرخص وأدق).
+ *  2) وإلا → Graph API على قائمة قوالب الـWABA ونطابق `metaTemplateName`.
+ *  3) لو الاتنين فشلوا (توكن ناقص/شبكة) → 0 = «غير معروف»، والبوابة بتستخدم عدد
+ *     متغيرات صف الشركة (مصدر الحقيقة) — مش قائمة متوقعة ثابتة في الكود.
+ */
+async function resolveMetaExpectedParamCount(sessionId, templateName, metaTemplateId = null) {
+  if (!sessionId || (!templateName && !metaTemplateId)) return 0;
+  const key = `${sessionId}::${metaTemplateId || templateName}`;
   const cached = META_PARAM_COUNT_CACHE.get(key);
   if (cached && Date.now() - cached.at < META_PARAM_COUNT_TTL_MS) return cached.count;
 
-  try {
-    const MetaCloudProvider = require('./providers/MetaCloudProvider');
-    const templates = await MetaCloudProvider.listTemplates(sessionId);
-    const tmpl = Array.isArray(templates) ? templates.find((t) => t.name === templateName) : null;
-    const bodyComp = (tmpl?.components || []).find(
+  const countBodyPlaceholders = (components) => {
+    const bodyComp = (components || []).find(
       (c) => String(c.type || '').toUpperCase() === 'BODY'
     );
-    const count = countMetaPlaceholders(bodyComp?.text);
+    return countMetaPlaceholders(bodyComp?.text);
+  };
+
+  try {
+    const MetaCloudProvider = require('./providers/MetaCloudProvider');
+
+    // 1) القالب بالـid — أدق مصدر وأقل استهلاكًا للـAPI.
+    if (metaTemplateId && typeof MetaCloudProvider.getTemplateById === 'function') {
+      try {
+        const byId = await MetaCloudProvider.getTemplateById(sessionId, metaTemplateId);
+        const count = countBodyPlaceholders(byId?.components);
+        if (count > 0) {
+          META_PARAM_COUNT_CACHE.set(key, { count, at: Date.now() });
+          console.log(
+            `🔢 [META-CLOUD] Approved template "${byId?.name || metaTemplateId}" (id=${metaTemplateId}) ` +
+              `expects ${count} BODY param(s).`
+          );
+          return count;
+        }
+      } catch (byIdErr) {
+        console.warn(
+          `⚠️ [META-CLOUD] Could not read template id=${metaTemplateId} from Graph:`,
+          byIdErr?.message || byIdErr
+        );
+      }
+    }
+
+    // 2) fallback: مطابقة بالاسم من قائمة الـWABA.
+    if (!templateName) return 0;
+    const templates = await MetaCloudProvider.listTemplates(sessionId);
+    const tmpl = Array.isArray(templates) ? templates.find((t) => t.name === templateName) : null;
+    const count = countBodyPlaceholders(tmpl?.components);
     META_PARAM_COUNT_CACHE.set(key, { count, at: Date.now() });
     if (count > 0) {
       console.log(`🔢 [META-CLOUD] Approved template "${templateName}" expects ${count} BODY param(s).`);
     }
     return count;
   } catch (err) {
-    // مش حرج — لو ماقدرناش نقرا القالب نرجع للسلوك القديم بدل ما نمنع الإرسال.
+    // مش حرج — من غير عدّاد ميتا بنستخدم عدد متغيرات صف الشركة (مصدر الحقيقة).
     console.warn(
-      `⚠️ [META-CLOUD] Could not resolve expected param count for "${templateName}":`,
+      `⚠️ [META-CLOUD] Could not resolve expected param count for "${templateName || metaTemplateId}":`,
       err?.message || err
     );
     return 0;
@@ -1597,6 +1631,77 @@ async function sendNotification(options) {
       };
     }
 
+    // 📐 PARAM PLAN GATE (2026-10-20) — مصدر الحقيقة لعدد/ترتيب المتغيرات هو **صف
+    // قالب الشركة المستخدَم فعلًا** (templateId → metaTemplateName/metaTemplateId)،
+    // مع تأكيد العدد من Meta Graph API لو التوكن متاح. ممنوع أي قصّ أعمى أو حشو:
+    // لو عدد البارامترات المتاحة ≠ متغيرات القالب → **صفر إرسال** + سطر لوج واحد
+    // `TEMPLATE_PARAM_MISMATCH` (eventType · templateId · expected · actual).
+    // البوابة بتتنفّذ قبل إنشاء سطر السجل وقبل أي نداء لميتا — فلا صف FAILED لكل
+    // مستلم (نفس قاعدة notificationSendGuard المركزية).
+    let metaParamPlan = null;
+    const willSendViaMetaTemplate =
+      effectiveProvider === 'META_CLOUD' &&
+      Boolean(safeTemplate?.metaTemplateName) &&
+      String(safeTemplate?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
+
+    if (willSendViaMetaTemplate) {
+      const metaExpectedParamCount = await resolveMetaExpectedParamCount(
+        sessionId,
+        safeTemplate?.metaTemplateName || null,
+        safeTemplate?.metaTemplateId || null
+      );
+      metaParamPlan = planMetaBodyParams({
+        template: safeTemplate,
+        metaParamCount: metaExpectedParamCount,
+      });
+
+      if (!metaParamPlan.ok) {
+        const mismatchKey = NotificationSendGuard.buildFailureKey({
+          companyId,
+          eventType,
+          templateId: templateId || null,
+        });
+        const emitted = NotificationSendGuard.shouldEmitOnce(`TEMPLATE_PARAM_MISMATCH::${mismatchKey}`);
+        const mismatchMessage =
+          `[TEMPLATE_PARAM_MISMATCH] eventType=${eventType} templateId=${templateId || 'none'} ` +
+          `metaTemplateName=${safeTemplate?.metaTemplateName || 'none'} ` +
+          `expected=${metaParamPlan.expected} actual=${metaParamPlan.actual} ` +
+          `source=${metaParamPlan.source} reason=${metaParamPlan.reason} — صفر إرسال: ` +
+          `بارامترات القالب لا تطابق متغيراته (أصلح صف القالب من /orders/status-templates أو أعد ربطه من ميتا).`;
+        if (emitted) {
+          console.warn(mismatchMessage);
+        }
+        return {
+          success: false,
+          reason: 'template_param_mismatch',
+          errorCode: 'TEMPLATE_PARAM_MISMATCH',
+          templateId: templateId || null,
+          metaTemplateName: safeTemplate?.metaTemplateName || null,
+          expected: metaParamPlan.expected,
+          actual: metaParamPlan.actual,
+          suppressed: !emitted,
+          message: mismatchMessage,
+        };
+      }
+
+      if (metaParamPlan.trimmed) {
+        const trimKey = NotificationSendGuard.buildFailureKey({
+          companyId,
+          eventType,
+          templateId: templateId || null,
+        });
+        if (NotificationSendGuard.shouldEmitOnce(`TEMPLATE_VARIABLES_TRIMMED::${trimKey}`)) {
+          console.warn(
+            `[TEMPLATE_VARIABLES_TRIMMED] eventType=${eventType} templateId=${templateId || 'none'} ` +
+            `metaTemplateName=${safeTemplate?.metaTemplateName || 'none'} ` +
+            `expected=${metaParamPlan.expected} actual=${metaParamPlan.actual} ` +
+            `dropped=${(metaParamPlan.dropped || []).join(',') || 'none'} — ` +
+            `الرسالة هتتبعت بأول ${metaParamPlan.expected} متغير بالترتيب؛ راجع صف القالب لو الترتيب اتغير.`
+          );
+        }
+      }
+    }
+
     // 5. تجهيز المحتوى
     const rawContent = options.contentOverride || safeTemplate.content || '';
     let content = replaceVariables(rawContent, {
@@ -1810,80 +1915,34 @@ async function sendNotification(options) {
         try {
           console.log(`☁️ [META-CLOUD] Sending via approved Meta template "${metaTemplateName}" (status=${metaTemplateStatus}) for event ${eventType}`);
 
-          // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name}).
-          // 🆕 buildMetaBodyParams يوحّد المسارين (variables JSON + fallback من نص القالب)
-          // بنفس منطق mapVariablesByOrder المستخدم وقت الربط — يمنع رسايل بمتغيرات مغلوطة.
-          // 🛡️ PRODUCTION-FIX (2026-08-29, #131008): لو القالب مش موجود في الـ DB المحلي
-          // (مثلاً الـ frontend بيبعت metaTemplateName جاي من ميتا مباشرة) → variablesOrder
-          // و content يبقوا null/undefined والـ buildMetaBodyParams بترجّع [] → ميتا ترفض
-          // بـ "missing parameter". نبني الـ order من الـ values (testVariables) نفسها كـ fallback.
-          const variablesOrder = safeTemplate?.variables ? (() => {
-            try { const parsed = JSON.parse(safeTemplate.variables); return Array.isArray(parsed) ? parsed : null; } catch { return null; }
-          })() : null;
-          const fallbackOrder = variablesOrder || !safeTemplate?.content
-            ? (variables && typeof variables === 'object' ? Object.keys(variables).map((name, i) => ({ position: i + 1, name })) : null)
-            : null;
-          // 🚨 PRODUCTION-FIX (2026-09-29, #132000 template_param_count_mismatch):
-          // السطر المحلي (variables) بيتفرّق عن القالب المعتمد في ميتا (متغير اتشال من
-          // الـ UI، أو القالب اتعاد إنشاؤه ببلاسهولدر زيادة). النتيجة: بنبعت عدد غلط،
-          // ميتا ترفض بـ 132000، والعميل مايوصلهوش إشعار خالص من غير سبب واضح.
-          // بنقرا العدد المتوقع من القالب المعتمد نفسه، ونختار ترتيب متغيرات متوافق
-          // معاه 100% (DB → نص القالب المحلي → بلوبرنت ميتا المزروع) — وممنوع نكمّل
-          // بترتيب مش متأكدين منه لأن الإشعار يطلع ببيانات متبدّلة.
-          const expectedMetaParamCount = canSendViaMetaTemplate
-            ? await resolveMetaExpectedParamCount(sessionId, metaTemplateName)
-            : 0;
-
-          const blueprintNames = (META_ORDER_BLUEPRINTS[eventType]?.variables || [])
-            .map((v) => (typeof v === 'string' ? v : v?.name));
-
-          // 🚨 PRODUCTION-FIX (2026-10-20): بقايا #132000 في LOYALTY_POINTS_AWARDED /
-          // CASHBACK_CREDITED كانت بترمي META_PARAM_COUNT_MISMATCH لأن مفيش مصدر
-          // متغيراته بعدد بارامترات ميتا بالضبط. fitOrderForExpectedCount بيجرّب
-          // التطابق التام الأول، وبعدها بيقصّ أطول مصدر أقرب (الزيادة بتبقى في
-          // الآخر) — بدل ما الرسالة تتوقف خالص.
-          const orderPick = expectedMetaParamCount > 0
-            ? fitOrderForExpectedCount(expectedMetaParamCount, [
-                { label: 'db_variables', names: variablesOrder || fallbackOrder },
-                { label: 'local_content', names: extractLocalVariableOrder(safeTemplate?.content) },
-                { label: 'meta_blueprint', names: blueprintNames },
-              ])
-            : null;
-
-          if (orderPick?.trimmed) {
-            console.warn(
-              `✂️ [META-CLOUD] Trimmed extra variables for "${metaTemplateName}" (${eventType}): ` +
-              `dropped [${(orderPick.dropped || []).join(', ')}] to match the ${expectedMetaParamCount} ` +
-              `BODY placeholder(s) of the approved Meta template (source=${orderPick.source}).`
-            );
-          }
-
-          if (orderPick && orderPick.source !== 'db_variables') {
-            console.warn(
-              `🚨 [META-CLOUD] Param drift for "${metaTemplateName}" (${eventType}): stored variables ` +
-              `${JSON.stringify(variablesOrder || fallbackOrder)} do not match the ${expectedMetaParamCount} ` +
-              `placeholder(s) of the approved Meta template. Using "${orderPick.source}" order instead: ` +
-              `${orderPick.order.map((v) => v.name).join(', ')}. ` +
-              `Fix the template row in /orders/status-templates to clear this warning.`
-            );
-          }
+          // بناء الـ components من **ترتيب متغيرات صف قالب الشركة** ({position, name}).
+          // 🆕 2026-10-20: المصدر الوحيد للعدد/الترتيب هو صف القالب المستخدَم فعلًا
+          // (تم التحقق منه في PARAM PLAN GATE قبل إنشاء السجل وقبل أي نداء لميتا).
+          // مفيش قصّ أعمى ومفيش حشو ولا رجوع لبلوبرنت/قائمة متوقعة ثابتة: لو الصف
+          // مش مطابق للقالب المعتمد، البوابة رجّعت TEMPLATE_PARAM_MISMATCH وماوصلناش هنا.
+          const fallbackResolved = resolveTemplateVariableOrder(safeTemplate);
+          const paramPlan = metaParamPlan && metaParamPlan.ok
+            ? metaParamPlan
+            : {
+                expected: fallbackResolved.names.length,
+                order: fallbackResolved.names.map((name, idx) => ({ position: idx + 1, name })),
+              };
 
           const bodyParams = buildMetaBodyParams(
-            orderPick ? orderPick.order : (variablesOrder || fallbackOrder),
+            paramPlan.order,
             safeTemplate?.content,
             variables
           );
 
-          // 🔒 حماية أخيرة: لو العدد لسه مش مطابق نوقف هنا بخطأ واضح بدل ما ميتا ترفض
-          // بـ 132000. ممنوع النزول لنص حر عبر META_CLOUD خارج نافذة 24 ساعة.
-          if (expectedMetaParamCount > 0 && bodyParams.length !== expectedMetaParamCount) {
+          // 🔒 حماية أخيرة: البوابة فوق ضمنت التطابق، وده تأكيد دفاعي فقط —
+          // لو حصل انحراف بين البناء والخطة نوقف قبل ميتا بخطأ واضح (صفر إرسال).
+          if (bodyParams.length !== paramPlan.expected) {
             throw Object.assign(
               new Error(
-                `Meta template "${metaTemplateName}" expects ${expectedMetaParamCount} BODY param(s) but ` +
-                `${bodyParams.length} are configured (event ${eventType}). ` +
-                `Rebuild the template variables in /orders/status-templates.`
+                `Meta template "${metaTemplateName}" expects ${paramPlan.expected} BODY param(s) but ` +
+                `${bodyParams.length} were built (event ${eventType}). Rebuild the template variables in /orders/status-templates.`
               ),
-              { code: 'META_PARAM_COUNT_MISMATCH', reason: 'meta_param_count_mismatch', expected: expectedMetaParamCount, actual: bodyParams.length }
+              { code: 'TEMPLATE_PARAM_MISMATCH', reason: 'template_param_mismatch', expected: paramPlan.expected, actual: bodyParams.length }
             );
           }
 

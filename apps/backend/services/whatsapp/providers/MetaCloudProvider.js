@@ -117,6 +117,35 @@ async function listTemplates(sessionId) {
   return allTemplates;
 }
 
+/**
+ * 🎯 قراءة قالب واحد بالـ metaTemplateId مباشرة من Graph API.
+ * أرخص وأدق من سحب كل قوالب الـWABA لما عايزين نتأكد من عدد متغيرات قالب
+ * الشركة المستخدَم فعلًا (بارامترات BODY) قبل الإرسال.
+ *
+ * @param {string} sessionId جلسة META_CLOUD (بها access token)
+ * @param {string} templateId metaTemplateId المخزّن في صف قالب الشركة
+ * @returns {Promise<Object|null>} { id, name, status, components, ... } أو null
+ */
+async function getTemplateById(sessionId, templateId) {
+  if (!sessionId || !templateId) return null;
+  const session = await getSession(sessionId);
+  if (!session) return null;
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const url =
+    `https://graph.facebook.com/${apiVersion}/${encodeURIComponent(templateId)}` +
+    '?fields=id,name,status,components';
+
+  const response = await apiCall(() => axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    timeout: 15000
+  }));
+
+  return response?.data || null;
+}
+
 async function sendText(sessionId, to, text, options = {}) {
   const session = await getSession(sessionId);
   if (!session) {
@@ -655,6 +684,7 @@ module.exports = {
   sendInteractive,
   sendRaw,
   listTemplates,
+  getTemplateById,
   checkContact,
   createTemplate,
   updateTemplate,
