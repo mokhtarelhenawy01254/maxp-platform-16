@@ -1,0 +1,529 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MaxP Platform — External Merchant REST API",
+    "version": "1.1.0",
+    "description": "Read-only programmatic REST API for ERP, BI, and Marketing Agency integrations (e.g. H2M). Exposes products, inventory, orders with full marketing attribution, delivery timestamps, item quantities, and COD settlement telemetry."
+  },
+  "servers": [
+    {
+      "url": "https://maxp.online/api/v1/public/ext",
+      "description": "Production Gateway"
+    },
+    {
+      "url": "http://localhost:3000/api/v1/public/ext",
+      "description": "Local Development Gateway"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Developer Hub REST API key (`mxp_live_...`) passed in Authorization header: `Bearer mxp_live_...`"
+      }
+    },
+    "schemas": {
+      "Attribution": {
+        "type": "object",
+        "description": "Standardized marketing attribution extracted from order metadata. Missing keys default to null.",
+        "properties": {
+          "utmSource": {
+            "type": "string",
+            "nullable": true,
+            "example": "facebook"
+          },
+          "utmMedium": {
+            "type": "string",
+            "nullable": true,
+            "example": "cpc"
+          },
+          "utmCampaign": {
+            "type": "string",
+            "nullable": true,
+            "example": "winter_clearance"
+          },
+          "utmTerm": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "utmContent": {
+            "type": "string",
+            "nullable": true,
+            "example": "video_ad_1"
+          },
+          "campaignId": {
+            "type": "string",
+            "nullable": true,
+            "example": "cmp_123456789"
+          },
+          "adSetId": {
+            "type": "string",
+            "nullable": true,
+            "example": "adset_987654321"
+          },
+          "adId": {
+            "type": "string",
+            "nullable": true,
+            "example": "ad_555666777"
+          },
+          "fbclid": {
+            "type": "string",
+            "nullable": true,
+            "example": "fb_click_xyz"
+          },
+          "gclid": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "couponCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "WINTER10"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "item_1"
+          },
+          "productId": {
+            "type": "string",
+            "example": "prod_1"
+          },
+          "productName": {
+            "type": "string",
+            "example": "حذاء رياضي"
+          },
+          "quantity": {
+            "type": "integer",
+            "example": 2
+          },
+          "price": {
+            "type": "string",
+            "example": "399.50"
+          }
+        }
+      },
+      "OrderListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ord_1"
+          },
+          "orderNumber": {
+            "type": "string",
+            "example": "1024"
+          },
+          "status": {
+            "type": "string",
+            "example": "DELIVERED"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "PAID"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "example": "CASH"
+          },
+          "subtotal": {
+            "type": "number",
+            "example": 799
+          },
+          "shipping": {
+            "type": "number",
+            "example": 50
+          },
+          "discount": {
+            "type": "number",
+            "example": 0
+          },
+          "total": {
+            "type": "number",
+            "example": 849
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "أحمد محمد"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "01012345678"
+          },
+          "city": {
+            "type": "string",
+            "example": "القاهرة"
+          },
+          "governorate": {
+            "type": "string",
+            "example": "القاهرة"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-01T09:30:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-01T09:00:00.000Z"
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "description": "Sum of all order items quantity",
+            "example": 2
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Shipment collectedAt or latest transition to DELIVERED",
+            "example": "2026-10-03T14:15:00.000Z"
+          },
+          "collectedCodAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Collected COD amount from shipment; null if uncollected or absent",
+            "example": 849
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/Attribution"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rejection or return reason; null if not returned/rejected",
+            "example": null
+          }
+        }
+      },
+      "OrderDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ord_1"
+          },
+          "orderNumber": {
+            "type": "string",
+            "example": "1024"
+          },
+          "status": {
+            "type": "string",
+            "example": "DELIVERED"
+          },
+          "customStatusCode": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "PAID"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "example": "CASH"
+          },
+          "subtotal": {
+            "type": "number",
+            "example": 799
+          },
+          "tax": {
+            "type": "number",
+            "example": 0
+          },
+          "shipping": {
+            "type": "number",
+            "example": 50
+          },
+          "discount": {
+            "type": "number",
+            "example": 0
+          },
+          "total": {
+            "type": "number",
+            "example": 849
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "أحمد محمد"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "01012345678"
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true,
+            "example": "ahmed@example.com"
+          },
+          "city": {
+            "type": "string",
+            "example": "القاهرة"
+          },
+          "governorate": {
+            "type": "string",
+            "example": "القاهرة"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-01T09:30:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-01T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-03T14:15:00.000Z"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "example": 2
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-10-03T14:15:00.000Z"
+          },
+          "collectedCodAmount": {
+            "type": "number",
+            "nullable": true,
+            "example": 849
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/Attribution"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/orders": {
+      "get": {
+        "summary": "List company orders",
+        "description": "Returns paginated list of company orders with delivery status, marketing attribution, item quantities, and COD settlement.",
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by order status (e.g. DELIVERED, PENDING)"
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by payment status (e.g. PAID, PENDING)"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Created date lower bound (ISO)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Created date upper bound (ISO)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Page size (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated orders list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OrderListItem"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 20
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 42
+                        },
+                        "pages": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "Get order details",
+        "description": "Returns full details for a single order including line items, total quantity, delivery timestamps, marketing attribution, and rejection reason.",
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order CUID or orderNumber"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/OrderDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found or belongs to another company",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "الطلب غير موجود"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
