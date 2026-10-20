@@ -21,6 +21,7 @@ import { StudioCreatePageModal } from "./StudioCreatePageModal";
 import { createTemplateSections } from "./utils/studioPageTemplates";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
+import { useAuth } from "../../hooks/useAuthSimple";
 import type { StudioPageDefinition } from "./StudioTypes";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 import { toast } from "sonner";
@@ -61,7 +62,10 @@ interface StorefrontStudioShellProps {
 export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   themeId, designTokens: externalDesignTokens, storeName = "متجري",
   hasPendingChanges, saving, previewUrl, onSave, onDiscard, onBack, onOpenPreview, onChange,
+  companyId: propCompanyId,
 }) => {
+  const { user } = useAuth();
+  const companyId = propCompanyId || user?.companyId || "";
   const [deviceMode, setDeviceMode] = useState<StudioDeviceMode>("desktop");
   const [zoomLevel, setZoomLevel] = useState<StudioZoomLevel>(1);
   const [showSpacingOverlay, setShowSpacingOverlay] = useState<boolean>(true);
