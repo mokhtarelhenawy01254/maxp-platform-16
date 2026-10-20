@@ -1,11 +1,13 @@
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import ReturnSettingsPage from '../ReturnSettingsPage';
 import { returnService } from '../../../services/returnService';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
@@ -52,9 +54,9 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('../../../services/returnService', () => ({
+vi.mock('../../../services/returnService', () => ({
   returnService: {
-    getSettings: jest.fn().mockResolvedValue({
+    getSettings: vi.fn().mockResolvedValue({
       data: {
         reviewDisplayConfig: {
           showOrderColumn: true,
@@ -71,20 +73,20 @@ jest.mock('../../../services/returnService', () => ({
         },
       },
     }),
-    updateSettings: jest.fn().mockResolvedValue({ success: true }),
-    getCategories: jest.fn().mockResolvedValue({
+    updateSettings: vi.fn().mockResolvedValue({ success: true }),
+    getCategories: vi.fn().mockResolvedValue({
       data: [
         { id: 'cat-1', name: 'خدمة العملاء', defaultRole: 'CUSTOMER' },
         { id: 'cat-2', name: 'الشحن والتوصيل', defaultRole: 'SHIPPING' },
       ],
     }),
-    getReasons: jest.fn().mockResolvedValue({
+    getReasons: vi.fn().mockResolvedValue({
       data: [
         { id: 'reason-1', categoryId: 'cat-1', reason: 'العميل تراجع عن الشراء', isActive: true },
         { id: 'reason-2', categoryId: 'cat-2', reason: 'تلف أثناء الشحن', isActive: true },
       ],
     }),
-    getReturnShippingCompanies: jest.fn().mockResolvedValue({
+    getReturnShippingCompanies: vi.fn().mockResolvedValue({
       data: {
         data: [
           {
@@ -98,28 +100,32 @@ jest.mock('../../../services/returnService', () => ({
         ],
       },
     }),
-    createCategory: jest.fn().mockResolvedValue({ data: { id: 'cat-new' } }),
-    updateCategory: jest.fn().mockResolvedValue({ success: true }),
-    deleteCategory: jest.fn().mockResolvedValue({ success: true }),
-    createReason: jest.fn().mockResolvedValue({ data: { id: 'reason-new' } }),
-    updateReason: jest.fn().mockResolvedValue({ success: true }),
-    deleteReason: jest.fn().mockResolvedValue({ success: true }),
-    createReturnType: jest.fn().mockResolvedValue({ success: true }),
-    updateReturnType: jest.fn().mockResolvedValue({ success: true }),
-    deleteReturnType: jest.fn().mockResolvedValue({ success: true }),
+    createCategory: vi.fn().mockResolvedValue({ data: { id: 'cat-new' } }),
+    updateCategory: vi.fn().mockResolvedValue({ success: true }),
+    deleteCategory: vi.fn().mockResolvedValue({ success: true }),
+    createReason: vi.fn().mockResolvedValue({ data: { id: 'reason-new' } }),
+    updateReason: vi.fn().mockResolvedValue({ success: true }),
+    deleteReason: vi.fn().mockResolvedValue({ success: true }),
+    createReturnType: vi.fn().mockResolvedValue({ success: true }),
+    updateReturnType: vi.fn().mockResolvedValue({ success: true }),
+    deleteReturnType: vi.fn().mockResolvedValue({ success: true }),
   },
 }));
 
-jest.mock('sonner', () => ({
+vi.mock('sonner', () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 describe('ReturnSettingsPage Suite', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('renders display settings tab with columns and controls sections by default', async () => {

@@ -1,26 +1,32 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ReturnManagementPage from "../ReturnManagementPage";
 import { returnService } from "../../../services/returnService";
 import { apiClient } from "../../../services/apiClient";
 
-jest.mock("../../../services/returnService", () => ({
+vi.mock("../../../services/returnService", () => ({
   returnService: {
-    getRequests: jest.fn(),
-    getSettings: jest.fn(),
-    getCategories: jest.fn(),
+    getRequests: vi.fn(),
+    getSettings: vi.fn(),
+    getCategories: vi.fn(),
   },
 }));
 
-jest.mock("../../../services/apiClient", () => ({
+vi.mock("../../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
 }));
 
-jest.mock("../ReturnDetailsModal", () => () => <div data-testid="mock-return-details-modal">Modal Opened</div>);
+vi.mock("../ReturnDetailsModal", () => ({
+  __esModule: true,
+  default: () => <div data-testid="mock-return-details-modal">Modal Opened</div>,
+}));
 
 const mockRequests = [
   {
@@ -51,19 +57,23 @@ const mockRequests = [
 
 describe("ReturnManagementPage Suite", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (returnService.getRequests as jest.Mock).mockResolvedValue({
+    vi.clearAllMocks();
+    vi.mocked(returnService.getRequests).mockResolvedValue({
       data: { data: mockRequests, total: 2, totalPages: 1 },
-    });
-    (returnService.getSettings as jest.Mock).mockResolvedValue({
+    } as unknown as Awaited<ReturnType<typeof returnService.getRequests>>);
+    vi.mocked(returnService.getSettings).mockResolvedValue({
       data: { reviewDisplayConfig: null },
-    });
-    (returnService.getCategories as jest.Mock).mockResolvedValue({
+    } as unknown as Awaited<ReturnType<typeof returnService.getSettings>>);
+    vi.mocked(returnService.getCategories).mockResolvedValue({
       data: [{ defaultRole: "CUSTOMER", name: "العميل" }, { defaultRole: "STORE", name: "المتجر" }],
-    });
-    (apiClient.get as jest.Mock).mockResolvedValue({
+    } as unknown as Awaited<ReturnType<typeof returnService.getCategories>>);
+    vi.mocked(apiClient.get).mockResolvedValue({
       data: { success: true, data: [] },
-    });
+    } as unknown as Awaited<ReturnType<typeof apiClient.get>>);
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("renders returns telemetry bar and requests table cleanly", async () => {
@@ -76,8 +86,8 @@ describe("ReturnManagementPage Suite", () => {
     await waitFor(() => {
       expect(screen.getByText("ORD-1001")).toBeInTheDocument();
       expect(screen.getByText("ORD-1002")).toBeInTheDocument();
-      expect(screen.getByText("أحمد علي")).toBeInTheDocument();
-      expect(screen.getByText("سارة محمود")).toBeInTheDocument();
+      expect(screen.getByText(/أحمد علي/)).toBeInTheDocument();
+      expect(screen.getByText(/سارة محمود/)).toBeInTheDocument();
     });
 
     expect(screen.getByText("إجمالي المرتجعات")).toBeInTheDocument();

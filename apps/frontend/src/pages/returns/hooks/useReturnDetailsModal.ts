@@ -1,14 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
-  ReturnRequest,
+  type ReturnRequest,
   returnService,
-  ContactAttempt,
-  ActivityLog,
-  ReturnType,
-  ReturnShippingCompany,
+  type ContactAttempt,
+  type ActivityLog,
 } from '../../../services/returnService';
+import { useReturnShippingSelection } from './useReturnShippingSelection';
+
+export interface ReturnDropdownCategory {
+  id: string;
+  name: string;
+  defaultRole?: string;
+}
+
+export interface ReturnDropdownReason {
+  id: string;
+  reason: string;
+  categoryId?: string;
+  description?: string;
+}
 
 export const useReturnDetailsModal = (
   request: ReturnRequest,
@@ -43,18 +55,23 @@ export const useReturnDetailsModal = (
   const isReviewed = true;
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Return Type & Shipping Company
-  const [shippingCompanies, setShippingCompanies] = useState<ReturnShippingCompany[]>([]);
-  const [returnTypes, setReturnTypes] = useState<ReturnType[]>([]);
-  const [shippingCompanyId, setShippingCompanyId] = useState(request.shippingCompanyId || '');
-  const [returnTypeId, setReturnTypeId] = useState(request.returnTypeId || '');
+  // Shipping & Return Type sub-hook
+  const {
+    shippingCompanies,
+    returnTypes,
+    shippingCompanyId,
+    returnTypeId,
+    getSuggestedCost,
+    handleShippingCompanyChange,
+    handleReturnTypeChange,
+  } = useReturnShippingSelection(request, setShippingReturnCost);
 
   // Categories & Reasons for dropdown
-  const [categories, setCategories] = useState<any[]>([]);
-  const [reasons, setReasons] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ReturnDropdownCategory[]>([]);
+  const [reasons, setReasons] = useState<ReturnDropdownReason[]>([]);
 
-  const responsiblePartyOptions = categories.reduce((acc: any[], cat: any) => {
-    if (!acc.find((a) => a.value === cat.defaultRole)) {
+  const responsiblePartyOptions = categories.reduce<Array<{ value: string; label: string }>>((acc, cat) => {
+    if (cat.defaultRole && !acc.find((a) => a.value === cat.defaultRole)) {
       acc.push({ value: cat.defaultRole, label: cat.name });
     }
     return acc;
@@ -63,7 +80,7 @@ export const useReturnDetailsModal = (
   // Activity Log Filter
   const [activityFilter, setActivityFilter] = useState<string>('');
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
       if (activeTab === 'contact') {
@@ -78,154 +95,18 @@ export const useReturnDetailsModal = (
     } finally {
       setLoadingLogs(false);
     }
-  };
+  }, [activeTab, request.id]);
 
   useEffect(() => {
     if (activeTab !== 'details') {
       fetchLogs();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchLogs]);
 
   useEffect(() => {
     returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
     returnService.getReasons().then((res) => setReasons(res.data)).catch(() => {});
   }, []);
-
-  const getSuggestedCost = (type: ReturnType | undefined): number => {
-    if (!type) return 0;
-    if (type.costModel === 'FIXED' && type.fixedAmount != null) {
-      const fixed = Number(type.fixedAmount);
-      return isNaN(fixed) ? 0 : fixed;
-    }
-    if (type.costModel === 'NONE') {
-      return 0;
-    }
-    if (type.costModel === 'FULL') {
-      const o = request.order as any;
-      const rawCost = o?.shippingCost ?? o?.shipping ?? 0;
-      const parsed = Number(rawCost);
-      return isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
-  };
-
-  const applyReturnTypeCost = (type: ReturnType | undefined) => {
-    if (!type) return;
-    const cost = getSuggestedCost(type);
-    setShippingReturnCost(String(cost));
-  };
-
-  useEffect(() => {
-    returnService
-      .getReturnShippingCompanies({ activeOnly: true })
-      .then((res) => {
-        const companies: ReturnShippingCompany[] = res.data?.data || [];
-        const activeCompanies = companies.filter((c) => c.isActive !== false);
-        setShippingCompanies(activeCompanies);
-
-        let resolvedCompanyId = request.shippingCompanyId || '';
-        if (!resolvedCompanyId) {
-          if (activeCompanies.length === 1) {
-            resolvedCompanyId = activeCompanies[0].id;
-          } else if (
-            request.order?.turboTrackingNumber ||
-            (request.order as any)?.turboShipmentId
-          ) {
-            const turbo = activeCompanies.find(
-              (c) =>
-                c.slug?.toLowerCase() === 'turbo' ||
-                c.providerKey?.toUpperCase() === 'TURBO' ||
-                c.name?.toLowerCase().includes('turbo')
-            );
-            if (turbo) {
-              resolvedCompanyId = turbo.id;
-            }
-          }
-        }
-
-        if (resolvedCompanyId) {
-          setShippingCompanyId(resolvedCompanyId);
-          const company = activeCompanies.find((c) => c.id === resolvedCompanyId);
-          const activeTypes = (company?.returnTypes || []).filter(
-            (rt) => rt.isActive !== false
-          );
-          setReturnTypes(activeTypes);
-
-          if (
-            request.returnTypeId &&
-            (request.shippingReturnCost === undefined ||
-              request.shippingReturnCost === null ||
-              request.shippingReturnCost === ('' as any))
-          ) {
-            const matchedType =
-              activeTypes.find((rt) => rt.id === request.returnTypeId) ||
-              activeCompanies
-                .flatMap((c) => c.returnTypes || [])
-                .find((rt) => rt.id === request.returnTypeId);
-            if (matchedType) {
-              applyReturnTypeCost(matchedType);
-            }
-          }
-        } else {
-          const allActiveTypes = activeCompanies
-            .flatMap((c) => c.returnTypes || [])
-            .filter((rt) => rt.isActive !== false);
-          setReturnTypes(allActiveTypes);
-
-          if (
-            request.returnTypeId &&
-            (request.shippingReturnCost === undefined ||
-              request.shippingReturnCost === null ||
-              request.shippingReturnCost === ('' as any))
-          ) {
-            const matchedType = allActiveTypes.find(
-              (rt) => rt.id === request.returnTypeId
-            );
-            if (matchedType) {
-              applyReturnTypeCost(matchedType);
-            }
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleShippingCompanyChange = (value: string) => {
-    setShippingCompanyId(value);
-    setReturnTypeId('');
-    if (!value) {
-      const allActiveTypes = shippingCompanies
-        .flatMap((c) => c.returnTypes || [])
-        .filter((rt) => rt.isActive !== false);
-      setReturnTypes(allActiveTypes);
-      return;
-    }
-    const company = shippingCompanies.find((c) => c.id === value);
-    const activeTypes = (company?.returnTypes || []).filter(
-      (rt) => rt.isActive !== false
-    );
-    setReturnTypes(activeTypes);
-  };
-
-  const handleReturnTypeChange = (value: string) => {
-    setReturnTypeId(value);
-    if (!value) {
-      setShippingReturnCost('');
-      return;
-    }
-    const type =
-      returnTypes.find((rt) => rt.id === value) ||
-      shippingCompanies
-        .flatMap((c) => c.returnTypes || [])
-        .find((rt) => rt.id === value);
-
-    if (type) {
-      if (type.shippingCompanyId && !shippingCompanyId) {
-        setShippingCompanyId(type.shippingCompanyId);
-      }
-      applyReturnTypeCost(type);
-    }
-  };
 
   const handleSaveReview = async () => {
     if (!responsibleParty) {
@@ -249,7 +130,7 @@ export const useReturnDetailsModal = (
       });
       toast.success(t('returns.k_119'));
       onUpdate();
-    } catch (error) {
+    } catch {
       toast.error(t('returns.k_120'));
     } finally {
       setSubmittingReview(false);
@@ -269,7 +150,7 @@ export const useReturnDetailsModal = (
       setContactResult('NO_ANSWER');
       setContactNotes('');
       fetchLogs();
-    } catch (error) {
+    } catch {
       toast.error(t('returns.k_122'));
     }
   };

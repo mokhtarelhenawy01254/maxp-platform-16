@@ -1,10 +1,12 @@
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ReturnDetailsModal from '../ReturnDetailsModal';
 import { returnService } from '../../../services/returnService';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
@@ -42,21 +44,21 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('../../../services/returnService', () => ({
+vi.mock('../../../services/returnService', () => ({
   returnService: {
-    getCategories: jest.fn().mockResolvedValue({
+    getCategories: vi.fn().mockResolvedValue({
       data: [
         { id: 'cat-1', name: 'خدمة العملاء', defaultRole: 'CUSTOMER' },
         { id: 'cat-2', name: 'الشحن والتوصيل', defaultRole: 'SHIPPING' },
       ],
     }),
-    getReasons: jest.fn().mockResolvedValue({
+    getReasons: vi.fn().mockResolvedValue({
       data: [
         { id: 'reason-1', categoryId: 'cat-1', reason: 'العميل تراجع عن الشراء' },
         { id: 'reason-2', categoryId: 'cat-2', reason: 'تلف أثناء الشحن' },
       ],
     }),
-    getReturnShippingCompanies: jest.fn().mockResolvedValue({
+    getReturnShippingCompanies: vi.fn().mockResolvedValue({
       data: {
         data: [
           {
@@ -70,7 +72,7 @@ jest.mock('../../../services/returnService', () => ({
         ],
       },
     }),
-    getContactHistory: jest.fn().mockResolvedValue({
+    getContactHistory: vi.fn().mockResolvedValue({
       data: [
         {
           id: 'attempt-1',
@@ -82,7 +84,7 @@ jest.mock('../../../services/returnService', () => ({
         },
       ],
     }),
-    getActivityLog: jest.fn().mockResolvedValue({
+    getActivityLog: vi.fn().mockResolvedValue({
       data: [
         {
           id: 'act-1',
@@ -98,20 +100,20 @@ jest.mock('../../../services/returnService', () => ({
         },
       ],
     }),
-    updateRequest: jest.fn().mockResolvedValue({ success: true }),
-    addContactAttempt: jest.fn().mockResolvedValue({ success: true }),
+    updateRequest: vi.fn().mockResolvedValue({ success: true }),
+    addContactAttempt: vi.fn().mockResolvedValue({ success: true }),
   },
 }));
 
-jest.mock('sonner', () => ({
+vi.mock('sonner', () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 describe('ReturnDetailsModal Suite', () => {
-  const mockRequest: any = {
+  const mockRequest = {
     id: 'ret-123',
     orderId: 'ord-456',
     status: 'PENDING',
@@ -129,13 +131,17 @@ describe('ReturnDetailsModal Suite', () => {
       codDepositAmount: 50,
       codDepositRefunded: true,
     },
-  };
+  } as unknown as Parameters<typeof ReturnDetailsModal>[0]['request'];
 
-  const mockOnClose = jest.fn();
-  const mockOnUpdate = jest.fn();
+  const mockOnClose = vi.fn();
+  const mockOnUpdate = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('renders modal header, financial settlement, and review inputs', async () => {
