@@ -150,7 +150,7 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
 
           {customPages.length === 0 ? (
             <p className="px-2 py-2 text-[10px] text-[#717782] leading-relaxed">
-              لم تقم بإنشاء صفحات مخصصة بعد. انقر على «+ صفحة جديدة» بالأسفل لإنشاء صفحة من قالب.
+              لا توجد صفحات مخصصة بعد. انقر على «+ صفحة جديدة» بالأسفل لإنشاء صفحة من قالب.
             </p>
           ) : (
             customPages.map((page) => {

@@ -19,6 +19,7 @@ import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
 import { StudioPagesPanel } from "./StudioPagesPanel";
 import { StudioCreatePageModal } from "./StudioCreatePageModal";
 import { createTemplateSections } from "./utils/studioPageTemplates";
+import { STUDIO_PAGE_PRESETS } from "./StudioPagePresets";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -302,7 +303,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     async (pageData: {
       title: string;
       slug: string;
-      template: "about" | "contact" | "faq" | "article";
+      template: string;
       showInMenu: boolean;
     }) => {
       const { title, slug, template, showInMenu } = pageData;
@@ -378,7 +379,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             ];
         const pageUrl = `/${cleanSlug}`;
         if (!currentMenu.some((item: any) => item.url === pageUrl)) {
-          currentMenu.push({ label: title, url: pageUrl });
+          const preset = STUDIO_PAGE_PRESETS.find((p) => p.id === template);
+          const menuLabelToUse =
+            preset?.menuLabel && (!title || title === preset.label)
+              ? preset.menuLabel
+              : (preset?.menuLabel || title);
+          currentMenu.push({ label: menuLabelToUse, url: pageUrl });
         }
         nextNavigation = {
           ...nextNavigation,

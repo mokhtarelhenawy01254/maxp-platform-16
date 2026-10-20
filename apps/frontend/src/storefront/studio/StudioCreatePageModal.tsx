@@ -1,15 +1,18 @@
-import React, { useState, useId, useEffect, useMemo } from "react";
+import * as React from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   XMarkIcon,
   CheckIcon,
   ExclamationCircleIcon,
   PlusIcon,
-  ArrowRightIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import {
-  STUDIO_PAGE_TEMPLATES,
-  type StudioPageTemplate,
-} from "./utils/studioPageTemplates";
+  STUDIO_PAGE_PRESETS,
+  STUDIO_PAGE_PRESET_CATEGORIES,
+  type StudioPagePreset,
+  type StudioPagePresetCategory,
+} from "./StudioPagePresets";
 
 interface StudioCreatePageModalProps {
   isOpen: boolean;
@@ -18,7 +21,7 @@ interface StudioCreatePageModalProps {
   onCreatePage: (newPage: {
     title: string;
     slug: string;
-    template: "about" | "contact" | "faq" | "article";
+    template: string;
     showInMenu: boolean;
   }) => Promise<void>;
 }
@@ -29,32 +32,34 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
   existingSlugs,
   onCreatePage,
 }) => {
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
+  const [title, setTitle] = useState("عن المتجر");
+  const [slug, setSlug] = useState("about");
   const [slugEdited, setSlugEdited] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<
-    "about" | "contact" | "faq" | "article"
-  >("about");
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("about");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | StudioPagePresetCategory>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showInMenu, setShowInMenu] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Auto-generate suggested slug if user hasn't edited slug manually
-  useEffect(() => {
-    if (!slugEdited) {
-      const template = STUDIO_PAGE_TEMPLATES.find((t) => t.id === selectedTemplate);
-      if (template) {
-        setSlug(template.defaultSlug);
-      }
-    }
-  }, [selectedTemplate, slugEdited]);
+  const activePreset = useMemo(() => {
+    return (
+      STUDIO_PAGE_PRESETS.find((p) => p.id === selectedPresetId) ||
+      STUDIO_PAGE_PRESETS[0]
+    );
+  }, [selectedPresetId]);
+
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTitle("عن المتجر");
-      setSlug("about");
+      const defaultPreset =
+        STUDIO_PAGE_PRESETS.find((p) => p.id === "about") || STUDIO_PAGE_PRESETS[0];
+      setTitle(defaultPreset.label);
+      setSlug(defaultPreset.suggestedSlug);
       setSlugEdited(false);
-      setSelectedTemplate("about");
+      setSelectedPresetId(defaultPreset.id);
+      setSelectedCategory("all");
+      setSearchQuery("");
       setShowInMenu(true);
       setIsSubmitting(false);
     }
@@ -91,6 +96,24 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
     return { isValid: true, message: null };
   }, [normalizedSlug, existingSlugs]);
 
+  // Filter presets based on category and search query
+  const filteredPresets = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return STUDIO_PAGE_PRESETS.filter((preset) => {
+      const matchesCategory =
+        selectedCategory === "all" || preset.category === selectedCategory;
+      if (!matchesCategory) return false;
+      if (!q) return true;
+      return (
+        preset.label.toLowerCase().includes(q) ||
+        preset.description.toLowerCase().includes(q) ||
+        preset.suggestedSlug.toLowerCase().includes(q) ||
+        preset.id.toLowerCase().includes(q) ||
+        preset.menuLabel.toLowerCase().includes(q)
+      );
+    });
+  }, [searchQuery, selectedCategory]);
+
   const canSubmit =
     title.trim().length > 0 &&
     slugValidation.isValid &&
@@ -105,7 +128,7 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
       await onCreatePage({
         title: title.trim(),
         slug: normalizedSlug,
-        template: selectedTemplate,
+        template: selectedPresetId,
         showInMenu,
       });
       onClose();
@@ -118,6 +141,11 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
 
   if (!isOpen) return null;
 
+  const effectiveMenuLabel =
+    activePreset.menuLabel && activePreset.menuLabel !== activePreset.label
+      ? activePreset.menuLabel
+      : activePreset.menuLabel || title || "الصفحة";
+
   return (
     <div
       role="dialog"
@@ -125,7 +153,7 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
       aria-labelledby="create-page-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/30">
           <div className="flex items-center gap-2">
@@ -140,7 +168,7 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
                 إنشاء صفحة جديدة من قالب
               </h2>
               <p className="text-[11px] text-muted-foreground">
-                اختر القالب وخصص العنوان والرابط اللاتيني لصفحتك
+                اختر صفحة جاهزة من مكتبة البريستات العشرة وخصص العنوان والرابط
               </p>
             </div>
           </div>
@@ -155,130 +183,208 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Title Input */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-foreground flex items-center justify-between">
-              <span>عنوان الصفحة</span>
-              <span className="text-[10px] text-muted-foreground">يظهر في الهيدر والتبويبات</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => {
-                const newTitle = e.target.value;
-                setTitle(newTitle);
-                if (!slugEdited) {
-                  // Derive slug hint from common words
-                  if (/عن|من نحن|قصتنا/i.test(newTitle)) setSlug("about");
-                  else if (/تواصل|اتصل|راسلنا/i.test(newTitle)) setSlug("contact");
-                  else if (/سؤال|أسئلة|شائع/i.test(newTitle)) setSlug("faq");
-                  else if (/مقال|مدونة|أخبار/i.test(newTitle)) setSlug("article");
-                }
-              }}
-              placeholder="مثال: عن المتجر، تواصل معنا..."
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-            />
-          </div>
-
-          {/* Slug Input */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-foreground flex items-center justify-between">
-              <span>رابط الصفحة اللاتيني (Slug)</span>
-              <span className="text-[10px] text-muted-foreground">أحرف لاتينية وشرطات فقط</span>
-            </label>
-            <div className="relative flex items-center">
-              <span className="absolute start-3 font-mono text-xs text-muted-foreground select-none">
-                /
-              </span>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 [scrollbar-width:thin]">
+          {/* Inputs Row: Title and Slug */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Title Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>عنوان الصفحة</span>
+                <span className="text-[10px] text-muted-foreground">يظهر في الهيدر والتبويبات</span>
+              </label>
               <input
                 type="text"
                 required
-                value={slug}
-                onChange={(e) => {
-                  setSlug(e.target.value);
-                  setSlugEdited(true);
-                }}
-                dir="ltr"
-                placeholder="about"
-                className={`w-full rounded-xl border bg-background ps-6 pe-3 py-2 text-xs font-mono font-medium transition-all focus:outline-none ${
-                  slugValidation.isValid
-                    ? "border-border text-foreground focus:border-primary focus:ring-1 focus:ring-primary"
-                    : "border-destructive text-destructive focus:border-destructive focus:ring-1 focus:ring-destructive"
-                }`}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="مثال: هوم إديتوريال، عروض وفلاش سيل..."
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
-            {slugValidation.message && (
-              <p className="flex items-center gap-1 text-[10.5px] font-semibold text-destructive mt-1">
-                <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>{slugValidation.message}</span>
-              </p>
-            )}
-            {slugValidation.isValid && normalizedSlug && (
-              <p className="text-[10px] text-muted-foreground font-mono">
-                الرابط النهائي: /{normalizedSlug}
-              </p>
-            )}
+
+            {/* Slug Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                <span>رابط الصفحة اللاتيني (Slug)</span>
+                <span className="text-[10px] text-muted-foreground">أحرف لاتينية وشرطات</span>
+              </label>
+              <div className="relative flex items-center">
+                <span className="absolute start-3 font-mono text-xs text-muted-foreground select-none">
+                  /
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value);
+                    setSlugEdited(true);
+                  }}
+                  dir="ltr"
+                  placeholder="about"
+                  className={`w-full rounded-xl border bg-background ps-6 pe-3 py-2 text-xs font-mono font-medium transition-all focus:outline-none ${
+                    slugValidation.isValid
+                      ? "border-border text-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+                      : "border-destructive text-destructive focus:border-destructive focus:ring-1 focus:ring-destructive"
+                  }`}
+                />
+              </div>
+              {slugValidation.message && (
+                <p className="flex items-center gap-1 text-[10.5px] font-semibold text-destructive mt-1">
+                  <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{slugValidation.message}</span>
+                </p>
+              )}
+              {slugValidation.isValid && normalizedSlug && (
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  الرابط النهائي: /{normalizedSlug}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Template Picker */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-foreground flex items-center justify-between">
-              <span>اختر قالب البداية</span>
-              <span className="text-[10px] text-muted-foreground">4 قوالب مجهزة بأقسام جاهزة</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {STUDIO_PAGE_TEMPLATES.map((tmpl) => {
-                const isSelected = selectedTemplate === tmpl.id;
+          {/* Presets Library Picker */}
+          <div className="space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span>مكتبة الصفحات الجاهزة (10 صفحات)</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-primary/10 text-primary font-bold">
+                  {filteredPresets.length} متاحة
+                </span>
+              </label>
+
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-56">
+                <MagnifyingGlassIcon className="h-3.5 w-3.5 absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="بحث في الصفحات الجاهزة..."
+                  className="w-full rounded-lg border border-border bg-background ps-8 pe-3 py-1.5 text-[11px] font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+              <button
+                type="button"
+                data-testid="category-tab-all"
+                onClick={() => setSelectedCategory("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                  selectedCategory === "all"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                الكل ({STUDIO_PAGE_PRESETS.length})
+              </button>
+              {STUDIO_PAGE_PRESET_CATEGORIES.map((cat) => {
+                const count = STUDIO_PAGE_PRESETS.filter((p) => p.category === cat.id).length;
+                const isActive = selectedCategory === cat.id;
                 return (
                   <button
-                    key={tmpl.id}
+                    key={cat.id}
+                    type="button"
+                    data-testid={`category-tab-${cat.id}`}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                    <span className="text-[10px] opacity-75 font-mono">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Presets Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[320px] overflow-y-auto p-0.5 [scrollbar-width:thin]">
+              {filteredPresets.map((preset) => {
+                const isSelected = selectedPresetId === preset.id;
+                const categoryDef = STUDIO_PAGE_PRESET_CATEGORIES.find(
+                  (c) => c.id === preset.category
+                );
+
+                return (
+                  <button
+                    key={preset.id}
                     type="button"
                     onClick={() => {
-                      setSelectedTemplate(tmpl.id);
+                      setSelectedPresetId(preset.id);
                       if (!slugEdited) {
-                        setSlug(tmpl.defaultSlug);
-                        setTitle(tmpl.name);
+                        setSlug(preset.suggestedSlug);
+                        setTitle(preset.label);
                       }
                     }}
-                    className={`text-start flex flex-col justify-between p-2.5 rounded-xl border transition-all text-xs active:scale-[0.98] ${
+                    className={`text-start flex flex-col justify-between p-3 rounded-xl border transition-all text-xs active:scale-[0.98] ${
                       isSelected
                         ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-xs"
                         : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm">{tmpl.icon}</span>
-                        <span className="font-black text-foreground text-xs">
-                          {tmpl.name}
-                        </span>
+                    <div>
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm shrink-0">{preset.icon}</span>
+                          <span className="font-black text-foreground text-xs truncate">
+                            {preset.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {categoryDef && (
+                            <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground font-semibold">
+                              {categoryDef.label}
+                            </span>
+                          )}
+                          {isSelected ? (
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                              <CheckIcon className="h-2.5 w-2.5 stroke-[3]" />
+                            </span>
+                          ) : (
+                            <span className="h-4 w-4 rounded-full border border-border" />
+                          )}
+                        </div>
                       </div>
-                      {isSelected ? (
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <CheckIcon className="h-2.5 w-2.5 stroke-[3]" />
-                        </span>
-                      ) : (
-                        <span className="h-4 w-4 rounded-full border border-border" />
-                      )}
+
+                      <p className="text-[10.5px] text-muted-foreground leading-snug line-clamp-2 mt-1">
+                        {preset.description}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
-                      {tmpl.description}
-                    </p>
-                    <div className="mt-2 pt-1.5 border-t border-border/50 flex flex-wrap gap-1">
-                      {tmpl.sectionsSummary.map((sec) => (
-                        <span
-                          key={sec}
-                          className="font-mono text-[8.5px] px-1 py-0.2 rounded bg-muted text-muted-foreground"
-                        >
-                          {sec}
-                        </span>
-                      ))}
+
+                    <div className="mt-2.5 pt-1.5 border-t border-border/50 flex items-center justify-between gap-1">
+                      <div className="flex flex-wrap gap-1 min-w-0">
+                        {preset.sections.slice(0, 3).map((sec, i) => (
+                          <span
+                            key={i}
+                            className="font-mono text-[8.5px] px-1 py-0.2 rounded bg-muted text-muted-foreground truncate"
+                          >
+                            {sec.type}
+                          </span>
+                        ))}
+                        {preset.sections.length > 3 && (
+                          <span className="font-mono text-[8.5px] px-1 py-0.2 rounded bg-muted text-muted-foreground">
+                            +{preset.sections.length - 3}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-[9px] text-primary/80 font-bold shrink-0">
+                        {preset.sections.length} أقسام
+                      </span>
                     </div>
                   </button>
                 );
               })}
+              {filteredPresets.length === 0 && (
+                <div className="col-span-full py-8 text-center text-xs text-muted-foreground">
+                  لا توجد صفحات جاهزة مطابقة لكلمة البحث
+                </div>
+              )}
             </div>
           </div>
 
@@ -296,7 +402,7 @@ export const StudioCreatePageModal: React.FC<StudioCreatePageModalProps> = ({
                   أضف رابط الصفحة إلى القائمة الرئيسية (المنيو)
                 </span>
                 <p className="text-[10px] text-muted-foreground">
-                  يضيف زر «{title || "الصفحة"}» في شريط التنقل العلوي للمتجر
+                  يضيف زر «{effectiveMenuLabel}» في شريط التنقل العلوي للمتجر
                 </p>
               </div>
             </label>

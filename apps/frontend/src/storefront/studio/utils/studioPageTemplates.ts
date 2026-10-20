@@ -1,3 +1,5 @@
+import { createPresetSections, STUDIO_PAGE_PRESETS } from "../StudioPagePresets";
+
 export interface StudioPageTemplate {
   id: "about" | "contact" | "faq" | "article";
   name: string;
@@ -48,9 +50,18 @@ export const STUDIO_PAGE_TEMPLATES: StudioPageTemplate[] = [
 ];
 
 export const createTemplateSections = (
-  templateId: "about" | "contact" | "faq" | "article",
+  templateId: string,
   pageTitle: string
 ) => {
+  // If it's one of the 10 presets in StudioPagePresets, generate from preset definitions
+  const isPreset = STUDIO_PAGE_PRESETS.some((p) => p.id === templateId);
+  if (isPreset) {
+    const presetSections = createPresetSections(templateId, pageTitle);
+    if (presetSections.length > 0) {
+      return presetSections;
+    }
+  }
+
   const ts = Date.now();
   switch (templateId) {
     case "about":
@@ -207,5 +218,8 @@ export const createTemplateSections = (
           },
         },
       ];
+
+    default:
+      return [];
   }
 };
