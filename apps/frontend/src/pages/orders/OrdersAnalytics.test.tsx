@@ -1,27 +1,30 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import "@testing-library/jest-dom";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { OrdersAnalytics } from "./OrdersAnalytics";
 import { OrdersAnalyticsCommandBar } from "./analytics/OrdersAnalyticsCommandBar";
 import { OrdersAnalyticsErrorBar } from "./analytics/OrdersAnalyticsErrorBar";
 
-jest.mock("../../i18n", () => ({
+vi.mock("../../i18n", () => ({
   getDirection: () => "rtl",
 }));
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: (k: string, opt?: any) => opt?.defaultValue || k,
     i18n: { language: "ar" },
   }),
 }));
 
-const mockLoadData = jest.fn();
-const mockApplyPeriod = jest.fn();
-const mockHandleCustomDateChange = jest.fn();
+const mockLoadData = vi.fn();
+const mockApplyPeriod = vi.fn();
+const mockHandleCustomDateChange = vi.fn();
 
-jest.mock("./analytics/useOrdersAnalyticsData", () => ({
+vi.mock("./analytics/useOrdersAnalyticsData", () => ({
   useOrdersAnalyticsData: () => ({
     period: "7",
     dateRange: { start: "2026-10-11", end: "2026-10-18" },
@@ -34,7 +37,7 @@ jest.mock("./analytics/useOrdersAnalyticsData", () => ({
     products: [],
     lastRefreshedAt: new Date("2026-10-18T10:00:00Z"),
     trendMetric: "orders",
-    setTrendMetric: jest.fn(),
+    setTrendMetric: vi.fn(),
     applyPeriod: mockApplyPeriod,
     handleCustomDateChange: mockHandleCustomDateChange,
     loadData: mockLoadData,
@@ -88,6 +91,10 @@ jest.mock("./analytics/useOrdersAnalyticsData", () => ({
   }),
 }));
 
+afterEach(() => {
+  cleanup();
+});
+
 describe("OrdersAnalytics Suite", () => {
   it("renders main analytics command bar and metrics strips", () => {
     render(
@@ -125,8 +132,10 @@ describe("OrdersAnalytics Suite", () => {
   });
 
   it("renders OrdersAnalyticsErrorBar and triggers retry callback", () => {
-    const onRetryMock = jest.fn();
-    render(<OrdersAnalyticsErrorBar error="فشل جلب البيانات" onRetry={onRetryMock} />);
+    const onRetryMock = vi.fn();
+    render(
+      <OrdersAnalyticsErrorBar error="فشل جلب البيانات" onRetry={onRetryMock} />
+    );
 
     expect(screen.getByText("فشل جلب البيانات")).toBeInTheDocument();
     const retryBtn = screen.getByText("إعادة المحاولة");
