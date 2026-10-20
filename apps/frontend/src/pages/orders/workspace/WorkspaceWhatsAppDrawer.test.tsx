@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import {
   WorkspaceWhatsAppDrawer,
   normalizeArabicDigits,
@@ -7,19 +10,23 @@ import {
 } from './WorkspaceWhatsAppDrawer';
 import type { WorkspaceOrder } from './types';
 
-jest.mock('../../../services/apiClient', () => ({
+vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({ data: {} }),
-    post: jest.fn().mockResolvedValue({ data: { success: true } }),
+    get: vi.fn().mockResolvedValue({ data: {} }),
+    post: vi.fn().mockResolvedValue({ data: { success: true } }),
   },
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue || key,
     i18n: { language: 'ar' },
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 const mockOrder: WorkspaceOrder = {
   id: 'ord-123',
@@ -56,14 +63,14 @@ describe('WorkspaceWhatsAppDrawer Suite', () => {
   describe('Component Rendering', () => {
     it('does not render when isOpen is false', () => {
       const { container } = render(
-        <WorkspaceWhatsAppDrawer isOpen={false} onClose={jest.fn()} order={mockOrder} />
+        <WorkspaceWhatsAppDrawer isOpen={false} onClose={vi.fn()} order={mockOrder} />
       );
       expect(container).toBeEmptyDOMElement();
     });
 
     it('renders customer name, order number, and tabs when open', () => {
       render(
-        <WorkspaceWhatsAppDrawer isOpen={true} onClose={jest.fn()} order={mockOrder} />
+        <WorkspaceWhatsAppDrawer isOpen={true} onClose={vi.fn()} order={mockOrder} />
       );
       expect(screen.getByText('أحمد محمود')).toBeInTheDocument();
       expect(screen.getByText('№ 1001')).toBeInTheDocument();
@@ -72,7 +79,7 @@ describe('WorkspaceWhatsAppDrawer Suite', () => {
     });
 
     it('calls onClose when close button is clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(
         <WorkspaceWhatsAppDrawer isOpen={true} onClose={onClose} order={mockOrder} />
       );
@@ -83,11 +90,10 @@ describe('WorkspaceWhatsAppDrawer Suite', () => {
 
     it('switches between chat and templates tab', () => {
       render(
-        <WorkspaceWhatsAppDrawer isOpen={true} onClose={jest.fn()} order={mockOrder} />
+        <WorkspaceWhatsAppDrawer isOpen={true} onClose={vi.fn()} order={mockOrder} />
       );
       const templatesTab = screen.getByText('قوالب التأكيد والرسائل');
       fireEvent.click(templatesTab);
-      // Mode tabs should reflect active selection
       expect(templatesTab.closest('button')).toHaveClass('border-emerald-500');
     });
   });
