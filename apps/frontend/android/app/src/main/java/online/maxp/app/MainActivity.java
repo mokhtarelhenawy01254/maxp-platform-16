@@ -25,7 +25,11 @@ public class MainActivity extends BridgeActivity {
                 WebSettings settings = getBridge().getWebView().getSettings();
                 String currentUa = settings.getUserAgentString();
                 if (currentUa != null && !currentUa.contains("MaxP-Native-Android")) {
-                    settings.setUserAgentString(currentUa + " MaxP-Native-Android/" + BuildConfig.VERSION_NAME);
+                    String versionName = "1.2.0";
+                    try {
+                        versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                    } catch (Exception ignored) {}
+                    settings.setUserAgentString(currentUa + " MaxP-Native-Android/" + versionName);
                 }
             }
         } catch (Exception e) {
