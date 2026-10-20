@@ -52,6 +52,7 @@ const {
   resolveMerchantAccount,
   syncMerchantProductStock,
 } = require('../utils/merchantAccountScope');
+const { syncProductToInventory } = require('../services/inventorySyncService');
 const redisCacheService = require('../services/redisCacheService');
 
 // 🔤 Arabic to Franco mapping for slug generation
@@ -1951,6 +1952,18 @@ const updateSingleProduct = async (req, res) => {
       if (updateData.price !== undefined || updateData.stock !== undefined) {
         await merchantService.updateProductDropshippingPrice(product.id);
       }
+    } else {
+      if (updateData.stock !== undefined) {
+        await syncProductToInventory(getSharedPrismaClient(), {
+          productId: id,
+          companyId,
+          stock: updateData.stock,
+          cost: updateData.cost !== undefined ? updateData.cost : product.cost,
+          userId: req.user?.id || null,
+          userName: req.user?.name || req.user?.email || 'System',
+          isCreate: false,
+        });
+      }
     }
 
     await refreshProductRetrievalArtifacts(product.id, companyId);
@@ -2485,6 +2498,17 @@ const createProduct = async (req, res) => {
             where: { merchantId: currentMerchant.id }
           }
         }
+      });
+    } else {
+      const actorName = req.user?.name || req.user?.email || 'System';
+      await syncProductToInventory(getSharedPrismaClient(), {
+        productId: product.id,
+        companyId,
+        stock: product.stock,
+        cost: product.cost,
+        userId: req.user?.id || null,
+        userName: actorName,
+        isCreate: true,
       });
     }
 

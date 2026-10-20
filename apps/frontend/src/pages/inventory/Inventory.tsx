@@ -22,6 +22,7 @@ interface InventoryItem {
   productName: string;
   sku: string;
   price: number;
+  cost?: number | null;
   warehouseId: string;
   warehouseName: string;
   quantity: number;
@@ -89,6 +90,7 @@ interface InventoryApiItem {
   quantity: number;
   available: number;
   reserved: number;
+  cost?: number | null;
   reorderPoint?: number;
   batchNumber?: string | null;
   expiryDate?: string | null;
@@ -97,6 +99,7 @@ interface InventoryApiItem {
     name?: string;
     sku?: string;
     price?: number;
+    cost?: number | null;
   };
   warehouses?: {
     name?: string;
@@ -227,6 +230,12 @@ const Inventory: React.FC = () => {
           productName: item.products?.name || "منتج بدون اسم",
           sku: item.products?.sku || "",
           price: Number(item.products?.price || 0),
+          cost:
+            item.cost !== undefined && item.cost !== null
+              ? Number(item.cost)
+              : item.products?.cost !== undefined && item.products?.cost !== null
+              ? Number(item.products.cost)
+              : null,
           warehouseId: item.warehouseId,
           warehouseName: item.warehouses?.name || "---",
           quantity: item.quantity,
@@ -337,6 +346,7 @@ const Inventory: React.FC = () => {
       "Batch",
       "Quantity",
       "Available",
+      "Price",
       "Cost",
       "Expiry",
     ];
@@ -348,6 +358,7 @@ const Inventory: React.FC = () => {
       item.quantity,
       item.available,
       item.price,
+      item.cost || "",
       item.expiryDate || "",
     ]);
 
@@ -714,8 +725,13 @@ const Inventory: React.FC = () => {
                     <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{item.available}</span>
                   </div>
                   <div>
-                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">التكلفة</span>
+                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">السعر</span>
                     <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatPrice(item.price)}</span>
+                    {item.cost !== undefined && item.cost !== null && item.cost > 0 ? (
+                      <span className="block text-[10px] text-gray-400 dark:text-gray-500">
+                        تكلفة: {formatPrice(item.cost)}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -822,7 +838,7 @@ const Inventory: React.FC = () => {
                   الحالة
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  التكلفة
+                  السعر
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   الإجراءات
@@ -877,7 +893,12 @@ const Inventory: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white font-mono tabular-nums font-semibold">
-                      {formatPrice(item.price)}
+                      <div>{formatPrice(item.price)}</div>
+                      {item.cost !== undefined && item.cost !== null && item.cost > 0 ? (
+                        <div className="text-[11px] text-gray-400 dark:text-gray-500 font-normal">
+                          تكلفة: {formatPrice(item.cost)}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
                       <div className="flex items-center space-x-1.5 space-x-reverse">
@@ -1002,6 +1023,11 @@ const Inventory: React.FC = () => {
                   <p className="text-gray-700 dark:text-gray-300">
                     <strong className="text-gray-900 dark:text-white">السعر:</strong> {formatPrice(selectedItem.price)}
                   </p>
+                  {selectedItem.cost !== undefined && selectedItem.cost !== null && selectedItem.cost > 0 ? (
+                    <p className="text-gray-700 dark:text-gray-300">
+                      <strong className="text-gray-900 dark:text-white">التكلفة:</strong> {formatPrice(selectedItem.cost)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

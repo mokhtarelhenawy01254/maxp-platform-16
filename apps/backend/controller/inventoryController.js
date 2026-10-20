@@ -21,6 +21,10 @@ const {
 const {
   syncProductStockFromInventory
 } = require('../utils/productInventorySync');
+const {
+  ensureCompanyPrimaryWarehouse,
+  autoHealProductInventory,
+} = require('../services/inventorySyncService');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const INVENTORY_PRODUCT_ROLES = new Set([
@@ -717,7 +721,19 @@ exports.getInventory = async (req, res) => {
     // If a product has no inventory records, we show it with 0 quantities
     const flatInventory = [];
 
-    products.forEach(product => {
+    let companyPrimaryWarehouse = null;
+    if (!scope.isMerchantScope && scope.companyId) {
+      try {
+        companyPrimaryWarehouse = await ensureCompanyPrimaryWarehouse(
+          getSharedPrismaClient(),
+          scope.companyId
+        );
+      } catch (whErr) {
+        console.error('⚠️ [INVENTORY] Failed to ensure primary warehouse:', whErr.message);
+      }
+    }
+
+    for (const product of products) {
       // If product has inventory records, create entries for each
       if (product.inventories && product.inventories.length > 0) {
         product.inventories.forEach(inv => {
@@ -733,11 +749,13 @@ exports.getInventory = async (req, res) => {
             batchNumber: inv.batchNumber,
             expiryDate: inv.expiryDate,
             updatedAt: inv.updatedAt,
+            cost: inv.cost ? Number(inv.cost) : (product.cost ? Number(product.cost) : null),
             products: {
               id: product.id,
               name: product.name,
               sku: product.sku,
               price: product.price,
+              cost: product.cost,
               images: product.images
             },
             warehouses: inv.warehouse,
@@ -747,40 +765,95 @@ exports.getInventory = async (req, res) => {
           });
         });
       } else {
-        const virtualWarehouse = scope.isMerchantScope
-          ? scope.merchantWarehouse
-          : null;
-        // Product exists but no stock records yet - add a "virtual" entry
-        flatInventory.push({
-          id: `virtual-${product.id}`,
-          productId: product.id,
-          warehouseId: warehouseId || virtualWarehouse?.id || scope.merchant?.defaultWarehouseId || 'INITIAL',
-          quantity: 0,
-          available: 0,
-          reserved: 0,
-          minStock: 0,
-          reorderPoint: 0,
-          batchNumber: null,
-          expiryDate: null,
-          updatedAt: product.updatedAt,
-          products: {
-            id: product.id,
-            name: product.name,
-            sku: product.sku,
-            price: product.price,
-            images: product.images
-          },
-          warehouses: {
-            id: virtualWarehouse?.id || 'NONE',
-            name: virtualWarehouse?.name || 'لم يتم التخصيص',
-            location: virtualWarehouse?.location || ''
-          },
-          canEditStock: scope.canEditStock,
-          stockLocation: scope.stockLocation,
-          stockLocationLabel: scope.stockLocationLabel
-        });
+        let healedInv = null;
+        if (
+          !scope.isMerchantScope &&
+          (product.stock || 0) > 0 &&
+          (!warehouseId || warehouseId === companyPrimaryWarehouse?.id)
+        ) {
+          try {
+            healedInv = await autoHealProductInventory(getSharedPrismaClient(), {
+              product,
+              companyId: product.companyId || scope.companyId
+            });
+          } catch (healErr) {
+            console.error(`⚠️ [INVENTORY] Auto-healing failed for product ${product.id}:`, healErr.message);
+          }
+        }
+
+        if (healedInv) {
+          flatInventory.push({
+            id: healedInv.id,
+            productId: product.id,
+            warehouseId: healedInv.warehouseId,
+            quantity: healedInv.quantity,
+            available: healedInv.available,
+            reserved: healedInv.reserved,
+            minStock: healedInv.minStock,
+            reorderPoint: healedInv.reorderPoint,
+            batchNumber: healedInv.batchNumber,
+            expiryDate: healedInv.expiryDate,
+            updatedAt: healedInv.updatedAt,
+            cost: healedInv.cost ? Number(healedInv.cost) : (product.cost ? Number(product.cost) : null),
+            products: {
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              price: product.price,
+              cost: product.cost,
+              images: product.images
+            },
+            warehouses: healedInv.warehouse || {
+              id: companyPrimaryWarehouse?.id || healedInv.warehouseId,
+              name: companyPrimaryWarehouse?.name || 'المخزن الرئيسي',
+              location: companyPrimaryWarehouse?.location || ''
+            },
+            canEditStock: scope.canEditStock,
+            stockLocation: scope.stockLocation,
+            stockLocationLabel: scope.stockLocationLabel
+          });
+        } else {
+          const virtualWarehouse = scope.isMerchantScope
+            ? scope.merchantWarehouse
+            : companyPrimaryWarehouse;
+          const fallbackWarehouseName = scope.isMerchantScope
+            ? 'لم يتم التخصيص'
+            : (companyPrimaryWarehouse?.name || 'المخزن الرئيسي');
+
+          // Product exists but no stock records yet - add a "virtual" entry
+          flatInventory.push({
+            id: `virtual-${product.id}`,
+            productId: product.id,
+            warehouseId: warehouseId || virtualWarehouse?.id || scope.merchant?.defaultWarehouseId || 'INITIAL',
+            quantity: 0,
+            available: 0,
+            reserved: 0,
+            minStock: 0,
+            reorderPoint: 0,
+            batchNumber: null,
+            expiryDate: null,
+            updatedAt: product.updatedAt,
+            cost: product.cost ? Number(product.cost) : null,
+            products: {
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              price: product.price,
+              cost: product.cost,
+              images: product.images
+            },
+            warehouses: {
+              id: virtualWarehouse?.id || 'NONE',
+              name: virtualWarehouse?.name || fallbackWarehouseName,
+              location: virtualWarehouse?.location || ''
+            },
+            canEditStock: scope.canEditStock,
+            stockLocation: scope.stockLocation,
+            stockLocationLabel: scope.stockLocationLabel
+          });
+        }
       }
-    });
+    }
 
     // Post-aggregation filtering for stock status (if requested)
     let filteredResults = flatInventory;
