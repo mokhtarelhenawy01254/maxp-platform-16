@@ -171,7 +171,12 @@ export function useStorefrontStudioState({
 
   const setActivePageKey = useCallback(
     (pageKey: string) => {
-      if (!previewTheme.pages || !previewTheme.pages[pageKey]) {
+      const existsInTheme = Boolean(previewTheme.pages && previewTheme.pages[pageKey]);
+      const existsInTokens = Boolean(
+        (currentDesignTokensRef.current?.pages as any)?.[pageKey] ||
+        (currentDesignTokensRef.current?.pageOverrides as any)?.[pageKey]
+      );
+      if (!existsInTheme && !existsInTokens) {
         toast.error(`الصفحة "${pageKey}" غير متوفرة في هذا الثيم`);
         return;
       }
@@ -183,9 +188,6 @@ export function useStorefrontStudioState({
 
   const activePageConfig = useMemo(() => {
     const page = previewTheme.pages?.[activePageKey];
-    if (!page) {
-      return { sections: [] };
-    }
     const fromPages = (currentDesignTokens?.pages as Record<string, any>)?.[activePageKey];
     const fromOverrides = (currentDesignTokens?.pageOverrides as Record<string, any>)?.[activePageKey];
 
@@ -198,7 +200,7 @@ export function useStorefrontStudioState({
         : null;
 
     return {
-      ...page,
+      ...(page || {}),
       ...(fromPages || {}),
       ...(fromOverrides || {}),
       sections: userSections !== null ? userSections : themeSecs,

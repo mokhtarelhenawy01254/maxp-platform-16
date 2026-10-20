@@ -17,6 +17,11 @@ import { StudioSortableSection } from "./StudioSortableSection";
 import { StudioStatusBar } from "./StudioStatusBar";
 import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
 import { StudioPagesPanel } from "./StudioPagesPanel";
+import { StudioCreatePageModal } from "./StudioCreatePageModal";
+import { createTemplateSections } from "./utils/studioPageTemplates";
+import { getApiUrl } from "../../config/environment";
+import tokenManager from "../../utils/tokenManager";
+import type { StudioPageDefinition } from "./StudioTypes";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 import { toast } from "sonner";
 import "./storefront-studio.css";
@@ -68,6 +73,35 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<StudioSelectedElement | null>(null);
+  const [showCreatePageModal, setShowCreatePageModal] = useState<boolean>(false);
+  const [dbCustomPages, setDbCustomPages] = useState<
+    Array<{ id: string; slug: string; title: string; pageType: string }>
+  >([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCustomPages = async () => {
+      try {
+        const res = await fetch(`${getApiUrl()}/store-pages/list?includeInactive=true`, {
+          method: "POST",
+          headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ companyId }),
+        });
+        const data = await res.json();
+        if (isMounted && data.success && Array.isArray(data.data)) {
+          setDbCustomPages(data.data);
+        }
+      } catch {
+        // Silently handle
+      }
+    };
+    if (companyId) {
+      fetchCustomPages();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [companyId]);
 
   // Library Drag-and-Drop state
   const [draggingLibraryItem, setDraggingLibraryItem] = useState<{ type: string; label: string } | null>(null);
@@ -211,9 +245,164 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
   const [inspectorTab, setInspectorTab] = useState<StudioInspectorTab>("design");
 
+  const standardPageIdSet = useMemo(() => new Set(STUDIO_PAGES.map((p) => p.id)), []);
+
+  const customPages: StudioPageDefinition[] = useMemo(() => {
+    const pagesMap = new Map<string, StudioPageDefinition>();
+
+    // 1. From DB
+    dbCustomPages.forEach((p) => {
+      if (!standardPageIdSet.has(p.slug)) {
+        pagesMap.set(p.slug, {
+          id: p.slug,
+          label: p.title || p.slug,
+          icon: "📄",
+          description: `/${p.slug}`,
+        });
+      }
+    });
+
+    // 2. From designTokens.pages & pageOverrides
+    const fromTokensPages = (currentDesignTokens?.pages as Record<string, any>) || {};
+    const fromTokenOverrides = (currentDesignTokens?.pageOverrides as Record<string, any>) || {};
+    const allTokenPageKeys = new Set([
+      ...Object.keys(fromTokensPages),
+      ...Object.keys(fromTokenOverrides),
+    ]);
+
+    allTokenPageKeys.forEach((key) => {
+      if (!standardPageIdSet.has(key)) {
+        const pageData = fromTokensPages[key] || fromTokenOverrides[key] || {};
+        const existing = pagesMap.get(key);
+        pagesMap.set(key, {
+          id: key,
+          label: pageData.title || pageData.label || existing?.label || key,
+          icon: "📄",
+          description: existing?.description || `/${key}`,
+        });
+      }
+    });
+
+    return Array.from(pagesMap.values());
+  }, [dbCustomPages, currentDesignTokens, standardPageIdSet]);
+
+  const existingSlugs = useMemo(() => {
+    const set = new Set<string>();
+    STUDIO_PAGES.forEach((p) => set.add(p.id.toLowerCase()));
+    customPages.forEach((p) => set.add(p.id.toLowerCase()));
+    dbCustomPages.forEach((p) => set.add(p.slug.toLowerCase()));
+    return Array.from(set);
+  }, [customPages, dbCustomPages]);
+
+  const handleCreateCustomPage = useCallback(
+    async (pageData: {
+      title: string;
+      slug: string;
+      template: "about" | "contact" | "faq" | "article";
+      showInMenu: boolean;
+    }) => {
+      const { title, slug, template, showInMenu } = pageData;
+      const cleanSlug = slug.trim().toLowerCase();
+
+      const pageTypeMap: Record<string, string> = {
+        about: "ABOUT_US",
+        contact: "CONTACT_US",
+        faq: "FAQ",
+        article: "CUSTOM",
+      };
+      const pageType = pageTypeMap[template] || "CUSTOM";
+
+      // Call DB API
+      try {
+        const res = await fetch(`${getApiUrl()}/store-pages/`, {
+          method: "POST",
+          headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            companyId,
+            title,
+            slug: cleanSlug,
+            content: `<p>${title}</p>`,
+            pageType,
+            isActive: true,
+            showInFooter: true,
+            showInMenu,
+            order: 0,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          setDbCustomPages((prev) => [
+            ...prev.filter((p) => p.slug !== cleanSlug),
+            { id: data.data.id || cleanSlug, slug: cleanSlug, title, pageType },
+          ]);
+        }
+      } catch (err) {
+        console.warn("DB page creation warning (proceeding to designTokens):", err);
+      }
+
+      // Generate template sections
+      const templateSections = createTemplateSections(template, title);
+
+      // Write to BOTH designTokens.pages[cleanSlug] and designTokens.pageOverrides[cleanSlug]
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        [cleanSlug]: {
+          id: cleanSlug,
+          title,
+          label: title,
+          sections: templateSections,
+        },
+      };
+      const nextPageOverrides = {
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [cleanSlug]: {
+          id: cleanSlug,
+          title,
+          label: title,
+          sections: templateSections,
+        },
+      };
+
+      // Add to menu if showInMenu
+      let nextNavigation = (currentDesignTokens?.navigation as Record<string, unknown>) || {};
+      if (showInMenu) {
+        const currentMenu = Array.isArray((nextNavigation as any)?.menu)
+          ? [...(nextNavigation as any).menu]
+          : [
+              { label: "الرئيسية", url: "/" },
+              { label: "كل المنتجات", url: "/shop" },
+            ];
+        const pageUrl = `/${cleanSlug}`;
+        if (!currentMenu.some((item: any) => item.url === pageUrl)) {
+          currentMenu.push({ label: title, url: pageUrl });
+        }
+        nextNavigation = {
+          ...nextNavigation,
+          menu: currentMenu,
+        };
+      }
+
+      const nextTokens: Record<string, unknown> = {
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPageOverrides,
+        ...(showInMenu ? { navigation: nextNavigation } : {}),
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      setActivePageKey(cleanSlug);
+      toast.success(`تم إنشاء صفحة "${title}" بنجاح!`);
+    },
+    [companyId, currentDesignTokens, handleDesignTokensChange, onSave, setActivePageKey]
+  );
+
   const pageSectionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     STUDIO_PAGES.forEach((p) => {
+      counts[p.id] = 0;
+    });
+    customPages.forEach((p) => {
       counts[p.id] = 0;
     });
     if (previewTheme && previewTheme.pages) {
@@ -223,7 +412,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     }
     counts[activePageKey] = activeSections.length;
     return counts;
-  }, [previewTheme, activePageKey, activeSections]);
+  }, [previewTheme, activePageKey, activeSections, customPages]);
 
   const themeName = STOREFRONT_THEME_PRESETS[themeId]?.name || themeId;
   const selectedLabel = selectedSectionConfig
@@ -348,6 +537,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         storeName={storeName}
         themeName={themeName}
         activePageKey={activePageKey}
+        customPages={customPages}
+        onOpenCreatePageModal={() => setShowCreatePageModal(true)}
         deviceMode={deviceMode}
         hasPendingChanges={hasPendingChanges}
         canUndo={canUndo}
@@ -508,6 +699,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                     }}
                     onClose={() => setIsLeftDrawerOpen(false)}
                     pageSectionCounts={pageSectionCounts}
+                    customPages={customPages}
+                    onOpenCreatePageModal={() => setShowCreatePageModal(true)}
                   />
                 )}
               </div>
@@ -800,6 +993,13 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         isOpen={showCatalogModal}
         onClose={() => setShowCatalogModal(false)}
         onAddSection={handleAddSection}
+      />
+
+      <StudioCreatePageModal
+        isOpen={showCreatePageModal}
+        onClose={() => setShowCreatePageModal(false)}
+        existingSlugs={existingSlugs}
+        onCreatePage={handleCreateCustomPage}
       />
 
       <StorefrontImagePickerModal

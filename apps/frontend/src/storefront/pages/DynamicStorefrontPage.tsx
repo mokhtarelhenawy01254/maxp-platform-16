@@ -33,8 +33,13 @@ const DynamicStorefrontPage: React.FC = () => {
     ? theme.pages[resolvedPageKey] || theme.pages[pageSlug]
     : undefined;
 
-  // Unconditional call to hook but with conditional parameter
-  const shouldFetchDbPage = !pageConfig && resolvedPageKey !== "home" && resolvedPageKey !== "shop";
+  const hasSections = Boolean(
+    pageConfig && Array.isArray(pageConfig.sections) && pageConfig.sections.length > 0
+  );
+
+  // If page exists in designTokens/theme with sections, render via PageComposer directly.
+  // Otherwise fall back to DB page content (rich-text).
+  const shouldFetchDbPage = !hasSections && resolvedPageKey !== "home" && resolvedPageKey !== "shop";
   const { page: dbPage, loading: dbLoading } = useStorePage(
     shouldFetchDbPage ? pageSlug : undefined,
     shouldFetchDbPage ? settings?.company?.id : undefined,
@@ -42,13 +47,24 @@ const DynamicStorefrontPage: React.FC = () => {
 
   // Sync dynamic page metadata with browser head
   useEffect(() => {
-    if (!dbPage) return;
     const storeName =
       settings?.storefront?.settings?.storeName ||
       settings?.storefront?.name ||
       theme.header?.brandName ||
       theme.name ||
       '';
+
+    if (hasSections && pageConfig) {
+      const pageTitle =
+        (pageConfig as any).title?.trim() ||
+        (pageConfig as any).label?.trim() ||
+        pageSlug ||
+        '';
+      document.title = pageTitle ? `${pageTitle} | ${storeName}` : storeName;
+      return;
+    }
+
+    if (!dbPage) return;
     const pageTitle =
       dbPage.metaTitle?.trim() ||
       (dbPage.title ? `${dbPage.title} | ${storeName}` : storeName);
@@ -66,7 +82,18 @@ const DynamicStorefrontPage: React.FC = () => {
       }
       descEl.setAttribute('content', metaDesc);
     }
-  }, [dbPage, settings, theme]);
+  }, [dbPage, settings, theme, hasSections, pageConfig, pageSlug]);
+
+  if (hasSections && pageConfig) {
+    return (
+      <PageComposer
+        pageConfig={pageConfig}
+        layout={resolveStorefrontPageLayout(pageConfig)}
+        runtimeText={runtimeText}
+        renderSectionFrame={StorefrontSectionFrame}
+      />
+    );
+  }
 
   if (shouldFetchDbPage && (settingsLoading || dbLoading)) {
     return (

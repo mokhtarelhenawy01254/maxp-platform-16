@@ -428,10 +428,38 @@ const normalizeThemeOverrides = (
     },
   };
 
-  const header = (input.header ||
+  let header = (input.header ||
     (isRecord(input.designTokens) ? (input.designTokens['header'] as StorefrontHeaderConfig | undefined) : undefined) ||
     (isRecord(settings?.['designTokens']) ? (settings?.['designTokens']['header'] as StorefrontHeaderConfig | undefined) : undefined) ||
     settings?.["header"]) as StorefrontHeaderConfig | undefined;
+
+  const rawNavMenu =
+    (isRecord(input?.designTokens) && isRecord((input.designTokens as any).navigation)
+      ? (input.designTokens as any).navigation.menu
+      : undefined) ||
+    (isRecord(settings?.['designTokens']) && isRecord((settings?.['designTokens'] as any).navigation)
+      ? (settings?.['designTokens'] as any).navigation.menu
+      : undefined) ||
+    (isRecord((input as any)?.navigation)
+      ? (input as any).navigation.menu
+      : undefined);
+
+  if (Array.isArray(rawNavMenu) && rawNavMenu.length > 0) {
+    const customNav = rawNavMenu
+      .filter((item: any) => Boolean(item && typeof item === 'object'))
+      .map((item: any) => ({
+        label: String(item.label || ''),
+        to: String(item.url || item.to || '/'),
+      }))
+      .filter((item: any) => item.label.trim().length > 0);
+
+    if (customNav.length > 0) {
+      header = {
+        ...(header || {}),
+        navigation: customNav,
+      };
+    }
+  }
 
   const footer = (input.footer ||
     (isRecord(input.designTokens) ? (input.designTokens['footer'] as StorefrontFooterConfig | undefined) : undefined) ||

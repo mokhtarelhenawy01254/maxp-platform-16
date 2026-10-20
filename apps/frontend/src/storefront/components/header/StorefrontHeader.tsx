@@ -320,8 +320,20 @@ const StorefrontHeader: React.FC<{
     settings?.storefront?.settings?.["logoUrl"] ||
     (settings?.company?.logo ? settings.company.logo : null);
 
-  // Use dynamic nav links from theme if available, otherwise default
-  const navLinks = theme.header?.navigation?.map((nav) => ({
+  // Use dynamic nav links from theme if available, otherwise check designTokens.navigation.menu, then fallback
+  const menuFromDesignTokens =
+    (settings?.storefront?.settings?.["designTokens"] as any)?.navigation?.menu ||
+    (settings?.["designTokens"] as any)?.navigation?.menu ||
+    (settings?.storefront?.designTokens as any)?.navigation?.menu;
+
+  const resolvedNavItems =
+    Array.isArray(theme.header?.navigation) && theme.header.navigation.length > 0
+      ? theme.header.navigation
+      : Array.isArray(menuFromDesignTokens) && menuFromDesignTokens.length > 0
+      ? menuFromDesignTokens.map((m: any) => ({ label: m.label || "", to: m.url || m.to || "/" }))
+      : null;
+
+  const navLinks = resolvedNavItems?.map((nav) => ({
     label: nav.label,
     to: buildStorefrontPath(location.pathname, nav.to, location.search),
   })) || [

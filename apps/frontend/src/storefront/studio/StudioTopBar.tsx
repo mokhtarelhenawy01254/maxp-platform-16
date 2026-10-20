@@ -16,13 +16,15 @@ import {
   ChevronDownIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import type { StudioDeviceMode, StudioZoomLevel } from "./StudioTypes";
+import type { StudioDeviceMode, StudioZoomLevel, StudioPageDefinition } from "./StudioTypes";
 import { StudioPageSelector } from "./StudioPageSelector";
 
 interface StudioTopBarProps {
   storeName?: string;
   themeName: string;
   activePageKey: string;
+  customPages?: StudioPageDefinition[];
+  onOpenCreatePageModal?: () => void;
   deviceMode: StudioDeviceMode;
   hasPendingChanges: boolean;
   canUndo: boolean;
@@ -52,6 +54,8 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   storeName = "متجري",
   themeName,
   activePageKey,
+  customPages,
+  onOpenCreatePageModal,
   deviceMode,
   hasPendingChanges,
   canUndo,
@@ -101,6 +105,8 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
           <StudioPageSelector
             activePageKey={activePageKey}
             onPageChange={onPageChange}
+            customPages={customPages}
+            onOpenCreatePageModal={onOpenCreatePageModal}
           />
         </div>
 

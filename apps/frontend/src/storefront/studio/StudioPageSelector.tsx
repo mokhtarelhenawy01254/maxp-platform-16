@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -15,12 +15,15 @@ import {
   TruckIcon,
   ShieldCheckIcon,
   DocumentTextIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_PAGES, type StudioPageDefinition } from "./StudioTypes";
 
 interface StudioPageSelectorProps {
   activePageKey: string;
   onPageChange: (pageKey: string) => void;
+  customPages?: StudioPageDefinition[];
+  onOpenCreatePageModal?: () => void;
 }
 
 const PAGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -41,13 +44,28 @@ const PAGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({
   activePageKey,
   onPageChange,
+  customPages = [],
+  onOpenCreatePageModal,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activePageDef: StudioPageDefinition =
-    STUDIO_PAGES.find((p) => p.id === activePageKey) || STUDIO_PAGES[0];
-  const ActiveIcon = PAGE_ICONS[activePageDef.id] || Squares2X2Icon;
+  const allPages = useMemo(() => {
+    return [...STUDIO_PAGES, ...customPages];
+  }, [customPages]);
+
+  const activePageDef: StudioPageDefinition = useMemo(() => {
+    return (
+      allPages.find((p) => p.id === activePageKey) || {
+        id: activePageKey,
+        label: activePageKey,
+        icon: "📄",
+        description: `/${activePageKey}`,
+      }
+    );
+  }, [allPages, activePageKey]);
+
+  const ActiveIcon = PAGE_ICONS[activePageDef.id] || DocumentTextIcon;
 
   // Close on outside click
   useEffect(() => {
@@ -125,7 +143,7 @@ export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({
 
         {/* Total Pages Counter Badge */}
         <span className="hidden md:inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-          {STUDIO_PAGES.length}
+          {allPages.length}
         </span>
       </button>
 
@@ -143,62 +161,149 @@ export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({
               <p className="text-[10px] text-muted-foreground">اختر الصفحة لتعديل أقسامها ومظهرها</p>
             </div>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary">
-              {STUDIO_PAGES.length} صفحات
+              {allPages.length} صفحة
             </span>
           </div>
 
           {/* List of Pages */}
-          <div className="space-y-1">
-            {STUDIO_PAGES.map((page) => {
-              const isSelected = page.id === activePageKey;
-              const PageIcon = PAGE_ICONS[page.id] || Squares2X2Icon;
+          <div className="max-h-[380px] overflow-y-auto space-y-2 p-1 [scrollbar-width:thin]">
+            {/* Section 1: Standard Pages */}
+            <div className="space-y-1">
+              <p className="px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                الصفحات الأساسية
+              </p>
+              {STUDIO_PAGES.map((page) => {
+                const isSelected = page.id === activePageKey;
+                const PageIcon = PAGE_ICONS[page.id] || Squares2X2Icon;
 
-              return (
-                <button
-                  key={page.id}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => handleSelect(page.id)}
-                  className={`group flex w-full items-center justify-between rounded-xl p-2 text-start transition-all active:scale-[0.98] ${
-                    isSelected
-                      ? "border border-primary/25 bg-primary/10 text-primary"
-                      : "border border-transparent text-foreground hover:bg-muted/70"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground shadow-xs"
-                          : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                      }`}
-                    >
-                      <PageIcon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p
-                        className={`text-xs font-bold truncate ${
-                          isSelected ? "text-primary" : "text-foreground"
+                return (
+                  <button
+                    key={page.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelect(page.id)}
+                    className={`group flex w-full items-center justify-between rounded-xl p-2 text-start transition-all active:scale-[0.98] ${
+                      isSelected
+                        ? "border border-primary/25 bg-primary/10 text-primary"
+                        : "border border-transparent text-foreground hover:bg-muted/70"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-xs"
+                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                         }`}
                       >
-                        {page.label}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {page.description}
-                      </p>
+                        <PageIcon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p
+                          className={`text-xs font-bold truncate ${
+                            isSelected ? "text-primary" : "text-foreground"
+                          }`}
+                        >
+                          {page.label}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {page.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  {isSelected && (
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <CheckIcon className="h-3.5 w-3.5 stroke-[2.5]" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    {isSelected && (
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <CheckIcon className="h-3.5 w-3.5 stroke-[2.5]" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Section 2: Custom Pages («صفحاتي») */}
+            <div className="pt-2 border-t border-border/60 space-y-1">
+              <div className="flex items-center justify-between px-2 py-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground">صفحاتي</p>
+                <span className="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground font-bold">
+                  {customPages.length}
+                </span>
+              </div>
+
+              {customPages.length === 0 ? (
+                <p className="px-2 py-1.5 text-[10px] text-muted-foreground">
+                  لا توجد صفحات مخصصة بعد. أضف صفحتك الأولى!
+                </p>
+              ) : (
+                customPages.map((page) => {
+                  const isSelected = page.id === activePageKey;
+                  return (
+                    <button
+                      key={page.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => handleSelect(page.id)}
+                      className={`group flex w-full items-center justify-between rounded-xl p-2 text-start transition-all active:scale-[0.98] ${
+                        isSelected
+                          ? "border border-primary/25 bg-primary/10 text-primary"
+                          : "border border-transparent text-foreground hover:bg-muted/70"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-xs"
+                              : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                          }`}
+                        >
+                          <DocumentTextIcon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p
+                            className={`text-xs font-bold truncate ${
+                              isSelected ? "text-primary" : "text-foreground"
+                            }`}
+                          >
+                            {page.label}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-mono truncate" dir="ltr">
+                            {page.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                          <CheckIcon className="h-3.5 w-3.5 stroke-[2.5]" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
+
+          {/* Create New Page Trigger Button */}
+          {onOpenCreatePageModal && (
+            <div className="mt-1 pt-1.5 border-t border-border/70">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenCreatePageModal();
+                }}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 py-2 text-xs font-bold text-primary transition-all active:scale-[0.98]"
+              >
+                <PlusIcon className="h-4 w-4" />
+                <span>+ صفحة جديدة</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

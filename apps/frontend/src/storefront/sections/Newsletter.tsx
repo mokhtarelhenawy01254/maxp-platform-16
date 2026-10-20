@@ -211,7 +211,7 @@ const Newsletter: React.FC<NewsletterProps> = ({ section, settings }) => {
   const variant = normalizeNewsletterVariant(section?.variant);
   const contentAlign = resolveSectionContentAlign(
     settings?.contentAlign,
-    theme.tokens.layout?.contentAlign,
+    theme.tokens?.layout?.contentAlign,
   );
 
   const title = settings?.title || (isRtl ? 'اشترك للحصول على أحدث الإصدارات' : 'Stay in the Loop');

@@ -169,7 +169,7 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
   );
   const contentAlign = resolveSectionContentAlign(
     settings?.contentAlign,
-    theme.tokens.layout?.contentAlign,
+    theme.tokens?.layout?.contentAlign,
   );
   const isCentered = contentAlign === 'center';
 
