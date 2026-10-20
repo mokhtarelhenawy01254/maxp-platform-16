@@ -1,5 +1,6 @@
 /**
  * Comprehensive Unit Tests for SupplierPaymentService (Procurement P1)
+ * Location: apps/backend/tests/services/supplierPaymentService.test.js
  *
  * Tests:
  * 1. Success Path:
@@ -149,12 +150,12 @@ const createMockStore = () => {
 };
 
 // Setup Jest mocks
-jest.mock('../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: () => testPrisma,
   safeQuery: (fn) => fn(testPrisma),
 }));
 
-jest.mock('../services/financialPostingService', () => ({
+jest.mock('../../services/financialPostingService', () => ({
   createOrGetFinancialPosting: jest.fn(async (params) => ({
     posting: { id: 'fp_mock_1', ...params, status: 'POSTED' },
     created: true,
@@ -164,13 +165,13 @@ jest.mock('../services/financialPostingService', () => ({
   },
 }));
 
-jest.mock('../services/accountingAutoPostingService', () => ({
+jest.mock('../../services/accountingAutoPostingService', () => ({
   postSupplierPayment: jest.fn(async () => ({ success: true })),
 }));
 
-const { recordSupplierPayment, generatePaymentNumber } = require('../services/supplierPaymentService');
-const { createOrGetFinancialPosting } = require('../services/financialPostingService');
-const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
+const { recordSupplierPayment, generatePaymentNumber } = require('../../services/supplierPaymentService');
+const { createOrGetFinancialPosting } = require('../../services/financialPostingService');
+const AccountingAutoPostingService = require('../../services/accountingAutoPostingService');
 
 describe('SupplierPaymentService Unit Tests (Procurement P1)', () => {
   let mockStore;
