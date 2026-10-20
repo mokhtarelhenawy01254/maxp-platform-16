@@ -387,6 +387,11 @@ class FactoryPortalService {
           ? Number(st.stageLaborCost)
           : round2(plannedQty * ratePerPiece);
 
+      const approvedTechPack = await ManufacturingTechPackService.getApprovedTechPackForOrder(
+        factory.companyId,
+        ord
+      );
+
       return {
         id: st.id,
         name: st.name,
@@ -419,10 +424,11 @@ class FactoryPortalService {
           currency: 'EGP',
         },
         attachments: visibleAttachments,
-        techPack: await ManufacturingTechPackService.getApprovedTechPackForOrder(factory.companyId, ord),
+        techPack: approvedTechPack,
         sizeChart: await ManufacturingTechPackService.getApprovedSizeChartForOrder(
           factory.companyId,
-          ord
+          ord,
+          approvedTechPack && approvedTechPack.id
         ),
       };
     })
