@@ -43,6 +43,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  ProcurementCatalogModal,
+  ProcurementItemCombobox,
+  ProcurementCatalogItem,
+  fetchProcurementCatalog,
+} from "./components";
 
 interface Supplier {
   id: string;
@@ -53,19 +59,10 @@ interface Supplier {
   currentBalance?: number;
 }
 
-interface CatalogItem {
-  id: string;
-  name: string;
-  sku?: string;
-  type: "product" | "dental_material";
-  cost: number;
-  category?: string;
-  unit?: string;
-}
-
 interface OrderItem {
   id?: string;
   productId: string | null;
+  variantId?: string | null;
   productName: string;
   description: string;
   quantity: number;
@@ -88,8 +85,8 @@ const PurchaseOrderForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
-  const [activeSearchRowIndex, setActiveSearchRowIndex] = useState<number | null>(null);
+  const [catalogItems, setCatalogItems] = useState<ProcurementCatalogItem[]>([]);
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
 
   // Searchable combobox for supplier
   const [supplierSearchOpen, setSupplierSearchOpen] = useState(false);
@@ -122,6 +119,7 @@ const PurchaseOrderForm: React.FC = () => {
   const [items, setItems] = useState<OrderItem[]>([
     {
       productId: null,
+      variantId: null,
       productName: "",
       description: "",
       quantity: 1,
@@ -156,49 +154,17 @@ const PurchaseOrderForm: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [suppliersRes, productsRes, materialsRes] = await Promise.all([
-        apiClient.get("/procurement/suppliers", { params: { limit: 200 } }).catch(() => ({ data: { suppliers: [] } })),
-        apiClient.get("/products", { params: { limit: 100 } }).catch(() => ({ data: { data: [] } })),
-        apiClient.get("/dental-lab/materials").catch(() => ({ data: { data: [] } })),
+      const [suppliersRes, catalogList] = await Promise.all([
+        apiClient
+          .get("/procurement/suppliers", { params: { limit: 200 } })
+          .catch(() => ({ data: { suppliers: [] } })),
+        fetchProcurementCatalog(""),
       ]);
 
       const loadedSuppliers: Supplier[] =
         suppliersRes?.data?.suppliers || suppliersRes?.data?.data || [];
       setSuppliers(loadedSuppliers);
-
-      const itemsList: CatalogItem[] = [];
-
-      // Add Dental Materials
-      const materials = materialsRes?.data?.data || [];
-      if (Array.isArray(materials)) {
-        materials.forEach((m: any) => {
-          itemsList.push({
-            id: m.id,
-            name: m.name,
-            sku: m.code,
-            type: "dental_material",
-            cost: Number(m.costPerUnit || 0),
-            category: m.category,
-            unit: m.unit,
-          });
-        });
-      }
-
-      // Add Store Products
-      const prods = productsRes?.data?.data || productsRes?.data?.products || [];
-      if (Array.isArray(prods)) {
-        prods.forEach((p: any) => {
-          itemsList.push({
-            id: p.id,
-            name: p.name,
-            sku: p.sku,
-            type: "product",
-            cost: Number(p.cost || p.price || 0),
-          });
-        });
-      }
-
-      setCatalogItems(itemsList);
+      setCatalogItems(catalogList);
     } catch (error) {
       console.error("Error fetching initial data:", error);
       toast.error(t("procurement.purchaseOrderForm.fetchError", "فشل في تحميل البيانات الأولية"));
@@ -232,6 +198,7 @@ const PurchaseOrderForm: React.FC = () => {
           order.items.map((item: any) => ({
             id: item.id,
             productId: item.productId ?? null,
+            variantId: item.variantId ?? null,
             productName: item.productName || "",
             description: item.description || "",
             quantity: Number(item.quantity || 1),
@@ -313,6 +280,7 @@ const PurchaseOrderForm: React.FC = () => {
       ...prev,
       {
         productId: null,
+        variantId: null,
         productName: "",
         description: "",
         quantity: 1,
@@ -329,6 +297,7 @@ const PurchaseOrderForm: React.FC = () => {
       setItems([
         {
           productId: null,
+          variantId: null,
           productName: "",
           description: "",
           quantity: 1,
@@ -341,6 +310,43 @@ const PurchaseOrderForm: React.FC = () => {
     } else {
       setItems((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleAddCatalogItems = (
+    selectedList: Array<{
+      productId: string | null;
+      variantId?: string | null;
+      productName: string;
+      unitPrice?: number;
+      quantity?: number;
+      sku?: string;
+      description?: string;
+    }>,
+  ) => {
+    setItems((prev) => {
+      const isEmptySingleItem =
+        prev.length === 1 &&
+        !prev[0].productName.trim() &&
+        prev[0].unitPrice === 0;
+
+      const newRows: OrderItem[] = selectedList.map((sel) => {
+        const qty = sel.quantity && sel.quantity > 0 ? sel.quantity : 1;
+        const price = Number(sel.unitPrice || 0);
+        return {
+          productId: sel.productId || null,
+          variantId: sel.variantId || null,
+          productName: sel.productName,
+          description: sel.description || (sel.sku ? `SKU: ${sel.sku}` : ""),
+          quantity: qty,
+          unitPrice: price,
+          taxRate: 0,
+          discountRate: 0,
+          totalPrice: qty * price,
+        };
+      });
+
+      return isEmptySingleItem ? newRows : [...prev, ...newRows];
+    });
   };
 
   const calculateTotals = () => {
@@ -425,6 +431,7 @@ const PurchaseOrderForm: React.FC = () => {
         discountAmount: Number(formData.discountAmount || 0),
         items: items.map((it) => ({
           productId: it.productId || null,
+          variantId: it.variantId || null,
           productName: it.productName.trim(),
           description: it.description || "",
           quantity: Number(it.quantity),
@@ -751,93 +758,30 @@ const PurchaseOrderForm: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item, index) => {
-                        const filteredCatalog = catalogItems.filter(
-                          (c) =>
-                            c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                            (c.sku &&
-                              c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
-                        );
-
-                        return (
-                          <TableRow key={index} className="hover:bg-muted/40 transition-colors">
-                            <TableCell className="relative overflow-visible">
-                              <div className="space-y-1 relative">
-                                <Input
-                                  ref={(el) => {
-                                    itemInputRefs.current[index] = el;
-                                  }}
-                                  placeholder={t(
-                                    "procurement.purchaseOrderForm.itemPlaceholder",
-                                    "اختر صنفاً أو اكتب اسمه...",
-                                  )}
-                                  value={item.productName}
-                                  onFocus={() => setActiveSearchRowIndex(index)}
-                                  onChange={(e) => {
-                                    updateItem(index, "productName", e.target.value);
-                                    setActiveSearchRowIndex(index);
-                                  }}
-                                  className="h-10 rounded-lg"
-                                />
-
-                                {/* Autocomplete Dropdown */}
-                                {activeSearchRowIndex === index &&
-                                  item.productName &&
-                                  filteredCatalog.length > 0 && (
-                                    <div
-                                      className="absolute top-full start-0 min-w-full sm:min-w-[320px] z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/80 bg-white dark:bg-zinc-900 shadow-2xl p-1 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
-                                      onMouseLeave={() => setActiveSearchRowIndex(null)}
-                                    >
-                                      {filteredCatalog.slice(0, 10).map((catItem) => (
-                                        <button
-                                          key={catItem.id}
-                                          type="button"
-                                          className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-muted text-start transition-colors"
-                                          onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            updateItemDetails(index, {
-                                              productId: catItem.type === "product" ? catItem.id : null,
-                                              productName: catItem.name,
-                                              unitPrice: catItem.cost || 0,
-                                              description: catItem.category
-                                                ? `${catItem.category}${catItem.unit ? ` - ${catItem.unit}` : ""}`
-                                                : "",
-                                            });
-                                            setActiveSearchRowIndex(null);
-                                          }}
-                                        >
-                                          <div className="flex items-center gap-2 truncate">
-                                            <span className="font-medium truncate">{catItem.name}</span>
-                                            {catItem.sku && (
-                                              <span className="text-xs text-muted-foreground">
-                                                ({catItem.sku})
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-2 shrink-0">
-                                            <span
-                                              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                                                catItem.type === "dental_material"
-                                                  ? "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20"
-                                                  : "bg-primary/10 text-primary border border-primary/20"
-                                              }`}
-                                            >
-                                              {catItem.type === "dental_material"
-                                                ? "خامة أسنان"
-                                                : "منتج"}
-                                            </span>
-                                            {catItem.cost > 0 && (
-                                              <span className="text-xs font-semibold">
-                                                {formatCurrency(catItem.cost)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            </TableCell>
+                      {items.map((item, index) => (
+                        <TableRow key={index} className="hover:bg-muted/40 transition-colors">
+                          <TableCell className="relative overflow-visible">
+                            <ProcurementItemCombobox
+                              value={item.productName}
+                              initialCatalog={catalogItems}
+                              placeholder={t(
+                                "procurement.purchaseOrderForm.itemPlaceholder",
+                                "اختر صنفاً أو اكتب اسمه...",
+                              )}
+                              onSelect={(selected) => {
+                                updateItemDetails(index, {
+                                  productId: selected.productId,
+                                  variantId: selected.variantId || null,
+                                  productName: selected.productName,
+                                  unitPrice:
+                                    selected.unitPrice !== undefined
+                                      ? selected.unitPrice
+                                      : item.unitPrice,
+                                  description: selected.description || item.description,
+                                });
+                              }}
+                            />
+                          </TableCell>
 
                             <TableCell>
                               <Input
@@ -905,82 +849,53 @@ const PurchaseOrderForm: React.FC = () => {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
 
                 {/* Mobile View: Single-depth cards per item */}
                 <div className="grid grid-cols-1 gap-3 md:hidden">
-                  {items.map((item, index) => {
-                    const filteredCatalog = catalogItems.filter(
-                      (c) =>
-                        c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                        (c.sku && c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
-                    );
+                  {items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="p-3.5 rounded-xl border border-border/80 bg-card/60 space-y-3 relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
+                          بند #{index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(index)}
+                          className="text-red-500 hover:bg-red-500/10 h-7 px-2"
+                        >
+                          <Trash2 className="size-3.5 me-1" /> حذف
+                        </Button>
+                      </div>
 
-                    return (
-                      <div
-                        key={index}
-                        className="p-3.5 rounded-xl border border-border/80 bg-card/60 space-y-3 relative"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
-                            بند #{index + 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(index)}
-                            className="text-red-500 hover:bg-red-500/10 h-7 px-2"
-                          >
-                            <Trash2 className="size-3.5 me-1" /> حذف
-                          </Button>
-                        </div>
-
-                        <div className="space-y-1 relative">
-                          <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
-                          <Input
-                            placeholder="ابحث أو اكتب اسم الصنف..."
-                            value={item.productName}
-                            onFocus={() => setActiveSearchRowIndex(index)}
-                            onChange={(e) => {
-                              updateItem(index, "productName", e.target.value);
-                              setActiveSearchRowIndex(index);
-                            }}
-                            className="h-10 rounded-lg"
-                          />
-                          {activeSearchRowIndex === index &&
-                            item.productName &&
-                            filteredCatalog.length > 0 && (
-                              <div
-                                className="absolute top-full start-0 min-w-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-2xl p-1 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
-                                onMouseLeave={() => setActiveSearchRowIndex(null)}
-                              >
-                                {filteredCatalog.slice(0, 8).map((catItem) => (
-                                  <button
-                                    key={catItem.id}
-                                    type="button"
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg hover:bg-muted text-start"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      updateItemDetails(index, {
-                                        productId: catItem.type === "product" ? catItem.id : null,
-                                        productName: catItem.name,
-                                        unitPrice: catItem.cost || 0,
-                                      });
-                                      setActiveSearchRowIndex(null);
-                                    }}
-                                  >
-                                    <span className="font-medium truncate">{catItem.name}</span>
-                                    <span className="text-primary font-mono">{formatCurrency(catItem.cost)}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                        </div>
+                      <div className="space-y-1 relative">
+                        <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
+                        <ProcurementItemCombobox
+                          value={item.productName}
+                          initialCatalog={catalogItems}
+                          placeholder="ابحث أو اختر صنفاً..."
+                          onSelect={(selected) => {
+                            updateItemDetails(index, {
+                              productId: selected.productId,
+                              variantId: selected.variantId || null,
+                              productName: selected.productName,
+                              unitPrice:
+                                selected.unitPrice !== undefined
+                                  ? selected.unitPrice
+                                  : item.unitPrice,
+                              description: selected.description || item.description,
+                            });
+                          }}
+                        />
+                      </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -1045,18 +960,27 @@ const PurchaseOrderForm: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addItem}
-                  className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
-                >
-                  <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem", "إضافة بند جديد")}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addItem}
+                    className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
+                  >
+                    <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem", "إضافة بند جديد")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setCatalogModalOpen(true)}
+                    className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
+                  >
+                    <ShoppingCart className="size-4" /> استعراض منتجات المتجر
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -1294,6 +1218,13 @@ const PurchaseOrderForm: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ProcurementCatalogModal
+        open={catalogModalOpen}
+        onClose={() => setCatalogModalOpen(false)}
+        onSelectItems={handleAddCatalogItems}
+        initialItems={catalogItems}
+      />
     </div>
   );
 };

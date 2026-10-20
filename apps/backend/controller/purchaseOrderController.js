@@ -4,14 +4,56 @@ const {
 } = require("../services/sharedDatabase");
 const { logProcurementActivity } = require("../services/procurementAuditService");
 
+const extractFirstImage = (imgField) => {
+  if (!imgField) return null;
+  if (Array.isArray(imgField)) return imgField[0] || null;
+  if (typeof imgField === "string") {
+    const trimmed = imgField.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0] || null;
+      } catch (_) {}
+    }
+    if (trimmed.includes(",")) {
+      return trimmed.split(",")[0].trim() || null;
+    }
+    return trimmed || null;
+  }
+  return null;
+};
+
+const normalizePurchaseOrderItem = (item) => {
+  if (!item || typeof item !== "object") return item;
+  const rawNotes = item.notes || "";
+  const match = rawNotes.match(/\[variantId:([^\]]+)\]/);
+  const variantId = match ? match[1] : (item.variantId || null);
+  const cleanNotes = match
+    ? rawNotes.replace(/\[variantId:[^\]]+\]\s*/g, "").trim()
+    : rawNotes;
+
+  return {
+    ...item,
+    variantId,
+    notes: cleanNotes || null,
+  };
+};
+
 const normalizePurchaseOrder = (order) => {
   if (!order) return order;
 
-  const { purchaseOrderItems, purchaseInvoices, _count, ...rest } = order;
+  const { purchaseOrderItems, purchaseInvoices, items, _count, ...rest } = order;
+  const rawItems = purchaseOrderItems !== undefined ? purchaseOrderItems : items;
 
   return {
     ...rest,
-    ...(purchaseOrderItems !== undefined ? { items: purchaseOrderItems } : {}),
+    ...(rawItems !== undefined
+      ? {
+          items: Array.isArray(rawItems)
+            ? rawItems.map(normalizePurchaseOrderItem)
+            : rawItems,
+        }
+      : {}),
     ...(purchaseInvoices !== undefined ? { invoices: purchaseInvoices } : {}),
     ...(_count
       ? {
@@ -38,6 +80,150 @@ const generateOrderNumber = async (companyId) => {
     ? parseInt(lastOrder.orderNumber.split("-").pop())
     : 0;
   return `PO-${String(lastNumber + 1).padStart(6, "0")}`;
+};
+
+exports.getProcurementCatalogItems = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, message: "غير مصرح" });
+    }
+
+    const { search, q } = req.query;
+    const rawSearch = typeof search === "string" ? search : typeof q === "string" ? q : "";
+    const searchTerm = rawSearch.trim();
+
+    let page = parseInt(req.query.page, 10) || 1;
+    if (page < 1) page = 1;
+    let limit = parseInt(req.query.limit, 10) || 50;
+    if (limit < 1) limit = 50;
+    if (limit > 200) limit = 200;
+
+    const skip = (page - 1) * limit;
+
+    const where = {
+      companyId,
+      deletedAt: null,
+    };
+
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm, mode: "insensitive" } },
+        { sku: { contains: searchTerm, mode: "insensitive" } },
+        { barcode: { contains: searchTerm, mode: "insensitive" } },
+        {
+          productVariants: {
+            some: {
+              isActive: true,
+              OR: [
+                { name: { contains: searchTerm, mode: "insensitive" } },
+                { sku: { contains: searchTerm, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
+      ];
+    }
+
+    const [products, totalProducts] = await Promise.all([
+      safeQuery(() =>
+        getSharedPrismaClient().product.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            cost: true,
+            price: true,
+            stock: true,
+            mainImage: true,
+            images: true,
+            productVariants: {
+              where: { isActive: true },
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                sku: true,
+                price: true,
+                cost: true,
+                stock: true,
+                images: true,
+              },
+            },
+          },
+        }),
+      ),
+      safeQuery(() => getSharedPrismaClient().product.count({ where })),
+    ]);
+
+    const catalogItems = [];
+
+    for (const p of products || []) {
+      const mainImg = p.mainImage || extractFirstImage(p.images) || null;
+
+      if (p.productVariants && p.productVariants.length > 0) {
+        for (const v of p.productVariants) {
+          const varImg = extractFirstImage(v.images) || null;
+          catalogItems.push({
+            id: `${p.id}_${v.id}`,
+            productId: p.id,
+            variantId: v.id,
+            name: `${p.name} - ${v.name}`,
+            parentName: p.name,
+            variantName: v.name,
+            sku: v.sku || p.sku || "",
+            barcode: p.barcode || "",
+            type: "variant",
+            cost: Number(v.cost ?? p.cost ?? 0),
+            price: Number(v.price ?? p.price ?? 0),
+            stock: Number(v.stock ?? 0),
+            image: varImg || mainImg,
+          });
+        }
+      } else {
+        catalogItems.push({
+          id: p.id,
+          productId: p.id,
+          variantId: null,
+          name: p.name,
+          parentName: p.name,
+          variantName: null,
+          sku: p.sku || "",
+          barcode: p.barcode || "",
+          type: "product",
+          cost: Number(p.cost ?? 0),
+          price: Number(p.price ?? 0),
+          stock: Number(p.stock ?? 0),
+          image: mainImg,
+        });
+      }
+    }
+
+    const totalPages = Math.ceil(totalProducts / limit) || 1;
+
+    return res.json({
+      success: true,
+      items: catalogItems,
+      pagination: {
+        page,
+        limit,
+        totalProducts,
+        totalPages,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching procurement catalog items:", error);
+    return res.status(500).json({
+      success: false,
+      message: "حدث خطأ أثناء جلب كتالوج المنتجات: " + error.message,
+      error: error.message,
+    });
+  }
 };
 
 exports.createPurchaseOrder = async (req, res) => {
@@ -101,16 +287,21 @@ exports.createPurchaseOrder = async (req, res) => {
           ? item.productId
           : null;
 
+      const rawNotes = (item.notes || "").replace(/\[variantId:[^\]]+\]\s*/g, "").trim();
+      const itemNotes = item.variantId
+        ? `[variantId:${item.variantId}]${rawNotes ? ` ${rawNotes}` : ""}`
+        : item.notes || null;
+
       return {
         productId: safeProductId,
         productName: item.productName,
-        description: item.description,
+        description: item.variantName || item.description || "",
         quantity,
         unitPrice,
         taxRate,
         discountRate,
         totalPrice,
-        notes: item.notes,
+        notes: itemNotes,
       };
     });
 
@@ -450,97 +641,121 @@ exports.receiveItems = async (req, res) => {
         }),
       );
 
-      if (orderItem.productId && item.updateInventory) {
-        const targetWarehouseId = item.warehouseId || defaultWarehouseId || null;
-        const product = await safeQuery(() =>
-          getSharedPrismaClient().product.findUnique({
-            where: { id: orderItem.productId },
-          }),
-        );
+      const receivedQuantity = parseInt(item.receivedQuantity, 10);
 
-        if (product) {
-          const receivedQuantity = parseInt(item.receivedQuantity);
-          await safeQuery(() =>
-            getSharedPrismaClient().product.update({
+      if (item.updateInventory && receivedQuantity > 0) {
+        const variantId =
+          item.variantId ||
+          (orderItem.notes || "").match(/\[variantId:([^\]]+)\]/)?.[1] ||
+          null;
+
+        if (variantId) {
+          try {
+            await safeQuery(() =>
+              getSharedPrismaClient().productVariant.update({
+                where: { id: variantId },
+                data: {
+                  stock: { increment: receivedQuantity },
+                  cost: parseFloat(orderItem.unitPrice),
+                },
+              }),
+            );
+          } catch (varErr) {
+            console.warn(`[Procurement] Could not update variant ${variantId}:`, varErr.message);
+          }
+        }
+
+        if (orderItem.productId) {
+          const targetWarehouseId = item.warehouseId || defaultWarehouseId || null;
+          const product = await safeQuery(() =>
+            getSharedPrismaClient().product.findUnique({
               where: { id: orderItem.productId },
-              data: {
-                stock: product.stock + receivedQuantity,
-                cost: parseFloat(orderItem.unitPrice),
-              },
             }),
           );
 
-          if (targetWarehouseId) {
-            const warehouse = await safeQuery(() =>
-              getSharedPrismaClient().warehouse.findFirst({
-                where: {
-                  id: targetWarehouseId,
-                  companyId,
-                  isActive: true,
+          if (product) {
+            await safeQuery(() =>
+              getSharedPrismaClient().product.update({
+                where: { id: orderItem.productId },
+                data: {
+                  stock: { increment: receivedQuantity },
+                  cost: parseFloat(orderItem.unitPrice),
                 },
               }),
             );
 
-            if (!warehouse) {
-              return res.status(400).json({
-                success: false,
-                message: "المخزن المحدد للاستلام غير موجود أو غير مفعل",
-              });
-            }
-
-            await safeQuery(() =>
-              getSharedPrismaClient().$transaction(async (prisma) => {
-                const existingInventory = await prisma.inventory.findFirst({
+            if (targetWarehouseId) {
+              const warehouse = await safeQuery(() =>
+                getSharedPrismaClient().warehouse.findFirst({
                   where: {
-                    productId: orderItem.productId,
-                    warehouseId: targetWarehouseId,
-                    batchNumber: item.batchNumber || null,
+                    id: targetWarehouseId,
+                    companyId,
+                    isActive: true,
                   },
-                });
+                }),
+              );
 
-                if (existingInventory) {
-                  await prisma.inventory.update({
-                    where: { id: existingInventory.id },
-                    data: {
-                      quantity: { increment: receivedQuantity },
-                      available: { increment: receivedQuantity },
-                      cost: parseFloat(orderItem.unitPrice),
-                      expiryDate: item.expiryDate ? new Date(item.expiryDate) : existingInventory.expiryDate,
+              if (!warehouse) {
+                return res.status(400).json({
+                  success: false,
+                  message: "المخزن المحدد للاستلام غير موجود أو غير مفعل",
+                });
+              }
+
+              await safeQuery(() =>
+                getSharedPrismaClient().$transaction(async (prisma) => {
+                  const existingInventory = await prisma.inventory.findFirst({
+                    where: {
+                      productId: orderItem.productId,
+                      warehouseId: targetWarehouseId,
+                      batchNumber: item.batchNumber || null,
                     },
                   });
-                } else {
-                  await prisma.inventory.create({
+
+                  if (existingInventory) {
+                    await prisma.inventory.update({
+                      where: { id: existingInventory.id },
+                      data: {
+                        quantity: { increment: receivedQuantity },
+                        available: { increment: receivedQuantity },
+                        cost: parseFloat(orderItem.unitPrice),
+                        expiryDate: item.expiryDate ? new Date(item.expiryDate) : existingInventory.expiryDate,
+                      },
+                    });
+                  } else {
+                    await prisma.inventory.create({
+                      data: {
+                        productId: orderItem.productId,
+                        warehouseId: targetWarehouseId,
+                        quantity: receivedQuantity,
+                        available: receivedQuantity,
+                        reserved: 0,
+                        cost: parseFloat(orderItem.unitPrice),
+                        batchNumber: item.batchNumber || null,
+                        expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
+                      },
+                    });
+                  }
+
+                  await prisma.stockMovement.create({
                     data: {
                       productId: orderItem.productId,
                       warehouseId: targetWarehouseId,
+                      type: "IN",
+                      reason: "PURCHASE",
                       quantity: receivedQuantity,
-                      available: receivedQuantity,
-                      reserved: 0,
-                      cost: parseFloat(orderItem.unitPrice),
-                      batchNumber: item.batchNumber || null,
-                      expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
+                      reference: order.orderNumber,
+                      notes: `استلام أمر شراء ${order.orderNumber}`,
+                      isApproved: true,
+                      userId: req.user.id,
+                      userName: req.user.email || req.user.name || "Procurement",
+                      approvedBy: req.user.id,
+                      approvedAt: new Date(),
                     },
                   });
-                }
-
-                await prisma.stockMovement.create({
-                  data: {
-                    productId: orderItem.productId,
-                    warehouseId: targetWarehouseId,
-                    type: "IN",
-                    reason: "PURCHASE",
-                    quantity: receivedQuantity,
-                    reference: order.orderNumber,
-                    notes: `استلام أمر شراء ${order.orderNumber}`,
-                    isApproved: true,
-                    userId: req.user.id,
-                    userName: req.user.email || req.user.name || "Procurement",
-                    approvedBy: req.user.id,
-                    approvedAt: new Date(),
-                  },
-                });
-              }),
-            );
+                }),
+              );
+            }
           }
         }
       }

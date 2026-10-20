@@ -18,6 +18,7 @@ router.put('/suppliers/:id', supplierController.updateSupplier);
 router.delete('/suppliers/:id', supplierController.deleteSupplier);
 router.get('/suppliers/:id/stats', supplierController.getSupplierStats);
 
+router.get('/catalog-items', purchaseOrderController.getProcurementCatalogItems);
 router.post('/purchase-orders', purchaseOrderController.createPurchaseOrder);
 router.get('/purchase-orders', purchaseOrderController.getAllPurchaseOrders);
 router.get('/purchase-orders/stats', purchaseOrderController.getPurchaseOrderStats);
