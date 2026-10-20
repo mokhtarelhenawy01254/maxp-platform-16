@@ -49,6 +49,8 @@ async function processDueOccasionCampaigns() {
 
       let sent = 0;
       let failed = 0;
+      let abortBatch = false;
+      let abortReason = null;
       for (const customer of audience) {
         const phone = customer.phone;
         if (!phone) continue;
@@ -65,7 +67,15 @@ async function processDueOccasionCampaigns() {
             variables: { customerName: name, firstName: customer.firstName || '' },
             priority: 2
           });
-          if (result.success) sent++; else failed++;
+          if (result && result.success) {
+            sent++;
+          } else {
+            failed++;
+            if (result?.reason === 'meta_template_not_approved' || result?.errorCode === 'META_TEMPLATE_NOT_APPROVED' || result?.reason === 'no_template') {
+              console.warn(`⚠️ [OCCASION-CRON] Campaign "${campaign.name}" aborted early due to template issue (${result?.reason || result?.errorCode}).`);
+              break;
+            }
+          }
         } catch (sendErr) {
           failed++;
           console.error(`❌ [OCCASION-CRON] Send failed for ${phone}:`, sendErr.message);
@@ -192,6 +202,8 @@ async function processDueOccasions() {
       const batch = recipients.slice(already, already + batchSize);
       let sent = 0;
       let failed = 0;
+      let abortBatch = false;
+      let abortReason = null;
 
       if (batch.length > 0) {
         for (const customer of batch) {
@@ -218,12 +230,39 @@ async function processDueOccasions() {
               },
               priority: 2,
             });
-            if (result && result.success) sent++;
-            else failed++;
+            if (result && result.success) {
+              sent++;
+            } else {
+              failed++;
+              const isTemplateUnapproved = result?.reason === 'meta_template_not_approved' ||
+                result?.errorCode === 'META_TEMPLATE_NOT_APPROVED' ||
+                result?.reason === 'no_template';
+              if (isTemplateUnapproved) {
+                abortBatch = true;
+                abortReason = result?.reason || result?.errorCode;
+                break;
+              }
+            } // end send handling
+
           } catch (sendErr) {
             failed++;
           }
         }
+      }
+
+      if (abortBatch) {
+        console.warn(`⚠️ [OCCASION-CRON] "${occ.name}" aborted early due to unapproved/missing template (${abortReason}). Deferring by 24h.`);
+        await prisma.occasion.update({
+          where: { id: occ.id },
+          data: {
+            status: 'scheduled',
+            nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            lastSentAt: new Date(),
+            lastSentCount: sent,
+            totalSent: already + sent
+          }
+        });
+        continue;
       }
 
       const totalSent = already + sent;

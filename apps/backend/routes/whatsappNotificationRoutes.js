@@ -63,6 +63,9 @@ router.get('/logs', verifyToken.authenticateToken, whatsappNotificationControlle
 // 📊 تقرير يومي لحالات الطلبات: من اتإشعر، بأي قالب (ميتا/عادي)، وأي حالة التوصيل
 router.get('/status-report', verifyToken.authenticateToken, whatsappNotificationController.getStatusReport);
 
+// 🩺 فحص صحة القوالب ومطابقتها لبارامترات ميتا لكل الأحداث (Read-Only)
+router.get('/template-health', verifyToken.authenticateToken, whatsappNotificationController.getTemplateHealth);
+
 // جلب إحصائيات الإشعارات
 router.get('/template-stats', verifyToken.authenticateToken, whatsappNotificationController.getTemplateStats);
 router.get('/stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationStats);

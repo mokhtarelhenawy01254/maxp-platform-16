@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ≡ƒÄü Customer Notification Schedule Service
  * ╪¼╪»┘ê┘ä ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä╪º╪í (╪º┘ä┘ê┘ä╪º╪í / ╪º┘ä┘â╪º╪┤ ╪¿╪º┘â / ╪º┘ä╪¼┘ê╪»╪⌐):
  * ┘è╪¡╪»╪» ┘ä┘â┘ä ╪¡╪»╪½ ┘ç┘ä ┘ç┘ê ┘à┘ü╪╣┘æ┘ä╪î ╪º┘ä┘é┘å╪º╪⌐ ╪º┘ä┘å╪┤╪╖╪⌐ (Auto/╪╣╪º╪»┘è/Meta)╪î
@@ -319,6 +319,16 @@ async function getEffectiveSchedule(companyId, eventType) {
  * ┘è╪¡┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪╡╪¡┘è╪¡ ╪¡╪│╪¿ ╪º┘ä┘é┘å╪º╪⌐ ╪º┘ä┘å╪┤╪╖╪⌐ ┘ü┘è ╪º┘ä╪¼╪»┘ê┘ä ╪½┘à ┘è╪▒╪│┘ä.
  */
 async function resolveTemplate(companyId, eventType, activeChannel) {
+  const WhatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
+  if (typeof WhatsAppNotificationService.findCanonicalNotificationTemplate === 'function') {
+    return WhatsAppNotificationService.findCanonicalNotificationTemplate(
+      companyId,
+      eventType,
+      activeChannel,
+      getSharedPrismaClient(),
+      { channel: activeChannel }
+    );
+  }
   const prisma = getSharedPrismaClient();
   const templates = await prisma.whatsAppNotificationTemplate.findMany({
     where: { companyId, eventType, isActive: true },
@@ -370,8 +380,8 @@ async function sendCustomerNotification({ companyId, eventType, customer, variab
     const template = await resolveTemplate(companyId, eventType, activeChannel);
 
     // ┘ä┘ê ┘à┘ü┘è╪┤ ┘é╪º┘ä╪¿ ┘ü┘è DB ┘å╪│╪¬╪«╪»┘à ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è (╪╣╪¿╪▒ sendNotification)
-    if (!template && activeChannel === 'META_CLOUD') {
-      return { success: false, reason: 'meta_template_not_ready' };
+    if (false) {
+      // 🚨 PRODUCTION-FIX: Do not drop silently without log; proceed to sendNotification to log failure cleanly
     }
 
     const recipientName =
