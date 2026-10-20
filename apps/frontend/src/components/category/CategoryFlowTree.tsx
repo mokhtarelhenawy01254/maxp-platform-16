@@ -54,7 +54,7 @@ const NODE_W = 240;
 const NODE_H = 108;
 const H_GAP = 22;
 const V_GAP = 62;
-const PAD = 18;
+const PAD = 24;
 
 const PALETTE = [
   { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.55)", solid: "#10b981" },
@@ -281,7 +281,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
             childPlaced.x + NODE_W / 2,
             childPlaced.y,
           ),
-          color: paletteAt(item.depth).border,
+          color: paletteAt(item.depth).solid,
         });
       });
     });
@@ -301,7 +301,7 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
       const available = element.clientWidth - 8;
       const needed = layout.width + PAD * 2;
       if (needed <= 0 || available <= 0) return;
-      setFitScale(Math.min(1, Math.max(0.4, available / needed)));
+      setFitScale(Math.min(1, Math.max(0.6, available / needed)));
     };
     compute();
     const observer = new ResizeObserver(compute);
@@ -345,6 +345,9 @@ const CategoryFlowTree: React.FC<CategoryFlowTreeProps> = ({
             {t("categories.management.tree.collapseAll")}
           </button>
           <span className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+          <span className="font-mono text-[10px] tabular-nums text-zinc-400 dark:text-zinc-500">
+            {Math.round(scale * 100)}%
+          </span>
           <button
             type="button"
             onClick={() => setZoomOverride(Math.min(1.4, Number((scale + 0.1).toFixed(2))))}
