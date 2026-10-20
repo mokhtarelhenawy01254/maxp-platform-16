@@ -448,6 +448,7 @@ const billingRoutes = require("./routes/billingRoutes");
 const treasuryExpensesRoutes = require("./routes/treasuryExpensesRoutes");
 const accountingRoutes = require("./routes/accountingRoutes");
 const manufacturingRoutes = require("./routes/manufacturingRoutes");
+const factoryPortalRoutes = require("./routes/factoryPortalRoutes");
 
 // Billing Cron Service
 const billingCronService = require("./services/billingCronService");
@@ -1225,6 +1226,7 @@ app.use("/api/v1/treasury", treasuryExpensesRoutes);
 app.use("/api/treasury", treasuryExpensesRoutes);
 app.use("/api/v1/accounting", accountingRoutes);
 app.use("/api/v1/manufacturing", manufacturingRoutes);
+app.use("/api/v1/factory-portal", factoryPortalRoutes);
 app.use("/api/v1/billing", billingRoutes);
 app.use("/api/v1/owner", ownerRoutes);
 app.use("/api/v1/support", supportRoutes);

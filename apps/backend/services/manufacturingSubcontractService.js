@@ -34,6 +34,11 @@ class ManufacturingSubcontractService {
         EXCEPTION WHEN duplicate_object THEN null;
         END $$;
 
+        DO $$ BEGIN
+          CREATE TYPE "AttachmentReviewStatus" AS ENUM ('UPLOADED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'PUBLISHED', 'HIDDEN');
+        EXCEPTION WHEN duplicate_object THEN null;
+        END $$;
+
         CREATE TABLE IF NOT EXISTS "partner_factories" (
           "id" TEXT PRIMARY KEY,
           "companyId" TEXT NOT NULL,
@@ -46,26 +51,51 @@ class ManufacturingSubcontractService {
           "address" TEXT,
           "notes" TEXT,
           "isActive" BOOLEAN NOT NULL DEFAULT true,
+          "accessToken" TEXT,
+          "portalEnabled" BOOLEAN NOT NULL DEFAULT false,
+          "portalLastAccessAt" TIMESTAMP(3),
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE UNIQUE INDEX IF NOT EXISTS "partner_factories_companyId_name_key" ON "partner_factories"("companyId", "name");
         CREATE INDEX IF NOT EXISTS "partner_factories_companyId_isActive_idx" ON "partner_factories"("companyId", "isActive");
+        CREATE UNIQUE INDEX IF NOT EXISTS "partner_factories_accessToken_key" ON "partner_factories"("accessToken");
 
         CREATE TABLE IF NOT EXISTS "manufacturing_attachments" (
           "id" TEXT PRIMARY KEY,
           "companyId" TEXT NOT NULL,
           "orderId" TEXT,
           "stageId" TEXT,
+          "partnerFactoryId" TEXT,
           "url" TEXT NOT NULL,
           "kind" "AttachmentKind" NOT NULL DEFAULT 'IMAGE',
           "caption" TEXT,
           "uploadedById" TEXT,
+          "reviewStatus" "AttachmentReviewStatus" NOT NULL DEFAULT 'UNDER_REVIEW',
+          "reviewedBy" TEXT,
+          "reviewedAt" TIMESTAMP(3),
+          "rejectReason" TEXT,
+          "publishedAt" TIMESTAMP(3),
+          "publishedBy" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS "manufacturing_attachments_companyId_orderId_idx" ON "manufacturing_attachments"("companyId", "orderId");
         CREATE INDEX IF NOT EXISTS "manufacturing_attachments_stageId_idx" ON "manufacturing_attachments"("stageId");
+        CREATE INDEX IF NOT EXISTS "manufacturing_attachments_companyId_reviewStatus_idx" ON "manufacturing_attachments"("companyId", "reviewStatus");
+        CREATE INDEX IF NOT EXISTS "manufacturing_attachments_partnerFactoryId_idx" ON "manufacturing_attachments"("partnerFactoryId");
+
+        ALTER TABLE "partner_factories" ADD COLUMN IF NOT EXISTS "accessToken" TEXT;
+        ALTER TABLE "partner_factories" ADD COLUMN IF NOT EXISTS "portalEnabled" BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE "partner_factories" ADD COLUMN IF NOT EXISTS "portalLastAccessAt" TIMESTAMP(3);
+
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "reviewStatus" "AttachmentReviewStatus" NOT NULL DEFAULT 'UNDER_REVIEW';
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "reviewedBy" TEXT;
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP(3);
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "rejectReason" TEXT;
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "publishedAt" TIMESTAMP(3);
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "publishedBy" TEXT;
+        ALTER TABLE "manufacturing_attachments" ADD COLUMN IF NOT EXISTS "partnerFactoryId" TEXT;
 
         ALTER TABLE "production_stages" ADD COLUMN IF NOT EXISTS "executionEntity" "StageExecutionEntity" NOT NULL DEFAULT 'INTERNAL';
         ALTER TABLE "production_stages" ADD COLUMN IF NOT EXISTS "partnerFactoryId" TEXT;
@@ -146,6 +176,9 @@ class ManufacturingSubcontractService {
         address: f.address,
         notes: f.notes,
         isActive: f.isActive,
+        accessToken: f.accessToken || null,
+        portalEnabled: Boolean(f.portalEnabled),
+        portalLastAccessAt: f.portalLastAccessAt || null,
         createdAt: f.createdAt,
         updatedAt: f.updatedAt,
         metrics: {
@@ -561,18 +594,23 @@ class ManufacturingSubcontractService {
       }
     }
 
+    const reviewStatus = data.reviewStatus || 'UNDER_REVIEW';
+
     return prisma.manufacturingAttachment.create({
       data: {
         companyId,
         orderId: data.orderId || null,
         stageId: data.stageId || null,
+        partnerFactoryId: data.partnerFactoryId || null,
         url,
         kind,
         caption: data.caption?.trim() || null,
         uploadedById: userId || null,
+        reviewStatus,
       },
       include: {
         stage: { select: { id: true, name: true, sequence: true } },
+        partnerFactory: { select: { id: true, name: true } },
       },
     });
   }
@@ -597,11 +635,21 @@ class ManufacturingSubcontractService {
     if (filters.kind) {
       where.kind = filters.kind;
     }
+    if (filters.partnerFactoryId) {
+      where.partnerFactoryId = filters.partnerFactoryId;
+    }
+    if (filters.reviewStatus) {
+      where.reviewStatus = filters.reviewStatus;
+    } else if (filters.publicOnly === true) {
+      // Non-admin or public endpoints must strictly only see PUBLISHED
+      where.reviewStatus = 'PUBLISHED';
+    }
 
     return prisma.manufacturingAttachment.findMany({
       where,
       include: {
         stage: { select: { id: true, name: true, sequence: true } },
+        partnerFactory: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

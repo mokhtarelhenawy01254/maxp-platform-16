@@ -8,6 +8,7 @@ const ManufacturingService = require('../services/manufacturingService');
 const ManufacturingContractService = require('../services/manufacturingContractService');
 const ManufacturingSubcontractService = require('../services/manufacturingSubcontractService');
 const ManufacturingFabricService = require('../services/manufacturingFabricService');
+const FactoryPortalService = require('../services/factoryPortalService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -452,6 +453,36 @@ class ManufacturingController {
     }
   }
 
+  static async generatePartnerFactoryPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.generatePortalLink(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async togglePartnerFactoryPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.togglePortalLink(companyId, req.params.id, req.body);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async revokePartnerFactoryPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.revokePortalLink(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
   static async assignStageExecution(req, res) {
     try {
       const companyId = ManufacturingController.getCompanyId(req);
@@ -518,6 +549,60 @@ class ManufacturingController {
         req.params.id,
         req.user
       );
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Media & Attachment Review System (Wave 3)
+  // ==========================================================================
+
+  static async listReviews(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.listReviews(companyId, req.query);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async approveReview(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.approveAttachment(companyId, req.params.id, req.user);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async rejectReview(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.rejectAttachment(companyId, req.params.id, req.user, req.body);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async publishReview(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.publishAttachment(companyId, req.params.id, req.user);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async hideReview(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await FactoryPortalService.hideAttachment(companyId, req.params.id, req.user);
       res.json(result);
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
