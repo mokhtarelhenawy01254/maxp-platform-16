@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Wrench } from 'lucide-react';
+import { Plus, Trash2, Wrench, Layers } from 'lucide-react';
 import { BomStandardStage, ProductionStageType } from '../../manufacturingApi';
 
 interface BomStagesTableProps {
@@ -8,6 +8,7 @@ interface BomStagesTableProps {
   onRemoveStage: (idx: number) => void;
   onChangeStage: (idx: number, field: keyof BomStandardStage, val: any) => void;
   totalCalculatedLabor: number;
+  onOpenApplySetModal?: () => void;
 }
 
 export const BomStagesTable: React.FC<BomStagesTableProps> = ({
@@ -16,6 +17,7 @@ export const BomStagesTable: React.FC<BomStagesTableProps> = ({
   onRemoveStage,
   onChangeStage,
   totalCalculatedLabor,
+  onOpenApplySetModal,
 }) => {
   return (
     <div>
@@ -30,6 +32,16 @@ export const BomStagesTable: React.FC<BomStagesTableProps> = ({
           <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
             إجمالي أجر العمالة: {totalCalculatedLabor.toFixed(2)} ج.م/قطعة
           </span>
+          {onOpenApplySetModal && (
+            <button
+              type="button"
+              onClick={onOpenApplySetModal}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>استدعاء مراحل قياسية</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onAddStage}

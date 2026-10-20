@@ -9,6 +9,7 @@ import {
 } from '../manufacturingApi';
 import { BomComponentsTable } from './components/BomComponentsTable';
 import { BomStagesTable } from './components/BomStagesTable';
+import { ApplyStageSetModal } from '../stageTemplates/modals/ApplyStageSetModal';
 
 interface BomModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export const BomModal: React.FC<BomModalProps> = ({
   ]);
 
   const [standardStages, setStandardStages] = useState<BomStandardStage[]>(DEFAULT_STAGES);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
 
   useEffect(() => {
     manufacturingApi.getProducts().then(setProducts).catch(() => {});
@@ -184,8 +186,8 @@ export const BomModal: React.FC<BomModalProps> = ({
         await manufacturingApi.createBom(payload);
       }
 
-      onSuccess();
       onClose();
+      onSuccess();
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'فشل حفظ قائمة المكونات');
     } finally {
@@ -312,6 +314,7 @@ export const BomModal: React.FC<BomModalProps> = ({
             onRemoveStage={handleRemoveStage}
             onChangeStage={handleStageChange}
             totalCalculatedLabor={totalCalculatedLabor}
+            onOpenApplySetModal={() => setApplyModalOpen(true)}
           />
 
           {/* Notes & Active status */}
@@ -359,7 +362,20 @@ export const BomModal: React.FC<BomModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    
+      <ApplyStageSetModal
+        isOpen={applyModalOpen}
+        onClose={() => setApplyModalOpen(false)}
+        targetType="BOM"
+        targetId={initialBom?.id}
+        targetLabel={code}
+        hasExistingStages={standardStages.length > 0}
+        onApplyLocalStages={(stages) => setStandardStages(stages)}
+        onSuccess={() => {
+          // If we had an existing BOM ID and applied via API, load stages or let modal finish
+        }}
+      />
+</div>
   );
 };
 

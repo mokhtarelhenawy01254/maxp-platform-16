@@ -9,6 +9,9 @@ const ManufacturingContractService = require('../services/manufacturingContractS
 const ManufacturingSubcontractService = require('../services/manufacturingSubcontractService');
 const ManufacturingFabricService = require('../services/manufacturingFabricService');
 const FactoryPortalService = require('../services/factoryPortalService');
+const ManufacturingTechPackService = require('../services/manufacturingTechPackService');
+const ManufacturingSampleService = require('../services/manufacturingSampleService');
+const ManufacturingStageTemplateService = require('../services/manufacturingStageTemplateService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -661,6 +664,504 @@ class ManufacturingController {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }
   }
+
+  // ==========================================================================
+  // 7. Technical Packs & Size Charts (Wave 4)
+  // ==========================================================================
+
+  // Tech Packs
+  static async listTechPacks(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.listTechPacks(companyId, req.query);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getTechPackById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.getTechPackById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createTechPack(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.createTechPack(companyId, req.user, req.body);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء ملف المنتج الفني بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateTechPack(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingTechPackService.updateTechPack(companyId, req.user, req.params.id, req.body);
+      res.json({ success: true, ...result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async cloneTechPackVersion(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.cloneVersion(companyId, req.user, req.params.id, req.body);
+      res.status(201).json({ success: true, data, message: 'تم استنساخ إصدار مسودة جديد بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async approveTechPack(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.approveTechPack(companyId, req.user, req.params.id);
+      res.json({ success: true, data, message: 'تم اعتماد ملف المنتج الفني بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async archiveTechPack(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.archiveTechPack(companyId, req.user, req.params.id);
+      res.json({ success: true, data, message: 'تم أرشفة ملف المنتج الفني' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getTechPackVersions(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.getTechPackVersions(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async uploadTechPackFile(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      let fileData = {};
+      if (req.file) {
+        fileData = {
+          fileName: req.file.originalname,
+          url: `/uploads/manufacturing/${req.file.filename}`,
+          kind: (req.file.mimetype || '').includes('pdf') ? 'PDF' : 'IMAGE',
+        };
+      } else if (req.body) {
+        fileData = {
+          fileName: req.body.fileName || 'ملف فني',
+          url: req.body.url,
+          kind: req.body.kind || 'IMAGE',
+        };
+      }
+      if (!fileData.url) {
+        return res.status(400).json({ success: false, message: 'رابط الملف أو الملف المرفوع مطلوب' });
+      }
+      const result = await ManufacturingTechPackService.addTechPackFile(companyId, req.user, req.params.id, fileData);
+      res.status(201).json({ success: true, ...result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteTechPackFile(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingTechPackService.deleteTechPackFile(
+        companyId,
+        req.user,
+        req.params.id,
+        req.params.fileId
+      );
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // Size Charts
+  static async listSizeCharts(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.listSizeCharts(companyId, req.query);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getSizeChartById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.getSizeChartById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createSizeChart(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.createSizeChart(companyId, req.user, req.body);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء جدول المقاسات بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateSizeChart(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingTechPackService.updateSizeChart(companyId, req.user, req.params.id, req.body);
+      res.json({ success: true, ...result });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async cloneSizeChartVersion(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.cloneSizeChartVersion(companyId, req.user, req.params.id, req.body);
+      res.status(201).json({ success: true, data, message: 'تم استنساخ إصدار مسودة جديد من جدول المقاسات' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async approveSizeChart(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.approveSizeChart(companyId, req.user, req.params.id);
+      res.json({ success: true, data, message: 'تم اعتماد جدول المقاسات بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async archiveSizeChart(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.archiveSizeChart(companyId, req.user, req.params.id);
+      res.json({ success: true, data, message: 'تم أرشفة جدول المقاسات' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getSizeChartVersions(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.getSizeChartVersions(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getSizeChartMatrix(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingTechPackService.getSizeChartMatrix(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Wave 5: Standalone Sample Orders (أوامر تصنيع العينات المستقلة والتحويل)
+  // ==========================================================================
+
+  static async listSampleOrders(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.listSampleOrders(companyId, req.query);
+      res.json({ success: true, ...data });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getSampleOrderById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.getSampleOrderById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createSampleOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.createSampleOrder(companyId, req.user, req.body);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء أمر العينة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateSampleOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.updateSampleOrder(companyId, req.user, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم تحديث بيانات العينة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteSampleOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingSampleService.deleteSampleOrder(companyId, req.user, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async addSampleStage(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.addSampleStage(companyId, req.user, req.params.id, req.body);
+      res.status(201).json({ success: true, data, message: 'تم إضافة مرحلة للعينة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateSampleStage(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.updateSampleStage(companyId, req.user, req.params.id, req.params.stageId, req.body);
+      res.json({ success: true, data, message: 'تم تحديث مرحلة العينة' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async uploadSampleFile(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const fileData = req.file || req.body;
+      const data = await ManufacturingSampleService.uploadSampleFile(companyId, req.user, req.params.id, fileData);
+      res.status(201).json({ success: true, data, message: 'تم رفع مرفق العينة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async approveSampleOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.approveSampleOrder(companyId, req.user, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم اعتماد العينة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async rejectSampleOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.rejectSampleOrder(companyId, req.user, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم رفض العينة وتسجيل السبب' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async convertSampleToOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingSampleService.convertSampleToOrder(companyId, req.user, req.params.id, req.body);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+
+  // ==========================================================================
+  // Wave 6: Standard Production Stage Templates & Sets Library
+  // ==========================================================================
+
+  static async listStageTemplates(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.listTemplates(companyId, req.query);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getStageTemplateById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.getTemplateById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createStageTemplate(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.createTemplate(companyId, req.body, req.user?.id);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء قالب مرحلة الإنتاج القياسية بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateStageTemplate(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.updateTemplate(companyId, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم تحديث قالب مرحلة الإنتاج بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async archiveStageTemplate(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.archiveTemplate(companyId, req.params.id);
+      res.json({ success: true, data, message: 'تم تعطيل قالب مرحلة الإنتاج' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async listStageTemplateSets(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.listSets(companyId, req.query);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getStageTemplateSetById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.getSetById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createStageTemplateSet(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.createSet(companyId, req.body, req.user?.id);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء مجموعة مراحل الإنتاج القياسية بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateStageTemplateSet(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.updateSet(companyId, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم تحديث مجموعة المراحل بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async archiveStageTemplateSet(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.archiveSet(companyId, req.params.id);
+      res.json({ success: true, data, message: 'تم تعطيل مجموعة المراحل القياسية' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async addStageTemplateSetItem(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.addSetItem(companyId, req.params.id, req.body);
+      res.status(201).json({ success: true, data, message: 'تمت إضافة المرحلة إلى المجموعة' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async removeStageTemplateSetItem(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.removeSetItem(companyId, req.params.id, req.params.itemId);
+      res.json({ success: true, data, message: 'تم حذف المرحلة من المجموعة' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async reorderStageTemplateSetItems(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingStageTemplateService.reorderSetItems(companyId, req.params.id, req.body.itemIds || req.body.orderedItemIds);
+      res.json({ success: true, data, message: 'تمت إعادة ترتيب مراحل المجموعة بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async applyStageSetToOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingStageTemplateService.applyStageSetToOrder(
+        companyId,
+        req.params.orderId,
+        req.body,
+        req.user?.id
+      );
+      res.json({ success: true, data: result, message: 'تم استدعاء وتطبيق المراحل القياسية على أمر التشغيل بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async applyStageSetToBom(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingStageTemplateService.applyStageSetToBom(
+        companyId,
+        req.params.bomId,
+        req.body
+      );
+      res.json({ success: true, data: result, message: 'تم تطبيق المراحل القياسية على قائمة المكونات (BOM) بنجاح' });
+    } catch (error) {
+      res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
 }
 
 module.exports = ManufacturingController;

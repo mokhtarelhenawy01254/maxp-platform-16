@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2,
+  Layers,
   Clock,
   Play,
   User,
@@ -19,6 +20,7 @@ import {
 } from '../../manufacturingApi';
 import { StageAssignmentModal } from './StageAssignmentModal';
 import { StageEventModal } from './StageEventModal';
+import { ApplyStageSetModal } from '../../stageTemplates/modals/ApplyStageSetModal';
 
 interface OrderStagesTabProps {
   order: ProductionOrder;
@@ -28,6 +30,7 @@ interface OrderStagesTabProps {
 export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh }) => {
   const [editingStage, setEditingStage] = useState<ProductionStage | null>(null);
   const [assigningStage, setAssigningStage] = useState<ProductionStage | null>(null);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [eventModalData, setEventModalData] = useState<{
     stage: ProductionStage;
     event: 'SENT' | 'ACK_RECEIPT' | 'COMPLETED';
@@ -126,12 +129,23 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
             تتبع مراحل التشغيل الداخلي والخارجي، إسناد المصانع الشركاء، وأجور العمالة المحققة
           </p>
         </div>
-        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">
-          إجمالي أجور العمالة المحققة:{' '}
-          <span className="font-mono font-bold text-sm tabular-nums">
-            {totalLaborCost.toFixed(2)}
-          </span>{' '}
-          <span className="text-[10px] font-sans">ج.م</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isOrderClosed}
+            onClick={() => setApplyModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold hover:bg-indigo-500/20 transition disabled:opacity-40"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>استدعاء مراحل قياسية</span>
+          </button>
+          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">
+            إجمالي أجور العمالة المحققة:{' '}
+            <span className="font-mono font-bold text-sm tabular-nums">
+              {totalLaborCost.toFixed(2)}
+            </span>{' '}
+            <span className="text-[10px] font-sans">ج.م</span>
+          </div>
         </div>
       </div>
 
@@ -431,6 +445,16 @@ export const OrderStagesTab: React.FC<OrderStagesTabProps> = ({ order, onRefresh
           onSuccess={onRefresh}
         />
       )}
-    </div>
+    
+      <ApplyStageSetModal
+        isOpen={applyModalOpen}
+        onClose={() => setApplyModalOpen(false)}
+        targetType="ORDER"
+        targetId={order.id}
+        targetLabel={order.orderNumber}
+        hasExistingStages={stages.length > 0}
+        onSuccess={onRefresh}
+      />
+</div>
   );
 };

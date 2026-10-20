@@ -129,6 +129,7 @@ model BillOfMaterials {
   components          BomComponentItem[]
   standardStages      BomStandardStage[]
   orders              ProductionOrder[]
+  techPacks           TechPack[]
 
   @@unique([companyId, code])
   @@index([companyId, productId])
@@ -220,7 +221,14 @@ model ProductionOrder {
   deliveryMethod     String?
   responsibleUserId  String?
 
+  // Technical Pack & Size Chart Layer (الدفعة 4: المواصفات الفنية وجداول المقاسات)
+  techPackId         String?
+  sizeChartId        String?
+  sourceSampleOrderId String?
+
   bom                BillOfMaterials               @relation(fields: [bomId], references: [id], onDelete: Restrict)
+  techPack           TechPack?                     @relation(fields: [techPackId], references: [id], onDelete: SetNull)
+  sizeChart          SizeChart?                    @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
   variants           ProductionOrderVariantMatrix[]
   stages             ProductionStage[]
   materialIssues     MaterialIssue[]
@@ -237,6 +245,9 @@ model ProductionOrder {
   @@index([companyId, customerOrderId])
   @@index([companyId, customerId])
   @@index([companyId, orderType])
+  @@index([companyId, techPackId])
+  @@index([companyId, sizeChartId])
+  @@index([companyId, sourceSampleOrderId])
   @@map("production_orders")
 }
 
@@ -504,6 +515,7 @@ model PartnerFactory {
 
   stages             ProductionStage[]
   attachments        ManufacturingAttachment[]
+  stageTemplates     ProductionStageTemplate[]
 
   @@unique([companyId, name])
   @@index([companyId, isActive])
@@ -540,4 +552,320 @@ model ManufacturingAttachment {
   @@index([companyId, reviewStatus])
   @@index([partnerFactoryId])
   @@map("manufacturing_attachments")
+}
+
+
+// ============================================================================
+// Wave 4: Technical Product Specification (Tech Pack) & Multi-Source Size Charts
+// ============================================================================
+
+enum TechPackStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum TechPackFileKind {
+  IMAGE
+  PDF
+  OTHER
+}
+
+enum SizeChartStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum SizeChartUnit {
+  CM
+  INCH
+}
+
+enum SizeChartMeasurementMethod {
+  FLAT
+  ROUND
+}
+
+enum SizeChartRowSource {
+  CUSTOMER
+  PATTERN
+  FACTORY
+}
+
+/// Technical Product Specification (ملف المنتج الفني - Tech Pack)
+model TechPack {
+  id               String           @id @default(cuid())
+  companyId        String
+  code             String
+  name             String
+  version          Int              @default(1)
+  status           TechPackStatus   @default(DRAFT)
+  productId        String?
+  bomId            String?
+  brand            String?
+  fabricSummary    String?
+  printDetails     String?
+  labelDetails     String?
+  packagingDetails String?
+  instructions     String?
+  notes            String?
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdBy        String?
+  supersedesId     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  files            TechPackFile[]
+  sizeCharts       SizeChart[]
+  bom              BillOfMaterials? @relation(fields: [bomId], references: [id], onDelete: SetNull)
+  orders           ProductionOrder[]
+
+  @@unique([companyId, code, version])
+  @@index([companyId, status])
+  @@index([companyId, productId])
+  @@index([companyId, bomId])
+  @@index([supersedesId])
+  @@map("tech_packs")
+}
+
+/// Tech Pack Attachment Files (ملفات وصور ومستندات ملف المنتج الفني)
+model TechPackFile {
+  id          String           @id @default(cuid())
+  techPackId  String
+  fileName    String
+  url         String
+  kind        TechPackFileKind @default(IMAGE)
+  uploadedBy  String?
+  uploadedAt  DateTime         @default(now())
+
+  techPack    TechPack         @relation(fields: [techPackId], references: [id], onDelete: Cascade)
+
+  @@index([techPackId])
+  @@map("tech_pack_files")
+}
+
+/// Product Size Chart Header with Multi-Version Support (جدول مقاسات المنتج الفني)
+model SizeChart {
+  id                String                     @id @default(cuid())
+  companyId         String
+  code              String
+  name              String
+  version           Int                        @default(1)
+  status            SizeChartStatus            @default(DRAFT)
+  unit              SizeChartUnit              @default(CM)
+  measurementMethod SizeChartMeasurementMethod @default(FLAT)
+  productId         String?
+  techPackId        String?
+  notes             String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdBy         String?
+  supersedesId      String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  techPack          TechPack?                  @relation(fields: [techPackId], references: [id], onDelete: SetNull)
+  rows              SizeChartRow[]
+  orders            ProductionOrder[]
+
+  @@unique([companyId, code, version])
+  @@index([companyId, status])
+  @@index([companyId, productId])
+  @@index([companyId, techPackId])
+  @@index([supersedesId])
+  @@map("size_charts")
+}
+
+/// Product Size Chart Matrix Row for 3 Interlinked Sources (صف قياسات المقاس: عميل / باترون / مصنع)
+model SizeChartRow {
+  id             String             @id @default(cuid())
+  chartId        String
+  sizeLabel      String
+  measurementKey String
+  value          Decimal            @db.Decimal(10, 2)
+  tolerance      Decimal            @default(1.0) @db.Decimal(10, 2)
+  source         SizeChartRowSource @default(CUSTOMER)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  chart          SizeChart          @relation(fields: [chartId], references: [id], onDelete: Cascade)
+
+  @@index([chartId])
+  @@index([chartId, source])
+  @@index([chartId, sizeLabel, measurementKey, source])
+  @@map("size_chart_rows")
+}
+
+
+// ============================================================================
+// Wave 5: Standalone Sample Manufacturing Order (أمر تصنيع عينة مستقل)
+// ============================================================================
+
+enum SampleOrderStatus {
+  DRAFT
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  CONVERTED
+}
+
+enum SampleMaterialSource {
+  CUSTOMER
+  COMPANY
+}
+
+enum SampleFileKind {
+  IMAGE
+  PDF
+  OTHER
+}
+
+/// Standalone Sample Manufacturing Order (أمر تصنيع عينة مستقل)
+model SampleOrder {
+  id               String               @id @default(cuid())
+  companyId        String
+  sampleNumber     String
+  customerId       String?
+  customerName     String?
+  brandName        String?
+  productName      String
+  productId        String?
+  bomId            String?
+  techPackId       String?
+  plannedQuantity  Int                  @default(1)
+  size             String?
+  color            String?
+  materialSource   SampleMaterialSource @default(COMPANY)
+  fee              Decimal?             @db.Decimal(10, 2)
+  status           SampleOrderStatus    @default(DRAFT)
+  dueDate          DateTime?
+  designNotes      String?
+  resultNotes      String?
+  convertedOrderId String?
+  createdById      String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  stages           SampleOrderStage[]
+  attachments      SampleOrderAttachment[]
+
+  @@unique([companyId, sampleNumber])
+  @@index([companyId, status])
+  @@index([companyId, customerId])
+  @@index([companyId, productId])
+  @@index([companyId, convertedOrderId])
+  @@map("sample_orders")
+}
+
+/// Standalone Sample Order Simplified Production Stage (مراحل تشغيل العينة المبسطة)
+model SampleOrderStage {
+  id            String              @id @default(cuid())
+  sampleOrderId String
+  name          String
+  stageType     ProductionStageType @default(CUSTOM)
+  sequence      Int                 @default(1)
+  status        String              @default("PENDING")
+  notes         String?
+  templateSetId String?
+  templateId    String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  sampleOrder   SampleOrder         @relation(fields: [sampleOrderId], references: [id], onDelete: Cascade)
+
+  @@index([sampleOrderId])
+  @@index([sampleOrderId, sequence])
+  @@map("sample_order_stages")
+}
+
+/// Standalone Sample Order Attachment Files (مرفقات وصور العينة)
+model SampleOrderAttachment {
+  id            String         @id @default(cuid())
+  sampleOrderId String
+  fileName      String
+  url           String
+  kind          SampleFileKind @default(IMAGE)
+  uploadedBy    String?
+  uploadedAt    DateTime       @default(now())
+
+  sampleOrder   SampleOrder    @relation(fields: [sampleOrderId], references: [id], onDelete: Cascade)
+
+  @@index([sampleOrderId])
+  @@map("sample_order_attachments")
+}
+
+
+// ============================================================================
+// Wave 6: Standard Production Stage Templates Library & Sets
+// ============================================================================
+
+/// Standard Production Stage Template (قالب مرحلة إنتاج قياسية في المكتبة)
+model ProductionStageTemplate {
+  id                      String                           @id @default(cuid())
+  companyId               String
+  code                    String
+  name                    String
+  stageType               ProductionStageType              @default(CUSTOM)
+  sequence                Int                              @default(1)
+  standardMinutes         Decimal                          @default(0.0) @db.Decimal(8, 2)
+  ratePerPiece            Decimal                          @default(0.0) @db.Decimal(10, 2)
+  executionEntity         StageExecutionEntity             @default(INTERNAL)
+  defaultPartnerFactoryId String?
+  instructions            String?
+  isActive                Boolean                          @default(true)
+  usageCount              Int                              @default(0)
+  createdById             String?
+  createdAt               DateTime                         @default(now())
+  updatedAt               DateTime                         @updatedAt
+
+  defaultPartnerFactory   PartnerFactory?                  @relation(fields: [defaultPartnerFactoryId], references: [id], onDelete: SetNull)
+  setItems                ProductionStageTemplateSetItem[]
+
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@index([companyId, stageType])
+  @@map("production_stage_templates")
+}
+
+/// Standard Production Stage Template Set / Sequence (مجموعة مسار مراحل إنتاج قياسي)
+model ProductionStageTemplateSet {
+  id          String                           @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean                          @default(true)
+  usageCount  Int                              @default(0)
+  lastUsedAt  DateTime?
+  createdById String?
+  createdAt   DateTime                         @default(now())
+  updatedAt   DateTime                         @updatedAt
+
+  items       ProductionStageTemplateSetItem[]
+
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@map("production_stage_template_sets")
+}
+
+/// Item inside a Production Stage Template Set (بند مرحلة داخل مجموعة المسار القياسي)
+model ProductionStageTemplateSetItem {
+  id         String                     @id @default(cuid())
+  setId      String
+  templateId String
+  sequence   Int
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  set        ProductionStageTemplateSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  template   ProductionStageTemplate    @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  @@unique([setId, sequence])
+  @@index([setId])
+  @@index([templateId])
+  @@map("production_stage_template_set_items")
 }

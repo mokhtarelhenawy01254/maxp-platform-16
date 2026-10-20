@@ -27,6 +27,10 @@ class ManufacturingService {
     try {
       const ManufacturingContractService = require('./manufacturingContractService');
       await ManufacturingContractService.ensureSchema();
+      const ManufacturingTechPackService = require('./manufacturingTechPackService');
+      await ManufacturingTechPackService.ensureSchema();
+      const ManufacturingStageTemplateService = require('./manufacturingStageTemplateService');
+      await ManufacturingStageTemplateService.ensureSchema();
 
       const prisma = getSharedPrismaClient();
       if (!prisma.$executeRawUnsafe) return;
@@ -798,6 +802,7 @@ class ManufacturingService {
           deliveryAddress: data.deliveryAddress ? String(data.deliveryAddress).trim() : null,
           deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod).trim() : null,
           responsibleUserId: data.responsibleUserId ? String(data.responsibleUserId) : null,
+          sourceSampleOrderId: data.sourceSampleOrderId ? String(data.sourceSampleOrderId) : null,
         },
       });
 

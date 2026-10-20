@@ -1,5 +1,31 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+
 const router = express.Router();
+
+const uploadsDir = path.resolve(__dirname, '../uploads/manufacturing');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const unique = uuidv4();
+    cb(null, `techpack-${unique}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 const controller = require('../controller/manufacturingController');
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
@@ -93,4 +119,71 @@ router.post('/fabric/actual-gsm', controller.calculateActualGsm);
 router.post('/fabric/requirements', controller.calculateFabricRequirements);
 router.post('/fabric/actual-waste', controller.calculateActualWaste);
 
+// ============================================================================
+// 7. Tech Packs (ملفات المنتجات الفنية) & Versions (Wave 4)
+// ============================================================================
+router.get('/tech-packs', controller.listTechPacks);
+router.post('/tech-packs', controller.createTechPack);
+router.get('/tech-packs/:id', controller.getTechPackById);
+router.patch('/tech-packs/:id', controller.updateTechPack);
+router.post('/tech-packs/:id/clone-version', controller.cloneTechPackVersion);
+router.post('/tech-packs/:id/approve', controller.approveTechPack);
+router.post('/tech-packs/:id/archive', controller.archiveTechPack);
+router.get('/tech-packs/:id/versions', controller.getTechPackVersions);
+router.post('/tech-packs/:id/files', upload.single('file'), controller.uploadTechPackFile);
+router.delete('/tech-packs/:id/files/:fileId', controller.deleteTechPackFile);
+
+// ============================================================================
+// 8. Size Charts (جداول المقاسات والمصفوفة ثلاثية النسخ) (Wave 4)
+// ============================================================================
+router.get('/size-charts', controller.listSizeCharts);
+router.post('/size-charts', controller.createSizeChart);
+router.get('/size-charts/:id', controller.getSizeChartById);
+router.patch('/size-charts/:id', controller.updateSizeChart);
+router.post('/size-charts/:id/clone-version', controller.cloneSizeChartVersion);
+router.post('/size-charts/:id/approve', controller.approveSizeChart);
+router.post('/size-charts/:id/archive', controller.archiveSizeChart);
+router.get('/size-charts/:id/versions', controller.getSizeChartVersions);
+router.get('/size-charts/:id/matrix', controller.getSizeChartMatrix);
+
+
+// ============================================================================
+// 9. Sample Orders (أوامر تصنيع العينات المستقلة والتحويل) (Wave 5)
+// ============================================================================
+router.get('/sample-orders', controller.listSampleOrders);
+router.post('/sample-orders', controller.createSampleOrder);
+router.get('/sample-orders/:id', controller.getSampleOrderById);
+router.patch('/sample-orders/:id', controller.updateSampleOrder);
+router.delete('/sample-orders/:id', controller.deleteSampleOrder);
+router.post('/sample-orders/:id/stages', controller.addSampleStage);
+router.patch('/sample-orders/:id/stages/:stageId', controller.updateSampleStage);
+router.post('/sample-orders/:id/files', upload.single('file'), controller.uploadSampleFile);
+router.post('/sample-orders/:id/approve', controller.approveSampleOrder);
+router.post('/sample-orders/:id/reject', controller.rejectSampleOrder);
+router.post('/sample-orders/:id/convert-to-order', controller.convertSampleToOrder);
+
+
+// ============================================================================
+// 10. Standard Production Stage Templates & Sets (مكتبة مراحل الإنتاج القياسية) (Wave 6)
+// ============================================================================
+router.get('/stage-templates', controller.listStageTemplates);
+router.post('/stage-templates', controller.createStageTemplate);
+router.get('/stage-templates/:id', controller.getStageTemplateById);
+router.patch('/stage-templates/:id', controller.updateStageTemplate);
+router.delete('/stage-templates/:id', controller.archiveStageTemplate);
+
+router.get('/stage-template-sets', controller.listStageTemplateSets);
+router.post('/stage-template-sets', controller.createStageTemplateSet);
+router.get('/stage-template-sets/:id', controller.getStageTemplateSetById);
+router.patch('/stage-template-sets/:id', controller.updateStageTemplateSet);
+router.delete('/stage-template-sets/:id', controller.archiveStageTemplateSet);
+
+router.post('/stage-template-sets/:id/items', controller.addStageTemplateSetItem);
+router.delete('/stage-template-sets/:id/items/:itemId', controller.removeStageTemplateSetItem);
+router.put('/stage-template-sets/:id/reorder', controller.reorderStageTemplateSetItems);
+
+router.post('/orders/:orderId/apply-stage-set', controller.applyStageSetToOrder);
+router.post('/boms/:bomId/apply-stage-set', controller.applyStageSetToBom);
+
 module.exports = router;
+

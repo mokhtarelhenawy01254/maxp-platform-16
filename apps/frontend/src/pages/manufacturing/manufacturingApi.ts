@@ -4,6 +4,133 @@ import { apiClient } from '../../services/api';
 // Types & Contracts for Manufacturing Execution System (MES)
 // ============================================================================
 
+// ============================================================================
+// Wave 4: Technical Product Specification (Tech Pack) & Multi-Source Size Charts
+// ============================================================================
+
+export type TechPackStatus = 'DRAFT' | 'APPROVED' | 'ARCHIVED';
+export type TechPackFileKind = 'IMAGE' | 'PDF' | 'OTHER';
+
+export interface TechPackFile {
+  id: string;
+  techPackId: string;
+  fileName: string;
+  url: string;
+  kind: TechPackFileKind;
+  uploadedBy?: string | null;
+  uploadedAt: string;
+}
+
+export interface TechPack {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  version: number;
+  status: TechPackStatus;
+  productId?: string | null;
+  bomId?: string | null;
+  brand?: string | null;
+  fabricSummary?: string | null;
+  printDetails?: string | null;
+  labelDetails?: string | null;
+  packagingDetails?: string | null;
+  instructions?: string | null;
+  notes?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  createdBy?: string | null;
+  supersedesId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  files?: TechPackFile[];
+  sizeCharts?: Array<{ id: string; code: string; name: string; version: number; status: string }>;
+  bom?: { id: string; code: string; name: string } | null;
+  filesCount?: number;
+  sizeChartsCount?: number;
+}
+
+export type SizeChartStatus = 'DRAFT' | 'APPROVED' | 'ARCHIVED';
+export type SizeChartUnit = 'CM' | 'INCH';
+export type SizeChartMeasurementMethod = 'FLAT' | 'ROUND';
+export type SizeChartRowSource = 'CUSTOMER' | 'PATTERN' | 'FACTORY';
+
+export interface SizeChartRow {
+  id?: string;
+  chartId?: string;
+  sizeLabel: string;
+  measurementKey: string;
+  value: number;
+  tolerance: number;
+  source: SizeChartRowSource;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SizeChart {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  version: number;
+  status: SizeChartStatus;
+  unit: SizeChartUnit;
+  measurementMethod: SizeChartMeasurementMethod;
+  productId?: string | null;
+  techPackId?: string | null;
+  notes?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  createdBy?: string | null;
+  supersedesId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  rows?: SizeChartRow[];
+  rowsCount?: number;
+  techPack?: { id: string; code: string; name: string; version: number; status: string } | null;
+}
+
+export interface SizeChartMatrixCell {
+  sizeLabel: string;
+  measurementKey: string;
+  tolerance: number;
+  customerValue: number | null;
+  patternValue: number | null;
+  factoryValue: number | null;
+  diffPatternVsCustomer: number | null;
+  diffFactoryVsCustomer: number | null;
+  diffFactoryVsPattern: number | null;
+  isToleranceExceeded: boolean;
+  exceededSources: Array<{
+    comparison: string;
+    label: string;
+    diff: number;
+    allowedTolerance: number;
+  }>;
+}
+
+export interface SizeChartMatrixResponse {
+  chart: {
+    id: string;
+    code: string;
+    name: string;
+    version: number;
+    status: SizeChartStatus;
+    unit: SizeChartUnit;
+    measurementMethod: SizeChartMeasurementMethod;
+    techPack?: any;
+    notes?: string | null;
+  };
+  sizes: string[];
+  measurementKeys: string[];
+  totalCells: number;
+  exceededCount: number;
+  hasExceededTolerance: boolean;
+  matrix: SizeChartMatrixCell[];
+}
+
+
+
 export type ProductionOrderStatus =
   | 'PLANNED'
   | 'RELEASED'
@@ -74,6 +201,8 @@ export interface CustomerOrder {
   brandName?: string | null;
   customerCountry?: string | null;
   responsibleUserId?: string | null;
+  sourceSampleOrderId?: string | null;
+  sourceSampleOrder?: SampleOrder | null;
   status: CustomerOrderStatus;
   expectedDelivery?: string | null;
   notes?: string | null;
@@ -340,6 +469,8 @@ export interface FactoryPortalAssignment {
     rejectReason?: string | null;
     createdAt: string;
   }>;
+  techPack?: TechPack | null;
+  sizeChart?: SizeChart | null;
 }
 
 export interface PartnerFactoryPerformance {
@@ -595,6 +726,154 @@ export interface AccountOption {
 // ============================================================================
 // API Service Methods
 // ============================================================================
+
+
+// ============================================================================
+// Wave 5: Standalone Sample Orders (أوامر تصنيع العينات المستقلة والتحويل)
+// ============================================================================
+
+export type SampleOrderStatus =
+  | 'DRAFT'
+  | 'IN_PROGRESS'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CONVERTED';
+
+export type SampleMaterialSource = 'CUSTOMER' | 'COMPANY';
+
+export type SampleFileKind = 'IMAGE' | 'PDF' | 'OTHER';
+
+export interface SampleOrderStage {
+  id: string;
+  sampleOrderId: string;
+  name: string;
+  stageType: ProductionStageType;
+  sequence: number;
+  status: string; // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  notes?: string | null;
+  templateSetId?: string | null;
+  templateId?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SampleOrderAttachment {
+  id: string;
+  sampleOrderId: string;
+  fileName: string;
+  url: string;
+  kind: SampleFileKind;
+  uploadedBy?: string | null;
+  uploadedAt: string;
+}
+
+export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stages'> {
+  stages?: Array<{
+    name: string;
+    sequence?: number;
+    stageType?: ProductionStageType;
+    status?: string;
+    notes?: string;
+    templateSetId?: string | null;
+    templateId?: string | null;
+  }>;
+}
+
+export interface SampleOrder {
+  id: string;
+  companyId: string;
+  sampleNumber: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  customer?: {
+    id: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  } | null;
+  brandName?: string | null;
+  productName: string;
+  productId?: string | null;
+  product?: any | null;
+  bomId?: string | null;
+  bom?: any | null;
+  techPackId?: string | null;
+  plannedQuantity: number;
+  size?: string | null;
+  color?: string | null;
+  materialSource: SampleMaterialSource;
+  fee?: number | null;
+  status: SampleOrderStatus;
+  dueDate?: string | null;
+  designNotes?: string | null;
+  resultNotes?: string | null;
+  convertedOrderId?: string | null;
+  convertedOrder?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    plannedQuantity: number;
+    orderType?: string;
+  } | null;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  stages?: SampleOrderStage[];
+  attachments?: SampleOrderAttachment[];
+}
+
+
+// ============================================================================
+// Wave 6: Standard Production Stage Templates Library & Sets
+// ============================================================================
+
+export interface ProductionStageTemplate {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  stageType: ProductionStageType;
+  sequence: number;
+  standardMinutes: number;
+  ratePerPiece: number;
+  executionEntity: StageExecutionEntity;
+  defaultPartnerFactoryId?: string | null;
+  defaultPartnerFactory?: { id: string; name: string; code?: string | null } | null;
+  instructions?: string | null;
+  isActive: boolean;
+  usageCount: number;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductionStageTemplateSetItem {
+  id: string;
+  setId: string;
+  templateId: string;
+  sequence: number;
+  createdAt: string;
+  updatedAt: string;
+  template?: ProductionStageTemplate;
+}
+
+export interface ProductionStageTemplateSet {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  usageCount: number;
+  lastUsedAt?: string | null;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items?: ProductionStageTemplateSetItem[];
+}
 
 export const manufacturingApi = {
   // Settings
@@ -1165,6 +1444,274 @@ export const manufacturingApi = {
     const res = await apiClient.patch(`/manufacturing/reviews/${id}/hide`);
     return res.data;
   },
+
+  // Tech Packs (Wave 4)
+  listTechPacks: async (params?: { status?: string; productId?: string; bomId?: string; search?: string }): Promise<TechPack[]> => {
+    const res = await apiClient.get('/manufacturing/tech-packs', { params });
+    return res.data?.data || [];
+  },
+
+  getTechPack: async (id: string): Promise<TechPack> => {
+    const res = await apiClient.get(`/manufacturing/tech-packs/${id}`);
+    return res.data?.data;
+  },
+
+  createTechPack: async (payload: Partial<TechPack> & { files?: Array<{ fileName: string; url: string; kind?: TechPackFileKind }> }): Promise<TechPack> => {
+    const res = await apiClient.post('/manufacturing/tech-packs', payload);
+    return res.data?.data;
+  },
+
+  updateTechPack: async (id: string, payload: Partial<TechPack>): Promise<{ isNewVersion: boolean; message: string; techPack: TechPack }> => {
+    const res = await apiClient.patch(`/manufacturing/tech-packs/${id}`, payload);
+    return res.data;
+  },
+
+  cloneTechPackVersion: async (id: string, payload?: { name?: string; notes?: string }): Promise<TechPack> => {
+    const res = await apiClient.post(`/manufacturing/tech-packs/${id}/clone-version`, payload || {});
+    return res.data?.data;
+  },
+
+  approveTechPack: async (id: string): Promise<TechPack> => {
+    const res = await apiClient.post(`/manufacturing/tech-packs/${id}/approve`);
+    return res.data?.data;
+  },
+
+  archiveTechPack: async (id: string): Promise<TechPack> => {
+    const res = await apiClient.post(`/manufacturing/tech-packs/${id}/archive`);
+    return res.data?.data;
+  },
+
+  getTechPackVersions: async (id: string): Promise<TechPack[]> => {
+    const res = await apiClient.get(`/manufacturing/tech-packs/${id}/versions`);
+    return res.data?.data || [];
+  },
+
+  uploadTechPackFile: async (id: string, payload: FormData | { url: string; fileName?: string; kind?: string }): Promise<{ file: TechPackFile; isCloned?: boolean; message: string }> => {
+    const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const res = await apiClient.post(`/manufacturing/tech-packs/${id}/files`, payload, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    });
+    return res.data;
+  },
+
+  deleteTechPackFile: async (id: string, fileId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/tech-packs/${id}/files/${fileId}`);
+    return res.data;
+  },
+
+  // Size Charts (Wave 4)
+  listSizeCharts: async (params?: { status?: string; productId?: string; techPackId?: string; search?: string }): Promise<SizeChart[]> => {
+    const res = await apiClient.get('/manufacturing/size-charts', { params });
+    return res.data?.data || [];
+  },
+
+  getSizeChart: async (id: string): Promise<SizeChart> => {
+    const res = await apiClient.get(`/manufacturing/size-charts/${id}`);
+    return res.data?.data;
+  },
+
+  createSizeChart: async (payload: Partial<SizeChart> & { rows?: SizeChartRow[] }): Promise<SizeChart> => {
+    const res = await apiClient.post('/manufacturing/size-charts', payload);
+    return res.data?.data;
+  },
+
+  updateSizeChart: async (id: string, payload: Partial<SizeChart> & { rows?: SizeChartRow[] }): Promise<{ isNewVersion: boolean; message: string; sizeChart: SizeChart }> => {
+    const res = await apiClient.patch(`/manufacturing/size-charts/${id}`, payload);
+    return res.data;
+  },
+
+  cloneSizeChartVersion: async (id: string, payload?: { name?: string; notes?: string }): Promise<SizeChart> => {
+    const res = await apiClient.post(`/manufacturing/size-charts/${id}/clone-version`, payload || {});
+    return res.data?.data;
+  },
+
+  approveSizeChart: async (id: string): Promise<SizeChart> => {
+    const res = await apiClient.post(`/manufacturing/size-charts/${id}/approve`);
+    return res.data?.data;
+  },
+
+  archiveSizeChart: async (id: string): Promise<SizeChart> => {
+    const res = await apiClient.post(`/manufacturing/size-charts/${id}/archive`);
+    return res.data?.data;
+  },
+
+  getSizeChartVersions: async (id: string): Promise<SizeChart[]> => {
+    const res = await apiClient.get(`/manufacturing/size-charts/${id}/versions`);
+    return res.data?.data || [];
+  },
+
+  getSizeChartMatrix: async (id: string): Promise<SizeChartMatrixResponse> => {
+    const res = await apiClient.get(`/manufacturing/size-charts/${id}/matrix`);
+    return res.data?.data;
+  },
+
+  // ==========================================================================
+  // Sample Orders (Wave 5)
+  // ==========================================================================
+
+  listSampleOrders: async (params?: {
+    status?: string;
+    materialSource?: string;
+    customerId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ items: SampleOrder[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> => {
+    const res = await apiClient.get('/manufacturing/sample-orders', { params });
+    return res.data;
+  },
+
+  getSampleOrderById: async (id: string): Promise<SampleOrder> => {
+    const res = await apiClient.get(`/manufacturing/sample-orders/${id}`);
+    return res.data?.data;
+  },
+
+  createSampleOrder: async (data: Partial<SampleOrder> & { stages?: Partial<SampleOrderStage>[] }): Promise<SampleOrder> => {
+    const res = await apiClient.post('/manufacturing/sample-orders', data);
+    return res.data?.data;
+  },
+
+  updateSampleOrder: async (id: string, data: Partial<SampleOrder>): Promise<SampleOrder> => {
+    const res = await apiClient.patch(`/manufacturing/sample-orders/${id}`, data);
+    return res.data?.data;
+  },
+
+  deleteSampleOrder: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/sample-orders/${id}`);
+    return res.data;
+  },
+
+  addSampleStage: async (id: string, stage: Partial<SampleOrderStage>): Promise<SampleOrderStage> => {
+    const res = await apiClient.post(`/manufacturing/sample-orders/${id}/stages`, stage);
+    return res.data?.data;
+  },
+
+  updateSampleStage: async (
+    id: string,
+    stageId: string,
+    data: { status?: string; notes?: string; startedAt?: string; completedAt?: string; name?: string }
+  ): Promise<SampleOrderStage> => {
+    const res = await apiClient.patch(`/manufacturing/sample-orders/${id}/stages/${stageId}`, data);
+    return res.data?.data;
+  },
+
+  uploadSampleFile: async (
+    id: string,
+    payload: FormData | { url: string; fileName: string; kind?: string }
+  ): Promise<SampleOrderAttachment> => {
+    const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const res = await apiClient.post(`/manufacturing/sample-orders/${id}/files`, payload, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    });
+    return res.data?.data;
+  },
+
+  approveSampleOrder: async (id: string, data?: { resultNotes?: string }): Promise<SampleOrder> => {
+    const res = await apiClient.post(`/manufacturing/sample-orders/${id}/approve`, data);
+    return res.data?.data;
+  },
+
+  rejectSampleOrder: async (id: string, data: { resultNotes: string }): Promise<SampleOrder> => {
+    const res = await apiClient.post(`/manufacturing/sample-orders/${id}/reject`, data);
+    return res.data?.data;
+  },
+
+  convertSampleToOrder: async (
+    id: string,
+    data: {
+      plannedQuantity?: number;
+      orderType?: string;
+      bomId?: string;
+      customerId?: string;
+      customerOrderId?: string;
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; message: string; order: ProductionOrder; sampleOrder: SampleOrder }> => {
+    const res = await apiClient.post(`/manufacturing/sample-orders/${id}/convert-to-order`, data);
+    return res.data;
+  },
+
+
+  // ==========================================================================
+  // Wave 6: Stage Templates & Sets Library
+  // ==========================================================================
+
+  listStageTemplates: async (params?: { search?: string; isActive?: boolean | string; stageType?: string; executionEntity?: string }): Promise<ProductionStageTemplate[]> => {
+    const res = await apiClient.get('/manufacturing/stage-templates', { params });
+    return res.data?.data || [];
+  },
+
+  getStageTemplateById: async (id: string): Promise<ProductionStageTemplate> => {
+    const res = await apiClient.get(`/manufacturing/stage-templates/${id}`);
+    return res.data?.data;
+  },
+
+  createStageTemplate: async (data: Partial<ProductionStageTemplate>): Promise<ProductionStageTemplate> => {
+    const res = await apiClient.post('/manufacturing/stage-templates', data);
+    return res.data?.data;
+  },
+
+  updateStageTemplate: async (id: string, data: Partial<ProductionStageTemplate>): Promise<ProductionStageTemplate> => {
+    const res = await apiClient.patch(`/manufacturing/stage-templates/${id}`, data);
+    return res.data?.data;
+  },
+
+  archiveStageTemplate: async (id: string): Promise<ProductionStageTemplate> => {
+    const res = await apiClient.delete(`/manufacturing/stage-templates/${id}`);
+    return res.data?.data;
+  },
+
+  listStageTemplateSets: async (params?: { search?: string; isActive?: boolean | string }): Promise<ProductionStageTemplateSet[]> => {
+    const res = await apiClient.get('/manufacturing/stage-template-sets', { params });
+    return res.data?.data || [];
+  },
+
+  getStageTemplateSetById: async (id: string): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.get(`/manufacturing/stage-template-sets/${id}`);
+    return res.data?.data;
+  },
+
+  createStageTemplateSet: async (data: Partial<ProductionStageTemplateSet> & { itemTemplateIds?: string[] }): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.post('/manufacturing/stage-template-sets', data);
+    return res.data?.data;
+  },
+
+  updateStageTemplateSet: async (id: string, data: Partial<ProductionStageTemplateSet>): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.patch(`/manufacturing/stage-template-sets/${id}`, data);
+    return res.data?.data;
+  },
+
+  archiveStageTemplateSet: async (id: string): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.delete(`/manufacturing/stage-template-sets/${id}`);
+    return res.data?.data;
+  },
+
+  addStageTemplateSetItem: async (setId: string, data: { templateId: string; sequence?: number }): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.post(`/manufacturing/stage-template-sets/${setId}/items`, data);
+    return res.data?.data;
+  },
+
+  removeStageTemplateSetItem: async (setId: string, itemId: string): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.delete(`/manufacturing/stage-template-sets/${setId}/items/${itemId}`);
+    return res.data?.data;
+  },
+
+  reorderStageTemplateSetItems: async (setId: string, itemIds: string[]): Promise<ProductionStageTemplateSet> => {
+    const res = await apiClient.put(`/manufacturing/stage-template-sets/${setId}/reorder`, { itemIds });
+    return res.data?.data;
+  },
+
+  applyStageSetToOrder: async (orderId: string, payload: { setId: string; mode?: 'APPEND' | 'REPLACE_IF_EMPTY' }): Promise<{ success: boolean; count: number; stages: ProductionStage[]; message?: string }> => {
+    const res = await apiClient.post(`/manufacturing/orders/${orderId}/apply-stage-set`, payload);
+    return res.data;
+  },
+
+  applyStageSetToBom: async (bomId: string, payload: { setId: string; mode?: 'APPEND' | 'REPLACE_ALL' }): Promise<{ success: boolean; count: number; stages: BomStandardStage[]; message?: string }> => {
+    const res = await apiClient.post(`/manufacturing/boms/${bomId}/apply-stage-set`, payload);
+    return res.data;
+  },
+
+
 };
 
 // ============================================================================
@@ -1259,5 +1806,5 @@ export const factoryPortalApi = {
     });
     return res.data;
   },
-};
 
+};

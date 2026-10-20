@@ -4,6 +4,7 @@ import {
   Factory,
   ClipboardList,
   ListTree,
+  ListOrdered,
   LineChart,
   Settings,
   LayoutDashboard,
@@ -11,6 +12,9 @@ import {
   Building2,
   Calculator,
   ShieldCheck,
+  BookOpen,
+  Ruler,
+  FlaskConical,
 } from 'lucide-react';
 import { manufacturingApi } from './manufacturingApi';
 
@@ -24,11 +28,15 @@ interface NavItemConfig {
 
 const NAV_ITEMS: NavItemConfig[] = [
   { to: '/manufacturing', label: 'نظرة عامة', icon: LayoutDashboard, end: true },
+  { to: '/manufacturing/samples', label: 'أوامر العينات', icon: FlaskConical },
   { to: '/manufacturing/customer-orders', label: 'أوامر العملاء (التصنيع للغير)', icon: FileText },
   { to: '/manufacturing/orders', label: 'أوامر الإنتاج والتشغيل', icon: ClipboardList },
   { to: '/manufacturing/partner-factories', label: 'المصانع الشركاء', icon: Building2 },
   { to: '/manufacturing/reviews', label: 'مراجعة تحديثات المصانع', icon: ShieldCheck, isReviewTab: true },
   { to: '/manufacturing/boms', label: 'قوائم المكونات (BOM)', icon: ListTree },
+  { to: '/manufacturing/stage-templates', label: 'مكتبة مراحل الإنتاج', icon: ListOrdered },
+  { to: '/manufacturing/tech-packs', label: 'ملفات المنتجات الفنية', icon: BookOpen },
+  { to: '/manufacturing/size-charts', label: 'جداول المقاسات', icon: Ruler },
   { to: '/manufacturing/fabric-calculator', label: 'حاسبة القماش', icon: Calculator },
   { to: '/manufacturing/reports', label: 'تقارير الإنتاج والتكاليف', icon: LineChart },
   { to: '/manufacturing/settings', label: 'إعدادات التصنيع', icon: Settings },
