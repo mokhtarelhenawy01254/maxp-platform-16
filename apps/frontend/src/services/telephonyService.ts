@@ -598,14 +598,12 @@ class TelephonyClientService {
             this.logDiagnostic("OVERLAY_DISPATCHED", { sessionId: data.sessionId });
           }
 
-          // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
+          // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي (فقط عند توفر الموديول وبيئة التطبيق الحقيقي)
           const canTryNative =
-            isNativePluginAvailable ||
-            this.isNativeTelephonyAvailable ||
-            isCapacitorNative() ||
-            (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.())) ||
-            (typeof navigator !== "undefined" && navigator.userAgent?.includes("MaxP-Native-Android")) ||
-            Boolean((window as any)?.Capacitor?.Plugins?.MaxPTelephony);
+            (isNativePluginAvailable || this.isNativeTelephonyAvailable) &&
+            (isCapacitorNative() ||
+              (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.())) ||
+              (typeof navigator !== "undefined" && navigator.userAgent?.includes("MaxP-Native-Android")));
 
           if (canTryNative) {
             try {

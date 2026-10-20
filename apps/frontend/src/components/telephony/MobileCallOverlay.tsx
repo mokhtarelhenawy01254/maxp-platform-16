@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Phone, PhoneCall, X, User, ShoppingBag } from "lucide-react";
+import { Phone, PhoneCall, X, User, ShoppingBag, ExternalLink, AlertTriangle } from "lucide-react";
 import { registerPlugin } from "@capacitor/core";
+import { isCapacitorNative } from "../../config/environment";
 
 interface DialEventData {
   sessionId: string;
@@ -82,19 +83,25 @@ export const MobileCallOverlay: React.FC = () => {
 
   if (!activeCall) return null;
 
+  const isNative = isCapacitorNative();
+
   const handleExecuteDial = async () => {
     const call = activeCall;
     setActiveCall(null);
-    try {
-      await MaxPTelephony.dialCustomer({
-        phone: call.customerPhone,
-        sessionId: call.sessionId,
-        orderId: call.orderId,
-      });
-    } catch {
-      const safePhone = String(call.customerPhone || "").replace(/[^\d+*#]/g, "");
-      window.location.href = `tel:${safePhone}`;
+    if (isNative) {
+      try {
+        await MaxPTelephony.dialCustomer({
+          phone: call.customerPhone,
+          sessionId: call.sessionId,
+          orderId: call.orderId,
+        });
+        return;
+      } catch (e) {
+        console.warn("Native dial failed, fallback to tel:", e);
+      }
     }
+    const safePhone = String(call.customerPhone || "").replace(/[^\d+*#]/g, "");
+    window.location.href = `tel:${safePhone}`;
   };
 
   const handleDismiss = () => {
@@ -154,6 +161,28 @@ export const MobileCallOverlay: React.FC = () => {
             </div>
           )}
         </div>
+
+        {!isNative && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 mb-4 text-xs">
+            <div className="font-bold flex items-center gap-1.5 text-amber-300 mb-1">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>أنت تستخدم متصفح الويب (وضع يدوي)</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-slate-300 mb-2">
+              متصفح Chrome يفتح لوحة الاتصال فقط بأمر أمني من أندرويد. للرنين التلقائي المباشر بدون لمس الشاشة، افتح تطبيق MaxP المثبت (APK).
+            </p>
+            <div className="flex items-center justify-between pt-1 border-t border-amber-500/20 text-[11px]">
+              <span className="text-amber-200/80">للرنين المباشر بدون لمس:</span>
+              <a
+                href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=online.maxp.app;end"
+                className="font-bold text-emerald-400 hover:text-emerald-300 underline inline-flex items-center gap-1"
+              >
+                <span>افتح تطبيق MaxP المثبت</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <button
