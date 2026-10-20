@@ -9,6 +9,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { GripDotsIcon } from "./StudioLayersDrawer";
 import type { StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
+import { buildSectionStyle } from "./utils/studioStyleUtils";
+import { StudioSpacingOverlay } from "./StudioSpacingOverlay";
 
 export function detectElementUnderCursor(target: HTMLElement, sectionSettings?: Record<string, any>) {
   // Ignore clicks on studio chrome, action bar, handles, badges
@@ -230,6 +232,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     position: "relative",
   };
 
+  const resolvedStyle = buildSectionStyle(settings, style);
+
   useEffect(() => {
     if (!contentRef.current) return;
     const prev = contentRef.current.querySelectorAll("[data-studio-element-selected='true']");
@@ -422,7 +426,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={resolvedStyle}
       data-studio-sortable-section="true"
       data-studio-section-index={index}
       data-section-type={sectionType}
@@ -608,20 +612,14 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
             </button>
           </div>
 
-          {/* Colored Spacing Overlay (Padding / Margin) */}
+          {/* Real Spacing Overlay (Padding / Margin) */}
           {showSpacingOverlay && (
-            <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
-              {/* Outer Margin outline in orange */}
-              <div className="absolute inset-0 border border-dashed border-[#e29142]/60" />
-              {/* Inner Padding in green with label */}
-              <div className="absolute inset-[18px] sm:inset-[24px] border border-dashed border-[#3faa6f]/60 bg-[#3faa6f]/10">
-                {resolvedPadding !== undefined && resolvedPadding !== "" && (
-                  <span className="absolute top-1 end-1.5 rounded bg-[#eaf7ef] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2d8554] shadow-xs">
-                    padding {resolvedPadding}
-                  </span>
-                )}
-              </div>
-            </div>
+            <StudioSpacingOverlay
+              settings={settings}
+              sectionLabel={sectionLabel}
+              onUpdateField={onUpdateField}
+              onBatchUpdateFields={onBatchUpdateFields}
+            />
           )}
 
           {/* Subtle blueprint grid overlay */}

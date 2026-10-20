@@ -431,6 +431,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 settings={settings}
                 deviceMode={deviceMode}
                 onUpdateField={onUpdateField}
+                onBatchUpdateFields={onBatchUpdateFields}
               />
             )}
 
@@ -438,6 +439,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
               <StudioInspectorLayoutTab
                 settings={settings}
                 onUpdateField={onUpdateField}
+                onBatchUpdateFields={onBatchUpdateFields}
               />
             )}
 

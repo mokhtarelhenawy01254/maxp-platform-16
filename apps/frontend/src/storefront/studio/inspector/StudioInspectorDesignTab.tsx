@@ -1,12 +1,28 @@
 import React, { useState } from "react";
-import { ChevronDownIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronDownIcon,
+  CodeBracketIcon,
+  PaintBrushIcon,
+  Square3Stack3DIcon,
+  SparklesIcon,
+  LanguageIcon,
+} from "@heroicons/react/24/outline";
 import type { StudioDeviceMode } from "../StudioTypes";
+import {
+  StudioPaddingControl,
+  StudioMarginControl,
+  StudioDimensionsLayoutControl,
+  FreeNumberInput,
+} from "./StudioDimensionControls";
+import { StudioShadowControls } from "./StudioShadowControls";
+import { normalizeArabicDigits, parseFreeNumber } from "../utils/studioStyleUtils";
 
 interface StudioInspectorDesignTabProps {
   sectionType: string;
   settings: Record<string, any>;
   deviceMode?: StudioDeviceMode;
   onUpdateField: (field: string, value: any) => void;
+  onBatchUpdateFields?: (updates: Record<string, any>) => void;
 }
 
 export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> = ({
@@ -14,11 +30,15 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   settings,
   deviceMode = "desktop",
   onUpdateField,
+  onBatchUpdateFields,
 }) => {
   const [openAcc, setOpenAcc] = useState<{ [key: string]: boolean }>({
     fill: true,
-    shadow: true,
     corners: true,
+    shadow: true,
+    spacing: false,
+    layout: false,
+    typography: false,
     css: Boolean(settings.customCss),
   });
 
@@ -27,10 +47,21 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   };
 
   const currentColor = settings.backgroundColor || settings.bgColor || "#ffffff";
-  const shadowMode = settings.shadow || "none";
-  const cornerRadius = settings.borderRadius || "none";
-  const containerWidth = settings.containerWidth || "fluid";
   const customCss = settings.customCss || "";
+
+  // Border radius numeric resolution
+  const currentRadiusNum = parseFreeNumber(
+    settings.borderRadius === "none"
+      ? 0
+      : settings.borderRadius === "small"
+      ? 8
+      : settings.borderRadius === "medium"
+      ? 16
+      : settings.borderRadius === "large"
+      ? 24
+      : settings.borderRadius,
+    0
+  );
 
   const colorSwatches = [
     { label: "أبيض ناصع", val: "#ffffff" },
@@ -40,55 +71,27 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
     { label: "طوبي أنيق", val: "#b4552d" },
   ];
 
-  const cornerOptions = [
-    { id: "none", label: "حادة (0px)" },
-    { id: "small", label: "خفيفة (8px)" },
-    { id: "medium", label: "متوسطة (16px)" },
-    { id: "large", label: "دائرية (24px)" },
-  ];
+  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = normalizeArabicDigits(e.target.value).trim();
+    if (val && !val.startsWith("#") && /^[0-9a-fA-F]+$/.test(val)) {
+      val = "#" + val;
+    }
+    onUpdateField("backgroundColor", val);
+  };
 
   return (
-    <div className="space-y-3.5 select-none text-[11.5px] text-[#17181c]">
-      {/* 1. Layout Mode & Responsive Width */}
-      <div className="space-y-1.5">
-        <span className="block text-[10px] font-bold text-[#8a8f96]">عرض وتخطيط السيكشن</span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onUpdateField("containerWidth", "fluid")}
-            className={`rounded-lg border p-2 text-start transition-all ${
-              containerWidth === "fluid"
-                ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
-                : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
-            }`}
-          >
-            <span className="block text-[10.5px]">عرض كامل (Fluid)</span>
-            <span className="text-[9.5px] text-[#8a8f96] font-normal">100% بعرض الشاشة</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onUpdateField("containerWidth", "contained")}
-            className={`rounded-lg border p-2 text-start transition-all ${
-              containerWidth === "contained"
-                ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
-                : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
-            }`}
-          >
-            <span className="block text-[10.5px]">حاوية مقيدة (Box)</span>
-            <span className="text-[9.5px] text-[#8a8f96] font-normal">بحد أقصى 1240px</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Accordion: Fill & Background Color */}
+    <div className="space-y-3 select-none text-[11.5px] text-[#17181c]">
+      {/* 1. Accordion: خلفية (Fill & Background) */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
           onClick={() => toggleAcc("fill")}
           className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
         >
-          <span>لون خلفية السيكشن</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <PaintBrushIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+            <span>خلفية القسم (Background)</span>
+          </div>
           <ChevronDownIcon
             className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
               openAcc.fill ? "rotate-180" : ""
@@ -116,18 +119,23 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[10.5px] text-[#8a8f96]">لون مخصص (HEX):</span>
+              <span className="text-[10px] text-[#8a8f96]">لون مخصص (HEX):</span>
               <div className="flex items-center gap-1.5">
                 <input
                   type="text"
                   dir="ltr"
                   value={currentColor}
-                  onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
-                  className="w-16 rounded border border-[#ececee] px-1.5 py-0.5 text-[10.5px] font-mono text-[#17181c] text-center"
+                  placeholder="#ffffff"
+                  onChange={handleHexChange}
+                  className="w-20 rounded border border-[#ececee] px-1.5 py-0.5 text-[10.5px] font-mono text-[#17181c] text-center tabular-nums"
                 />
                 <input
                   type="color"
-                  value={currentColor.startsWith("#") && currentColor.length === 7 ? currentColor : "#ffffff"}
+                  value={
+                    currentColor.startsWith("#") && currentColor.length === 7
+                      ? currentColor
+                      : "#ffffff"
+                  }
                   onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
                   className="h-6 w-7 cursor-pointer rounded border border-[#ececee] bg-transparent"
                 />
@@ -137,14 +145,17 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         )}
       </div>
 
-      {/* 3. Accordion: Corners & Border Radius */}
+      {/* 2. Accordion: حدود واستدارة (Borders & Radius) */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
           onClick={() => toggleAcc("corners")}
           className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
         >
-          <span>استدارة الزوايا (Radius)</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <Square3Stack3DIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+            <span>حدود واستدارة الزوايا (Radius)</span>
+          </div>
           <ChevronDownIcon
             className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
               openAcc.corners ? "rotate-180" : ""
@@ -153,15 +164,29 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         </button>
 
         {openAcc.corners && (
-          <div className="p-3 bg-white">
-            <div className="grid grid-cols-2 gap-1.5">
-              {cornerOptions.map((opt) => (
+          <div className="p-3 bg-white space-y-2.5">
+            <FreeNumberInput
+              label="استدارة الزوايا (px)"
+              value={currentRadiusNum}
+              min={0}
+              max={100}
+              placeholder="0"
+              onChange={(val) => onUpdateField("borderRadius", val)}
+            />
+
+            <div className="grid grid-cols-4 gap-1 pt-0.5">
+              {[
+                { label: "0px", val: 0 },
+                { label: "8px", val: 8 },
+                { label: "16px", val: 16 },
+                { label: "24px", val: 24 },
+              ].map((opt) => (
                 <button
-                  key={opt.id}
+                  key={opt.val}
                   type="button"
-                  onClick={() => onUpdateField("borderRadius", opt.id)}
-                  className={`rounded-md border py-1.5 px-2 text-center text-[10.5px] transition-all ${
-                    cornerRadius === opt.id
+                  onClick={() => onUpdateField("borderRadius", opt.val)}
+                  className={`rounded border py-1 text-center text-[9.5px] transition-all ${
+                    currentRadiusNum === opt.val
                       ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
                       : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
                   }`}
@@ -174,14 +199,17 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         )}
       </div>
 
-      {/* 4. Accordion: Shadows */}
+      {/* 3. Accordion: تأثيرات وظلال (Effects & Shadows) */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
           onClick={() => toggleAcc("shadow")}
           className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
         >
-          <span>الظل والتأثيرات (Shadows)</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <SparklesIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+            <span>تأثيرات وظلال مخصصة (Shadows)</span>
+          </div>
           <ChevronDownIcon
             className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
               openAcc.shadow ? "rotate-180" : ""
@@ -190,32 +218,121 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         </button>
 
         {openAcc.shadow && (
-          <div className="p-3 bg-white space-y-1.5">
-            {[
-              { id: "none", label: "بلا ظل (Flat)" },
-              { id: "soft", label: "ظل ناعم خفيف (Soft Subtle)" },
-              { id: "card", label: "ظل بارز (Elevated Card)" },
-            ].map((option) => (
-              <label
-                key={option.id}
-                onClick={() => onUpdateField("shadow", option.id)}
-                className="flex items-center gap-2 cursor-pointer text-[11px] text-[#3f434a] p-1 rounded hover:bg-[#f6f7f8]"
-              >
-                <input
-                  type="radio"
-                  name="shadowMode"
-                  checked={shadowMode === option.id}
-                  onChange={() => onUpdateField("shadow", option.id)}
-                  className="accent-[#2b6cf6]"
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
+          <div className="p-3 bg-white">
+            <StudioShadowControls
+              settings={settings}
+              onUpdateField={onUpdateField}
+              onBatchUpdateFields={onBatchUpdateFields}
+            />
           </div>
         )}
       </div>
 
-      {/* 5. Custom CSS Accordion (Real Pro Feature) */}
+      {/* 4. Accordion: مسافات (Spacing & Padding) */}
+      <div className="overflow-hidden rounded-lg border border-[#ececee]">
+        <button
+          type="button"
+          onClick={() => toggleAcc("spacing")}
+          className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
+        >
+          <span>المسافات والحشوة (Spacing)</span>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
+              openAcc.spacing ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {openAcc.spacing && (
+          <div className="p-3 bg-white space-y-3">
+            <StudioPaddingControl
+              settings={settings}
+              onUpdateField={onUpdateField}
+              onBatchUpdateFields={onBatchUpdateFields}
+            />
+            <div className="border-t border-[#f0f1f3] pt-2">
+              <StudioMarginControl
+                settings={settings}
+                onUpdateField={onUpdateField}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 5. Accordion: تخطيط ومقاسات (Layout & Dimensions) */}
+      <div className="overflow-hidden rounded-lg border border-[#ececee]">
+        <button
+          type="button"
+          onClick={() => toggleAcc("layout")}
+          className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
+        >
+          <span>التخطيط والمقاسات (Dimensions)</span>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
+              openAcc.layout ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {openAcc.layout && (
+          <div className="p-3 bg-white">
+            <StudioDimensionsLayoutControl
+              settings={settings}
+              onUpdateField={onUpdateField}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 6. Accordion: طباعة ونصوص (Typography) */}
+      <div className="overflow-hidden rounded-lg border border-[#ececee]">
+        <button
+          type="button"
+          onClick={() => toggleAcc("typography")}
+          className="flex w-full items-center justify-between bg-[#fafbfc] px-3 py-2 text-start font-medium text-[#3f434a]"
+        >
+          <div className="flex items-center gap-1.5 font-bold">
+            <LanguageIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+            <span>طباعة ونصوص (Typography)</span>
+          </div>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 text-[#9aa0a8] transition-transform ${
+              openAcc.typography ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {openAcc.typography && (
+          <div className="p-3 bg-white space-y-2">
+            <span className="block text-[10px] font-bold text-[#8a8f96]">
+              محاذاة النصوص
+            </span>
+            <div className="flex rounded-lg border border-[#ececee] bg-[#f6f7f8] p-1">
+              {[
+                { id: "right", label: "يمين" },
+                { id: "center", label: "وسط" },
+                { id: "left", label: "يسار" },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onUpdateField("align", item.id)}
+                  className={`flex-1 rounded-md py-1 text-center text-[10.5px] font-medium transition-all ${
+                    (settings.align || "right") === item.id
+                      ? "bg-white text-[#2b6cf6] shadow-xs font-bold"
+                      : "text-[#6f747b] hover:text-[#17181c]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 7. Accordion: Custom CSS */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
           type="button"
@@ -235,7 +352,7 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
 
         {openAcc.css && (
           <div className="p-3 bg-white space-y-2">
-            <p className="text-[10px] text-[#8a8f96] leading-relaxed">
+            <p className="text-[9.5px] text-[#8a8f96] leading-relaxed">
               أضف قواعد CSS مخصصة تُطبق مباشرة على حاوية هذا السيكشن:
             </p>
             <textarea

@@ -318,6 +318,7 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
         {onToggleSpacingOverlay && (
           <button
             type="button"
+            data-testid="toggle-spacing-overlay-btn"
             onClick={onToggleSpacingOverlay}
             className={`hidden sm:flex h-7 sm:h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-medium transition-colors ${
               showSpacingOverlay

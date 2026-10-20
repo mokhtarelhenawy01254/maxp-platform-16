@@ -18,6 +18,7 @@ import { StudioStatusBar } from "./StudioStatusBar";
 import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
 import { StudioPagesPanel } from "./StudioPagesPanel";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
+import { toast } from "sonner";
 import "./storefront-studio.css";
 
 import {
@@ -117,6 +118,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           setShowImagePickerModal(false);
         } else if (showCatalogModal) {
           setShowCatalogModal(false);
+        } else if (showSpacingOverlay) {
+          setShowSpacingOverlay(false);
+          toast.info("تم إخفاء أداة المسافات");
         }
       }
 
@@ -339,7 +343,22 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onZoomChange={setZoomLevel}
         onFitWidth={handleZoomFit}
         showSpacingOverlay={showSpacingOverlay}
-        onToggleSpacingOverlay={() => setShowSpacingOverlay((prev) => !prev)}
+        onToggleSpacingOverlay={() => {
+          setShowSpacingOverlay((prev) => {
+            const next = !prev;
+            if (next) {
+              if (!selectedSectionKey && activeSections.length > 0) {
+                const firstKey = getSectionKey(activeSections[0], 0);
+                setSelectedSectionKey(firstKey);
+                setIsInspectorOpen(true);
+              }
+              toast.info("أداة المسافات مفعّلة: أشرطة الهوامش والحشوات ظاهرة (Esc للإخفاء)");
+            } else {
+              toast.info("تم إخفاء أداة المسافات");
+            }
+            return next;
+          });
+        }}
         isInspectorOpen={isInspectorOpen}
         onToggleInspector={() => setIsInspectorOpen((prev) => !prev)}
         isLeftDrawerOpen={isLeftDrawerOpen}
