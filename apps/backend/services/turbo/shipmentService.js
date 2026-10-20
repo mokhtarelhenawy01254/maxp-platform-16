@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName } = require('../../utils/turbo/addressParser');
+const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName, stripMatchedAreaFromAddress } = require('../../utils/turbo/addressParser');
 const { getTurboGovernorateName, findGovernmentByCity, normalizeArabic } = require('../../utils/turbo/governorateMapper');
 const { FALLBACK_GOVERNMENTS } = require('../../utils/turbo/constants');
 const { handleError } = require('../../utils/turbo/errorHandler');
@@ -58,16 +58,37 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
     'رقم', 'امام', 'خلف', 'بجوار', 'قرب', 'ناصية', 'ناصيه', 'تقاطع', 'مدخل'
   ];
 
-  // 1. Direct exact normalized match with candidateArea
+  const sortedAreas = [...areas].sort((a, b) => (b.name || '').length - (a.name || '').length);
+
+  // 1. Primary AI Match: Scan address text FIRST for canonical areas of this governorate.
+  // If the customer wrote their specific neighborhood in the address (e.g. "سموحة شارع مصطفى النجار"),
+  // this takes precedence over a generic or mismatched candidate area (e.g. "سيدي جابر").
+  if (fullAddressText) {
+    const nAddress = normalizeArabic(fullAddressText);
+    for (const area of sortedAreas) {
+      const na = normalizeArabic(area.name);
+      if (na === nGov || govNamesList.includes(na)) continue;
+
+      if (na.length >= 3 && nAddress.includes(na)) {
+        return area.name;
+      }
+
+      const bareArea = na.startsWith('ال') ? na.slice(2) : na;
+      if (bareArea.length >= 3 && nAddress.includes(bareArea)) {
+        return area.name;
+      }
+    }
+  }
+
+  // 2. Direct exact normalized match with candidateArea
   if (!isCandidateJustGov && nCandidate.length >= 2) {
     const directMatch = areas.find(a => normalizeArabic(a.name) === nCandidate);
     if (directMatch) return directMatch.name;
   }
 
-  // 2. Tokenized search: if candidateArea has street words (e.g. "شارع الطالبية هرم")
+  // 3. Tokenized search in candidateArea if it has street words
   if (!isCandidateJustGov && candidateArea) {
     let cleanedCandidate = nCandidate;
-    // Strip standalone 'ش ' prefix safely without touching letters inside words like 'شبرا' or 'الشروق'
     cleanedCandidate = cleanedCandidate.replace(/(?:^|\s)ش\s+/g, ' ');
 
     for (const noise of streetNoiseWords) {
@@ -76,7 +97,6 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
       }
     }
     const candidateTokens = cleanedCandidate.split(/\s+/).filter(w => w.length >= 3);
-    const sortedAreas = [...areas].sort((a, b) => (b.name || '').length - (a.name || '').length);
 
     for (const area of sortedAreas) {
       const na = normalizeArabic(area.name);
@@ -86,24 +106,14 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
     }
   }
 
-  // 3. Smart search: match against full address text (sorted by longest area name first)
-  const fullCombinedText = `${fullAddressText || ''} ${candidateArea || ''}`;
-  const nAddress = normalizeArabic(fullCombinedText);
-  const sortedAreas = [...areas].sort((a, b) => (b.name || '').length - (a.name || '').length);
-
-  for (const area of sortedAreas) {
-    const na = normalizeArabic(area.name);
-    if (na.length >= 3 && nAddress.includes(na)) {
-      return area.name;
-    }
-  }
-
-  // 4. Colloquial variations without 'ال' (e.g. "طالبية" -> "الطالبية", "هرم" -> "الهرم", "اكتوبر" -> "6 اكتوبر")
-  for (const area of sortedAreas) {
-    const na = normalizeArabic(area.name);
-    const bareArea = na.startsWith('ال') ? na.slice(2) : na;
-    if (bareArea.length >= 3 && nAddress.includes(bareArea)) {
-      return area.name;
+  // 4. Colloquial variations without 'ال' against candidateArea
+  if (!isCandidateJustGov && candidateArea) {
+    for (const area of sortedAreas) {
+      const na = normalizeArabic(area.name);
+      const bareArea = na.startsWith('ال') ? na.slice(2) : na;
+      if (bareArea.length >= 3 && nCandidate.includes(bareArea)) {
+        return area.name;
+      }
     }
   }
 
@@ -116,8 +126,6 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
   }
 
   // 6. Safe Central Fallback for Turbo:
-  // Instead of sending a street name that triggers expected_branch: null (status 99),
-  // pick a central/branch-enabled area for this governorate
   const govAreaMatch = areas.find(a => normalizeArabic(a.name) === nGov || normalizeArabic(a.name).includes(nGov));
   if (govAreaMatch) return govAreaMatch.name;
 
@@ -210,8 +218,13 @@ class ShipmentService {
         }
       }
 
+      // Capture district candidate if rawGov was a district resolved to governorate (e.g. سيدي جابر -> الإسكندرية)
+      const potentialDistrict = (rawGov && normalizeArabic(rawGov) !== normalizeArabic(cleanGovernorate))
+        ? cleanLocationName(rawGov)
+        : null;
+
       // Determine area: prioritize specific area, then smart match from address text against Turbo's canonical area list
-      let candidateArea = cleanLocationName(orderData.area || addressFields.area || addressFields.parsedAddress?.area || city || addressFields.city || '');
+      let candidateArea = cleanLocationName(orderData.area || addressFields.area || addressFields.parsedAddress?.area || potentialDistrict || city || addressFields.city || '');
       let cleanArea = candidateArea;
 
       if (matchedGovId) {
@@ -221,7 +234,7 @@ class ShipmentService {
           let areas = [];
           if ((aData.success === true || aData.success === 1) && aData.feed) areas = Array.isArray(aData.feed) ? aData.feed : [];
           if (areas.length > 0) {
-            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, fullAddressContext, cleanGovernorate);
+            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, cleanAddress || fullAddressContext, cleanGovernorate);
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
@@ -276,7 +289,13 @@ class ShipmentService {
 
       const finalTurboNotes = cleanShippingNotes(notes || `Order #${orderNumber}`, undefined, secondPhone);
 
-      const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
+      const strippedAddress = stripMatchedAreaFromAddress(cleanAddress, cleanArea, {
+        additionalDistrict: potentialDistrict,
+        governorate: cleanGovernorate
+      });
+      const finalAddress = (strippedAddress && strippedAddress.trim().length >= 3)
+        ? strippedAddress.trim()
+        : ((cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`);
       const shipmentData = {
         authentication_key: apiKey, main_client_code: mainClientCode || 37321, remote_order_id: orderNumber || `Order ${orderNumber}`,
         remote_shipment_id: String(orderId || ''), receiver: finalReceiver, phone1: validPhone, phone2: secondPhone || null,
@@ -385,19 +404,46 @@ class ShipmentService {
         if ((data.success === true || data.success === 1) && data.feed) governments = Array.isArray(data.feed) ? data.feed : [];
       } catch (e) { console.warn('⚠️ [TURBO] Failed to fetch governments for update:', e.message); }
 
-      let cleanGovernorate = formattedData.governorate || '';
-      let matchedGovId = null;
-      if (cleanGovernorate && governments.length > 0) {
-        const cleanedLower = cleanGovernorate.toLowerCase().trim();
-        let foundGov = governments.find(g => g.name.toLowerCase().trim() === cleanedLower)
-          || [...governments].sort((a, b) => b.name.length - a.name.length).find(g => { const gn = g.name.toLowerCase().trim(); return cleanedLower.includes(gn) || gn.includes(cleanedLower); });
-        if (foundGov) { cleanGovernorate = foundGov.name; matchedGovId = foundGov.id; }
-      } else if (!cleanGovernorate && formattedData.city) {
-        cleanGovernorate = findGovernmentByCity(formattedData.city, governments);
+      const updateRawGov = formattedData.governorate || '';
+      const updateRawCity = formattedData.city || addressFields.city || '';
+      const updateFullAddressContext = `${cleanAddress} ${rawShippingAddressString(formattedData.shippingAddress, formattedData.customerAddress)}`;
+
+      let cleanGovernorate = getTurboGovernorateName(updateRawGov, updateRawCity, updateFullAddressContext);
+      if (!cleanGovernorate && updateRawCity) {
+        cleanGovernorate = findGovernmentByCity(updateRawCity, governments, updateFullAddressContext);
+      }
+      if (!cleanGovernorate) {
+        cleanGovernorate = 'القاهرة';
       }
 
+      let matchedGovId = null;
+      if (governments.length > 0) {
+        const nTargetGov = normalizeArabic(cleanGovernorate);
+        let foundGov = governments.find(g => normalizeArabic(g.name) === nTargetGov)
+          || governments.find(g => normalizeArabic(g.name).includes(nTargetGov))
+          || [...governments].sort((a, b) => b.name.length - a.name.length).find(g => nTargetGov.includes(normalizeArabic(g.name)));
+        if (foundGov) {
+          cleanGovernorate = foundGov.name;
+          matchedGovId = foundGov.id;
+        }
+      }
+
+      if (!matchedGovId && FALLBACK_GOVERNMENTS && FALLBACK_GOVERNMENTS.length > 0) {
+        const nTargetGov = normalizeArabic(cleanGovernorate);
+        const fbMatch = FALLBACK_GOVERNMENTS.find(g => normalizeArabic(g.name) === nTargetGov)
+          || FALLBACK_GOVERNMENTS.find(g => normalizeArabic(g.name).includes(nTargetGov));
+        if (fbMatch) {
+          cleanGovernorate = fbMatch.name;
+          matchedGovId = fbMatch.id;
+        }
+      }
+
+      const updatePotentialDistrict = (updateRawGov && normalizeArabic(updateRawGov) !== normalizeArabic(cleanGovernorate))
+        ? cleanLocationName(updateRawGov)
+        : null;
+
       // Determine area: prioritize specific area, then smart match from address text against Turbo's canonical area list
-      let candidateArea = cleanLocationName(formattedData.area || addressFields.area || addressFields.parsedAddress?.area || formattedData.city || addressFields.city || '');
+      let candidateArea = cleanLocationName(formattedData.area || addressFields.area || addressFields.parsedAddress?.area || updatePotentialDistrict || formattedData.city || addressFields.city || '');
       let cleanArea = candidateArea;
 
       if (matchedGovId) {
@@ -407,7 +453,7 @@ class ShipmentService {
           let areas = [];
           if ((aData.success === true || aData.success === 1) && aData.feed) areas = Array.isArray(aData.feed) ? aData.feed : [];
           if (areas.length > 0) {
-            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, `${cleanAddress} ${rawShippingAddressString(formattedData.shippingAddress, formattedData.customerAddress)}`, cleanGovernorate);
+            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, cleanAddress || `${cleanAddress} ${rawShippingAddressString(formattedData.shippingAddress, formattedData.customerAddress)}`, cleanGovernorate);
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
@@ -447,7 +493,10 @@ class ShipmentService {
         remote_order_id: formattedData.orderNumber || `Order ${formattedData.orderNumber}`,
         remote_shipment_id: String(formattedData.orderId || ''), receiver: finalReceiver, phone1: validPhone,
         phone2: formattedData.alternativePhone || null, api_followup_phone: senderNumber || validPhone,
-        government: cleanGovernorate, area: cleanArea, address: cleanAddress,
+        government: cleanGovernorate, area: cleanArea, address: stripMatchedAreaFromAddress(cleanAddress, cleanArea, {
+          additionalDistrict: updatePotentialDistrict,
+          governorate: cleanGovernorate
+        }) || cleanAddress,
         notes: cleanShippingNotes(formattedData.notes || `Order #${formattedData.orderNumber}`, undefined, formattedData.alternativePhone),
         invoice_number: String(formattedData.orderNumber || ''),
         order_summary: formattedSummary, return_summary: formattedData.returnSummary || defaultReturnSummary,

@@ -4,7 +4,7 @@
  */
 
 const { getBestShippingAddressFields } = require('./addressParser');
-const { getTurboGovernorateName, isUnspecified } = require('./governorateMapper');
+const { getTurboGovernorateName, isUnspecified, normalizeArabic } = require('./governorateMapper');
 const {
   cleanPhoneNumber,
   cleanCustomerName,
@@ -174,7 +174,7 @@ function formatOrderForTurbo(order, customer, items) {
     city: order.city || addressFields.city,
     // Merged district/area from both address sources (structured JSON + plain text),
     // so it survives even when the street is taken from a plain-text customerAddress.
-    area: addressFields.area || order.area || null,
+    area: addressFields.area || order.area || ((rawGovCandidate && normalizeArabic(rawGovCandidate) !== normalizeArabic(governorate)) ? rawGovCandidate : null),
     governorate: governorate,
     items: formattedItems,
     totalWeight: calculateTotalWeight(formattedItems),

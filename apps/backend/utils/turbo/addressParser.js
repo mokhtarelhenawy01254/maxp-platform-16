@@ -361,6 +361,71 @@ function normalizeGuestShippingAddress(rawShippingAddress) {
   };
 }
 
+
+/**
+ * Strips matched area/district and redundant location keywords from street address.
+ * Preserves street, building, apartment, floor, landmark, etc.
+ * Safety guard: If stripping leaves empty or < 3 chars, preserves original text.
+ */
+function stripMatchedAreaFromAddress(addressText, areaName, options = {}) {
+  if (!addressText || typeof addressText !== 'string') return '';
+  let cleaned = addressText.trim();
+  if (!cleaned) return '';
+
+  const areasToStrip = [];
+  if (areaName && typeof areaName === 'string') {
+    areasToStrip.push(areaName.trim());
+  }
+  if (options.additionalDistrict && typeof options.additionalDistrict === 'string') {
+    areasToStrip.push(options.additionalDistrict.trim());
+  }
+  if (options.governorate && typeof options.governorate === 'string') {
+    areasToStrip.push(options.governorate.trim());
+  }
+
+  const targets = areasToStrip.filter(t => t && t.length >= 2);
+  if (targets.length === 0) return cleaned;
+
+  for (const target of targets) {
+    const bare = target.replace(/^(?:ال|الـ)/, '');
+    const variants = new Set([target, bare, 'ال' + bare]);
+
+    for (const v of Array.from(variants)) {
+      if (v.endsWith('ة')) variants.add(v.slice(0, -1) + 'ه');
+      if (v.endsWith('ه')) variants.add(v.slice(0, -1) + 'ة');
+      if (v.endsWith('ى')) variants.add(v.slice(0, -1) + 'ي');
+      if (v.endsWith('ي')) variants.add(v.slice(0, -1) + 'ى');
+    }
+
+    for (const v of variants) {
+      if (v.length < 2) continue;
+      const escaped = v.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const areaPattern = new RegExp(
+        '(?:^|[\\s,،\\-\\–\\/])(?:(?:منطقة|منطقه|حي|حى|مدينة|مدينه|قسم|مركز)\\s+)?' + escaped + '(?=[\\s,،\\-\\–\\/]|$)',
+        'gi'
+      );
+
+      const potential = cleaned.replace(areaPattern, ' ');
+      const candidateTrimmed = potential
+        .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (candidateTrimmed.length >= 3) {
+        cleaned = candidateTrimmed;
+      }
+    }
+  }
+
+  cleaned = cleaned
+    .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+    .replace(/[،\s]*,[،\s]*,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleaned.length >= 3 ? cleaned : addressText.trim();
+}
+
 module.exports = {
   cleanLocationName,
   parseShippingAddress,
@@ -368,5 +433,6 @@ module.exports = {
   getAddressCompletenessScore,
   getBestShippingAddressFields,
   extractCleanStreetAddress,
+  stripMatchedAreaFromAddress,
   normalizeGuestShippingAddress
 };
