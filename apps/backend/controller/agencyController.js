@@ -1036,8 +1036,29 @@ function resolveRequestedRange(req) {
     return { from, to };
 }
 
-function applyDailyRowsToClient(client, rows, source) {
-    const months = new Set();
+function applyDailyRowsToClient(client, rows, source, period = {}) {
+    const dates = new Set(rows.map((row) => row.date));
+    const months = new Set(rows.map((row) => row.date.slice(0, 7)));
+    const metrics = ['adSpend', 'salesRevenue', 'ordersCount', 'unitsSold'];
+
+    const sumForMonth = (month, key) => {
+        const monthDates = new Set(Array.from(dates).filter((date) => date.startsWith(month)));
+        return (client.dailyLogs || []).reduce(
+            (acc, log) => (monthDates.has(log?.date) ? acc + (Number(log[key]) || 0) : acc),
+            0
+        );
+    };
+
+    // لقطة «قبل» للأيام اللي هنكتبها — أساس حساب الـ delta للشهور المغطاة جزئيًا
+    const before = {};
+    months.forEach((month) => {
+        before[month] = {};
+        metrics.forEach((key) => {
+            before[month][key] = sumForMonth(month, key);
+        });
+    });
+
+    const monthsFullSummary = {};
     let spend = 0;
     let orders = 0;
     let salesRevenue = 0;
@@ -1056,7 +1077,6 @@ function applyDailyRowsToClient(client, rows, source) {
             source,
         });
 
-        months.add(row.date.slice(0, 7));
         spend += Number(row.adSpend) || 0;
         orders += Number(row.ordersCount) || 0;
         if (salesValue !== null) {
@@ -1065,7 +1085,17 @@ function applyDailyRowsToClient(client, rows, source) {
         }
     });
 
-    const rollup = agencyMetaSync.rollupMonthlyLogs(client, Array.from(months));
+    const deltas = {};
+    months.forEach((month) => {
+        deltas[month] = {};
+        metrics.forEach((key) => {
+            deltas[month][key] = round2Safe(sumForMonth(month, key) - before[month][key]);
+        });
+        monthsFullSummary[month] = agencyMetaSync.isMonthFullyCovered(month, period.from, period.to);
+    });
+
+    const fullMonths = new Set(Object.keys(monthsFullSummary).filter((month) => monthsFullSummary[month]));
+    const rollup = agencyMetaSync.rollupMonthlyLogs(client, Array.from(months), { fullMonths, deltas });
 
     return {
         spend: agencyMetaSync.round2(spend),
@@ -1076,6 +1106,10 @@ function applyDailyRowsToClient(client, rows, source) {
         monthsSummary: rollup.monthsSummary,
         dailyCounts: rollup.dailyCounts,
     };
+}
+
+function round2Safe(value) {
+    return Math.round((Number(value) || 0) * 100) / 100;
 }
 
 const syncClientMetaSpend = async (req, res) => {
@@ -1184,7 +1218,10 @@ const syncClientMetaSpend = async (req, res) => {
             });
         }
 
-        const totals = applyDailyRowsToClient(client, dailyRows, agencyMetaSync.META_SOURCE);
+        const totals = applyDailyRowsToClient(client, dailyRows, agencyMetaSync.META_SOURCE, {
+            from: range.from,
+            to: range.to,
+        });
 
         const summary = {
             synced: dailyRows.length,
@@ -1316,7 +1353,10 @@ const importClientCsv = async (req, res) => {
             });
         }
 
-        const totals = applyDailyRowsToClient(client, parsed.rows, agencyMetaSync.CSV_SOURCE);
+        const totals = applyDailyRowsToClient(client, parsed.rows, agencyMetaSync.CSV_SOURCE, {
+            from: parsed.rows[0].date,
+            to: parsed.rows[parsed.rows.length - 1].date,
+        });
         const lastSyncedAt = new Date().toISOString();
         const summary = {
             synced: parsed.rows.length,

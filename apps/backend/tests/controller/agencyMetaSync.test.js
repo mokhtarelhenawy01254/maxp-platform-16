@@ -394,6 +394,86 @@ describe('POST /agency/clients/:clientId/sync-meta', () => {
     expect(monthly.adSpend).toBeCloseTo(350.5, 2);
   });
 
+  it('الشهر المغطى جزئيًا: تعديل تراكمي — أرقام الأيام اللي برّه السحب متضيعش', async () => {
+    const client = baseClient({
+      monthlyLogs: [
+        {
+          month: '2026-09',
+          adSpend: 9550,
+          salesRevenue: 30000,
+          ordersCount: 150,
+          unitsSold: 200,
+          isPaid: false,
+        },
+      ],
+      dailyLogs: [],
+    });
+
+    mockPrisma.company.findUnique.mockResolvedValue({
+      settings: agencySettings([client]),
+      facebookAdsAccessToken: 'COMPANY_META_TOKEN',
+      facebookUserAccessToken: null,
+    });
+    mockGetCampaignInsightsSummary.mockResolvedValue({
+      success: true,
+      data: [
+        metaRow({ date: '2026-09-21', campaignId: 'c1', spend: 1000, purchases: 10, purchaseValue: 4000 }),
+        metaRow({ date: '2026-09-22', campaignId: 'c1', spend: 500, purchases: 5, purchaseValue: 2000 }),
+      ],
+    });
+
+    const res = mockRes();
+    await agencyController.syncClientMetaSpend(
+      mockReq({ body: { from: '2026-09-21', to: '2026-09-30' } }),
+      res
+    );
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.success).toBe(true);
+    expect(payload.data.summary.monthsSummary[0].merged).toBe(true);
+
+    const sep = savedClient().monthlyLogs.find((m) => m.month === '2026-09');
+    // 9550 (يدوي قبل السحب) + 1500 (delta من أيام 21 و22) — مفيش مسح لأرقام 1..20
+    expect(sep.adSpend).toBeCloseTo(11050, 2);
+    expect(sep.salesRevenue).toBeCloseTo(36000, 2);
+    expect(sep.ordersCount).toBe(165);
+    expect(sep.unitsSold).toBe(200);
+  });
+
+  it('الشهر المغطى بالكامل: الإجمالي = مجموع dailyLogs (مصدر الحقيقة)', async () => {
+    const client = baseClient({
+      monthlyLogs: [
+        { month: '2026-09', adSpend: 99999, salesRevenue: 999999, ordersCount: 999, unitsSold: 999, isPaid: true },
+      ],
+      dailyLogs: [
+        { id: 'd1', date: '2026-09-02', month: '2026-09', adSpend: 100, salesRevenue: 0, ordersCount: 1, unitsSold: 0 },
+      ],
+    });
+
+    mockPrisma.company.findUnique.mockResolvedValue({
+      settings: agencySettings([client]),
+      facebookAdsAccessToken: 'COMPANY_META_TOKEN',
+      facebookUserAccessToken: null,
+    });
+    mockGetCampaignInsightsSummary.mockResolvedValue({
+      success: true,
+      data: [metaRow({ date: '2026-09-30', campaignId: 'c1', spend: 400, purchases: 4, purchaseValue: 1600 })],
+    });
+
+    const res = mockRes();
+    await agencyController.syncClientMetaSpend(
+      mockReq({ body: { from: '2026-09-01', to: '2026-09-30' } }),
+      res
+    );
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data.summary.monthsSummary[0].merged).toBe(false);
+
+    const sep = savedClient().monthlyLogs.find((m) => m.month === '2026-09');
+    expect(sep.adSpend).toBeCloseTo(500, 2); // 100 + 400
+    expect(sep.isPaid).toBe(true); // حالة السداد محفوظة
+  });
+
   it('فترة تاريخ غير صحيحة → 400 وصفر نداءات لميتا', async () => {
     mockPrisma.company.findUnique.mockResolvedValue({
       settings: agencySettings([baseClient()]),

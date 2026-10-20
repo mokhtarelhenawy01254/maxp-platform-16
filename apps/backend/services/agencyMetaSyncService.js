@@ -179,11 +179,20 @@ function upsertDailyLog(client, payload) {
 }
 
 /**
- * يعيد حساب صفوف `monthlyLogs` كمجموع للـ dailyLogs لشهور محددة.
+ * يعيد حساب صفوف `monthlyLogs` كمجموع للـ dailyLogs.
+ * - لو الشهر مغطّى بالكامل بفترة السحب ⇒ الإجمالي = مجموع الـ dailyLogs (مصدر الحقيقة).
+ * - لو الشهر مغطّى جزئيًا (مثل سحب آخر 30 يوم اللي بيقطع شهرين) ⇒ تعديل تراكمي (delta):
+ *   الإجمالي القديم + (مجموع الأيام المسحوبة بعد − قبل)، عشان الأيام اللي برّه
+ *   فترة السحب (إدخال يدوي) متضيعش.
  * بيحافظ على isPaid / paidAt / notes الخاصة بالمستخدم.
  */
-function rollupMonthlyLogs(client, months) {
+function rollupMonthlyLogs(client, months, options = {}) {
     if (!Array.isArray(client.monthlyLogs)) client.monthlyLogs = [];
+
+    const fullMonths = options.fullMonths instanceof Set
+        ? options.fullMonths
+        : new Set(options.fullMonths || []);
+    const deltas = options.deltas || {};
 
     const targets = Array.from(new Set((months || []).filter(Boolean)));
     const currentMonthStr = new Date().toISOString().slice(0, 7);
@@ -198,22 +207,39 @@ function rollupMonthlyLogs(client, months) {
         const now = new Date().toISOString();
 
         const idx = client.monthlyLogs.findIndex((log) => log?.month === month);
+        const existing = idx !== -1 ? client.monthlyLogs[idx] : null;
+        const useSum = fullMonths.has(month) || !existing;
+        const monthDelta = deltas[month] || {};
+
+        const nextSpend = useSum
+            ? sumSpend
+            : round2((Number(existing.adSpend) || 0) + (Number(monthDelta.adSpend) || 0));
+        const nextSales = useSum
+            ? sumSales
+            : round2((Number(existing.salesRevenue) || 0) + (Number(monthDelta.salesRevenue) || 0));
+        const nextOrders = useSum
+            ? sumOrders
+            : Math.round((Number(existing.ordersCount) || 0) + (Number(monthDelta.ordersCount) || 0));
+        const nextUnits = useSum
+            ? sumUnits
+            : Math.round((Number(existing.unitsSold) || 0) + (Number(monthDelta.unitsSold) || 0));
+
         if (idx !== -1) {
             client.monthlyLogs[idx] = {
                 ...client.monthlyLogs[idx],
-                adSpend: sumSpend,
-                salesRevenue: sumSales,
-                ordersCount: sumOrders,
-                unitsSold: sumUnits,
+                adSpend: nextSpend,
+                salesRevenue: nextSales,
+                ordersCount: nextOrders,
+                unitsSold: nextUnits,
                 updatedAt: now,
             };
         } else {
             client.monthlyLogs.push({
                 month,
-                adSpend: sumSpend,
-                salesRevenue: sumSales,
-                ordersCount: sumOrders,
-                unitsSold: sumUnits,
+                adSpend: nextSpend,
+                salesRevenue: nextSales,
+                ordersCount: nextOrders,
+                unitsSold: nextUnits,
                 isPaid: false,
                 notes: '',
                 createdAt: now,
@@ -222,29 +248,44 @@ function rollupMonthlyLogs(client, months) {
         }
 
         if (month === currentMonthStr) {
-            client.currentSpend = sumSpend;
-            client.monthlySales = sumSales;
-            client.monthlyOrders = sumOrders;
-            client.monthlyUnits = sumUnits;
+            client.currentSpend = nextSpend;
+            client.monthlySales = nextSales;
+            client.monthlyOrders = nextOrders;
+            client.monthlyUnits = nextUnits;
         }
 
         updatedMonths.push(month);
     });
 
     client.monthlyLogs.sort((a, b) => String(b?.month || '').localeCompare(String(a?.month || '')));
-    return { updatedMonths, monthsSummary: targets.map((month) => {
-        const log = client.monthlyLogs.find((entry) => entry?.month === month) || {};
-        return {
+    return {
+        updatedMonths,
+        monthsSummary: targets.map((month) => {
+            const log = client.monthlyLogs.find((entry) => entry?.month === month) || {};
+            return {
+                month,
+                adSpend: Number(log.adSpend) || 0,
+                ordersCount: Number(log.ordersCount) || 0,
+                salesRevenue: Number(log.salesRevenue) || 0,
+                merged: !fullMonths.has(month),
+            };
+        }),
+        dailyCounts: Object.fromEntries(targets.map((month) => [
             month,
-            adSpend: Number(log.adSpend) || 0,
-            ordersCount: Number(log.ordersCount) || 0,
-            salesRevenue: Number(log.salesRevenue) || 0,
-        };
-    }),
-    dailyCounts: Object.fromEntries(targets.map((month) => [
-        month,
-        (client.dailyLogs || []).filter((d) => String(d?.date || '').startsWith(month)).length,
-    ])) };
+            (client.dailyLogs || []).filter((d) => String(d?.date || '').startsWith(month)).length,
+        ])),
+    };
+}
+
+/** الشهر مغطّى بالكامل بفترة السحب؟ (من أول يوم لآخر يوم في الشهر) */
+function isMonthFullyCovered(month, from, to) {
+    if (!isValidIsoDate(from) || !isValidIsoDate(to) || !month) return false;
+    const year = Number(month.slice(0, 4));
+    const monthIndex = Number(month.slice(5, 7));
+    const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
+    const monthStart = `${month}-01`;
+    const monthEnd = `${month}-${String(lastDay).padStart(2, '0')}`;
+    return from <= monthStart && to >= monthEnd;
 }
 
 // ═══════════════════════════════════════════════════
@@ -483,6 +524,7 @@ module.exports = {
     extractPurchaseMetric,
     upsertDailyLog,
     rollupMonthlyLogs,
+    isMonthFullyCovered,
     parseMetaCsv,
     buildClientSyncMeta,
     round2,
