@@ -48,9 +48,7 @@ interface PurchaseInvoice {
 
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   PENDING: "secondary",
-  PARTIALLY_PAID: "default",
   PAID: "default",
-  OVERDUE: "destructive",
   CANCELLED: "outline",
 };
 
@@ -64,16 +62,35 @@ const PurchaseInvoices: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const statusLabels: Record<string, string> = {
-    PENDING: t("procurement.purchaseInvoices.statusPending"),
-    PARTIALLY_PAID: t("procurement.purchaseInvoices.statusPartiallyPaid"),
-    PAID: t("procurement.purchaseInvoices.statusPaid"),
-    OVERDUE: t("procurement.purchaseInvoices.statusOverdue"),
-    CANCELLED: t("procurement.purchaseInvoices.statusCancelled"),
+    PENDING: t("procurement.purchaseInvoices.statusPending", "غير مدفوعة"),
+    PAID: t("procurement.purchaseInvoices.statusPaid", "مدفوعة"),
+    CANCELLED: t("procurement.purchaseInvoices.statusCancelled", "ملغاة"),
+  };
+
+  const filterOptions = [
+    { value: "all", label: t("procurement.purchaseInvoices.all", "الكل") },
+    { value: "PENDING", label: t("procurement.purchaseInvoices.statusPending", "غير مدفوعة") },
+    { value: "PAID", label: t("procurement.purchaseInvoices.statusPaid", "مدفوعة") },
+    { value: "CANCELLED", label: t("procurement.purchaseInvoices.statusCancelled", "ملغاة") },
+    { value: "OVERDUE", label: t("procurement.purchaseInvoices.statusOverdue", "متأخرة") },
+  ];
+
+  const isInvoiceOverdue = (invoice: PurchaseInvoice) => {
+    if (!invoice.dueDate) return false;
+    if (invoice.status === "PAID" || invoice.status === "CANCELLED") return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(invoice.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
   };
 
   const fetchInvoices = useCallback(async () => {
     try {
-      const response = await apiClient.get("/procurement/purchase-invoices", {
+      const response = await apiClient.get<{
+        invoices: PurchaseInvoice[];
+        pagination: { totalPages: number };
+      }>("/procurement/purchase-invoices", {
         params: { page, limit: 20, search: searchTerm, status: statusFilter },
       });
       setInvoices(response.data.invoices);
@@ -109,14 +126,15 @@ const PurchaseInvoices: React.FC = () => {
               />
             </div>
             <div className="min-w-[200px]">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "")}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("procurement.purchaseInvoices.filterStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("procurement.purchaseInvoices.all")}</SelectItem>
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  {filterOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -157,9 +175,16 @@ const PurchaseInvoices: React.FC = () => {
                 <TableCell>{Number(invoice.paidAmount).toFixed(2)} EGP</TableCell>
                 <TableCell>{Number(invoice.remainingAmount).toFixed(2)} EGP</TableCell>
                 <TableCell>
-                  <Badge variant={statusColors[invoice.status] || "outline"}>
-                    {statusLabels[invoice.status]}
-                  </Badge>
+                  <div className="flex flex-col gap-1 items-start">
+                    <Badge variant={statusColors[invoice.status] || "outline"}>
+                      {statusLabels[invoice.status] ?? invoice.status}
+                    </Badge>
+                    {isInvoiceOverdue(invoice) && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                        {t("procurement.purchaseInvoices.statusOverdue", "متأخر")}
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -206,9 +231,16 @@ const PurchaseInvoices: React.FC = () => {
               title={invoice.supplier.name}
               subtitle={t("procurement.purchaseInvoices.mobileSubtitle", { payments: invoice._count.payments, items: invoice._count.items })}
               status={
-                <Badge variant={statusColors[invoice.status] || "outline"}>
-                  {statusLabels[invoice.status] || invoice.status}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  <Badge variant={statusColors[invoice.status] || "outline"}>
+                    {statusLabels[invoice.status] ?? invoice.status}
+                  </Badge>
+                  {isInvoiceOverdue(invoice) && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                      {t("procurement.purchaseInvoices.statusOverdue", "متأخر")}
+                    </Badge>
+                  )}
+                </div>
               }
               fields={[
                 {

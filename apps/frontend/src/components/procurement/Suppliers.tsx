@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -94,7 +95,7 @@ const StarRating: React.FC<{
 
 const Suppliers: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const tr = (key: string) => String(t(key));
+  const tr = (key: string) => String(t(key as any));
   const isRtl = i18n.language === "ar";
   const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -102,6 +103,10 @@ const Suppliers: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+    open: boolean;
+    supplierId: string | null;
+  }>({ open: false, supplierId: null });
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -126,7 +131,10 @@ const Suppliers: React.FC = () => {
   const fetchSuppliers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/procurement/suppliers", {
+      const response = await apiClient.get<{
+        suppliers: Supplier[];
+        pagination: { totalPages: number };
+      }>("/procurement/suppliers", {
         params: { page, limit: 20, search: searchTerm },
       });
       setSuppliers(response.data.suppliers);
@@ -207,14 +215,19 @@ const Suppliers: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm(tr("procurement.suppliers.deleteConfirm"))) {
-      try {
-        await apiClient.delete(`/procurement/suppliers/${id}`);
-        fetchSuppliers();
-      } catch (error) {
-        console.error("Error deleting supplier:", error);
-      }
+  const handleDelete = (id: string) => {
+    setDeleteConfirmDialog({ open: true, supplierId: id });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmDialog.supplierId) return;
+    try {
+      await apiClient.delete(`/procurement/suppliers/${deleteConfirmDialog.supplierId}`);
+      fetchSuppliers();
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+    } finally {
+      setDeleteConfirmDialog({ open: false, supplierId: null });
     }
   };
 
@@ -600,6 +613,15 @@ const Suppliers: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteConfirmDialog.open}
+        title={t("procurement.suppliers.deleteConfirm", "تأكيد حذف المورد")}
+        content={t("procurement.suppliers.deleteConfirm", "هل أنت متأكد من حذف هذا المورد؟")}
+        confirmColor="error"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirmDialog({ open: false, supplierId: null })}
+      />
     </div>
   );
 };

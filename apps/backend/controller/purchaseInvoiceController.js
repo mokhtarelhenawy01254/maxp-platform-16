@@ -244,7 +244,12 @@ exports.getAllPurchaseInvoices = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = { companyId };
 
-    if (status) where.status = status;
+    if (status === "OVERDUE") {
+      where.status = { notIn: ["PAID", "CANCELLED"] };
+      where.dueDate = { lt: new Date() };
+    } else if (status && status !== "all") {
+      where.status = status;
+    }
     if (supplierId) where.supplierId = supplierId;
     if (search) {
       where.OR = [
@@ -494,15 +499,17 @@ exports.checkOverdueInvoices = async (req, res) => {
       getSharedPrismaClient().purchaseInvoice.findMany({
         where: {
           companyId,
-          status: "PENDING",
+          status: { notIn: ["PAID", "CANCELLED"] },
           dueDate: { lt: new Date() },
         },
       }),
     );
 
     res.json({
+      success: true,
       message: "تم فحص الفواتير المتأخرة",
       count: overdueInvoices.length,
+      overdueInvoices: overdueInvoices.map(normalizePurchaseInvoice),
     });
   } catch (error) {
     console.error("Error checking overdue invoices:", error);

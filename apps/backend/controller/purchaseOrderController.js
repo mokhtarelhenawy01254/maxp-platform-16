@@ -380,7 +380,11 @@ exports.receiveItems = async (req, res) => {
       return res.status(404).json({ message: "أمر الشراء غير موجود" });
     }
 
-    if (order.status !== "ORDERED" && order.status !== "RECEIVED") {
+    if (
+      order.status !== "ORDERED" &&
+      order.status !== "PARTIALLY_RECEIVED" &&
+      order.status !== "RECEIVED"
+    ) {
       return res
         .status(400)
         .json({ message: "لا يمكن استلام أصناف من هذا الأمر" });
@@ -518,7 +522,7 @@ exports.receiveItems = async (req, res) => {
     if (allReceived) {
       newStatus = "RECEIVED";
     } else if (partiallyReceived) {
-      newStatus = "ORDERED";
+      newStatus = "PARTIALLY_RECEIVED";
     }
 
     const finalOrder = await safeQuery(() =>
@@ -537,58 +541,66 @@ exports.receiveItems = async (req, res) => {
 
     if (newStatus === "RECEIVED") {
       try {
-        const lastInvoice = await safeQuery(() =>
+        const existingInvoice = await safeQuery(() =>
           getSharedPrismaClient().purchaseInvoice.findFirst({
-            where: { companyId },
-            orderBy: { createdAt: "desc" },
+            where: { companyId, purchaseOrderId: order.id },
           }),
         );
-        const lastNumber = lastInvoice
-          ? parseInt(lastInvoice.invoiceNumber.split("-").pop())
-          : 0;
-        const invoiceNumber = `PI-${String(lastNumber + 1).padStart(6, "0")}`;
 
-        await safeQuery(() =>
-          getSharedPrismaClient().purchaseInvoice.create({
-            data: {
-              companyId,
-              supplierId: order.supplierId,
-              purchaseOrderId: order.id,
-              invoiceNumber,
-              invoiceDate: new Date(),
-              subtotal: order.subtotal,
-              taxAmount: order.taxAmount,
-              discountAmount: order.discountAmount,
-              shippingCost: order.shippingCost,
-              totalAmount: order.totalAmount,
-              paidAmount: 0,
-              remainingAmount: order.totalAmount,
-              status: "PENDING",
-              createdBy: order.createdBy,
-              purchaseInvoiceItems: {
-                create: order.purchaseOrderItems.map((item) => ({
-                  productId: item.productId,
-                  productName: item.productName,
-                  description: item.description,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                  taxRate: item.taxRate,
-                  discountRate: item.discountRate,
-                  totalPrice: item.totalPrice,
-                })),
+        if (!existingInvoice) {
+          const lastInvoice = await safeQuery(() =>
+            getSharedPrismaClient().purchaseInvoice.findFirst({
+              where: { companyId },
+              orderBy: { createdAt: "desc" },
+            }),
+          );
+          const lastNumber = lastInvoice
+            ? parseInt(lastInvoice.invoiceNumber.split("-").pop())
+            : 0;
+          const invoiceNumber = `PI-${String(lastNumber + 1).padStart(6, "0")}`;
+
+          await safeQuery(() =>
+            getSharedPrismaClient().purchaseInvoice.create({
+              data: {
+                companyId,
+                supplierId: order.supplierId,
+                purchaseOrderId: order.id,
+                invoiceNumber,
+                invoiceDate: new Date(),
+                subtotal: order.subtotal,
+                taxAmount: order.taxAmount,
+                discountAmount: order.discountAmount,
+                shippingCost: order.shippingCost,
+                totalAmount: order.totalAmount,
+                paidAmount: 0,
+                remainingAmount: order.totalAmount,
+                status: "PENDING",
+                createdBy: order.createdBy,
+                purchaseInvoiceItems: {
+                  create: order.purchaseOrderItems.map((item) => ({
+                    productId: item.productId,
+                    productName: item.productName,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    taxRate: item.taxRate,
+                    discountRate: item.discountRate,
+                    totalPrice: item.totalPrice,
+                  })),
+                },
               },
-            },
-          }),
-        );
+            }),
+          );
 
-        await safeQuery(() =>
-          getSharedPrismaClient().supplier.update({
-            where: { id: order.supplierId },
-            data: {
-              currentBalance: { increment: order.totalAmount },
-            },
-          }),
-        );
+          await safeQuery(() =>
+            getSharedPrismaClient().supplier.update({
+              where: { id: order.supplierId },
+              data: {
+                currentBalance: { increment: order.totalAmount },
+              },
+            }),
+          );
+        }
       } catch (invError) {
         console.error("Error creating automated invoice:", invError);
       }

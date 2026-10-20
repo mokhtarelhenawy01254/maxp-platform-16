@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -54,12 +55,10 @@ interface PurchaseOrder {
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   DRAFT: "outline",
   PENDING: "secondary",
-  APPROVED: "default",
-  SENT: "default",
+  ORDERED: "default",
   PARTIALLY_RECEIVED: "secondary",
   RECEIVED: "default",
   CANCELLED: "destructive",
-  CLOSED: "outline",
 };
 
 const PurchaseOrders: React.FC = () => {
@@ -70,21 +69,34 @@ const PurchaseOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    content: string;
+    onConfirm: () => void;
+    confirmColor?: "primary" | "secondary" | "error" | "info" | "success" | "warning";
+  }>({
+    open: false,
+    title: "",
+    content: "",
+    onConfirm: () => {},
+  });
 
   const statusLabels: Record<string, string> = {
-    DRAFT: t("procurement.purchaseOrders.statusDraft"),
-    PENDING: t("procurement.purchaseOrders.statusPending"),
-    APPROVED: t("procurement.purchaseOrders.statusApproved"),
-    SENT: t("procurement.purchaseOrders.statusSent"),
-    PARTIALLY_RECEIVED: t("procurement.purchaseOrders.statusPartiallyReceived"),
-    RECEIVED: t("procurement.purchaseOrders.statusReceived"),
-    CANCELLED: t("procurement.purchaseOrders.statusCancelled"),
-    CLOSED: t("procurement.purchaseOrders.statusClosed"),
+    DRAFT: t("procurement.purchaseOrders.statusDraft", "مسودة"),
+    PENDING: t("procurement.purchaseOrders.statusPending", "في انتظار الموافقة"),
+    ORDERED: t("procurement.purchaseOrders.statusOrdered", "معتمد / قيد التوريد"),
+    PARTIALLY_RECEIVED: t("procurement.purchaseOrders.statusPartiallyReceived", "استلام جزئي"),
+    RECEIVED: t("procurement.purchaseOrders.statusReceived", "تم الاستلام"),
+    CANCELLED: t("procurement.purchaseOrders.statusCancelled", "ملغي"),
   };
 
   const fetchOrders = useCallback(async () => {
     try {
-      const response = await apiClient.get("/procurement/purchase-orders", {
+      const response = await apiClient.get<{
+        orders: PurchaseOrder[];
+        pagination: { totalPages: number };
+      }>("/procurement/purchase-orders", {
         params: { page, limit: 20, search: searchTerm, status: statusFilter },
       });
       setOrders(response.data.orders);
@@ -98,26 +110,42 @@ const PurchaseOrders: React.FC = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const handleApprove = async (id: string) => {
-    if (window.confirm(t("procurement.purchaseOrders.confirmApprove"))) {
-      try {
-        await apiClient.post(`/procurement/purchase-orders/${id}/approve`);
-        fetchOrders();
-      } catch (error) {
-        console.error("Error approving order:", error);
-      }
-    }
+  const handleApprove = (id: string) => {
+    setConfirmDialog({
+      open: true,
+      title: t("procurement.purchaseOrderDetail.confirmApproveTitle", "تأكيد الموافقة"),
+      content: t("procurement.purchaseOrders.confirmApprove", "هل تريد الموافقة على هذا الأمر؟"),
+      confirmColor: "primary",
+      onConfirm: async () => {
+        try {
+          await apiClient.post(`/procurement/purchase-orders/${id}/approve`);
+          fetchOrders();
+        } catch (error) {
+          console.error("Error approving order:", error);
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
-  const handleCancel = async (id: string) => {
-    if (window.confirm(t("procurement.purchaseOrders.confirmCancel"))) {
-      try {
-        await apiClient.post(`/procurement/purchase-orders/${id}/cancel`);
-        fetchOrders();
-      } catch (error) {
-        console.error("Error cancelling order:", error);
-      }
-    }
+  const handleCancel = (id: string) => {
+    setConfirmDialog({
+      open: true,
+      title: t("procurement.purchaseOrderDetail.confirmCancelTitle", "تأكيد الإلغاء"),
+      content: t("procurement.purchaseOrders.confirmCancel", "هل تريد إلغاء هذا الأمر؟"),
+      confirmColor: "error",
+      onConfirm: async () => {
+        try {
+          await apiClient.post(`/procurement/purchase-orders/${id}/cancel`);
+          fetchOrders();
+        } catch (error) {
+          console.error("Error cancelling order:", error);
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -142,7 +170,7 @@ const PurchaseOrders: React.FC = () => {
               />
             </div>
             <div className="min-w-[200px]">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "")}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("procurement.purchaseOrders.filterStatus")} />
                 </SelectTrigger>
@@ -191,7 +219,7 @@ const PurchaseOrders: React.FC = () => {
                 <TableCell>{Number(order.totalAmount).toFixed(2)} EGP</TableCell>
                 <TableCell>
                   <Badge variant={statusColors[order.status] || "outline"}>
-                    {statusLabels[order.status]}
+                    {statusLabels[order.status] ?? order.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -229,7 +257,6 @@ const PurchaseOrders: React.FC = () => {
                       </>
                     )}
                     {order.status !== "RECEIVED" &&
-                      order.status !== "CLOSED" &&
                       order.status !== "CANCELLED" && (
                         <Button
                           variant="ghost"
@@ -260,7 +287,7 @@ const PurchaseOrders: React.FC = () => {
               subtitle={t("procurement.purchaseOrders.mobileItemCount", { count: order._count.items })}
               status={
                 <Badge variant={statusColors[order.status] || "outline"}>
-                  {statusLabels[order.status] || order.status}
+                  {statusLabels[order.status] ?? order.status}
                 </Badge>
               }
               fields={[
@@ -319,7 +346,6 @@ const PurchaseOrders: React.FC = () => {
                     </>
                   )}
                   {order.status !== "RECEIVED" &&
-                    order.status !== "CLOSED" &&
                     order.status !== "CANCELLED" && (
                       <Button
                         variant="ghost"
@@ -348,6 +374,15 @@ const PurchaseOrders: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        content={confirmDialog.content}
+        confirmColor={confirmDialog.confirmColor}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 };
