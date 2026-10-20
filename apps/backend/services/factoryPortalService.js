@@ -324,8 +324,11 @@ class FactoryPortalService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const sanitizedAssignments = stages.map((st) => {
-      const ord = st.order || {};
+    const ManufacturingTechPackService = require('./manufacturingTechPackService');
+
+    const sanitizedAssignments = await Promise.all(
+      stages.map(async (st) => {
+        const ord = st.order || {};
 
       // Aggregate delivered materials across issued vouchers (strictly no unitCost or totalCost)
       const deliveredMaterialsMap = new Map();
@@ -416,8 +419,14 @@ class FactoryPortalService {
           currency: 'EGP',
         },
         attachments: visibleAttachments,
+        techPack: await ManufacturingTechPackService.getApprovedTechPackForOrder(factory.companyId, ord),
+        sizeChart: await ManufacturingTechPackService.getApprovedSizeChartForOrder(
+          factory.companyId,
+          ord
+        ),
       };
-    });
+    })
+  );
 
     // Run strict security audit on the entire payload before returning
     this.auditSanitizedPayload(sanitizedAssignments, 'assignments');

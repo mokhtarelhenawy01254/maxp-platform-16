@@ -98,12 +98,14 @@ export const ManufacturingBomsPage: React.FC = () => {
   const handleOpenEdit = (bom: BillOfMaterials) => {
     setSelectedBom(bom);
     setModalMode('edit');
+    setDrawerOpen(false);
     setModalOpen(true);
   };
 
   const handleOpenClone = (bom: BillOfMaterials) => {
     setSelectedBom(bom);
     setModalMode('clone');
+    setDrawerOpen(false);
     setModalOpen(true);
   };
 
@@ -326,8 +328,15 @@ export const ManufacturingBomsPage: React.FC = () => {
       {/* Modals & Drawer */}
       <BomModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={loadData}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedBom(null);
+        }}
+        onSuccess={() => {
+          setModalOpen(false);
+          setSelectedBom(null);
+          loadData();
+        }}
         initialBom={selectedBom}
         mode={modalMode}
       />
