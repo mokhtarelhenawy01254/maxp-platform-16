@@ -1,33 +1,40 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { IncompleteOrdersFilterBar } from "./IncompleteOrdersFilterBar";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }));
 
+afterEach(() => {
+  cleanup();
+});
+
 describe("IncompleteOrdersFilterBar", () => {
   const defaultProps = {
     searchInput: "",
-    onSearchChange: jest.fn(),
+    onSearchChange: vi.fn(),
     statusFilter: "active",
-    onStatusFilterChange: jest.fn(),
+    onStatusFilterChange: vi.fn(),
     phoneFilter: "all" as const,
-    onPhoneFilterChange: jest.fn(),
+    onPhoneFilterChange: vi.fn(),
     sortValue: "recent" as const,
-    onSortValueChange: jest.fn(),
+    onSortValueChange: vi.fn(),
     limit: 20,
-    onLimitChange: jest.fn(),
-    onRefresh: jest.fn(),
+    onLimitChange: vi.fn(),
+    onRefresh: vi.fn(),
     activeCount: 15,
     lostCount: 3,
     loading: false,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders search input, status pills, phone filter, sort, and pagination limit", () => {

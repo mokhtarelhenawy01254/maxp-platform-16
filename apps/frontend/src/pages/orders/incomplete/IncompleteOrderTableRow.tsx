@@ -1,18 +1,6 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Phone,
-  MessageCircle,
-  ShoppingBag,
-  FileText,
-  Ban,
-  ExternalLink,
-  Copy,
-  Check,
-  Clock,
-  Loader2,
-} from "lucide-react";
 import { useCurrency } from "../../../hooks/useCurrency";
 import type { IncompleteOrder } from "../incompleteUtils";
 import {
@@ -25,13 +13,13 @@ import {
   getLastUpdated,
   getOrderAttribution,
   getRelativeTime,
-  getStatusLabel,
   getValueLabel,
   getValueTier,
 } from "../incompleteUtils";
-import type { OrderAttributionData } from "../types";
-
 import AttributionCell from "./AttributionCell";
+import { IncompleteOrderCustomerCell } from "./IncompleteOrderCustomerCell";
+import { IncompleteOrderStatusCell } from "./IncompleteOrderStatusCell";
+import { IncompleteOrderTableRowActions } from "./IncompleteOrderTableRowActions";
 
 interface IncompleteOrderTableRowProps {
   order: IncompleteOrder;
@@ -100,36 +88,11 @@ export const IncompleteOrderTableRow: React.FC<IncompleteOrderTableRowProps> = (
       }`}
     >
       {/* Customer */}
-      <td className="px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-full bg-muted/80 flex items-center justify-center text-xs font-semibold text-foreground shrink-0 border border-border/50">
-            {name ? name.charAt(0).toUpperCase() : "?"}
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-medium text-foreground truncate max-w-[160px]">
-              {name || (
-                <span className="text-muted-foreground italic">
-                  {t("orders.notSpecified")}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
-              <span
-                className="font-mono tabular-nums truncate max-w-[120px]"
-                title={order.cartId}
-              >
-                {order.cartId.slice(0, 12)}...
-              </span>
-              {governorate && (
-                <>
-                  <span className="text-border">·</span>
-                  <span>{governorate}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </td>
+      <IncompleteOrderCustomerCell
+        name={name}
+        cartId={order.cartId}
+        governorate={governorate}
+      />
 
       {/* Contact */}
       <td className="px-3 py-2.5">
@@ -211,156 +174,23 @@ export const IncompleteOrderTableRow: React.FC<IncompleteOrderTableRowProps> = (
       </td>
 
       {/* Order Status */}
-      <td className="px-3 py-2.5">
-        <div className="flex flex-col gap-1">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border w-fit ${
-              order.status === "lost"
-                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                order.status === "lost" ? "bg-rose-500" : "bg-amber-500"
-              }`}
-            />
-            <span>{getStatusLabel(order.status, t)}</span>
-          </span>
-          {expiry && (
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-                expiry.urgent ? "text-destructive" : "text-muted-foreground"
-              }`}
-            >
-              <Clock className="h-3 w-3" />
-              <span>{expiry.label}</span>
-            </span>
-          )}
-        </div>
-      </td>
+      <IncompleteOrderStatusCell
+        status={order.status}
+        expiry={expiry}
+      />
 
       {/* Actions */}
-      <td className="px-3 py-2.5">
-        <div className="flex items-center gap-1">
-          {/* Call */}
-          {contact.phone ? (
-            <a
-              href={`tel:${contact.phone.replace(/\D/g, "")}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/70 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all"
-              title={t("orders.incompleteCall")}
-              aria-label={t("orders.incompleteCall")}
-            >
-              <Phone className="h-3.5 w-3.5" />
-            </a>
-          ) : (
-            <span
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/40 text-muted-foreground/40 cursor-not-allowed"
-              title={t("orders.incompleteNoPhoneToContact")}
-              aria-label={t("orders.incompleteNoPhoneToContact")}
-            >
-              <Phone className="h-3.5 w-3.5" />
-            </span>
-          )}
-
-          {/* WhatsApp */}
-          {whatsappUrl ? (
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/70 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 transition-all"
-              title={t("orders.incompleteWhatsApp")}
-              aria-label={t("orders.incompleteWhatsApp")}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-            </a>
-          ) : (
-            <span
-              className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/40 text-muted-foreground/40 cursor-not-allowed"
-              title={t("orders.incompleteNoPhoneToContact")}
-              aria-label={t("orders.incompleteNoPhoneToContact")}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-            </span>
-          )}
-
-          {/* Quick Convert */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onConfirmConvert(order.cartId);
-            }}
-            disabled={isConverting}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            title={t("orders.incompleteQuickConvert")}
-            aria-label={t("orders.incompleteQuickConvert")}
-          >
-            {isConverting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ShoppingBag className="h-3.5 w-3.5" />
-            )}
-          </button>
-
-          {/* Log Contact */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenContactModal(order.cartId);
-            }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/70 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
-            title={t("orders.incompleteLogContact") as string}
-            aria-label={t("orders.incompleteLogContact") as string}
-          >
-            <FileText className="h-3.5 w-3.5" />
-          </button>
-
-          {/* Cancel Order */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenCancelModal(order);
-            }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all"
-            title={t("orders.incompleteCancelOrder") as string}
-            aria-label={t("orders.incompleteCancelOrder") as string}
-          >
-            <Ban className="h-3.5 w-3.5" />
-          </button>
-
-          {/* View Details */}
-          <Link
-            to={`/orders/incomplete/${encodeURIComponent(order.cartId)}`}
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/70 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
-            title={t("orders.incompleteViewDetails")}
-            aria-label={t("orders.incompleteViewDetails")}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-
-          {/* Copy ID */}
-          <button
-            type="button"
-            onClick={(e) => onCopyCartId(e, order.cartId)}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-border/70 text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
-            title={t("orders.incompleteCopyId")}
-            aria-label={t("orders.incompleteCopyId")}
-          >
-            {isCopied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
-        </div>
-      </td>
+      <IncompleteOrderTableRowActions
+        order={order}
+        phone={contact.phone}
+        whatsappUrl={whatsappUrl}
+        isConverting={isConverting}
+        isCopied={isCopied}
+        onCopyCartId={onCopyCartId}
+        onConfirmConvert={onConfirmConvert}
+        onOpenContactModal={onOpenContactModal}
+        onOpenCancelModal={onOpenCancelModal}
+      />
     </tr>
   );
 };
