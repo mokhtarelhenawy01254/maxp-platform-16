@@ -103,6 +103,14 @@
       "target": "Target category",
       "noCategory": "No category (remove classification)",
       "submit": "Move products"
+    },
+    "flow": {
+      "categoriesUnit": "categories",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom",
+      "show": "Show",
+      "hide": "Hide"
     }
   }
 }

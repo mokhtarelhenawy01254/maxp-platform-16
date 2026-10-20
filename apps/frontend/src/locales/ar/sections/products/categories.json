@@ -103,6 +103,14 @@
       "target": "الفئة الهدف",
       "noCategory": "بدون فئة (إزالة التصنيف)",
       "submit": "نقل المنتجات"
+    },
+    "flow": {
+      "categoriesUnit": "فئة",
+      "zoomIn": "تكبير",
+      "zoomOut": "تصغير",
+      "zoomReset": "الحجم الأصلي",
+      "show": "عرض",
+      "hide": "طي"
     }
   }
 }

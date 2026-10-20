@@ -16662,6 +16662,14 @@ declare module 'react-i18next' {
             noCategory: string;
             submit: string;
           };
+          flow: {
+            categoriesUnit: string;
+            zoomIn: string;
+            zoomOut: string;
+            zoomReset: string;
+            show: string;
+            hide: string;
+          };
         };
       };
       categoriesAnalytics: {

@@ -22,7 +22,7 @@ import { getImageUrl } from "../../utils/imageUrl";
 import type { AxiosError } from "axios";
 import { CategoryFormModal } from "../../components/category/CategoryFormModal";
 import MoveProductsModal from "../../components/category/MoveProductsModal";
-import CategoryTree from "../../components/category/CategoryTree";
+import CategoryFlowTree from "../../components/category/CategoryFlowTree";
 import type { ManagedCategory } from "../../components/category/types";
 
 type Category = ManagedCategory;
@@ -178,7 +178,7 @@ const Categories: React.FC = () => {
       return;
     }
 
-    if (window.confirm(t("categories.management.delete.confirm"))) {
+    if (window.confirm(t("categories.management.delete.confirm") as string)) {
       try {
         await apiClient.delete(`/products/categories/${category.id}`);
         fetchCategories();
@@ -373,7 +373,7 @@ const Categories: React.FC = () => {
             )}
           </div>
         ) : activeTab === "tree" ? (
-          <CategoryTree
+          <CategoryFlowTree
             categories={categories}
             searchQuery={searchQuery}
             statusFilter={statusFilter}
