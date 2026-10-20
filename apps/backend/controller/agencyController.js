@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
+const FacebookAdsService = require('../services/facebookAdsService');
+const agencyMetaSync = require('../services/agencyMetaSyncService');
 
 function parseAgencyData(settingsRaw) {
     if (!settingsRaw) return { clients: [], approvals: [], settings: {} };
@@ -438,6 +440,7 @@ const logClientPerformance = async (req, res) => {
                 ordersCount: Number(ordersCount) || 0,
                 unitsSold: Number(unitsSold) || 0,
                 notes: (notes || '').trim(),
+                source: 'MANUAL',
                 updatedAt: new Date().toISOString(),
             };
 
@@ -496,6 +499,8 @@ const logClientPerformance = async (req, res) => {
             }
 
             client.updatedAt = new Date().toISOString();
+            client.dataSource = 'MANUAL';
+            client.lastManualEntryAt = client.updatedAt;
             await saveAgencyData(prisma, companyId, agencyData);
 
             return res.json({
@@ -546,6 +551,8 @@ const logClientPerformance = async (req, res) => {
         }
 
         client.updatedAt = new Date().toISOString();
+        client.dataSource = 'MANUAL';
+        client.lastManualEntryAt = client.updatedAt;
         await saveAgencyData(prisma, companyId, agencyData);
 
         res.json({
@@ -1009,7 +1016,357 @@ const deleteApproval = async (req, res) => {
     }
 };
 
-// 7. Public Portal for Client (No Login Needed)
+// 7. Meta Ads spend sync (real Meta Marketing API) + CSV fallback
+// ═══════════════════════════════════════════════════
+// المصدر الوحيد للتوكن: Company.facebookAdsAccessToken / facebookUserAccessToken
+// (نفس مصدر facebookAdsBudgetAlertService.getCompanyAdsAccessToken) — ممنوع توكن جديد.
+
+function resolveRequestedRange(req) {
+    const today = new Date().toISOString().slice(0, 10);
+    const fallback = agencyMetaSync.defaultDateRange(today);
+    const from = String((req.body && req.body.from) || req.query?.from || fallback.from).trim();
+    const to = String((req.body && req.body.to) || req.query?.to || fallback.to).trim();
+
+    if (!agencyMetaSync.isValidIsoDate(from) || !agencyMetaSync.isValidIsoDate(to)) {
+        return { error: 'صيغة التاريخ غير صحيحة، استخدم YYYY-MM-DD' };
+    }
+    if (from > to) {
+        return { error: 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية' };
+    }
+    return { from, to };
+}
+
+function applyDailyRowsToClient(client, rows, source) {
+    const months = new Set();
+    let spend = 0;
+    let orders = 0;
+    let salesRevenue = 0;
+    let salesReportedDays = 0;
+
+    rows.forEach((row) => {
+        const ordersValue = row.ordersReported === false ? null : row.ordersCount;
+        const salesValue = row.salesReported === false || row.salesRevenue === undefined ? null : row.salesRevenue;
+
+        agencyMetaSync.upsertDailyLog(client, {
+            date: row.date,
+            adSpend: row.adSpend,
+            ordersCount: ordersValue,
+            salesRevenue: salesValue,
+            unitsSold: null,
+            source,
+        });
+
+        months.add(row.date.slice(0, 7));
+        spend += Number(row.adSpend) || 0;
+        orders += Number(row.ordersCount) || 0;
+        if (salesValue !== null) {
+            salesRevenue += Number(salesValue) || 0;
+            salesReportedDays += 1;
+        }
+    });
+
+    const rollup = agencyMetaSync.rollupMonthlyLogs(client, Array.from(months));
+
+    return {
+        spend: agencyMetaSync.round2(spend),
+        orders,
+        salesRevenue: agencyMetaSync.round2(salesRevenue),
+        salesReportedDays,
+        months: rollup.updatedMonths,
+        monthsSummary: rollup.monthsSummary,
+        dailyCounts: rollup.dailyCounts,
+    };
+}
+
+const syncClientMetaSpend = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { clientId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: {
+                settings: true,
+                facebookAdsAccessToken: true,
+                facebookUserAccessToken: true,
+            },
+        });
+
+        const agencyData = parseAgencyData(company?.settings);
+        const client = agencyData.clients.find((c) => c.id === clientId);
+        if (!client) {
+            return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        }
+
+        const adAccountId = agencyMetaSync.normalizeAdAccountId(client.adAccountId);
+        if (!adAccountId || adAccountId === 'act_') {
+            return res.status(400).json({
+                success: false,
+                code: 'MISSING_AD_ACCOUNT_ID',
+                message: `العميل "${client.name}" مش مربوط بحساب إعلاني على ميتا. ضيف "معرف الحساب الإعلاني" (act_...) من تعديل العميل الأول، وبعدها أعد السحب.`,
+                clientId,
+            });
+        }
+
+        const accessToken = agencyMetaSync.pickCompanyAdsToken(company);
+        if (!accessToken) {
+            return res.status(400).json({
+                success: false,
+                code: 'MISSING_META_TOKEN',
+                message: 'مفيش توكن ميتا محفوظ للشركة. اربط حساب Meta Ads من إعدادات الشركة (نفس توكن تنبيهات ميزانية فيسبوك) وبعدها أعد المحاولة. مفيش أي أرقام تم تسجيلها.',
+                clientId,
+            });
+        }
+
+        const range = resolveRequestedRange(req);
+        if (range.error) {
+            return res.status(400).json({ success: false, code: 'INVALID_DATE_RANGE', message: range.error });
+        }
+
+        let insightResult;
+        try {
+            const adsService = new FacebookAdsService(accessToken, adAccountId);
+            insightResult = await adsService.getCampaignInsightsSummary(
+                adAccountId,
+                { since: range.from, until: range.to },
+                { timeIncrement: 1 }
+            );
+        } catch (metaError) {
+            console.error(`❌ [AGENCY] sync-meta threw for client ${clientId} (company ${companyId}):`, metaError?.message || metaError);
+            return res.status(502).json({
+                success: false,
+                code: 'META_SYNC_FAILED',
+                message: 'فشل الاتصال بواجهة ميتا الإعلانية. لم يتم تعديل أي أرقام — راجع سجل السيرفر للسبب الحقيقي.',
+                reason: metaError?.message || 'unknown_error',
+            });
+        }
+
+        if (!insightResult?.success) {
+            const rawError = insightResult?.error;
+            const reason = typeof rawError === 'string' ? rawError : JSON.stringify(rawError || { message: 'unknown_error' });
+            console.error(`❌ [AGENCY] sync-meta failed for client ${clientId} (company ${companyId}, ${adAccountId}):`, reason);
+            return res.status(502).json({
+                success: false,
+                code: 'META_SYNC_FAILED',
+                message: 'ميتا رجّعت خطأ أثناء سحب الإنفاق. لم يتم تعديل أي أرقام — راجع سجل السيرفر لسبب الخطأ.',
+                reason,
+                adAccountId,
+            });
+        }
+
+        const dailyRows = agencyMetaSync.aggregateInsightsByDate(insightResult.data);
+        const lastSyncedAt = new Date().toISOString();
+
+        if (dailyRows.length === 0) {
+            const emptySummary = {
+                synced: 0,
+                spend: 0,
+                orders: 0,
+                period: { from: range.from, to: range.to },
+                source: agencyMetaSync.META_SOURCE,
+                adAccountId,
+                note: 'ميتا لم ترجع أي صفوف إنفاق لهذه الفترة (الحساب متوقف أو الفترة فاضية) — لم يُكتب أي صف.',
+            };
+            Object.assign(client, agencyMetaSync.buildClientSyncMeta(client, {
+                source: agencyMetaSync.META_SOURCE,
+                period: { from: range.from, to: range.to },
+                lastSyncedAt,
+                summary: emptySummary,
+            }));
+            client.updatedAt = lastSyncedAt;
+            await saveAgencyData(prisma, companyId, agencyData);
+
+            return res.json({
+                success: true,
+                message: 'تم الاتصال بميتا لكن مفيش بيانات إنفاق في الفترة المطلوبة، لم يُسجَّل أي صف.',
+                data: { summary: emptySummary, lastSyncedAt },
+            });
+        }
+
+        const totals = applyDailyRowsToClient(client, dailyRows, agencyMetaSync.META_SOURCE);
+
+        const summary = {
+            synced: dailyRows.length,
+            spend: totals.spend,
+            orders: totals.orders,
+            period: { from: range.from, to: range.to },
+            source: agencyMetaSync.META_SOURCE,
+            adAccountId,
+            salesRevenue: totals.salesRevenue,
+            months: totals.months,
+            monthsSummary: totals.monthsSummary,
+            dailyCounts: totals.dailyCounts,
+        };
+
+        if (totals.salesReportedDays === 0) {
+            summary.unavailableMetrics = ['salesRevenue', 'unitsSold'];
+            summary.note = 'ميتا لم ترجع قيمة المبيعات/القطع لهذه الفترة — تم تحديث الإنفاق والأوردرات فقط والحفاظ على قيم المبيعات والقطع اليدوية.';
+        }
+
+        Object.assign(client, agencyMetaSync.buildClientSyncMeta(client, {
+            source: agencyMetaSync.META_SOURCE,
+            period: { from: range.from, to: range.to },
+            lastSyncedAt,
+            summary,
+        }));
+        client.updatedAt = lastSyncedAt;
+
+        await saveAgencyData(prisma, companyId, agencyData);
+
+        console.log(`✅ [AGENCY] sync-meta client=${clientId} company=${companyId} days=${dailyRows.length} spend=${totals.spend}`);
+
+        return res.json({
+            success: true,
+            message: `تم سحب ${dailyRows.length} يوم من ميتا وتحديث سجلات العميل بدون تكرار.`,
+            data: {
+                summary,
+                lastSyncedAt,
+                dataSource: agencyMetaSync.META_SOURCE,
+                client: {
+                    id: client.id,
+                    name: client.name,
+                    adAccountId: client.adAccountId,
+                    currentSpend: client.currentSpend,
+                    monthlySales: client.monthlySales,
+                    monthlyOrders: client.monthlyOrders,
+                    dataSource: client.dataSource,
+                    lastSyncedAt: client.lastSyncedAt,
+                },
+            },
+        });
+    } catch (error) {
+        console.error('❌ [AGENCY] syncClientMetaSpend error:', error);
+        return res.status(500).json({ success: false, message: 'فشل سحب بيانات ميتا', error: error.message });
+    }
+};
+
+function extractCsvText(req) {
+    if (req.file && req.file.buffer) return req.file.buffer.toString('utf8');
+    if (typeof req.body === 'string') return req.body;
+    if (req.body && typeof req.body.csv === 'string') return req.body.csv;
+    if (req.body && typeof req.body.csvText === 'string') return req.body.csvText;
+    if (req.body && typeof req.body.data === 'string') return req.body.data;
+    if (req.body && Array.isArray(req.body.rows)) {
+        const cell = (value) => `"${String(value === undefined || value === null ? '' : value).replace(/"/g, '""')}"`;
+        const lines = ['Date,Campaign Name,Amount Spent,Purchases'];
+        req.body.rows.forEach((row) => {
+            if (!row || typeof row !== 'object') return;
+            lines.push([
+                row.Date ?? row.date,
+                row['Campaign Name'] ?? row.campaignName ?? row.campaign ?? '',
+                row['Amount Spent'] ?? row.amountSpent ?? row.spend,
+                row.Purchases ?? row.purchases ?? row.orders ?? '',
+            ].map(cell).join(','));
+        });
+        return lines.join('\n');
+    }
+    return '';
+}
+
+const importClientCsv = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { clientId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const csvText = extractCsvText(req);
+        if (!csvText || !String(csvText).trim()) {
+            return res.status(400).json({
+                success: false,
+                code: 'MISSING_CSV',
+                message: 'مفيش ملف CSV في الطلب. ابعته كـ multipart (حقل file) أو كنص في الحقل csv.',
+            });
+        }
+
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true },
+        });
+
+        const agencyData = parseAgencyData(company?.settings);
+        const client = agencyData.clients.find((c) => c.id === clientId);
+        if (!client) {
+            return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        }
+
+        let parsed;
+        try {
+            parsed = agencyMetaSync.parseMetaCsv(csvText, { maxRejectedSamples: 20 });
+        } catch (parseError) {
+            return res.status(400).json({
+                success: false,
+                code: parseError.code || 'INVALID_CSV',
+                message: parseError.message,
+                missingHeaders: parseError.missingHeaders,
+                receivedHeaders: parseError.headerCells,
+            });
+        }
+
+        if (parsed.rows.length === 0) {
+            return res.status(400).json({
+                success: false,
+                code: 'NO_VALID_ROWS',
+                message: `مفيش صفوف صالحة في الملف (${parsed.rejectedCount} صف مرفوض من ${parsed.totalLines}). لم يتم تعديل أي أرقام.`,
+                data: {
+                    rejectedRows: parsed.rejectedCount,
+                    rejectedSamples: parsed.rejected,
+                    warnings: parsed.warnings,
+                },
+            });
+        }
+
+        const totals = applyDailyRowsToClient(client, parsed.rows, agencyMetaSync.CSV_SOURCE);
+        const lastSyncedAt = new Date().toISOString();
+        const summary = {
+            synced: parsed.rows.length,
+            spend: totals.spend,
+            orders: totals.orders,
+            period: {
+                from: parsed.rows[0].date,
+                to: parsed.rows[parsed.rows.length - 1].date,
+            },
+            source: agencyMetaSync.CSV_SOURCE,
+            rejectedRows: parsed.rejectedCount,
+            totalRows: parsed.totalLines,
+            months: totals.months,
+            monthsSummary: totals.monthsSummary,
+            dailyCounts: totals.dailyCounts,
+            warnings: parsed.warnings,
+        };
+
+        Object.assign(client, agencyMetaSync.buildClientSyncMeta(client, {
+            source: agencyMetaSync.CSV_SOURCE,
+            period: summary.period,
+            lastSyncedAt,
+            summary,
+        }));
+        client.updatedAt = lastSyncedAt;
+
+        await saveAgencyData(prisma, companyId, agencyData);
+
+        console.log(`✅ [AGENCY] import-csv client=${clientId} company=${companyId} days=${parsed.rows.length} rejected=${parsed.rejectedCount}`);
+
+        return res.json({
+            success: true,
+            message: parsed.rejectedCount > 0
+                ? `تم استيراد ${parsed.rows.length} يوم من ملف ميتا، وتم رفض ${parsed.rejectedCount} صف.`
+                : `تم استيراد ${parsed.rows.length} يوم من ملف ميتا بنجاح.`,
+            data: {
+                summary,
+                lastSyncedAt,
+                dataSource: agencyMetaSync.CSV_SOURCE,
+                rejectedRows: parsed.rejectedCount,
+                rejectedSamples: parsed.rejected,
+            },
+        });
+    } catch (error) {
+        console.error('❌ [AGENCY] importClientCsv error:', error);
+        return res.status(500).json({ success: false, message: 'فشل استيراد ملف CSV', error: error.message });
+    }
+};
+
+// 8. Public Portal for Client (No Login Needed)
 const getPublicApproval = async (req, res) => {
     try {
         const { token } = req.params;
@@ -1134,4 +1491,6 @@ module.exports = {
     deleteApproval,
     getPublicApproval,
     respondPublicApproval,
+    syncClientMetaSpend,
+    importClientCsv,
 };

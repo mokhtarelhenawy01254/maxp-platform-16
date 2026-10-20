@@ -43,6 +43,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { AgencyPerformanceModal, DailyLog } from "./AgencyPerformanceModal";
+import AgencyMetaSyncControl from "./AgencyMetaSyncControl";
 
 export type PricingModel =
   | "RETAINER"
@@ -94,6 +95,9 @@ interface AgencyClient {
   monthlyUnits?: number;
   isOffPlatform?: boolean;
   adAccountId?: string;
+  dataSource?: "META" | "CSV" | "MANUAL" | string;
+  lastSyncedAt?: string;
+  lastSyncSource?: string;
   status: "active" | "lead" | "paused" | "completed";
   notes?: string;
   extraServices?: ExtraServiceItem[];
@@ -1378,6 +1382,15 @@ export default function AgencyDashboard() {
                             </div>
                           </div>
                         )}
+
+                        {/* مصدر الأرقام + سحب الإنفاق الحقيقي من ميتا */}
+                        <AgencyMetaSyncControl
+                          clientId={client.id}
+                          adAccountId={client.adAccountId}
+                          dataSource={client.dataSource}
+                          lastSyncedAt={client.lastSyncedAt}
+                          onSynced={fetchData}
+                        />
 
                         {/* Action buttons on client card */}
                         <div className="grid grid-cols-2 gap-2 pt-1">

@@ -2993,7 +2993,7 @@ class FacebookAdsService {
   /**
    * جلب ملخص أداء الحملات من حساب الإعلانات دفعة واحدة
    */
-  async getCampaignInsightsSummary(adAccountId = null, dateRange = null) {
+  async getCampaignInsightsSummary(adAccountId = null, dateRange = null, options = {}) {
     try {
       const accountId = adAccountId || this.getAccountId();
 
@@ -3007,7 +3007,7 @@ class FacebookAdsService {
 
       const params = {
         access_token: this.accessToken,
-        level: 'campaign',
+        level: options?.level || 'campaign',
         fields: [
           'campaign_id',
           'campaign_name',
@@ -3033,6 +3033,16 @@ class FacebookAdsService {
           since: dateRange.since,
           until: dateRange.until
         });
+      }
+
+      // اختياري (backwards-compatible): تفصيل زمني مخصص، مثل time_increment=1 لسحب
+      // إنفاق Agency OS يومًا بيوم. الافتراضي بدون time_increment = نفس السلوك القديم.
+      const timeIncrement = options?.timeIncrement;
+      if (timeIncrement !== undefined && timeIncrement !== null) {
+        params.time_increment = timeIncrement;
+        if (!params.fields.split(',').includes('date_start')) {
+          params.fields = `date_start,date_stop,${params.fields}`;
+        }
       }
 
       let nextUrl = `${this.baseUrl}/${normalizedAccountId}/insights`;
