@@ -1,23 +1,30 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ConfirmationQueueFilterBar } from "./ConfirmationQueueFilterBar";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => (opts && opts.defaultValue ? opts.defaultValue : key),
+    t: (key: string, opts?: { defaultValue?: string }) => (opts && opts.defaultValue ? opts.defaultValue : key),
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("ConfirmationQueueFilterBar", () => {
   const defaultProps = {
     searchInput: "",
-    setSearchInput: jest.fn(),
+    setSearchInput: vi.fn(),
     statusFilter: "",
-    setStatusFilter: jest.fn(),
+    setStatusFilter: vi.fn(),
     sourceFilter: "",
-    setSourceFilter: jest.fn(),
+    setSourceFilter: vi.fn(),
     onlyUnassigned: false,
-    setOnlyUnassigned: jest.fn(),
+    setOnlyUnassigned: vi.fn(),
     statusOptions: [
       { value: "", label: "كل الحالات" },
       { value: "pending", label: "قيد الانتظار" },
@@ -30,8 +37,8 @@ describe("ConfirmationQueueFilterBar", () => {
     activeQueueFilterCount: 0,
     statusFilterLabel: "كل الحالات",
     sourceFilterLabel: "كل المصادر",
-    onOpenMobileFilters: jest.fn(),
-    setPage: jest.fn(),
+    onOpenMobileFilters: vi.fn(),
+    setPage: vi.fn(),
   };
 
   it("renders search bar and filter controls cleanly", () => {
@@ -46,7 +53,7 @@ describe("ConfirmationQueueFilterBar", () => {
   });
 
   it("calls setSearchInput when typing in search field", () => {
-    const setSearchInput = jest.fn();
+    const setSearchInput = vi.fn();
     render(<ConfirmationQueueFilterBar {...defaultProps} setSearchInput={setSearchInput} />);
 
     const input = screen.getByPlaceholderText(/بحث باسم العميل، الهاتف، أو رقم الطلب/i);
@@ -56,7 +63,7 @@ describe("ConfirmationQueueFilterBar", () => {
   });
 
   it("triggers onOpenMobileFilters on mobile button click", () => {
-    const onOpenMobileFilters = jest.fn();
+    const onOpenMobileFilters = vi.fn();
     render(
       <ConfirmationQueueFilterBar
         {...defaultProps}
