@@ -12,6 +12,11 @@ import {
   AlertCircle,
   Power,
   RotateCw,
+  Link2,
+  Copy,
+  Check,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import { manufacturingApi, PartnerFactory } from '../manufacturingApi';
@@ -41,6 +46,10 @@ export const PartnerFactoriesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingFactory, setEditingFactory] = useState<PartnerFactory | null>(null);
 
+  // Copy feedback state
+  const [copyFeedbackId, setCopyFeedbackId] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
   const fetchFactories = async () => {
     try {
       setLoading(true);
@@ -57,6 +66,61 @@ export const PartnerFactoriesPage: React.FC = () => {
   useEffect(() => {
     fetchFactories();
   }, []);
+
+  const getFullPortalUrl = (token?: string | null) => {
+    if (!token) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/factory-portal?token=${token}`;
+  };
+
+  const handleCopyPortalLink = async (factory: PartnerFactory) => {
+    try {
+      let token = factory.accessToken;
+      if (!token) {
+        const res = await manufacturingApi.generatePortalLink(factory.id);
+        token = res.accessToken;
+        await fetchFactories();
+      }
+      const url = getFullPortalUrl(token);
+      await navigator.clipboard.writeText(url);
+      setCopyFeedbackId(factory.id);
+      setActionSuccess(`تم نسخ رابط بوابة المصنع (${factory.name}) بنجاح`);
+      setTimeout(() => setCopyFeedbackId(null), 3000);
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'تعذر نسخ الرابط');
+    }
+  };
+
+  const handleGeneratePortalLink = async (factory: PartnerFactory) => {
+    try {
+      await manufacturingApi.generatePortalLink(factory.id);
+      setActionSuccess(`تم توليد رابط جديد لبوابة ${factory.name}`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      await fetchFactories();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'تعذر توليد الرابط');
+    }
+  };
+
+  const handleRotatePortalLink = async (factory: PartnerFactory) => {
+    if (!confirm(`هل أنت متأكد من رغبتك في تجديد رابط بوابة "${factory.name}"؟ الرابط القديم سيتوقف فوراً.`)) {
+      return;
+    }
+    await handleGeneratePortalLink(factory);
+  };
+
+  const handleTogglePortal = async (factory: PartnerFactory) => {
+    try {
+      const nextState = !factory.portalEnabled;
+      await manufacturingApi.togglePortalLink(factory.id, nextState);
+      setActionSuccess(nextState ? `تم تفعيل بوابة ${factory.name}` : `تم إيقاف بوابة ${factory.name}`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      await fetchFactories();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'تعذر تغيير حالة البوابة');
+    }
+  };
 
   const filteredFactories = useMemo(() => {
     return factories.filter((f) => {
@@ -221,6 +285,22 @@ export const PartnerFactoriesPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Success / Action Notification */}
+        {actionSuccess && (
+          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{actionSuccess}</span>
+            </div>
+            <button
+              onClick={() => setActionSuccess(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Error Notification */}
         {error && (
           <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-sm flex items-center gap-3">
@@ -263,6 +343,7 @@ export const PartnerFactoriesPage: React.FC = () => {
                     <th className="py-3 px-4">مسؤول التواصل</th>
                     <th className="py-3 px-4">المراحل المسندة</th>
                     <th className="py-3 px-4">إجمالي تكلفة العمالة</th>
+                    <th className="py-3 px-4">بوابة المصنع (رابط آمن)</th>
                     <th className="py-3 px-4">الحالة</th>
                     <th className="py-3 px-4 text-center">إجراءات</th>
                   </tr>
@@ -275,6 +356,9 @@ export const PartnerFactoriesPage: React.FC = () => {
                       completedStagesCount: 0,
                       totalLaborCost: 0,
                     };
+
+                    const isPortalReady = Boolean(factory.portalEnabled && factory.accessToken);
+                    const isCopied = copyFeedbackId === factory.id;
 
                     return (
                       <tr
@@ -351,6 +435,76 @@ export const PartnerFactoriesPage: React.FC = () => {
                             maximumFractionDigits: 2,
                           })}{' '}
                           <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+                        </td>
+
+                        {/* Factory Portal Link Column */}
+                        <td className="py-3 px-4">
+                          {isPortalReady ? (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleCopyPortalLink(factory)}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                    isCopied
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                                  }`}
+                                  title="نسخ الرابط لمشاركته مع المصنع عبر واتساب أو البريد"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check className="w-3 h-3" />
+                                      <span>تم النسخ!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3 h-3" />
+                                      <span>نسخ الرابط</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <button
+                                  onClick={() => handleRotatePortalLink(factory)}
+                                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                  title="تجديد / تدوير الرابط (إلغاء القديم وتوليد رابط جديد)"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleTogglePortal(factory)}
+                                  className="p-1 rounded text-amber-600 hover:bg-amber-500/10"
+                                  title="إيقاف البوابة مؤقتاً"
+                                >
+                                  <Power className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              <div className="text-[10px] text-muted-foreground">
+                                {factory.portalLastAccessAt ? (
+                                  <span>
+                                    آخر دخول: {new Date(factory.portalLastAccessAt).toLocaleDateString('ar-EG', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span>لم يتم الدخول بعد</span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleGeneratePortalLink(factory)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                            >
+                              <Link2 className="w-3 h-3" />
+                              <span>توليد رابط البوابة</span>
+                            </button>
+                          )}
                         </td>
 
                         <td className="py-3.5 px-4">

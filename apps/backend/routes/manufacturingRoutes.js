@@ -65,14 +65,25 @@ router.get('/partner-factories/:id', controller.getPartnerFactoryById);
 router.patch('/partner-factories/:id', controller.updatePartnerFactory);
 router.delete('/partner-factories/:id', controller.deletePartnerFactory);
 
+// Partner Factories Portal Links (Wave 3)
+router.post('/partner-factories/:id/portal-link/generate', controller.generatePartnerFactoryPortalLink);
+router.post('/partner-factories/:id/portal-link/toggle', controller.togglePartnerFactoryPortalLink);
+router.post('/partner-factories/:id/portal-link/revoke', controller.revokePartnerFactoryPortalLink);
+
 // Stage External Execution & Factory Events
 router.patch('/orders/:orderId/stages/:stageId/assignment', controller.assignStageExecution);
 router.post('/orders/:orderId/stages/:stageId/factory-events', controller.recordStageFactoryEvent);
 
-// Manufacturing Attachments
+// Manufacturing Attachments & Management Review System (Wave 3)
 router.get('/orders/:id/attachments', controller.listOrderAttachments);
 router.post('/attachments', controller.createAttachment);
 router.delete('/attachments/:id', controller.deleteAttachment);
+
+router.get('/reviews', controller.listReviews);
+router.patch('/reviews/:id/approve', controller.approveReview);
+router.patch('/reviews/:id/reject', controller.rejectReview);
+router.patch('/reviews/:id/publish', controller.publishReview);
+router.patch('/reviews/:id/hide', controller.hideReview);
 
 // ============================================================================
 // 6. Fabric Calculator & Material Conversions (Wave 2.5)

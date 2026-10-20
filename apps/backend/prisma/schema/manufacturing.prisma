@@ -100,6 +100,15 @@ enum AttachmentKind {
   DOC
 }
 
+enum AttachmentReviewStatus {
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  HIDDEN
+}
+
 /// Bill of Materials Header (قائمة مكونات ومواد التصنيع)
 model BillOfMaterials {
   id                  String             @id @default(cuid())
@@ -476,44 +485,59 @@ model CustomerOrderPayment {
 
 /// Partner Factory / Subcontractor (المصانع الشركاء وجهات التشغيل الخارجية)
 model PartnerFactory {
-  id            String            @id @default(cuid())
-  companyId     String
-  name          String
-  code          String?
-  specialty     String?
-  contactPerson String?
-  phone         String?
-  email         String?
-  address       String?
-  notes         String?
-  isActive      Boolean           @default(true)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id                 String                    @id @default(cuid())
+  companyId          String
+  name               String
+  code               String?
+  specialty          String?
+  contactPerson      String?
+  phone              String?
+  email              String?
+  address            String?
+  notes              String?
+  isActive           Boolean                   @default(true)
+  accessToken        String?                   @unique
+  portalEnabled      Boolean                   @default(false)
+  portalLastAccessAt DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
 
-  stages        ProductionStage[]
+  stages             ProductionStage[]
+  attachments        ManufacturingAttachment[]
 
   @@unique([companyId, name])
   @@index([companyId, isActive])
+  @@index([accessToken])
   @@map("partner_factories")
 }
 
 /// Manufacturing Attachment for Orders & Stages (مرفقات أوامر ومراحل التشغيل)
 model ManufacturingAttachment {
-  id           String           @id @default(cuid())
-  companyId    String
-  orderId      String?
-  stageId      String?
-  url          String
-  kind         AttachmentKind   @default(IMAGE)
-  caption      String?
-  uploadedById String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id               String                 @id @default(cuid())
+  companyId        String
+  orderId          String?
+  stageId          String?
+  partnerFactoryId String?
+  url              String
+  kind             AttachmentKind         @default(IMAGE)
+  caption          String?
+  uploadedById     String?
+  reviewStatus     AttachmentReviewStatus @default(UNDER_REVIEW)
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  rejectReason     String?
+  publishedAt      DateTime?
+  publishedBy      String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
-  order        ProductionOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  stage        ProductionStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  order            ProductionOrder?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage            ProductionStage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  partnerFactory   PartnerFactory?        @relation(fields: [partnerFactoryId], references: [id], onDelete: SetNull)
 
   @@index([companyId, orderId])
   @@index([stageId])
+  @@index([companyId, reviewStatus])
+  @@index([partnerFactoryId])
   @@map("manufacturing_attachments")
 }

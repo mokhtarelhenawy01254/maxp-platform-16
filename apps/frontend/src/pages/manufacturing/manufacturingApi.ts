@@ -196,6 +196,13 @@ export interface ProductionStage {
 
 export type StageExecutionEntity = 'INTERNAL' | 'EXTERNAL';
 export type AttachmentKind = 'IMAGE' | 'VIDEO' | 'DOC';
+export type AttachmentReviewStatus =
+  | 'UPLOADED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'PUBLISHED'
+  | 'HIDDEN';
 
 export interface PartnerFactory {
   id: string;
@@ -209,6 +216,9 @@ export interface PartnerFactory {
   address?: string | null;
   notes?: string | null;
   isActive: boolean;
+  accessToken?: string | null;
+  portalEnabled?: boolean;
+  portalLastAccessAt?: string | null;
   createdAt: string;
   updatedAt: string;
   metrics?: {
@@ -224,17 +234,112 @@ export interface ManufacturingAttachment {
   companyId: string;
   orderId?: string | null;
   stageId?: string | null;
+  partnerFactoryId?: string | null;
   url: string;
   kind: AttachmentKind;
   caption?: string | null;
   uploadedById?: string | null;
+  reviewStatus: AttachmentReviewStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  rejectReason?: string | null;
+  publishedAt?: string | null;
+  publishedBy?: string | null;
   createdAt: string;
   updatedAt: string;
   stage?: {
     id: string;
     name: string;
     sequence: number;
+    status?: string;
   } | null;
+  order?: {
+    id: string;
+    orderNumber: string;
+    brandName?: string | null;
+    plannedQuantity?: number;
+    status?: string;
+  } | null;
+  partnerFactory?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    phone?: string | null;
+  } | null;
+}
+
+export interface FactoryMediaReviewListResponse {
+  attachments: ManufacturingAttachment[];
+  underReviewCount: number;
+  totalCount: number;
+}
+
+export interface FactoryPortalContext {
+  id: string;
+  name: string;
+  code?: string | null;
+  specialty?: string | null;
+  contactPerson?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  portalEnabled: boolean;
+  portalLastAccessAt?: string | null;
+}
+
+export interface FactoryPortalDeliveredMaterial {
+  rawMaterialName: string;
+  quantity: number;
+  unit: string;
+  batchNumber?: string | null;
+  notes?: string | null;
+}
+
+export interface FactoryPortalAssignment {
+  id: string;
+  name: string;
+  stageType: ProductionStageType;
+  sequence: number;
+  status: ProductionStageStatus;
+  completedQuantity: number;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  sentToFactoryAt?: string | null;
+  factoryAckReceiptAt?: string | null;
+  factoryCompletedAt?: string | null;
+  factoryNotes?: string | null;
+  order: {
+    id: string;
+    orderNumber: string;
+    brandName?: string | null;
+    dueDate?: string | null;
+    expectedDelivery?: string | null;
+    plannedQuantity: number;
+    unit: string;
+    notes?: string | null;
+    productModel?: string;
+    variantMatrix?: Array<{
+      size?: string | null;
+      color?: string | null;
+      sku?: string | null;
+      plannedQuantity: number;
+    }>;
+  };
+  deliveredMaterials: FactoryPortalDeliveredMaterial[];
+  agreement: {
+    ratePerPiece: number;
+    partnerAgreedCost: number;
+    currency: string;
+  };
+  attachments: Array<{
+    id: string;
+    url: string;
+    kind: AttachmentKind;
+    caption?: string | null;
+    reviewStatus: AttachmentReviewStatus;
+    rejectReason?: string | null;
+    createdAt: string;
+  }>;
 }
 
 export interface PartnerFactoryPerformance {
@@ -998,4 +1103,161 @@ export const manufacturingApi = {
     const res = await apiClient.post('/manufacturing/fabric/actual-waste', data);
     return res.data?.data;
   },
+
+  // --------------------------------------------------------------------------
+  // Partner Factories Portal Links (Wave 3)
+  // --------------------------------------------------------------------------
+  generatePortalLink: async (
+    factoryId: string
+  ): Promise<{ accessToken: string; portalEnabled: boolean; portalUrl: string; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/partner-factories/${factoryId}/portal-link/generate`);
+    return res.data;
+  },
+
+  togglePortalLink: async (
+    factoryId: string,
+    portalEnabled: boolean
+  ): Promise<{ portalEnabled: boolean; accessToken?: string | null; portalUrl?: string | null; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/partner-factories/${factoryId}/portal-link/toggle`, {
+      portalEnabled,
+    });
+    return res.data;
+  },
+
+  revokePortalLink: async (
+    factoryId: string
+  ): Promise<{ portalEnabled: boolean; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/partner-factories/${factoryId}/portal-link/revoke`);
+    return res.data;
+  },
+
+  // --------------------------------------------------------------------------
+  // Media Review & Approval System (Wave 3)
+  // --------------------------------------------------------------------------
+  listReviews: async (params?: {
+    reviewStatus?: string;
+    partnerFactoryId?: string;
+    orderId?: string;
+  }): Promise<FactoryMediaReviewListResponse> => {
+    const res = await apiClient.get('/manufacturing/reviews', { params });
+    return res.data?.data || { attachments: [], underReviewCount: 0, totalCount: 0 };
+  },
+
+  approveReview: async (id: string): Promise<{ success: boolean; message: string; attachment: ManufacturingAttachment }> => {
+    const res = await apiClient.patch(`/manufacturing/reviews/${id}/approve`);
+    return res.data;
+  },
+
+  rejectReview: async (
+    id: string,
+    reason: string
+  ): Promise<{ success: boolean; message: string; attachment: ManufacturingAttachment }> => {
+    const res = await apiClient.patch(`/manufacturing/reviews/${id}/reject`, { reason });
+    return res.data;
+  },
+
+  publishReview: async (id: string): Promise<{ success: boolean; message: string; attachment: ManufacturingAttachment }> => {
+    const res = await apiClient.patch(`/manufacturing/reviews/${id}/publish`);
+    return res.data;
+  },
+
+  hideReview: async (id: string): Promise<{ success: boolean; message: string; attachment: ManufacturingAttachment }> => {
+    const res = await apiClient.patch(`/manufacturing/reviews/${id}/hide`);
+    return res.data;
+  },
 };
+
+// ============================================================================
+// Factory Portal Standalone API (Unauthenticated, Token-based)
+// ============================================================================
+export const factoryPortalApi = {
+  getContext: async (token: string): Promise<FactoryPortalContext> => {
+    const res = await apiClient.get('/factory-portal/context', {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data?.data;
+  },
+
+  getAssignments: async (token: string): Promise<FactoryPortalAssignment[]> => {
+    const res = await apiClient.get('/factory-portal/assignments', {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data?.data || [];
+  },
+
+  confirmReceipt: async (
+    token: string,
+    stageId: string,
+    data?: { at?: string; notes?: string }
+  ): Promise<{ success: boolean; message: string; stageId: string; factoryAckReceiptAt: string; status: string }> => {
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/confirm-receipt`, data, {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data;
+  },
+
+  startStage: async (
+    token: string,
+    stageId: string,
+    data?: { at?: string; notes?: string }
+  ): Promise<{ success: boolean; message: string; stageId: string; startedAt: string; status: string }> => {
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/start`, data, {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data;
+  },
+
+  updateStage: async (
+    token: string,
+    stageId: string,
+    data: {
+      completedQuantity?: number;
+      scrapQuantity?: number;
+      reworkQuantity?: number;
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; message: string; stageId: string; completedQuantity: number; stageLaborCost: number }> => {
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/update`, data, {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data;
+  },
+
+  uploadMedia: async (
+    token: string,
+    stageId: string,
+    payload: FormData | { url: string; caption?: string; kind?: string }
+  ): Promise<{ success: boolean; message: string; attachment: any }> => {
+    const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/media`, payload, {
+      headers: {
+        'x-factory-token': token,
+        ...(isFormData ? { 'Content-Type': 'multipart/form-data' } : {}),
+      },
+    });
+    return res.data;
+  },
+
+  requestApproval: async (
+    token: string,
+    stageId: string,
+    data?: { notes?: string }
+  ): Promise<{ success: boolean; message: string; stageId: string }> => {
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/request-approval`, data, {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data;
+  },
+
+  reportIssue: async (
+    token: string,
+    stageId: string,
+    data: { issue: string }
+  ): Promise<{ success: boolean; message: string; stageId: string }> => {
+    const res = await apiClient.post(`/factory-portal/assignments/${stageId}/issues`, data, {
+      headers: { 'x-factory-token': token },
+    });
+    return res.data;
+  },
+};
+

@@ -600,6 +600,9 @@ const AgencyDashboard = React.lazy(
 const AgencyClientPortal = React.lazy(
   () => import("./pages/agency/AgencyClientPortal"),
 );
+const FactoryPortalPage = React.lazy(
+  () => import("./pages/manufacturing/portal/FactoryPortalPage"),
+);
 
 const ProductLandingPages = React.lazy(
   () => import("./pages/advertising/ProductLandingPages"),
@@ -2066,6 +2069,7 @@ const AppContent = () => {
   // Check if current path is a public route
   const isPublicRoute =
     currentPath.startsWith("/portal") ||
+    currentPath.startsWith("/factory-portal") ||
     currentPath.startsWith("/academy/portal") ||
     currentPath.startsWith("/academy/course") ||
     currentPath.startsWith("/academy/my-courses") ||
@@ -2242,6 +2246,22 @@ const AppContent = () => {
               element={
                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                   <AgencyClientPortal />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/factory-portal"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <FactoryPortalPage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/factory-portal/:token"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <FactoryPortalPage />
                 </React.Suspense>
               }
             />
