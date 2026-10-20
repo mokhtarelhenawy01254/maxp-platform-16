@@ -129,6 +129,43 @@ function pickOrderForExpectedCount(expectedCount, sources = []) {
 }
 
 /**
+ * 🚨 PRODUCTION-FIX (2026-10-20 — بقايا #132000 في LOYALTY_POINTS_AWARDED / CASHBACK_CREDITED):
+ * نفس منطق pickOrderForExpectedCount، لكن لو مفيش مصدر مطابق بالضبط بنقصّ أطول
+ * مصدر أقرب لعدد بارامترات ميتا (من الآخر). السبب: الانحراف الواقعي هو متغيّر
+ * زيادة اتضاف في الـUI/الـservice بعد اعتماد قالب ميتا — الباراميترات الزيادة
+ * بتقع في آخر القائمة، فحذفها بيخلي المراكز 1..N متطابقة مع القالب المعتمد.
+ * (الحشو لسه ممنوع: بيزحزح الباراميترات ويطلع رسالة بمحتوى مبدّل.)
+ *
+ * @returns {{order: Array<{position:number,name:string}>, source: string, trimmed?: boolean, dropped?: string[]}|null}
+ */
+function fitOrderForExpectedCount(expectedCount, sources = []) {
+  const exact = pickOrderForExpectedCount(expectedCount, sources);
+  if (exact) return exact;
+
+  const expected = Number(expectedCount) || 0;
+  if (expected <= 0) return null;
+
+  const candidates = [];
+  for (const src of sources) {
+    const raw = Array.isArray(src) ? src : src?.names;
+    const label = Array.isArray(src) ? 'unspecified' : (src?.label || 'unspecified');
+    const names = normalizeVariableNames(raw);
+    if (names.length > expected) candidates.push({ names, label });
+  }
+  if (candidates.length === 0) return null;
+
+  // أقرب مصدر (أقل زيادة) — يحافظ على أكبر قدر من الترتيب المخزّن
+  candidates.sort((a, b) => a.names.length - b.names.length);
+  const chosen = candidates[0];
+  return {
+    order: chosen.names.slice(0, expected).map((name, idx) => ({ position: idx + 1, name })),
+    source: `${chosen.label}:trimmed`,
+    trimmed: true,
+    dropped: chosen.names.slice(expected),
+  };
+}
+
+/**
  * Normalizes a variables array to a de-duplicated list of names, accepting both
  * shapes stored in the DB (`["orderNumber"]` and `[{position,name}]`).
  */
@@ -151,5 +188,6 @@ module.exports = {
   buildMetaBodyParams,
   countMetaPlaceholders,
   pickOrderForExpectedCount,
+  fitOrderForExpectedCount,
   normalizeVariableNames,
 };

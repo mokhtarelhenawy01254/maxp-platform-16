@@ -127,15 +127,20 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
   });
 
   describe('2. Pre-Send PARAM_COUNT_MISMATCH Guard', () => {
-    test('حارس ما قبل الإرسال يمنع الإرسال ويسجل الخطأ مع expected و actual', async () => {
+    test('بارامترات زيادة (4 محلية vs 3 في ميتا): بتتقص لـ3 وبتبعت — صفر META_PARAM_COUNT_MISMATCH', async () => {
+      // التغيير المقصود (2026-10-20): الانحراف الحقيقي في LOYALTY_POINTS_AWARDED /
+      // CASHBACK_CREDITED هو متغير زيادة اتضاف محليًا بعد اعتماد قالب ميتا. الحارس
+      // بقى يقص الزيادة (من الآخر) ويبعت بالعدد الصح بدل ما الرسالة تتوقف خالص.
       const createdLogs = [];
-      mockPrismaInstance = {
+      const TEMPLATE_VARS = ['customerName', 'cashAmount', 'currency', 'balance'];
+            mockPrismaInstance = {
         whatsAppNotificationSettings: {
-          findUnique: jest.fn(async () => ({ isEnabled: true, defaultSessionId: 'sess-meta' }))
+          findUnique: jest.fn(async () => ({ isEnabled: true, defaultSessionId: 'sess-meta', loyaltyEnabled: true }))
         },
         company: {
           findUnique: jest.fn(async () => ({ id: 'company-swan', name: 'Swan' }))
         },
+        companyBranding: null,
         whatsAppSession: {
           findFirst: jest.fn(async () => ({
             id: 'sess-meta',
@@ -154,14 +159,16 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
         },
         whatsAppNotificationTemplate: {
           findFirst: jest.fn(async () => ({
-            id: 'template-4vars',
+            id: 'template-vars',
             companyId: 'company-swan',
             eventType: 'CASHBACK_CREDITED',
             channel: 'META_CLOUD',
             metaTemplateName: 'cashback_creditedv3mtcywhw6',
             metaTemplateStatus: 'APPROVED',
-            variables: JSON.stringify(['customerName', 'cashAmount', 'currency', 'balance'])
-          }))
+            content: 'أهلاً {{customerName}} رصيدك {{cashAmount}} {{currency}} {{balance}}',
+            variables: JSON.stringify(TEMPLATE_VARS)
+          })),
+          findMany: jest.fn(async () => [])
         },
         whatsAppNotificationLog: {
           create: jest.fn(async (args) => {
@@ -174,7 +181,6 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
           })
         }
       };
-
       // Mock meta template check to expect 3 placeholders while template provides 4
       const MetaCloudProvider = require('../../services/whatsapp/providers/MetaCloudProvider');
       jest.spyOn(MetaCloudProvider, 'listTemplates').mockResolvedValue([
@@ -187,6 +193,9 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
         }
       ]);
 
+      const WhatsAppMessageHandler = require('../../services/whatsapp/WhatsAppMessageHandler');
+      jest.spyOn(WhatsAppMessageHandler, 'sendTemplateMessage').mockResolvedValue({ id: 'wamid-trim' });
+
       const WhatsAppNotificationService = require('../../services/whatsapp/WhatsAppNotificationService');
       const res = await WhatsAppNotificationService.sendNotification({
         companyId: 'company-swan',
@@ -197,11 +206,103 @@ describe('WhatsApp Customer Notification Canonical Fixes', () => {
         variables: { customerName: 'أحمد', cashAmount: '100', currency: 'EGP', balance: '250' }
       });
 
-      // Verification: sending was blocked, not sent to Meta API
+      expect(res.success).toBe(true);
+      const body = WhatsAppMessageHandler.sendTemplateMessage.mock.calls[0][3];
+      expect(body.components[0].parameters).toHaveLength(3);
+      expect(body.components[0].parameters.map((p) => p.text)).toEqual(['أحمد', '100', 'EGP']);
+      expect(createdLogs.find((l) => l.errorCode === 'META_PARAM_COUNT_MISMATCH')).toBeUndefined();
+      expect(createdLogs.find((l) => l.status === 'SENT')).toBeDefined();
+    });
+
+    test('بارامترات أقل من ميتا (2 محلية vs 3): ممنوع الإرسال + سجل mismatch مع expected و actual', async () => {
+      const createdLogs = [];
+      const TEMPLATE_VARS = ['customerName', 'cashAmount'];
+            mockPrismaInstance = {
+        whatsAppNotificationSettings: {
+          findUnique: jest.fn(async () => ({ isEnabled: true, defaultSessionId: 'sess-meta', loyaltyEnabled: true }))
+        },
+        company: {
+          findUnique: jest.fn(async () => ({ id: 'company-swan', name: 'Swan' }))
+        },
+        companyBranding: null,
+        whatsAppSession: {
+          findFirst: jest.fn(async () => ({
+            id: 'sess-meta',
+            companyId: 'company-swan',
+            provider: 'META_CLOUD',
+            status: 'CONNECTED',
+            credentials: JSON.stringify({ accessToken: 'fake-token', phoneNumberId: '123' })
+          })),
+          findUnique: jest.fn(async () => ({
+            id: 'sess-meta',
+            companyId: 'company-swan',
+            provider: 'META_CLOUD',
+            status: 'CONNECTED',
+            credentials: JSON.stringify({ accessToken: 'fake-token', phoneNumberId: '123' })
+          }))
+        },
+        whatsAppNotificationTemplate: {
+          findFirst: jest.fn(async () => ({
+            id: 'template-vars',
+            companyId: 'company-swan',
+            eventType: 'CASHBACK_CREDITED',
+            channel: 'META_CLOUD',
+            metaTemplateName: 'cashback_creditedv3mtcywhw6',
+            metaTemplateStatus: 'APPROVED',
+            content: 'أهلاً {{customerName}} رصيدك {{cashAmount}} {{currency}} {{balance}}',
+            variables: JSON.stringify(TEMPLATE_VARS)
+          })),
+          findMany: jest.fn(async () => [])
+        },
+        whatsAppNotificationLog: {
+          create: jest.fn(async (args) => {
+            createdLogs.push(args.data);
+            return { id: 'log-err-1', ...args.data };
+          }),
+          update: jest.fn(async (args) => {
+            createdLogs.push(args.data);
+            return { id: args.where?.id || 'log-err-1', ...args.data };
+          })
+        }
+      };
+      // القالب المحلي كمان فيه متغيرين بس — مفيش أي مصدر بيوصل لـ3 → ممنوع الإرسال
+      mockPrismaInstance.whatsAppNotificationTemplate.findFirst.mockResolvedValue({
+        id: 'template-2vars',
+        companyId: 'company-swan',
+        eventType: 'CASHBACK_CREDITED',
+        channel: 'META_CLOUD',
+        metaTemplateName: 'cashback_creditedv3mtcywhw6',
+        metaTemplateStatus: 'APPROVED',
+        content: 'أهلاً {{customerName}} رصيدك {{cashAmount}}',
+        variables: JSON.stringify(['customerName', 'cashAmount'])
+      });
+      const MetaCloudProvider = require('../../services/whatsapp/providers/MetaCloudProvider');
+      jest.spyOn(MetaCloudProvider, 'listTemplates').mockResolvedValue([
+        {
+          name: 'cashback_creditedv3mtcywhw6',
+          status: 'APPROVED',
+          components: [
+            { type: 'BODY', text: 'أهلاً {{1}} رصيدك {{2}} {{3}}' } // 3 placeholders
+          ]
+        }
+      ]);
+      const WhatsAppMessageHandler = require('../../services/whatsapp/WhatsAppMessageHandler');
+      jest.spyOn(WhatsAppMessageHandler, 'sendTemplateMessage').mockResolvedValue({ id: 'wamid-short' });
+
+      const WhatsAppNotificationService = require('../../services/whatsapp/WhatsAppNotificationService');
+      const res = await WhatsAppNotificationService.sendNotification({
+        companyId: 'company-swan',
+        recipientPhone: '201000000000',
+        recipientName: 'أحمد',
+        category: 'MARKETING',
+        eventType: 'CASHBACK_CREDITED',
+        variables: { customerName: 'أحمد', cashAmount: '100' }
+      });
+
       expect(res.success).toBe(false);
       expect(res.errorCode).toBe('META_PARAM_COUNT_MISMATCH');
-      expect(createdLogs.length).toBeGreaterThanOrEqual(1);
-      const errorLog = createdLogs.find(l => l.errorCode === 'META_PARAM_COUNT_MISMATCH');
+      expect(WhatsAppMessageHandler.sendTemplateMessage).not.toHaveBeenCalled();
+      const errorLog = createdLogs.find((l) => l.errorCode === 'META_PARAM_COUNT_MISMATCH');
       expect(errorLog).toBeDefined();
       expect(errorLog.failureReason).toContain('expects 3 BODY param(s)');
     });

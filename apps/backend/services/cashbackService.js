@@ -69,7 +69,10 @@ async function applyCashbackForPaidOrder({ orderId, companyId, changedBy }) {
       discount: true,
       total: true,
       metadata: true,
-      orderNumber: true
+      orderNumber: true,
+      // 🚨 2026-10-20: القالب القانوني لـ CASHBACK_CREDITED بيستخدم {currency} —
+      // كانت مش بتتقرأ فميتا كانت بتاخد '—' أو عدد بارامترات مختلف (#132000).
+      currency: true
     }
   });
 
@@ -205,7 +208,13 @@ async function applyCashbackForPaidOrder({ orderId, companyId, changedBy }) {
           customerId: order.customerId,
           orderId: order.id,
           variables: {
+            // 🚨 2026-10-20: مطابقة أسماء متغيرات القالب القانوني (CASHBACK_CREDITED):
+            // customerName بيتضاف في customerNotificationScheduleService، وهنا بنضمن
+            // amount + cashAmount (alias) + currency + orderNumber + balance — نفس
+            // ترتيب القالب المعتمد، فمفيش META_PARAM_COUNT_MISMATCH ولا قيم '—'.
             amount: cashbackAmount.toFixed(2),
+            cashAmount: cashbackAmount.toFixed(2),
+            currency: order.currency || 'EGP',
             orderNumber: order.orderNumber,
             balance: String(Number(balance || 0).toFixed(2))
           }

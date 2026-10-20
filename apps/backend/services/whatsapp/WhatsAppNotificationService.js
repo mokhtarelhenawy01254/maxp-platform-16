@@ -1047,9 +1047,13 @@ const {
   buildMetaBodyParams,
   extractLocalVariableOrder,
   countMetaPlaceholders,
-  pickOrderForExpectedCount,
+  fitOrderForExpectedCount,
 } = require('../../utils/metaTemplateVariables');
 const { META_ORDER_BLUEPRINTS } = require('../orderTemplateSeeding');
+
+// 🛡️ حارس الإرسال المركزي (2026-10-20): بوابة واحدة قبل أي لوج/أي نداء لميتا +
+// سطر لوج واحد لكل دفعة + قفل 24 ساعة لكل (companyId+eventType+templateId).
+const NotificationSendGuard = require('./notificationSendGuard');
 
 // ☁️ [META-CLOUD] عدد بارامترات BODY اللي القالب المعتمد في ميتا مستنيها.
 // 🚨 PRODUCTION-FIX (2026-09-29, #132000 template_param_count_mismatch): مسار الإرسال
@@ -1328,8 +1332,19 @@ async function sendNotification(options) {
 
     if (!sessionId) {
       console.log(`⚠️ [WHATSAPP-DEBUG] No session available for company ${companyId}`);
-      await recordEarlyFailureLog({ companyId, eventType, rawEventType: options.rawEventType || eventType, sessionId: 'none', recipientPhone: options.recipientPhone || 'none', recipientName: options.recipientName || null, recipientType: options.recipientType || 'CUSTOMER', category: options.category || 'GENERAL', errorCode: 'NO_SESSION', reason: 'no_session' });
-      return { success: false, reason: 'no_session', error: 'لا توجد جلسة واتساب متصلة للشركة — يرجى ربط حساب واتساب (Meta Cloud أو Baileys) من إعدادات الشركة أولاً' };
+      // 🛡️ 2026-10-20: صف فشل واحد لكل (شركة + حدث) في نافذة الساعة — مش صف لكل
+      // مستلم. باقي المحاولات بتتخطى بصمت (الحارس المركزي بيطبع سطر واحد).
+      const sessionFailure = NotificationSendGuard.guardSessionUnavailable({ companyId, eventType });
+      if (sessionFailure.shouldRecord) {
+        await recordEarlyFailureLog({ companyId, eventType, rawEventType: options.rawEventType || eventType, sessionId: 'none', recipientPhone: options.recipientPhone || 'none', recipientName: options.recipientName || null, recipientType: options.recipientType || 'CUSTOMER', category: options.category || 'GENERAL', errorCode: 'NO_SESSION', reason: 'no_session' });
+      }
+      return {
+        success: false,
+        reason: 'no_session',
+        errorCode: 'NO_SESSION',
+        suppressed: !sessionFailure.shouldRecord,
+        error: 'لا توجد جلسة واتساب متصلة للشركة — يرجى ربط حساب واتساب (Meta Cloud أو Baileys) من إعدادات الشركة أولاً'
+      };
     }
 
     // 🆕 تحديد نوع الجلسة (META_CLOUD vs BAILEYS) من قاعدة البيانات.
@@ -1552,8 +1567,34 @@ async function sendNotification(options) {
       const metaStatus = String(safeTemplate?.metaTemplateStatus || '').toUpperCase();
       if (!metaName || metaStatus !== 'APPROVED') {
         console.warn(`⚠️ [WHATSAPP] Channel=META_CLOUD لكن قالب "${eventType}" غير مربوط/معتمد — تم التخطي.`);
-        return { success: false, reason: 'meta_template_not_ready' };
+        // (الحارس المركزي تحت بيحوّلها لسطر واحد + قفل 24 ساعة بدل رجوع صامت)
       }
+    }
+
+    // 🛡️ CENTRAL SEND GATE (2026-10-20) — بوابة واحدة قبل أي لوج وقبل أي نداء لميتا:
+    // أي مسار (حالي أو جديد) بينادي sendNotification بيرث الحماية دي تلقائيًا.
+    // - META_CLOUD: ممنوع أي إرسال بدون قالب مربوط APPROVED (حتى لو فيه contentOverride).
+    // - Baileys: النص الحر مسموح بشرط وجود قالب/محتوى.
+    // - بعد أول فشل: قفل 24 ساعة لنفس (companyId + eventType + templateId) وسطر لوج واحد
+    //   لكل دفعة — بدل صف FAILED لكل مستلم (اللي كان بيعمل ~1,000 صف/ساعة).
+    const effectiveProvider = channel === 'META_CLOUD' ? 'META_CLOUD' : sessionProvider;
+    const sendGate = NotificationSendGuard.guardNotificationSend({
+      companyId,
+      eventType,
+      sessionProvider: effectiveProvider,
+      template: safeTemplate,
+      contentOverride: options.contentOverride || null,
+    });
+    if (!sendGate.allowed) {
+      return {
+        success: false,
+        reason: sendGate.reason,
+        errorCode: sendGate.errorCode,
+        templateId: sendGate.templateId,
+        suppressed: sendGate.suppressed,
+        circuitOpenUntil: sendGate.circuitOpenUntil,
+        message: sendGate.message,
+      };
     }
 
     // 5. تجهيز المحتوى
@@ -1736,6 +1777,15 @@ async function sendNotification(options) {
           ? `قالب ميتا "${metaTemplateName}" حالته ${metaTemplateStatus || 'غير معروف'} — لازم يكون APPROVED من ميتا قبل الإرسال`
           : `لا يوجد قالب ميتا معتمد (metaTemplateName) مربوط بالحدث "${eventType}"`;
         console.warn(`⚠️ [META-CLOUD] ${reason} — تم الرفض (مفيش إرسال نص حر).`);
+        // 🛡️ 2026-10-20: أي وصول للحالة دي بيفتح قفل 24 ساعة لنفس (شركة+حدث+قالب)
+        // عشان ما نضربش ميتا/الـDB بنفس المحاولة المستحيلة تاني.
+        NotificationSendGuard.openFailureWindow({
+          companyId,
+          eventType,
+          templateId: templateId || null,
+          errorCode: 'META_TEMPLATE_NOT_APPROVED',
+        });
+
         // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-26, خطأ 2): لو فيه contentOverride
         // (نص حر من Journey/LeadFollowUp) والجلسة META_CLOUD — نرفض صراحةً بدل ما نحاول
         // نبعته كـ free-text (ميتا بتترفضه بـ 132018). نفس الرفض meta_template_not_approved.
@@ -1787,13 +1837,26 @@ async function sendNotification(options) {
           const blueprintNames = (META_ORDER_BLUEPRINTS[eventType]?.variables || [])
             .map((v) => (typeof v === 'string' ? v : v?.name));
 
+          // 🚨 PRODUCTION-FIX (2026-10-20): بقايا #132000 في LOYALTY_POINTS_AWARDED /
+          // CASHBACK_CREDITED كانت بترمي META_PARAM_COUNT_MISMATCH لأن مفيش مصدر
+          // متغيراته بعدد بارامترات ميتا بالضبط. fitOrderForExpectedCount بيجرّب
+          // التطابق التام الأول، وبعدها بيقصّ أطول مصدر أقرب (الزيادة بتبقى في
+          // الآخر) — بدل ما الرسالة تتوقف خالص.
           const orderPick = expectedMetaParamCount > 0
-            ? pickOrderForExpectedCount(expectedMetaParamCount, [
+            ? fitOrderForExpectedCount(expectedMetaParamCount, [
                 { label: 'db_variables', names: variablesOrder || fallbackOrder },
                 { label: 'local_content', names: extractLocalVariableOrder(safeTemplate?.content) },
                 { label: 'meta_blueprint', names: blueprintNames },
               ])
             : null;
+
+          if (orderPick?.trimmed) {
+            console.warn(
+              `✂️ [META-CLOUD] Trimmed extra variables for "${metaTemplateName}" (${eventType}): ` +
+              `dropped [${(orderPick.dropped || []).join(', ')}] to match the ${expectedMetaParamCount} ` +
+              `BODY placeholder(s) of the approved Meta template (source=${orderPick.source}).`
+            );
+          }
 
           if (orderPick && orderPick.source !== 'db_variables') {
             console.warn(
@@ -2445,6 +2508,34 @@ async function scheduleNotification(options) {
         );
       }
       return { success: false, reason: 'no_template' };
+    }
+
+    // 🛡️ نفس الحارس المركزي قبل كتابة أي صف في الطابور: رسالة ميتا بدون قالب
+    // معتمد مالهاش أي فرصة نجاح — منعها هنا بيمنع آلاف محاولات الـ retry لاحقًا.
+    let scheduledProvider = 'BAILEYS';
+    if (sessionId) {
+      const scheduledSession = await safeQuery(() => prisma.whatsAppSession.findUnique({
+        where: { id: sessionId },
+        select: { provider: true }
+      }));
+      if (scheduledSession?.provider) scheduledProvider = scheduledSession.provider;
+    }
+    const scheduleGate = NotificationSendGuard.guardNotificationSend({
+      companyId,
+      eventType,
+      sessionProvider: scheduledProvider,
+      template,
+      contentOverride,
+    });
+    if (!scheduleGate.allowed) {
+      return {
+        success: false,
+        reason: scheduleGate.reason,
+        errorCode: scheduleGate.errorCode,
+        templateId: scheduleGate.templateId,
+        suppressed: scheduleGate.suppressed,
+        message: scheduleGate.message,
+      };
     }
 
     // تجهيز المحتوى
@@ -3479,6 +3570,9 @@ async function processNotificationQueue() {
         // - الجلسة قد تنفصل بين الجدولة والمعالجة.
         let sessionId = notification.sessionId;
         let session = sessionId ? WhatsAppManager.getSession(sessionId) : null;
+        // 🛡️ مزوّد الجلسة — لازم نعرفه عشان الحارس المركزي يمنع النص الحر عبر META_CLOUD
+        let queueSessionProvider = session?.provider || null;
+
         if (!session || session.status !== 'connected') {
           const connected = await prisma.whatsAppSession.findFirst({
             where: { companyId: notification.companyId, status: 'CONNECTED' },
@@ -3492,12 +3586,40 @@ async function processNotificationQueue() {
               // META_CLOUD يُعتبر متصلاً إذا كان CONNECTED في DB (لا socket في الذاكرة)
               if (connected.provider === 'META_CLOUD') {
                 session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+                queueSessionProvider = 'META_CLOUD';
               }
             }
           }
         }
         if (!session || session.status !== 'connected') {
           throw new Error('Session not connected');
+        }
+
+        // 🛡️ الحارس المركزي في الطابور: META_CLOUD مايسمحش بأي نص حر.
+        // الرسالة اللي اتحجزت (ANNOUNCEMENT مثلاً) بلا قالب معتمد بترفض مرة واحدة
+        // (FAILED بدون retry) بدل 3 محاولات × كل دورة معالجة.
+        if (String(queueSessionProvider || '').toUpperCase() === 'META_CLOUD') {
+          const queueTemplate = notification.templateId
+            ? await safeQuery(() => prisma.whatsAppNotificationTemplate.findUnique({ where: { id: notification.templateId } }))
+            : null;
+          const queueGate = NotificationSendGuard.guardNotificationSend({
+            companyId: notification.companyId,
+            eventType: notification.eventType,
+            sessionProvider: 'META_CLOUD',
+            template: queueTemplate,
+            contentOverride: notification.content,
+          });
+          if (!queueGate.allowed) {
+            await prisma.whatsAppNotificationQueue.update({
+              where: { id: notification.id },
+              data: { status: 'FAILED', processedAt: new Date() },
+            });
+            console.warn(
+              `🚫 [WHATSAPP-QUEUE] ${notification.eventType} dropped for company ${notification.companyId} ` +
+              `(code=${queueGate.errorCode}) — zero Meta calls, zero retries.`
+            );
+            continue;
+          }
         }
 
         // إرسال الرسالة — WhatsAppMessageHandler يروّت META_CLOUD تلقائياً (getSessionProvider)
@@ -4293,5 +4415,8 @@ module.exports = {
 
   // الإحصائيات
   getNotificationStats,
+
+  // 🛡️ الحارس المركزي للإرسال (2026-10-20) — متاح للتشخيص والاختبارات
+  NotificationSendGuard,
   findCanonicalNotificationTemplate
 };
