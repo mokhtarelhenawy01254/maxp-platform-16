@@ -2,6 +2,8 @@ const {
   getSharedPrismaClient,
   safeQuery,
 } = require("../services/sharedDatabase");
+const { recordSupplierPayment } = require("../services/supplierPaymentService");
+const { logProcurementActivity } = require("../services/procurementAuditService");
 
 const normalizePurchaseInvoice = (invoice) => {
   if (!invoice) return invoice;
@@ -146,64 +148,93 @@ exports.createPurchaseInvoice = async (req, res) => {
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
     const status = remainingAmount <= 0 ? "PAID" : paidAmount > 0 ? "PARTIALLY_PAID" : "PENDING";
 
-    const invoice = await safeQuery(() =>
-      getSharedPrismaClient().purchaseInvoice.create({
+    let invoice = null;
+    let lastInvoiceError = null;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const invoiceNumber = await generateInvoiceNumber(companyId);
+        invoice = await safeQuery(() =>
+          getSharedPrismaClient().purchaseInvoice.create({
+            data: {
+              companyId,
+              supplierId,
+              purchaseOrderId: purchaseOrderId || null,
+              invoiceNumber,
+              invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+              dueDate: dueDate ? new Date(dueDate) : null,
+              subtotal,
+              taxAmount,
+              discountAmount: discount,
+              shippingCost: shipping,
+              totalAmount,
+              paidAmount: 0,
+              remainingAmount: totalAmount,
+              status: "PENDING",
+              notes,
+              createdBy: userId,
+              purchaseInvoiceItems: {
+                create: invoiceItems,
+              },
+            },
+            include: {
+              purchaseInvoiceItems: true,
+              supplier: true,
+              purchaseOrder: true,
+            },
+          }),
+        );
+        break;
+      } catch (err) {
+        if (err.code === "P2002" || (err.message && err.message.includes("invoiceNumber"))) {
+          lastInvoiceError = err;
+          await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!invoice) {
+      throw lastInvoiceError || new Error("فشل إنشاء فاتورة الشراء بعد عدة محاولات بسبب تعارض الترقيم");
+    }
+
+    // 1. Supplier debt increases by full invoice totalAmount
+    await safeQuery(() =>
+      getSharedPrismaClient().supplier.update({
+        where: { id: supplierId },
         data: {
-          companyId,
-          supplierId,
-          purchaseOrderId: purchaseOrderId || null,
-          invoiceNumber,
-          invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
-          dueDate: dueDate ? new Date(dueDate) : null,
-          subtotal,
-          taxAmount,
-          discountAmount: discount,
-          shippingCost: shipping,
-          totalAmount,
-          paidAmount,
-          remainingAmount,
-          status,
-          notes,
-          createdBy: userId,
-          purchaseInvoiceItems: {
-            create: invoiceItems,
+          currentBalance: {
+            increment: totalAmount,
           },
-        },
-        include: {
-          purchaseInvoiceItems: true,
-          supplier: true,
-          purchaseOrder: true,
         },
       }),
     );
 
+    // 2. Record upfront supplier payment if paidAmount > 0 via unified service
     if (paidAmount > 0) {
-      const paymentNumber = await generatePaymentNumber(companyId);
-      await safeQuery(() =>
-        getSharedPrismaClient().supplierPayment.create({
-          data: {
-            companyId,
-            supplierId,
-            purchaseInvoiceId: invoice.id,
-            paymentNumber,
-            paymentDate: invoiceDate ? new Date(invoiceDate) : new Date(),
-            amount: paidAmount,
-            paymentMethod: paymentMethod || "CASH",
-            notes: paymentNotes || "سداد فوري عند إنشاء الفاتورة",
-            createdBy: userId,
-          },
-        }),
-      );
-    }
+      await recordSupplierPayment({
+        companyId,
+        supplierId,
+        purchaseInvoiceId: invoice.id,
+        amount: paidAmount,
+        paymentMethod: paymentMethod || "CASH",
+        treasuryAccountId: req.body.treasuryAccountId || null,
+        notes: paymentNotes || "سداد فوري عند إنشاء الفاتورة",
+        userId,
+        paymentDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+        sourceKey: `invoice:${invoice.id}:inline`,
+      });
 
-    if (remainingAmount > 0) {
-      await safeQuery(() =>
-        getSharedPrismaClient().supplier.update({
-          where: { id: supplierId },
-          data: {
-            currentBalance: {
-              increment: remainingAmount,
-            },
+      // Reload fresh invoice with updated balances
+      invoice = await safeQuery(() =>
+        getSharedPrismaClient().purchaseInvoice.findUnique({
+          where: { id: invoice.id },
+          include: {
+            purchaseInvoiceItems: true,
+            supplier: true,
+            purchaseOrder: true,
+            supplierPayments: true,
           },
         }),
       );
@@ -219,6 +250,26 @@ exports.createPurchaseInvoice = async (req, res) => {
     } catch (autoErr) {
       console.error('[Accounting Auto-Posting] Purchase Invoice hook error:', autoErr.message);
     }
+
+    // Audit Log Activity
+    await logProcurementActivity({
+      companyId,
+      userId,
+      action: "CREATE_PURCHASE_INVOICE",
+      targetType: "PURCHASE_INVOICE",
+      targetId: invoice.id,
+      targetName: invoice.invoiceNumber,
+      description: `إنشاء فاتورة شراء رقم ${invoice.invoiceNumber} بمبلغ إجمالي ${totalAmount} ج.م`,
+      metadata: {
+        totalAmount,
+        paidAmount,
+        remainingAmount: invoice.remainingAmount,
+        supplierId,
+        purchaseOrderId,
+        treasuryAccountId: req.body.treasuryAccountId || null,
+      },
+      severity: "MEDIUM",
+    });
 
     res.status(201).json({
       success: true,
@@ -424,6 +475,18 @@ exports.deletePurchaseInvoice = async (req, res) => {
         where: { id },
       }),
     );
+
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: "DELETE_PURCHASE_INVOICE",
+      targetType: "PURCHASE_INVOICE",
+      targetId: invoice.id,
+      targetName: invoice.invoiceNumber,
+      description: `حذف فاتورة شراء رقم ${invoice.invoiceNumber} بقيمة ${invoice.totalAmount} ج.م`,
+      metadata: { totalAmount: invoice.totalAmount, supplierId: invoice.supplierId },
+      severity: "HIGH",
+    });
 
     res.json({ message: "تم حذف الفاتورة بنجاح" });
   } catch (error) {

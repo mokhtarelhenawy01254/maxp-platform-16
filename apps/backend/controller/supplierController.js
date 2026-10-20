@@ -1,4 +1,5 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
+const { logProcurementActivity } = require('../services/procurementAuditService');
 
 exports.createSupplier = async (req, res) => {
   try {
@@ -53,6 +54,18 @@ exports.createSupplier = async (req, res) => {
         }
       })
     );
+
+    await logProcurementActivity({
+      companyId,
+      userId,
+      action: 'CREATE_SUPPLIER',
+      targetType: 'SUPPLIER',
+      targetId: supplier.id,
+      targetName: supplier.name,
+      description: `إضافة مورد جديد: ${supplier.name}`,
+      metadata: { phone: supplier.phone, contactPerson: supplier.contactPerson },
+      severity: 'LOW',
+    });
 
     res.status(201).json({
       success: true,
@@ -335,6 +348,17 @@ exports.deleteSupplier = async (req, res) => {
     await safeQuery(() => getSharedPrismaClient().supplier.delete({
       where: { id }
     }));
+
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: 'DELETE_SUPPLIER',
+      targetType: 'SUPPLIER',
+      targetId: supplier.id,
+      targetName: supplier.name,
+      description: `حذف المورد: ${supplier.name}`,
+      severity: 'MEDIUM',
+    });
 
     res.json({ message: 'تم حذف المورد بنجاح' });
   } catch (error) {

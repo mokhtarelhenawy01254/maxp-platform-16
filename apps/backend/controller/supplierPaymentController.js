@@ -1,16 +1,6 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-
-const generatePaymentNumber = async (companyId) => {
-  const lastPayment = await safeQuery(() =>
-    getSharedPrismaClient().supplierPayment.findFirst({
-      where: { companyId },
-      orderBy: { createdAt: 'desc' }
-    })
-  );
-
-  const lastNumber = lastPayment ? parseInt(lastPayment.paymentNumber.split('-').pop()) : 0;
-  return `SP-${String(lastNumber + 1).padStart(6, '0')}`;
-};
+const { recordSupplierPayment, generatePaymentNumber } = require('../services/supplierPaymentService');
+const { logProcurementActivity } = require('../services/procurementAuditService');
 
 exports.createSupplierPayment = async (req, res) => {
   try {
@@ -25,148 +15,41 @@ exports.createSupplierPayment = async (req, res) => {
       bankName,
       checkNumber,
       checkDate,
-      notes
+      notes,
+      treasuryAccountId,
+      sourceKey,
     } = req.body;
 
-    if (!supplierId || !amount || !paymentMethod) {
-      return res.status(400).json({ message: 'المورد والمبلغ وطريقة الدفع مطلوبة' });
-    }
+    const result = await recordSupplierPayment({
+      companyId,
+      supplierId,
+      purchaseInvoiceId,
+      paymentDate,
+      amount,
+      paymentMethod,
+      referenceNumber,
+      bankName,
+      checkNumber,
+      checkDate,
+      notes,
+      treasuryAccountId,
+      userId,
+      sourceKey,
+    });
 
-    const paymentAmount = parseFloat(amount);
-
-    if (purchaseInvoiceId) {
-      const invoice = await safeQuery(() =>
-        getSharedPrismaClient().purchaseInvoice.findFirst({
-          where: { id: purchaseInvoiceId, companyId }
-        })
-      );
-
-      if (!invoice) {
-        return res.status(404).json({ message: 'الفاتورة غير موجودة' });
-      }
-
-      if (paymentAmount > parseFloat(invoice.remainingAmount)) {
-        return res.status(400).json({ message: 'المبلغ المدفوع أكبر من المبلغ المتبقي' });
-      }
-    }
-
-    const paymentNumber = await generatePaymentNumber(companyId);
-
-    const payment = await safeQuery(() =>
-      getSharedPrismaClient().supplierPayment.create({
-        data: {
-          companyId,
-          supplierId,
-          purchaseInvoiceId: purchaseInvoiceId || null,
-          paymentNumber,
-          paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-          amount: paymentAmount,
-          paymentMethod,
-          referenceNumber,
-          bankName,
-          checkNumber,
-          checkDate: checkDate ? new Date(checkDate) : null,
-          notes,
-          createdBy: userId
-        },
-        include: {
-          supplier: true,
-          purchaseInvoice: true
-        }
-      })
-    );
-
-    await safeQuery(() =>
-      getSharedPrismaClient().supplier.update({
-        where: { id: supplierId },
-        data: {
-          currentBalance: {
-            decrement: paymentAmount
-          }
-        }
-      })
-    );
-
-    if (purchaseInvoiceId) {
-      const invoice = await safeQuery(() =>
-        getSharedPrismaClient().purchaseInvoice.findUnique({
-          where: { id: purchaseInvoiceId }
-        })
-      );
-
-      const newPaidAmount = parseFloat(invoice.paidAmount) + paymentAmount;
-      const newRemainingAmount = parseFloat(invoice.totalAmount) - newPaidAmount;
-
-      let newStatus = invoice.status;
-      if (newRemainingAmount <= 0) {
-        newStatus = 'PAID';
-      } else if (newPaidAmount > 0) {
-        // The current Prisma enum has no PARTIALLY_PAID value; keep the
-        // invoice pending while remainingAmount carries the partial state.
-        newStatus = 'PENDING';
-      }
-
-      await safeQuery(() =>
-        getSharedPrismaClient().purchaseInvoice.update({
-          where: { id: purchaseInvoiceId },
-          data: {
-            paidAmount: newPaidAmount,
-            remainingAmount: newRemainingAmount,
-            status: newStatus
-          }
-        })
-      );
-    }
-
-    // P1: ترحيل دفعة المورد للطبقة المالية والخزينة (Idempotent)
-    let financialPosting = null;
-    try {
-      const { createOrGetFinancialPosting, SOURCE_TYPES } = require('../services/financialPostingService');
-      const finResult = await createOrGetFinancialPosting({
-        companyId,
-        sourceType: SOURCE_TYPES.SUPPLIER_PAYMENT,
-        sourceId: payment.id,
-        treasuryAccountId: req.body.treasuryAccountId || null,
-        direction: 'OUT',
-        amount: paymentAmount,
-        reference: `سداد مورد ${payment.supplier?.name || ''} - ${payment.paymentNumber}`,
-        notes: notes || `سداد دفعة للمورد ${payment.supplier?.name || ''}`,
-        metadata: {
-          supplierId,
-          supplierName: payment.supplier?.name,
-          paymentNumber: payment.paymentNumber,
-          purchaseInvoiceId: purchaseInvoiceId || null,
-        },
-        userId,
-      });
-      financialPosting = finResult?.posting || null;
-    } catch (finErr) {
-      console.warn('Warning: Financial posting failed for supplier payment:', finErr.message);
-    }
-
-    // Accounting Auto-Posting Hook (Non-blocking & Zero Blast-Radius)
-    try {
-      const AccountingAutoPostingService = require('../services/accountingAutoPostingService');
-      AccountingAutoPostingService.postSupplierPayment(companyId, payment.id, {
-        userId,
-        paymentData: payment,
-      }).catch((err) => console.error('[Accounting Auto-Posting] Supplier Payment async error:', err.message));
-    } catch (autoErr) {
-      console.error('[Accounting Auto-Posting] Supplier Payment hook error:', autoErr.message);
-    }
-
-    res.status(201).json({
+    res.status(result.alreadyExisted ? 200 : 201).json({
       success: true,
-      message: 'تم تسجيل الدفعة بنجاح',
-      payment,
-      financialPosting
+      message: result.alreadyExisted ? 'تم استرجاع الدفعة المسجلة مسبقاً' : 'تم تسجيل الدفعة بنجاح',
+      payment: result.payment,
+      financialPosting: result.financialPosting,
+      alreadyExisted: result.alreadyExisted,
     });
   } catch (error) {
     console.error('Error creating supplier payment:', error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'حدث خطأ أثناء تسجيل الدفعة: ' + error.message,
-      error: error.message
+      message: error.message || 'حدث خطأ أثناء تسجيل الدفعة',
+      error: error.message,
     });
   }
 };
@@ -289,6 +172,18 @@ exports.updateSupplierPayment = async (req, res) => {
       }
     }));
 
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: 'UPDATE_SUPPLIER_PAYMENT',
+      targetType: 'SUPPLIER_PAYMENT',
+      targetId: payment.id,
+      targetName: payment.paymentNumber,
+      description: `تعديل بيانات دفعة المورد ${payment.paymentNumber}`,
+      metadata: { paymentMethod, referenceNumber },
+      severity: 'LOW',
+    });
+
     res.json({
       message: 'تم تحديث الدفعة بنجاح',
       payment
@@ -348,6 +243,18 @@ exports.deleteSupplierPayment = async (req, res) => {
     await safeQuery(() => getSharedPrismaClient().supplierPayment.delete({
       where: { id }
     }));
+
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: 'DELETE_SUPPLIER_PAYMENT',
+      targetType: 'SUPPLIER_PAYMENT',
+      targetId: payment.id,
+      targetName: payment.paymentNumber,
+      description: `حذف دفعة مورد بقيمة ${payment.amount} ج.م (رقم: ${payment.paymentNumber})`,
+      metadata: { amount: payment.amount, supplierId: payment.supplierId },
+      severity: 'HIGH',
+    });
 
     res.json({ message: 'تم حذف الدفعة بنجاح' });
   } catch (error) {

@@ -95,6 +95,12 @@ interface InvoiceItem {
   notes?: string;
 }
 
+interface TreasuryAccount {
+  id: string;
+  name: string;
+  balance: number;
+}
+
 const PurchaseInvoiceForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -123,6 +129,8 @@ const PurchaseInvoiceForm: React.FC = () => {
   const [paymentOption, setPaymentOption] = useState<"UNPAID" | "FULL" | "PARTIAL">("UNPAID");
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [customPaidAmount, setCustomPaidAmount] = useState<number>(0);
+  const [treasuryAccounts, setTreasuryAccounts] = useState<TreasuryAccount[]>([]);
+  const [treasuryAccountId, setTreasuryAccountId] = useState<string>("");
 
   // Quick Supplier Modal
   const [isQuickSupplierOpen, setIsQuickSupplierOpen] = useState(false);
@@ -187,6 +195,34 @@ const PurchaseInvoiceForm: React.FC = () => {
     }
     fetchSupplierPurchaseOrders(formData.supplierId);
   }, [formData.supplierId]);
+
+  const fetchTreasuries = async () => {
+    try {
+      const res = await apiClient.get("/treasury/accounts");
+      const data = res?.data as any;
+      const list: TreasuryAccount[] = Array.isArray(data?.accounts)
+        ? data.accounts
+        : Array.isArray(data)
+        ? data
+        : [];
+      setTreasuryAccounts(list);
+      if (list.length > 0) {
+        const firstId = list[0]?.id;
+        if (firstId) {
+          setTreasuryAccountId((prev) => prev || firstId);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load treasury accounts:", err);
+    }
+  };
+
+  // Load treasury accounts when payment option is active
+  useEffect(() => {
+    if (paymentOption !== "UNPAID") {
+      fetchTreasuries();
+    }
+  }, [paymentOption]);
 
   const fetchInitialData = async () => {
     try {
@@ -542,6 +578,7 @@ const PurchaseInvoiceForm: React.FC = () => {
         discountAmount: Number(formData.discountAmount || 0),
         paidAmount: totals.effectivePaid,
         paymentMethod: totals.effectivePaid > 0 ? paymentMethod : undefined,
+        treasuryAccountId: totals.effectivePaid > 0 ? treasuryAccountId || undefined : undefined,
         notes: combinedNotes,
         items: items.map((it) => ({
           productId: it.productId || null,
@@ -1418,6 +1455,29 @@ const PurchaseInvoiceForm: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {treasuryAccounts.length > 0 && (
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-muted-foreground">
+                            الخزينة المسحوب منها *:
+                          </Label>
+                          <Select
+                            value={treasuryAccountId}
+                            onValueChange={(val: any) => setTreasuryAccountId(val || "")}
+                          >
+                            <SelectTrigger className="h-9 rounded-lg text-xs">
+                              <SelectValue placeholder="اختر الخزينة" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {treasuryAccounts.map((acc) => (
+                                <SelectItem key={acc.id} value={acc.id}>
+                                  {acc.name} ({Number(acc.balance || 0).toLocaleString()} ج.م)
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
 
                       {paymentOption === "PARTIAL" && (
                         <div className="space-y-1">

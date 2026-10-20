@@ -2,6 +2,7 @@ const {
   getSharedPrismaClient,
   safeQuery,
 } = require("../services/sharedDatabase");
+const { logProcurementActivity } = require("../services/procurementAuditService");
 
 const normalizePurchaseOrder = (order) => {
   if (!order) return order;
@@ -56,8 +57,6 @@ exports.createPurchaseOrder = async (req, res) => {
     if (!supplierId || !items || items.length === 0) {
       return res.status(400).json({ message: "المورد والأصناف مطلوبة" });
     }
-
-    const orderNumber = await generateOrderNumber(companyId);
 
     // Validate candidate productIds against actual Products table to avoid Foreign Key violation
     const validProductIds = new Set();
@@ -119,34 +118,66 @@ exports.createPurchaseOrder = async (req, res) => {
     const discount = parseFloat(discountAmount || 0);
     const totalAmount = subtotal + taxAmount + shipping - discount;
 
-    const purchaseOrder = await safeQuery(() =>
-      getSharedPrismaClient().purchaseOrder.create({
-        data: {
-          companyId,
-          supplierId,
-          orderNumber,
-          orderDate: orderDate ? new Date(orderDate) : new Date(),
-          expectedDelivery: expectedDelivery
-            ? new Date(expectedDelivery)
-            : null,
-          subtotal,
-          taxAmount,
-          discountAmount: discount,
-          shippingCost: shipping,
-          totalAmount,
-          paymentTerms,
-          notes,
-          createdBy: userId,
-          purchaseOrderItems: {
-            create: orderItems,
-          },
-        },
-        include: {
-          purchaseOrderItems: true,
-          supplier: true,
-        },
-      }),
-    );
+    let purchaseOrder = null;
+    let lastOrderError = null;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const orderNumber = await generateOrderNumber(companyId);
+        purchaseOrder = await safeQuery(() =>
+          getSharedPrismaClient().purchaseOrder.create({
+            data: {
+              companyId,
+              supplierId,
+              orderNumber,
+              orderDate: orderDate ? new Date(orderDate) : new Date(),
+              expectedDelivery: expectedDelivery
+                ? new Date(expectedDelivery)
+                : null,
+              subtotal,
+              taxAmount,
+              discountAmount: discount,
+              shippingCost: shipping,
+              totalAmount,
+              paymentTerms,
+              notes,
+              createdBy: userId,
+              purchaseOrderItems: {
+                create: orderItems,
+              },
+            },
+            include: {
+              purchaseOrderItems: true,
+              supplier: true,
+            },
+          }),
+        );
+        break;
+      } catch (err) {
+        if (err.code === "P2002" || (err.message && err.message.includes("orderNumber"))) {
+          lastOrderError = err;
+          await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!purchaseOrder) {
+      throw lastOrderError || new Error("فشل إنشاء أمر الشراء بعد عدة محاولات بسبب تعارض الترقيم");
+    }
+
+    await logProcurementActivity({
+      companyId,
+      userId,
+      action: "CREATE_PURCHASE_ORDER",
+      targetType: "PURCHASE_ORDER",
+      targetId: purchaseOrder.id,
+      targetName: purchaseOrder.orderNumber,
+      description: `إنشاء أمر شراء جديد رقم ${purchaseOrder.orderNumber} بمبلغ ${totalAmount} ج.م`,
+      metadata: { totalAmount, itemsCount: items.length, supplierId },
+      severity: "LOW",
+    });
 
     res.status(201).json({
       success: true,
@@ -353,6 +384,18 @@ exports.approvePurchaseOrder = async (req, res) => {
       }),
     );
 
+    await logProcurementActivity({
+      companyId,
+      userId,
+      action: "APPROVE_PURCHASE_ORDER",
+      targetType: "PURCHASE_ORDER",
+      targetId: updatedOrder.id,
+      targetName: updatedOrder.orderNumber,
+      description: `اعتماد أمر الشراء رقم ${updatedOrder.orderNumber}`,
+      metadata: { status: "ORDERED", totalAmount: updatedOrder.totalAmount },
+      severity: "MEDIUM",
+    });
+
     res.json({
       message: "تمت الموافقة على أمر الشراء بنجاح",
       order: normalizePurchaseOrder(updatedOrder),
@@ -548,63 +591,92 @@ exports.receiveItems = async (req, res) => {
         );
 
         if (!existingInvoice) {
-          const lastInvoice = await safeQuery(() =>
-            getSharedPrismaClient().purchaseInvoice.findFirst({
-              where: { companyId },
-              orderBy: { createdAt: "desc" },
-            }),
-          );
-          const lastNumber = lastInvoice
-            ? parseInt(lastInvoice.invoiceNumber.split("-").pop())
-            : 0;
-          const invoiceNumber = `PI-${String(lastNumber + 1).padStart(6, "0")}`;
+          let autoInvoice = null;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+              const lastInvoice = await safeQuery(() =>
+                getSharedPrismaClient().purchaseInvoice.findFirst({
+                  where: { companyId },
+                  orderBy: { createdAt: "desc" },
+                }),
+              );
+              const lastNumber = lastInvoice
+                ? parseInt(lastInvoice.invoiceNumber.split("-").pop(), 10) || 0
+                : 0;
+              const invoiceNumber = `PI-${String(lastNumber + 1).padStart(6, "0")}`;
 
-          await safeQuery(() =>
-            getSharedPrismaClient().purchaseInvoice.create({
-              data: {
-                companyId,
-                supplierId: order.supplierId,
-                purchaseOrderId: order.id,
-                invoiceNumber,
-                invoiceDate: new Date(),
-                subtotal: order.subtotal,
-                taxAmount: order.taxAmount,
-                discountAmount: order.discountAmount,
-                shippingCost: order.shippingCost,
-                totalAmount: order.totalAmount,
-                paidAmount: 0,
-                remainingAmount: order.totalAmount,
-                status: "PENDING",
-                createdBy: order.createdBy,
-                purchaseInvoiceItems: {
-                  create: order.purchaseOrderItems.map((item) => ({
-                    productId: item.productId,
-                    productName: item.productName,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    taxRate: item.taxRate,
-                    discountRate: item.discountRate,
-                    totalPrice: item.totalPrice,
-                  })),
+              autoInvoice = await safeQuery(() =>
+                getSharedPrismaClient().purchaseInvoice.create({
+                  data: {
+                    companyId,
+                    supplierId: order.supplierId,
+                    purchaseOrderId: order.id,
+                    invoiceNumber,
+                    invoiceDate: new Date(),
+                    subtotal: order.subtotal,
+                    taxAmount: order.taxAmount,
+                    discountAmount: order.discountAmount,
+                    shippingCost: order.shippingCost,
+                    totalAmount: order.totalAmount,
+                    paidAmount: 0,
+                    remainingAmount: order.totalAmount,
+                    status: "PENDING",
+                    createdBy: order.createdBy,
+                    purchaseInvoiceItems: {
+                      create: order.purchaseOrderItems.map((item) => ({
+                        productId: item.productId,
+                        productName: item.productName,
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        taxRate: item.taxRate,
+                        discountRate: item.discountRate,
+                        totalPrice: item.totalPrice,
+                      })),
+                    },
+                  },
+                }),
+              );
+              break;
+            } catch (err) {
+              if (err.code === "P2002" || (err.message && err.message.includes("invoiceNumber"))) {
+                await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+                continue;
+              }
+              throw err;
+            }
+          }
+
+          if (autoInvoice) {
+            await safeQuery(() =>
+              getSharedPrismaClient().supplier.update({
+                where: { id: order.supplierId },
+                data: {
+                  currentBalance: { increment: order.totalAmount },
                 },
-              },
-            }),
-          );
-
-          await safeQuery(() =>
-            getSharedPrismaClient().supplier.update({
-              where: { id: order.supplierId },
-              data: {
-                currentBalance: { increment: order.totalAmount },
-              },
-            }),
-          );
+              }),
+            );
+          }
         }
       } catch (invError) {
         console.error("Error creating automated invoice:", invError);
       }
     }
+
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: "RECEIVE_PURCHASE_ORDER",
+      targetType: "PURCHASE_ORDER",
+      targetId: finalOrder.id,
+      targetName: finalOrder.orderNumber,
+      description: `استلام أصناف من أمر الشراء رقم ${finalOrder.orderNumber} (الحالة: ${newStatus})`,
+      metadata: {
+        newStatus,
+        itemsReceived: items.map((i) => ({ itemId: i.itemId, receivedQuantity: i.receivedQuantity })),
+      },
+      severity: "MEDIUM",
+    });
 
     res.json({
       message: "تم استلام الأصناف بنجاح",
@@ -647,6 +719,18 @@ exports.cancelPurchaseOrder = async (req, res) => {
         },
       }),
     );
+
+    await logProcurementActivity({
+      companyId,
+      userId: req.user.id,
+      action: "CANCEL_PURCHASE_ORDER",
+      targetType: "PURCHASE_ORDER",
+      targetId: updatedOrder.id,
+      targetName: updatedOrder.orderNumber,
+      description: `إلغاء أمر الشراء رقم ${updatedOrder.orderNumber}`,
+      metadata: { previousStatus: order.status, totalAmount: updatedOrder.totalAmount },
+      severity: "MEDIUM",
+    });
 
     res.json({
       message: "تم إلغاء أمر الشراء بنجاح",
