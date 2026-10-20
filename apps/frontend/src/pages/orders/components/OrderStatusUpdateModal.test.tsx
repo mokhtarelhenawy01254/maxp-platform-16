@@ -1,29 +1,37 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { OrderStatusUpdateModal } from "./OrderStatusUpdateModal";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => (opts && opts.defaultValue ? opts.defaultValue : key),
+    t: (key: string, opts?: { defaultValue?: string }) =>
+      opts && opts.defaultValue ? opts.defaultValue : key,
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("OrderStatusUpdateModal", () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     newStatus: "CONFIRMED",
-    setNewStatus: jest.fn(),
+    setNewStatus: vi.fn(),
     statusNotes: "",
-    setStatusNotes: jest.fn(),
+    setStatusNotes: vi.fn(),
     isOverride: false,
-    setIsOverride: jest.fn(),
+    setIsOverride: vi.fn(),
     cancellationAdditionalNotes: "",
-    setCancellationAdditionalNotes: jest.fn(),
+    setCancellationAdditionalNotes: vi.fn(),
     returnReason: "",
-    setReturnReason: jest.fn(),
+    setReturnReason: vi.fn(),
     returnAdditionalNotes: "",
-    setReturnAdditionalNotes: jest.fn(),
+    setReturnAdditionalNotes: vi.fn(),
     filteredStatusOptions: [
       { code: "PENDING", name: "قيد الانتظار" },
       { code: "CONFIRMED", name: "مؤكد" },
@@ -37,7 +45,7 @@ describe("OrderStatusUpdateModal", () => {
     cancellationReasonOptionsLoading: false,
     commonReturnReasons: ["العميل غير راغب بالاستلام", "منتج غير مطابق"],
     updating: false,
-    onUpdateStatus: jest.fn().mockResolvedValue(undefined),
+    onUpdateStatus: vi.fn().mockResolvedValue(undefined),
   };
 
   it("renders status modal title and select options", () => {
