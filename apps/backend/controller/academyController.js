@@ -888,17 +888,65 @@ exports.sendStudentLoginCode = async (req, res) => {
           throw new Error('لا توجد جلسة واتساب نشطة متصلة في النظام لإرسال الكود');
         }
 
-        const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
-        if (typeof WhatsAppMessageHandler.sendText !== 'function') {
-          throw new Error('خدمة إرسال رسائل واتساب غير متاحة حالياً');
-        }
+        if (activeSession.provider === 'META_CLOUD') {
+          // 🔒 Meta Cloud requires pre-approved AUTHENTICATION templates for business-initiated OTP
+          const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+          let authTemplate = null;
+          try {
+            const templates = await MetaCloudProvider.listTemplates(activeSession.id);
+            authTemplate = (templates || []).find(
+              (t) => t.status === 'APPROVED' && (t.name === 'student_login_otp' || t.category === 'AUTHENTICATION')
+            );
+          } catch (listErr) {
+            console.warn('[student-otp] Could not list Meta templates:', listErr.message);
+          }
 
-        await WhatsAppMessageHandler.sendText(
-          activeSession.id,
-          cleanPhone,
-          `كود التحقق لدخول أكاديمية ماكس بي: ${code}\nصلاحية الكود 10 دقائق.`
-        );
-        dispatchSuccess = true;
+          if (!authTemplate) {
+            throw new Error(
+              'جلسة واتساب الرسمية (Meta Cloud) تتطلب قالباً معتمداً (student_login_otp). لا يوجد قالب معتمد متاح حالياً.'
+            );
+          }
+
+          // Build template components for Meta Authentication template (code in body param & button url param)
+          const hasButton = authTemplate.components?.some((c) => c.type === 'BUTTONS');
+          const components = [
+            {
+              type: 'body',
+              parameters: [{ type: 'text', text: code }],
+            },
+          ];
+          if (hasButton) {
+            components.push({
+              type: 'button',
+              sub_type: 'url',
+              index: '0',
+              parameters: [{ type: 'text', text: code }],
+            });
+          }
+
+          await MetaCloudProvider.sendTemplate(
+            activeSession.id,
+            cleanPhone,
+            authTemplate.name,
+            {
+              language: authTemplate.language || 'ar',
+              components,
+            }
+          );
+          dispatchSuccess = true;
+        } else {
+          const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+          if (typeof WhatsAppMessageHandler.sendText !== 'function') {
+            throw new Error('خدمة إرسال رسائل واتساب غير متاحة حالياً');
+          }
+
+          await WhatsAppMessageHandler.sendText(
+            activeSession.id,
+            cleanPhone,
+            `كود التحقق لدخول أكاديمية ماكس بي: ${code}\nصلاحية الكود 10 دقائق.`
+          );
+          dispatchSuccess = true;
+        }
       } catch (waErr) {
         dispatchError = waErr;
         console.error(`🚨 [STUDENT_OTP_FAILED] WhatsApp dispatch failed for ${cleanPhone}:`, waErr.message);

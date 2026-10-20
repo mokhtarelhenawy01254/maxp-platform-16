@@ -89,7 +89,7 @@ router.post('/courses/:courseId/verify-payment', studentVerifyLimiter, controlle
 router.post('/lessons/:id/complete', authenticateToken, controller.completeLesson);
 router.post('/lessons/:id/submit-quiz', authenticateToken, controller.submitQuiz);
 router.post('/lessons/:id/submit-exercise', authenticateToken, controller.submitExercise);
-router.post('/lessons/:id/coach-chat', authenticateToken, controller.askCoach);
+router.post('/lessons/:id/coach-chat', optionalAuth, controller.askCoach);
 
 // Instructor Submissions Review
 router.get('/courses/:id/submissions', instructorAuth, controller.getCourseSubmissions);

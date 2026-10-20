@@ -575,7 +575,54 @@ async function createTemplate(sessionId, templateData) {
     throw new Error('Missing required fields: name, language, category');
   }
 
-  const components = generateExample ? generateComponentExamples(rawComponents) : rawComponents;
+  let components;
+  if (category === 'AUTHENTICATION') {
+    // Normalization for Meta Graph API Authentication Template specification:
+    // 1. BODY: Meta restricts custom body text. Requires add_security_recommendation, no text, no example.
+    // 2. FOOTER: code_expiration_minutes (integer), no text.
+    // 3. BUTTONS: type OTP with otp_type COPY_CODE.
+    const rawList = Array.isArray(rawComponents) ? rawComponents : [];
+    components = rawList.map(comp => {
+      const type = (comp.type || '').toUpperCase();
+      if (type === 'BODY') {
+        const bodyComp = { type: 'BODY' };
+        if (typeof comp.add_security_recommendation === 'boolean') {
+          bodyComp.add_security_recommendation = comp.add_security_recommendation;
+        } else if (comp.addSecurityRecommendation !== undefined) {
+          bodyComp.add_security_recommendation = Boolean(comp.addSecurityRecommendation);
+        } else {
+          bodyComp.add_security_recommendation = true;
+        }
+        return bodyComp;
+      }
+      if (type === 'FOOTER') {
+        const mins = Number(comp.code_expiration_minutes || comp.codeExpirationMinutes || 10);
+        return {
+          type: 'FOOTER',
+          code_expiration_minutes: Math.max(1, Math.min(90, isNaN(mins) ? 10 : mins))
+        };
+      }
+      if (type === 'BUTTONS') {
+        const rawBtns = Array.isArray(comp.buttons) ? comp.buttons : [];
+        const buttons = rawBtns.map(b => ({
+          type: 'OTP',
+          otp_type: 'COPY_CODE',
+          text: b.text || 'نسخ الرمز'
+        }));
+        return {
+          type: 'BUTTONS',
+          buttons: buttons.length > 0 ? buttons : [{ type: 'OTP', otp_type: 'COPY_CODE', text: 'نسخ الرمز' }]
+        };
+      }
+      return comp;
+    });
+
+    if (!components.some(c => c.type === 'BODY')) {
+      components.unshift({ type: 'BODY', add_security_recommendation: true });
+    }
+  } else {
+    components = generateExample ? generateComponentExamples(rawComponents) : rawComponents;
+  }
 
   const payload = {
     name,
@@ -584,7 +631,11 @@ async function createTemplate(sessionId, templateData) {
     components
   };
 
-  if (allowCategoryChange) {
+  if (category === 'AUTHENTICATION') {
+    if (templateData.messageSendTtlSeconds || templateData.message_send_ttl_seconds) {
+      payload.message_send_ttl_seconds = Number(templateData.messageSendTtlSeconds || templateData.message_send_ttl_seconds);
+    }
+  } else if (allowCategoryChange) {
     payload.allow_category_change = true;
   }
 

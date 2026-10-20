@@ -15,6 +15,7 @@ import { LessonCoachChat } from "./components/LessonCoachChat";
 import { LessonSyllabusSidebar, SidebarModule } from "./components/LessonSyllabusSidebar";
 import { LessonQuizPanel } from "./components/LessonQuizPanel";
 import { LessonExercisePanel } from "./components/LessonExercisePanel";
+import { AcademyScriptViewer } from "./components/AcademyScriptViewer";
 
 interface LessonContent {
   lesson: {
@@ -358,11 +359,9 @@ const StudentLessonPlayerPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Tab 1: Script */}
+            {/* Tab 1: Clean Structured Script for Students */}
             {activeTab === "script" && (
-              <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line space-y-3 p-2">
-                {lesson.scriptText || "لا يوجد نص سكريبت متاح لهذا الدرس حالياً."}
-              </div>
+              <AcademyScriptViewer scriptText={lesson.scriptText} />
             )}
 
             {/* Tab 2: Exercise */}

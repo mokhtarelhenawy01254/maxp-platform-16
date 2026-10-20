@@ -1734,7 +1734,23 @@ class AcademyService {
 
     const course = lesson.module?.course;
 
-    // 🔒 نفس بوابة قراءة المحتوى: طالب بلا اشتراك ساري أو معاينة مجانية = ممنوع
+    // 🔒 التحقق من إذن الوصول للكوتش الذكي (معاينة مجانية أو اشتراك ساري)
+    let isFreePreview = Boolean(lesson.isFreePreview);
+    if (!isFreePreview && course?.freePreviewLessons > 0) {
+      const fullCourse = await db.academyCourse.findUnique({
+        where: { id: course.id },
+        include: {
+          modules: {
+            orderBy: { sortOrder: 'asc' },
+            include: { lessons: { orderBy: { sortOrder: 'asc' }, select: { id: true } } },
+          },
+        },
+      });
+      const allCourseLessons = (fullCourse?.modules || []).flatMap((m) => m.lessons || []);
+      const lessonIdx = allCourseLessons.findIndex((l) => l.id === lesson.id);
+      if (lessonIdx !== -1 && lessonIdx < course.freePreviewLessons) isFreePreview = true;
+    }
+
     if (studentPhone) {
       const enrollment = await db.academyEnrollment.findFirst({
         where: {
@@ -1744,23 +1760,12 @@ class AcademyService {
         },
       });
       const enrollmentLive = enrollment && !(enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date());
-      let isFreePreview = Boolean(lesson.isFreePreview);
-      if (!isFreePreview && course.freePreviewLessons > 0) {
-        const fullCourse = await db.academyCourse.findUnique({
-          where: { id: course.id },
-          include: {
-            modules: {
-              orderBy: { sortOrder: 'asc' },
-              include: { lessons: { orderBy: { sortOrder: 'asc' }, select: { id: true } } },
-            },
-          },
-        });
-        const allCourseLessons = (fullCourse?.modules || []).flatMap((m) => m.lessons || []);
-        const lessonIdx = allCourseLessons.findIndex((l) => l.id === lesson.id);
-        if (lessonIdx !== -1 && lessonIdx < course.freePreviewLessons) isFreePreview = true;
-      }
       if (!enrollmentLive && !isFreePreview) {
-        throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
+        throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً للتحدث مع الكوتش');
+      }
+    } else if (!userId) {
+      if (!isFreePreview) {
+        throw new Error('هذا الدرس مخصص للمشتركين. يرجى تسجيل الدخول أو الاشتراك في الكورس للتحدث مع الكوتش.');
       }
     }
 

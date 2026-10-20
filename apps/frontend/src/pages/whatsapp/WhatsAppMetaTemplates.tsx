@@ -182,11 +182,12 @@ const PROHIBITED_WORDS = [
 ];
 
 const COMPLIANCE_RULES = [
-  { id: "body_required", check: (f: typeof initialForm) => !f.bodyText, message: "محتوى الرسالة (BODY) مطلوب — لا يمكن ترك الحقل فارغاً" },
-  { id: "header_text_length", check: (f: typeof initialForm) => f.headerFormat === "TEXT" && f.headerText.length > 60, message: "نص رأس الرسالة (HEADER) يجب ألا يتجاوز 60 حرفاً" },
-  { id: "footer_length", check: (f: typeof initialForm) => f.footerText.length > 60, message: "نص التذييل (FOOTER) يجب ألا يتجاوز 60 حرفاً" },
-  { id: "footer_vars", check: (f: typeof initialForm) => /\{\{.+?\}\}/.test(f.footerText), message: "⚠️ Meta يمنع تماماً وجود أي متغيرات في التذييل (FOOTER). استخدم نصاً ثابتاً فقط بدون {{1}} أو أقواس." },
+  { id: "body_required", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && !f.bodyText, message: "محتوى الرسالة (BODY) مطلوب — لا يمكن ترك الحقل فارغاً" },
+  { id: "header_text_length", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.headerFormat === "TEXT" && f.headerText.length > 60, message: "نص رأس الرسالة (HEADER) يجب ألا يتجاوز 60 حرفاً" },
+  { id: "footer_length", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.footerText.length > 60, message: "نص التذييل (FOOTER) يجب ألا يتجاوز 60 حرفاً" },
+  { id: "footer_vars", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && /\{\{.+?\}\}/.test(f.footerText), message: "⚠️ Meta يمنع تماماً وجود أي متغيرات في التذييل (FOOTER). استخدم نصاً ثابتاً فقط بدون {{1}} أو أقواس." },
   { id: "var_sequential_body", check: (f: typeof initialForm) => {
+    if (f.category === "AUTHENTICATION") return false;
     const matches = (f.bodyText.match(/\{\{(\d+)\}\}/g) || []).map(m => parseInt(m.replace(/\D/g, ""), 10));
     if (matches.length === 0) return false;
     let expected = 1;
@@ -200,26 +201,29 @@ const COMPLIANCE_RULES = [
     }
     return false;
   }, message: "⚠️ المتغيرات في محتوى الرسالة يجب أن تبدأ بـ {{1}} وتتسلسل تصاعدياً ({{1}}, {{2}}, ...) بدون قفزات أو ترتيب معكوس" },
-  { id: "body_length", check: (f: typeof initialForm) => f.bodyText.length > 1024, message: "محتوى الرسالة (BODY) يجب ألا يتجاوز 1024 حرفاً" },
-  { id: "named_vars_header", check: (f: typeof initialForm) => f.headerFormat === "TEXT" && hasNamedVariables(f.headerText), message: "⚠️ Meta لا يقبل أسماء متغيرات في HEADER. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
-  { id: "named_vars_body", check: (f: typeof initialForm) => hasNamedVariables(f.bodyText), message: "⚠️ Meta لا يقبل أسماء متغيرات في BODY. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
-  { id: "header_media_required", check: (f: typeof initialForm) => f.headerFormat !== "TEXT" && !f.headerMediaHandle, message: "⚠️ رأس IMAGE/VIDEO/DOCUMENT يتطلب رفع وسيط — ميتا ترفض القالب بدونه (header_handle)" },
-  { id: "button_url_invalid", check: (f: typeof initialForm) => f.buttonText && !isValidButtonUrl(f.buttonUrl), message: "رابط الزر (URL) يجب أن يبدأ بـ https:// — مثال: https://example.com/pay" },
-  { id: "var_start_body", check: (f: typeof initialForm) => /^\{\{1\}\}/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن يبدأ محتوى الرسالة (BODY) بمتغير {{1}}. أضف نصاً قبل المتغير.", severity: "warning" },
-  { id: "var_end_body", check: (f: typeof initialForm) => /\{\{\d+\}\}$/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن ينتهي محتوى الرسالة (BODY) بمتغير. أضف نقطة أو نصاً بعد المتغير.", severity: "warning" },
+  { id: "body_length", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.bodyText.length > 1024, message: "محتوى الرسالة (BODY) يجب ألا يتجاوز 1024 حرفاً" },
+  { id: "named_vars_header", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.headerFormat === "TEXT" && hasNamedVariables(f.headerText), message: "⚠️ Meta لا يقبل أسماء متغيرات في HEADER. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
+  { id: "named_vars_body", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && hasNamedVariables(f.bodyText), message: "⚠️ Meta لا يقبل أسماء متغيرات في BODY. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
+  { id: "header_media_required", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.headerFormat !== "TEXT" && !f.headerMediaHandle, message: "⚠️ رأس IMAGE/VIDEO/DOCUMENT يتطلب رفع وسيط — ميتا ترفض القالب بدونه (header_handle)" },
+  { id: "button_url_invalid", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && f.buttonText && !isValidButtonUrl(f.buttonUrl), message: "رابط الزر (URL) يجب أن يبدأ بـ https:// — مثال: https://example.com/pay" },
+  { id: "var_start_body", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && /^\{\{1\}\}/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن يبدأ محتوى الرسالة (BODY) بمتغير {{1}}. أضف نصاً قبل المتغير.", severity: "warning" },
+  { id: "var_end_body", check: (f: typeof initialForm) => f.category !== "AUTHENTICATION" && /\{\{\d+\}\}$/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن ينتهي محتوى الرسالة (BODY) بمتغير. أضف نقطة أو نصاً بعد المتغير.", severity: "warning" },
   { id: "prohibited_words", check: (f: typeof initialForm) => {
+    if (f.category === "AUTHENTICATION") return false;
     const allText = [f.headerText, f.bodyText, f.footerText].filter(Boolean).join(" ").toLowerCase();
     const found = PROHIBITED_WORDS.filter(w => allText.includes(w));
     if (found.length > 0) return true;
     return false;
   }, message: "⚠️ النص يحتوي على كلمات قد تسبب رفض القالب من ميتا (تجنب العبارات التسويقية المبالغ فيها)", severity: "warning" },
   { id: "excessive_punctuation", check: (f: typeof initialForm) => {
+    if (f.category === "AUTHENTICATION") return false;
     const allText = [f.headerText, f.bodyText, f.footerText].filter(Boolean).join(" ");
     const exclaimMatch = allText.match(/!{3,}/g);
     const questMatch = allText.match(/\?{3,}/g);
     return !!(exclaimMatch?.length || questMatch?.length);
   }, message: "⚠️ تجنب استخدام علامات الترقيم المتكررة (!!!, ???) — قد تسبب رفض القالب", severity: "warning" },
   { id: "all_caps", check: (f: typeof initialForm) => {
+    if (f.category === "AUTHENTICATION") return false;
     const words = f.bodyText.split(/\s+/).filter(w => w.length > 3);
     const capsWords = words.filter(w => w === w.toUpperCase() && /[A-Z]/.test(w));
     return capsWords.length > words.length * 0.5;
@@ -371,6 +375,14 @@ const WhatsAppMetaTemplates: React.FC<{
   }, [form.headerText, form.bodyText, form.footerText, form.buttonText]);
 
   const previewText = useMemo(() => {
+    if (form.category === "AUTHENTICATION") {
+      const code = varValues["1"] || "482915";
+      const btn = form.buttonText || (form.language === "ar" ? "نسخ الرمز" : "Copy Code");
+      if (form.language === "ar") {
+        return `🔐 رمز التحقق الخاص بك هو: ${code}\n\n⚠️ لأسباب أمنية، لا تشارك هذا الرمز مع أي شخص.\nينتهي هذا الرمز خلال 10 دقائق.\n\n[ 📋 ${btn} ]`;
+      }
+      return `🔐 Your verification code is: ${code}\n\n⚠️ For security reasons, do not share this code.\nThis code expires in 10 minutes.\n\n[ 📋 ${btn} ]`;
+    }
     let text = "";
     if (form.headerFormat === "TEXT" && form.headerText) {
       text += `🔷 ${form.headerText}\n\n`;
@@ -390,6 +402,22 @@ const WhatsAppMetaTemplates: React.FC<{
   }, [form, extractedVars, varValues]);
 
   const buildComponents = useCallback((f: typeof initialForm) => {
+    if (f.category === "AUTHENTICATION") {
+      return [
+        { type: "BODY", add_security_recommendation: true },
+        { type: "FOOTER", code_expiration_minutes: 10 },
+        {
+          type: "BUTTONS",
+          buttons: [
+            {
+              type: "OTP",
+              otp_type: "COPY_CODE",
+              text: f.buttonText || (f.language === "ar" ? "نسخ الرمز" : "Copy Code"),
+            },
+          ],
+        },
+      ];
+    }
     const components: any[] = [
       { type: "BODY", text: f.bodyText },
     ];
@@ -422,7 +450,7 @@ const WhatsAppMetaTemplates: React.FC<{
   }, []);
 
   const handleCreate = useCallback(async () => {
-    if (!sanitizedName || !form.bodyText) {
+    if (!sanitizedName || (form.category !== "AUTHENTICATION" && !form.bodyText)) {
       tToast.error("WhatsAppMetaTemplates.msg_5d29");
       return;
     }
@@ -1771,41 +1799,49 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
               <div className="space-y-2">
                 <Label>رأس الرسالة (اختياري)</Label>
-                <div className="flex gap-2">
-                  <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v ?? '' }))}>
-                    <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
-                      <SelectItem value="IMAGE"><Image className="ml-1 size-3.5 inline" /> IMAGE</SelectItem>
-                      <SelectItem value="VIDEO"><Video className="ml-1 size-3.5 inline" /> VIDEO</SelectItem>
-                      <SelectItem value="DOCUMENT"><File className="ml-1 size-3.5 inline" /> DOCUMENT</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {form.headerFormat === "TEXT" && (
-                    <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
-                      placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
-                  )}
-                  {form.headerFormat !== "TEXT" && (
-                    <HeaderMediaUploadField
-                      handle={form.headerMediaHandle}
-                      fileName={form.headerMediaName}
-                      format={form.headerFormat}
-                      uploading={uploadingHeader}
-                      onUpload={(file) => uploadHeaderMedia(file, (handle, name) =>
-                        setForm((p) => ({ ...p, headerMediaHandle: handle, headerMediaName: name })))}
-                      onRemove={() => setForm((p) => ({ ...p, headerMediaHandle: "", headerMediaName: "" }))}
-                    />
-                  )}
-                </div>
-                {form.headerFormat !== "TEXT" && !form.headerMediaHandle && (
-                  <p className="text-[11px] text-amber-500 dark:text-amber-400">
-                    ⚠️ ارفع وسيطاً (صورة/فيديو/مستند) — ميتا تتطلب sample media في الهيدر لاعتماد القالب
-                  </p>
-                )}
-                {form.headerText && !headerVarsOk && (
-                  <p className="text-[11px] text-red-500 dark:text-red-400">
-                    ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
-                  </p>
+                {form.category === "AUTHENTICATION" ? (
+                  <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3 text-xs text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-violet-300">
+                    🔒 قوالب المصادقة الأمنيّة (AUTHENTICATION) تتبع معيار Meta الموحد: لا تدعم رأس الرسالة المخصص.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v ?? '' }))}>
+                        <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
+                          <SelectItem value="IMAGE"><Image className="ml-1 size-3.5 inline" /> IMAGE</SelectItem>
+                          <SelectItem value="VIDEO"><Video className="ml-1 size-3.5 inline" /> VIDEO</SelectItem>
+                          <SelectItem value="DOCUMENT"><File className="ml-1 size-3.5 inline" /> DOCUMENT</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.headerFormat === "TEXT" && (
+                        <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
+                          placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
+                      )}
+                      {form.headerFormat !== "TEXT" && (
+                        <HeaderMediaUploadField
+                          handle={form.headerMediaHandle}
+                          fileName={form.headerMediaName}
+                          format={form.headerFormat}
+                          uploading={uploadingHeader}
+                          onUpload={(file) => uploadHeaderMedia(file, (handle, name) =>
+                            setForm((p) => ({ ...p, headerMediaHandle: handle, headerMediaName: name })))}
+                          onRemove={() => setForm((p) => ({ ...p, headerMediaHandle: "", headerMediaName: "" }))}
+                        />
+                      )}
+                    </div>
+                    {form.headerFormat !== "TEXT" && !form.headerMediaHandle && (
+                      <p className="text-[11px] text-amber-500 dark:text-amber-400">
+                        ⚠️ ارفع وسيطاً (صورة/فيديو/مستند) — ميتا تتطلب sample media في الهيدر لاعتماد القالب
+                      </p>
+                    )}
+                    {form.headerText && !headerVarsOk && (
+                      <p className="text-[11px] text-red-500 dark:text-red-400">
+                        ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1813,59 +1849,88 @@ const WhatsAppMetaTemplates: React.FC<{
 
           {createStep === 2 && (
             <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
-              <div className="space-y-2">
-                <Label>محتوى الرسالة *</Label>
-                <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
-                  placeholder={"مرحباً {{1}}\nطلبك رقم {{2}} جاهز للاستلام."}
-                  className="min-h-[140px]" />
-                {form.bodyText && !bodyVarsOk && (
-                  <p className="text-[11px] text-red-500 dark:text-red-400">
-                    ⚠️ استخدم متغيرات مرقمة: {"{{1}}"}, {"{{2}}"} بدلاً من أسماء. Meta يتطلب ترقيم المتغيرات.
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>تذييل الرسالة (اختياري)</Label>
-                <Input value={form.footerText} onChange={(e) => setForm((p) => ({ ...p, footerText: e.target.value }))}
-                  placeholder="شكراً لاختيارك متجرنا" className="h-11" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>نص الزر (اختياري)</Label>
-                  <Input value={form.buttonText} onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
-                    placeholder="تتبع الطلب" className="h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>رابط الزر (اختياري)</Label>
-                  <Input value={form.buttonUrl} onChange={(e) => setForm((p) => ({ ...p, buttonUrl: e.target.value }))}
-                    placeholder="https://example.com/track" className="h-11" dir="ltr" />
-                  {form.buttonUrl && !buttonUrlOk && (
-                    <p className="text-[11px] text-red-500 dark:text-red-400">
-                      ⚠️ الرابط يجب أن يبدأ بـ https://
+              {form.category === "AUTHENTICATION" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-violet-200 bg-violet-50/80 p-4 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
+                    <p className="font-semibold text-sm flex items-center gap-1.5 mb-1.5">
+                      <span>🔐</span> مواصفات قوالب التحقق والمصادقة (Meta Standard OTP):
                     </p>
-                  )}
-                </div>
-              </div>
-              {extractedVars.length > 0 && (
-                <div className="space-y-2 rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-3">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">اختبار المتغيرات</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {extractedVars.map((v) => {
-                      const key = v.replace(/\D/g, "");
-                      return (
-                        <div key={key} className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-[color:var(--color-muted-foreground)]">{v}</span>
-                          <Input
-                            value={varValues[key] || ""}
-                            onChange={(e) => setVarValues((p) => ({ ...p, [key]: e.target.value }))}
-                            placeholder={`قيمة ${key}`}
-                            className="h-8 w-28 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
+                    <ul className="space-y-1.5 text-xs leading-5 list-disc list-inside">
+                      <li>يتم توليد محتوى الرسالة وتوصيات الأمان تلقائياً بواسطة Meta لمنع التلاعب وتأمين الحسابات.</li>
+                      <li>صلاحية الرمز محددة بـ <strong>10 دقائق</strong> ويتم توضيحها للمستخدم داخل الرسالة.</li>
+                      <li>الزر من نوع <strong>نسخ الرمز (Copy Code)</strong> بنقرة واحدة لسهولة إدخاله في التطبيق.</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نص زر نسخ الكود (OTP Button Label)</Label>
+                    <Input
+                      value={form.buttonText}
+                      onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
+                      placeholder={form.language === "ar" ? "نسخ الرمز" : "Copy Code"}
+                      className="h-11"
+                    />
+                    <p className="text-[11px] text-[color:var(--color-muted-foreground)]">
+                      اتركه فارغاً للاستخدام الافتراضي المعتمد ({form.language === "ar" ? "نسخ الرمز" : "Copy Code"}).
+                    </p>
                   </div>
                 </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>محتوى الرسالة *</Label>
+                    <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
+                      placeholder={"مرحباً {{1}}\nطلبك رقم {{2}} جاهز للاستلام."}
+                      className="min-h-[140px]" />
+                    {form.bodyText && !bodyVarsOk && (
+                      <p className="text-[11px] text-red-500 dark:text-red-400">
+                        ⚠️ استخدم متغيرات مرقمة: {"{{1}}"}, {"{{2}}"} بدلاً من أسماء. Meta يتطلب ترقيم المتغيرات.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تذييل الرسالة (اختياري)</Label>
+                    <Input value={form.footerText} onChange={(e) => setForm((p) => ({ ...p, footerText: e.target.value }))}
+                      placeholder="شكراً لاختيارك متجرنا" className="h-11" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>نص الزر (اختياري)</Label>
+                      <Input value={form.buttonText} onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
+                        placeholder="تتبع الطلب" className="h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>رابط الزر (اختياري)</Label>
+                      <Input value={form.buttonUrl} onChange={(e) => setForm((p) => ({ ...p, buttonUrl: e.target.value }))}
+                        placeholder="https://example.com/track" className="h-11" dir="ltr" />
+                      {form.buttonUrl && !buttonUrlOk && (
+                        <p className="text-[11px] text-red-500 dark:text-red-400">
+                          ⚠️ الرابط يجب أن يبدأ بـ https://
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {extractedVars.length > 0 && (
+                    <div className="space-y-2 rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-3">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">اختبار المتغيرات</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {extractedVars.map((v) => {
+                          const key = v.replace(/\D/g, "");
+                          return (
+                            <div key={key} className="flex items-center gap-2">
+                              <span className="text-xs font-mono text-[color:var(--color-muted-foreground)]">{v}</span>
+                              <Input
+                                value={varValues[key] || ""}
+                                onChange={(e) => setVarValues((p) => ({ ...p, [key]: e.target.value }))}
+                                placeholder={`قيمة ${key}`}
+                                className="h-8 w-28 text-xs"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
