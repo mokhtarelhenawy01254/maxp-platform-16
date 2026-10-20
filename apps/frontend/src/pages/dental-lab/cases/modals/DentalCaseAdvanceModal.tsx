@@ -1,0 +1,185 @@
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { ArrowRightCircle, Loader2, X as XMarkIcon } from "lucide-react";
+import type { DentalLabCase, DentalTechnician } from "../../shared";
+import {
+  advanceCase,
+  CASE_STATUS_MAP,
+  MODAL_CONTENT_CLS,
+  MODAL_INPUT_CLS,
+  nextStatusOf,
+} from "../../shared";
+import { statusBadge } from "../types/dentalCasesTypes";
+
+export interface DentalCaseAdvanceModalProps {
+  caseData: DentalLabCase;
+  technicians: DentalTechnician[];
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+export function DentalCaseAdvanceModal({
+  caseData,
+  technicians,
+  onClose,
+  onSaved,
+}: DentalCaseAdvanceModalProps) {
+  const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+  const defaultNext = nextStatusOf(caseData.status);
+  const [reason, setReason] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
+
+  const availableTargets = useMemo(() => {
+    const list: Array<{ id: string; label: string }> = [];
+    const current = caseData.status;
+    if (current === "RECEIVED") {
+      list.push({ id: "DESIGN", label: "تصميم CAD/CAM" });
+      list.push({ id: "MANUFACTURING", label: "بدء التصنيع والمعالجة" });
+      list.push({ id: "OUTSOURCED", label: "إرسال لمعمل خارجي" });
+    } else if (current === "DESIGN") {
+      list.push({ id: "MANUFACTURING", label: "بدء التصنيع والإنتاج" });
+      list.push({ id: "OUTSOURCED", label: "إرسال لمعمل خارجي" });
+      list.push({ id: "QC", label: "فحص الجودة (QC)" });
+    } else if (current === "MANUFACTURING") {
+      list.push({ id: "QC", label: "فحص الجودة (QC)" });
+      list.push({ id: "READY", label: "جاهز للتسليم (اكتمال الشغل)" });
+      list.push({ id: "OUTSOURCED", label: "إرسال لمعمل خارجي" });
+    } else if (current === "OUTSOURCED") {
+      list.push({ id: "QC", label: "فحص الجودة (استلام من الخارجي)" });
+      list.push({ id: "READY", label: "جاهز للتسليم مباشرة" });
+      list.push({ id: "MANUFACTURING", label: "عودة للتصنيع الداخلي" });
+    } else if (current === "QC") {
+      list.push({ id: "READY", label: "جاهز للتسليم (اجتياز الجودة)" });
+      list.push({ id: "DELIVERED", label: "تم التسليم للعيادة" });
+    } else if (current === "READY") {
+      list.push({ id: "DELIVERED", label: "تم التسليم للعيادة / الطبيب" });
+      list.push({ id: "CLOSED", label: "إغلاق وتصفية الحالة" });
+    } else if (current === "DELIVERED") {
+      list.push({ id: "CLOSED", label: "إغلاق الحالة" });
+    }
+    return list;
+  }, [caseData.status]);
+
+  const [targetStatus, setTargetStatus] = useState<string>(
+    defaultNext || (availableTargets[0]?.id ?? "")
+  );
+
+  const save = async () => {
+    if (saving || !targetStatus) return;
+    setSaving(true);
+    try {
+      await advanceCase(caseData.id, {
+        to: targetStatus,
+        reason: reason.trim() || undefined,
+        assigneeId: assigneeId || undefined,
+      });
+      toast.success(t("dentalLab.detail.advanced"));
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls = `${MODAL_INPUT_CLS} text-sm`;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3 sm:p-4"
+      onClick={() => !saving && onClose()}
+    >
+      <div className={MODAL_CONTENT_CLS} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">{t("dentalLab.cases.advanceTitle")}</h3>
+          <button
+            onClick={() => !saving && onClose()}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"
+            aria-label="إغلاق"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 font-medium">الحالة الحالية:</span>
+            {statusBadge(CASE_STATUS_MAP, caseData.status)}
+            <ArrowRightCircle className="w-5 h-5 text-gray-400" />
+            {targetStatus ? (
+              statusBadge(CASE_STATUS_MAP, targetStatus)
+            ) : (
+              <span className="text-sm text-gray-400">{t("dentalLab.common.noData")}</span>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              المرحلة أو الحالة المراد الانتقال إليها *
+            </label>
+            <select
+              className={inputCls}
+              value={targetStatus}
+              onChange={(e) => setTargetStatus(e.target.value)}
+            >
+              {availableTargets.map((tgt) => (
+                <option key={tgt.id} value={tgt.id}>
+                  {tgt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("dentalLab.cases.advanceReason")}
+            </label>
+            <textarea
+              className={`${inputCls} min-h-[80px] resize-y`}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="ملاحظات سبب النقل (اختياري)..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("dentalLab.cases.advanceAssignee")}
+            </label>
+            <select
+              className={inputCls}
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+            >
+              <option value="">— إسناد لفني محدد (اختياري) —</option>
+              {technicians
+                .filter((x) => x.isActive)
+                .map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 text-xs font-semibold"
+          >
+            {t("dentalLab.common.cancel")}
+          </button>
+          <button
+            onClick={save}
+            disabled={saving || !targetStatus}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-xs font-bold"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {t("dentalLab.common.save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default DentalCaseAdvanceModal;
