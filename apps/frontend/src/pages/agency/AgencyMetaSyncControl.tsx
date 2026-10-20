@@ -66,7 +66,7 @@ export default function AgencyMetaSyncControl({
     }
     try {
       setSyncing(true);
-      const res = await apiClient.post(`/agency/clients/${clientId}/sync-meta`, {}, { _skipErrorToast: true } as any);
+      const res = await apiClient.post<any>(`/agency/clients/${clientId}/sync-meta`, {}, { _skipErrorToast: true } as any);
       const summary = res.data?.data?.summary || {};
       if (Number(summary.synced) === 0) {
         toast.info(res.data?.message || "ميتا لم ترجع بيانات لهذه الفترة.");
@@ -91,7 +91,7 @@ export default function AgencyMetaSyncControl({
       setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
-      const res = await apiClient.post(`/agency/clients/${clientId}/import-csv`, formData, {
+      const res = await apiClient.post<any>(`/agency/clients/${clientId}/import-csv`, formData, {
         _skipErrorToast: true,
       } as any);
       const rejected = Number(res.data?.data?.rejectedRows || 0);
