@@ -1,27 +1,34 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { WorkspaceItemsEditor } from "./WorkspaceItemsEditor";
-import { WorkspaceOrder } from "./types";
+import type { WorkspaceOrder } from "./types";
 
-jest.mock("../../../services/apiClient", () => ({
+vi.mock("../../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({ data: { success: true, data: { variants: [] } } }),
-    post: jest.fn().mockResolvedValue({ data: {} }),
+    get: vi.fn().mockResolvedValue({ data: { success: true, data: { variants: [] } } }),
+    post: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));
 
-jest.mock("../../../hooks/useCurrency", () => ({
+vi.mock("../../../hooks/useCurrency", () => ({
   useCurrency: () => ({
     formatPrice: (amount: number) => `${amount} ج.م`,
   }),
 }));
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     i18n: { language: "ar" },
     t: (key: string) => key,
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("WorkspaceItemsEditor", () => {
   const mockOrder: WorkspaceOrder = {
@@ -42,11 +49,11 @@ describe("WorkspaceItemsEditor", () => {
     ],
   } as unknown as WorkspaceOrder;
 
-  const mockOnSave = jest.fn();
-  const mockOnCancel = jest.fn();
+  const mockOnSave = vi.fn();
+  const mockOnCancel = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders order items and computed totals without throwing", () => {
@@ -56,7 +63,7 @@ describe("WorkspaceItemsEditor", () => {
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isSaving={false}
-      />,
+      />
     );
 
     expect(screen.getByText("تعديل بنود وعروض الطلب")).toBeInTheDocument();
@@ -72,7 +79,7 @@ describe("WorkspaceItemsEditor", () => {
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isSaving={false}
-      />,
+      />
     );
 
     const increaseBtn = screen.getByTitle("زيادة");
@@ -89,7 +96,7 @@ describe("WorkspaceItemsEditor", () => {
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isSaving={false}
-      />,
+      />
     );
 
     const saveBtn = screen.getByRole("button", { name: /حفظ التعديلات/i });
@@ -110,7 +117,7 @@ describe("WorkspaceItemsEditor", () => {
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isSaving={false}
-      />,
+      />
     );
 
     const cancelBtn = screen.getByRole("button", { name: /إلغاء/i });
