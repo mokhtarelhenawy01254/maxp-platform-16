@@ -328,6 +328,42 @@ const WhatsAppInteractionService = {
 
             console.log(`📦 Updating order ${order.orderNumber} to ${status}`);
 
+            // 🛡️ Data Synchronization: Ensure governorate, city and area are resolved if missing or unspecified
+            if (status === 'CONFIRMED') {
+                try {
+                    const { getBestShippingAddressFields } = require('../../utils/turbo/addressParser');
+                    const { getTurboGovernorateName, isUnspecified } = require('../../utils/turbo/governorateMapper');
+
+                    const addrFields = getBestShippingAddressFields(order.shippingAddress, order.customerAddress);
+                    const updatePayload = {};
+
+                    if (isUnspecified(order.governorate)) {
+                        const resolvedGov = getTurboGovernorateName(
+                            addrFields.governorate || order.city || addrFields.city,
+                            order.city || addrFields.city,
+                            order.shippingAddress || order.customerAddress
+                        );
+                        if (resolvedGov && !isUnspecified(resolvedGov)) {
+                            updatePayload.governorate = resolvedGov;
+                        }
+                    }
+
+                    if (isUnspecified(order.city) && addrFields.city && !isUnspecified(addrFields.city)) {
+                        updatePayload.city = addrFields.city;
+                    }
+
+                    if (Object.keys(updatePayload).length > 0) {
+                        await prisma.order.update({
+                            where: { id: orderId },
+                            data: updatePayload
+                        }).catch(() => {});
+                        Object.assign(order, updatePayload);
+                    }
+                } catch (syncErr) {
+                    console.warn(`⚠️ [INTERACTION] Address resolution warning for order ${order.orderNumber}:`, syncErr.message);
+                }
+            }
+
             // استخدام orderService لضمان تشغيل كل التوابع (إشعارات، لوج، إلخ)
             const updatedOrder = await orderService.updateOrderStatus(
                 orderId,

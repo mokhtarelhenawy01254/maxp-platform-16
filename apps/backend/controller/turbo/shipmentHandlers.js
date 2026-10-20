@@ -79,6 +79,13 @@ const createShipment = async (req, res) => {
     const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems || order.items);
     const validation = validateOrderForTurbo(order, orderData);
     if (!validation.isValid) return res.status(400).json({ success: false, validationError: true, error: validation.message, missingFields: validation.missingFields, suggestions: validation.suggestions, message: validation.message });
+    if (validation.resolvedGovernorate && (!order.governorate || order.governorate === 'غير محدد')) {
+      if (order.id) {
+        await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { governorate: validation.resolvedGovernorate } }), 3).catch(() => {});
+      }
+      order.governorate = validation.resolvedGovernorate;
+      orderData.governorate = validation.resolvedGovernorate;
+    }
     const result = await turboService.createShipment(orderData);
     const baseTurboMetadata = result.data && typeof result.data === 'object' ? { ...result.data } : (result.data ? { result: result.data } : {});
     if (previousTurboShipment) { baseTurboMetadata.previousTurboShipment = previousTurboShipment; baseTurboMetadata.replacedExistingTurboShipment = true; }
@@ -274,6 +281,21 @@ const bulkCreateShipments = async (req, res) => {
         }
 
         const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
+        const validation = validateOrderForTurbo(order, orderData);
+        if (!validation.isValid) {
+          results.skipped.push({
+            orderNumber: order.orderNumber,
+            reason: `بيانات الطلب غير مكتملة لشحن تربو: ${validation.missingFields.join('، ')}`
+          });
+          continue;
+        }
+        if (validation.resolvedGovernorate && (!order.governorate || order.governorate === 'غير محدد')) {
+          if (order.orderNumber) {
+            await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { governorate: validation.resolvedGovernorate } }), 3).catch(() => {});
+          }
+          order.governorate = validation.resolvedGovernorate;
+          orderData.governorate = validation.resolvedGovernorate;
+        }
         const result = await turboService.createShipment(orderData);
         const updateData = {
           turboShipmentId: String(result.shipmentId || ''),
@@ -430,6 +452,15 @@ const bulkCreateShipments = async (req, res) => {
           email: guest.guestEmail || ''
         }, items);
 
+        const validation = validateOrderForTurbo(guest, guestOrderData);
+        if (!validation.isValid) {
+          results.skipped.push({
+            orderNumber: guest.orderNumber,
+            reason: `بيانات الطلب غير مكتملة لشحن تربو: ${validation.missingFields.join('، ')}`,
+            isGuest: true
+          });
+          continue;
+        }
         const result = await turboService.createShipment(guestOrderData);
         const updateData = {
           turboShipmentId: String(result.shipmentId || ''),

@@ -4,6 +4,7 @@
  */
 
 const { getBestShippingAddressFields } = require('./addressParser');
+const { getTurboGovernorateName, isUnspecified } = require('./governorateMapper');
 const {
   cleanPhoneNumber,
   cleanCustomerName,
@@ -58,7 +59,13 @@ function formatOrderForTurbo(order, customer, items) {
   const addressFields = getBestShippingAddressFields(order.shippingAddress, order.customerAddress);
   const rawShippingAddress = addressFields.sourceValue || order.shippingAddress || order.customerAddress;
 
-  let governorate = addressFields.governorate || order.city || order.governorate;
+  const rawGovCandidate = (!isUnspecified(order.governorate) ? order.governorate : null)
+    || (!isUnspecified(addressFields.governorate) ? addressFields.governorate : null)
+    || (!isUnspecified(order.city) ? order.city : null)
+    || (!isUnspecified(addressFields.city) ? addressFields.city : null)
+    || '';
+
+  let governorate = getTurboGovernorateName(rawGovCandidate, order.city || addressFields.city, rawShippingAddress) || rawGovCandidate;
 
   const rawCustomerName = (
     order.customerName ||

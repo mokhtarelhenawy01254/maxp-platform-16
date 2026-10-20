@@ -1136,10 +1136,23 @@ class EnhancedOrderService {
       parsedAddress = data.customerAddress;
     }
 
-    const addrGov = parsedAddress?.governorate || data.governorate || data.city || 'غير محدد';
-    const addrCity = parsedAddress?.city || data.city || data.area || 'غير محدد';
-    const addrArea = parsedAddress?.area || parsedAddress?.district || parsedAddress?.neighborhood || data.area || data.district || '';
+    const rawGovInput = parsedAddress?.governorate || data.governorate || '';
+    const rawCityInput = parsedAddress?.city || data.city || '';
+    const rawAreaInput = parsedAddress?.area || parsedAddress?.district || parsedAddress?.neighborhood || data.area || data.district || '';
     const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
+
+    const { getTurboGovernorateName, isUnspecified } = require('../utils/turbo/governorateMapper');
+    let resolvedGov = (!isUnspecified(rawGovInput) ? getTurboGovernorateName(rawGovInput, rawCityInput, addrText) : null);
+    if (!resolvedGov && !isUnspecified(rawCityInput)) {
+      resolvedGov = getTurboGovernorateName(rawCityInput, '', addrText);
+    }
+    if (!resolvedGov && addrText) {
+      resolvedGov = getTurboGovernorateName('', rawCityInput, addrText);
+    }
+
+    const addrGov = resolvedGov || rawGovInput || 'غير محدد';
+    const addrCity = (!isUnspecified(rawCityInput) ? rawCityInput : (rawAreaInput || addrGov));
+    const addrArea = rawAreaInput || '';
     const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
 
     // استخراج attribution تلقائياً لو الطلب من محادثة

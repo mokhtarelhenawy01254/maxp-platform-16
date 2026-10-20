@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName } = require('../../utils/turbo/addressParser');
-const { getTurboGovernorateName, findGovernmentByCity } = require('../../utils/turbo/governorateMapper');
+const { getTurboGovernorateName, findGovernmentByCity, normalizeArabic } = require('../../utils/turbo/governorateMapper');
+const { FALLBACK_GOVERNMENTS } = require('../../utils/turbo/constants');
 const { handleError } = require('../../utils/turbo/errorHandler');
 const { cleanShippingNotes } = require('../../utils/shippingSanitizer');
 
@@ -40,42 +41,96 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
     return candidateArea || govName || 'المركز الرئيسي';
   }
 
-  const nCandidate = normalizeTextForMatching(candidateArea);
-  const nGov = normalizeTextForMatching(govName);
-  const isCandidateJustGov = !nCandidate || nCandidate === nGov || ['cairo', 'giza', 'alexandria', 'sharqia', 'gharbia', 'dakahlia', 'qena', 'sohag', 'aswan', 'asyut'].includes(nCandidate);
+  const nGov = normalizeArabic(govName);
+  const nCandidate = normalizeArabic(candidateArea);
 
-  // 1. Direct match on candidateArea if it is a specific area name
+  const govNamesList = [
+    'cairo', 'giza', 'alexandria', 'sharqia', 'gharbia', 'dakahlia', 'qena',
+    'sohag', 'aswan', 'asyut', 'qalyubia', 'monufia', 'beheira', 'ismailia',
+    'suez', 'damietta', 'port said', 'fayoum', 'beni suef', 'minya', 'luxor',
+    'matrouh', 'red sea', 'north sinai', 'south sinai', 'new valley'
+  ];
+  const isCandidateJustGov = !nCandidate || nCandidate === nGov || govNamesList.includes(nCandidate);
+
+  const streetNoiseWords = [
+    'شارع', 'طريق', 'ميدان', 'حارة', 'حاره', 'عطفة', 'عطفه', 'زقاق',
+    'عمارة', 'عماره', 'برج', 'فيلا', 'مبنى', 'مبني', 'دور', 'شقة', 'شقه',
+    'رقم', 'امام', 'خلف', 'بجوار', 'قرب', 'ناصية', 'ناصيه', 'تقاطع', 'مدخل'
+  ];
+
+  // 1. Direct exact normalized match with candidateArea
   if (!isCandidateJustGov && nCandidate.length >= 2) {
-    const directMatch = areas.find(a => {
-      const na = normalizeTextForMatching(a.name);
-      return na === nCandidate || na.includes(nCandidate) || nCandidate.includes(na);
-    });
+    const directMatch = areas.find(a => normalizeArabic(a.name) === nCandidate);
     if (directMatch) return directMatch.name;
   }
 
-  // 2. Smart search: match against full address text
-  const nAddress = normalizeTextForMatching((fullAddressText || '') + ' ' + (candidateArea || ''));
-  let bestMatch = null;
-  let maxMatchLength = 0;
+  // 2. Tokenized search: if candidateArea has street words (e.g. "شارع الطالبية هرم")
+  if (!isCandidateJustGov && candidateArea) {
+    let cleanedCandidate = nCandidate;
+    // Strip standalone 'ش ' prefix safely without touching letters inside words like 'شبرا' or 'الشروق'
+    cleanedCandidate = cleanedCandidate.replace(/(?:^|\s)ش\s+/g, ' ');
 
-  for (const area of areas) {
-    const na = normalizeTextForMatching(area.name);
-    if (na.length >= 3 && nAddress.includes(na)) {
-      if (na.length > maxMatchLength) {
-        maxMatchLength = na.length;
-        bestMatch = area.name;
+    for (const noise of streetNoiseWords) {
+      if (noise.trim().length >= 2) {
+        cleanedCandidate = cleanedCandidate.replace(new RegExp(normalizeArabic(noise), 'g'), ' ');
+      }
+    }
+    const candidateTokens = cleanedCandidate.split(/\s+/).filter(w => w.length >= 3);
+    const sortedAreas = [...areas].sort((a, b) => (b.name || '').length - (a.name || '').length);
+
+    for (const area of sortedAreas) {
+      const na = normalizeArabic(area.name);
+      if (candidateTokens.some(token => token === na || (token.length >= 4 && na.includes(token)) || (na.length >= 4 && token.includes(na)))) {
+        return area.name;
       }
     }
   }
 
-  if (bestMatch) return bestMatch;
+  // 3. Smart search: match against full address text (sorted by longest area name first)
+  const fullCombinedText = `${fullAddressText || ''} ${candidateArea || ''}`;
+  const nAddress = normalizeArabic(fullCombinedText);
+  const sortedAreas = [...areas].sort((a, b) => (b.name || '').length - (a.name || '').length);
 
-  // 3. If candidateArea was provided and isn't just the governorate, retain it
-  if (!isCandidateJustGov && candidateArea && candidateArea.trim().length >= 2) {
-    return candidateArea.trim();
+  for (const area of sortedAreas) {
+    const na = normalizeArabic(area.name);
+    if (na.length >= 3 && nAddress.includes(na)) {
+      return area.name;
+    }
   }
 
-  // 4. Default fallback to governorate or 'المركز الرئيسي'
+  // 4. Colloquial variations without 'ال' (e.g. "طالبية" -> "الطالبية", "هرم" -> "الهرم", "اكتوبر" -> "6 اكتوبر")
+  for (const area of sortedAreas) {
+    const na = normalizeArabic(area.name);
+    const bareArea = na.startsWith('ال') ? na.slice(2) : na;
+    if (bareArea.length >= 3 && nAddress.includes(bareArea)) {
+      return area.name;
+    }
+  }
+
+  // 5. If candidateArea is clean and contains no street noise, retain it
+  if (!isCandidateJustGov && candidateArea && candidateArea.trim().length >= 2) {
+    const hasStreetNoise = streetNoiseWords.some(w => candidateArea.includes(w));
+    if (!hasStreetNoise) {
+      return candidateArea.trim();
+    }
+  }
+
+  // 6. Safe Central Fallback for Turbo:
+  // Instead of sending a street name that triggers expected_branch: null (status 99),
+  // pick a central/branch-enabled area for this governorate
+  const govAreaMatch = areas.find(a => normalizeArabic(a.name) === nGov || normalizeArabic(a.name).includes(nGov));
+  if (govAreaMatch) return govAreaMatch.name;
+
+  const mainCenterMatch = areas.find(a => {
+    const na = normalizeArabic(a.name);
+    return na.includes('رئيسي') || na.includes('مركز') || na.includes('عام');
+  });
+  if (mainCenterMatch) return mainCenterMatch.name;
+
+  if (areas.length > 0 && areas[0].name) {
+    return areas[0].name;
+  }
+
   return govName || 'المركز الرئيسي';
 }
 
@@ -116,27 +171,42 @@ class ShipmentService {
         }
       } catch (e) { console.warn('⚠️ [TURBO] Failed to fetch governments:', e.message); }
 
-      let cleanGovernorate;
+      // 🛡️ Fallback to FALLBACK_GOVERNMENTS if API failed or returned empty
+      if (!governments || governments.length === 0) {
+        governments = FALLBACK_GOVERNMENTS || [];
+      }
+
+      const rawGov = governorate || '';
+      const rawCity = city || addressFields.city || '';
+      const fullAddressContext = `${cleanAddress} ${rawShippingAddressString(shippingAddress, customerAddress)}`;
+
+      let cleanGovernorate = getTurboGovernorateName(rawGov, rawCity, fullAddressContext);
+      if (!cleanGovernorate && rawCity) {
+        cleanGovernorate = findGovernmentByCity(rawCity, governments, fullAddressContext);
+      }
+      if (!cleanGovernorate) {
+        cleanGovernorate = 'القاهرة';
+      }
+
       let matchedGovId = null;
-      if (governorate && governorate.trim()) {
-        const cleanedGov = cleanLocationName(governorate);
-        if (governments.length > 0) {
-          const cleanedLower = cleanedGov.toLowerCase();
-          let foundGov = governments.find(g => g.name.toLowerCase() === cleanedLower)
-            || governments.find(g => g.name.toLowerCase().includes(cleanedLower))
-            || [...governments].sort((a, b) => b.name.length - a.name.length).find(g => cleanedLower.includes(g.name.toLowerCase()));
-          if (foundGov) { cleanGovernorate = foundGov.name; matchedGovId = foundGov.id; }
-          else cleanGovernorate = getTurboGovernorateName(cleanedGov);
-        } else {
-          cleanGovernorate = getTurboGovernorateName(cleanedGov);
+      if (governments.length > 0) {
+        const nTargetGov = normalizeArabic(cleanGovernorate);
+        let foundGov = governments.find(g => normalizeArabic(g.name) === nTargetGov)
+          || governments.find(g => normalizeArabic(g.name).includes(nTargetGov))
+          || [...governments].sort((a, b) => b.name.length - a.name.length).find(g => nTargetGov.includes(normalizeArabic(g.name)));
+        if (foundGov) {
+          cleanGovernorate = foundGov.name;
+          matchedGovId = foundGov.id;
         }
-      } else {
-        const orderCity = city || '';
-        if (governments.length > 0) cleanGovernorate = findGovernmentByCity(orderCity, governments);
-        else cleanGovernorate = getTurboGovernorateName(cleanLocationName(city || ''));
-        if (governments.length > 0 && cleanGovernorate) {
-          const g = governments.find(x => x.name === cleanGovernorate);
-          if (g) matchedGovId = g.id;
+      }
+
+      if (!matchedGovId && FALLBACK_GOVERNMENTS && FALLBACK_GOVERNMENTS.length > 0) {
+        const nTargetGov = normalizeArabic(cleanGovernorate);
+        const fbMatch = FALLBACK_GOVERNMENTS.find(g => normalizeArabic(g.name) === nTargetGov)
+          || FALLBACK_GOVERNMENTS.find(g => normalizeArabic(g.name).includes(nTargetGov));
+        if (fbMatch) {
+          cleanGovernorate = fbMatch.name;
+          matchedGovId = fbMatch.id;
         }
       }
 
@@ -151,7 +221,7 @@ class ShipmentService {
           let areas = [];
           if ((aData.success === true || aData.success === 1) && aData.feed) areas = Array.isArray(aData.feed) ? aData.feed : [];
           if (areas.length > 0) {
-            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, `${cleanAddress} ${rawShippingAddressString(shippingAddress, customerAddress)}`, cleanGovernorate);
+            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, fullAddressContext, cleanGovernorate);
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
@@ -230,7 +300,23 @@ class ShipmentService {
       if (!shipment.code && !shipment.bar_code) throw new Error('Invalid response from Turbo API: missing code or bar_code');
       const trackingNumber = shipment.bar_code || shipment.code;
 
-      return { success: true, shipmentId: shipment.code || shipment.bar_code, trackingNumber, labelUrl: null, status: 'turbo_sent', estimatedDelivery: shipment.expected_branch || null, cost: null, data: shipment };
+      const rawStatusCode = String(shipment.status_code || '');
+      const rawStatusText = String(shipment.status || '');
+      let determinedStatus = 'turbo_sent';
+      if (rawStatusCode === '99' || rawStatusCode === '18' || rawStatusText.includes('غير مكتمل')) {
+        determinedStatus = 'incomplete';
+      }
+
+      return {
+        success: true,
+        shipmentId: shipment.code || shipment.bar_code,
+        trackingNumber,
+        labelUrl: null,
+        status: determinedStatus,
+        estimatedDelivery: shipment.expected_branch || null,
+        cost: null,
+        data: shipment
+      };
     } catch (error) {
       handleError(error, 'Create Shipment');
     }

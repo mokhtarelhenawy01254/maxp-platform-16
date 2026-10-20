@@ -3131,6 +3131,42 @@ class OrderService {
       const turboService = new TurboService(turboApiKey, companyId);
       const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
+      // 🛡️ PRE-SHIPMENT VALIDATION GATE:
+      // Verify governorate, city, address, customer phone and items before calling Turbo
+      const { validateOrderForTurbo } = require('../utils/turbo/shipmentValidator');
+      const validation = validateOrderForTurbo(order, orderData);
+
+      if (!validation.isValid) {
+        console.warn(`⚠️ [TURBO-AUTO] Pre-shipment validation failed for order ${order.orderNumber}: ${validation.missingFields.join(', ')}`);
+        const classified = classifyShippingError(validation.message, 'VALIDATION_FAILED');
+        const updatedMeta = attachShippingErrorToMetadata(order.metadata, classified);
+        const warnNote = `[تنبيه شحن تربو: تعذر إنشاء الشحنة تلقائياً بسبب نقص البيانات (${validation.missingFields.join('، ')}). يرجى استكمال العنوان/المحافظة ثم شحن الطلب]`;
+
+        if (!order.notes?.includes('تنبيه شحن تربو')) {
+          const updatedNotes = order.notes ? `${order.notes}\n${warnNote}` : warnNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes, metadata: updatedMeta }
+          }).catch(() => {});
+        } else {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { metadata: updatedMeta }
+          }).catch(() => {});
+        }
+        return { success: false, reason: 'VALIDATION_FAILED', errorInfo: classified, validationErrors: validation.missingFields };
+      }
+
+      // Persist resolved governorate to order record if it was missing/unspecified
+      if (validation.resolvedGovernorate && (!order.governorate || order.governorate === 'غير محدد')) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { governorate: validation.resolvedGovernorate }
+        }).catch(() => {});
+        order.governorate = validation.resolvedGovernorate;
+        orderData.governorate = validation.resolvedGovernorate;
+      }
+
       const shipmentResult = await turboService.createShipment(orderData);
 
       if (shipmentResult && shipmentResult.success && (shipmentResult.shipmentId || shipmentResult.trackingNumber)) {
@@ -3353,6 +3389,31 @@ class OrderService {
         phone: guest.guestPhone || '',
         email: guest.guestEmail || ''
       }, parsedItems);
+
+      // 🛡️ PRE-SHIPMENT VALIDATION GATE FOR GUEST ORDER:
+      const { validateOrderForTurbo } = require('../utils/turbo/shipmentValidator');
+      const validation = validateOrderForTurbo(guest, guestOrderData);
+
+      if (!validation.isValid) {
+        console.warn(`⚠️ [TURBO-AUTO-GUEST] Pre-shipment validation failed for guest order ${guest.orderNumber}: ${validation.missingFields.join(', ')}`);
+        const classified = classifyShippingError(validation.message, 'VALIDATION_FAILED');
+        const updatedMeta = attachShippingErrorToMetadata(guest.metadata, classified);
+        const warnNote = `[تنبيه شحن تربو: تعذر إنشاء الشحنة تلقائياً بسبب نقص البيانات (${validation.missingFields.join('، ')}). يرجى استكمال العنوان/المحافظة ثم شحن الطلب]`;
+
+        if (!guest.notes?.includes('تنبيه شحن تربو')) {
+          const updatedNotes = guest.notes ? `${guest.notes}\n${warnNote}` : warnNote;
+          await prisma.guestOrder.update({
+            where: { id: guest.id },
+            data: { notes: updatedNotes, metadata: updatedMeta }
+          }).catch(() => {});
+        } else {
+          await prisma.guestOrder.update({
+            where: { id: guest.id },
+            data: { metadata: updatedMeta }
+          }).catch(() => {});
+        }
+        return { success: false, reason: 'VALIDATION_FAILED', errorInfo: classified, validationErrors: validation.missingFields };
+      }
 
       const result = await turboService.createShipment(guestOrderData);
 

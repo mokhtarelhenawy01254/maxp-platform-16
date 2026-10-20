@@ -250,17 +250,29 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
   }
 
   // Remove trailing city or governorate name only if it's trailing at the very end of the formatted address
+  const knownGovNames = [
+    'Cairo', 'Giza', 'Alexandria', 'القاهرة', 'القاهره', 'الجيزة', 'الجيزه', 'الإسكندرية', 'الاسكندريه'
+  ];
   const locWords = [
     addressFields.governorate,
     options.governorate,
     addressFields.city,
     options.city,
-    'Cairo', 'Giza', 'Alexandria'
+    ...knownGovNames
   ].filter(Boolean).map(s => cleanLocationName(String(s).trim())).filter(s => s.length > 2);
 
-  for (const loc of locWords) {
-    const locRegex = new RegExp(`[\\s,]+(${loc.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})\\s*$`, 'i');
-    streetText = streetText.replace(locRegex, '');
+  let stripped = true;
+  let iterations = 0;
+  while (stripped && iterations < 5) {
+    stripped = false;
+    iterations++;
+    for (const loc of locWords) {
+      const locRegex = new RegExp(`[\\s,]+(${loc.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})\\s*$`, 'i');
+      if (locRegex.test(streetText)) {
+        streetText = streetText.replace(locRegex, '');
+        stripped = true;
+      }
+    }
   }
 
   // Clean up extra whitespace and punctuation without removing location/district text
