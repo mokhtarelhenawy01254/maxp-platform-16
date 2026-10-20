@@ -1,6 +1,118 @@
 import { apiClient } from '../../services/api';
 
 // ============================================================================
+// Wave 7: Factory Agreements & Payments Types
+// ============================================================================
+export type FactoryAgreementPricingMode = 'PER_PIECE' | 'PER_STAGE' | 'HOURLY' | 'FIXED';
+export type FactoryAgreementStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'CANCELLED';
+export type FactoryAgreementPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+
+export interface FactoryAgreementPayment {
+  id: string;
+  agreementId: string;
+  seq: number;
+  label: string;
+  percent?: number | null;
+  amount: number;
+  dueDate?: string | null;
+  status: FactoryAgreementPaymentStatus;
+  paidAt?: string | null;
+  paidById?: string | null;
+  reference?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FactoryAgreementFile {
+  id: string;
+  agreementId: string;
+  fileName: string;
+  url: string;
+  kind: string;
+  uploadedBy?: string | null;
+  uploadedAt?: string;
+}
+
+export interface FactoryAgreement {
+  id: string;
+  companyId: string;
+  partnerFactoryId: string;
+  code: string;
+  title: string;
+  orderId?: string | null;
+  customerOrderId?: string | null;
+  pricingMode: FactoryAgreementPricingMode;
+  totalValue?: number | null;
+  currency: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  scopeOfOperations?: string | null;
+  productsDesc?: string | null;
+  quantitiesNotes?: string | null;
+  qualityTerms?: string | null;
+  materialOwnership?: string | null;
+  wastePolicy?: string | null;
+  deliveryTerms?: string | null;
+  reworkPolicy?: string | null;
+  notes?: string | null;
+  status: FactoryAgreementStatus;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+
+  partnerFactory?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    phone?: string | null;
+    specialty?: string | null;
+  };
+  order?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    plannedQuantity?: number;
+    unit?: string;
+  } | null;
+  customerOrder?: {
+    id: string;
+    orderNumber: string;
+    brandName?: string | null;
+    status: string;
+  } | null;
+  payments?: FactoryAgreementPayment[];
+  files?: FactoryAgreementFile[];
+
+  // Computed metrics
+  paidAmount?: number;
+  pendingAmount?: number;
+  paidPercent?: number;
+  remainingAmount?: number;
+}
+
+export interface FactoryAgreementSummary {
+  id: string;
+  code: string;
+  title: string;
+  status: FactoryAgreementStatus;
+  pricingMode: FactoryAgreementPricingMode;
+  totalValue: number;
+  currency: string;
+  payments: Array<{
+    id: string;
+    seq: number;
+    label: string;
+    amount: number;
+    percent?: number | null;
+    dueDate?: string | null;
+    status: FactoryAgreementPaymentStatus;
+    paidAt?: string | null;
+  }>;
+}
+
+
+// ============================================================================
 // Types & Contracts for Manufacturing Execution System (MES)
 // ============================================================================
 
@@ -207,6 +319,9 @@ export interface CustomerOrder {
   expectedDelivery?: string | null;
   notes?: string | null;
   currency: string;
+  portalToken?: string | null;
+  portalEnabled?: boolean;
+  portalLastAccessAt?: string | null;
   createdById?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -471,6 +586,7 @@ export interface FactoryPortalAssignment {
   }>;
   techPack?: TechPack | null;
   sizeChart?: SizeChart | null;
+  agreementSummary?: FactoryAgreementSummary | null;
 }
 
 export interface PartnerFactoryPerformance {
@@ -1184,6 +1300,29 @@ export const manufacturingApi = {
     return res.data?.data;
   },
 
+  // Customer Portal Link Management (Wave 8)
+  generateCustomerOrderPortalLink: async (
+    customerOrderId: string
+  ): Promise<{ success: boolean; portalToken: string; portalEnabled: boolean; portalUrl: string; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/customer-orders/${customerOrderId}/portal-link/generate`);
+    return res.data;
+  },
+
+  toggleCustomerOrderPortalLink: async (
+    customerOrderId: string,
+    enabled: boolean
+  ): Promise<{ success: boolean; portalToken: string; portalEnabled: boolean; portalUrl: string | null; message: string }> => {
+    const res = await apiClient.patch(`/manufacturing/customer-orders/${customerOrderId}/portal-link/toggle`, { enabled });
+    return res.data;
+  },
+
+  deleteCustomerOrderPortalLink: async (
+    customerOrderId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/customer-orders/${customerOrderId}/portal-link`);
+    return res.data;
+  },
+
   getCustomersList: async (search?: string): Promise<Array<{ id: string; name: string; phone?: string; email?: string }>> => {
     try {
       const res = await apiClient.get('/customers', { params: { search, limit: 30 } });
@@ -1712,6 +1851,110 @@ export const manufacturingApi = {
   },
 
 
+  // ============================================================================
+  // Wave 7: Factory Agreements & Payments API
+  // ============================================================================
+  listFactoryAgreements: async (params?: {
+    partnerFactoryId?: string;
+    status?: string;
+    orderId?: string;
+    customerOrderId?: string;
+    pricingMode?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    data: FactoryAgreement[];
+    pagination: { total: number; page: number; limit: number; totalPages: number };
+    metrics: { totalCount: number; activeCount: number; totalValue: number; totalPaid: number };
+  }> => {
+    const res = await apiClient.get('/manufacturing/factory-agreements', { params });
+    return res.data;
+  },
+
+  getFactoryAgreement: async (id: string): Promise<{ success: boolean; data: FactoryAgreement }> => {
+    const res = await apiClient.get(`/manufacturing/factory-agreements/${id}`);
+    return res.data;
+  },
+
+  createFactoryAgreement: async (data: Partial<FactoryAgreement>): Promise<{ success: boolean; data: FactoryAgreement; message: string }> => {
+    const res = await apiClient.post('/manufacturing/factory-agreements', data);
+    return res.data;
+  },
+
+  updateFactoryAgreement: async (id: string, data: Partial<FactoryAgreement>): Promise<{ success: boolean; data: FactoryAgreement; message: string }> => {
+    const res = await apiClient.patch(`/manufacturing/factory-agreements/${id}`, data);
+    return res.data;
+  },
+
+  activateFactoryAgreement: async (id: string): Promise<{ success: boolean; data: FactoryAgreement; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/activate`);
+    return res.data;
+  },
+
+  closeFactoryAgreement: async (id: string): Promise<{ success: boolean; data: FactoryAgreement; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/close`);
+    return res.data;
+  },
+
+  cancelFactoryAgreement: async (id: string): Promise<{ success: boolean; data: FactoryAgreement; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/cancel`);
+    return res.data;
+  },
+
+  deleteFactoryAgreement: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/factory-agreements/${id}`);
+    return res.data;
+  },
+
+  generateAgreementPayments: async (
+    id: string,
+    data?: { schedule?: Array<{ label: string; percent: number; dueDate?: string; notes?: string }> }
+  ): Promise<{ success: boolean; message: string; data: FactoryAgreement }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/payments/generate`, data);
+    return res.data;
+  },
+
+  createAgreementPayment: async (
+    id: string,
+    data: { label: string; amount: number; dueDate?: string; notes?: string }
+  ): Promise<{ success: boolean; data: FactoryAgreementPayment; agreement: FactoryAgreement; message: string }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/payments`, data);
+    return res.data;
+  },
+
+  payAgreementPayment: async (
+    id: string,
+    paymentId: string,
+    data?: { paidAt?: string; reference?: string; notes?: string }
+  ): Promise<{ success: boolean; data: FactoryAgreementPayment; agreement: FactoryAgreement; message: string }> => {
+    const res = await apiClient.patch(`/manufacturing/factory-agreements/${id}/payments/${paymentId}/pay`, data);
+    return res.data;
+  },
+
+  cancelAgreementPayment: async (
+    id: string,
+    paymentId: string
+  ): Promise<{ success: boolean; data: FactoryAgreementPayment; agreement: FactoryAgreement; message: string }> => {
+    const res = await apiClient.patch(`/manufacturing/factory-agreements/${id}/payments/${paymentId}/cancel`);
+    return res.data;
+  },
+
+  uploadAgreementFile: async (
+    id: string,
+    formData: FormData
+  ): Promise<{ success: boolean; data: FactoryAgreementFile }> => {
+    const res = await apiClient.post(`/manufacturing/factory-agreements/${id}/files`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
+
+  deleteAgreementFile: async (id: string, fileId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/factory-agreements/${id}/files/${fileId}`);
+    return res.data;
+  },
 };
 
 // ============================================================================
@@ -1806,5 +2049,145 @@ export const factoryPortalApi = {
     });
     return res.data;
   },
+};
 
+// ============================================================================
+// Wave 8: Customer Portal Types & Public API Client
+// ============================================================================
+
+export interface CustomerPortalContext {
+  orderNumber: string;
+  brandName?: string | null;
+  customerName?: string | null;
+  status: CustomerOrderStatus;
+  currency: string;
+  portalLastAccessAt?: string | null;
+}
+
+export interface CustomerPortalProgressStage {
+  name: string;
+  sequence: number;
+  status: string;
+  plannedQuantity: number;
+  completedQuantity: number;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface CustomerPortalVariantItem {
+  id: string;
+  size: string;
+  color: string;
+  quantity: number;
+  completedQuantity: number;
+}
+
+export interface CustomerPortalUpdateMedia {
+  id: string;
+  url: string;
+  kind: string;
+  caption?: string | null;
+  publishedAt: string;
+}
+
+export interface CustomerPortalApprovedTechPack {
+  id: string;
+  code: string;
+  title: string;
+  version: number;
+  category?: string | null;
+  season?: string | null;
+  targetGender?: string | null;
+  approvedAt?: string | null;
+  packagingDetails?: string | null;
+  instructions?: string | null;
+  files: Array<{
+    id: string;
+    fileName: string;
+    url: string;
+    kind: string;
+  }>;
+}
+
+export interface CustomerPortalApprovedSizeChart {
+  id: string;
+  code: string;
+  name: string;
+  version: number;
+  unit: string;
+  measurementMethod: string;
+  rows: Array<{
+    id: string;
+    sizeLabel: string;
+    measurementKey: string;
+    value: number;
+    tolerance: number;
+  }>;
+}
+
+export interface CustomerPortalPaymentItem {
+  id: string;
+  kind: CustomerOrderPaymentKind;
+  label?: string | null;
+  percent?: number | null;
+  amount: number;
+  dueDate?: string | null;
+  status: CustomerOrderPaymentStatus;
+  paidAt?: string | null;
+  paidAmount?: number | null;
+  method?: string | null;
+  notes?: string | null;
+}
+
+export interface CustomerPortalOrderDetails {
+  orderNumber: string;
+  brandName?: string | null;
+  customerName?: string | null;
+  status: CustomerOrderStatus;
+  currency: string;
+  contractedDeliveryDate?: string | null;
+  expectedDeliveryDate?: string | null;
+  isDelayed: boolean;
+  progress: {
+    percent: number;
+    totalStages: number;
+    completedStages: number;
+    totalPlannedPieces: number;
+    totalCompletedPieces: number;
+    stages: CustomerPortalProgressStage[];
+  };
+  variantMatrix: CustomerPortalVariantItem[];
+  updates: CustomerPortalUpdateMedia[];
+  techPack?: CustomerPortalApprovedTechPack | null;
+  sizeChart?: CustomerPortalApprovedSizeChart | null;
+  payments: {
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    percentPaid: number;
+    items: CustomerPortalPaymentItem[];
+  };
+  portalLastAccessAt?: string | null;
+}
+
+export const customerPortalApi = {
+  getContext: async (token: string): Promise<CustomerPortalContext> => {
+    const res = await apiClient.get('/customer-portal/context', {
+      params: { token },
+      _skipAuthHeader: true,
+      _skipAuthRefresh: true,
+      _skipErrorToast: true,
+    } as any);
+    return res.data?.data;
+  },
+
+  getOrderDetails: async (token: string): Promise<CustomerPortalOrderDetails> => {
+    const res = await apiClient.get('/customer-portal/order', {
+      params: { token },
+      _skipAuthHeader: true,
+      _skipAuthRefresh: true,
+      _skipErrorToast: true,
+    } as any);
+    return res.data?.data;
+  },
 };

@@ -81,6 +81,11 @@ router.post('/customer-orders/:id/payments/generate', controller.generateDefault
 router.post('/customer-orders/:id/payments', controller.createCustomerOrderPayment);
 router.patch('/customer-orders/:id/payments/:paymentId', controller.updateCustomerOrderPayment);
 
+// Customer Portal Link Lifecycle (Wave 8)
+router.post('/customer-orders/:id/portal-link/generate', controller.generateCustomerOrderPortalLink);
+router.patch('/customer-orders/:id/portal-link/toggle', controller.toggleCustomerOrderPortalLink);
+router.delete('/customer-orders/:id/portal-link', controller.deleteCustomerOrderPortalLink);
+
 // ============================================================================
 // 5. Partner Factories & External Subcontracting (Wave 2)
 // ============================================================================
@@ -184,6 +189,27 @@ router.put('/stage-template-sets/:id/reorder', controller.reorderStageTemplateSe
 
 router.post('/orders/:orderId/apply-stage-set', controller.applyStageSetToOrder);
 router.post('/boms/:bomId/apply-stage-set', controller.applyStageSetToBom);
+
+
+// ============================================================================
+// 11. Partner Factory Agreements & Payments (Wave 7)
+// ============================================================================
+router.get('/factory-agreements', controller.listFactoryAgreements);
+router.post('/factory-agreements', controller.createFactoryAgreement);
+router.get('/factory-agreements/:id', controller.getFactoryAgreementById);
+router.patch('/factory-agreements/:id', controller.updateFactoryAgreement);
+router.post('/factory-agreements/:id/activate', controller.activateFactoryAgreement);
+router.post('/factory-agreements/:id/close', controller.closeFactoryAgreement);
+router.post('/factory-agreements/:id/cancel', controller.cancelFactoryAgreement);
+router.delete('/factory-agreements/:id', controller.deleteFactoryAgreement);
+
+router.post('/factory-agreements/:id/payments/generate', controller.generateAgreementPayments);
+router.post('/factory-agreements/:id/payments', controller.createAgreementPayment);
+router.patch('/factory-agreements/:id/payments/:paymentId/pay', controller.payAgreementPayment);
+router.patch('/factory-agreements/:id/payments/:paymentId/cancel', controller.cancelAgreementPayment);
+
+router.post('/factory-agreements/:id/files', upload.single('file'), controller.uploadAgreementFile);
+router.delete('/factory-agreements/:id/files/:fileId', controller.deleteAgreementFile);
 
 module.exports = router;
 

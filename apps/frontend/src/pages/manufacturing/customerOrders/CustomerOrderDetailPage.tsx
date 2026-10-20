@@ -15,6 +15,10 @@ import {
   Building2,
   Clock,
   Sparkles,
+  Copy,
+  Link2,
+  Power,
+  Trash2,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import {
@@ -37,6 +41,7 @@ export const CustomerOrderDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [portalCopied, setPortalCopied] = useState(false);
 
   // Modals state
   const [recordModalOpen, setRecordModalOpen] = useState(false);
@@ -96,6 +101,61 @@ export const CustomerOrderDetailPage: React.FC = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleGeneratePortalLink = async () => {
+    if (!id) return;
+    if (order?.portalToken && !window.confirm('هل تريد تدوير رمز البوابة؟ الرمز القديم سيتوقف عن العمل فوراً.')) {
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const res = await manufacturingApi.generateCustomerOrderPortalLink(id);
+      await loadOrderDetail();
+      alert(res.message || 'تم توليد وتفعيل رابط بوابة العميل بنجاح');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'فشل توليد رابط بوابة العميل');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleTogglePortalLink = async () => {
+    if (!id || !order) return;
+    try {
+      setActionLoading(true);
+      await manufacturingApi.toggleCustomerOrderPortalLink(id, !order.portalEnabled);
+      await loadOrderDetail();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'فشل تغيير حالة بوابة العميل');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeletePortalLink = async () => {
+    if (!id) return;
+    if (!window.confirm('هل أنت متأكد من إلغاء رابط بوابة العميل؟ لن يتمكن العميل من الدخول حتى يتم توليد رابط جديد.')) {
+      return;
+    }
+    try {
+      setActionLoading(true);
+      await manufacturingApi.deleteCustomerOrderPortalLink(id);
+      await loadOrderDetail();
+      alert('تم إلغاء رابط بوابة العميل بنجاح');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'فشل إلغاء رابط بوابة العميل');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCopyPortalLink = () => {
+    if (!order?.portalToken) return;
+    const url = `${window.location.origin}/customer-portal?token=${order.portalToken}`;
+    navigator.clipboard.writeText(url);
+    setPortalCopied(true);
+    setTimeout(() => setPortalCopied(false), 2500);
   };
 
   const getStatusBadge = (status: CustomerOrderStatus) => {
@@ -303,6 +363,126 @@ export const CustomerOrderDetailPage: React.FC = () => {
                   className="h-full bg-emerald-500 rounded-full transition-all duration-300"
                   style={{ width: `${percentCollected}%` }}
                 />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Portal Management Cockpit Card (Wave 8) */}
+        <div className="p-4 sm:p-5 rounded-xl bg-card border border-border/70 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground">بوابة متابعة العميل (Customer Portal)</h3>
+                  {order.portalToken ? (
+                    order.portalEnabled ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>نشط ومفعل</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                        <Clock className="w-3 h-3" />
+                        <span>معطل مؤقتاً</span>
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border">
+                      لم يتم التوليد بعد
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  رابط مشفر خاص بالعميل لمتابعة التقدم المعتمد، المواعيد، التحديثات المنشورة ودفعات العقد فقط (مع عزل تام للمصانع والتكاليف)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {order.portalToken ? (
+                <>
+                  <button
+                    onClick={handleCopyPortalLink}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs transition active:scale-[0.98]"
+                  >
+                    {portalCopied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{portalCopied ? 'تم النسخ بنجاح' : 'نسخ رابط العميل'}</span>
+                  </button>
+
+                  <a
+                    href={`/customer-portal?token=${order.portalToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>فتح البوابة</span>
+                  </a>
+
+                  <button
+                    onClick={handleTogglePortalLink}
+                    disabled={actionLoading}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${
+                      order.portalEnabled
+                        ? 'border-amber-200 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20'
+                        : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+                    }`}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>{order.portalEnabled ? 'تعطيل مؤقت' : 'تفعيل'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleGeneratePortalLink}
+                    disabled={actionLoading}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted text-muted-foreground transition"
+                    title="تدوير الرمز وإبطال الرابط السابق"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>تدوير الرمز</span>
+                  </button>
+
+                  <button
+                    onClick={handleDeletePortalLink}
+                    disabled={actionLoading}
+                    className="p-1.5 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10 transition"
+                    title="إلغاء الرابط نهائياً"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleGeneratePortalLink}
+                  disabled={actionLoading}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition active:scale-[0.98]"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>توليد وتفعيل رابط العميل</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {order.portalToken && (
+            <div className="pt-2 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 font-mono truncate max-w-xl">
+                <span className="text-muted-foreground">الرابط المباشر:</span>
+                <span className="text-foreground/90 select-all truncate">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/customer-portal?token=${order.portalToken}` : `/customer-portal?token=${order.portalToken}`}
+                </span>
+              </div>
+              <div className="shrink-0 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-muted-foreground" />
+                <span>
+                  {order.portalLastAccessAt
+                    ? `آخر دخول للعميل: ${new Date(order.portalLastAccessAt).toLocaleString('ar-EG')}`
+                    : 'لم يتم تسجيل أي دخول للعميل بعد'}
+                </span>
               </div>
             </div>
           )}

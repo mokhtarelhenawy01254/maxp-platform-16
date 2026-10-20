@@ -12,6 +12,8 @@ const FactoryPortalService = require('../services/factoryPortalService');
 const ManufacturingTechPackService = require('../services/manufacturingTechPackService');
 const ManufacturingSampleService = require('../services/manufacturingSampleService');
 const ManufacturingStageTemplateService = require('../services/manufacturingStageTemplateService');
+const ManufacturingFactoryAgreementService = require('../services/manufacturingFactoryAgreementService');
+const CustomerPortalService = require('../services/customerPortalService');
 
 class ManufacturingController {
   static getCompanyId(req) {
@@ -395,6 +397,40 @@ class ManufacturingController {
       res.json({ success: true, data: result, message: 'تم تحديث الدفعة بنجاح' });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Customer Portal Link Management (Wave 8)
+  // ==========================================================================
+
+  static async generateCustomerOrderPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await CustomerPortalService.generatePortalLink(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async toggleCustomerOrderPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await CustomerPortalService.togglePortalLink(companyId, req.params.id, req.body);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteCustomerOrderPortalLink(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await CustomerPortalService.deletePortalLink(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 500).json({ success: false, message: error.message });
     }
   }
 
@@ -1159,6 +1195,180 @@ class ManufacturingController {
       res.json({ success: true, data: result, message: 'تم تطبيق المراحل القياسية على قائمة المكونات (BOM) بنجاح' });
     } catch (error) {
       res.status(error.status || error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================================================
+  // Wave 7: Partner Factory Agreements & Payments
+  // ==========================================================================
+
+  static async listFactoryAgreements(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.listAgreements(companyId, req.query);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getFactoryAgreementById(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.getAgreementById(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 404).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.createAgreement(companyId, req.user, req.body);
+      res.status(201).json({ success: true, data, message: 'تم إنشاء اتفاقية المصنع الشريك بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.updateAgreement(companyId, req.params.id, req.body);
+      res.json({ success: true, data, message: 'تم تحديث بيانات الاتفاقية بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async activateFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.activateAgreement(companyId, req.params.id);
+      res.json({ success: true, data, message: 'تم تفعيل الاتفاقية بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async closeFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.closeAgreement(companyId, req.params.id);
+      res.json({ success: true, data, message: 'تم إغلاق الاتفاقية بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async cancelFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingFactoryAgreementService.cancelAgreement(companyId, req.params.id);
+      res.json({ success: true, data, message: 'تم إلغاء الاتفاقية بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteFactoryAgreement(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.deleteAgreement(companyId, req.params.id);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async generateAgreementPayments(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.generateDefaultPayments(
+        companyId,
+        req.params.id,
+        req.body
+      );
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createAgreementPayment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.createPayment(
+        companyId,
+        req.params.id,
+        req.body
+      );
+      res.status(201).json({ success: true, data: result.data, agreement: result.agreement, message: 'تمت إضافة الدفعة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async payAgreementPayment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.payPayment(
+        companyId,
+        req.params.id,
+        req.params.paymentId,
+        req.body,
+        req.user
+      );
+      res.json({ success: true, data: result.data, agreement: result.agreement, message: 'تم تسجيل سداد الدفعة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async cancelAgreementPayment(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.cancelPayment(
+        companyId,
+        req.params.id,
+        req.params.paymentId
+      );
+      res.json({ success: true, data: result.data, agreement: result.agreement, message: 'تم إلغاء الدفعة بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async uploadAgreementFile(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'الملف مطلوب للرفع' });
+      }
+      const result = await ManufacturingFactoryAgreementService.addFile(
+        companyId,
+        req.params.id,
+        req.file,
+        req.user
+      );
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteAgreementFile(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingFactoryAgreementService.deleteFile(
+        companyId,
+        req.params.id,
+        req.params.fileId
+      );
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }
   }
 

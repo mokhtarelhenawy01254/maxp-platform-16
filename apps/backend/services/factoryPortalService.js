@@ -93,7 +93,11 @@ class FactoryPortalService {
 
     for (const [key, value] of Object.entries(obj)) {
       if (PROHIBITED_FIELDS.has(key)) {
-        throw new Error(`[SECURITY VIOLATION] Prohibited sensitive field "${key}" detected at path "${path}.${key}" in Factory Portal payload.`);
+        if (key === 'payments' && path.endsWith('agreementSummary')) {
+          // Explicitly permitted partner agreement payment schedule
+        } else {
+          throw new Error(`[SECURITY VIOLATION] Prohibited sensitive field "${key}" detected at path "${path}.${key}" in Factory Portal payload.`);
+        }
       }
       if (value && typeof value === 'object') {
         this.auditSanitizedPayload(value, `${path}.${key}`);
@@ -387,6 +391,46 @@ class FactoryPortalService {
           ? Number(st.stageLaborCost)
           : round2(plannedQty * ratePerPiece);
 
+      // Wave 7: Look up independent partner factory agreement linked to this order & factory
+      let agreementSummary = null;
+      if (ord.id && prisma.factoryAgreement) {
+        const fa = await prisma.factoryAgreement.findFirst({
+          where: {
+            companyId: factory.companyId,
+            partnerFactoryId: factory.id,
+            orderId: ord.id,
+            status: { in: ['ACTIVE', 'CLOSED', 'DRAFT'] },
+          },
+          include: {
+            payments: {
+              orderBy: { seq: 'asc' },
+            },
+          },
+        });
+
+        if (fa) {
+          agreementSummary = {
+            id: fa.id,
+            code: fa.code,
+            title: fa.title,
+            status: fa.status,
+            pricingMode: fa.pricingMode,
+            totalValue: Number(fa.totalValue || 0),
+            currency: fa.currency || 'EGP',
+            payments: (fa.payments || []).map((p) => ({
+              id: p.id,
+              seq: p.seq,
+              label: p.label,
+              amount: Number(p.amount || 0),
+              percent: p.percent ? Number(p.percent) : null,
+              dueDate: p.dueDate || null,
+              status: p.status,
+              paidAt: p.paidAt || null,
+            })),
+          };
+        }
+      }
+
       const approvedTechPack = await ManufacturingTechPackService.getApprovedTechPackForOrder(
         factory.companyId,
         ord
@@ -430,6 +474,7 @@ class FactoryPortalService {
           ord,
           approvedTechPack && approvedTechPack.id
         ),
+        agreementSummary,
       };
     })
   );
