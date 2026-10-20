@@ -1,23 +1,30 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import UnifiedShippingCard from "./UnifiedShippingCard";
 
-jest.mock("../../../hooks/useCurrency", () => ({
+vi.mock("../../../hooks/useCurrency", () => ({
   useCurrency: () => ({
     formatPrice: (amount: number) => `${amount} ج.م`,
   }),
 }));
 
-jest.mock("../../../services/apiClient", () => ({
+vi.mock("../../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({ data: { success: true, data: [] } }),
-    post: jest.fn().mockResolvedValue({ data: { success: true, message: "OK" } }),
+    get: vi.fn().mockResolvedValue({ data: { success: true, data: [] } }),
+    post: vi.fn().mockResolvedValue({ data: { success: true, message: "OK" } }),
   },
 }));
 
-jest.mock("../../../utils/tokenManager", () => ({
+vi.mock("../../../utils/tokenManager", () => ({
   getAccessToken: () => "mock-token",
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("UnifiedShippingCard", () => {
   it("renders shipping management header", () => {
@@ -30,7 +37,9 @@ describe("UnifiedShippingCard", () => {
     render(<UnifiedShippingCard order={mockOrder} />);
 
     expect(screen.getByText("إدارة الشحن والتوصيل")).toBeInTheDocument();
-    expect(screen.getByText("ربط ومتابعة شحنة الطلب مع أي شركة شحن أو مندوب")).toBeInTheDocument();
+    expect(
+      screen.getByText("ربط ومتابعة شحنة الطلب مع أي شركة شحن أو مندوب")
+    ).toBeInTheDocument();
   });
 
   it("renders active tracking information when order has existing tracking", () => {
@@ -62,7 +71,9 @@ describe("UnifiedShippingCard", () => {
     render(<UnifiedShippingCard order={mockOrder} />);
 
     expect(screen.getByText("سبب المرتجع:")).toBeInTheDocument();
-    expect(screen.getByText("العميل رفض الاستلام لعدم توفر المبلغ")).toBeInTheDocument();
+    expect(
+      screen.getByText("العميل رفض الاستلام لعدم توفر المبلغ")
+    ).toBeInTheDocument();
   });
 
   it("opens cancel confirmation modal when cancel button is clicked", () => {
