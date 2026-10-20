@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import '@testing-library/jest-dom/vitest';
@@ -202,7 +204,7 @@ describe("AgentWorkspace", () => {
 
     await screen.findAllByText(/#?ORD-1/);
 
-    expect(screen.queryByText("orders.urgent")).not.toBeInTheDocument();
+    expect(screen.queryByText(/urgent|عاجل/i)).not.toBeInTheDocument();
   });
 
   it("marks an old pending order with no calls as urgent", async () => {
@@ -219,7 +221,7 @@ describe("AgentWorkspace", () => {
 
     await screen.findAllByText(/#?ORD-2/);
 
-    expect(screen.getAllByText("orders.urgent").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/urgent|عاجل/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("marks a pending order whose last call was more than 12h ago as urgent", async () => {
@@ -237,7 +239,7 @@ describe("AgentWorkspace", () => {
 
     await screen.findAllByText(/#?ORD-3/);
 
-    expect(screen.getAllByText("orders.urgent").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/urgent|عاجل/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("fetches pending orders with status PENDING and sort recent", async () => {
@@ -803,7 +805,7 @@ describe("AgentWorkspace", () => {
     await screen.findAllByText(/#?ORD-1/);
 
     // Click order to open inspector
-    const orderItem = screen.getByText("Test Customer");
+    const orderItem = screen.getAllByText("Test Customer")[0];
     fireEvent.click(orderItem);
 
     // Inspector navigation buttons
