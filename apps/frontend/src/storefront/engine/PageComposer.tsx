@@ -451,14 +451,18 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     sectionEntry,
     index,
   })).filter(({ sectionEntry }) => {
+    if (renderSectionFrame) {
+      // In editor mode (renderSectionFrame provided), keep all sections (hidden sections are styled with dimmed look)
+      return true;
+    }
     if (typeof sectionEntry === 'string') {
       return true;
     }
 
-    return !(
-      isRecord(sectionEntry["settings"]) &&
-      sectionEntry["settings"]["hidden"] === true
-    );
+    const isHidden =
+      (isRecord(sectionEntry["settings"]) && sectionEntry["settings"]["hidden"] === true) ||
+      sectionEntry["hidden"] === true;
+    return !isHidden;
   });
 
   if (indexedSections.length === 0) {

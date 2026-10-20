@@ -179,6 +179,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDuplicateSection,
     handleDeleteSection,
     handleAddSection,
+    handleRenameSection,
+    handleToggleSectionVisibility,
+    handleToggleSectionLock,
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
   } = useStorefrontStudioState({
@@ -187,6 +190,17 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     onChange,
     onSave,
   });
+
+  // Two-way Selection Sync: smoothly scroll canvas into view when section is selected
+  useEffect(() => {
+    if (!selectedSectionKey) return;
+    const sectionEl = document.querySelector(
+      `[data-studio-sortable-section="true"][data-section-key="${selectedSectionKey}"]`
+    );
+    if (sectionEl) {
+      sectionEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [selectedSectionKey]);
 
   // DnD Sensors
   const sensors = useSensors(
@@ -467,6 +481,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                         }
                         setIsInspectorOpen(true);
                       }}
+                      onRenameSection={handleRenameSection}
+                      onToggleSectionVisibility={handleToggleSectionVisibility}
+                      onToggleSectionLock={handleToggleSectionLock}
                       onMoveSection={handleMoveSection}
                       onDuplicateSection={handleDuplicateSection}
                       onDeleteSection={handleDeleteSection}
@@ -543,7 +560,20 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                     renderSectionFrame={({ element, index, sectionEntry, sectionId, componentKey }) => {
                       const stableKey = getSectionKey(sectionEntry, index);
                       const isSelected = stableKey === selectedSectionKey;
+                      const isSectionHidden = Boolean(
+                        typeof sectionEntry === "object" &&
+                          sectionEntry !== null &&
+                          (sectionEntry.hidden === true || sectionEntry.settings?.hidden === true)
+                      );
+                      const isSectionLocked = Boolean(
+                        typeof sectionEntry === "object" &&
+                          sectionEntry !== null &&
+                          (sectionEntry.locked === true || sectionEntry.settings?.locked === true)
+                      );
                       const sectionLabel =
+                        (typeof sectionEntry === "object" &&
+                          sectionEntry !== null &&
+                          (sectionEntry.label || sectionEntry.settings?.label)) ||
                         getStorefrontSectionManifest(
                           typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type
                         )?.label ||
@@ -572,12 +602,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           deviceMode={deviceMode}
                           showSpacingOverlay={showSpacingOverlay}
                           settings={sectionSettings}
+                          hidden={isSectionHidden}
+                          locked={isSectionLocked}
                           libraryDropSlot={libraryDropSlot}
                           selectedElement={selectedElement}
                           onSelect={() => {
                             setSelectedSectionKey(stableKey);
                             setIsInspectorOpen(true);
                           }}
+                          onToggleVisibility={() => handleToggleSectionVisibility(stableKey)}
                           onSelectElement={(el) => {
                             setSelectedSectionKey(stableKey);
                             setSelectedElement(el);

@@ -5,8 +5,11 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
   DocumentDuplicateIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 import { GripDotsIcon } from "./StudioLayersDrawer";
 import type { StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
 import { buildSectionStyle } from "./utils/studioStyleUtils";
@@ -144,9 +147,12 @@ interface StudioSortableSectionProps {
   showSpacingOverlay?: boolean;
   actualPadding?: string | number;
   settings?: Record<string, any>;
+  hidden?: boolean;
+  locked?: boolean;
   libraryDropSlot?: number | null;
   selectedElement?: StudioSelectedElement | null;
   onSelect: () => void;
+  onToggleVisibility?: () => void;
   onSelectElement?: (element: StudioSelectedElement) => void;
   onClearSelectedElement?: () => void;
   onUpdateField?: (field: string, value: any) => void;
@@ -173,9 +179,12 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   showSpacingOverlay = true,
   actualPadding,
   settings,
+  hidden = false,
+  locked = false,
   libraryDropSlot,
   selectedElement,
   onSelect,
+  onToggleVisibility,
   onSelectElement,
   onClearSelectedElement,
   onUpdateField,
@@ -212,7 +221,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     isDragging,
     isOver,
     active,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: Boolean(locked) });
 
   const isDropAbove =
     Boolean(isOver && active && active.id !== id && (active.data.current?.sortable?.index ?? 0) > index);
@@ -228,7 +237,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.35 : 1,
+    opacity: isDragging ? 0.35 : hidden ? 0.48 : 1,
+    filter: isDragging ? undefined : hidden ? "grayscale(0.25)" : undefined,
     position: "relative",
   };
 
@@ -338,6 +348,10 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
 
   const handleSectionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (locked) {
+      toast.info(`القسم "${sectionLabel}" مقفل. قم بفك القفل من لوحة الهيكل لتعديله.`);
+      return;
+    }
     const target = e.target as HTMLElement;
     if (
       target.closest(
@@ -371,6 +385,10 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   };
 
   const handleSectionDoubleClick = (e: React.MouseEvent) => {
+    if (locked) {
+      e.stopPropagation();
+      return;
+    }
     const target = e.target as HTMLElement;
     if (
       target.closest(
@@ -428,8 +446,11 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       ref={setNodeRef}
       style={resolvedStyle}
       data-studio-sortable-section="true"
+      data-section-key={sectionKey}
       data-studio-section-index={index}
       data-section-type={sectionType}
+      data-is-hidden={hidden ? "true" : "false"}
+      data-is-locked={locked ? "true" : "false"}
       onClick={handleSectionClick}
       onDoubleClick={handleSectionDoubleClick}
       onDragOver={(e) => {
@@ -470,6 +491,28 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
         selected ? "z-20" : "z-10 hover:z-15"
       }`}
     >
+      {/* Hidden section badge indicator */}
+      {hidden && (
+        <div
+          data-studio-hidden-badge="true"
+          className="pointer-events-none absolute top-2.5 start-3 z-30 flex items-center gap-1.5 rounded-md bg-[#18191d]/95 border border-amber-500/50 px-2.5 py-1 text-[10.5px] font-bold text-amber-300 shadow-md backdrop-blur-xs select-none"
+        >
+          <EyeSlashIcon className="h-3.5 w-3.5 text-amber-400" />
+          <span>مخفي (لن يظهر في المتجر الحي)</span>
+        </div>
+      )}
+
+      {/* Locked section badge indicator */}
+      {locked && (
+        <div
+          data-studio-locked-badge="true"
+          className="pointer-events-none absolute top-2.5 end-3 z-30 flex items-center gap-1.5 rounded-md bg-[#18191d]/90 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-300 shadow-xs backdrop-blur-xs select-none"
+        >
+          <LockClosedIcon className="h-3 w-3 text-amber-400" />
+          <span>مقفل</span>
+        </div>
+      )}
+
       {/* Drop insertion line indicator during drag (Sortable or Library) */}
       {showIndicator && (
         <div
@@ -610,6 +653,20 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
             >
               <TrashIcon className="h-3 w-3" />
             </button>
+
+            {/* Quick Unhide Action if hidden */}
+            {hidden && onToggleVisibility && (
+              <button
+                type="button"
+                onClick={onToggleVisibility}
+                className="flex items-center gap-1 px-2 py-1 text-amber-300 hover:bg-[#2b303a] border-s border-[#2c2f35]"
+                title="إظهار في المتجر"
+                aria-label="إظهار في المتجر"
+              >
+                <EyeSlashIcon className="h-3 w-3 text-amber-400" />
+                <span className="text-[9.5px]">إظهار</span>
+              </button>
+            )}
           </div>
 
           {/* Real Spacing Overlay (Padding / Margin) */}

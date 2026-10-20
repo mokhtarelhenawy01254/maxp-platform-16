@@ -1,23 +1,17 @@
 import React, { useState } from "react";
 import {
-  Bars3Icon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  DocumentDuplicateIcon,
   PaintBrushIcon,
   PlusIcon,
   Squares2X2Icon,
-  TrashIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { StudioThemeSettingsPanel } from "./StudioThemeSettingsPanel";
-import { CSS } from "@dnd-kit/utilities";
+import { StudioSortableLayerRow } from "./StudioSortableLayerRow";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
 
@@ -32,13 +26,16 @@ export const GripDotsIcon: React.FC<{ className?: string }> = ({ className = "h-
   </svg>
 );
 
-interface StudioLayersDrawerProps {
+export interface StudioLayersDrawerProps {
   sections: any[];
   sectionKeys?: string[];
   selectedSectionKey: string;
   leftPanelTab: StudioLeftPanelTab;
   designTokens?: Record<string, unknown>;
   onSelectSection: (key: string) => void;
+  onRenameSection?: (key: string, newLabel: string) => void;
+  onToggleSectionVisibility?: (key: string) => void;
+  onToggleSectionLock?: (key: string) => void;
   onMoveSection: (index: number, direction: "up" | "down") => void;
   onDuplicateSection: (index: number) => void;
   onDeleteSection: (key: string) => void;
@@ -48,135 +45,6 @@ interface StudioLayersDrawerProps {
   onCollapse?: () => void;
 }
 
-const StudioSortableLayerRow: React.FC<{
-  index: number;
-  sectionKey: string;
-  sectionType: string;
-  label: string;
-  isSelected: boolean;
-  totalSections: number;
-  onSelect: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-}> = ({
-  index,
-  sectionKey,
-  sectionType,
-  label,
-  isSelected,
-  totalSections,
-  onSelect,
-  onMoveUp,
-  onMoveDown,
-  onDuplicate,
-  onDelete,
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: sectionKey });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.35 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={onSelect}
-      className={`group relative flex items-center justify-between rounded-xl border p-2 transition-all cursor-pointer ${
-        isSelected
-          ? "border-[#2b6cf6] bg-[#2b6cf6]/15 text-white shadow-xs ring-1 ring-[#2b6cf6]/40"
-          : "border-[#33363c] bg-[#26292f] hover:border-[#424752] hover:bg-[#2c313a] text-[#c3c7cd]"
-      } ${isDragging ? "border-dashed border-[#2b6cf6]" : ""}`}
-    >
-      <div className="flex items-center gap-2 min-w-0">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          className="flex h-6 w-5 shrink-0 items-center justify-center rounded text-[#8b9199] hover:text-[#2b6cf6] hover:bg-[#2b6cf6]/10 active:cursor-grabbing cursor-grab touch-none transition-colors"
-          title="اسحب لإعادة الترتيب"
-          aria-label="اسحب لإعادة الترتيب"
-        >
-          <GripDotsIcon className="h-3.5 w-3.5" />
-        </button>
-
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1a1b20] text-[#8fa4c8] group-hover:text-[#2b6cf6] transition-colors">
-          <Bars3Icon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <p className={`truncate text-xs font-black ${isSelected ? "text-white" : "text-[#e8eaee]"}`}>
-            {label}
-          </p>
-          <p className="truncate text-[10px] text-[#8a8f96] font-mono">
-            {sectionType}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-0.5 opacity-90 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (index > 0) onMoveUp();
-          }}
-          disabled={index === 0}
-          className="rounded-md p-1 text-[#8a8f96] hover:bg-[#34383f] hover:text-white disabled:opacity-20"
-          title="تحريك لأعلى"
-        >
-          <ChevronUpIcon className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (index < totalSections - 1) onMoveDown();
-          }}
-          disabled={index === totalSections - 1}
-          className="rounded-md p-1 text-[#8a8f96] hover:bg-[#34383f] hover:text-white disabled:opacity-20"
-          title="تحريك لأسفل"
-        >
-          <ChevronDownIcon className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDuplicate();
-          }}
-          className="rounded-md p-1 text-[#8a8f96] hover:bg-[#34383f] hover:text-white"
-          title="تكرار القسم"
-        >
-          <DocumentDuplicateIcon className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="rounded-md p-1 text-red-400 hover:bg-red-950/40 hover:text-red-300"
-          title="حذف القسم"
-        >
-          <TrashIcon className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   sections,
   sectionKeys,
@@ -184,6 +52,9 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   leftPanelTab,
   designTokens,
   onSelectSection,
+  onRenameSection,
+  onToggleSectionVisibility,
+  onToggleSectionLock,
   onMoveSection,
   onDuplicateSection,
   onDeleteSection,
@@ -192,7 +63,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   onUpdateThemeTokens,
   onCollapse,
 }) => {
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("" );
 
   return (
     <aside className="flex h-full w-full flex-col border-e border-border/80 bg-card/95 backdrop-blur-md">
@@ -292,7 +163,21 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                     ? `${section}-${index}`
                     : section.key || `${sectionType}-${index}`);
                 const isSelected = selectedSectionKey === sectionKey;
-                const label = getStorefrontSectionLabel(sectionType);
+                const customLabel =
+                  typeof section === "object" && section !== null
+                    ? (section.label || section.settings?.label)
+                    : undefined;
+                const label = customLabel || getStorefrontSectionLabel(sectionType);
+                const isHidden = Boolean(
+                  typeof section === "object" &&
+                    section !== null &&
+                    (section.hidden || section.settings?.hidden)
+                );
+                const isLocked = Boolean(
+                  typeof section === "object" &&
+                    section !== null &&
+                    (section.locked || section.settings?.locked)
+                );
 
                 const normalizedQuery = searchQuery.trim().toLowerCase();
                 if (
@@ -310,9 +195,14 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                     sectionKey={sectionKey}
                     sectionType={sectionType}
                     label={label}
+                    isHidden={isHidden}
+                    isLocked={isLocked}
                     isSelected={isSelected}
                     totalSections={sections.length}
                     onSelect={() => onSelectSection(sectionKey)}
+                    onRename={(newLabel) => onRenameSection?.(sectionKey, newLabel)}
+                    onToggleVisibility={() => onToggleSectionVisibility?.(sectionKey)}
+                    onToggleLock={() => onToggleSectionLock?.(sectionKey)}
                     onMoveUp={() => onMoveSection(index, "up")}
                     onMoveDown={() => onMoveSection(index, "down")}
                     onDuplicate={() => onDuplicateSection(index)}

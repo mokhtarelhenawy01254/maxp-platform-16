@@ -235,6 +235,17 @@ export function useStorefrontStudioState({
     const newIndex = sectionKeys.indexOf(String(over.id));
 
     if (oldIndex !== -1 && newIndex !== -1) {
+      const activeSection = activeSections[oldIndex];
+      const isLocked = Boolean(
+        typeof activeSection === "object" &&
+          activeSection !== null &&
+          (activeSection.locked || activeSection.settings?.locked)
+      );
+      if (isLocked) {
+        toast.info("هذا القسم مقفل. لا يمكن إعادة ترتيبه وهو في وضع القفل.");
+        return;
+      }
+
       const normalizedSections = activeSections.map((s: any, idx: number) => {
         const key = getSectionKey(s, idx);
         return typeof s === "string" ? { type: s, key } : { ...s, key: s.key || key };
@@ -254,6 +265,7 @@ export function useStorefrontStudioState({
         pages: nextPages,
         pageOverrides: nextPages,
       });
+      onSave();
     }
   };
 
@@ -444,6 +456,173 @@ export function useStorefrontStudioState({
     [selectedSectionKey, themeId, handleDesignTokensChange]
   );
 
+  const handleRenameSection = useCallback(
+    (sectionKey: string, newLabel: string) => {
+      const trimmed = newLabel.trim();
+      if (!trimmed) return;
+
+      const currentSections = activeSectionsRef.current;
+      const targetIndex = currentSections.findIndex(
+        (s: any, idx: number) => getSectionKey(s, idx) === sectionKey
+      );
+      if (targetIndex === -1) return;
+
+      const target = currentSections[targetIndex];
+      const base = typeof target === "string" ? { type: target } : { ...target };
+      const baseSettings =
+        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+
+      base.label = trimmed;
+      baseSettings.label = trimmed;
+      base.settings = baseSettings;
+
+      const nextSections = [...currentSections];
+      nextSections[targetIndex] = base;
+
+      activeSectionsRef.current = nextSections;
+
+      const currentTokens = currentDesignTokensRef.current;
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextPages = {
+        ...((currentTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
+          sections: nextSections,
+        },
+      };
+
+      const nextTokens = {
+        ...currentTokens,
+        themeId,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+    },
+    [themeId, handleDesignTokensChange, onSave]
+  );
+
+  const handleToggleSectionVisibility = useCallback(
+    (sectionKey: string) => {
+      const currentSections = activeSectionsRef.current;
+      const targetIndex = currentSections.findIndex(
+        (s: any, idx: number) => getSectionKey(s, idx) === sectionKey
+      );
+      if (targetIndex === -1) return;
+
+      const target = currentSections[targetIndex];
+      const base = typeof target === "string" ? { type: target } : { ...target };
+      const baseSettings =
+        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+
+      const currentHidden = Boolean(base.hidden ?? baseSettings.hidden);
+      const nextHidden = !currentHidden;
+
+      if (nextHidden) {
+        base.hidden = true;
+        baseSettings.hidden = true;
+      } else {
+        base.hidden = false;
+        delete base.hidden;
+        delete baseSettings.hidden;
+      }
+
+      base.settings = baseSettings;
+
+      const nextSections = [...currentSections];
+      nextSections[targetIndex] = base;
+
+      activeSectionsRef.current = nextSections;
+
+      const currentTokens = currentDesignTokensRef.current;
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextPages = {
+        ...((currentTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
+          sections: nextSections,
+        },
+      };
+
+      const nextTokens = {
+        ...currentTokens,
+        themeId,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+    },
+    [themeId, handleDesignTokensChange, onSave]
+  );
+
+  const handleToggleSectionLock = useCallback(
+    (sectionKey: string) => {
+      const currentSections = activeSectionsRef.current;
+      const targetIndex = currentSections.findIndex(
+        (s: any, idx: number) => getSectionKey(s, idx) === sectionKey
+      );
+      if (targetIndex === -1) return;
+
+      const target = currentSections[targetIndex];
+      const base = typeof target === "string" ? { type: target } : { ...target };
+      const baseSettings =
+        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+
+      const currentLocked = Boolean(base.locked ?? baseSettings.locked);
+      const nextLocked = !currentLocked;
+
+      if (nextLocked) {
+        base.locked = true;
+        baseSettings.locked = true;
+      } else {
+        base.locked = false;
+        delete base.locked;
+        delete baseSettings.locked;
+      }
+
+      base.settings = baseSettings;
+
+      const nextSections = [...currentSections];
+      nextSections[targetIndex] = base;
+
+      activeSectionsRef.current = nextSections;
+
+      const currentTokens = currentDesignTokensRef.current;
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextPages = {
+        ...((currentTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
+          sections: nextSections,
+        },
+      };
+
+      const nextTokens = {
+        ...currentTokens,
+        themeId,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+    },
+    [themeId, handleDesignTokensChange, onSave]
+  );
+
   const handleUpdateSectionField = useCallback(
     (field: string, value: any) => {
       handleBatchUpdateSectionFields({ [field]: value });
@@ -472,6 +651,9 @@ export function useStorefrontStudioState({
     handleDuplicateSection,
     handleDeleteSection,
     handleAddSection,
+    handleRenameSection,
+    handleToggleSectionVisibility,
+    handleToggleSectionLock,
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
   };
