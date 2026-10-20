@@ -1,23 +1,30 @@
-jest.mock("../../../../i18n", () => ({
-  __esModule: true,
-  default: { t: (key: string) => key },
-}));
-
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import PreparationOrdersTable from "../components/PreparationOrdersTable";
 import type { PreparationOrder } from "../types";
+import type { PreparationTableColumn } from "../constants";
+
+vi.mock("../../../../i18n", () => ({
+  default: { t: (key: string) => key },
+}));
 
 // Mock i18next
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => {
+    t: (key: string, opts?: { count?: number }) => {
       if (opts?.count !== undefined) return `${key} (${opts.count})`;
       return key;
     },
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 const mockOrder: PreparationOrder = {
   orderNumber: "ORD-1001",
@@ -94,23 +101,23 @@ const defaultProps = {
     "readiness",
     "printStatus",
     "shippingCode",
-  ] as any[],
+  ] as PreparationTableColumn[],
   formatPrice: (v: number) => `${v} EGP`,
   formatDate: (v: string) => v,
-  onToggleSelection: jest.fn(),
-  onQuickTransfer: jest.fn(),
-  onShortageFieldChange: jest.fn(),
-  onSaveShortageHoldDetails: jest.fn().mockResolvedValue(true),
-  onQcCheckToggle: jest.fn(),
-  onStatusSelectionChange: jest.fn(),
-  onSingleStatusUpdate: jest.fn(),
-  onMarkAsShortageHold: jest.fn(),
-  onReleaseShortageHold: jest.fn(),
-  onMarkAsShortageFailed: jest.fn(),
-  onHoldAsProblem: jest.fn(),
-  onReleaseProblemHold: jest.fn(),
-  onEditProblemReason: jest.fn(),
-  onPrintPreparationSlip: jest.fn(),
+  onToggleSelection: vi.fn(),
+  onQuickTransfer: vi.fn(),
+  onShortageFieldChange: vi.fn(),
+  onSaveShortageHoldDetails: vi.fn().mockResolvedValue(true),
+  onQcCheckToggle: vi.fn(),
+  onStatusSelectionChange: vi.fn(),
+  onSingleStatusUpdate: vi.fn(),
+  onMarkAsShortageHold: vi.fn(),
+  onReleaseShortageHold: vi.fn(),
+  onMarkAsShortageFailed: vi.fn(),
+  onHoldAsProblem: vi.fn(),
+  onReleaseProblemHold: vi.fn(),
+  onEditProblemReason: vi.fn(),
+  onPrintPreparationSlip: vi.fn(),
 };
 
 describe("PreparationOrdersTable Component", () => {
@@ -150,7 +157,6 @@ describe("PreparationOrdersTable Component", () => {
     const detailsBtn = screen.getByText("preparation.table.details");
     fireEvent.click(detailsBtn);
 
-    // After expanding, items list or actions should appear
     expect(screen.getByText(/T-Shirt/i)).toBeInTheDocument();
   });
 });
