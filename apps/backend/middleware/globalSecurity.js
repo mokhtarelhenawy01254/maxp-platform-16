@@ -598,6 +598,10 @@ const PUBLIC_ROUTES = [
   'GET /api/agency/public-approval/*',
   'POST /api/agency/public-approval/*',
 
+  // Factory portal — public routes gated by per-factory accessToken (validated in FactoryPortalService), NOT platform auth
+  'GET /api/v1/factory-portal/*',
+  'POST /api/v1/factory-portal/*',
+
   // Public Support
   'GET /api/v1/support/faq',
 
