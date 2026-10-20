@@ -1,920 +1,138 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import {
-  DocumentTextIcon,
-  TruckIcon,
-  PrinterIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon,
-  EyeIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ClipboardDocumentIcon,
-  ChatBubbleLeftRightIcon,
-  PlusIcon,
-  XMarkIcon,
-  ArrowRightCircleIcon
-} from '@heroicons/react/24/outline';
-import courierService, { DeliveryRun, DeliveryRunItem, Courier } from '../../../services/courierService';
+import React from 'react';
 import { useCurrency } from '../../../hooks/useCurrency';
 import { useDateFormat } from '../../../hooks/useDateFormat';
-import api from '../../../services/api';
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  DISPATCHED: { label: 'في الميدان', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
-  COMPLETED: { label: 'اكتمل التوصيل', color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
-  SETTLED: { label: 'تمت التسوية والتوريد', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
-  DRAFT: { label: 'مسودة', color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
-  CANCELLED: { label: 'ملغاة', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200 dark:border-rose-800' }
-};
+import { useDeliveryRunsData } from './hooks/useDeliveryRunsData';
+import { DeliveryRunsHeader } from './components/DeliveryRunsHeader';
+import { DeliveryRunsTable } from './components/DeliveryRunsTable';
+import { DeliveryRunDetailModal } from './components/DeliveryRunDetailModal';
+import { DeliveryRunReassignModal } from './components/DeliveryRunReassignModal';
+import { DeliveryRunWaybillModal } from './components/DeliveryRunWaybillModal';
+import { CreateDeliveryRunModal } from './components/CreateDeliveryRunModal';
 
 const DeliveryRunsPage: React.FC = () => {
-  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
-
-  const [runs, setRuns] = useState<DeliveryRun[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<{ total: number; page: number; pages: number } | null>(null);
-  const [selectedRun, setSelectedRun] = useState<DeliveryRun | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-
-  // Waybill and Share Link States
-  const [viewingWaybill, setViewingWaybill] = useState<{ run: DeliveryRun; shipment?: DeliveryRunItem } | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [activeCouriers, setActiveCouriers] = useState<Courier[]>([]);
-  // Reassignment state (manifest modal → move a parcel to another courier)
-  const [reassigningShipment, setReassigningShipment] = useState<DeliveryRunItem | null>(null);
-  const [reassignCourierId, setReassignCourierId] = useState('');
-  const [reassigning, setReassigning] = useState(false);
-  const [selectedCourierId, setSelectedCourierId] = useState('');
-  const [orderNumbersInput, setOrderNumbersInput] = useState('');
-  const [dispatchNotes, setDispatchNotes] = useState('');
-  const [submittingDispatch, setSubmittingDispatch] = useState(false);
-
-  const fetchRuns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await courierService.getDeliveryRuns({
-        search: search || undefined,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined,
-        page,
-        limit: 20
-      });
-      if (res.success) {
-        setRuns(res.data || []);
-        setPagination(res.pagination || null);
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر تحميل مأموريات التوصيل');
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter, page]);
-
-  useEffect(() => {
-    fetchRuns();
-  }, [fetchRuns]);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
-
-  const loadCouriersForDispatch = async () => {
-    try {
-      const res = await courierService.getCouriers({ isActive: true });
-      if (res.success && res.data) {
-        setActiveCouriers(res.data);
-        if (res.data.length > 0 && !selectedCourierId) {
-          const available = res.data.find((c) => c.status === 'AVAILABLE');
-          setSelectedCourierId(available ? available.id : res.data[0].id);
-        }
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر تحميل قائمة المناديب');
-    }
-  };
-
-  const handleOpenDetail = async (runId: string) => {
-    setLoadingDetail(true);
-    try {
-      const res = await courierService.getDeliveryRun(runId);
-      if (res.success) {
-        setSelectedRun(res.data);
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر تحميل تفاصيل المأمورية');
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
-  const openReassign = async (shipment: DeliveryRunItem) => {
-    setReassigningShipment(shipment);
-    setReassignCourierId('');
-    if (activeCouriers.length === 0) {
-      await loadCouriersForDispatch();
-    }
-  };
-
-  const confirmReassign = async () => {
-    if (!reassigningShipment || !reassignCourierId) return;
-    setReassigning(true);
-    try {
-      const res = await courierService.reassignShipments([reassigningShipment.id], reassignCourierId);
-      if (res.success) {
-        toast.success(res.message || 'تم إعادة الإسناد');
-        setReassigningShipment(null);
-        if (selectedRun) await handleOpenDetail(selectedRun.id);
-        fetchRuns();
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر إعادة الإسناد');
-    } finally {
-      setReassigning(false);
-    }
-  };
-
-  const handleCopyMobileLink = async (run: DeliveryRun) => {
-    try {
-      let token = run.mobileToken;
-      if (!token) {
-        const linkRes = await courierService.getRunShareLink(run.id);
-        token = linkRes?.data?.mobileToken;
-      }
-      const origin = window.location.origin;
-      const url = `${origin}/courier/run/${run.id}${token ? `?token=${token}` : ''}`;
-      await navigator.clipboard.writeText(url);
-      toast.success('تم نسخ رابط مأمورية المندوب الذكي بنجاح');
-    } catch {
-      toast.error('تعذر نسخ الرابط');
-    }
-  };
-
-  // Ready-to-ship quick select orders
-  const [readyOrders, setReadyOrders] = useState<any[]>([]);
-  const [loadingReadyOrders, setLoadingReadyOrders] = useState(false);
-  const [selectedReadyOrderNumbers, setSelectedReadyOrderNumbers] = useState<string[]>([]);
-
-  const handleShareWhatsApp = async (run: DeliveryRun) => {
-    try {
-      let token = run.mobileToken;
-      if (!token) {
-        const linkRes = await courierService.getRunShareLink(run.id);
-        token = linkRes?.data?.mobileToken;
-      }
-      const origin = window.location.origin;
-      const url = `${origin}/courier/run/${run.id}${token ? `?token=${token}` : ''}`;
-      let phone = run.courier?.phone ? run.courier.phone.replace(/[^0-9]/g, '') : '';
-      if (phone.startsWith('00')) phone = phone.substring(2);
-      if (phone.startsWith('01') && phone.length === 11) phone = `2${phone}`;
-      const text = encodeURIComponent(
-        `مرحباً يا كابتن ${run.courier?.name || ''}، تفضل رابط مأمورية التوصيل الخاصة بك:\n${url}`
-      );
-      window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
-    } catch {
-      toast.error('تعذر فتح واتساب');
-    }
-  };
-
-  const loadReadyOrders = async () => {
-    setLoadingReadyOrders(true);
-    try {
-      const res = await api.get('/orders', {
-        params: { status: 'READY_TO_SHIP', limit: 25 }
-      });
-      const list = Array.isArray(res?.data?.orders)
-        ? res.data.orders
-        : Array.isArray(res?.data?.data)
-        ? res.data.data
-        : [];
-      setReadyOrders(list);
-    } catch {
-      // ignore silently
-    } finally {
-      setLoadingReadyOrders(false);
-    }
-  };
-
-  const handleOpenCreateRun = () => {
-    loadCouriersForDispatch();
-    loadReadyOrders();
-    setOrderNumbersInput('');
-    setSelectedReadyOrderNumbers([]);
-    setDispatchNotes('');
-    setIsCreateModalOpen(true);
-  };
-
-  const toggleReadyOrder = (orderNum: string) => {
-    setSelectedReadyOrderNumbers((prev) => {
-      const next = prev.includes(orderNum)
-        ? prev.filter((n) => n !== orderNum)
-        : [...prev, orderNum];
-      return next;
-    });
-  };
-
-  const handleConfirmCreateRun = async () => {
-    if (!selectedCourierId) {
-      toast.error('يرجى اختيار مندوب التوصيل');
-      return;
-    }
-
-    const typedNumbers = orderNumbersInput
-      .split(/[\n,]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const allOrderRefs = Array.from(new Set([...selectedReadyOrderNumbers, ...typedNumbers]));
-
-    if (allOrderRefs.length === 0) {
-      toast.error('يرجى اختيار أو إدخال أرقام الطلبات المراد إسنادها');
-      return;
-    }
-
-    setSubmittingDispatch(true);
-    try {
-      const res = await courierService.createDeliveryRun({
-        courierId: selectedCourierId,
-        orderIds: allOrderRefs,
-        notes: dispatchNotes || undefined
-      });
-
-      if (res.success && res.data) {
-        toast.success(`تم إنشاء مأمورية التوزيع رقم ${res.data.runNumber} بنجاح`);
-        setIsCreateModalOpen(false);
-        fetchRuns();
-        handleOpenDetail(res.data.id);
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'تعذر إنشاء مأمورية التوصيل');
-    } finally {
-      setSubmittingDispatch(false);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
+  const {
+    runs,
+    loading,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    page,
+    setPage,
+    pagination,
+    fetchRuns,
+    selectedRun,
+    setSelectedRun,
+    viewingWaybill,
+    setViewingWaybill,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    activeCouriers,
+    selectedCourierId,
+    setSelectedCourierId,
+    orderNumbersInput,
+    setOrderNumbersInput,
+    dispatchNotes,
+    setDispatchNotes,
+    submittingDispatch,
+    readyOrders,
+    loadingReadyOrders,
+    selectedReadyOrderNumbers,
+    reassigningShipment,
+    setReassigningShipment,
+    reassignCourierId,
+    setReassignCourierId,
+    reassigning,
+    openReassign,
+    confirmReassign,
+    handleCopyMobileLink,
+    handleShareWhatsApp,
+    handleOpenDetail,
+    handleOpenCreateRun,
+    toggleReadyOrder,
+    handleConfirmCreateRun,
+    handlePrint
+  } = useDeliveryRunsData();
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link to="/shipping/couriers" className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-              المناديب ←
-            </Link>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">رحلات التوزيع والمانيفست الميداني</h1>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            إصدار أذون خروج الطرود، تتبع مأموريات المناديب، طباعة البوالص، ومطابقة تسليمات الميدان
-          </p>
-        </div>
-        <div className="flex items-center flex-wrap gap-2">
-          <button
-            onClick={handleOpenCreateRun}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition active:scale-95"
-          >
-            <PlusIcon className="w-4 h-4" />
-            إنشاء مأمورية توزيع جديدة
-          </button>
-          <Link
-            to="/orders/preparation"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            صالة تجهيز الطلبات
-          </Link>
-          <Link
-            to="/shipping/courier-settlements"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-white bg-slate-900 dark:bg-slate-50 dark:text-slate-900 rounded-lg hover:bg-slate-800 transition active:scale-95"
-          >
-            شاشة التوريد وتسوية الخزينة
-          </Link>
-        </div>
-      </div>
+      <DeliveryRunsHeader onOpenCreateRun={handleOpenCreateRun} />
 
-      {/* Filter and Search */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-        <div className="relative w-full sm:w-80">
-          <MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="بحث برقم المأمورية أو اسم المندوب..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-3 pr-9 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
-          >
-            <option value="ALL">كل الحالات</option>
-            <option value="UNSETTLED">غير مسوّاة (بانتظار التوريد)</option>
-            <option value="DISPATCHED">في الميدان</option>
-            <option value="COMPLETED">اكتمل التوصيل</option>
-            <option value="SETTLED">تمت التسوية والتوريد</option>
-          </select>
-          <button
-            onClick={fetchRuns}
-            title="تحديث"
-            className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
+      <DeliveryRunsTable
+        runs={runs}
+        loading={loading}
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        page={page}
+        setPage={setPage}
+        pagination={pagination}
+        fetchRuns={fetchRuns}
+        handleCopyMobileLink={handleCopyMobileLink}
+        handleShareWhatsApp={handleShareWhatsApp}
+        handleOpenDetail={handleOpenDetail}
+        formatDate={formatDate}
+        formatPrice={formatPrice}
+      />
 
-      {/* Runs Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs sm:text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="py-3 px-4 font-medium">رقم المأمورية</th>
-                <th className="py-3 px-4 font-medium">المندوب</th>
-                <th className="py-3 px-4 font-medium">تاريخ الخروج</th>
-                <th className="py-3 px-4 font-medium">عدد الطرود</th>
-                <th className="py-3 px-4 font-medium">المبلغ المطلوب (COD)</th>
-                <th className="py-3 px-4 font-medium">المبلغ المورد</th>
-                <th className="py-3 px-4 font-medium">الحالة</th>
-                <th className="py-3 px-4 font-medium text-left">إجراءات المأمورية</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {runs.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                    لا توجد رحلات توصيل مسجلة حالياً
-                  </td>
-                </tr>
-              ) : (
-                runs.map((r) => {
-                  const statusConf = STATUS_CONFIG[r.status] || STATUS_CONFIG.DISPATCHED;
-                  return (
-                    <tr key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-semibold text-slate-900 dark:text-slate-100">
-                        {r.runNumber}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">{r.courier?.name}</div>
-                        <div className="text-xs text-slate-400" dir="ltr">{r.courier?.phone}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
-                        {formatDate(r.dispatchDate)}
-                      </td>
-                      <td className="py-3.5 px-4 tabular-nums">
-                        <span className="font-semibold">{r.totalShipments}</span> طرد
-                      </td>
-                      <td className="py-3.5 px-4 tabular-nums font-medium text-slate-900 dark:text-slate-100">
-                        {formatPrice(r.totalCODExpected)}
-                      </td>
-                      <td className="py-3.5 px-4 tabular-nums font-medium">
-                        {r.status === 'SETTLED' ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">{formatPrice(r.totalCODCollected)}</span>
-                        ) : (
-                          <span className="text-slate-400">بانتظار التوريد</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusConf.color}`}>
-                          {statusConf.label}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-left">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleCopyMobileLink(r)}
-                            title="نسخ رابط المندوب للموبايل"
-                            className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                          >
-                            <ClipboardDocumentIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleShareWhatsApp(r)}
-                            title="إرسال الرابط عبر واتساب للمندوب"
-                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition"
-                          >
-                            <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenDetail(r.id)}
-                            title="عرض تفاصيل المانيفست وطباعة البوالص"
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        {pagination && pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-            <span className="tabular-nums">
-              {pagination.total} مأمورية — صفحة {pagination.page} من {pagination.pages}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || loading}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
-              >
-                السابق
-              </button>
-              <button
-                onClick={() => setPage((p) => (pagination && p < pagination.pages ? p + 1 : p))}
-                disabled={!pagination || page >= pagination.pages || loading}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
-              >
-                التالي
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Manifest Detail Modal */}
       {selectedRun && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm print:p-0 print:bg-white">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-xl flex flex-col overflow-hidden print:border-none print:shadow-none print:max-h-none">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 print:hidden">
-              <div className="flex items-center gap-2">
-                <DocumentTextIcon className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-base sm:text-lg">
-                  مانيفست مأمورية التوصيل: {selectedRun.runNumber}
-                </h3>
-              </div>
-              <div className="flex items-center flex-wrap gap-2">
-                <button
-                  onClick={() => handleCopyMobileLink(selectedRun)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  <ClipboardDocumentIcon className="w-4 h-4 text-slate-500" />
-                  رابط المندوب
-                </button>
-                <button
-                  onClick={() => handleShareWhatsApp(selectedRun)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 transition"
-                >
-                  <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                  واتساب
-                </button>
-                <button
-                  onClick={() => setViewingWaybill({ run: selectedRun })}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 transition"
-                >
-                  <PrinterIcon className="w-4 h-4" />
-                  طباعة كل البوالص
-                </button>
-                <button
-                  onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  <PrinterIcon className="w-4 h-4" />
-                  طباعة المانيفست
-                </button>
-                <button
-                  onClick={() => setSelectedRun(null)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Printable Manifest Content */}
-            <div className="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
-                <div>
-                  <div className="text-xs text-slate-400">المندوب المستلم</div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">{selectedRun.courier?.name}</div>
-                  <div className="text-[11px] text-slate-500" dir="ltr">{selectedRun.courier?.phone}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400">تاريخ الخروج</div>
-                  <div className="font-semibold mt-0.5">{formatDate(selectedRun.dispatchDate)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400">إجمالي الطرود</div>
-                  <div className="font-semibold mt-0.5 tabular-nums">{selectedRun.totalShipments} طرد</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400">إجمالي المبلغ المطلوب (COD)</div>
-                  <div className="font-semibold text-blue-600 dark:text-blue-400 mt-0.5 tabular-nums">
-                    {formatPrice(selectedRun.totalCODExpected)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipments List */}
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-right text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800 font-medium text-slate-500">
-                    <tr>
-                      <th className="py-2.5 px-3">#</th>
-                      <th className="py-2.5 px-3">رقم الطلب</th>
-                      <th className="py-2.5 px-3">العميل</th>
-                      <th className="py-2.5 px-3">العنوان</th>
-                      <th className="py-2.5 px-3">المحتويات</th>
-                      <th className="py-2.5 px-3">المبلغ المطلوب</th>
-                      <th className="py-2.5 px-3">الحالة الميدانية</th>
-                      <th className="py-2.5 px-3 print:hidden">بوليصة الشحن</th>
-                      <th className="py-2.5 px-3 print:table-cell hidden">توقيع المستلم</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {selectedRun.shipments?.map((s, idx) => (
-                      <tr key={s.id}>
-                        <td className="py-2.5 px-3 tabular-nums text-slate-400">{idx + 1}</td>
-                        <td className="py-2.5 px-3 font-mono font-medium">{s.order?.orderNumber}</td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-medium">{s.order?.customerName}</div>
-                          <div className="text-[11px] text-slate-500" dir="ltr">{s.order?.customerPhone}</div>
-                        </td>
-                        <td className="py-2.5 px-3 max-w-[200px] truncate">
-                          {s.order?.governorate ? `${s.order.governorate} - ` : ''}
-                          {s.order?.customerAddress || s.destinationAddress || '-'}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-500">
-                          {s.order?.items?.map((it) => `${it.quantity}x ${it.name}`).join('، ') || 'طرد مغلق'}
-                        </td>
-                        <td className="py-2.5 px-3 font-semibold tabular-nums">
-                          {formatPrice(s.order?.total || 0)}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="font-medium text-slate-700 dark:text-slate-300">
-                            {s.status === 'DELIVERED' ? 'تم التسليم' : s.status === 'RETURNED' ? 'مرتجع' : s.status === 'DELAYED' ? 'مؤجل' : 'في الطريق'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 print:hidden">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => setViewingWaybill({ run: selectedRun, shipment: s })}
-                              title="طباعة بوليصة هذا الطرد"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                            >
-                              <PrinterIcon className="w-3.5 h-3.5 text-blue-600" />
-                              بوليصة
-                            </button>
-                            {!['SETTLED', 'CANCELLED'].includes(selectedRun.status) &&
-                             !['DELIVERED', 'RETURNED', 'FAILED', 'CANCELLED'].includes(s.status) && (
-                              <button
-                                onClick={() => openReassign(s)}
-                                title="إعادة إسناد الطرد لمنديب آخر"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                              >
-                                <ArrowRightCircleIcon className="w-3.5 h-3.5 text-amber-600" />
-                                نقل
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 print:table-cell hidden border-b border-dashed border-slate-300 w-24"></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Signatures for print */}
-              <div className="pt-8 grid grid-cols-2 gap-8 text-center text-xs print:grid hidden">
-                <div className="border-t border-slate-400 pt-2">
-                  توقيع أمين المخزن المسلم: ..............................
-                </div>
-                <div className="border-t border-slate-400 pt-2">
-                  توقيع المندوب المستلم للعهدة: ..............................
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DeliveryRunDetailModal
+          selectedRun={selectedRun}
+          onClose={() => setSelectedRun(null)}
+          onCopyMobileLink={handleCopyMobileLink}
+          onShareWhatsApp={handleShareWhatsApp}
+          onViewWaybill={setViewingWaybill}
+          onPrint={handlePrint}
+          onOpenReassign={openReassign}
+          formatDate={formatDate}
+          formatPrice={formatPrice}
+        />
       )}
 
-      {/* Reassign Modal */}
       {reassigningShipment && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <ArrowRightCircleIcon className="w-5 h-5 text-amber-600" />
-              <h3 className="font-bold text-sm">إعادة إسناد الطرد لمنديب آخر</h3>
-            </div>
-            <div className="text-xs text-slate-500 space-y-1">
-              <div>
-                الطلب: <span className="font-semibold text-slate-800 dark:text-slate-200">{reassigningShipment.order?.orderNumber}</span>
-              </div>
-              <div>
-                العميل: <span className="font-semibold text-slate-800 dark:text-slate-200">{reassigningShipment.order?.customerName}</span>
-              </div>
-              <div className="text-[11px] text-amber-600 dark:text-amber-400">
-                الطرد هنزل من المانيفست الحالي ويبقى في عهدة المنديب الجديد — كود الاستلام بتاع العميل هيفضل صالح.
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">المندوب الجديد *</label>
-              <select
-                value={reassignCourierId}
-                onChange={(e) => setReassignCourierId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none"
-              >
-                <option value="">اختر المندوب…</option>
-                {activeCouriers
-                  .filter((c) => c.id !== selectedRun?.courierId)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} — {c.status === 'AVAILABLE' ? 'متاح' : 'في مأمورية'}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <button
-                onClick={() => setReassigningShipment(null)}
-                className="py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold active:scale-[0.98] transition"
-              >
-                رجوع
-              </button>
-              <button
-                onClick={confirmReassign}
-                disabled={!reassignCourierId || reassigning}
-                className="py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold active:scale-[0.98] transition disabled:opacity-50"
-              >
-                {reassigning ? 'جارٍ النقل…' : 'تأكيد النقل'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeliveryRunReassignModal
+          reassigningShipment={reassigningShipment}
+          selectedRun={selectedRun}
+          activeCouriers={activeCouriers}
+          reassignCourierId={reassignCourierId}
+          setReassignCourierId={setReassignCourierId}
+          reassigning={reassigning}
+          onClose={() => setReassigningShipment(null)}
+          onConfirm={confirmReassign}
+        />
       )}
 
-      {/* Waybill Modal (Print View) */}
       {viewingWaybill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm print:p-0 print:bg-white overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl my-auto shadow-2xl p-6 space-y-6 print:border-none print:shadow-none print:p-0">
-            {/* Header / Actions for Print */}
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 print:hidden">
-              <div className="flex items-center gap-2">
-                <PrinterIcon className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-base">
-                  معاينة وطباعة بوليصة الشحن (Airway Bill)
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 rounded-lg hover:bg-slate-800 transition active:scale-95"
-                >
-                  <PrinterIcon className="w-4 h-4" />
-                  طباعة الآن
-                </button>
-                <button
-                  onClick={() => setViewingWaybill(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Waybill Content (Single or Multi) */}
-            <div className="space-y-8">
-              {(viewingWaybill.shipment ? [viewingWaybill.shipment] : viewingWaybill.run.shipments || []).map((s, idx) => (
-                <div
-                  key={s.id}
-                  className="border-2 border-slate-900 dark:border-slate-100 rounded-xl p-5 text-slate-900 dark:text-slate-100 font-sans space-y-4 print:page-break-after-always print:m-0"
-                >
-                  {/* Top Header of Waybill */}
-                  <div className="flex items-start justify-between border-b-2 border-slate-900 dark:border-slate-100 pb-3">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        أسطول التوصيل الداخلي السريع
-                      </span>
-                      <h2 className="text-lg font-black tracking-tight">بوليصة شحن وتوصيل</h2>
-                      <div className="text-xs font-mono font-bold mt-0.5">
-                        رقم المأمورية: {viewingWaybill.run.runNumber}
-                      </div>
-                    </div>
-                    <div className="text-left font-mono">
-                      <div className="text-[11px] text-slate-400">BARCODE / REF</div>
-                      <div className="text-sm font-black border border-slate-900 dark:border-slate-100 px-2.5 py-1 rounded mt-0.5">
-                        *{s.order?.orderNumber}*
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">طرد رقم {idx + 1}</div>
-                    </div>
-                  </div>
-
-                  {/* Consignee and Sender Grid */}
-                  <div className="grid grid-cols-2 gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 text-xs">
-                    <div>
-                      <div className="font-bold text-[11px] text-slate-400 mb-1">بيانات العميل والمستلم:</div>
-                      <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        {s.order?.customerName}
-                      </div>
-                      <div className="font-mono font-semibold mt-0.5" dir="ltr">
-                        {s.order?.customerPhone}
-                      </div>
-                      <div className="mt-1 text-slate-600 dark:text-slate-300">
-                        {s.order?.governorate ? `${s.order.governorate} - ` : ''}
-                        {s.order?.customerAddress || s.destinationAddress || 'العنوان غير مدون'}
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-[11px] text-slate-400 mb-1">المندوب وتاريخ الإسناد:</div>
-                      <div className="font-bold text-sm">{viewingWaybill.run.courier?.name}</div>
-                      <div className="font-mono text-xs text-slate-500" dir="ltr">
-                        {viewingWaybill.run.courier?.phone}
-                      </div>
-                      <div className="text-xs text-slate-400 mt-1">
-                        {formatDate(viewingWaybill.run.dispatchDate)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Parcel Items */}
-                  <div className="text-xs space-y-1">
-                    <div className="font-bold text-[11px] text-slate-400">محتويات الشحنة:</div>
-                    <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                      {s.order?.items && s.order.items.length > 0 ? (
-                        s.order.items.map((it) => (
-                          <div key={it.id} className="flex justify-between py-0.5">
-                            <span>{it.quantity}x {it.name} {it.variantTitle ? `(${it.variantTitle})` : ''}</span>
-                            <span className="font-mono font-medium">{formatPrice(it.price * it.quantity)}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span>طرد مغلق - تسليم مباشر</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Cash Collection Block (The Most Important Field for Couriers) */}
-                  <div className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                      <div className="text-[11px] font-medium opacity-80">المبلغ المطلوب تحصيله نقداً (COD)</div>
-                      <div className="text-2xl font-black tabular-nums tracking-tight">
-                        {formatPrice(s.order?.total || 0)}
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <span className="inline-block border border-current px-2.5 py-1 rounded text-xs font-bold uppercase">
-                        دفع عند الاستلام
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Instructions and Signature */}
-                  <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200 dark:border-slate-800">
-                    <div>
-                      <span>تعليمات: مسموح بالمعاينة قبل الاستلام وفق سياسة المتجر.</span>
-                    </div>
-                    <div>
-                      <span>توقيع العميل: ....................</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <DeliveryRunWaybillModal
+          viewingWaybill={viewingWaybill}
+          onClose={() => setViewingWaybill(null)}
+          onPrint={handlePrint}
+          formatDate={formatDate}
+          formatPrice={formatPrice}
+        />
       )}
 
-      {/* Quick Dispatch Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <TruckIcon className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-base">إنشاء مأمورية توزيع وإسناد شحنات</h3>
-              </div>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 p-1">
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block text-xs font-medium mb-1">اختر المندوب المستلم للمأمورية *</label>
-                <select
-                  value={selectedCourierId}
-                  onChange={(e) => setSelectedCourierId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm focus:outline-none"
-                >
-                  {activeCouriers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.phone}) - {c.status === 'AVAILABLE' ? 'متاح' : 'في الميدان'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Quick Select from Ready Orders */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium">الطلبات الجاهزة للشحن (اختر للإسناد السريع):</label>
-                  {readyOrders.length > 0 && (
-                    <span className="text-[11px] text-slate-400">
-                      محدد: {selectedReadyOrderNumbers.length} من {readyOrders.length}
-                    </span>
-                  )}
-                </div>
-
-                {loadingReadyOrders ? (
-                  <div className="py-2 text-center text-xs text-slate-400 animate-pulse">
-                    جارٍ تحميل الطلبات الجاهزة...
-                  </div>
-                ) : readyOrders.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    {readyOrders.map((ord: any) => {
-                      const isSelected = selectedReadyOrderNumbers.includes(ord.orderNumber);
-                      return (
-                        <button
-                          key={ord.id}
-                          type="button"
-                          onClick={() => toggleReadyOrder(ord.orderNumber)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition active:scale-95 ${
-                            isSelected
-                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                              : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                          }`}
-                        >
-                          <span className="font-mono font-semibold">{ord.orderNumber}</span>
-                          <span className="text-[11px] opacity-75 truncate max-w-[100px]">{ord.customerName}</span>
-                          <span className="font-bold tabular-nums text-[11px]">({formatPrice(ord.total || 0)})</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-400 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    لا توجد طلبات معلقة بحالة READY_TO_SHIP حالياً. يمكنك كتابة أرقام الطلبات يدوياً بالأسفل.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-1">
-                  أو كتابة / لصق أرقام طلبات يدوياً (مفصولة بفاصلة أو سطر جديد):
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="مثال:&#10;ORD-1001&#10;ORD-1002"
-                  value={orderNumbersInput}
-                  onChange={(e) => setOrderNumbersInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs focus:outline-none"
-                />
-                <span className="text-[11px] text-slate-400 block mt-1">
-                  يمكنك أيضاً إسناد الطلبات مباشرة من صالة تجهيز الطلبات (Preparation Queue).
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-1">ملاحظات المأمورية (اختياري)</label>
-                <input
-                  type="text"
-                  placeholder="مثال: خط سير شرق القاهرة، أولوية تسليم صباحي"
-                  value={dispatchNotes}
-                  onChange={(e) => setDispatchNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmCreateRun}
-                  disabled={submittingDispatch}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-50 dark:text-slate-900 rounded-lg hover:bg-slate-800 transition active:scale-95"
-                >
-                  {submittingDispatch ? 'جارٍ إصدار المأمورية...' : 'إصدار المأمورية وخروج الطرود'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateDeliveryRunModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        activeCouriers={activeCouriers}
+        selectedCourierId={selectedCourierId}
+        setSelectedCourierId={setSelectedCourierId}
+        readyOrders={readyOrders}
+        loadingReadyOrders={loadingReadyOrders}
+        selectedReadyOrderNumbers={selectedReadyOrderNumbers}
+        toggleReadyOrder={toggleReadyOrder}
+        orderNumbersInput={orderNumbersInput}
+        setOrderNumbersInput={setOrderNumbersInput}
+        dispatchNotes={dispatchNotes}
+        setDispatchNotes={setDispatchNotes}
+        submittingDispatch={submittingDispatch}
+        onConfirm={handleConfirmCreateRun}
+        formatPrice={formatPrice}
+      />
     </div>
   );
 };
