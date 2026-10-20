@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   BarChart3, RefreshCw, Download, Filter, 
@@ -85,7 +85,7 @@ export default function ProcurementReports() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const res = await apiClient.get('/procurement/suppliers');
+        const res = await apiClient.get<any>('/procurement/suppliers');
         const list = Array.isArray(res.data?.suppliers)
           ? res.data.suppliers
           : Array.isArray(res.data)
@@ -114,39 +114,39 @@ export default function ProcurementReports() {
     setError(null);
 
     const baseParams: Record<string, string> = {};
-    if (startDate) baseParams.startDate = startDate;
+    if (startDate) baseParams['startDate'] = startDate;
     if (endDate) {
       // Append end-of-day boundary so records created on the last day are included
-      baseParams.endDate = `${endDate}T23:59:59.999Z`;
+      baseParams['endDate'] = `${endDate}T23:59:59.999Z`;
     }
     if (supplierId && supplierId !== 'all') {
-      baseParams.supplierId = supplierId;
+      baseParams['supplierId'] = supplierId;
     }
 
     try {
       if (activeTab === 'aging') {
-        const res = await apiClient.get('/procurement/reports/aging');
+        const res = await apiClient.get<any>('/procurement/reports/aging');
         setAgingData(res.data?.aging || null);
       } else if (activeTab === 'suppliers') {
-        const res = await apiClient.get('/procurement/reports/suppliers', { params: baseParams });
+        const res = await apiClient.get<any>('/procurement/reports/suppliers', { params: baseParams });
         setSuppliersData(res.data?.report || []);
       } else if (activeTab === 'orders') {
         const params: Record<string, string> = { ...baseParams };
-        if (status && status !== 'all') params.status = status;
-        const res = await apiClient.get('/procurement/reports/purchase-orders', { params });
+        if (status && status !== 'all') params['status'] = status;
+        const res = await apiClient.get<any>('/procurement/reports/purchase-orders', { params });
         setOrdersData({ summary: res.data?.summary || null, orders: res.data?.orders || [] });
       } else if (activeTab === 'invoices') {
         const params: Record<string, string> = { ...baseParams };
-        if (status && status !== 'all') params.status = status;
-        const res = await apiClient.get('/procurement/reports/invoices', { params });
+        if (status && status !== 'all') params['status'] = status;
+        const res = await apiClient.get<any>('/procurement/reports/invoices', { params });
         setInvoicesData({ summary: res.data?.summary || null, invoices: res.data?.invoices || [] });
       } else if (activeTab === 'payments') {
         const params: Record<string, string> = { ...baseParams };
-        if (paymentMethod && paymentMethod !== 'all') params.paymentMethod = paymentMethod;
-        const res = await apiClient.get('/procurement/reports/payments', { params });
+        if (paymentMethod && paymentMethod !== 'all') params['paymentMethod'] = paymentMethod;
+        const res = await apiClient.get<any>('/procurement/reports/payments', { params });
         setPaymentsData({ summary: res.data?.summary || null, payments: res.data?.payments || [] });
       } else if (activeTab === 'products') {
-        const res = await apiClient.get('/procurement/reports/products', { params: baseParams });
+        const res = await apiClient.get<any>('/procurement/reports/products', { params: baseParams });
         setProductsData(res.data?.productSummary || []);
       }
     } catch (err: any) {
@@ -337,7 +337,7 @@ export default function ProcurementReports() {
           {activeTab !== 'aging' && activeTab !== 'products' && (
             <div>
               <Label htmlFor="rep-supplier" className="text-xs">المورد</Label>
-              <Select value={supplierId} onValueChange={setSupplierId}>
+              <Select value={supplierId} onValueChange={(val: any) => setSupplierId(val || 'all')}>
                 <SelectTrigger id="rep-supplier" className="mt-1 h-9 text-xs">
                   <SelectValue placeholder="كل الموردين" />
                 </SelectTrigger>
@@ -355,7 +355,7 @@ export default function ProcurementReports() {
           {activeTab === 'orders' && (
             <div>
               <Label htmlFor="rep-status-po" className="text-xs">حالة أمر الشراء</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status} onValueChange={(val: any) => setStatus(val || 'all')}>
                 <SelectTrigger id="rep-status-po" className="mt-1 h-9 text-xs">
                   <SelectValue placeholder="كل الحالات" />
                 </SelectTrigger>
@@ -375,7 +375,7 @@ export default function ProcurementReports() {
           {activeTab === 'invoices' && (
             <div>
               <Label htmlFor="rep-status-inv" className="text-xs">حالة الفاتورة</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status} onValueChange={(val: any) => setStatus(val || 'all')}>
                 <SelectTrigger id="rep-status-inv" className="mt-1 h-9 text-xs">
                   <SelectValue placeholder="كل الحالات" />
                 </SelectTrigger>
@@ -394,7 +394,7 @@ export default function ProcurementReports() {
           {activeTab === 'payments' && (
             <div>
               <Label htmlFor="rep-method" className="text-xs">طريقة الدفع</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <Select value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val || 'all')}>
                 <SelectTrigger id="rep-method" className="mt-1 h-9 text-xs">
                   <SelectValue placeholder="كل الطرق" />
                 </SelectTrigger>

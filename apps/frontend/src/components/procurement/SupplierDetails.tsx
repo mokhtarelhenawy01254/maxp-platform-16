@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Building2, Phone, Mail, MapPin, 
-  CreditCard, Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
+  Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { Button } from '@/components/ui/button';
@@ -90,8 +90,8 @@ export default function SupplierDetails() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get(`/procurement/suppliers/${id}`);
-      setSupplier(res.data);
+      const res = await apiClient.get<SupplierDetailData>(`/procurement/suppliers/${id}`);
+      setSupplier(res.data as SupplierDetailData);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'تعذر تحميل بيانات المورد');
     } finally {
@@ -105,7 +105,7 @@ export default function SupplierDetails() {
 
   const fetchTreasuries = async () => {
     try {
-      const res = await apiClient.get('/treasury/accounts');
+      const res = await apiClient.get<any>('/treasury/accounts');
       const list = Array.isArray(res.data?.accounts) ? res.data.accounts : (Array.isArray(res.data) ? res.data : []);
       setTreasuryAccounts(list);
       if (list.length > 0 && !paymentForm.treasuryAccountId) {
@@ -491,7 +491,7 @@ export default function SupplierDetails() {
                 <Label htmlFor="pay-method">طريقة الدفع *</Label>
                 <Select
                   value={paymentForm.paymentMethod}
-                  onValueChange={val => setPaymentForm(prev => ({ ...prev, paymentMethod: val }))}
+                  onValueChange={(val: any) => setPaymentForm(prev => ({ ...prev, paymentMethod: val || 'CASH' }))}
                 >
                   <SelectTrigger id="pay-method">
                     <SelectValue />
@@ -511,7 +511,7 @@ export default function SupplierDetails() {
                 <Label htmlFor="pay-treasury">الخزينة المسحوب منها *</Label>
                 <Select
                   value={paymentForm.treasuryAccountId}
-                  onValueChange={val => setPaymentForm(prev => ({ ...prev, treasuryAccountId: val }))}
+                  onValueChange={(val: any) => setPaymentForm(prev => ({ ...prev, treasuryAccountId: val || '' }))}
                 >
                   <SelectTrigger id="pay-treasury">
                     <SelectValue placeholder="اختر الخزينة" />

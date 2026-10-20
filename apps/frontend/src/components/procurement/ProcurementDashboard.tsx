@@ -83,8 +83,8 @@ const ProcurementDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/procurement/reports/dashboard");
-      setData(response.data);
+      const response = await apiClient.get<DashboardData>("/procurement/reports/dashboard");
+      setData(response.data as DashboardData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
