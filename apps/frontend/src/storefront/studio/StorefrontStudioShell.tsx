@@ -27,6 +27,7 @@ import {
   type StudioLeftPanelTab,
   type StudioZoomLevel,
   type StudioInspectorTab,
+  type StudioSelectedElement,
 } from "./StudioTypes";
 import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
@@ -65,6 +66,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<StudioSelectedElement | null>(null);
 
   // Library Drag-and-Drop state
   const [draggingLibraryItem, setDraggingLibraryItem] = useState<{ type: string; label: string } | null>(null);
@@ -346,6 +348,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onPageChange={(page) => {
           setActivePageKey(page);
           setSelectedSectionKey("");
+          setSelectedElement(null);
         }}
         onDeviceChange={setDeviceMode}
         onUndo={undo}
@@ -551,10 +554,21 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           showSpacingOverlay={showSpacingOverlay}
                           settings={sectionSettings}
                           libraryDropSlot={libraryDropSlot}
+                          selectedElement={selectedElement}
                           onSelect={() => {
                             setSelectedSectionKey(stableKey);
                             setIsInspectorOpen(true);
                           }}
+                          onSelectElement={(el) => {
+                            setSelectedSectionKey(stableKey);
+                            setSelectedElement(el);
+                            setIsInspectorOpen(true);
+                          }}
+                          onClearSelectedElement={() => {
+                            setSelectedElement(null);
+                          }}
+                          onUpdateField={handleUpdateSectionField}
+                          onSave={onSave}
                           onMoveUp={() => handleMoveSection(index, "up")}
                           onMoveDown={() => handleMoveSection(index, "down")}
                           onDuplicate={() => handleDuplicateSection(index)}
@@ -628,11 +642,14 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                   sectionConfig={selectedSectionConfig}
                   deviceMode={deviceMode}
                   initialTab={inspectorTab}
+                  selectedElement={selectedElement}
+                  onClearSelectedElement={() => setSelectedElement(null)}
                   onClose={() => setIsInspectorOpen(false)}
                   onUpdateField={handleUpdateSectionField}
                   onBatchUpdateFields={handleBatchUpdateSectionFields}
                   onOpenImagePicker={handleOpenImagePickerModal}
                   onSwitchDevice={setDeviceMode}
+                  onSave={onSave}
                 />
               </div>
             </>

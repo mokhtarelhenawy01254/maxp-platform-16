@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -8,7 +8,127 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { GripDotsIcon } from "./StudioLayersDrawer";
-import type { StudioDeviceMode } from "./StudioTypes";
+import type { StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
+
+export function detectElementUnderCursor(target: HTMLElement, sectionSettings?: Record<string, any>) {
+  // Ignore clicks on studio chrome, action bar, handles, badges
+  if (
+    target.closest(
+      "[data-studio-floating-bar], [data-studio-badge], [data-studio-drop-indicator], .studio-section-hairline, [data-studio-inline-badge]"
+    )
+  ) {
+    return null;
+  }
+
+  // 1. Button / Link (CTA)
+  const ctaEl = target.closest<HTMLElement>("a, button, [role='button'], .btn, [data-cta]");
+  if (ctaEl) {
+    const text = ctaEl.textContent?.trim() || "";
+    return {
+      type: "button" as const,
+      label: "زر",
+      field: "ctaText",
+      linkField: "ctaLink",
+      domElement: ctaEl,
+      currentText: sectionSettings?.ctaText ?? sectionSettings?.buttonText ?? text,
+      currentLink:
+        sectionSettings?.ctaLink ??
+        sectionSettings?.buttonUrl ??
+        sectionSettings?.primaryHref ??
+        ctaEl.getAttribute("href") ??
+        "",
+    };
+  }
+
+  // 2. Heading (h1-h6)
+  const headingEl = target.closest<HTMLElement>("h1, h2, h3, h4, h5, h6, [data-heading]");
+  if (headingEl) {
+    const text = headingEl.textContent?.trim() || "";
+    return {
+      type: "heading" as const,
+      label: "العنوان",
+      field: "title",
+      domElement: headingEl,
+      currentText: sectionSettings?.title ?? sectionSettings?.heading ?? text,
+    };
+  }
+
+  // 3. Image
+  const imgEl = target.closest<HTMLElement>("img, picture, [data-image]");
+  if (imgEl) {
+    const src = imgEl instanceof HTMLImageElement ? imgEl.src : "";
+    return {
+      type: "image" as const,
+      label: "صورة",
+      field:
+        sectionSettings?.heroImage !== undefined
+          ? "heroImage"
+          : sectionSettings?.backgroundImage !== undefined
+          ? "backgroundImage"
+          : "image",
+      domElement: imgEl,
+      currentImage:
+        sectionSettings?.image ??
+        sectionSettings?.backgroundImage ??
+        sectionSettings?.heroImage ??
+        src,
+      currentText: imgEl.getAttribute("alt") || "",
+      altField: "imageAlt",
+    };
+  }
+
+  // 4. Eyebrow / Badge
+  const badgeEl = target.closest<HTMLElement>("[data-badge], [data-eyebrow], .badge");
+  if (badgeEl) {
+    const text = badgeEl.textContent?.trim() || "";
+    return {
+      type: "badge" as const,
+      label: "الشارة",
+      field: "eyebrow",
+      domElement: badgeEl,
+      currentText: sectionSettings?.eyebrow ?? sectionSettings?.badge ?? text,
+    };
+  }
+
+  // 5. Paragraph / Subtitle / Description
+  const pEl = target.closest<HTMLElement>("p, blockquote, [data-subtitle], [data-description]");
+  if (pEl) {
+    const text = pEl.textContent?.trim() || "";
+    const field =
+      sectionSettings?.content !== undefined
+        ? "content"
+        : sectionSettings?.body !== undefined
+        ? "body"
+        : "subtitle";
+    return {
+      type: "subtitle" as const,
+      label: "الوصف",
+      field,
+      domElement: pEl,
+      currentText: sectionSettings?.[field] ?? sectionSettings?.description ?? text,
+    };
+  }
+
+  // 6. Match any string setting value in child text nodes
+  if (sectionSettings && target.textContent?.trim()) {
+    const text = target.textContent.trim();
+    if (text.length > 0 && text.length < 150) {
+      for (const [key, val] of Object.entries(sectionSettings)) {
+        if (typeof val === "string" && val.trim() === text) {
+          return {
+            type: "custom" as const,
+            label: key,
+            field: key,
+            domElement: target,
+            currentText: val,
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
 
 interface StudioSortableSectionProps {
   id: string;
@@ -23,7 +143,12 @@ interface StudioSortableSectionProps {
   actualPadding?: string | number;
   settings?: Record<string, any>;
   libraryDropSlot?: number | null;
+  selectedElement?: StudioSelectedElement | null;
   onSelect: () => void;
+  onSelectElement?: (element: StudioSelectedElement) => void;
+  onClearSelectedElement?: () => void;
+  onUpdateField?: (field: string, value: any) => void;
+  onSave?: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDuplicate: () => void;
@@ -36,6 +161,7 @@ interface StudioSortableSectionProps {
 export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   id,
   index,
+  sectionKey,
   sectionLabel,
   sectionType,
   selected,
@@ -45,7 +171,12 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   actualPadding,
   settings,
   libraryDropSlot,
+  selectedElement,
   onSelect,
+  onSelectElement,
+  onClearSelectedElement,
+  onUpdateField,
+  onSave,
   onMoveUp,
   onMoveDown,
   onDuplicate,
@@ -54,6 +185,14 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   onLibraryDrop,
   children,
 }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [inlineEditing, setInlineEditing] = useState<{
+    domEl: HTMLElement;
+    field: string;
+    label: string;
+    originalText: string;
+  } | null>(null);
+
   const resolvedPadding =
     actualPadding ??
     settings?.padding ??
@@ -89,6 +228,180 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     position: "relative",
   };
 
+  useEffect(() => {
+    if (!contentRef.current) return;
+    const prev = contentRef.current.querySelectorAll("[data-studio-element-selected='true']");
+    prev.forEach((el) => el.removeAttribute("data-studio-element-selected"));
+
+    if (selected && selectedElement && selectedElement.sectionKey === sectionKey) {
+      const candidates = contentRef.current.querySelectorAll(
+        "h1, h2, h3, h4, h5, h6, p, a, button, img, [role='button'], [data-cta], [data-heading], [data-badge], span, blockquote"
+      );
+      for (const el of Array.from(candidates)) {
+        const detected = detectElementUnderCursor(el as HTMLElement, settings);
+        if (
+          detected &&
+          detected.type === selectedElement.type &&
+          detected.field === selectedElement.field
+        ) {
+          el.setAttribute("data-studio-element-selected", "true");
+          break;
+        }
+      }
+    }
+  }, [selected, selectedElement, sectionKey, settings]);
+
+  useEffect(() => {
+    if (!inlineEditing) return;
+    const { domEl, field, originalText } = inlineEditing;
+    let saved = false;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        saved = true;
+        domEl.innerText = originalText;
+        cleanup();
+      } else if (e.key === "Enter") {
+        const isMultiline =
+          domEl.tagName.toLowerCase() === "p" ||
+          domEl.tagName.toLowerCase() === "blockquote";
+        if (e.ctrlKey || e.metaKey || !isMultiline) {
+          e.preventDefault();
+          e.stopPropagation();
+          commitSave();
+        }
+      }
+    };
+
+    const handleBlur = () => {
+      if (!saved) {
+        commitSave();
+      }
+    };
+
+    const commitSave = () => {
+      saved = true;
+      const newText = domEl.innerText.trim();
+      cleanup();
+      if (newText !== originalText && onUpdateField) {
+        onUpdateField(field, newText);
+        if (field === "title") onUpdateField("heading", newText);
+        if (field === "subtitle") onUpdateField("description", newText);
+        if (field === "ctaText") onUpdateField("buttonText", newText);
+        onSave?.();
+      }
+    };
+
+    const cleanup = () => {
+      domEl.contentEditable = "false";
+      domEl.setAttribute("contenteditable", "false");
+      domEl.removeAttribute("data-studio-inline-editing");
+      domEl.removeEventListener("keydown", handleKeyDown);
+      domEl.removeEventListener("blur", handleBlur);
+      setInlineEditing(null);
+    };
+
+    domEl.addEventListener("keydown", handleKeyDown);
+    domEl.addEventListener("blur", handleBlur);
+
+    return () => {
+      domEl.contentEditable = "false";
+      domEl.setAttribute("contenteditable", "false");
+      domEl.removeAttribute("data-studio-inline-editing");
+      domEl.removeEventListener("keydown", handleKeyDown);
+      domEl.removeEventListener("blur", handleBlur);
+    };
+  }, [inlineEditing, onUpdateField, onSave]);
+
+  const handleSectionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "[data-studio-floating-bar], [data-studio-badge], [data-studio-inline-badge]"
+      )
+    ) {
+      return;
+    }
+
+    if (contentRef.current && contentRef.current.contains(target)) {
+      const detected = detectElementUnderCursor(target, settings);
+      if (detected) {
+        onSelect();
+        onSelectElement?.({
+          sectionKey,
+          type: detected.type,
+          label: detected.label,
+          field: detected.field,
+          linkField: detected.linkField,
+          altField: detected.altField,
+          currentText: detected.currentText,
+          currentLink: detected.currentLink,
+          currentImage: detected.currentImage,
+        });
+        return;
+      }
+    }
+
+    onSelect();
+    onClearSelectedElement?.();
+  };
+
+  const handleSectionDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "[data-studio-floating-bar], [data-studio-badge], [data-studio-inline-badge]"
+      )
+    ) {
+      return;
+    }
+
+    if (contentRef.current && contentRef.current.contains(target)) {
+      const detected = detectElementUnderCursor(target, settings);
+      if (detected && detected.type !== "image") {
+        e.stopPropagation();
+        e.preventDefault();
+        onSelect();
+        onSelectElement?.({
+          sectionKey,
+          type: detected.type,
+          label: detected.label,
+          field: detected.field,
+          linkField: detected.linkField,
+          currentText: detected.currentText,
+          currentLink: detected.currentLink,
+        });
+
+        const targetEl = detected.domElement;
+        const originalText = targetEl.innerText || targetEl.textContent || "";
+        targetEl.contentEditable = "true";
+        targetEl.setAttribute("contenteditable", "true");
+        targetEl.setAttribute("data-studio-inline-editing", "true");
+        targetEl.focus();
+
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(targetEl);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        } catch {
+          // ignore selection error
+        }
+
+        setInlineEditing({
+          domEl: targetEl,
+          field: detected.field,
+          label: detected.label,
+          originalText,
+        });
+      }
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -96,10 +409,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       data-studio-sortable-section="true"
       data-studio-section-index={index}
       data-section-type={sectionType}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect();
-      }}
+      onClick={handleSectionClick}
+      onDoubleClick={handleSectionDoubleClick}
       onDragOver={(e) => {
         const types = Array.from(e.dataTransfer.types || []);
         if (
@@ -151,6 +462,23 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
         </div>
       )}
 
+      {/* Floating Inline Editing Badge */}
+      {inlineEditing && (
+        <div
+          data-studio-inline-badge="true"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute -top-7 start-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-[#2b6cf6] px-3 py-1 text-[10.5px] font-bold text-white shadow-xl select-none"
+        >
+          <span className="flex items-center gap-1">
+            <span>✏️</span>
+            <span>تحرير: {inlineEditing.label}</span>
+          </span>
+          <span className="text-[9px] font-normal opacity-90 border-s border-white/20 ps-2">
+            Ctrl+Enter للحفظ • Esc للإلغاء
+          </span>
+        </div>
+      )}
+
       {/* Selected Blue Outline & Handles */}
       {selected && (
         <>
@@ -163,20 +491,49 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           <span className="pointer-events-none absolute -bottom-1 -end-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
           <span className="pointer-events-none absolute -bottom-1 -start-1 z-40 h-2 w-2 rounded-xs bg-[#2b6cf6]" />
 
-          {/* Section Indicator Badge */}
-          <div className="absolute -top-7 end-2 sm:end-4 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none">
-            <span>#{index + 1} {sectionLabel}</span>
+          {/* Section Indicator Badge with Breadcrumb */}
+          <div
+            data-studio-badge="true"
+            className="absolute -top-7 end-2 sm:end-4 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none"
+          >
+            <span>
+              #{index + 1} {sectionLabel}
+              {selectedElement && selectedElement.sectionKey === sectionKey
+                ? ` › ${selectedElement.label}`
+                : ""}
+            </span>
           </div>
 
           {/* Floating Action Bar (fbtool) */}
           <div
+            data-studio-floating-bar="true"
             onClick={(e) => e.stopPropagation()}
             className="absolute -top-7 start-2 sm:start-4 z-40 flex items-center overflow-hidden rounded-lg border border-[#33363c] bg-[#17181c] text-[#d6dae0] shadow-xl text-[10px] sm:text-[11px] select-none max-w-[calc(100%-90px)] sm:max-w-none"
           >
-            <span className="flex items-center gap-1 px-2 sm:px-2.5 py-1 font-bold text-white bg-[#202226] truncate max-w-[120px] sm:max-w-none">
-              <span className="truncate">{sectionLabel}</span>
-              <span className="hidden sm:inline text-[9px] text-[#9ba0a8]">({sectionType})</span>
-            </span>
+            <div className="flex items-center gap-1 px-2 sm:px-2.5 py-1 font-bold text-white bg-[#202226] truncate max-w-[180px] sm:max-w-none">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearSelectedElement?.();
+                }}
+                className="hover:underline hover:text-[#3b82f6] truncate transition-colors cursor-pointer"
+                title="الرجوع إلى تحديد القسم"
+              >
+                {sectionLabel}
+              </button>
+              {selectedElement && selectedElement.sectionKey === sectionKey && (
+                <>
+                  <span className="text-[#9ba0a8] text-[9px] shrink-0">›</span>
+                  <span className="text-[#3b82f6] text-[10.5px] font-extrabold truncate shrink-0">
+                    {selectedElement.label}
+                  </span>
+                </>
+              )}
+              {(!selectedElement || selectedElement.sectionKey !== sectionKey) && (
+                <span className="hidden sm:inline text-[9px] text-[#9ba0a8]">({sectionType})</span>
+              )}
+            </div>
 
             {/* Drag handle */}
             <button
@@ -279,7 +636,16 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       )}
 
       {/* Content wrapper with pointer events isolated */}
-      <div className="relative z-0 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
+      <div
+        ref={contentRef}
+        onClickCapture={(e) => {
+          const anchor = (e.target as HTMLElement).closest("a, button, [type='submit']");
+          if (anchor) {
+            e.preventDefault();
+          }
+        }}
+        className="relative z-0 [&_input]:pointer-events-none [&_select]:pointer-events-none"
+      >
         {children}
       </div>
     </div>
