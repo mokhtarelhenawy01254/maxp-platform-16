@@ -1,24 +1,31 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import OrderHeader from "../components/OrderHeader";
-import { OrderDetailsType } from "../types";
+import type { OrderDetailsType } from "../types";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => {
+    t: (key: string, opts?: { defaultValue?: string }) => {
       if (opts?.defaultValue) return opts.defaultValue;
       return key;
     },
   }),
 }));
 
-jest.mock("../../../hooks/useDateFormat", () => ({
+vi.mock("../../../hooks/useDateFormat", () => ({
   useDateFormat: () => ({
-    formatDate: (d: any) => String(d),
-    formatDateTime: (d: any) => "2026-09-23 11:50",
+    formatDate: (d: unknown) => String(d),
+    formatDateTime: () => "2026-09-23 11:50",
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("OrderHeader Component", () => {
   const mockOrder: OrderDetailsType = {
@@ -33,7 +40,7 @@ describe("OrderHeader Component", () => {
     items: [],
     currency: "EGP",
     totalAmount: 500,
-  } as any;
+  } as unknown as OrderDetailsType;
 
   it("renders order title, number, and status badge", () => {
     render(
@@ -42,12 +49,12 @@ describe("OrderHeader Component", () => {
           order={mockOrder}
           isEditing={false}
           updating={false}
-          onEdit={jest.fn()}
-          onCancel={jest.fn()}
-          onSave={jest.fn()}
-          onPrint={jest.fn()}
-          onPrintPreparationSlip={jest.fn()}
-          onBack={jest.fn()}
+          onEdit={vi.fn()}
+          onCancel={vi.fn()}
+          onSave={vi.fn()}
+          onPrint={vi.fn()}
+          onPrintPreparationSlip={vi.fn()}
+          onBack={vi.fn()}
           currentStatusConfig={{
             code: "CONFIRMED",
             name: "مؤكد",
@@ -63,12 +70,12 @@ describe("OrderHeader Component", () => {
   });
 
   it("renders unified action buttons with no-wrap and triggers callbacks", () => {
-    const onEdit = jest.fn();
-    const onPrint = jest.fn();
-    const onPrintPrep = jest.fn();
-    const onPostpone = jest.fn();
-    const onUpdatePayment = jest.fn();
-    const onOpenTicket = jest.fn();
+    const onEdit = vi.fn();
+    const onPrint = vi.fn();
+    const onPrintPrep = vi.fn();
+    const onPostpone = vi.fn();
+    const onUpdatePayment = vi.fn();
+    const onOpenTicket = vi.fn();
 
     render(
       <MemoryRouter>
@@ -77,11 +84,11 @@ describe("OrderHeader Component", () => {
           isEditing={false}
           updating={false}
           onEdit={onEdit}
-          onCancel={jest.fn()}
-          onSave={jest.fn()}
+          onCancel={vi.fn()}
+          onSave={vi.fn()}
           onPrint={onPrint}
           onPrintPreparationSlip={onPrintPrep}
-          onBack={jest.fn()}
+          onBack={vi.fn()}
           onOpenTicket={onOpenTicket}
           canEditOrder={true}
           canPrintPreparationSlip={true}
@@ -125,8 +132,8 @@ describe("OrderHeader Component", () => {
   });
 
   it("renders save and cancel buttons when isEditing is true", () => {
-    const onSave = jest.fn();
-    const onCancel = jest.fn();
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
 
     render(
       <MemoryRouter>
@@ -134,12 +141,12 @@ describe("OrderHeader Component", () => {
           order={mockOrder}
           isEditing={true}
           updating={false}
-          onEdit={jest.fn()}
+          onEdit={vi.fn()}
           onCancel={onCancel}
           onSave={onSave}
-          onPrint={jest.fn()}
-          onPrintPreparationSlip={jest.fn()}
-          onBack={jest.fn()}
+          onPrint={vi.fn()}
+          onPrintPreparationSlip={vi.fn()}
+          onBack={vi.fn()}
         />
       </MemoryRouter>
     );
