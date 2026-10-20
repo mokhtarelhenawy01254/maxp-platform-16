@@ -10,6 +10,45 @@ export interface DevFetchError extends Error {
   status?: number;
 }
 
+/** Availability snapshot returned by the public MCP probe. */
+export interface McpStatus {
+  available: boolean;
+  reason: string | null;
+  gatewayBaseUrl: string | null;
+  servers: Array<{ id: string; path: string; url?: string | null }>;
+}
+
+/**
+ * `GET /api/v1/public/ext/mcp/status` — credential-free probe that reports
+ * whether the MCP servers are actually deployed in this environment.
+ *
+ * Throws on network/HTTP errors. Callers must fail closed (treat a throw as
+ * "unavailable") so the hub never renders a config for endpoints that may not
+ * exist.
+ */
+export const fetchMcpStatus = async (): Promise<McpStatus> => {
+  const response = await fetch(`${getApiUrl()}/public/ext/mcp/status`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const payload = (await response.json()) as Partial<McpStatus> | null;
+  const servers = Array.isArray(payload?.servers) ? payload?.servers ?? [] : [];
+  return {
+    available: payload?.available === true,
+    reason: typeof payload?.reason === "string" && payload.reason ? payload.reason : null,
+    gatewayBaseUrl:
+      typeof payload?.gatewayBaseUrl === "string" && payload.gatewayBaseUrl
+        ? payload.gatewayBaseUrl
+        : null,
+    servers: servers.filter(
+      (server): server is { id: string; path: string; url?: string | null } =>
+        Boolean(server) && typeof server?.path === "string",
+    ),
+  };
+};
+
 export const devFetch = async <T = unknown>(
   path: string,
   options: RequestInit = {},

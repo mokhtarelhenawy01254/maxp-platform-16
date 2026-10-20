@@ -82,6 +82,7 @@ export interface DevStrings {
   mcp: {
     title: string;
     description: string;
+    descriptionUnavailable: string;
     create: string;
     typeBadge: string;
     serversTitle: string;
@@ -96,6 +97,16 @@ export interface DevStrings {
     catalogServer: string;
     videoServer: string;
     serverNote: string;
+    unavailableBadge: string;
+    unavailableTitle: string;
+    reasonLabel: string;
+    reasonNotDeployed: string;
+    reasonUnknown: string;
+    serversUnavailable: string;
+    configUnavailable: string;
+    checking: string;
+    alternativeTitle: string;
+    alternativeBody: string;
   };
   usage: {
     title: string;
@@ -194,6 +205,8 @@ const ar: DevStrings = {
   mcp: {
     title: "MCP",
     description: "صِل أدوات Cursor و Claude وأي عميل MCP بحساب شركتك.",
+    descriptionUnavailable:
+      "إدارة توكنات MCP من هنا جاهزة، لكن سيرفرات MCP نفسها غير منشورة في الإنتاج حاليًا — للتكامل الآن استخدم الـREST API العام.",
     create: "إنشاء توكن MCP",
     typeBadge: "توكن MCP",
     serversTitle: "السيرفرات المتاحة",
@@ -208,6 +221,19 @@ const ar: DevStrings = {
     catalogServer: "كتالوج المنتجات والمخزون",
     videoServer: "توليد فيديو Veo",
     serverNote: "كل الطلبات تُوثّق وتخضع لحدود الاستخدام الخاصة بالتوكن.",
+    unavailableBadge: "غير متاح",
+    unavailableTitle: "سيرفرات MCP غير متاحة في الإنتاج حاليًا",
+    reasonLabel: "السبب",
+    reasonNotDeployed: "السيرفرات لم تُنشر على هذا النطاق بعد، فمسارات /mcp/* غير مفعّلة.",
+    reasonUnknown: "تعذر التحقق من حالة السيرفرات الآن، ولسنا نفترض أنها تعمل.",
+    serversUnavailable:
+      "مسارات /mcp/* غير مفعّلة على هذا النطاق، لذلك لا نعرض عناوين قابلة للنسخ.",
+    configUnavailable:
+      "الإعداد الجاهز متوقف حتى تُنشر السيرفرات — أي رابط MCP الآن سيكون رابطًا ميتًا.",
+    checking: "جارٍ التحقق من حالة سيرفرات MCP…",
+    alternativeTitle: "البديل العملي الآن: الـREST API العام",
+    alternativeBody:
+      "نفس التوكن/المفتاح يشتغل على /api/v1/public/ext لقراءة المنتجات والمخزون والطلبات والعملاء والكوبونات والتحليلات — راجع تبويب الدوكيومنتيشن.",
   },
   usage: {
     title: "الاستخدام",
@@ -306,6 +332,8 @@ const en: DevStrings = {
   mcp: {
     title: "MCP",
     description: "Connect Cursor, Claude and any MCP client to your company account.",
+    descriptionUnavailable:
+      "MCP credential management is ready here, but the MCP servers themselves are not deployed in production yet — use the public REST API for integrations today.",
     create: "Create MCP credential",
     typeBadge: "MCP",
     serversTitle: "Available servers",
@@ -320,6 +348,19 @@ const en: DevStrings = {
     catalogServer: "Products & inventory catalog",
     videoServer: "Veo video generation",
     serverNote: "Every request is audited and subject to the credential's rate limit.",
+    unavailableBadge: "Unavailable",
+    unavailableTitle: "MCP servers are not available in production right now",
+    reasonLabel: "Reason",
+    reasonNotDeployed: "The servers are not published on this domain yet, so /mcp/* paths are disabled.",
+    reasonUnknown: "Could not verify server status right now — we do not assume they are up.",
+    serversUnavailable:
+      "/mcp/* paths are disabled on this domain, so no copyable endpoints are shown.",
+    configUnavailable:
+      "The ready-to-paste config is disabled until the servers are deployed — any MCP URL right now would be a dead link.",
+    checking: "Checking MCP server status…",
+    alternativeTitle: "Practical alternative today: the public REST API",
+    alternativeBody:
+      "The same credential works against /api/v1/public/ext for products, inventory, orders, customers, coupons and analytics — see the Documentation tab.",
   },
   usage: {
     title: "Usage",

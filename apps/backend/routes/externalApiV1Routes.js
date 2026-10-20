@@ -3,6 +3,10 @@
  * @description Public merchant REST API — read-only, authenticated with
  * Developer Hub API keys (`mxp_live_…`). Mounted at /api/v1/public/ext.
  *
+ * Public (credential-free) probe: GET /mcp/status reports whether the MCP
+ * servers are actually deployed, so the Developer Hub never advertises a dead
+ * MCP endpoint. See config/mcpDeployment for the source of truth.
+ *
  * Isolation contract:
  *  - company scope comes from the credential row (req.merchantCredential)
  *  - every query filters by that companyId
@@ -12,6 +16,7 @@ const express = require('express');
 const router = express.Router();
 
 const { merchantApiAuth, requireScope, createMerchantApiAuth } = require('../middleware/merchantApiAuth');
+const { getMcpDeploymentStatus } = require('../config/mcpDeployment');
 const videoGenerationController = require('../controller/videoGenerationController');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 const {
@@ -40,6 +45,18 @@ const degrade = (res, context, error) => {
   console.error(`[ext-api] ${context} failed:`, error?.message || error);
   return res.status(503).json({ success: false, code: 'DATA_UNAVAILABLE', message: 'البيانات غير متاحة حالياً' });
 };
+
+// ─── MCP availability probe (public, no credential) ─────────────────────────
+// Registered BEFORE the REST-key gate below on purpose: the Developer Hub must
+// be able to learn whether the MCP servers exist before it owns a valid key,
+// and the answer is the same for everyone. Values come from real deployment
+// configuration (`config/mcpDeployment`), never hardcoded — deploying the
+// servers (MCP_SERVERS_DEPLOYED=true) flips the Developer Hub back to the
+// copy-ready config with no code change.
+router.get('/mcp/status', (_req, res) => {
+  res.set('Cache-Control', 'no-store, max-age=0');
+  return res.json({ success: true, ...getMcpDeploymentStatus() });
+});
 
 // ─── Video bridge (merchant MCP tokens) ─────────────────────────────────────
 // Registered BEFORE the REST-key gate below on purpose: this surface accepts
