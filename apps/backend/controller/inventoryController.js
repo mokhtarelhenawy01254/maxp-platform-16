@@ -699,6 +699,13 @@ exports.getInventory = async (req, res) => {
     const products = await getSharedPrismaClient().product.findMany({
       where: productWhere,
       include: {
+        productVariants: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            stock: true
+          }
+        },
         inventories: {
           where: inventoryWhere,
           include: {
@@ -765,10 +772,15 @@ exports.getInventory = async (req, res) => {
           });
         });
       } else {
+        const variantStockSum = Array.isArray(product.productVariants)
+          ? product.productVariants.reduce((sum, v) => sum + Math.max(0, Number(v.stock || 0)), 0)
+          : 0;
+        const effectiveStock = Math.max(Number(product.stock || 0), variantStockSum);
+
         let healedInv = null;
         if (
           !scope.isMerchantScope &&
-          (product.stock || 0) > 0 &&
+          effectiveStock > 0 &&
           (!warehouseId || warehouseId === companyPrimaryWarehouse?.id)
         ) {
           try {

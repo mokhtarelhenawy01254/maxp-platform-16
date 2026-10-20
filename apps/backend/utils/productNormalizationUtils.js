@@ -408,6 +408,17 @@ function formatProductResponse(product) {
     }
   }
 
+  let effectiveStock = parseInt(product.stock, 10) || 0;
+  if (variants && variants.length > 0) {
+    const variantStockSum = variants.reduce(
+      (sum, v) => sum + Math.max(0, parseInt(v.stock, 10) || 0),
+      0
+    );
+    if (variantStockSum > 0 || (effectiveStock === 0 && variantStockSum > 0)) {
+      effectiveStock = variantStockSum;
+    }
+  }
+
   return {
     ...product,
     metadata: parsedMetadata,
@@ -415,6 +426,7 @@ function formatProductResponse(product) {
     metaDescription,
     price: effectivePrice,
     comparePrice: effectiveComparePrice,
+    stock: effectiveStock,
     cost: product.cost ? parseFloat(product.cost) : null,
     weight: product.weight ? parseFloat(product.weight) : null,
     mainImage: finalMainImage,

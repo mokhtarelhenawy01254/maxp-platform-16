@@ -52,7 +52,7 @@ const {
   resolveMerchantAccount,
   syncMerchantProductStock,
 } = require('../utils/merchantAccountScope');
-const { syncProductToInventory } = require('../services/inventorySyncService');
+const { syncProductToInventory, syncProductVariantsStock } = require('../services/inventorySyncService');
 const redisCacheService = require('../services/redisCacheService');
 
 // 🔤 Arabic to Franco mapping for slug generation
@@ -3403,6 +3403,14 @@ const createProductVariant = async (req, res) => {
 
     await refreshProductRetrievalArtifacts(id, companyId);
 
+    if (!stockManagedByCompanyWarehouse) {
+      await syncProductVariantsStock(getSharedPrismaClient(), id, {
+        companyId,
+        userId: req.user?.id,
+        userName: req.user?.name,
+      }).catch(err => console.error('⚠️ [PRODUCT] Failed to sync variant stock on create:', err.message));
+    }
+
     res.status(201).json({
       success: true,
       data: variant,
@@ -3871,6 +3879,14 @@ const updateProductVariant = async (req, res) => {
       }).catch(e => console.warn('Waitlist lookup failed', e.message));
     }
 
+    if (!stockManagedByCompanyWarehouse) {
+      await syncProductVariantsStock(getSharedPrismaClient(), id, {
+        companyId,
+        userId: req.user?.id,
+        userName: req.user?.name,
+      }).catch(err => console.error('⚠️ [PRODUCT] Failed to sync variant stock on update:', err.message));
+    }
+
     res.json({
       success: true,
       data: updatedVariant,
@@ -3939,6 +3955,12 @@ const deleteProductVariant = async (req, res) => {
     });
 
     await refreshProductRetrievalArtifacts(id, companyId);
+
+    await syncProductVariantsStock(getSharedPrismaClient(), id, {
+      companyId,
+      userId: req.user?.id,
+      userName: req.user?.name,
+    }).catch(err => console.error('⚠️ [PRODUCT] Failed to sync variant stock on delete:', err.message));
 
     res.json({
       success: true,

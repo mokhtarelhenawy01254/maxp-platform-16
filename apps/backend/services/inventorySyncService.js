@@ -109,39 +109,48 @@ const syncProductToInventory = async (
   // If new product or no inventory row exists
   if (isCreate || !inventory) {
     if (stockNumber > 0) {
-      const savedInventory = await db.inventory.upsert({
-        where: {
-          productId_warehouseId_batchNumber: {
-            productId,
-            warehouseId: warehouse.id,
-            batchNumber: null,
+      let savedInventory;
+      if (inventory) {
+        savedInventory = await db.inventory.update({
+          where: { id: inventory.id },
+          data: {
+            quantity: stockNumber,
+            available: stockNumber,
+            ...(costNumber !== null && { cost: costNumber }),
+            updatedAt: new Date(),
           },
-        },
-        update: {
-          quantity: stockNumber,
-          available: stockNumber,
-          ...(costNumber !== null && { cost: costNumber }),
-          updatedAt: new Date(),
-        },
-        create: {
-          productId,
-          warehouseId: warehouse.id,
-          quantity: stockNumber,
-          available: stockNumber,
-          reserved: 0,
-          cost: costNumber,
-          batchNumber: null,
-        },
-        include: {
-          warehouse: {
-            select: {
-              id: true,
-              name: true,
-              location: true,
+          include: {
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+                location: true,
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        savedInventory = await db.inventory.create({
+          data: {
+            productId,
+            warehouseId: warehouse.id,
+            quantity: stockNumber,
+            available: stockNumber,
+            reserved: 0,
+            cost: costNumber,
+            batchNumber: null,
+          },
+          include: {
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+                location: true,
+              },
+            },
+          },
+        });
+      }
 
       await db.stockMovement.create({
         data: {
@@ -236,7 +245,75 @@ const syncProductToInventory = async (
 };
 
 /**
- * Automatically heals orphan products that have stock > 0 but no inventory row in warehouses.
+ * Calculates the total stock of a product from its active variants,
+ * updates Product.stock in the database, and syncs to warehouse Inventory.
+ *
+ * @param {import('@prisma/client').PrismaClient} [prisma]
+ * @param {string} productId
+ * @param {object} [options]
+ * @param {string} [options.companyId]
+ * @param {string} [options.userId]
+ * @param {string} [options.userName]
+ * @returns {Promise<number>} Returns the total stock
+ */
+const syncProductVariantsStock = async (
+  prisma,
+  productId,
+  { companyId, userId, userName } = {}
+) => {
+  if (!productId) return 0;
+  const db = prisma || getSharedPrismaClient();
+
+  const product = await db.product.findUnique({
+    where: { id: productId },
+    include: {
+      productVariants: {
+        where: { isActive: true },
+        select: { stock: true },
+      },
+    },
+  });
+
+  if (!product) return 0;
+
+  const resolvedCompanyId = companyId || product.companyId;
+  const variants = product.productVariants || [];
+  if (variants.length === 0) {
+    return product.stock || 0;
+  }
+
+  const totalStock = variants.reduce(
+    (sum, v) => sum + Math.max(0, parseInt(v.stock, 10) || 0),
+    0
+  );
+
+  // Update product.stock if changed
+  if (product.stock !== totalStock) {
+    await db.product.update({
+      where: { id: productId },
+      data: { stock: totalStock },
+    }).catch(err => {
+      console.error(`⚠️ [INVENTORY] Failed to update product.stock for ${productId}:`, err.message);
+    });
+  }
+
+  // Sync to warehouse inventory
+  await syncProductToInventory(db, {
+    productId,
+    companyId: resolvedCompanyId,
+    stock: totalStock,
+    cost: product.cost,
+    userId,
+    userName,
+    isCreate: false,
+  });
+
+  return totalStock;
+};
+
+/**
+ * Automatically heals orphan products that have stock > 0 but no inventory row in warehouses,
+ * taking into account variant stock sums when variants exist.
  *
  * @param {import('@prisma/client').PrismaClient} [prisma]
  * @param {object} params
@@ -246,16 +323,46 @@ const syncProductToInventory = async (
  */
 const autoHealProductInventory = async (prisma, { product, companyId } = {}) => {
   if (!product || !companyId) return null;
-  const stock =
-    typeof product.stock === 'number' ? product.stock : parseInt(product.stock, 10);
+  const db = prisma || getSharedPrismaClient();
 
-  if (stock > 0 && (!product.inventories || product.inventories.length === 0)) {
+  let effectiveStock =
+    typeof product.stock === 'number' ? product.stock : parseInt(product.stock, 10) || 0;
+
+  let variants = product.productVariants || product.variants;
+  if (!variants || !Array.isArray(variants)) {
+    try {
+      variants = await db.productVariant.findMany({
+        where: { productId: product.id, isActive: true },
+        select: { stock: true },
+      });
+    } catch (e) {
+      variants = [];
+    }
+  }
+
+  if (Array.isArray(variants) && variants.length > 0) {
+    const variantSum = variants.reduce(
+      (sum, v) => sum + Math.max(0, parseInt(v.stock, 10) || 0),
+      0
+    );
+    if (variantSum > 0 || (effectiveStock === 0 && variantSum > 0)) {
+      effectiveStock = variantSum;
+      if (product.stock !== effectiveStock) {
+        await db.product.update({
+          where: { id: product.id },
+          data: { stock: effectiveStock },
+        }).catch(err => console.error(`⚠️ [AUTO-HEAL] Failed to update product.stock:`, err.message));
+      }
+    }
+  }
+
+  if (effectiveStock > 0 && (!product.inventories || product.inventories.length === 0)) {
     const cost =
       product.cost !== undefined && product.cost !== null ? product.cost : null;
-    return syncProductToInventory(prisma, {
+    return syncProductToInventory(db, {
       productId: product.id,
       companyId,
-      stock,
+      stock: effectiveStock,
       cost,
       userId: null,
       userName: 'النظام (مزامنة تلقائية)',
@@ -269,5 +376,6 @@ const autoHealProductInventory = async (prisma, { product, companyId } = {}) => 
 module.exports = {
   ensureCompanyPrimaryWarehouse,
   syncProductToInventory,
+  syncProductVariantsStock,
   autoHealProductInventory,
 };
