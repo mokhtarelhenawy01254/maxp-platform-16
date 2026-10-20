@@ -833,6 +833,44 @@ const getCategory = async (req, res) => {
   }
 };
 
+const assertCategoryParent = async ({ companyId, parentId, categoryId = null }) => {
+  if (parentId === undefined || parentId === null) {
+    return { ok: true, value: null };
+  }
+  const raw = typeof parentId === 'string' ? parentId.trim() : String(parentId);
+  if (!raw || raw === 'null' || raw === 'undefined') {
+    return { ok: true, value: null };
+  }
+  const prisma = getSharedPrismaClient();
+
+  if (categoryId && raw === categoryId) {
+    return { ok: false, error: 'لا يمكن أن تكون الفئة تابعة لنفسها' };
+  }
+
+  const parent = await prisma.category.findFirst({ where: { id: raw, companyId } });
+  if (!parent) {
+    return { ok: false, error: 'الفئة الأب غير موجودة في شركتك' };
+  }
+
+  // منع الدوران: ممنوع اختيار فئة فرعية (أو حفيد) كأب
+  if (categoryId) {
+    let cursor = parent;
+    let guard = 0;
+    while (cursor && cursor.parentId && guard < 100) {
+      if (cursor.parentId === categoryId) {
+        return { ok: false, error: 'لا يمكن نقل الفئة داخل إحدى فئاتها الفرعية' };
+      }
+      cursor = await prisma.category.findFirst({ where: { id: cursor.parentId, companyId } });
+      guard += 1;
+    }
+    if (cursor && cursor.parentId === categoryId) {
+      return { ok: false, error: 'لا يمكن نقل الفئة داخل إحدى فئاتها الفرعية' };
+    }
+  }
+
+  return { ok: true, value: raw };
+};
+
 const createNewCategory = async (req, res) => {
   try {
     //console.log('🔍 [server] POST /api/v1/products/categories');
@@ -893,6 +931,12 @@ const createNewCategory = async (req, res) => {
       companyId
     });
 
+    // تحقق من الفئة الأب (لازم تكون في نفس الشركة)
+    const parentCheck = await assertCategoryParent({ companyId, parentId: parentId || null });
+    if (!parentCheck.ok) {
+        return res.status(400).json({ success: false, error: parentCheck.error });
+    }
+
     //console.log('📦 Creating category for company:', companyId);
 
     // Create new category
@@ -902,7 +946,7 @@ const createNewCategory = async (req, res) => {
         slug: categorySlug,
         description: description?.trim() || null,
         image: image || null,
-        parentId: parentId || null,
+        parentId: parentCheck.value,
         isActive: parseMultipartBoolean(isActive, true),
         sortOrder: sortOrder || 0,
         displayType: displayType || 'default',
@@ -940,83 +984,100 @@ const updateCategory = async (req, res) => {
     }
 
     const { id } = req.params;
-    let {
-      name,
-      slug,
-      description,
-      image,
-      parentId,
-      isActive,
-      sortOrder,
-      displayType,
-      metaTitle,
-      metaDescription
-    } = req.body;
-
-    if (req.file) {
-      image = `/uploads/products/${req.file.filename}`;
-    }
-
-    if (!name) {
-      return res.status(400).json({
-        success: false,
-        error: 'Category name is required'
-      });
-    }
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
 
     // Check if category exists and belongs to the company
-    const existingCategory = await getSharedPrismaClient().category.findFirst({
-      where: {
-        id,
-        companyId
-      }
+    const existingCategory = await prisma.category.findFirst({
+      where: { id, companyId }
     });
 
     if (!existingCategory) {
       return res.status(404).json({
         success: false,
-        error: 'Category not found'
+        error: 'الفئة غير موجودة'
       });
     }
 
-    // Check if name is already taken by another category
-    const duplicateCategory = await getSharedPrismaClient().category.findFirst({
-      where: {
-        name: name.trim(),
+    // ⚠️ تحديث جزئي: الحقول اللي مش واصلة بتفضل زي ما هي
+    // (النسخة القديمة كانت بتكتب كل الحقول، فحفظ من المودال كان بيمسح
+    //  الصورة والـsortOrder والـSEO والفئة الأب)
+    const data = {};
+
+    if (body.name !== undefined) {
+      const trimmedName = String(body.name).trim();
+      if (!trimmedName) {
+        return res.status(400).json({ success: false, error: 'اسم الفئة مطلوب' });
+      }
+      const duplicateCategory = await prisma.category.findFirst({
+        where: { name: trimmedName, companyId, id: { not: id } }
+      });
+      if (duplicateCategory) {
+        return res.status(400).json({ success: false, error: 'توجد فئة بنفس الاسم في شركتك' });
+      }
+      data.name = trimmedName;
+    }
+
+    if (body.name !== undefined || body.slug !== undefined) {
+      data.slug = await buildCategorySlug({
+        name: body.name !== undefined ? String(body.name) : existingCategory.name,
+        slug: body.slug,
         companyId,
-        id: { not: id }
-      }
-    });
-
-    if (duplicateCategory) {
-      return res.status(400).json({
-        success: false,
-        error: 'Category with this name already exists'
+        excludeCategoryId: id
       });
     }
 
-    const categorySlug = await buildCategorySlug({
-      name,
-      slug,
-      companyId,
-      excludeCategoryId: id
-    });
+    if (body.description !== undefined) {
+      data.description = String(body.description).trim() || null;
+    }
 
-    // Update category
-    const updatedCategory = await getSharedPrismaClient().category.update({
-      where: { id },
-      data: {
-        name: name.trim(),
-        slug: categorySlug,
-        description: description?.trim() || null,
-        image: image || null,
-        parentId: parentId || null,
-        isActive: parseMultipartBoolean(isActive, true),
-        sortOrder: sortOrder || 0,
-        displayType: displayType || 'default',
-        metaTitle: metaTitle?.trim() || null,
-        metaDescription: metaDescription?.trim() || null
+    // الصورة: رفع جديد > إزالة صريحة > تفضل زي ما هي
+    if (req.file) {
+      data.image = `/uploads/products/${req.file.filename}`;
+    } else if (body.removeImage === true || body.removeImage === 'true') {
+      data.image = null;
+    }
+
+    if (body.parentId !== undefined) {
+      const parentCheck = await assertCategoryParent({
+        companyId,
+        parentId: body.parentId,
+        categoryId: id
+      });
+      if (!parentCheck.ok) {
+        return res.status(400).json({ success: false, error: parentCheck.error });
       }
+      data.parentId = parentCheck.value;
+    }
+
+    if (body.isActive !== undefined) {
+      data.isActive = parseMultipartBoolean(body.isActive, existingCategory.isActive);
+    }
+
+    if (body.sortOrder !== undefined) {
+      const parsedSort = parseInt(body.sortOrder, 10);
+      data.sortOrder = Number.isFinite(parsedSort) ? parsedSort : 0;
+    }
+
+    if (body.displayType !== undefined) {
+      data.displayType = String(body.displayType).trim() || 'default';
+    }
+
+    if (body.metaTitle !== undefined) {
+      data.metaTitle = String(body.metaTitle).trim() || null;
+    }
+
+    if (body.metaDescription !== undefined) {
+      data.metaDescription = String(body.metaDescription).trim() || null;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.json({ success: true, data: existingCategory });
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id },
+      data
     });
 
     res.json({

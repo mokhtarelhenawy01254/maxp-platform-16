@@ -16469,17 +16469,45 @@ declare module 'react-i18next' {
           searchPlaceholder: string;
           noCategories: string;
           noCategoriesDesc: string;
+          count: {
+            none: string;
+            one: string;
+            two: string;
+            few: string;
+            many: string;
+          };
+          tabs: {
+            list: string;
+            tree: string;
+          };
           table: {
+            image: string;
             name: string;
             description: string;
             slug: string;
+            parent: string;
+            rootCategory: string;
+            sortOrder: string;
             status: string;
             products: string;
+            productsUnit: string;
             actions: string;
           };
           status: {
             active: string;
             inactive: string;
+          };
+          tree: {
+            expand: string;
+            collapse: string;
+            expandAll: string;
+            collapseAll: string;
+            addChild: string;
+            rootsUnit: string;
+            subcategoriesUnit: string;
+            searchActive: string;
+            noMatches: string;
+            noMatchesDesc: string;
           };
           form: {
             addTitle: string;
@@ -16488,6 +16516,20 @@ declare module 'react-i18next' {
             nameHelp: string;
             slug: string;
             description: string;
+            parent: string;
+            parentNone: string;
+            parentSearch: string;
+            parentHelp: string;
+            sortOrder: string;
+            sortOrderHelp: string;
+            seoSection: string;
+            metaTitle: string;
+            metaTitleHelp: string;
+            metaDescription: string;
+            metaDescriptionHelp: string;
+            image: string;
+            uploadImage: string;
+            removeImage: string;
             status: string;
             save: string;
             cancel: string;
@@ -16495,11 +16537,18 @@ declare module 'react-i18next' {
               nameRequired: string;
               fetchFailed: string;
               actionFailed: string;
+              duplicateName: string;
+              parentNotFound: string;
+              parentCycle: string;
+              notFound: string;
             };
           };
           delete: {
             confirm: string;
             hasProducts: string;
+            hasSubcategories: string;
+            moveFirst: string;
+            reparentFirst: string;
           };
         };
       };

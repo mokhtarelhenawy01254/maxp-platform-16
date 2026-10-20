@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const productController = require('../controller/productController');
 const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 
 const router = express.Router();
 
@@ -48,9 +49,9 @@ const upload = multer({
   }
 });
 
-router.get('/', verifyToken.authenticateToken, productController.getCategory);
-router.post('/', verifyToken.authenticateToken, upload.single('image'), productController.createNewCategory);
-router.put('/:id', verifyToken.authenticateToken, upload.single('image'), productController.updateCategory);
-router.delete('/:id', verifyToken.authenticateToken, productController.deleteCategory);
+router.get('/', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getCategory);
+router.post('/', verifyToken.authenticateToken, requireDbPermission('products.create'), upload.single('image'), productController.createNewCategory);
+router.put('/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.single('image'), productController.updateCategory);
+router.delete('/:id', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteCategory);
 
 module.exports = router;
