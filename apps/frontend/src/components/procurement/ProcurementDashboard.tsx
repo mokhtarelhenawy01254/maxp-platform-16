@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/table";
 import { MetricCard } from "../dashboard/MetricCard";
 import PeriodSelector, { PeriodRange } from "../common/PeriodSelector";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 
 interface DashboardData {
   summary: {
@@ -147,7 +148,7 @@ const ProcurementDashboard: React.FC = () => {
       {/* KPI Cards using platform MetricCard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard
-          variant="trend"
+          variant="simple"
           icon={Users}
           label={t("procurement.dashboard.totalSuppliers")}
           value={String(summary.totalSuppliers ?? 0)}
@@ -155,7 +156,7 @@ const ProcurementDashboard: React.FC = () => {
           onClick={() => navigate("/procurement/suppliers")}
         />
         <MetricCard
-          variant="trend"
+          variant="simple"
           icon={ShoppingCart}
           label={t("procurement.dashboard.purchaseOrders")}
           value={String(summary.totalPurchaseOrders ?? 0)}
@@ -163,7 +164,7 @@ const ProcurementDashboard: React.FC = () => {
           onClick={() => navigate("/procurement/purchase-orders")}
         />
         <MetricCard
-          variant="trend"
+          variant="simple"
           icon={Receipt}
           label={t("procurement.dashboard.pendingInvoices")}
           value={String(summary.pendingInvoices ?? 0)}
@@ -171,7 +172,7 @@ const ProcurementDashboard: React.FC = () => {
           onClick={() => navigate("/procurement/purchase-invoices?status=PENDING")}
         />
         <MetricCard
-          variant="trend"
+          variant="simple"
           icon={CreditCard}
           label={t("procurement.dashboard.totalPayments")}
           value={String(summary.totalPayments ?? 0)}
@@ -360,7 +361,7 @@ const ProcurementDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-start">{invoice.supplier?.name || "—"}</TableCell>
                       <TableCell className="text-xs tabular-nums text-start">
-                        {formatProcurementDate(invoice.invoiceDate, i18n.language)}
+                        {formatShortDate(invoice.invoiceDate, i18n.language)}
                       </TableCell>
                       <TableCell className="text-end tabular-nums font-medium">
                         {formatCurrency(invoice.totalAmount, { locale: i18n.language })}

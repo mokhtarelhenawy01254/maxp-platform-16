@@ -5,7 +5,8 @@ import {
   Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
-import { formatCurrency, formatProcurementDate } from '../../lib/formatCurrency';
+import { formatCurrency } from '../../utils/currency';
+import { formatShortDate } from '../../utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -164,9 +165,14 @@ export default function SupplierDetails() {
       <div className="p-6 text-center space-y-4">
         <AlertCircle className="size-10 text-rose-500 mx-auto" />
         <h2 className="text-lg font-semibold">{error || 'المورد غير موجود'}</h2>
-        <Button variant="outline" onClick={() => navigate('/procurement/suppliers')}>
-          العودة لقائمة الموردين
-        </Button>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="default" onClick={fetchSupplierDetails}>
+            إعادة المحاولة
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/procurement/suppliers')}>
+            العودة لقائمة الموردين
+          </Button>
+        </div>
       </div>
     );
   }
@@ -235,7 +241,7 @@ export default function SupplierDetails() {
             </div>
           </div>
           <div className="text-left text-xs space-y-1">
-            <div>تاريخ الطباعة: {formatProcurementDate(new Date(), 'ar')}</div>
+            <div>تاريخ الطباعة: {formatShortDate(new Date(), 'ar')}</div>
             <div className="font-semibold">الرصيد الافتتاحي: {formatCurrency(supplier.openingBalance || 0)}</div>
             <div className="font-bold text-sm">الرصيد الختامي: {formatCurrency(supplier.currentBalance || 0)}</div>
           </div>
@@ -413,7 +419,7 @@ export default function SupplierDetails() {
                   statement.map((entry, idx) => (
                     <tr key={idx} className="hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 tabular-nums whitespace-nowrap text-xs">
-                        {entry.date ? formatProcurementDate(entry.date, 'ar') : '—'}
+                        {entry.date ? formatShortDate(entry.date, 'ar') : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {entry.type === 'INVOICE' && (

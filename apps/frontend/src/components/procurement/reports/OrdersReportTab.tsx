@@ -10,7 +10,8 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
-import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
+import { formatCurrency } from '../../../utils/currency';
+import { formatShortDate } from '../../../utils/dateFormat';
 import { PurchaseOrderReportRow } from './reportTypes';
 
 interface OrdersReportTabProps {
@@ -94,10 +95,10 @@ export const OrdersReportTab: React.FC<OrdersReportTabProps> = ({ orders, summar
                         {order.supplier?.name || '—'}
                       </TableCell>
                       <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
-                        {formatProcurementDate(order.orderDate, 'ar')}
+                        {formatShortDate(order.orderDate, 'ar')}
                       </TableCell>
                       <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
-                        {formatProcurementDate(order.expectedDeliveryDate, 'ar')}
+                        {formatShortDate(order.expectedDeliveryDate, 'ar')}
                       </TableCell>
                       <TableCell className="text-center tabular-nums text-xs">
                         {order.purchaseOrderItems?.length || 0}

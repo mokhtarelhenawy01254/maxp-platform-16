@@ -12,7 +12,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -248,10 +249,10 @@ const PurchaseOrders: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-start">{order.supplier.name}</TableCell>
                   <TableCell className="text-xs tabular-nums text-start">
-                    {formatProcurementDate(order.orderDate, i18n.language)}
+                    {formatShortDate(order.orderDate, i18n.language)}
                   </TableCell>
                   <TableCell className="text-xs tabular-nums text-start">
-                    {formatProcurementDate(order.expectedDelivery, i18n.language)}
+                    {formatShortDate(order.expectedDelivery, i18n.language)}
                   </TableCell>
                   <TableCell className="text-center tabular-nums">{order._count.items}</TableCell>
                   <TableCell className="text-end tabular-nums font-medium">
@@ -345,11 +346,11 @@ const PurchaseOrders: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.purchaseOrders.mobileOrderDate"),
-                  value: formatProcurementDate(order.orderDate, i18n.language),
+                  value: formatShortDate(order.orderDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseOrders.mobileExpectedDelivery"),
-                  value: formatProcurementDate(order.expectedDelivery, i18n.language),
+                  value: formatShortDate(order.expectedDelivery, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseOrders.mobileTotalAmount"),

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { downloadCsv } from '../../utils/procurementCsvExport';
-import { formatProcurementDate } from '../../lib/formatCurrency';
+import { formatShortDate } from '../../utils/dateFormat';
 
 import { AgingReportTab } from './reports/AgingReportTab';
 import { SuppliersReportTab } from './reports/SuppliersReportTab';
@@ -175,7 +175,7 @@ export default function ProcurementReports() {
           rows.push([
             inv.invoiceNumber,
             inv.supplierName || '—',
-            inv.dueDate ? formatProcurementDate(inv.dueDate, 'ar') : '—',
+            inv.dueDate ? formatShortDate(inv.dueDate, 'ar') : '—',
             inv.daysPastDue,
             Number(inv.remainingAmount) || 0,
           ]);
@@ -202,8 +202,8 @@ export default function ProcurementReports() {
       const rows = ordersData.orders.map((o) => [
         o.orderNumber,
         o.supplier?.name || '—',
-        o.orderDate ? formatProcurementDate(o.orderDate, 'ar') : '—',
-        o.expectedDeliveryDate ? formatProcurementDate(o.expectedDeliveryDate, 'ar') : '—',
+        o.orderDate ? formatShortDate(o.orderDate, 'ar') : '—',
+        o.expectedDeliveryDate ? formatShortDate(o.expectedDeliveryDate, 'ar') : '—',
         o.purchaseOrderItems?.length || 0,
         Number(o.totalAmount) || 0,
         o.status,
@@ -214,8 +214,8 @@ export default function ProcurementReports() {
       const rows = invoicesData.invoices.map((inv) => [
         inv.invoiceNumber,
         inv.supplier?.name || '—',
-        inv.invoiceDate ? formatProcurementDate(inv.invoiceDate, 'ar') : '—',
-        inv.dueDate ? formatProcurementDate(inv.dueDate, 'ar') : '—',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate, 'ar') : '—',
+        inv.dueDate ? formatShortDate(inv.dueDate, 'ar') : '—',
         Number(inv.totalAmount) || 0,
         Number(inv.paidAmount) || 0,
         Number(inv.remainingAmount) || 0,
@@ -228,7 +228,7 @@ export default function ProcurementReports() {
         p.paymentNumber,
         p.supplier?.name || '—',
         p.purchaseInvoice?.invoiceNumber || '',
-        p.paymentDate ? formatProcurementDate(p.paymentDate, 'ar') : '—',
+        p.paymentDate ? formatShortDate(p.paymentDate, 'ar') : '—',
         p.paymentMethod,
         p.referenceNumber || '',
         Number(p.amount) || 0,

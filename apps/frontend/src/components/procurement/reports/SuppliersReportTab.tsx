@@ -9,7 +9,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
-import { formatCurrency } from '../../../lib/formatCurrency';
+import { formatCurrency } from '../../../utils/currency';
 import { SupplierReportRow } from './reportTypes';
 
 interface SuppliersReportTabProps {

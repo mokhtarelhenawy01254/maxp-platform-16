@@ -12,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import { formatCurrency } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -215,8 +215,9 @@ const Suppliers: React.FC = () => {
       }
       fetchSuppliers();
       handleCloseDialog();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving supplier:", error);
+      setError(error?.response?.data?.message || "تعذر حفظ بيانات المورد");
     }
   };
 
@@ -229,8 +230,9 @@ const Suppliers: React.FC = () => {
     try {
       await apiClient.delete(`/procurement/suppliers/${deleteConfirmDialog.supplierId}`);
       fetchSuppliers();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting supplier:", error);
+      setError(error?.response?.data?.message || "تعذر حذف المورد");
     } finally {
       setDeleteConfirmDialog({ open: false, supplierId: null });
     }
@@ -361,9 +363,19 @@ const Suppliers: React.FC = () => {
 
       <div className="grid md:hidden gap-2">
         {loading ? (
-          <ProcurementMobileState>{t("common.loading")}</ProcurementMobileState>
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse space-y-2">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+          ))
         ) : suppliers.length === 0 ? (
-          <ProcurementMobileState>{t("common.noData")}</ProcurementMobileState>
+          <ProcurementMobileState>
+            {searchTerm
+              ? "لا توجد نتائج مطابقة لبحثك"
+              : "لا يوجد موردون مسجلون حالياً"}
+          </ProcurementMobileState>
         ) : (
           suppliers.map((supplier) => (
             <ProcurementMobileCard

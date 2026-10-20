@@ -10,7 +10,8 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
-import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
+import { formatCurrency } from '../../../utils/currency';
+import { formatShortDate } from '../../../utils/dateFormat';
 import { ProductReportRow } from './reportTypes';
 
 interface ProductsReportTabProps {
@@ -104,7 +105,7 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ products, 
                                     <span className="font-mono text-primary font-medium">{ord.orderNumber}</span>
                                     <span className="text-muted-foreground">({ord.supplierName})</span>
                                     <span className="text-muted-foreground text-[11px] tabular-nums">
-                                      {formatProcurementDate(ord.orderDate, 'ar')}
+                                      {formatShortDate(ord.orderDate, 'ar')}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-4 tabular-nums">

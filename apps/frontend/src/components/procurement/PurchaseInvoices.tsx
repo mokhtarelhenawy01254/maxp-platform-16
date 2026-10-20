@@ -3,7 +3,8 @@ import { Plus, Eye, CreditCard, Search, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -203,10 +204,10 @@ const PurchaseInvoices: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-start">{invoice.supplier.name}</TableCell>
                   <TableCell className="text-xs tabular-nums text-start">
-                    {formatProcurementDate(invoice.invoiceDate, i18n.language)}
+                    {formatShortDate(invoice.invoiceDate, i18n.language)}
                   </TableCell>
                   <TableCell className="text-xs tabular-nums text-start">
-                    {formatProcurementDate(invoice.dueDate, i18n.language)}
+                    {formatShortDate(invoice.dueDate, i18n.language)}
                   </TableCell>
                   <TableCell className="text-end tabular-nums font-medium">
                     {formatCurrency(invoice.totalAmount, { locale: i18n.language })}
@@ -301,11 +302,11 @@ const PurchaseInvoices: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.purchaseInvoices.mobileInvoiceDate"),
-                  value: formatProcurementDate(invoice.invoiceDate, i18n.language),
+                  value: formatShortDate(invoice.invoiceDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobileDueDate"),
-                  value: formatProcurementDate(invoice.dueDate, i18n.language),
+                  value: formatShortDate(invoice.dueDate, i18n.language),
                 },
                 {
                   label: t("procurement.purchaseInvoices.mobileTotal"),

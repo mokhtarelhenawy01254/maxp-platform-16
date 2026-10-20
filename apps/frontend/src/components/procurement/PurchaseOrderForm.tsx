@@ -17,7 +17,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
 import "../../styles/dashboard-enhanced.css";
@@ -652,7 +652,7 @@ const PurchaseOrderForm: React.FC = () => {
                                           : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                       }`}
                                     >
-                                      رصيد: {Number(s.currentBalance).toFixed(0)} ج.م
+                                      رصيد: {formatCurrency(s.currentBalance)}
                                     </span>
                                   )}
                                 </button>
@@ -669,7 +669,7 @@ const PurchaseOrderForm: React.FC = () => {
                         <span>
                           الرصيد الحالي:{" "}
                           <strong className="font-bold text-foreground font-mono">
-                            {Number(selectedSupplier.currentBalance).toFixed(2)} ج.م
+                            {formatCurrency(selectedSupplier.currentBalance)}
                           </strong>
                         </span>
                       </div>
@@ -828,7 +828,7 @@ const PurchaseOrderForm: React.FC = () => {
                                             </span>
                                             {catItem.cost > 0 && (
                                               <span className="text-xs font-semibold">
-                                                {catItem.cost} ج.م
+                                                {formatCurrency(catItem.cost)}
                                               </span>
                                             )}
                                           </div>
@@ -890,7 +890,7 @@ const PurchaseOrderForm: React.FC = () => {
                             )}
 
                             <TableCell className="text-right font-bold font-mono text-sm text-foreground">
-                              {item.totalPrice.toFixed(2)} ج.م
+                              {formatCurrency(item.totalPrice)}
                             </TableCell>
 
                             <TableCell className="text-center">
@@ -975,7 +975,7 @@ const PurchaseOrderForm: React.FC = () => {
                                     }}
                                   >
                                     <span className="font-medium truncate">{catItem.name}</span>
-                                    <span className="text-primary font-mono">{catItem.cost} ج.م</span>
+                                    <span className="text-primary font-mono">{formatCurrency(catItem.cost)}</span>
                                   </button>
                                 ))}
                               </div>
@@ -1041,7 +1041,7 @@ const PurchaseOrderForm: React.FC = () => {
                             إجمالي البند:
                           </span>
                           <span className="text-sm font-bold font-mono text-primary">
-                            {item.totalPrice.toFixed(2)} ج.م
+                            {formatCurrency(item.totalPrice)}
                           </span>
                         </div>
                       </div>
@@ -1112,7 +1112,7 @@ const PurchaseOrderForm: React.FC = () => {
                     <span className="text-muted-foreground">
                       {t("procurement.purchaseOrderForm.subtotalLabel", "المجموع قبل الخصم:")}
                     </span>
-                    <span className="font-semibold font-mono">{totals.subtotal.toFixed(2)} ج.م</span>
+                    <span className="font-semibold font-mono">{formatCurrency(totals.subtotal)}</span>
                   </div>
 
                   {totals.itemDiscounts > 0 && (
@@ -1121,7 +1121,7 @@ const PurchaseOrderForm: React.FC = () => {
                         {t("procurement.purchaseOrderForm.itemDiscountsLabel", "خصم البنود:")}
                       </span>
                       <span className="font-semibold font-mono">
-                        -{totals.itemDiscounts.toFixed(2)} ج.م
+                        -{formatCurrency(totals.itemDiscounts)}
                       </span>
                     </div>
                   )}
@@ -1130,7 +1130,7 @@ const PurchaseOrderForm: React.FC = () => {
                     <div className="flex justify-between text-emerald-600">
                       <span>{t("procurement.purchaseOrderForm.totalTaxLabel", "الضرائب:")}</span>
                       <span className="font-semibold font-mono">
-                        +{totals.totalTax.toFixed(2)} ج.م
+                        +{formatCurrency(totals.totalTax)}
                       </span>
                     </div>
                   )}
@@ -1177,7 +1177,7 @@ const PurchaseOrderForm: React.FC = () => {
                       {t("procurement.purchaseOrderForm.grandTotalLabel", "الإجمالي التقديري:")}
                     </span>
                     <span className="text-2xl font-black font-mono text-primary">
-                      {totals.grandTotal.toFixed(2)} ج.م
+                      {formatCurrency(totals.grandTotal)}
                     </span>
                   </div>
                 </div>

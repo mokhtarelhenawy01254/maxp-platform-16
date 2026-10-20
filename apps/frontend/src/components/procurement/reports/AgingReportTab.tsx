@@ -11,7 +11,8 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
-import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
+import { formatCurrency } from '../../../utils/currency';
+import { formatShortDate } from '../../../utils/dateFormat';
 import { AgingReportData, AgingInvoice } from './reportTypes';
 
 interface AgingReportTabProps {
@@ -118,7 +119,7 @@ export const AgingReportTab: React.FC<AgingReportTabProps> = ({ data, loading })
                     </TableCell>
                     <TableCell className="font-medium text-start">{inv.supplierName || '—'}</TableCell>
                     <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
-                      {formatProcurementDate(inv.dueDate, 'ar')}
+                      {formatShortDate(inv.dueDate, 'ar')}
                     </TableCell>
                     <TableCell className="text-center tabular-nums text-xs">
                       {inv.daysPastDue > 0 ? (

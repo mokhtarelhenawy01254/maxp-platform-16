@@ -3,7 +3,8 @@ import { Plus, Eye, Search, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
@@ -178,7 +179,7 @@ const SupplierPayments: React.FC = () => {
                     {payment.purchaseInvoice?.invoiceNumber || t("procurement.supplierPayments.advancePayment")}
                   </TableCell>
                   <TableCell className="text-xs tabular-nums text-start">
-                    {formatProcurementDate(payment.paymentDate, i18n.language)}
+                    {formatShortDate(payment.paymentDate, i18n.language)}
                   </TableCell>
                   <TableCell className="text-end tabular-nums font-medium text-emerald-600">
                     {formatCurrency(payment.amount, { locale: i18n.language })}
@@ -237,7 +238,7 @@ const SupplierPayments: React.FC = () => {
               fields={[
                 {
                   label: t("procurement.supplierPayments.mobilePaymentDate"),
-                  value: formatProcurementDate(payment.paymentDate, i18n.language),
+                  value: formatShortDate(payment.paymentDate, i18n.language),
                 },
                 {
                   label: t("procurement.supplierPayments.mobileAmount"),

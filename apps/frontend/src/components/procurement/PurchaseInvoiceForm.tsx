@@ -18,7 +18,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
 import "../../styles/dashboard-enhanced.css";
@@ -813,7 +813,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                           : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                       }`}
                                     >
-                                      رصيد: {Number(s.currentBalance).toFixed(0)} ج.م
+                                      رصيد: {formatCurrency(s.currentBalance)}
                                     </span>
                                   )}
                                 </button>
@@ -832,7 +832,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                           الرصيد الحالي للمورد في الحسابات:
                         </span>
                         <strong className="font-mono font-bold text-sm">
-                          {Number(selectedSupplier.currentBalance).toFixed(2)} ج.م
+                          {formatCurrency(selectedSupplier.currentBalance)}
                         </strong>
                       </div>
                     )}
@@ -894,7 +894,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                             <div className="flex items-center justify-between gap-3 w-full">
                               <span className="font-medium">{order.orderNumber}</span>
                               <span className="text-xs text-muted-foreground font-mono">
-                                {Number(order.totalAmount).toFixed(2)} ج.م
+                                {formatCurrency(order.totalAmount)}
                               </span>
                             </div>
                           </SelectItem>
@@ -1062,7 +1062,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                             </span>
                                             {catItem.cost > 0 && (
                                               <span className="text-xs font-mono font-bold">
-                                                {catItem.cost} ج.م
+                                                {formatCurrency(catItem.cost)}
                                               </span>
                                             )}
                                           </div>
@@ -1130,7 +1130,7 @@ const PurchaseInvoiceForm: React.FC = () => {
 
                             {/* Line Total */}
                             <TableCell className="text-right font-mono font-bold text-sm text-foreground py-2">
-                              {item.totalPrice.toFixed(2)} ج.م
+                              {formatCurrency(item.totalPrice)}
                             </TableCell>
 
                             {/* Remove Button */}
@@ -1218,7 +1218,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                     }}
                                   >
                                     <span className="font-medium truncate">{catItem.name}</span>
-                                    <span className="text-primary font-mono">{catItem.cost} ج.م</span>
+                                    <span className="text-primary font-mono">{formatCurrency(catItem.cost)}</span>
                                   </button>
                                 ))}
                               </div>
@@ -1256,7 +1256,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                             إجمالي البند:
                           </span>
                           <span className="text-sm font-bold font-mono text-primary">
-                            {item.totalPrice.toFixed(2)} ج.م
+                            {formatCurrency(item.totalPrice)}
                           </span>
                         </div>
                       </div>
@@ -1312,7 +1312,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                     <span className="text-muted-foreground">
                       {t("procurement.purchaseInvoiceForm.subtotalLabel", "المجموع قبل الخصم:")}
                     </span>
-                    <span className="font-semibold font-mono">{totals.subtotal.toFixed(2)} ج.م</span>
+                    <span className="font-semibold font-mono">{formatCurrency(totals.subtotal)}</span>
                   </div>
 
                   {totals.itemDiscounts > 0 && (
@@ -1321,7 +1321,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                         {t("procurement.purchaseInvoiceForm.itemDiscountsLabel", "خصم البنود:")}
                       </span>
                       <span className="font-semibold font-mono">
-                        -{totals.itemDiscounts.toFixed(2)} ج.م
+                        -{formatCurrency(totals.itemDiscounts)}
                       </span>
                     </div>
                   )}
@@ -1330,7 +1330,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                     <div className="flex justify-between text-emerald-600">
                       <span>{t("procurement.purchaseInvoiceForm.totalTaxLabel", "الضرائب:")}</span>
                       <span className="font-semibold font-mono">
-                        +{totals.totalTax.toFixed(2)} ج.م
+                        +{formatCurrency(totals.totalTax)}
                       </span>
                     </div>
                   )}
@@ -1377,7 +1377,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                       {t("procurement.purchaseInvoiceForm.grandTotalLabel", "صافي الفاتورة:")}
                     </span>
                     <span className="text-2xl font-black font-mono text-primary">
-                      {totals.grandTotal.toFixed(2)} ج.م
+                      {formatCurrency(totals.grandTotal)}
                     </span>
                   </div>
                 </div>
@@ -1469,7 +1469,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                             <SelectContent>
                               {treasuryAccounts.map((acc) => (
                                 <SelectItem key={acc.id} value={acc.id}>
-                                  {acc.name} ({Number(acc.balance || 0).toLocaleString()} ج.م)
+                                  {acc.name} ({formatCurrency(acc.balance || 0)})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1497,7 +1497,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                       <div className="flex justify-between items-center text-xs pt-1 border-t border-border/40 font-mono">
                         <span className="text-muted-foreground">المتبقي على الحساب:</span>
                         <strong className="text-amber-600 font-bold">
-                          {totals.remainingAmount.toFixed(2)} ج.م
+                          {formatCurrency(totals.remainingAmount)}
                         </strong>
                       </div>
                     </div>

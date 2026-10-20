@@ -16,7 +16,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -157,10 +158,15 @@ export const PurchaseInvoiceDetail: React.FC = () => {
           <AlertCircle className="size-5 shrink-0" />
           <span>{error || t("procurement.purchaseInvoiceDetail.loadError", "الفاتورة غير موجودة")}</span>
         </div>
-        <Button variant="outline" onClick={() => navigate("/procurement/purchase-invoices")}>
-          <BackIcon className="size-4 me-2" />
-          {t("procurement.purchaseInvoiceDetail.backToList", "العودة لقائمة الفواتير")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="default" onClick={fetchInvoice}>
+            إعادة المحاولة
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/procurement/purchase-invoices")}>
+            <BackIcon className="size-4 me-2" />
+            {t("procurement.purchaseInvoiceDetail.backToList", "العودة لقائمة الفواتير")}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -286,12 +292,12 @@ export const PurchaseInvoiceDetail: React.FC = () => {
           <CardContent className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.invoiceDate", "تاريخ الفاتورة")}:</span>
-              <span className="font-semibold tabular-nums">{formatProcurementDate(invoice.invoiceDate, i18n.language)}</span>
+              <span className="font-semibold tabular-nums">{formatShortDate(invoice.invoiceDate, i18n.language)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseInvoiceDetail.dueDate", "تاريخ الاستحقاق")}:</span>
               <span className={`font-semibold tabular-nums ${isOverdue ? "text-destructive" : ""}`}>
-                {formatProcurementDate(invoice.dueDate, i18n.language)}
+                {formatShortDate(invoice.dueDate, i18n.language)}
               </span>
             </div>
             <div className="flex justify-between items-center pt-1 border-t border-border/50">
@@ -487,7 +493,7 @@ export const PurchaseInvoiceDetail: React.FC = () => {
                   {payments.map((pmt) => (
                     <TableRow key={pmt.id}>
                       <TableCell className="font-mono font-semibold">{pmt.paymentNumber}</TableCell>
-                      <TableCell className="tabular-nums">{formatProcurementDate(pmt.paymentDate, i18n.language)}</TableCell>
+                      <TableCell className="tabular-nums">{formatShortDate(pmt.paymentDate, i18n.language)}</TableCell>
                       <TableCell className="text-center font-mono font-bold text-emerald-600 tabular-nums">
                         {formatCurrency(pmt.amount, { locale: i18n.language })}
                       </TableCell>

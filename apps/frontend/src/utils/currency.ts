@@ -49,6 +49,11 @@ export const getCurrencyByCode = (code: string): Currency | undefined => {
   return SUPPORTED_CURRENCIES.find((currency) => currency.code === code);
 };
 
+export interface FormatCurrencyOptions {
+  locale?: string;
+  currency?: boolean;
+}
+
 // Helper to determine if locale or language is English
 export const isEnglishLocale = (locale?: string): boolean => {
   if (locale) {
@@ -67,34 +72,67 @@ export const isEnglishLocale = (locale?: string): boolean => {
 
 // Format currency amount
 export const formatCurrency = (
-  amount: number | null | undefined,
-  currencyCode: string = DEFAULT_CURRENCY,
+  amount: number | string | null | undefined,
+  currencyCodeOrOptions: string | FormatCurrencyOptions = DEFAULT_CURRENCY,
   locale?: string,
 ): string => {
+  // Handle options object branch (P3 specification)
+  if (typeof currencyCodeOrOptions === "object" && currencyCodeOrOptions !== null) {
+    const { locale: optLocale, currency = true } = currencyCodeOrOptions;
+    const isEn = isEnglishLocale(optLocale);
+
+    if (amount === null || amount === undefined || amount === "") {
+      const zero = (0).toFixed(2);
+      if (!currency) return zero;
+      return isEn ? `${zero} EGP` : `${zero} ج.م`;
+    }
+
+    const num = typeof amount === "number" ? amount : Number(amount);
+    if (isNaN(num)) {
+      const zero = (0).toFixed(2);
+      if (!currency) return zero;
+      return isEn ? `${zero} EGP` : `${zero} ج.م`;
+    }
+
+    const formattedNum = num.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    if (!currency) return formattedNum;
+    return isEn ? `${formattedNum} EGP` : `${formattedNum} ج.م`;
+  }
+
   // Handle null or undefined
-  if (amount === null || amount === undefined || isNaN(amount)) {
+  if (amount === null || amount === undefined || (typeof amount === "number" && isNaN(amount))) {
+    return "-";
+  }
+
+  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) {
     return "-";
   }
 
   const isEn = isEnglishLocale(locale);
+  const currencyCode = typeof currencyCodeOrOptions === "string" ? currencyCodeOrOptions : DEFAULT_CURRENCY;
   const currency = getCurrencyByCode(currencyCode);
 
   if (!currency) {
     return isEn
-      ? `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencyCode}`
-      : `${Number(amount).toLocaleString("ar-EG")} ${currencyCode}`;
+      ? `${Number(numAmount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencyCode}`
+      : `${Number(numAmount).toLocaleString("ar-EG")} ${currencyCode}`;
   }
 
   // Format Egyptian Pound
   if (currencyCode === "EGP") {
     if (isEn) {
-      const formattedNum = Number(amount).toLocaleString("en-US", {
+      const formattedNum = Number(numAmount).toLocaleString("en-US", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       });
       return `${formattedNum} EGP`;
     }
-    return `${Number(amount).toLocaleString("ar-EG")} ${currency.symbol}`;
+    return `${Number(numAmount).toLocaleString("ar-EG")} ${currency.symbol}`;
   }
 
   // Format with appropriate locale for other currencies
@@ -105,9 +143,9 @@ export const formatCurrency = (
         currency: currencyCode,
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-      }).format(amount);
+      }).format(numAmount);
     } catch {
-      return `${Number(amount).toLocaleString("en-US")} ${currencyCode}`;
+      return `${Number(numAmount).toLocaleString("en-US")} ${currencyCode}`;
     }
   }
 
@@ -117,10 +155,10 @@ export const formatCurrency = (
       currency: currencyCode,
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(numAmount);
   } catch (error) {
     // Fallback formatting
-    return `${currency.symbol}${Number(amount).toLocaleString("ar-EG")}`;
+    return `${currency.symbol}${Number(numAmount).toLocaleString("ar-EG")}`;
   }
 };
 

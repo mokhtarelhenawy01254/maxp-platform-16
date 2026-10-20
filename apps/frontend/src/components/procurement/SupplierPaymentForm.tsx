@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
 import "../../styles/dashboard-enhanced.css";
@@ -313,7 +314,7 @@ const SupplierPaymentForm: React.FC = () => {
 
     if (selectedInvoice && currentPaymentAmount > selectedInvoice.remainingAmount) {
       toast.error(
-        `المبلغ المدخل (${currentPaymentAmount} ج.م) أكبر من المتبقي على الفاتورة (${selectedInvoice.remainingAmount} ج.م)`,
+        `المبلغ المدخل (${formatCurrency(currentPaymentAmount)}) أكبر من المتبقي على الفاتورة (${formatCurrency(selectedInvoice.remainingAmount)})`,
       );
       return;
     }
@@ -416,7 +417,7 @@ const SupplierPaymentForm: React.FC = () => {
                 <div className="text-xs text-muted-foreground pt-1">
                   تاريخ السند:{" "}
                   <strong className="text-foreground tabular-nums">
-                    {formatProcurementDate(existingPayment.paymentDate, "ar")}
+                    {formatShortDate(existingPayment.paymentDate, "ar")}
                   </strong>
                 </div>
               </div>
@@ -478,7 +479,7 @@ const SupplierPaymentForm: React.FC = () => {
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">
                       إجمالي الفاتورة:{" "}
-                      {Number(existingPayment.purchaseInvoice.totalAmount).toFixed(2)} ج.م
+                      {formatCurrency(existingPayment.purchaseInvoice.totalAmount)}
                     </div>
                   </>
                 ) : (
@@ -516,7 +517,7 @@ const SupplierPaymentForm: React.FC = () => {
                   <div>
                     <span className="text-muted-foreground block">تاريخ استحقاق الشيك:</span>
                     <strong className="text-sm font-mono text-foreground tabular-nums">
-                      {formatProcurementDate(existingPayment.checkDate, "ar")}
+                      {formatShortDate(existingPayment.checkDate, "ar")}
                     </strong>
                   </div>
                 )}
@@ -723,7 +724,7 @@ const SupplierPaymentForm: React.FC = () => {
                                           : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                       }`}
                                     >
-                                      رصيد: {Number(s.currentBalance).toFixed(0)} ج.م
+                                      رصيد: {formatCurrency(s.currentBalance)}
                                     </span>
                                   )}
                                 </button>
@@ -742,7 +743,7 @@ const SupplierPaymentForm: React.FC = () => {
                           الرصيد المستحق للمورد في الحسابات:
                         </span>
                         <strong className="font-mono font-bold text-sm">
-                          {supplierBalance.toFixed(2)} ج.م
+                          {formatCurrency(supplierBalance)}
                         </strong>
                       </div>
                     )}
@@ -800,7 +801,7 @@ const SupplierPaymentForm: React.FC = () => {
                           <div className="flex items-center justify-between gap-4 w-full">
                             <span className="font-mono font-semibold">{inv.invoiceNumber}</span>
                             <span className="text-xs text-amber-600 font-mono">
-                              متبقي: {inv.remainingAmount.toFixed(2)} ج.م
+                              متبقي: {formatCurrency(inv.remainingAmount)}
                             </span>
                           </div>
                         </SelectItem>
@@ -810,10 +811,10 @@ const SupplierPaymentForm: React.FC = () => {
 
                   {selectedInvoice && (
                     <div className="flex justify-between items-center text-xs bg-muted/60 p-2 rounded-xl text-muted-foreground font-mono">
-                      <span>إجمالي الفاتورة: {selectedInvoice.totalAmount.toFixed(2)} ج.م</span>
-                      <span>سُدد سابقاً: {selectedInvoice.paidAmount.toFixed(2)} ج.م</span>
+                      <span>إجمالي الفاتورة: {formatCurrency(selectedInvoice.totalAmount)}</span>
+                      <span>سُدد سابقاً: {formatCurrency(selectedInvoice.paidAmount)}</span>
                       <strong className="text-primary">
-                        المتبقي: {selectedInvoice.remainingAmount.toFixed(2)} ج.م
+                        المتبقي: {formatCurrency(selectedInvoice.remainingAmount)}
                       </strong>
                     </div>
                   )}
@@ -855,7 +856,7 @@ const SupplierPaymentForm: React.FC = () => {
                         }
                         className="text-xs rounded-lg h-7 font-mono"
                       >
-                        سداد الرصيد كاملاً ({supplierBalance.toFixed(0)} ج.م)
+                        سداد الرصيد كاملاً ({formatCurrency(supplierBalance)})
                       </Button>
                       <Button
                         type="button"
@@ -869,7 +870,7 @@ const SupplierPaymentForm: React.FC = () => {
                         }
                         className="text-xs rounded-lg h-7 font-mono"
                       >
-                        سداد 50% ({Math.round(supplierBalance / 2)} ج.م)
+                        سداد 50% ({formatCurrency(Math.round(supplierBalance / 2))})
                       </Button>
                       {selectedInvoice && (
                         <Button
@@ -884,7 +885,7 @@ const SupplierPaymentForm: React.FC = () => {
                           }
                           className="text-xs rounded-lg h-7 font-mono text-primary"
                         >
-                          متبقي الفاتورة ({selectedInvoice.remainingAmount.toFixed(0)} ج.م)
+                          متبقي الفاتورة ({formatCurrency(selectedInvoice.remainingAmount)})
                         </Button>
                       )}
                     </div>
@@ -1031,13 +1032,13 @@ const SupplierPaymentForm: React.FC = () => {
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">رصيد المورد الحالي:</span>
-                    <span className="font-semibold font-mono">{supplierBalance.toFixed(2)} ج.م</span>
+                    <span className="font-semibold font-mono">{formatCurrency(supplierBalance)}</span>
                   </div>
 
                   <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
                     <span>قيمة الدفعة الحالية:</span>
                     <span className="font-bold font-mono">
-                      -{currentPaymentAmount.toFixed(2)} ج.م
+                      -{formatCurrency(currentPaymentAmount)}
                     </span>
                   </div>
 
@@ -1046,7 +1047,7 @@ const SupplierPaymentForm: React.FC = () => {
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="font-bold text-sm">الرصيد بعد السداد:</span>
                     <span className="text-2xl font-black font-mono text-primary">
-                      {balanceAfterPayment.toFixed(2)} ج.م
+                      {formatCurrency(balanceAfterPayment)}
                     </span>
                   </div>
 
@@ -1055,17 +1056,18 @@ const SupplierPaymentForm: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">متبقي الفاتورة الآن:</span>
                         <span className="font-mono font-semibold">
-                          {selectedInvoice.remainingAmount.toFixed(2)} ج.م
+                          {formatCurrency(selectedInvoice.remainingAmount)}
                         </span>
                       </div>
                       <div className="flex justify-between text-primary font-bold">
                         <span>متبقي الفاتورة بعد السند:</span>
                         <span className="font-mono">
-                          {Math.max(
-                            0,
-                            selectedInvoice.remainingAmount - currentPaymentAmount,
-                          ).toFixed(2)}{" "}
-                          ج.م
+                          {formatCurrency(
+                            Math.max(
+                              0,
+                              selectedInvoice.remainingAmount - currentPaymentAmount,
+                            ),
+                          )}
                         </span>
                       </div>
                     </div>

@@ -10,7 +10,8 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
-import { formatCurrency, formatProcurementDate } from '../../../lib/formatCurrency';
+import { formatCurrency } from '../../../utils/currency';
+import { formatShortDate } from '../../../utils/dateFormat';
 import { PaymentReportRow } from './reportTypes';
 
 interface PaymentsReportTabProps {
@@ -101,7 +102,7 @@ export const PaymentsReportTab: React.FC<PaymentsReportTabProps> = ({ payments, 
                       {p.purchaseInvoice?.invoiceNumber || 'سداد مباشر / على الحساب'}
                     </TableCell>
                     <TableCell className="text-xs tabular-nums text-muted-foreground text-start">
-                      {formatProcurementDate(p.paymentDate, 'ar')}
+                      {formatShortDate(p.paymentDate, 'ar')}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-xs">

@@ -1,5 +1,7 @@
+import { describe, it, expect } from "vitest";
 import {
   formatDate,
+  formatShortDate,
   formatTime,
   formatDateTime,
   getTimeAgo,
@@ -97,4 +99,24 @@ describe("dateFormat utility", () => {
       expect(getTimeAgo(justNow, "ar-EG")).toBe("الآن");
     });
   });
+
+  describe("formatShortDate", () => {
+    it("formats ISO date strings according to locale", () => {
+      const dateStr = "2026-10-20T12:00:00Z";
+      const arDate = formatShortDate(dateStr, "ar");
+      const enDate = formatShortDate(dateStr, "en");
+
+      expect(arDate).toBeTruthy();
+      expect(enDate).toBeTruthy();
+      expect(arDate).not.toBe("—");
+      expect(enDate).not.toBe("—");
+    });
+
+    it("handles null, undefined, and invalid dates gracefully", () => {
+      expect(formatShortDate(null)).toBe("—");
+      expect(formatShortDate(undefined)).toBe("—");
+      expect(formatShortDate("not-a-date")).toBe("—");
+    });
+  });
 });
+

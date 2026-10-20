@@ -83,6 +83,25 @@ export const formatDate = (
   }
 };
 
+// Format short date based on interface language (ar-EG for Arabic, en-GB for English)
+export const formatShortDate = (
+  dateValue: Date | string | number | null | undefined,
+  locale?: string,
+): string => {
+  if (!dateValue) return "—";
+  try {
+    const dateObj =
+      typeof dateValue === "string" || typeof dateValue === "number"
+        ? new Date(dateValue)
+        : dateValue;
+    if (isNaN(dateObj.getTime())) return "—";
+    const isEn = isEnglishLocale(locale);
+    return dateObj.toLocaleDateString(isEn ? "en-GB" : "ar-EG");
+  } catch {
+    return "—";
+  }
+};
+
 // Format time
 export const formatTime = (
   date: Date | string | number,

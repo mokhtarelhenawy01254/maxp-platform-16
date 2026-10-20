@@ -19,7 +19,8 @@ import {
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { ReceiveItemsDialog } from "./ReceiveItemsDialog";
-import { formatCurrency, formatProcurementDate } from "../../lib/formatCurrency";
+import { formatCurrency } from "../../utils/currency";
+import { formatShortDate } from "../../utils/dateFormat";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -168,8 +169,9 @@ export const PurchaseOrderDetail: React.FC = () => {
         try {
           await apiClient.post(`/procurement/purchase-orders/${order.id}/approve`);
           await fetchOrder();
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error approving order:", err);
+          setError(err?.response?.data?.message || "تعذر اعتماد أمر الشراء");
         } finally {
           setActionLoading(false);
           setConfirmDialog((prev) => ({ ...prev, open: false }));
@@ -190,8 +192,9 @@ export const PurchaseOrderDetail: React.FC = () => {
         try {
           await apiClient.post(`/procurement/purchase-orders/${order.id}/cancel`);
           await fetchOrder();
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error cancelling order:", err);
+          setError(err?.response?.data?.message || "تعذر إلغاء أمر الشراء");
         } finally {
           setActionLoading(false);
           setConfirmDialog((prev) => ({ ...prev, open: false }));
@@ -216,10 +219,15 @@ export const PurchaseOrderDetail: React.FC = () => {
           <AlertCircle className="size-5 shrink-0" />
           <span>{error || t("procurement.purchaseOrderDetail.loadError", "أمر الشراء غير موجود")}</span>
         </div>
-        <Button variant="outline" onClick={() => navigate("/procurement/purchase-orders")}>
-          <BackIcon className="size-4 me-2" />
-          {t("procurement.purchaseOrderDetail.backToList", "العودة لقائمة الأوامر")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="default" onClick={fetchOrder}>
+            إعادة المحاولة
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/procurement/purchase-orders")}>
+            <BackIcon className="size-4 me-2" />
+            {t("procurement.purchaseOrderDetail.backToList", "العودة لقائمة الأوامر")}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -354,18 +362,18 @@ export const PurchaseOrderDetail: React.FC = () => {
           <CardContent className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.orderDate", "تاريخ الأمر")}:</span>
-              <span className="font-semibold tabular-nums">{formatProcurementDate(order.orderDate, i18n.language)}</span>
+              <span className="font-semibold tabular-nums">{formatShortDate(order.orderDate, i18n.language)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("procurement.purchaseOrderDetail.expectedDelivery", "التسليم المتوقع")}:</span>
               <span className="font-semibold tabular-nums">
-                {formatProcurementDate(order.expectedDelivery, i18n.language)}
+                {formatShortDate(order.expectedDelivery, i18n.language)}
               </span>
             </div>
             {order.receivedDate && (
               <div className="flex justify-between text-emerald-600">
                 <span>{t("procurement.purchaseOrderDetail.receivedDate", "تاريخ الاستلام")}:</span>
-                <span className="font-semibold tabular-nums">{formatProcurementDate(order.receivedDate, i18n.language)}</span>
+                <span className="font-semibold tabular-nums">{formatShortDate(order.receivedDate, i18n.language)}</span>
               </div>
             )}
           </CardContent>
@@ -544,8 +552,8 @@ export const PurchaseOrderDetail: React.FC = () => {
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-mono font-semibold">{inv.invoiceNumber}</TableCell>
-                      <TableCell className="tabular-nums">{formatProcurementDate(inv.invoiceDate, i18n.language)}</TableCell>
-                      <TableCell className="tabular-nums">{formatProcurementDate(inv.dueDate, i18n.language)}</TableCell>
+                      <TableCell className="tabular-nums">{formatShortDate(inv.invoiceDate, i18n.language)}</TableCell>
+                      <TableCell className="tabular-nums">{formatShortDate(inv.dueDate, i18n.language)}</TableCell>
                       <TableCell className="text-center font-mono font-medium tabular-nums">{formatCurrency(inv.totalAmount, { locale: i18n.language })}</TableCell>
                       <TableCell className="text-center font-mono text-emerald-600 tabular-nums">{formatCurrency(inv.paidAmount, { locale: i18n.language })}</TableCell>
                       <TableCell className="text-center font-mono text-destructive tabular-nums">{formatCurrency(inv.remainingAmount, { locale: i18n.language })}</TableCell>
