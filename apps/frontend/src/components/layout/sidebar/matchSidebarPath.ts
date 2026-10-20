@@ -35,7 +35,9 @@ export const isSidebarPathActive = (
     "/settings/store",
     "/hr",
     "/admin/booking",
-    "/admin/education"
+    "/admin/education",
+    "/manufacturing",
+    "/accounting"
   ];
 
   if (target.pathname === "/settings" && current.pathname.startsWith("/settings/store")) {

@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -1490,11 +1490,19 @@ export const getSidebarConfig = (
             icon: Factory,
             hidden: !isAppInstalled('manufacturing') && !isAppInstalled('manufacturing-app') && !isAppInstalled('cat-app-manufacturing'),
             items: [
-                { to: '/manufacturing', icon: BarChart3, label: isEn ? 'Overview' : t('sidebar.manufacturingOverview', 'لوحة المؤشرات') },
-                { to: '/manufacturing/orders', icon: ClipboardList, label: isEn ? 'Production Orders' : t('sidebar.manufacturingOrders', 'أوامر الإنتاج') },
-                { to: '/manufacturing/boms', icon: Layers, label: isEn ? 'Bill of Materials (BOM)' : t('sidebar.manufacturingBoms', 'أنماط التشغيل BOM') },
-                { to: '/manufacturing/reports', icon: FileBarChart, label: isEn ? 'Cost & Scrap Reports' : t('sidebar.manufacturingReports', 'تقارير التكاليف والهدر') },
-                { to: '/manufacturing/settings', icon: Settings, label: isEn ? 'Factory Settings' : t('sidebar.manufacturingSettings', 'إعدادات المصنع والحسابات') },
+                { to: '/manufacturing', icon: LayoutDashboard, label: isEn ? 'Overview' : t('sidebar.manufacturingOverview', 'نظرة عامة') },
+                { to: '/manufacturing/orders', icon: ClipboardList, label: isEn ? 'Production Orders' : t('sidebar.manufacturingOrders', 'أوامر الإنتاج والتشغيل') },
+                { to: '/manufacturing/customer-orders', icon: FileText, label: isEn ? 'Customer Orders (CMT)' : t('sidebar.manufacturingCustomerOrders', 'أوامر العملاء (التصنيع للغير)') },
+                { to: '/manufacturing/samples', icon: FlaskConical, label: isEn ? 'Sample Orders' : t('sidebar.manufacturingSamples', 'أوامر العينات') },
+                { to: '/manufacturing/partner-factories', icon: Building2, label: isEn ? 'Partner Factories' : t('sidebar.manufacturingPartnerFactories', 'المصانع الشركاء') },
+                { to: '/manufacturing/reviews', icon: ShieldCheck, label: isEn ? 'Factory Updates Review' : t('sidebar.manufacturingReviews', 'مراجعة تحديثات المصانع') },
+                { to: '/manufacturing/boms', icon: ListTree, label: isEn ? 'Bill of Materials (BOM)' : t('sidebar.manufacturingBoms', 'قوائم المكونات (BOM)') },
+                { to: '/manufacturing/stage-templates', icon: ListOrdered, label: isEn ? 'Stage Templates Library' : t('sidebar.manufacturingStageTemplates', 'مكتبة مراحل الإنتاج') },
+                { to: '/manufacturing/tech-packs', icon: BookOpen, label: isEn ? 'Technical Packs' : t('sidebar.manufacturingTechPacks', 'ملفات المنتجات الفنية') },
+                { to: '/manufacturing/size-charts', icon: Ruler, label: isEn ? 'Size Charts' : t('sidebar.manufacturingSizeCharts', 'جداول المقاسات') },
+                { to: '/manufacturing/fabric-calculator', icon: Calculator, label: isEn ? 'Fabric Calculator' : t('sidebar.manufacturingFabricCalculator', 'حاسبة القماش') },
+                { to: '/manufacturing/reports', icon: LineChart, label: isEn ? 'Cost & Scrap Reports' : t('sidebar.manufacturingReports', 'تقارير الإنتاج والتكاليف') },
+                { to: '/manufacturing/settings', icon: Settings, label: isEn ? 'Factory Settings' : t('sidebar.manufacturingSettings', 'إعدادات التصنيع') },
             ]
         },
 
