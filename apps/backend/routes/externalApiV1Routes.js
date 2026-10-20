@@ -14,6 +14,10 @@ const router = express.Router();
 const { merchantApiAuth, requireScope, createMerchantApiAuth } = require('../middleware/merchantApiAuth');
 const videoGenerationController = require('../controller/videoGenerationController');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
+const {
+  formatExternalOrderListRow,
+  formatExternalOrderDetail,
+} = require('../utils/externalOrderPayload');
 
 const getPrisma = () => getSharedPrismaClientAsync();
 
@@ -189,14 +193,36 @@ router.get('/orders', requireScope('orders:read'), async (req, res) => {
         take: limit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, orderNumber: true, status: true, paymentStatus: true, paymentMethod: true,
+          id: true, orderNumber: true, status: true, customStatusCode: true, paymentStatus: true, paymentMethod: true,
           subtotal: true, shipping: true, discount: true, total: true, currency: true,
-          customerName: true, customerPhone: true, city: true, governorate: true, createdAt: true,
+          customerName: true, customerPhone: true, city: true, governorate: true,
+          confirmedAt: true, createdAt: true, metadata: true,
+          orderItems: { select: { quantity: true } },
+          shipments: {
+            select: { collectedAt: true, collectedAmount: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+          },
+          statusHistory: {
+            where: { status: { in: ['DELIVERED', 'delivered', 'Delivered'] } },
+            select: { status: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+          returnRequests: {
+            select: {
+              rejectionReason: true,
+              reasonId: true,
+              adminNotes: true,
+              customerNotes: true,
+              returnReason: { select: { reason: true } },
+            },
+            take: 1,
+          },
         },
       }),
       prisma.order.count({ where }),
     ]);
-    return paginated(res, { data: rows, total, page, limit });
+    return paginated(res, { data: rows.map(formatExternalOrderListRow), total, page, limit });
   } catch (error) {
     if (String(error?.name || '').includes('PrismaClientValidationError')) {
       return res.status(400).json({ success: false, code: 'INVALID_FILTER', message: 'قيمة فلتر غير صالحة' });
@@ -209,21 +235,48 @@ router.get('/orders/:id', requireScope('orders:read'), async (req, res) => {
   try {
     const prisma = await getPrisma();
     const order = await prisma.order.findFirst({
-      where: { id: req.params.id, companyId: req.merchantCredential.companyId },
+      where: {
+        companyId: req.merchantCredential.companyId,
+        OR: [
+          { id: req.params.id },
+          { orderNumber: req.params.id },
+        ],
+      },
       select: {
         id: true, orderNumber: true, status: true, customStatusCode: true, paymentStatus: true,
         paymentMethod: true, subtotal: true, tax: true, shipping: true, discount: true, total: true,
         currency: true, customerName: true, customerPhone: true, customerEmail: true, city: true,
-        governorate: true, notes: true, createdAt: true, updatedAt: true,
-        items: {
+        governorate: true, notes: true, confirmedAt: true, createdAt: true, updatedAt: true,
+        metadata: true,
+        orderItems: {
           select: { id: true, productId: true, quantity: true, price: true, productName: true },
+        },
+        shipments: {
+          select: { collectedAt: true, collectedAmount: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        statusHistory: {
+          where: { status: { in: ['DELIVERED', 'delivered', 'Delivered'] } },
+          select: { status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        returnRequests: {
+          select: {
+            rejectionReason: true,
+            reasonId: true,
+            adminNotes: true,
+            customerNotes: true,
+            returnReason: { select: { reason: true } },
+          },
+          take: 1,
         },
       },
     });
     if (!order) {
       return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'الطلب غير موجود' });
     }
-    return res.json({ success: true, data: order });
+    return res.json({ success: true, data: formatExternalOrderDetail(order) });
   } catch (error) {
     return degrade(res, 'order get', error);
   }
