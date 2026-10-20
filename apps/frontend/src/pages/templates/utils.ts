@@ -153,9 +153,12 @@ export function timeToMinutes(value: string): number | null {
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(query).matches
+      : false,
   );
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
     const mql = window.matchMedia(query);
     const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
     setMatches(mql.matches);
@@ -213,3 +216,33 @@ export const ORDER_STATUS_TO_EVENT_TYPE: Record<string, string> = {
   PARTIALLY_REFUNDED: "PARTIAL_REFUND",
   EXCHANGED: "ORDER_RETURNED",
 };
+
+export const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
+  { value: "CONFIRMED", label: "تأكيد الطلب" },
+  { value: "PROCESSING", label: "تأجيل التسليم" },
+  { value: "CANCELLED", label: "إلغاء الطلب" },
+];
+
+export function formatWhatsAppText(text: string): string {
+  return text.trim();
+}
+
+/**
+ * يختار لون نص مقروء (أسود/أبيض) حسب سطوع خلفية الشارة — يضمن تباين WCAG AA
+ * يدعم #RGB و #RRGGBB و #RRGGBBAA (يتجاهل alpha)
+ */
+export function readableTextColor(hex: string): string {
+  let c = (hex || "#6B7280").replace("#", "").trim();
+  if (c.length === 3) c = c.split("").map((ch) => ch + ch).join("");
+  if (c.length === 4) c = c.slice(0, 3).split("").map((ch) => ch + ch).join("");
+  if (c.length === 8) c = c.slice(0, 6);
+  if (c.length !== 6) return "#ffffff";
+  const r = parseInt(c.slice(0, 2), 16) / 255;
+  const g = parseInt(c.slice(2, 4), 16) / 255;
+  const b = parseInt(c.slice(4, 6), 16) / 255;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return "#ffffff";
+  const lin = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return L > 0.179 ? "#0f172a" : "#ffffff";
+}
+

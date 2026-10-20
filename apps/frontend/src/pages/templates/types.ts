@@ -71,6 +71,7 @@ export interface TemplateButton {
   id: string;
   text: string;
   action: string;
+  type?: "QUICK_REPLY" | "LINK";
 }
 
 export interface MetaAvailableTemplate {
@@ -125,6 +126,17 @@ export interface TabDef {
   isSpecial?: boolean;
 }
 
+export type StatusWithTemplate = EventRow;
+
+export interface MetaSession {
+  id: string;
+  name: string;
+  metaDisplayPhoneNumber?: string;
+  phoneNumber?: string;
+  provider?: string;
+  status?: string;
+}
+
 export type TemplateSlot = "regular" | "meta";
 
 export type TemplateFormState = {
@@ -141,7 +153,28 @@ export type TemplateFormState = {
   headerMediaName: string;
   headerUsesOrderProduct: boolean;
   category: string;
+  metaCategory?: string;
 };
+
+export const emptyTemplateForm = (): TemplateFormState => ({
+  name: "",
+  content: "",
+  isActive: true,
+  hasButtons: true,
+  buttons: [
+    { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED", type: "QUICK_REPLY" },
+    { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED", type: "QUICK_REPLY" },
+  ],
+  sendMode: "direct",
+  metaTemplateName: "",
+  metaTemplateLanguage: "ar",
+  headerFormat: "TEXT",
+  headerMediaHandle: "",
+  headerMediaName: "",
+  headerUsesOrderProduct: false,
+  category: "CUSTOMER",
+  metaCategory: "UTILITY",
+});
 
 /**
  * الـ config الخاص بكل نطاق — بيحدد كل ما يخص النطاق:
