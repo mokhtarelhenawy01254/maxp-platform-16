@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import { TicketListTab } from "./TicketListTab";
 import type { OrderTicketItem } from "./ticketTypes";
 
@@ -19,8 +22,8 @@ describe("TicketListTab", () => {
       <TicketListTab
         loadingTickets={true}
         existingTickets={[]}
-        onOpenNewTab={jest.fn()}
-        onOpenDetail={jest.fn()}
+        onOpenNewTab={vi.fn()}
+        onOpenDetail={vi.fn()}
       />
     );
 
@@ -28,13 +31,13 @@ describe("TicketListTab", () => {
   });
 
   it("shows empty state when no tickets exist and handles open new tab", () => {
-    const onOpenNewTab = jest.fn();
+    const onOpenNewTab = vi.fn();
     render(
       <TicketListTab
         loadingTickets={false}
         existingTickets={[]}
         onOpenNewTab={onOpenNewTab}
-        onOpenDetail={jest.fn()}
+        onOpenDetail={vi.fn()}
       />
     );
 
@@ -45,12 +48,12 @@ describe("TicketListTab", () => {
   });
 
   it("renders existing tickets list and calls onOpenDetail when clicked", () => {
-    const onOpenDetail = jest.fn();
+    const onOpenDetail = vi.fn();
     render(
       <TicketListTab
         loadingTickets={false}
         existingTickets={mockTickets}
-        onOpenNewTab={jest.fn()}
+        onOpenNewTab={vi.fn()}
         onOpenDetail={onOpenDetail}
       />
     );
@@ -59,8 +62,8 @@ describe("TicketListTab", () => {
     expect(screen.getByText("TRK-555")).toBeInTheDocument();
     expect(screen.getByText("مشكلة في التوصيل")).toBeInTheDocument();
 
-    const item = screen.getByText("عرض المحادثة");
-    fireEvent.click(item);
+    const ticketCard = screen.getByText("#101").closest("div");
+    fireEvent.click(ticketCard!);
     expect(onOpenDetail).toHaveBeenCalledWith(mockTickets[0]);
   });
 });
