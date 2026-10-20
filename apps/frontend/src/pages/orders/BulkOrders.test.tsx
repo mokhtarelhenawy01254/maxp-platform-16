@@ -1,11 +1,13 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import { BulkOrders } from "./BulkOrders";
 
-jest.mock("../../services/apiClient", () => ({
+vi.mock("../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({
+    get: vi.fn().mockResolvedValue({
       data: {
         success: true,
         data: [
@@ -25,12 +27,12 @@ jest.mock("../../services/apiClient", () => ({
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
       },
     }),
-    post: jest.fn().mockResolvedValue({ data: { success: true } }),
-    delete: jest.fn().mockResolvedValue({ data: { success: true } }),
+    post: vi.fn().mockResolvedValue({ data: { success: true } }),
+    delete: vi.fn().mockResolvedValue({ data: { success: true } }),
   },
 }));
 
-jest.mock("../../hooks/useAuthSimple", () => ({
+vi.mock("../../hooks/useAuthSimple", () => ({
   useAuth: () => ({
     user: {
       role: "SUPER_ADMIN",
@@ -39,12 +41,17 @@ jest.mock("../../hooks/useAuthSimple", () => ({
   }),
 }));
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: (k: string, opt?: any) => opt?.defaultValue || k,
     i18n: { language: "ar" },
   }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("BulkOrders Suite", () => {
   it("renders page header and bulk orders table with fetched data", async () => {
