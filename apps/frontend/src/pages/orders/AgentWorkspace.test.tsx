@@ -23,6 +23,17 @@ jest.mock("../../hooks/useCurrency", () => ({
   }),
 }));
 
+jest.mock("../../hooks/useAuthSimple", () => ({
+  useAuth: () => ({ user: { id: "u-1", role: "SUPER_ADMIN" } }),
+  useOptionalAuth: () => ({ user: { id: "u-1", role: "SUPER_ADMIN" } }),
+}));
+
+jest.mock("../../hooks/useDateFormat", () => ({
+  useDateFormat: () => ({
+    formatDate: (d: any) => String(d),
+  }),
+}));
+
 jest.mock("../../components/telephony/OrderCallButton", () => ({
   OrderCallButton: () => null,
 }));
