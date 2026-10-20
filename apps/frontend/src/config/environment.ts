@@ -61,6 +61,7 @@ export const isCapacitorNative = (): boolean => {
   if (typeof window === "undefined") return false;
   const win = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
   if (win.Capacitor?.isNativePlatform?.()) return true;
+  if (typeof navigator !== "undefined" && navigator.userAgent?.includes("MaxP-Native-Android")) return true;
   return (
     window.location.protocol === "capacitor:" ||
     window.location.origin === "https://localhost" ||
@@ -267,3 +268,5 @@ export const getAppUrl = () => envConfig.appUrl;
 export const getBackendUrl = () => envConfig.backendUrl;
 
 export default envConfig;
+
+

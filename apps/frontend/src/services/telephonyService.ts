@@ -78,6 +78,23 @@ interface MaxPTelephonyNativePlugin {
 }
 
 const MaxPTelephony = registerPlugin<MaxPTelephonyNativePlugin>("MaxPTelephony");
+/**
+ * الانتظار الذكي لجسر Capacitor في الروابط السحابية البعيدة (Remote URLs)
+ */
+async function waitForCapacitorBridge(timeoutMs = 3500): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const win = window as any;
+    if (win.Capacitor?.isNativePlatform?.() && win.Capacitor?.Plugins?.MaxPTelephony) {
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  const win = window as any;
+  return Boolean(win?.Capacitor?.isNativePlatform?.());
+}
+
 
 class TelephonyClientService {
   private isAgentInitialized = false;
@@ -85,7 +102,8 @@ class TelephonyClientService {
   private heartbeatInterval: any = null;
   private handledSessionIds = new Set<string>();
   private activeCallWatchdogInterval: any = null;
-  public currentDeviceInfo: DeviceInfo | null = null;
+  public currentDeviceInfo: DeviceInfo | null = null;
+  public isNativeTelephonyAvailable = false;
 
   /**
    * تسجيل وإرسال أحداث التشخيص لسيرفر MaxP وللوحدة المحلية
@@ -250,18 +268,52 @@ class TelephonyClientService {
       this.isAgentInitialized = true;
       await tokenManager.restoreNativeTokens();
 
-      // 1. استخراج معلومات الجهاز (مع خطة بديلة مرنة في حال عدم توفر الموديول الأصلي)
-      let deviceInfo: DeviceInfo;
+      // 1. استخراج معلومات الجهاز (مع خطة بديلة مرنة وانتظار ذكي للموديول الأصلي)
+      await waitForCapacitorBridge(3000);
+
+      let deviceInfo: DeviceInfo | null = null;
       let isNativePluginAvailable = false;
 
-      try {
-        const pluginPromise = MaxPTelephony.getDeviceInfo();
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout getting native device info")), 2000)
-        );
-        deviceInfo = await Promise.race([pluginPromise, timeoutPromise]);
-        isNativePluginAvailable = true;
-      } catch (_nativeErr) {
+      const tryNativePlugin = async (timeoutMs: number = 4000): Promise<DeviceInfo | null> => {
+        try {
+          const pluginPromise = MaxPTelephony.getDeviceInfo();
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout getting native device info")), timeoutMs)
+          );
+          const res = await Promise.race([pluginPromise, timeoutPromise]);
+          if (res && res.deviceId) return res;
+        } catch (err: any) {
+          this.logDiagnostic("NATIVE_DETECT_ATTEMPT_ERR", { message: err?.message });
+        }
+        return null;
+      };
+
+      const isLikelyNative =
+        isCapacitorNative() ||
+        (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.())) ||
+        (typeof navigator !== "undefined" && navigator.userAgent?.includes("MaxP-Native-Android"));
+
+      if (isLikelyNative) {
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          const nativeRes = await tryNativePlugin(3500);
+          if (nativeRes) {
+            deviceInfo = nativeRes;
+            isNativePluginAvailable = true;
+            this.isNativeTelephonyAvailable = true;
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 600));
+        }
+      } else {
+        const nativeRes = await tryNativePlugin(2500);
+        if (nativeRes) {
+          deviceInfo = nativeRes;
+          isNativePluginAvailable = true;
+          this.isNativeTelephonyAvailable = true;
+        }
+      }
+
+      if (!deviceInfo) {
         let fallbackId = localStorage.getItem("maxp_telephony_device_id");
         if (!fallbackId) {
           try {
@@ -319,7 +371,7 @@ class TelephonyClientService {
         deviceInfo = {
           deviceId: fallbackId,
           deviceName: model,
-          osVersion: "MaxP Mobile Agent",
+          osVersion: isLikelyNative ? "Android Native (Pending Bridge)" : "MaxP Mobile Agent",
         };
       }
 
@@ -486,7 +538,15 @@ class TelephonyClientService {
           }
 
           // محاولة الاتصال المباشر عبر موديول أندرويد الأصلي
-          if (isNativePluginAvailable) {
+          const canTryNative =
+            isNativePluginAvailable ||
+            this.isNativeTelephonyAvailable ||
+            isCapacitorNative() ||
+            (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.())) ||
+            (typeof navigator !== "undefined" && navigator.userAgent?.includes("MaxP-Native-Android")) ||
+            Boolean((window as any)?.Capacitor?.Plugins?.MaxPTelephony);
+
+          if (canTryNative) {
             try {
               this.logDiagnostic("NATIVE_DIAL_ATTEMPTED", { phone: data.customerPhone });
               const dialRes = await MaxPTelephony.dialCustomer({
@@ -495,7 +555,8 @@ class TelephonyClientService {
                 orderId: data.orderId,
               });
               this.logDiagnostic("NATIVE_DIAL_SUCCESS", dialRes);
-              return;
+              this.isNativeTelephonyAvailable = true;
+              return; // نجح الاتصال المباشر! لا حاجة لفتح لوحة المفاتيح
             } catch (nativeErr: any) {
               this.logDiagnostic("NATIVE_DIAL_FAILED", { error: nativeErr?.message || String(nativeErr) });
               console.warn("Native dialCustomer failed or background restricted:", nativeErr);

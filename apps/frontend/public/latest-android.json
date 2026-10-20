@@ -2,21 +2,22 @@
   "platform": "android",
   "appName": "MaxP",
   "appId": "online.maxp.app",
-  "latestVersion": "1.1.0",
-  "latestVersionCode": 10,
+  "latestVersion": "1.2.0",
+  "latestVersionCode": 12,
   "minRequiredVersion": "1.0.8",
   "minRequiredVersionCode": 8,
   "forceUpdate": false,
   "downloadUrl": "https://maxp.online/download/maxp.apk",
   "directApkUrl": "https://maxp.online/download/maxp.apk",
-  "releaseNotesAr": "تحديث رئيسي: خدمة المكالمات في الخلفية، تحسينات شاملة في الأداء والاستقرار.",
-  "releaseNotesEn": "Major update: background telephony service, performance and stability improvements.",
-  "releaseDate": "2026-10-08",
-  "fileSizeBytes": 179121520,
-  "fileSizeFormatted": "171 MB",
+  "releaseNotesAr": "تحديث رئيسي 1.2.0: تفعيل الاتصال الهاتفي والرنين التلقائي المباشر لجميع هواتف أندرويد وسامسونج، تجاوز قيود الخلفية، ومزامنة فورية.",
+  "releaseNotesEn": "Major update 1.2.0: Direct auto-dialing and telephony execution for all Android devices.",
+  "releaseDate": "2026-10-20",
+  "fileSizeBytes": 210558244,
+  "fileSizeFormatted": "200 MB",
   "featuresAr": [
-    "تسريع فتح الصفحات والمزامنة الفورية",
-    "إصلاحات لاستقرار التنبيهات وإشعارات الدفع",
-    "تحسين تجربة التصفح والطباعة المحمولة"
+    "الرنين التلقائي المباشر للاتصال بالعملاء بنقرة واحدة من الكمبيوتر",
+    "تجاوز قيود العمل في الخلفية وقفل الشاشة على أندرويد 10 إلى 15",
+    "دعم كامل لشرائح الاتصال المتعددة Dual-SIM وهواتف سامسونج وهوواوي",
+    "تشخيص لحظي وتوثيق فوري لنتيجة المكالمة"
   ]
 }

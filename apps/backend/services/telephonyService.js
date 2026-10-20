@@ -100,17 +100,48 @@ class TelephonyService {
     const presenceWindowMs = process.env.NODE_ENV === 'test' ? (3 * 60 * 1000) : (24 * 60 * 60 * 1000);
     const cutoffDate = new Date(Date.now() - presenceWindowMs);
 
-    let device = await prisma.employeeDevice.findFirst({
-      where: {
-        companyId,
-        userId,
-        isOnline: true,
-        lastSeenAt: { gte: cutoffDate }
-      },
-      orderBy: { lastSeenAt: 'desc' }
-    });
+    let device = null;
 
-    // خطة بديلة: إذا لم يكن هناك جهاز مسجل مباشرة لهذا الموظف، ابحث عن جهاز نشط في نفس الشركة
+    // في بيئة الإنتاج: نمنح الأولوية دائماً لتطبيق أندرويد الأصلي (Native APK) لتجاوز قيود المتصفح
+    if (process.env.NODE_ENV !== 'test') {
+      device = await prisma.employeeDevice.findFirst({
+        where: {
+          companyId,
+          userId,
+          isOnline: true,
+          lastSeenAt: { gte: cutoffDate },
+          appVersion: { not: 'MaxP Mobile Agent' }
+        },
+        orderBy: { lastSeenAt: 'desc' }
+      });
+    }
+
+    if (!device) {
+      device = await prisma.employeeDevice.findFirst({
+        where: {
+          companyId,
+          userId,
+          isOnline: true,
+          lastSeenAt: { gte: cutoffDate }
+        },
+        orderBy: { lastSeenAt: 'desc' }
+      });
+    }
+
+    // خطة بديلة: إذا لم يكن هناك جهاز مسجل مباشرة لهذا الموظف، ابحث عن تطبيق أصلي نشط في نفس الشركة
+    if (!device && process.env.NODE_ENV !== 'test') {
+      device = await prisma.employeeDevice.findFirst({
+        where: {
+          companyId,
+          isOnline: true,
+          lastSeenAt: { gte: cutoffDate },
+          appVersion: { not: 'MaxP Mobile Agent' }
+        },
+        orderBy: { lastSeenAt: 'desc' }
+      });
+    }
+
+    // خطة بديلة أخيرة: أي جهاز نشط في الشركة
     if (!device) {
       device = await prisma.employeeDevice.findFirst({
         where: {
@@ -551,15 +582,45 @@ class TelephonyService {
       this.diagnosticLogs.shift();
     }
 
+    // نشر السجل عبر Redis لكي تتمكن جميع الـ PM2 Workers من قراءته عبر الكلاستر
+    if (socketService.pubClient && typeof socketService.pubClient.lpush === 'function') {
+      try {
+        const redisKey = `telephony:diagnostics:${companyId}`;
+        socketService.pubClient.lpush(redisKey, JSON.stringify(entry)).catch(() => {});
+        socketService.pubClient.ltrim(redisKey, 0, 199).catch(() => {});
+        socketService.pubClient.expire(redisKey, 7 * 86400).catch(() => {});
+      } catch {}
+    }
+
+    // بث لحظي عبر Socket.IO لغرفة الشركة لكي تظهر الأحداث مباشرة أمام أعين الموظفين
+    const io = socketService.getIO ? (socketService.getIO() || socketService.io) : socketService.io;
+    if (io) {
+      io.to(`company_${companyId}`).emit('telephony:diagnostic_event', entry);
+    }
+
     console.log(`📱 [TELEPHONY-DIAGNOSTIC] [${event}] company=${companyId} user=${userId || 'none'} device=${deviceName || deviceId || 'unknown'}:`, details ? JSON.stringify(details) : '');
     return entry;
   }
 
   /**
-   * استرجاع سجلات التشخيص لشركة محددة
+   * استرجاع سجلات التشخيص لشركة محددة (يدعم Redis Cluster مع Fallback محلي)
    */
-  getDiagnosticLogs({ companyId, limit = 50 }) {
+  async getDiagnosticLogs({ companyId, limit = 50 }) {
     if (!companyId) return [];
+
+    // استعلام من Redis أولاً لتوحيد السجلات عبر جميع وحدات الـ PM2
+    if (socketService.pubClient && typeof socketService.pubClient.lrange === 'function') {
+      try {
+        const redisKey = `telephony:diagnostics:${companyId}`;
+        const raw = await socketService.pubClient.lrange(redisKey, 0, Math.min(limit, 100) - 1);
+        if (raw && raw.length > 0) {
+          return raw.map(item => {
+            try { return JSON.parse(item); } catch { return null; }
+          }).filter(Boolean);
+        }
+      } catch {}
+    }
+
     if (!this.diagnosticLogs) return [];
     return this.diagnosticLogs
       .filter(l => l.companyId === String(companyId))
@@ -569,3 +630,4 @@ class TelephonyService {
 }
 
 module.exports = new TelephonyService();
+

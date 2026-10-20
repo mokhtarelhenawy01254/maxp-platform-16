@@ -37,8 +37,8 @@ const DEFAULT_ANDROID_VERSION_CONFIG = {
   platform: 'android',
   appName: 'MaxP',
   appId: 'online.maxp.app',
-  latestVersion: '1.1.0',
-  latestVersionCode: 10,
+  latestVersion: '1.2.0',
+  latestVersionCode: 12,
   minRequiredVersion: '1.0.8',
   minRequiredVersionCode: 8,
   forceUpdate: false,
@@ -47,7 +47,7 @@ const DEFAULT_ANDROID_VERSION_CONFIG = {
   storeUrl: 'https://maxp.online/download/maxp.apk',
   releaseNotesAr: 'تحديث رئيسي: خدمة المكالمات في الخلفية، تحسينات شاملة في الأداء والاستقرار.',
   releaseNotesEn: 'Major update: background telephony service, performance and stability improvements.',
-  releaseDate: '2026-10-08',
+  releaseDate: '2026-10-20',
   fileSizeBytes: 179121520,
   fileSizeFormatted: '171 MB',
   featuresAr: [
@@ -149,3 +149,4 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+

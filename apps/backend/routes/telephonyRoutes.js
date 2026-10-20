@@ -210,7 +210,7 @@ router.get('/diagnostic-logs', async (req, res) => {
       return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     }
 
-    const logs = telephonyService.getDiagnosticLogs({ companyId });
+    const logs = await telephonyService.getDiagnosticLogs({ companyId });
     res.json({ success: true, data: logs });
   } catch (error) {
     respondError(res, error);
@@ -218,3 +218,4 @@ router.get('/diagnostic-logs', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -159,9 +159,16 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       setIsDialing(true);
       armDialWatchdog();
       setCooldown(20);
-      toast.success(
-        `جاري الرنين على ${res.customerPhone} عبر هاتف ${res.deviceName || "الموظف"}...`
-      );
+      if (isBrowserDevice) {
+        toast.info(
+          "📱 الهاتف متصل عبر المتصفح: سيفتح الرقم على شاشة الهاتف، اضغط زر الاتصال الأخضر. (للرنين التلقائي المباشر بدون لمس الشاشة، افتح تطبيق MaxP APK الإصدار 1.2.0)",
+          { duration: 7000 }
+        );
+      } else {
+        toast.success(
+          `جاري الرنين والاتصال التلقائي المباشر على ${res.customerPhone} عبر هاتف ${res.deviceName || "الموظف"}...`
+        );
+      }
     } catch (error: any) {
       toast.error(error.message || "فشل إطلاق الاتصال");
       void refreshDevicePresence();
@@ -171,6 +178,15 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   };
 
   const [isRefreshingPresence, setIsRefreshingPresence] = useState(false);
+
+  const isNativeApp =
+    presence.isOnline &&
+    Boolean(presence.device?.appVersion) &&
+    presence.device?.appVersion !== "MaxP Mobile Agent";
+
+  const isBrowserDevice =
+    presence.isOnline &&
+    (!presence.device?.appVersion || presence.device.appVersion === "MaxP Mobile Agent");
 
   const handleManualPresenceRefresh = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -195,13 +211,17 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       role="button"
       tabIndex={0}
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border font-mono tabular-nums transition-colors cursor-pointer hover:opacity-80 active:scale-95 ${
-        presence.isOnline
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+        isNativeApp
+          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+          : isBrowserDevice
+          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
           : "bg-muted/50 text-muted-foreground border-border/60"
       }`}
       title={
-        presence.isOnline
-          ? `الهاتف متصل: ${presence.device?.deviceName || "Android"} (انقر لإعادة الفحص)`
+        isNativeApp
+          ? `📱 تطبيق MaxP الأصلي متصل وجاهز للرنين التلقائي المباشر (${presence.device?.deviceName || "Android"} - ${presence.device?.appVersion || ""}) - انقر للتحديث`
+          : isBrowserDevice
+          ? `⚠️ متصل عبر المتصفح (${presence.device?.deviceName || "Web"}): للاتصال التلقائي بدون لمس، حمّل وافتح تطبيق MaxP APK الجديد (1.2.0)`
           : "الهاتف غير متصل. افتح تطبيق MaxP على الهاتف ثم انقر هنا للتحديث الفوري."
       }
     >
@@ -210,13 +230,21 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       ) : (
         <span
           className={`size-1.5 rounded-full ${
-            presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/60"
+            isNativeApp
+              ? "bg-emerald-500 animate-pulse"
+              : isBrowserDevice
+              ? "bg-amber-500 animate-pulse"
+              : "bg-muted-foreground/60"
           }`}
         />
       )}
-      <Smartphone className="size-3 shrink-0 text-muted-foreground" />
-      <span className="truncate max-w-[110px]">
-        {presence.isOnline ? presence.device?.deviceName || "متصل" : "غير متصل"}
+      <Smartphone className={`size-3 shrink-0 ${isNativeApp ? "text-emerald-500" : isBrowserDevice ? "text-amber-500" : "text-muted-foreground"}`} />
+      <span className="truncate max-w-[125px]">
+        {isNativeApp
+          ? `${presence.device?.deviceName || "أندرويد"} (مباشر)`
+          : isBrowserDevice
+          ? `${presence.device?.deviceName || "متصفح"} (يدوي)`
+          : "غير متصل"}
       </span>
     </div>
   );
@@ -337,3 +365,4 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
 };
 
 export default OrderCallButton;
+

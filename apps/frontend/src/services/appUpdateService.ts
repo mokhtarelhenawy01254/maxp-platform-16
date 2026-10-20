@@ -37,8 +37,8 @@ export interface UpdateCheckResult {
   error?: string | null;
 }
 
-const DEFAULT_CURRENT_VERSION = '1.1.0';
-const DEFAULT_CURRENT_BUILD = 10;
+const DEFAULT_CURRENT_VERSION = '1.2.0';
+const DEFAULT_CURRENT_BUILD = 12;
 const DISMISSED_UPDATE_KEY = 'maxp_dismissed_update';
 const SNOOZE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours snooze for optional updates
 
@@ -327,3 +327,4 @@ export function exitAndroidApp(): void {
   // Fallback in web/preview
   window.close();
 }
+
