@@ -184,6 +184,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleToggleSectionLock,
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
+    handleResetDeviceOverrides,
   } = useStorefrontStudioState({
     themeId,
     externalDesignTokens,
@@ -619,8 +620,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           onClearSelectedElement={() => {
                             setSelectedElement(null);
                           }}
-                          onUpdateField={handleUpdateSectionField}
-                          onBatchUpdateFields={(updates) => handleBatchUpdateSectionFields(updates, stableKey)}
+                          onUpdateField={(field, val) => handleUpdateSectionField(field, val, deviceMode)}
+                          onBatchUpdateFields={(updates) => handleBatchUpdateSectionFields(updates, stableKey, deviceMode)}
                           onSave={onSave}
                           onMoveUp={() => handleMoveSection(index, "up")}
                           onMoveDown={() => handleMoveSection(index, "down")}
@@ -698,8 +699,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                   selectedElement={selectedElement}
                   onClearSelectedElement={() => setSelectedElement(null)}
                   onClose={() => setIsInspectorOpen(false)}
-                  onUpdateField={handleUpdateSectionField}
-                  onBatchUpdateFields={handleBatchUpdateSectionFields}
+                  onUpdateField={(field, val) => handleUpdateSectionField(field, val, deviceMode)}
+                  onBatchUpdateFields={(updates) => handleBatchUpdateSectionFields(updates, selectedSectionKey, deviceMode)}
+                  onResetDeviceOverrides={(dev) => handleResetDeviceOverrides(selectedSectionKey, dev)}
                   onOpenImagePicker={handleOpenImagePickerModal}
                   onSwitchDevice={setDeviceMode}
                   onSave={onSave}

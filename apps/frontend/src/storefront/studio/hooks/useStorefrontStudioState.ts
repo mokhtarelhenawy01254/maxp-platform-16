@@ -8,6 +8,8 @@ import { resolveStorefrontTheme } from "../../engine/themeResolver";
 import { useCartStore } from "../../store/useCartStore";
 import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
 import { isStorefrontSectionKnown } from "../../sections/manifest";
+import type { StudioDeviceMode } from "../StudioTypes";
+import { RESPONSIVE_STYLE_FIELDS } from "../utils/studioStyleUtils";
 
 const STUDIO_STARTER_SETTINGS: Record<string, Record<string, any>> = {
   "hero-banner": {
@@ -405,7 +407,7 @@ export function useStorefrontStudioState({
   activePageKeyRef.current = activePageKey;
 
   const handleBatchUpdateSectionFields = useCallback(
-    (updates: Record<string, any>, targetSectionKey?: string) => {
+    (updates: Record<string, any>, targetSectionKey?: string, device: StudioDeviceMode = "desktop") => {
       const sectionKeyToUpdate = targetSectionKey || selectedSectionKey;
       if (!sectionKeyToUpdate) return;
 
@@ -421,15 +423,58 @@ export function useStorefrontStudioState({
         const base = typeof s === "string" ? { type: s } : { ...s };
         const baseSettings =
           typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+        const baseConfig =
+          typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
 
-        Object.entries(updates).forEach(([field, value]) => {
-          baseSettings[field] = value;
-          base[field] = value;
-        });
+        if (device === "mobile" || device === "tablet") {
+          const existingResponsive = {
+            ...(baseSettings.responsive || base.responsive || baseConfig.responsive || {}),
+          };
+          const existingDeviceOverrides = {
+            ...(existingResponsive[device] || {}),
+          };
+
+          Object.entries(updates).forEach(([field, value]) => {
+            if (RESPONSIVE_STYLE_FIELDS.has(field)) {
+              if (value === undefined || value === null || value === "") {
+                delete existingDeviceOverrides[field];
+              } else {
+                existingDeviceOverrides[field] = value;
+              }
+            } else {
+              baseSettings[field] = value;
+              base[field] = value;
+              baseConfig[field] = value;
+            }
+          });
+
+          const nextResponsive = {
+            ...existingResponsive,
+            [device]: existingDeviceOverrides,
+          };
+
+          baseSettings.responsive = nextResponsive;
+          base.responsive = nextResponsive;
+          baseConfig.responsive = nextResponsive;
+        } else {
+          Object.entries(updates).forEach(([field, value]) => {
+            baseSettings[field] = value;
+            base[field] = value;
+            baseConfig[field] = value;
+          });
+
+          if (baseSettings.responsive) {
+            baseConfig.responsive = baseSettings.responsive;
+          }
+        }
+
+        base.settings = baseSettings;
+        base.config = baseConfig;
 
         return {
           ...base,
           settings: baseSettings,
+          config: baseConfig,
         };
       });
 
@@ -454,6 +499,72 @@ export function useStorefrontStudioState({
       handleDesignTokensChange(nextTokens);
     },
     [selectedSectionKey, themeId, handleDesignTokensChange]
+  );
+
+  const handleResetDeviceOverrides = useCallback(
+    (sectionKey: string, device: "mobile" | "tablet" = "mobile") => {
+      const currentSections = activeSectionsRef.current;
+      const targetIndex = currentSections.findIndex(
+        (s: any, idx: number) => getSectionKey(s, idx) === sectionKey
+      );
+      if (targetIndex === -1) return;
+
+      const target = currentSections[targetIndex];
+      const base = typeof target === "string" ? { type: target } : { ...target };
+      const baseSettings =
+        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+
+      const responsive = {
+        ...(baseSettings.responsive || base.responsive || base.config?.responsive || {}),
+      };
+
+      if (responsive[device]) {
+        delete responsive[device];
+      }
+
+      baseSettings.responsive = responsive;
+      base.responsive = responsive;
+      const baseConfig =
+        typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
+      baseConfig.responsive = responsive;
+      base.config = baseConfig;
+
+      const nextSections = [...currentSections];
+      nextSections[targetIndex] = {
+        ...base,
+        settings: baseSettings,
+        config: baseConfig,
+      };
+
+      activeSectionsRef.current = nextSections;
+
+      const currentTokens = currentDesignTokensRef.current;
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextPages = {
+        ...((currentTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
+          sections: nextSections,
+        },
+      };
+
+      const nextTokens = {
+        ...currentTokens,
+        themeId,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success(
+        `تم تصفير تخصيصات ${device === "mobile" ? "الجوال" : "التابلت"} والعودة للوراثة من سطح المكتب`
+      );
+    },
+    [themeId, handleDesignTokensChange, onSave]
   );
 
   const handleRenameSection = useCallback(
@@ -624,8 +735,8 @@ export function useStorefrontStudioState({
   );
 
   const handleUpdateSectionField = useCallback(
-    (field: string, value: any) => {
-      handleBatchUpdateSectionFields({ [field]: value });
+    (field: string, value: any, device: StudioDeviceMode = "desktop") => {
+      handleBatchUpdateSectionFields({ [field]: value }, undefined, device);
     },
     [handleBatchUpdateSectionFields]
   );
@@ -656,5 +767,6 @@ export function useStorefrontStudioState({
     handleToggleSectionLock,
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
+    handleResetDeviceOverrides,
   };
 }

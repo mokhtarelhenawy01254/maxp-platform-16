@@ -2,7 +2,8 @@ import React from "react";
 import type { StorefrontPageConfig, StorefrontPageLayout } from "../types/theme.types";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { RenderSectionFrameArgs } from "../engine/PageComposer";
-import { buildSectionStyle } from "../studio/utils/studioStyleUtils";
+import { buildSectionStyle, hasDeviceOverrides } from "../studio/utils/studioStyleUtils";
+import { useCurrentBreakpoint } from "../hooks/useCurrentBreakpoint";
 
 export const resolveStorefrontPageLayout = (
   pageConfig: StorefrontPageConfig | undefined,
@@ -30,17 +31,24 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   }
   const { theme } = useStorefrontTheme();
   const reveal = isRevealEnabledTheme(theme?.id);
+  const currentBreakpoint = useCurrentBreakpoint();
+
   const settings =
     typeof sectionEntry === "object" && sectionEntry !== null
       ? (sectionEntry.settings || sectionEntry)
       : undefined;
-  const sectionStyle = buildSectionStyle(settings);
+
+  // Resolve responsive styles for the live breakpoint (Ticket 2G)
+  const sectionStyle = buildSectionStyle(settings, undefined, currentBreakpoint);
+  const hasResponsive = hasDeviceOverrides(settings, "mobile") || hasDeviceOverrides(settings, "tablet");
 
   return (
     <div
       data-storefront-section="true"
       data-section-index={index}
       data-section-type={typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type}
+      data-device-breakpoint={currentBreakpoint}
+      data-has-responsive={hasResponsive ? "true" : undefined}
       style={sectionStyle}
       className={reveal ? `sf-reveal ${index > 0 ? 'mt-6 sm:mt-12' : ''}` : index > 0 ? 'mt-6 sm:mt-12' : ''}
       data-reveal-delay={reveal ? (index % 5) + 1 : undefined}

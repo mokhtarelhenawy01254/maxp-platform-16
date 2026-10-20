@@ -1,7 +1,139 @@
 /**
  * Utility functions for storefront studio style computation,
- * free-value conversions, Arabic numeral normalization, and shadow formatting.
+ * free-value conversions, Arabic numeral normalization, shadow formatting,
+ * and multi-device responsive overrides resolution (Ticket 2G).
  */
+
+export type StorefrontBreakpoint = "desktop" | "tablet" | "mobile";
+
+/**
+ * All styling / layout fields that can be overridden per device (Ticket 2G).
+ */
+export const RESPONSIVE_STYLE_FIELDS = new Set<string>([
+  "paddingTop",
+  "paddingBottom",
+  "paddingRight",
+  "paddingLeft",
+  "padding",
+  "marginTop",
+  "marginBottom",
+  "margin",
+  "minHeight",
+  "borderRadius",
+  "gap",
+  "shadow",
+  "customShadow",
+  "shadowX",
+  "shadowY",
+  "shadowBlur",
+  "shadowSpread",
+  "shadowOpacity",
+  "shadowColor",
+  "fontSize",
+  "align",
+  "textAlign",
+  "backgroundColor",
+  "bgColor",
+  "spacing",
+]);
+
+/**
+ * Checks if a section settings object has non-empty overrides for a specific device.
+ */
+export function hasDeviceOverrides(
+  settings?: Record<string, any> | null,
+  device: "tablet" | "mobile" = "mobile"
+): boolean {
+  if (!settings) return false;
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+  if (!responsive || typeof responsive !== "object") return false;
+  const deviceOverrides = responsive[device];
+  if (!deviceOverrides || typeof deviceOverrides !== "object") return false;
+  return Object.keys(deviceOverrides).some((k) => {
+    const val = deviceOverrides[k];
+    return val !== undefined && val !== null && val !== "";
+  });
+}
+
+/**
+ * Counts how many style overrides exist for a specific device.
+ */
+export function getDeviceOverridesCount(
+  settings?: Record<string, any> | null,
+  device: "tablet" | "mobile" = "mobile"
+): number {
+  if (!settings) return 0;
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+  if (!responsive || typeof responsive !== "object") return 0;
+  const deviceOverrides = responsive[device];
+  if (!deviceOverrides || typeof deviceOverrides !== "object") return 0;
+  return Object.keys(deviceOverrides).filter((k) => {
+    const val = deviceOverrides[k];
+    return val !== undefined && val !== null && val !== "";
+  }).length;
+}
+
+/**
+ * Resolves effective section settings by merging responsive device overrides
+ * onto the base desktop settings according to responsive cascade:
+ * - Desktop: base settings
+ * - Tablet: base settings merged with responsive.tablet
+ * - Mobile: base settings merged with responsive.tablet (if any), then responsive.mobile (highest priority)
+ */
+export function resolveEffectiveSectionSettings(
+  settings?: Record<string, any> | null,
+  device: StorefrontBreakpoint | "desktop" | "tablet" | "mobile" = "desktop"
+): Record<string, any> {
+  if (!settings) return {};
+
+  const effective: Record<string, any> = { ...settings };
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+
+  if (!responsive || typeof responsive !== "object" || device === "desktop") {
+    return effective;
+  }
+
+  const tabletOverrides = responsive.tablet;
+  const mobileOverrides = responsive.mobile;
+
+  if (device === "tablet") {
+    if (tabletOverrides && typeof tabletOverrides === "object") {
+      Object.entries(tabletOverrides).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          effective[k] = v;
+        }
+      });
+    }
+  } else if (device === "mobile") {
+    // Mobile inherits from tablet overrides if present
+    if (tabletOverrides && typeof tabletOverrides === "object") {
+      Object.entries(tabletOverrides).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          effective[k] = v;
+        }
+      });
+    }
+    // Mobile overrides take final precedence
+    if (mobileOverrides && typeof mobileOverrides === "object") {
+      Object.entries(mobileOverrides).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          effective[k] = v;
+        }
+      });
+    }
+  }
+
+  return effective;
+}
 
 /**
  * Converts Arabic-Indic numerals (٠١٢٣٤٥٦٧٨٩) to standard Latin digits (0-9).
@@ -129,79 +261,98 @@ export function resolveBorderRadius(value: any): string | undefined {
 /**
  * Computes the unified CSS style object for a storefront section.
  * Used in both StudioSortableSection (canvas) and StorefrontSectionFrame (live storefront).
+ * Supports optional deviceMode for responsive overrides resolution.
  */
 export function buildSectionStyle(
   settings?: Record<string, any> | null,
-  baseStyle?: React.CSSProperties
+  baseStyle?: React.CSSProperties,
+  deviceMode?: StorefrontBreakpoint | "desktop" | "tablet" | "mobile"
 ): React.CSSProperties {
   if (!settings) return baseStyle || {};
 
+  const effective = deviceMode ? resolveEffectiveSectionSettings(settings, deviceMode) : settings;
   const style: React.CSSProperties = { ...(baseStyle || {}) };
 
   // 1. Free Padding
-  if (settings.paddingTop !== undefined && settings.paddingTop !== null) {
-    style.paddingTop = `${parseFreeNumber(settings.paddingTop)}px`;
-  } else if (settings.padding !== undefined && settings.padding !== null) {
-    style.paddingTop = `${parseFreeNumber(settings.padding)}px`;
+  if (effective.paddingTop !== undefined && effective.paddingTop !== null) {
+    style.paddingTop = `${parseFreeNumber(effective.paddingTop)}px`;
+  } else if (effective.padding !== undefined && effective.padding !== null) {
+    style.paddingTop = `${parseFreeNumber(effective.padding)}px`;
   }
 
-  if (settings.paddingBottom !== undefined && settings.paddingBottom !== null) {
-    style.paddingBottom = `${parseFreeNumber(settings.paddingBottom)}px`;
-  } else if (settings.padding !== undefined && settings.padding !== null) {
-    style.paddingBottom = `${parseFreeNumber(settings.padding)}px`;
+  if (effective.paddingBottom !== undefined && effective.paddingBottom !== null) {
+    style.paddingBottom = `${parseFreeNumber(effective.paddingBottom)}px`;
+  } else if (effective.padding !== undefined && effective.padding !== null) {
+    style.paddingBottom = `${parseFreeNumber(effective.padding)}px`;
   }
 
-  if (settings.paddingRight !== undefined && settings.paddingRight !== null) {
-    style.paddingRight = `${parseFreeNumber(settings.paddingRight)}px`;
-  } else if (settings.padding !== undefined && settings.padding !== null) {
-    style.paddingRight = `${parseFreeNumber(settings.padding)}px`;
+  if (effective.paddingRight !== undefined && effective.paddingRight !== null) {
+    style.paddingRight = `${parseFreeNumber(effective.paddingRight)}px`;
+  } else if (effective.padding !== undefined && effective.padding !== null) {
+    style.paddingRight = `${parseFreeNumber(effective.padding)}px`;
   }
 
-  if (settings.paddingLeft !== undefined && settings.paddingLeft !== null) {
-    style.paddingLeft = `${parseFreeNumber(settings.paddingLeft)}px`;
-  } else if (settings.padding !== undefined && settings.padding !== null) {
-    style.paddingLeft = `${parseFreeNumber(settings.padding)}px`;
+  if (effective.paddingLeft !== undefined && effective.paddingLeft !== null) {
+    style.paddingLeft = `${parseFreeNumber(effective.paddingLeft)}px`;
+  } else if (effective.padding !== undefined && effective.padding !== null) {
+    style.paddingLeft = `${parseFreeNumber(effective.padding)}px`;
   }
 
   // 2. Free Margin
-  if (settings.marginTop !== undefined && settings.marginTop !== null) {
-    style.marginTop = `${parseFreeNumber(settings.marginTop)}px`;
+  if (effective.marginTop !== undefined && effective.marginTop !== null) {
+    style.marginTop = `${parseFreeNumber(effective.marginTop)}px`;
   }
-  if (settings.marginBottom !== undefined && settings.marginBottom !== null) {
-    style.marginBottom = `${parseFreeNumber(settings.marginBottom)}px`;
+  if (effective.marginBottom !== undefined && effective.marginBottom !== null) {
+    style.marginBottom = `${parseFreeNumber(effective.marginBottom)}px`;
   }
 
   // 3. Free Min-Height
-  if (settings.minHeight !== undefined && settings.minHeight !== null) {
-    const minH = parseFreeNumber(settings.minHeight);
+  if (effective.minHeight !== undefined && effective.minHeight !== null) {
+    const minH = parseFreeNumber(effective.minHeight);
     if (minH > 0) {
       style.minHeight = `${minH}px`;
     }
   }
 
   // 4. Border Radius
-  const radius = resolveBorderRadius(settings.borderRadius);
+  const radius = resolveBorderRadius(effective.borderRadius);
   if (radius !== undefined) {
     style.borderRadius = radius;
   }
 
   // 5. Box Shadow
-  const shadow = buildBoxShadowString(settings);
+  const shadow = buildBoxShadowString(effective);
   if (shadow && shadow !== "none") {
     style.boxShadow = shadow;
   }
 
   // 6. Background Color
-  const bg = settings.backgroundColor || settings.bgColor;
+  const bg = effective.backgroundColor || effective.bgColor;
   if (bg && typeof bg === "string" && bg !== "transparent") {
     style.backgroundColor = bg;
   }
 
   // 7. Gap (for grid/flex layouts)
-  if (settings.gap !== undefined && settings.gap !== null) {
-    const gapNum = parseFreeNumber(settings.gap);
+  if (effective.gap !== undefined && effective.gap !== null) {
+    const gapNum = parseFreeNumber(effective.gap);
     if (gapNum > 0) {
       style.gap = `${gapNum}px`;
+    }
+  }
+
+  // 8. Typography / Font Size
+  if (effective.fontSize !== undefined && effective.fontSize !== null) {
+    const fSize = parseFreeNumber(effective.fontSize);
+    if (fSize > 0) {
+      style.fontSize = `${fSize}px`;
+    }
+  }
+
+  // 9. Text Alignment
+  if (effective.align || effective.textAlign) {
+    const alignVal = effective.align || effective.textAlign;
+    if (alignVal === "center" || alignVal === "right" || alignVal === "left" || alignVal === "justify") {
+      style.textAlign = alignVal as React.CSSProperties["textAlign"];
     }
   }
 

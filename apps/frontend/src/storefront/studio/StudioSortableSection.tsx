@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { GripDotsIcon } from "./StudioLayersDrawer";
 import type { StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
-import { buildSectionStyle } from "./utils/studioStyleUtils";
+import { buildSectionStyle, resolveEffectiveSectionSettings, hasDeviceOverrides } from "./utils/studioStyleUtils";
 import { StudioSpacingOverlay } from "./StudioSpacingOverlay";
 
 export function detectElementUnderCursor(target: HTMLElement, sectionSettings?: Record<string, any>) {
@@ -206,12 +206,17 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     originalText: string;
   } | null>(null);
 
+  const effectiveSettings = resolveEffectiveSectionSettings(settings, deviceMode);
+  const hasActiveDeviceOverrides =
+    deviceMode !== "desktop" &&
+    hasDeviceOverrides(settings, deviceMode as "mobile" | "tablet");
+
   const resolvedPadding =
     actualPadding ??
-    settings?.padding ??
-    settings?.paddingTop ??
-    settings?.paddingBlock ??
-    settings?.sectionPadding;
+    effectiveSettings.padding ??
+    effectiveSettings.paddingTop ??
+    effectiveSettings.paddingBlock ??
+    effectiveSettings.sectionPadding;
   const {
     attributes,
     listeners,
@@ -242,7 +247,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     position: "relative",
   };
 
-  const resolvedStyle = buildSectionStyle(settings, style);
+  const resolvedStyle = buildSectionStyle(settings, style, deviceMode);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -451,6 +456,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       data-section-type={sectionType}
       data-is-hidden={hidden ? "true" : "false"}
       data-is-locked={locked ? "true" : "false"}
+      data-device-mode={deviceMode}
+      data-has-responsive-overrides={hasActiveDeviceOverrides ? "true" : undefined}
       onClick={handleSectionClick}
       onDoubleClick={handleSectionDoubleClick}
       onDragOver={(e) => {
@@ -558,7 +565,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           {/* Section Indicator Badge with Breadcrumb */}
           <div
             data-studio-badge="true"
-            className="absolute -top-7 end-2 sm:end-4 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none"
+            className="absolute -top-7 end-2 sm:end-4 z-40 flex items-center gap-1.5 rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none"
           >
             <span>
               #{index + 1} {sectionLabel}
@@ -566,6 +573,11 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
                 ? ` › ${selectedElement.label}`
                 : ""}
             </span>
+            {hasActiveDeviceOverrides && (
+              <span className="rounded bg-white/20 px-1 py-0.2 text-[9px] font-bold">
+                {deviceMode === "mobile" ? "📱 جوال مخصص" : "💻 تابلت مخصص"}
+              </span>
+            )}
           </div>
 
           {/* Floating Action Bar (fbtool) */}
@@ -672,7 +684,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           {/* Real Spacing Overlay (Padding / Margin) */}
           {showSpacingOverlay && (
             <StudioSpacingOverlay
-              settings={settings}
+              settings={effectiveSettings}
               sectionLabel={sectionLabel}
               onUpdateField={onUpdateField}
               onBatchUpdateFields={onBatchUpdateFields}

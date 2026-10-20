@@ -16,6 +16,7 @@ import { StudioInspectorDesignTab } from "./inspector/StudioInspectorDesignTab";
 import { StudioInspectorLayoutTab } from "./inspector/StudioInspectorLayoutTab";
 import { StudioInspectorContentTab } from "./inspector/StudioInspectorContentTab";
 import { StudioInspectorAiTab } from "./inspector/StudioInspectorAiTab";
+import { resolveEffectiveSectionSettings, hasDeviceOverrides, getDeviceOverridesCount } from "./utils/studioStyleUtils";
 
 interface StudioPropertyInspectorProps {
   selectedSectionKey: string;
@@ -27,6 +28,7 @@ interface StudioPropertyInspectorProps {
   onClose: () => void;
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
+  onResetDeviceOverrides?: (device: "mobile" | "tablet") => void;
   onOpenImagePicker?: () => void;
   onSwitchDevice?: (device: StudioDeviceMode) => void;
   onSave?: () => void;
@@ -42,6 +44,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   onClose,
   onUpdateField,
   onBatchUpdateFields,
+  onResetDeviceOverrides,
   onOpenImagePicker,
   onSwitchDevice = () => {},
   onSave,
@@ -82,6 +85,15 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
     typeof sectionConfig === "object" && sectionConfig !== null
       ? { ...(sectionConfig.settings || {}), ...sectionConfig }
       : {};
+
+  const effectiveSettings = resolveEffectiveSectionSettings(settings, deviceMode);
+  const hasCurrentDeviceOverrides =
+    deviceMode !== "desktop" &&
+    hasDeviceOverrides(settings, deviceMode as "mobile" | "tablet");
+  const currentDeviceOverridesCount =
+    deviceMode !== "desktop"
+      ? getDeviceOverridesCount(settings, deviceMode as "mobile" | "tablet")
+      : 0;
 
   const tabs: Array<{
     id: StudioInspectorTab;
@@ -134,6 +146,53 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
           <XMarkIcon className="h-4 w-4" />
         </button>
       </div>
+
+      {/* 1.5. Device Awareness Banner (Ticket 2G) */}
+      {deviceMode !== "desktop" && (
+        <div
+          data-studio-device-banner="true"
+          className="mx-3.5 mt-2.5 rounded-lg border border-blue-200 bg-blue-50/90 p-2 text-start text-[11px] select-none shadow-xs"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-blue-900">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] text-white">
+                {deviceMode === "mobile" ? "📱" : "💻"}
+              </span>
+              <span>
+                تعديل {deviceMode === "mobile" ? "الجوال (375px)" : "التابلت (768px)"}
+              </span>
+            </div>
+            {hasCurrentDeviceOverrides ? (
+              <span
+                data-studio-override-badge="true"
+                className="rounded bg-blue-600 px-1.5 py-0.2 text-[9px] font-bold text-white shadow-xs"
+              >
+                {currentDeviceOverridesCount} overrides نشطة
+              </span>
+            ) : (
+              <span className="text-[9.5px] text-blue-700/80 font-medium">
+                يرث من الديسكتوب
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[10px] leading-tight text-blue-700">
+            التعديلات تُحفظ كـ Overrides لجهاز {deviceMode === "mobile" ? "الجوال" : "التابلت"} فقط ولا تؤثر على سطح المكتب.
+          </p>
+          {hasCurrentDeviceOverrides && (
+            <div className="mt-1.5 flex items-center justify-between border-t border-blue-200/60 pt-1.5">
+              <span className="text-[9.5px] text-blue-800">تخصيصات مخصصة للجهاز</span>
+              <button
+                type="button"
+                data-action="reset-device-overrides"
+                onClick={() => onResetDeviceOverrides?.(deviceMode as "mobile" | "tablet")}
+                className="text-[9.5px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+              >
+                تصفير قيم {deviceMode === "mobile" ? "الجوال" : "التابلت"} (العودة للوراثة)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Top Tabs (Wix Studio 4 tabs) */}
       <div className="flex border-b border-[#eeeef0] bg-[#fafbfc]">
@@ -428,7 +487,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
             {(activeTab === "design" || activeTab === "style") && (
               <StudioInspectorDesignTab
                 sectionType={sectionType}
-                settings={settings}
+                settings={effectiveSettings}
                 deviceMode={deviceMode}
                 onUpdateField={onUpdateField}
                 onBatchUpdateFields={onBatchUpdateFields}
@@ -437,7 +496,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
 
             {activeTab === "layout" && (
               <StudioInspectorLayoutTab
-                settings={settings}
+                settings={effectiveSettings}
                 onUpdateField={onUpdateField}
                 onBatchUpdateFields={onBatchUpdateFields}
               />
@@ -456,8 +515,10 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
               <StudioInspectorAiTab
                 sectionType={sectionType}
                 settings={settings}
+                deviceMode={deviceMode}
                 onUpdateField={onUpdateField}
                 onBatchUpdateFields={onBatchUpdateFields}
+                onResetDeviceOverrides={onResetDeviceOverrides}
                 onSwitchDevice={onSwitchDevice}
               />
             )}
