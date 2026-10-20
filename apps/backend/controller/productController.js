@@ -949,7 +949,7 @@ const createNewCategory = async (req, res) => {
         image: image || null,
         parentId: parentCheck.value,
         isActive: parseMultipartBoolean(isActive, true),
-        sortOrder: sortOrder || 0,
+        sortOrder: Number.isFinite(parseInt(sortOrder, 10)) ? parseInt(sortOrder, 10) : 0,
         displayType: displayType || 'default',
         metaTitle: metaTitle?.trim() || null,
         metaDescription: metaDescription?.trim() || null,
@@ -965,9 +965,10 @@ const createNewCategory = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [server] Error creating category:', error);
+    const rawMessage = String(error?.message || '');
     res.status(500).json({
       success: false,
-      error: error.message
+      error: /prisma/i.test(rawMessage) ? 'تعذر إنشاء الفئة. راجع البيانات وحاول تاني.' : rawMessage
     });
   }
 };
@@ -1087,9 +1088,61 @@ const updateCategory = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [server] Error updating category:', error);
+    const rawMessage = String(error?.message || '');
     res.status(500).json({
       success: false,
-      error: error.message
+      error: /prisma/i.test(rawMessage) ? 'تعذر حفظ الفئة. راجع البيانات وحاول تاني.' : rawMessage
+    });
+  }
+};
+
+const moveCategoryProducts = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'معرف الشركة مطلوب للوصول لهذا المورد',
+        code: 'COMPANY_ID_REQUIRED'
+      });
+    }
+
+    const { id } = req.params;
+    const targetCategoryId = req.body?.targetCategoryId || null;
+    const prisma = getSharedPrismaClient();
+
+    const sourceCategory = await prisma.category.findFirst({ where: { id, companyId } });
+    if (!sourceCategory) {
+      return res.status(404).json({ success: false, error: 'الفئة غير موجودة' });
+    }
+
+    if (targetCategoryId) {
+      if (targetCategoryId === id) {
+        return res.status(400).json({ success: false, error: 'اختار فئة مختلفة عن الفئة الحالية' });
+      }
+      const targetCategory = await prisma.category.findFirst({
+        where: { id: targetCategoryId, companyId }
+      });
+      if (!targetCategory) {
+        return res.status(400).json({ success: false, error: 'الفئة الهدف غير موجودة في شركتك' });
+      }
+    }
+
+    const result = await prisma.product.updateMany({
+      where: { categoryId: id, companyId },
+      data: { categoryId: targetCategoryId }
+    });
+
+    res.json({
+      success: true,
+      data: { moved: result.count, targetCategoryId }
+    });
+  } catch (error) {
+    console.error('❌ [server] Error moving category products:', error);
+    const rawMessage = String(error?.message || '');
+    res.status(500).json({
+      success: false,
+      error: /prisma/i.test(rawMessage) ? 'تعذر نقل المنتجات. حاول تاني.' : rawMessage
     });
   }
 };
@@ -4196,6 +4249,7 @@ module.exports = {
   getCategory,
   createNewCategory,
   updateCategory,
+  moveCategoryProducts,
   deleteCategory,
   getSingleProduct,
   updateSingleProduct,

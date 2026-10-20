@@ -13,12 +13,15 @@ import {
   FolderTree,
   ListTree,
   Table2,
+  Power,
+  ArrowRightLeft,
 } from "lucide-react";
 import { getDirection } from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { getImageUrl } from "../../utils/imageUrl";
 import type { AxiosError } from "axios";
 import { CategoryFormModal } from "../../components/category/CategoryFormModal";
+import MoveProductsModal from "../../components/category/MoveProductsModal";
 import CategoryTree from "../../components/category/CategoryTree";
 import type { ManagedCategory } from "../../components/category/types";
 
@@ -36,6 +39,8 @@ const Categories: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"list" | "tree">("list");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [movingCategory, setMovingCategory] = useState<Category | null>(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,13 +84,19 @@ const Categories: React.FC = () => {
     setSearchQuery(e.target.value);
   };
 
-  const filteredCategories = categories.filter(
-    (cat) =>
-      cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cat.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cat.description &&
-        cat.description.toLowerCase().includes(searchQuery.toLowerCase())),
-  );
+  const filteredCategories = categories
+    .filter((cat) => {
+      if (statusFilter === "active") return cat.isActive;
+      if (statusFilter === "inactive") return !cat.isActive;
+      return true;
+    })
+    .filter(
+      (cat) =>
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (cat.description &&
+          cat.description.toLowerCase().includes(searchQuery.toLowerCase())),
+    );
 
   const parentNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -127,6 +138,23 @@ const Categories: React.FC = () => {
 
   const handleSaved = () => {
     fetchCategories();
+  };
+
+  const handleToggleActive = async (category: Category) => {
+    try {
+      const formData = new FormData();
+      formData.append("isActive", String(!category.isActive));
+      await apiClient.put(`/products/categories/${category.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      fetchCategories();
+    } catch (err) {
+      console.error("Error toggling category:", err);
+      alert(
+        getApiErrorMessage(err) ||
+          (t("categories.management.form.errors.actionFailed") as string),
+      );
+    }
   };
 
   const handleDelete = async (category: Category) => {
@@ -275,6 +303,33 @@ const Categories: React.FC = () => {
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          {(
+            [
+              { key: "all", label: t("categories.management.filter.all") },
+              { key: "active", label: t("categories.management.filter.active") },
+              { key: "inactive", label: t("categories.management.filter.inactive") },
+            ] as const
+          ).map((chip) => {
+            const isActiveChip = statusFilter === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setStatusFilter(chip.key)}
+                aria-pressed={isActiveChip}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                  isActiveChip
+                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                    : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Content Area */}
@@ -321,9 +376,12 @@ const Categories: React.FC = () => {
           <CategoryTree
             categories={categories}
             searchQuery={searchQuery}
+            statusFilter={statusFilter}
             onEdit={(category) => handleOpenModal(category)}
             onAddChild={(parent) => handleOpenModal(null, parent.id)}
             onDelete={(category) => handleDelete(category)}
+            onToggleActive={(category) => handleToggleActive(category)}
+            onMoveProducts={(category) => setMovingCategory(category)}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -434,6 +492,37 @@ const Categories: React.FC = () => {
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
+                          onClick={() => handleToggleActive(cat)}
+                          title={
+                            (cat.isActive
+                              ? t("categories.management.actions.deactivate")
+                              : t("categories.management.actions.activate")) as string
+                          }
+                          aria-label={
+                            (cat.isActive
+                              ? t("categories.management.actions.deactivate")
+                              : t("categories.management.actions.activate")) as string
+                          }
+                          className={`p-1.5 rounded-md transition-all active:scale-[0.94] ${
+                            cat.isActive
+                              ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          }`}
+                        >
+                          <Power className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMovingCategory(cat)}
+                          disabled={(cat._count?.products || 0) === 0}
+                          title={t("categories.management.actions.moveProducts") as string}
+                          aria-label={t("categories.management.actions.moveProducts") as string}
+                          className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.94] transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenModal(null, cat.id)}
                           title={t("categories.management.tree.addChild") as string}
                           aria-label={t("categories.management.tree.addChild") as string}
@@ -477,6 +566,14 @@ const Categories: React.FC = () => {
         defaultParentId={defaultParentId}
         onClose={handleCloseModal}
         onSaved={handleSaved}
+      />
+
+      <MoveProductsModal
+        open={Boolean(movingCategory)}
+        sourceCategory={movingCategory}
+        categories={categories}
+        onClose={() => setMovingCategory(null)}
+        onMoved={handleSaved}
       />
     </div>
   );

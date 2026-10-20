@@ -62,6 +62,7 @@ router.get('/categories', verifyToken.authenticateToken, requireDbPermission('pr
 router.post('/categories', verifyToken.authenticateToken, requireDbPermission('products.create'), upload.single('image'), productController.createNewCategory);
 router.put('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.single('image'), productController.updateCategory);
 router.delete('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteCategory);
+router.post('/categories/:id/move-products', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.moveCategoryProducts);
 router.post('/visual-search', verifyToken.authenticateToken, requireDbPermission('products.view'), upload.single('image'), productController.visualSearchProduct);
 router.post('/:id/duplicate', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.duplicateProduct);
 router.get('/:id/volume-discounts', verifyToken.authenticateToken, requireDbPermission('products.view'), volumeDiscountController.getVolumeDiscounts);

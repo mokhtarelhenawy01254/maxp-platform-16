@@ -9,6 +9,8 @@ import {
   Layers,
   Pencil,
   Plus,
+  Power,
+  ArrowRightLeft,
   Trash2,
 } from "lucide-react";
 import { getDirection } from "../../i18n";
@@ -19,9 +21,12 @@ import { buildCategoryTree, type CategoryTreeNode } from "./categoryTreeUtils";
 interface CategoryTreeProps {
   categories: ManagedCategory[];
   searchQuery: string;
+  statusFilter?: "all" | "active" | "inactive";
   onEdit: (category: ManagedCategory) => void;
   onAddChild: (parent: ManagedCategory) => void;
   onDelete: (category: ManagedCategory) => void;
+  onToggleActive?: (category: ManagedCategory) => void;
+  onMoveProducts?: (category: ManagedCategory) => void;
 }
 
 const matchesQuery = (category: ManagedCategory, query: string): boolean => {
@@ -38,9 +43,12 @@ const matchesQuery = (category: ManagedCategory, query: string): boolean => {
 const CategoryTree: React.FC<CategoryTreeProps> = ({
   categories,
   searchQuery,
+  statusFilter = "all",
   onEdit,
   onAddChild,
   onDelete,
+  onToggleActive,
+  onMoveProducts,
 }) => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language?.startsWith("en");
@@ -77,6 +85,27 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
 
     return { visibleIds: visible, ancestorIds: ancestors };
   }, [categories, searchQuery, searching]);
+
+  const statusVisibleIds = useMemo(() => {
+    if (statusFilter === "all") return null;
+    const byId = new Map<string, ManagedCategory>();
+    categories.forEach((category) => byId.set(category.id, category));
+    const visible = new Set<string>();
+    categories.forEach((category) => {
+      const matches =
+        statusFilter === "active" ? category.isActive : !category.isActive;
+      if (!matches) return;
+      visible.add(category.id);
+      let parentId = category.parentId;
+      let guard = 0;
+      while (parentId && guard < 100) {
+        visible.add(parentId);
+        parentId = byId.get(parentId)?.parentId || null;
+        guard += 1;
+      }
+    });
+    return visible;
+  }, [categories, statusFilter]);
 
   const isOpen = useCallback(
     (node: CategoryTreeNode): boolean => {
@@ -116,6 +145,7 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
 
   const renderNode = (node: CategoryTreeNode, depth: number): React.ReactNode => {
     if (visibleIds && !visibleIds.has(node.id)) return null;
+    if (statusVisibleIds && !statusVisibleIds.has(node.id)) return null;
 
     const hasChildren = node.children.length > 0;
     const open = isOpen(node);
@@ -187,6 +217,41 @@ const CategoryTree: React.FC<CategoryTreeProps> = ({
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5 opacity-70 sm:opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            {onToggleActive && (
+              <button
+                type="button"
+                onClick={() => onToggleActive(node)}
+                title={
+                  (node.isActive
+                    ? t("categories.management.actions.deactivate")
+                    : t("categories.management.actions.activate")) as string
+                }
+                aria-label={
+                  (node.isActive
+                    ? t("categories.management.actions.deactivate")
+                    : t("categories.management.actions.activate")) as string
+                }
+                className={`p-1.5 rounded-md transition-colors ${
+                  node.isActive
+                    ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                    : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <Power className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onMoveProducts && (
+              <button
+                type="button"
+                onClick={() => onMoveProducts(node)}
+                disabled={productCount === 0}
+                title={t("categories.management.actions.moveProducts") as string}
+                aria-label={t("categories.management.actions.moveProducts") as string}
+                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ArrowRightLeft className="h-3.5 w-3.5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onAddChild(node)}

@@ -86,6 +86,23 @@
       "hasSubcategories": "Cannot delete category because it has subcategories",
       "moveFirst": "Move its products to another category first, then delete it.",
       "reparentFirst": "Move its subcategories to another parent first, then delete it."
+    },
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "activate": "Activate category",
+      "deactivate": "Deactivate category",
+      "moveProducts": "Move category products"
+    },
+    "move": {
+      "title": "Move category products",
+      "description": "All products of \"{{name}}\" ({{count}}) will be moved to the category you pick.",
+      "target": "Target category",
+      "noCategory": "No category (remove classification)",
+      "submit": "Move products"
     }
   }
 }

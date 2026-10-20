@@ -494,6 +494,8 @@
 }
 
 .form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
 .form-group textarea {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -501,9 +503,12 @@
   border-radius: 0.5rem;
   font-size: 1rem; /* ≥16px — prevents iOS auto-zoom */
   transition: all 0.2s;
+  background-color: #fff;
+  color: inherit;
 }
 
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #2563eb;
@@ -578,6 +583,16 @@ input:checked+.slider:before {
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 2rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 0.75rem 0;
+  background: #fff;
+  box-shadow: 0 -8px 12px -10px rgba(0, 0, 0, 0.35);
+}
+
+.dark .modal-actions {
+  background: #1e293b;
 }
 
 [dir="rtl"] .modal-actions {
@@ -985,6 +1000,8 @@ input:checked+.slider:before {
 }
 
 .dark .form-group input[type="text"],
+.dark .form-group input[type="number"],
+.dark .form-group select,
 .dark .form-group textarea {
   background-color: #0f172a;
   border-color: #334155;
@@ -992,6 +1009,7 @@ input:checked+.slider:before {
 }
 
 .dark .form-group input:focus,
+.dark .form-group select:focus,
 .dark .form-group textarea:focus {
   border-color: #3b82f6;
 }

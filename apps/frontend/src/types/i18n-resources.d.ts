@@ -16550,6 +16550,23 @@ declare module 'react-i18next' {
             moveFirst: string;
             reparentFirst: string;
           };
+          filter: {
+            all: string;
+            active: string;
+            inactive: string;
+          };
+          actions: {
+            activate: string;
+            deactivate: string;
+            moveProducts: string;
+          };
+          move: {
+            title: string;
+            description: string;
+            target: string;
+            noCategory: string;
+            submit: string;
+          };
         };
       };
       categoriesAnalytics: {
