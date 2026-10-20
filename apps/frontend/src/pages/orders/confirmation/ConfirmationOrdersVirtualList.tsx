@@ -122,15 +122,15 @@ export const ConfirmationOrdersVirtualList: React.FC<ConfirmationOrdersVirtualLi
                     formatDate={formatDate}
                     formatPrice={formatPrice}
                     strategyLabelMap={strategyLabelMap}
-                    onAssignChange={handleAssignChange}
-                    onAssign={handleAssign}
-                    onConfirm={handleConfirm}
-                    onCancel={handleCancel}
-                    onLogCall={handleLogCall}
+                    onAssignChange={onAssignChange}
+                    onAssign={onAssign}
+                    onConfirm={onConfirm}
+                    onCancel={onCancel}
+                    onLogCall={onLogCall}
                     onPostpone={onPostpone}
-                    onToggleSelect={handleToggleSelect}
-                    onPrintSlip={handlePrintSlip}
-                    onPrintInvoice={handlePrintInvoice}
+                    onToggleSelect={onToggleSelect}
+                    onPrintSlip={onPrintSlip}
+                    onPrintInvoice={onPrintInvoice}
                   />
                 </div>
               );

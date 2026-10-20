@@ -16,6 +16,20 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: ({ count }: any) => ({
+    getTotalSize: () => count * 170,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        start: index * 170,
+        size: 170,
+        key: String(index),
+      })),
+    measureElement: () => {},
+  }),
+}));
+
 afterEach(() => {
   cleanup();
 });
@@ -157,5 +171,48 @@ describe("ConfirmationOrdersVirtualList", () => {
 
     expect(screen.getByText("كل شيء تحت السيطرة")).toBeInTheDocument();
     expect(screen.getByText("لا توجد طلبات تحتاج إلى تأكيد حالياً")).toBeInTheDocument();
+  });
+
+  it("renders order row and binds actions when orders are present", () => {
+    const dummyOrder: ConfirmationOrder = {
+      id: "ord-test-1",
+      orderNumber: "ORD-9999",
+      customerName: "عميل تجريبي",
+      total: 350,
+      status: "pending",
+      sourceType: "storefront",
+      createdAt: "2026-10-20T10:00:00Z",
+    };
+
+    render(
+      <MemoryRouter>
+        <ConfirmationOrdersVirtualList
+          orders={[dummyOrder]}
+          loading={false}
+          settings={{ enabled: true }}
+          assignSelections={{}}
+          eligibleUsers={[]}
+          assigningId={null}
+          cancellingId={null}
+          callingId={null}
+          selectedOrderIds={[]}
+          formatDate={() => "2026-10-20"}
+          formatPrice={(p) => `${p} EGP`}
+          strategyLabelMap={{}}
+          onAssignChange={vi.fn()}
+          onAssign={vi.fn()}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+          onLogCall={vi.fn()}
+          onPostpone={vi.fn()}
+          onToggleSelect={vi.fn()}
+          onPrintSlip={vi.fn()}
+          onPrintInvoice={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("عميل تجريبي")).toBeInTheDocument();
+    expect(screen.getByText("ORD-9999")).toBeInTheDocument();
   });
 });

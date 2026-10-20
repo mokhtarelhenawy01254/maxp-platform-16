@@ -6,6 +6,12 @@ import OrderReturnCard from "./components/OrderReturnCard";
 import { OrderDetailsModalsHost } from "./components/OrderDetailsModalsHost";
 import { OrderDetailsNotFound } from "./components/OrderDetailsNotFound";
 import { useOrderDetailsController } from "./hooks/useOrderDetailsController";
+import {
+  isCancellationStatus,
+  getLatestCancellationReason,
+} from "./hooks/useOrderStatusOperations";
+
+export { isCancellationStatus, getLatestCancellationReason };
 
 export const OrderDetails: React.FC = () => {
   const {
