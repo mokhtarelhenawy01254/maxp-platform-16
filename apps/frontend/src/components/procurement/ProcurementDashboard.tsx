@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ShoppingCart, Receipt, CreditCard, Users } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
@@ -46,8 +47,12 @@ const StatCard: React.FC<{
   value: string | number;
   icon: React.ReactNode;
   color: string;
-}> = ({ title, value, icon, color }) => (
-  <Card>
+  onClick?: () => void;
+}> = ({ title, value, icon, color, onClick }) => (
+  <Card
+    onClick={onClick}
+    className={onClick ? "cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" : ""}
+  >
     <CardContent>
       <div className="flex items-center justify-between">
         <div>
@@ -67,6 +72,7 @@ const StatCard: React.FC<{
 
 const ProcurementDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -104,41 +110,54 @@ const ProcurementDashboard: React.FC = () => {
           value={summary.totalSuppliers ?? 0}
           icon={<Users />}
           color="#1976d2"
+          onClick={() => navigate("/procurement/suppliers")}
         />
         <StatCard
           title={t("procurement.dashboard.purchaseOrders")}
           value={summary.totalPurchaseOrders ?? 0}
           icon={<ShoppingCart />}
           color="#2e7d32"
+          onClick={() => navigate("/procurement/purchase-orders")}
         />
         <StatCard
           title={t("procurement.dashboard.pendingInvoices")}
           value={summary.pendingInvoices ?? 0}
           icon={<Receipt />}
           color="#ed6c02"
+          onClick={() => navigate("/procurement/purchase-invoices?status=PENDING")}
         />
         <StatCard
           title={t("procurement.dashboard.totalPayments")}
           value={summary.totalPayments ?? 0}
           icon={<CreditCard />}
           color="#9c27b0"
+          onClick={() => navigate("/procurement/supplier-payments")}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-3">
-        <Card>
+        <Card
+          onClick={() => navigate("/procurement/reports?tab=orders")}
+          className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+        >
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPurchases")}</h3>
             {fmtMoney(summary.totalPurchaseAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => navigate("/procurement/reports?tab=payments")}
+          className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+        >
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPaid")}</h3>
             {fmtMoney(summary.totalPaidAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => navigate("/procurement/reports?tab=aging")}
+          className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+        >
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.pendingAmount")}</h3>
             {fmtMoney(summary.totalPendingAmount)} {t("dashboard.egp")}
@@ -161,11 +180,15 @@ const ProcurementDashboard: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {(data.topSuppliers ?? []).map((supplier) => (
-                  <TableRow key={supplier.id}>
-                    <TableCell>{supplier.name || "—"}</TableCell>
-                    <TableCell className="text-right">{supplier._count?.purchaseOrders ?? 0}</TableCell>
-                    <TableCell className="text-right">{supplier._count?.purchaseInvoices ?? 0}</TableCell>
-                    <TableCell className="text-right">
+                  <TableRow
+                    key={supplier.id}
+                    onClick={() => navigate(`/procurement/suppliers/${supplier.id}`)}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-medium text-primary">{supplier.name || "—"}</TableCell>
+                    <TableCell className="text-right tabular-nums">{supplier._count?.purchaseOrders ?? 0}</TableCell>
+                    <TableCell className="text-right tabular-nums">{supplier._count?.purchaseInvoices ?? 0}</TableCell>
+                    <TableCell className="text-right tabular-nums">
                       {fmtMoney(supplier.currentBalance)} {t("dashboard.egp")}
                     </TableCell>
                   </TableRow>
@@ -189,10 +212,14 @@ const ProcurementDashboard: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {(data.recentOrders ?? []).map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>{order.orderNumber}</TableCell>
+                  <TableRow
+                    key={order.id}
+                    onClick={() => navigate(`/procurement/purchase-orders/${order.id}`)}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-mono text-xs font-medium text-primary">{order.orderNumber}</TableCell>
                     <TableCell>{order.supplier?.name || "—"}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {fmtMoney(order.totalAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell>
@@ -222,19 +249,23 @@ const ProcurementDashboard: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {(data.recentInvoices ?? []).map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>{invoice.invoiceNumber}</TableCell>
+                  <TableRow
+                    key={invoice.id}
+                    onClick={() => navigate(`/procurement/purchase-invoices/${invoice.id}`)}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-mono text-xs font-medium text-primary">{invoice.invoiceNumber}</TableCell>
                     <TableCell>{invoice.supplier?.name || "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-xs tabular-nums">
                       {new Date(invoice.invoiceDate).toLocaleDateString(i18n.language)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {fmtMoney(invoice.totalAmount)} {t("dashboard.egp")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
                       {fmtMoney(invoice.paidAmount)} {t("dashboard.egp")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums font-semibold text-rose-500">
                       {fmtMoney(invoice.remainingAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell>

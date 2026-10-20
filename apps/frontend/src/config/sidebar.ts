@@ -453,6 +453,7 @@ export const getSidebarConfig = (
                     { to: '/procurement/purchase-orders', icon: FileText, label: t('sidebar.purchaseOrders') },
                     { to: '/procurement/purchase-invoices', icon: ClipboardCheck, label: t('sidebar.purchaseInvoices') },
                     { to: '/procurement/supplier-payments', icon: Banknote, label: t('sidebar.supplierPayments') },
+                    { to: '/procurement/reports', icon: FileBarChart, label: isEn ? 'Procurement Reports' : 'تقارير المشتريات' },
                 ],
                 hidden: !isAnyAppActive(['procurement-pro', 'store-pro']),
             },
@@ -872,6 +873,7 @@ export const getSidebarConfig = (
                 { to: '/procurement/purchase-orders', icon: FileText, label: t('sidebar.purchaseOrders') },
                 { to: '/procurement/purchase-invoices', icon: ClipboardCheck, label: t('sidebar.purchaseInvoices') },
                 { to: '/procurement/supplier-payments', icon: Banknote, label: t('sidebar.supplierPayments') },
+                { to: '/procurement/reports', icon: FileBarChart, label: isEn ? 'Procurement Reports' : 'تقارير المشتريات' },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro'])

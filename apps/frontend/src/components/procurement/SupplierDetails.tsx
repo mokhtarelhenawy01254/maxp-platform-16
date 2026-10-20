@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Building2, Phone, Mail, MapPin, 
-  CreditCard, Calendar, Clock, PlusCircle, AlertCircle, RefreshCw 
+  CreditCard, Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { Button } from '@/components/ui/button';
@@ -173,9 +173,76 @@ export default function SupplierDetails() {
   const { aging, statement } = supplier;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto supplier-details-container" dir="rtl">
+      {/* Print-specific style rules */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 15mm 10mm;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          header, nav, aside, [role="navigation"], .sidebar, button, .print\\:hidden {
+            display: none !important;
+          }
+          .supplier-details-container {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          th, td {
+            border: 1px solid #d1d5db !important;
+            padding: 6px 8px !important;
+            color: #000000 !important;
+          }
+          th {
+            background-color: #f3f4f6 !important;
+          }
+          tr {
+            page-break-inside: avoid;
+          }
+        }
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Printable Document Header */}
+      <div className="print-only border-b-2 border-black pb-4 mb-4 text-black">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">كشف حساب مورد: {supplier.name}</h1>
+            <div className="text-xs space-y-0.5 mt-1 text-gray-700">
+              {supplier.contactPerson && <div>المسؤول: {supplier.contactPerson}</div>}
+              {supplier.phone && <div>الهاتف: {supplier.phone}</div>}
+              {supplier.taxNumber && <div>الرقم الضريبي: {supplier.taxNumber}</div>}
+            </div>
+          </div>
+          <div className="text-left text-xs space-y-1">
+            <div>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</div>
+            <div className="font-semibold">الرصيد الافتتاحي: {(Number(supplier.openingBalance) || 0).toLocaleString()} ج.م</div>
+            <div className="font-bold text-sm">الرصيد الختامي: {(Number(supplier.currentBalance) || 0).toLocaleString()} ج.م</div>
+          </div>
+        </div>
+      </div>
+
       {/* Top Header & Breadcrumbs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4 print:hidden">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
@@ -198,7 +265,15 @@ export default function SupplierDetails() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={handleOpenPayment} className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()} 
+            className="gap-2 print:hidden"
+          >
+            <Printer className="size-4" />
+            طباعة كشف الحساب
+          </Button>
+          <Button onClick={handleOpenPayment} className="gap-2 print:hidden">
             <PlusCircle className="size-4" />
             تسجيل دفعة
           </Button>
@@ -296,9 +371,20 @@ export default function SupplierDetails() {
           <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
             <Calendar className="size-4" /> كشف الحساب الزمني (Running Balance)
           </h3>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {statement?.length || 0} حركة
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {statement?.length || 0} حركة
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="h-8 gap-1.5 text-xs print:hidden"
+            >
+              <Printer className="size-3.5" />
+              طباعة كشف الحساب
+            </Button>
+          </div>
         </div>
 
         <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
