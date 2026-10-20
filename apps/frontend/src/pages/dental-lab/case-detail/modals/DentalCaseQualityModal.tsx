@@ -104,3 +104,6 @@ export function DentalCaseQualityModal({
     </div>
   );
 }
+
+
+export default DentalCaseQualityModal;

@@ -154,3 +154,6 @@ export function DentalCaseRefabricationModal({
     </div>
   );
 }
+
+
+export default DentalCaseRefabricationModal;

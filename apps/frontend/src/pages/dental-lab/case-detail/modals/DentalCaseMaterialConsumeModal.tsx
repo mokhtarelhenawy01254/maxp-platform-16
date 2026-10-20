@@ -158,3 +158,6 @@ export function DentalCaseMaterialConsumeModal({
     </div>
   );
 }
+
+
+export default DentalCaseMaterialConsumeModal;

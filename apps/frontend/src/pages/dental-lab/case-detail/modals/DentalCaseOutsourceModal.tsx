@@ -193,3 +193,6 @@ export function DentalCaseOutsourceModal({
     </div>
   );
 }
+
+
+export default DentalCaseOutsourceModal;

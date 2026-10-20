@@ -122,3 +122,6 @@ export function DentalCasePaymentModal({
     </div>
   );
 }
+
+
+export default DentalCasePaymentModal;
