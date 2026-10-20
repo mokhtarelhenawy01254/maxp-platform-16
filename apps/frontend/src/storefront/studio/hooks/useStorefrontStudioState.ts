@@ -96,8 +96,8 @@ export function useStorefrontStudioState({
   const {
     state: currentDesignTokens,
     set: setDesignTokensWithHistory,
-    undo,
-    redo,
+    undo: rawUndo,
+    redo: rawRedo,
     canUndo,
     canRedo,
   } = useStudioHistory<Record<string, unknown>>(externalDesignTokens, {
@@ -105,12 +105,34 @@ export function useStorefrontStudioState({
     onChange,
   });
 
+  const currentDesignTokensRef = useRef(currentDesignTokens);
+  currentDesignTokensRef.current = currentDesignTokens;
+
   const handleDesignTokensChange = useCallback(
     (next: Record<string, unknown>) => {
+      currentDesignTokensRef.current = next;
       setDesignTokensWithHistory(next);
     },
     [setDesignTokensWithHistory]
   );
+
+  const handleUndo = useCallback(() => {
+    const prev = rawUndo();
+    if (prev !== undefined) {
+      currentDesignTokensRef.current = prev;
+      onSave();
+    }
+    return prev;
+  }, [rawUndo, onSave]);
+
+  const handleRedo = useCallback(() => {
+    const next = rawRedo();
+    if (next !== undefined) {
+      currentDesignTokensRef.current = next;
+      onSave();
+    }
+    return next;
+  }, [rawRedo, onSave]);
 
   // Keyboard Shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Y)
   useEffect(() => {
@@ -122,19 +144,19 @@ export function useStorefrontStudioState({
         } else if (e.key === "z" || e.key === "Z") {
           e.preventDefault();
           if (e.shiftKey) {
-            if (canRedo) redo();
+            if (canRedo) handleRedo();
           } else {
-            if (canUndo) undo();
+            if (canUndo) handleUndo();
           }
         } else if (e.key === "y" || e.key === "Y") {
           e.preventDefault();
-          if (canRedo) redo();
+          if (canRedo) handleRedo();
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave, undo, redo, canUndo, canRedo]);
+  }, [onSave, handleUndo, handleRedo, canUndo, canRedo]);
 
   const previewTheme = useMemo(() => {
     const baseTheme = STOREFRONT_THEME_PRESETS[themeId] || STOREFRONT_THEME_PRESETS["modern-minimal"];
@@ -361,13 +383,28 @@ export function useStorefrontStudioState({
     });
   };
 
-  const handleBatchUpdateSectionFields = useCallback(
-    (updates: Record<string, any>) => {
-      if (!selectedSectionKey) return;
+  const activeSectionsRef = useRef(activeSections);
+  activeSectionsRef.current = activeSections;
 
-      const nextSections = activeSections.map((s: any, idx: number) => {
+  const activePageConfigRef = useRef(activePageConfig);
+  activePageConfigRef.current = activePageConfig;
+
+  const activePageKeyRef = useRef(activePageKey);
+  activePageKeyRef.current = activePageKey;
+
+  const handleBatchUpdateSectionFields = useCallback(
+    (updates: Record<string, any>, targetSectionKey?: string) => {
+      const sectionKeyToUpdate = targetSectionKey || selectedSectionKey;
+      if (!sectionKeyToUpdate) return;
+
+      const currentTokens = currentDesignTokensRef.current;
+      const currentSections = activeSectionsRef.current;
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextSections = currentSections.map((s: any, idx: number) => {
         const key = getSectionKey(s, idx);
-        if (key !== selectedSectionKey) return s;
+        if (key !== sectionKeyToUpdate) return s;
 
         const base = typeof s === "string" ? { type: s } : { ...s };
         const baseSettings =
@@ -384,22 +421,27 @@ export function useStorefrontStudioState({
         };
       });
 
+      activeSectionsRef.current = nextSections;
+
       const nextPages = {
-        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
-        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
-        [activePageKey]: {
-          ...activePageConfig,
+        ...((currentTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
           sections: nextSections,
         },
       };
 
-      handleDesignTokensChange({
-        ...currentDesignTokens,
+      const nextTokens = {
+        ...currentTokens,
+        themeId,
         pages: nextPages,
         pageOverrides: nextPages,
-      });
+      };
+
+      handleDesignTokensChange(nextTokens);
     },
-    [selectedSectionKey, activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
+    [selectedSectionKey, themeId, handleDesignTokensChange]
   );
 
   const handleUpdateSectionField = useCallback(
@@ -422,8 +464,8 @@ export function useStorefrontStudioState({
     selectedSectionConfig,
     canUndo,
     canRedo,
-    undo,
-    redo,
+    undo: handleUndo,
+    redo: handleRedo,
     handleDesignTokensChange,
     handleDragEnd,
     handleMoveSection,

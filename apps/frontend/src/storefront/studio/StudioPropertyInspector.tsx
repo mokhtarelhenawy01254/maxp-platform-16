@@ -203,9 +203,19 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                     type="text"
                     value={settings.ctaText ?? settings.buttonText ?? selectedElement.currentText ?? ""}
                     onChange={(e) => {
-                      onUpdateField("ctaText", e.target.value);
-                      onUpdateField("buttonText", e.target.value);
-                      onUpdateField("primaryButtonText", e.target.value);
+                      const val = e.target.value;
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          ctaText: val,
+                          buttonText: val,
+                          primaryButtonText: val,
+                        });
+                      }
+                      onUpdateField("ctaText", val);
+                      if (!onBatchUpdateFields) {
+                        onUpdateField("buttonText", val);
+                        onUpdateField("primaryButtonText", val);
+                      }
                     }}
                     onBlur={() => onSave?.()}
                     placeholder="تسوق الآن"
@@ -228,9 +238,19 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                         ""
                       }
                       onChange={(e) => {
-                        onUpdateField("ctaLink", e.target.value);
-                        onUpdateField("primaryHref", e.target.value);
-                        onUpdateField("buttonUrl", e.target.value);
+                        const val = e.target.value;
+                        if (onBatchUpdateFields) {
+                          onBatchUpdateFields({
+                            ctaLink: val,
+                            primaryHref: val,
+                            buttonUrl: val,
+                          });
+                        }
+                        onUpdateField("ctaLink", val);
+                        if (!onBatchUpdateFields) {
+                          onUpdateField("primaryHref", val);
+                          onUpdateField("buttonUrl", val);
+                        }
                       }}
                       onBlur={() => onSave?.()}
                       placeholder="/shop أو https://..."
@@ -250,8 +270,17 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                     type="text"
                     value={settings.title ?? settings.heading ?? selectedElement.currentText ?? ""}
                     onChange={(e) => {
-                      onUpdateField("title", e.target.value);
-                      onUpdateField("heading", e.target.value);
+                      const val = e.target.value;
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          title: val,
+                          heading: val,
+                        });
+                      }
+                      onUpdateField("title", val);
+                      if (!onBatchUpdateFields) {
+                        onUpdateField("heading", val);
+                      }
                     }}
                     onBlur={() => onSave?.()}
                     placeholder="أدخل عنوان القسم…"
@@ -276,9 +305,16 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                       ""
                     }
                     onChange={(e) => {
-                      onUpdateField(selectedElement.field, e.target.value);
-                      if (selectedElement.field === "subtitle") {
-                        onUpdateField("description", e.target.value);
+                      const val = e.target.value;
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          [selectedElement.field]: val,
+                          ...(selectedElement.field === "subtitle" ? { description: val } : {}),
+                        });
+                      }
+                      onUpdateField(selectedElement.field, val);
+                      if (!onBatchUpdateFields && selectedElement.field === "subtitle") {
+                        onUpdateField("description", val);
                       }
                     }}
                     onBlur={() => onSave?.()}
@@ -298,8 +334,17 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                     type="text"
                     value={settings.eyebrow ?? settings.badge ?? selectedElement.currentText ?? ""}
                     onChange={(e) => {
-                      onUpdateField("eyebrow", e.target.value);
-                      onUpdateField("badge", e.target.value);
+                      const val = e.target.value;
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          eyebrow: val,
+                          badge: val,
+                        });
+                      }
+                      onUpdateField("eyebrow", val);
+                      if (!onBatchUpdateFields) {
+                        onUpdateField("badge", val);
+                      }
                     }}
                     onBlur={() => onSave?.()}
                     placeholder="مثال: عرض خاص"

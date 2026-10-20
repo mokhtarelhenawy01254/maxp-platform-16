@@ -148,6 +148,7 @@ interface StudioSortableSectionProps {
   onSelectElement?: (element: StudioSelectedElement) => void;
   onClearSelectedElement?: () => void;
   onUpdateField?: (field: string, value: any) => void;
+  onBatchUpdateFields?: (updates: Record<string, any>) => void;
   onSave?: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -176,6 +177,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   onSelectElement,
   onClearSelectedElement,
   onUpdateField,
+  onBatchUpdateFields,
   onSave,
   onMoveUp,
   onMoveDown,
@@ -285,11 +287,26 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       saved = true;
       const newText = domEl.innerText.trim();
       cleanup();
-      if (newText !== originalText && onUpdateField) {
-        onUpdateField(field, newText);
-        if (field === "title") onUpdateField("heading", newText);
-        if (field === "subtitle") onUpdateField("description", newText);
-        if (field === "ctaText") onUpdateField("buttonText", newText);
+      if (newText !== originalText) {
+        const updates: Record<string, any> = { [field]: newText };
+        if (field === "title") updates.heading = newText;
+        if (field === "subtitle") updates.description = newText;
+        if (field === "ctaText") {
+          updates.buttonText = newText;
+          updates.primaryButtonText = newText;
+        }
+
+        if (onBatchUpdateFields) {
+          onBatchUpdateFields(updates);
+        }
+        if (onUpdateField) {
+          onUpdateField(field, newText);
+          if (!onBatchUpdateFields) {
+            if (field === "title") onUpdateField("heading", newText);
+            if (field === "subtitle") onUpdateField("description", newText);
+            if (field === "ctaText") onUpdateField("buttonText", newText);
+          }
+        }
         onSave?.();
       }
     };
@@ -313,7 +330,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       domEl.removeEventListener("keydown", handleKeyDown);
       domEl.removeEventListener("blur", handleBlur);
     };
-  }, [inlineEditing, onUpdateField, onSave]);
+  }, [inlineEditing, onUpdateField, onBatchUpdateFields, onSave]);
 
   const handleSectionClick = (e: React.MouseEvent) => {
     e.stopPropagation();

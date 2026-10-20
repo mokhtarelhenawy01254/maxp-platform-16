@@ -568,6 +568,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                             setSelectedElement(null);
                           }}
                           onUpdateField={handleUpdateSectionField}
+                          onBatchUpdateFields={(updates) => handleBatchUpdateSectionFields(updates, stableKey)}
                           onSave={onSave}
                           onMoveUp={() => handleMoveSection(index, "up")}
                           onMoveDown={() => handleMoveSection(index, "down")}
