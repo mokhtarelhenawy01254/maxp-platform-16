@@ -18,6 +18,8 @@ import {
   RefreshCw,
   ExternalLink,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileSignature } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import { manufacturingApi, PartnerFactory } from '../manufacturingApi';
 import { PartnerFactoryModal } from './PartnerFactoryModal';
@@ -45,6 +47,7 @@ export const PartnerFactoriesPage: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingFactory, setEditingFactory] = useState<PartnerFactory | null>(null);
+  const [agreementsMap, setAgreementsMap] = useState<Record<string, { count: number; latestStatus?: string }>>({});
 
   // Copy feedback state
   const [copyFeedbackId, setCopyFeedbackId] = useState<string | null>(null);
@@ -56,6 +59,17 @@ export const PartnerFactoriesPage: React.FC = () => {
       setError(null);
       const data = await manufacturingApi.listPartnerFactories();
       setFactories(data);
+      manufacturingApi.listFactoryAgreements({ limit: 200 }).then((res) => {
+        const map: Record<string, { count: number; latestStatus?: string }> = {};
+        (res.data || []).forEach((a) => {
+          if (!a.partnerFactoryId) return;
+          if (!map[a.partnerFactoryId]) {
+            map[a.partnerFactoryId] = { count: 0, latestStatus: a.status };
+          }
+          map[a.partnerFactoryId].count += 1;
+        });
+        setAgreementsMap(map);
+      }).catch(() => {});
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'فشل تحميل بيانات المصانع الشركاء');
     } finally {
@@ -342,6 +356,7 @@ export const PartnerFactoriesPage: React.FC = () => {
                     <th className="py-3 px-4">التخصص</th>
                     <th className="py-3 px-4">مسؤول التواصل</th>
                     <th className="py-3 px-4">المراحل المسندة</th>
+                    <th className="py-3 px-4">الاتفاقيات</th>
                     <th className="py-3 px-4">إجمالي تكلفة العمالة</th>
                     <th className="py-3 px-4">بوابة المصنع (رابط آمن)</th>
                     <th className="py-3 px-4">الحالة</th>
@@ -426,6 +441,35 @@ export const PartnerFactoriesPage: React.FC = () => {
                             <div className="text-[11px] text-muted-foreground">
                               {metrics.activeStagesCount} جارية · {metrics.completedStagesCount} تامة
                             </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <div className="text-xs space-y-1">
+                            <Link
+                              to={`/manufacturing/factory-agreements`}
+                              className="font-semibold text-primary hover:underline flex items-center gap-1"
+                            >
+                              <FileSignature className="w-3.5 h-3.5" />
+                              <span>{agreementsMap[factory.id]?.count || 0} اتفاقية</span>
+                            </Link>
+                            {agreementsMap[factory.id]?.count > 0 && (
+                              <span
+                                className={`inline-block text-[10px] px-1.5 py-0.5 rounded font-medium border ${
+                                  agreementsMap[factory.id]?.latestStatus === 'ACTIVE'
+                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                    : agreementsMap[factory.id]?.latestStatus === 'DRAFT'
+                                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                    : 'bg-muted text-muted-foreground border-border'
+                                }`}
+                              >
+                                {agreementsMap[factory.id]?.latestStatus === 'ACTIVE'
+                                  ? 'نشطة'
+                                  : agreementsMap[factory.id]?.latestStatus === 'DRAFT'
+                                  ? 'مسودة'
+                                  : agreementsMap[factory.id]?.latestStatus || 'سارية'}
+                              </span>
+                            )}
                           </div>
                         </td>
 

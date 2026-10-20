@@ -15,6 +15,7 @@ import TechPacksPage from './tech-packs/TechPacksPage';
 import SizeChartsPage from './size-charts/SizeChartsPage';
 import StageTemplatesLibraryPage from './stageTemplates/StageTemplatesLibraryPage';
 import SampleOrdersPage from './samples/SampleOrdersPage';
+import FactoryAgreementsPage from './agreements/FactoryAgreementsPage';
 
 export const ManufacturingRoutes: React.FC = () => {
   return (
@@ -27,6 +28,8 @@ export const ManufacturingRoutes: React.FC = () => {
       <Route path="orders" element={<ManufacturingOrdersPage />} />
       <Route path="orders/:id" element={<ManufacturingOrderDetailPage />} />
       <Route path="partner-factories" element={<PartnerFactoriesPage />} />
+      <Route path="factory-agreements" element={<FactoryAgreementsPage />} />
+      <Route path="factory-agreements/:id" element={<FactoryAgreementsPage />} />
       <Route path="reviews" element={<FactoryMediaReviewPage />} />
       <Route path="boms" element={<ManufacturingBomsPage />} />
       <Route path="stage-templates" element={<StageTemplatesLibraryPage />} />
