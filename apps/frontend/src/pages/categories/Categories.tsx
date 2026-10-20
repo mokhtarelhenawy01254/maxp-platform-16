@@ -48,7 +48,10 @@ const Categories: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get("/products/categories");
+      const response = await apiClient.get<{
+        success: boolean;
+        data: Category[];
+      }>("/products/categories");
       if (response.data.success) {
         setCategories(response.data.data);
       } else {
