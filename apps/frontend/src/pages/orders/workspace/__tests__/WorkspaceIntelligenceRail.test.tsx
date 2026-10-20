@@ -1,24 +1,26 @@
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { WorkspaceIntelligenceRail } from '../WorkspaceIntelligenceRail';
 import type { WorkspaceOrder, WorkspaceStats } from '../types';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
     i18n: { language: 'ar' },
   }),
 }));
 
-jest.mock('../../../../hooks/useCurrency', () => ({
+vi.mock('../../../../hooks/useCurrency', () => ({
   useCurrency: () => ({
     formatPrice: (amount: number) => `${amount} ج.م`,
   }),
 }));
 
-jest.mock('../../../../hooks/useDateFormat', () => ({
+vi.mock('../../../../hooks/useDateFormat', () => ({
   useDateFormat: () => ({
     formatDate: () => '18 أكتوبر 2026',
     getTimeAgo: () => 'منذ ساعتين',
@@ -74,18 +76,22 @@ const mockCustomerHistory = {
   },
 };
 
-jest.mock('../../../../services/apiClient', () => ({
+vi.mock('../../../../services/apiClient', () => ({
   apiClient: {
-    get: jest.fn().mockImplementation((url: string) => {
+    get: vi.fn().mockImplementation((url: string) => {
       if (url.includes('/customer-history')) {
         return Promise.resolve({ data: { success: true, data: mockCustomerHistory } });
       }
       return Promise.resolve({ data: { success: true } });
     }),
-    put: jest.fn().mockResolvedValue({ data: { success: true } }),
-    post: jest.fn().mockResolvedValue({ data: { success: true } }),
+    put: vi.fn().mockResolvedValue({ data: { success: true } }),
+    post: vi.fn().mockResolvedValue({ data: { success: true } }),
   },
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('WorkspaceIntelligenceRail', () => {
   const mockOrder: WorkspaceOrder = {

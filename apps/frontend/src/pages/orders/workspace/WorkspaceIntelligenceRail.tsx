@@ -1,14 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import {
-  Users,
   ArrowLeft,
   ArrowRight,
   Clock,
   RefreshCw,
-  CheckCircle2,
-  XCircle,
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
@@ -20,6 +16,9 @@ import type { PerspectiveMode, WorkspaceOrder, WorkspaceStats } from "./types";
 import { useCustomerOrderHistory } from "./components/intelligence/useCustomerOrderHistory";
 import { CustomerRatingDossierSection } from "./components/intelligence/CustomerRatingDossierSection";
 import { CustomerOrderHistoryCard } from "./components/intelligence/CustomerOrderHistoryCard";
+import { CustomerHistoryKpiGrid } from "./components/intelligence/CustomerHistoryKpiGrid";
+import { CustomerHistoryFilters } from "./components/intelligence/CustomerHistoryFilters";
+import { SupervisorDistributionLink } from "./components/intelligence/SupervisorDistributionLink";
 
 export interface WorkspaceIntelligenceRailProps {
   order: WorkspaceOrder | null;
@@ -175,84 +174,24 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             </div>
 
             {/* 2x2 KPI Summary Strip */}
-            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-              <div className="rounded-lg border border-border/50 bg-muted/15 p-2">
-                <span className="text-muted-foreground block text-[10px] font-medium">
-                  {isArabic ? "إجمالي الطلبات" : "Total Orders"}
-                </span>
-                <span className="text-sm font-bold font-mono tabular-nums text-foreground mt-0.5 block">
-                  {totalOrdersCount}
-                </span>
-              </div>
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-emerald-700 dark:text-emerald-400 text-[10px] font-medium">
-                    {isArabic ? "مستلمة" : "Delivered"}
-                  </span>
-                  <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <span className="text-sm font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5 block">
-                  {totalDelivered}
-                </span>
-              </div>
-              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-destructive text-[10px] font-medium">
-                    {isArabic ? "ملغية/مرتجعة" : "Failed"}
-                  </span>
-                  <XCircle className="h-3 w-3 text-destructive" />
-                </div>
-                <span className="text-sm font-bold font-mono tabular-nums text-destructive mt-0.5 block">
-                  {failedCount}
-                </span>
-              </div>
-              <div className="rounded-lg border border-border/50 bg-muted/15 p-2">
-                <span className="text-muted-foreground block text-[10px] font-medium">
-                  {isArabic ? "نسبة الاستلام" : "Success Rate"}
-                </span>
-                <span className="text-sm font-bold font-mono tabular-nums text-foreground mt-0.5 block">
-                  {deliveryRate != null ? `${Math.round(deliveryRate)}%` : isArabic ? "جديد" : "New"}
-                </span>
-              </div>
-            </div>
+            <CustomerHistoryKpiGrid
+              totalOrdersCount={totalOrdersCount}
+              totalDelivered={totalDelivered}
+              failedCount={failedCount}
+              deliveryRate={deliveryRate}
+              isArabic={isArabic}
+            />
 
             {/* Filter Pills when multiple orders exist */}
             {pastOrders.length > 1 && (
-              <div className="flex items-center gap-1 border-b border-border/40 pb-2 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => setOrderFilter("all")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition ${
-                    orderFilter === "all"
-                      ? "bg-foreground text-background shadow-xs font-bold"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {isArabic ? "الكل" : "All"} ({pastOrders.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderFilter("delivered")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition ${
-                    orderFilter === "delivered"
-                      ? "bg-emerald-600 text-white font-bold"
-                      : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-                  }`}
-                >
-                  {isArabic ? "المستلمة" : "Delivered"} ({totalDelivered})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderFilter("failed")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition ${
-                    orderFilter === "failed"
-                      ? "bg-destructive text-destructive-foreground font-bold"
-                      : "text-destructive hover:bg-destructive/10"
-                  }`}
-                >
-                  {isArabic ? "الملغية" : "Failed"} ({failedCount})
-                </button>
-              </div>
+              <CustomerHistoryFilters
+                orderFilter={orderFilter}
+                onFilterChange={setOrderFilter}
+                totalCount={pastOrders.length}
+                deliveredCount={totalDelivered}
+                failedCount={failedCount}
+                isArabic={isArabic}
+              />
             )}
 
             {/* Loading Indicator */}
@@ -338,21 +277,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
 
       {/* Supervisor Team Distribution Section (Supervisors Only) */}
       {perspective === "supervisor" && (
-        <div className="border-t border-border/40 pt-3">
-          <section>
-            <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <Users className="h-4 w-4 text-primary" />
-              <span>{isArabic ? "إدارة توزيع الفريق" : "Team Distribution"}</span>
-            </div>
-            <Link
-              to="/settings/orders?tab=confirmation"
-              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-            >
-              <span>{isArabic ? "ضبط إعدادات التوزيع" : "Configure Assignment Rules"}</span>
-              {isArabic ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
-            </Link>
-          </section>
-        </div>
+        <SupervisorDistributionLink isArabic={isArabic} />
       )}
     </aside>
   );
