@@ -1,47 +1,63 @@
+// @vitest-environment jsdom
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, cleanup } from "@testing-library/react";
 import { PreparationOrdersContainer } from "./PreparationOrdersContainer";
 
-jest.mock("../../../../i18n", () => ({
+afterEach(() => {
+  cleanup();
+});
+
+vi.mock("../../../../i18n", () => ({
   __esModule: true,
   default: { language: "ar", t: (k: string) => k },
   getDirection: () => "rtl",
 }));
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }));
 
-jest.mock("./PreparationOrderCard", () => ({
+vi.mock("./PreparationOrderCard", () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: ({ order }: any) => (
     <div data-testid={`order-card-${order.orderNumber}`}>{order.customerName}</div>
   ),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PreparationOrderCard: ({ order }: any) => (
     <div data-testid={`order-card-${order.orderNumber}`}>{order.customerName}</div>
   ),
 }));
 
-jest.mock("./PreparationOrdersTable", () => ({
+vi.mock("./PreparationOrdersTable", () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: ({ orders }: any) => (
     <div data-testid="orders-table">
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {orders.map((o: any) => (
         <span key={o.orderNumber}>{o.orderNumber}</span>
       ))}
     </div>
   ),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PreparationOrdersTable: ({ orders }: any) => (
     <div data-testid="orders-table">
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {orders.map((o: any) => (
         <span key={o.orderNumber}>{o.orderNumber}</span>
       ))}
     </div>
   ),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MemoizedPreparationOrdersTable: ({ orders }: any) => (
     <div data-testid="orders-table">
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {orders.map((o: any) => (
         <span key={o.orderNumber}>{o.orderNumber}</span>
       ))}
@@ -49,11 +65,13 @@ jest.mock("./PreparationOrdersTable", () => ({
   ),
 }));
 
-jest.mock("./PreparationPaginationBar", () => ({
+vi.mock("./PreparationPaginationBar", () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: ({ page, totalPages }: any) => (
     <div data-testid="pagination-bar" data-page={page} data-total-pages={totalPages} />
   ),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PreparationPaginationBar: ({ page, totalPages }: any) => (
     <div data-testid="pagination-bar" data-page={page} data-total-pages={totalPages} />
   ),
@@ -62,6 +80,7 @@ jest.mock("./PreparationPaginationBar", () => ({
 describe("PreparationOrdersContainer", () => {
   const defaultProps = {
     loading: false,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     enrichedOrders: [] as any[],
     pagination: { page: 1, limit: 20, total: 0 },
     totalPages: 1,
@@ -81,6 +100,7 @@ describe("PreparationOrdersContainer", () => {
     problemHoldDrafts: {},
     transferingItemKey: null,
     printingOrderNumber: null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     preparationSettings: {
       enabled: true,
       startingStatus: "CONFIRMED",
@@ -92,23 +112,23 @@ describe("PreparationOrdersContainer", () => {
     visibleColumns: {},
     formatPrice: (amt: number) => `${amt} EGP`,
     formatDate: (dt: string) => dt,
-    toggleOrderSelection: jest.fn(),
-    handleQuickTransfer: jest.fn(),
-    handleShortageFieldChange: jest.fn(),
-    saveShortageHoldDetails: jest.fn(),
-    handleQcCheckToggle: jest.fn(),
-    onStatusSelectionChange: jest.fn(),
-    handleRequestStatusChange: jest.fn(),
-    handleMarkAsShortageHold: jest.fn(),
-    handleReleaseShortageHold: jest.fn(),
-    handleMarkAsShortageFailed: jest.fn(),
-    handleHoldAsProblem: jest.fn(),
-    handleReleaseProblemHold: jest.fn(),
-    handleEditProblemReason: jest.fn(),
-    handlePrintPreparationSlip: jest.fn(),
-    onPageSizeChange: jest.fn(),
-    onPreviousPage: jest.fn(),
-    onNextPage: jest.fn(),
+    toggleOrderSelection: vi.fn(),
+    handleQuickTransfer: vi.fn(),
+    handleShortageFieldChange: vi.fn(),
+    saveShortageHoldDetails: vi.fn(),
+    handleQcCheckToggle: vi.fn(),
+    onStatusSelectionChange: vi.fn(),
+    handleRequestStatusChange: vi.fn(),
+    handleMarkAsShortageHold: vi.fn(),
+    handleReleaseShortageHold: vi.fn(),
+    handleMarkAsShortageFailed: vi.fn(),
+    handleHoldAsProblem: vi.fn(),
+    handleReleaseProblemHold: vi.fn(),
+    handleEditProblemReason: vi.fn(),
+    handlePrintPreparationSlip: vi.fn(),
+    onPageSizeChange: vi.fn(),
+    onPreviousPage: vi.fn(),
+    onNextPage: vi.fn(),
   };
 
   it("renders loading skeleton when loading is true", () => {
@@ -140,6 +160,7 @@ describe("PreparationOrdersContainer", () => {
       <PreparationOrdersContainer
         {...defaultProps}
         loading={false}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         enrichedOrders={[sampleOrder as any]}
       />
     );
