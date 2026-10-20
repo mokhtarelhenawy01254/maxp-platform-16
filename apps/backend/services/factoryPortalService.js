@@ -305,7 +305,7 @@ class FactoryPortalService {
                 items: true,
               },
             },
-            variantMatrix: true,
+            variants: true,
             attachments: {
               where: {
                 reviewStatus: { in: ['APPROVED', 'PUBLISHED'] },
@@ -368,7 +368,7 @@ class FactoryPortalService {
         }));
 
       // Variant matrix for this order
-      const variantMatrix = (ord.variantMatrix || []).map((vm) => ({
+      const variantMatrix = (ord.variants || []).map((vm) => ({
         size: vm.size || null,
         color: vm.color || null,
         sku: vm.sku || null,
