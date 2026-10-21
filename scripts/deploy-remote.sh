@@ -781,6 +781,7 @@ NODE_ENV=production timeout 60 node scripts/catalog/sync_pos_pro_app.js || echo 
 # Restart services
 echo "🔄 Restarting services..."
 if [ -n "$PM2_BIN" ]; then
+  "$PM2_BIN" update >/dev/null 2>&1 || true
   echo "📋 Current PM2 processes:"
   "$PM2_BIN" list
 
@@ -794,7 +795,10 @@ if [ -n "$PM2_BIN" ]; then
     const { execSync } = require("child_process");
     const pm2 = process.argv[1];
     try {
-      const list = JSON.parse(execSync(`"${pm2}" jlist`, { encoding: "utf8" }));
+      const raw = execSync(`"${pm2}" jlist`, { encoding: "utf8" });
+      const start = raw.indexOf("[");
+      const end = raw.lastIndexOf("]");
+      const list = JSON.parse((start !== -1 && end !== -1 && end > start) ? raw.slice(start, end + 1) : "[]");
       for (const p of list) {
         if (p.name && (p.name.includes("_old_") || p.name === "backend1" || p.name === "chat-backend")) {
           console.log(`🧹 Deleting stale process ${p.name} (pm_id: ${p.pm_id})`);
@@ -816,13 +820,22 @@ if [ -n "$PM2_BIN" ]; then
 
   # Capture baseline restart count for maxp-backend
   INITIAL_RESTARTS=$(node -e '
-    const jlist = JSON.parse(process.argv[1] || "[]");
-    const count = jlist
-      .filter(p => p.name === "maxp-backend")
-      .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
-    console.log(count);
+    try {
+      const raw = process.argv[1] || "";
+      const start = raw.indexOf("[");
+      const end = raw.lastIndexOf("]");
+      const jsonStr = (start !== -1 && end !== -1 && end > start) ? raw.slice(start, end + 1) : "[]";
+      const jlist = JSON.parse(jsonStr);
+      const count = jlist
+        .filter(p => p.name === "maxp-backend")
+        .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
+      console.log(count);
+    } catch (_) {
+      console.log(0);
+    }
   ' "$("$PM2_BIN" jlist 2>/dev/null || echo '[]')")
-  echo "ℹ️ Baseline maxp-backend restart count before reload: ${INITIAL_RESTARTS:-0}"
+  INITIAL_RESTARTS="${INITIAL_RESTARTS:-0}"
+  echo "ℹ️ Baseline maxp-backend restart count before reload: $INITIAL_RESTARTS"
 
   # 🧪 Pre-Flight Server Load Check before PM2 touches the new code
   echo "🧪 Verifying server.js dry-run load on production before PM2 reload..."
@@ -889,12 +902,21 @@ if [ -n "$PM2_BIN" ]; then
 
     # Check for crash loop / restart surge
     CURRENT_RESTARTS=$(node -e '
-      const jlist = JSON.parse(process.argv[1] || "[]");
-      const count = jlist
-        .filter(p => p.name === "maxp-backend")
-        .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
-      console.log(count);
+      try {
+        const raw = process.argv[1] || "";
+        const start = raw.indexOf("[");
+        const end = raw.lastIndexOf("]");
+        const jsonStr = (start !== -1 && end !== -1 && end > start) ? raw.slice(start, end + 1) : "[]";
+        const jlist = JSON.parse(jsonStr);
+        const count = jlist
+          .filter(p => p.name === "maxp-backend")
+          .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
+        console.log(count);
+      } catch (_) {
+        console.log(0);
+      }
     ' "$("$PM2_BIN" jlist 2>/dev/null || echo '[]')")
+    CURRENT_RESTARTS="${CURRENT_RESTARTS:-0}"
 
     RESTART_DELTA=$((CURRENT_RESTARTS - INITIAL_RESTARTS))
     if [ "$RESTART_DELTA" -gt "$MAX_ALLOWED_RESTARTS" ]; then
