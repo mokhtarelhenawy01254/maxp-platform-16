@@ -533,6 +533,10 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
+          secure: false,
+          headers: {
+            host: 'maxp.online',
+          },
           timeout: 120000,
           proxyTimeout: 120000,
           configure: (proxy) => {
