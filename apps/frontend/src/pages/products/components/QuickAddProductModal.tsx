@@ -1,30 +1,45 @@
-import React, { useState, useEffect, useRef, useId } from "react";
+import React, { useState, useEffect, useRef, useId, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   XMarkIcon,
   PhotoIcon,
   PlusIcon,
   TrashIcon,
-  ArrowRightIcon,
   CheckIcon,
+  ArrowPathIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { uploadFiles, productApi } from "../../../utils/apiHelpers";
 import { normalizeImagePath, getImageUrl } from "../../../utils/imageUrl";
 import { useCurrency } from "../../../hooks/useCurrency";
-import { getCurrencyByCode, getCurrencySymbol } from "../../../utils/currency";
+import { getCurrencySymbol } from "../../../utils/currency";
 import {
   CategoryFormModal,
-  CategoryFormModalCategory,
 } from "../../../components/category/CategoryFormModal";
 
 export interface QuickVariantOption {
   id: string;
-  name: string; // e.g. "مقاس M" or "أسود"
-  type: string; // "size" | "color" | "option"
+  name: string;
+  type?: string;
   price: string;
   stock: string;
+}
+
+export interface QuickProductAttribute {
+  id: string;
+  name: string;
+  slug: string;
+  values: string[];
+}
+
+export interface QuickGeneratedVariant {
+  id: string;
+  name: string;
+  price: string;
+  stock: string;
+  attributeValues: Record<string, string>;
 }
 
 interface CategoryOption {
@@ -48,9 +63,45 @@ export interface QuickAddProductModalProps {
   showWarehouseSelect?: boolean;
 }
 
-const CLOTHING_SIZES = ["S", "M", "L", "XL", "XXL"];
-const SHOE_SIZES = ["39", "40", "41", "42", "43", "44"];
-const POPULAR_COLORS = ["أسود", "أبيض", "كحلي", "رمادي", "بيج"];
+interface AttributeTemplate {
+  name: string;
+  slug: string;
+  icon: string;
+  suggestedValues: string[];
+}
+
+const ATTRIBUTE_TEMPLATES: AttributeTemplate[] = [
+  {
+    name: "المقاس",
+    slug: "size",
+    icon: "📏",
+    suggestedValues: ["S", "M", "L", "XL", "XXL"],
+  },
+  {
+    name: "اللون",
+    slug: "color",
+    icon: "🎨",
+    suggestedValues: ["أسود", "أبيض", "كحلي", "رمادي", "بيج", "أحمر", "أزرق"],
+  },
+  {
+    name: "مقاس الحذاء",
+    slug: "shoe_size",
+    icon: "👟",
+    suggestedValues: ["39", "40", "41", "42", "43", "44"],
+  },
+  {
+    name: "الخامة",
+    slug: "material",
+    icon: "🧵",
+    suggestedValues: ["قطن", "بوليستر", "جلد", "كتان"],
+  },
+  {
+    name: "العبوة / الباقة",
+    slug: "pack",
+    icon: "📦",
+    suggestedValues: ["قطعة", "قطعتين", "3 قطع", "عرض التوفير"],
+  },
+];
 
 export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   open,
@@ -84,10 +135,13 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategoryLoading, setAddingCategoryLoading] = useState(false);
 
-  // Options / Variants (المقاسات والألوان)
+  // Attributes & Variations Model (المتغيرات والصفات)
   const [hasOptions, setHasOptions] = useState(false);
-  const [options, setOptions] = useState<QuickVariantOption[]>([]);
-  const [customOptionName, setCustomOptionName] = useState("");
+  const [attributes, setAttributes] = useState<QuickProductAttribute[]>([]);
+  const [variants, setVariants] = useState<QuickGeneratedVariant[]>([]);
+  const [newCustomAttrName, setNewCustomAttrName] = useState("");
+  const [attrInputValues, setAttrInputValues] = useState<Record<string, string>>({});
+  const [bulkStockValue, setBulkStockValue] = useState("");
 
   // Loading & submission state
   const [submitting, setSubmitting] = useState(false);
@@ -190,8 +244,6 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     }
   };
 
-  if (!open) return null;
-
   // Reset form
   const resetForm = () => {
     setName("");
@@ -200,8 +252,11 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     setStock("10");
     setImages([]);
     setHasOptions(false);
-    setOptions([]);
-    setCustomOptionName("");
+    setAttributes([]);
+    setVariants([]);
+    setNewCustomAttrName("");
+    setAttrInputValues({});
+    setBulkStockValue("");
     setWarehouseId(defaultWarehouseId || (internalWarehouses[0]?.id || ""));
     setFieldErrors({});
     setSubmitting(false);
@@ -241,31 +296,174 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     }
   };
 
-  // Quick Option Presets (إضافة سريعة لمقاس أو لون)
-  const addOptionItem = (optionLabel: string, type: string) => {
-    if (options.some((o) => o.name === optionLabel)) return;
-    const newOption: QuickVariantOption = {
-      id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: optionLabel,
-      type,
-      price: price || "",
-      stock: "10",
+  // Attribute Operations
+  const handleAddAttributeFromTemplate = (template: AttributeTemplate) => {
+    if (attributes.some((a) => a.name === template.name || a.slug === template.slug)) {
+      toast.info(`الخاصية "${template.name}" مضافة بالفعل`);
+      return;
+    }
+    const newAttr: QuickProductAttribute = {
+      id: `attr_${template.slug}_${Date.now()}`,
+      name: template.name,
+      slug: template.slug,
+      values: [...template.suggestedValues.slice(0, 3)], // start with first 3 popular values
     };
-    setOptions((prev) => [...prev, newOption]);
+    setAttributes((prev) => [...prev, newAttr]);
+    if (fieldErrors.options) {
+      setFieldErrors((p) => ({ ...p, options: "" }));
+    }
   };
 
-  const removeOptionItem = (id: string) => {
-    setOptions((prev) => prev.filter((o) => o.id !== id));
+  const handleAddCustomAttribute = () => {
+    const trimmed = newCustomAttrName.trim();
+    if (!trimmed) return;
+    if (attributes.some((a) => a.name.toLowerCase() === trimmed.toLowerCase())) {
+      toast.error("اسم الخاصية مضاف مسبقاً");
+      return;
+    }
+    const slug = `attr_${Date.now()}`;
+    const newAttr: QuickProductAttribute = {
+      id: slug,
+      name: trimmed,
+      slug,
+      values: [],
+    };
+    setAttributes((prev) => [...prev, newAttr]);
+    setNewCustomAttrName("");
+    if (fieldErrors.options) {
+      setFieldErrors((p) => ({ ...p, options: "" }));
+    }
   };
 
-  const updateOptionItem = (
+  const handleRemoveAttribute = (id: string) => {
+    setAttributes((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleAddValueToAttribute = (attrId: string, val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setAttributes((prev) =>
+      prev.map((a) => {
+        if (a.id !== attrId) return a;
+        if (a.values.includes(trimmed)) return a;
+        return { ...a, values: [...a.values, trimmed] };
+      })
+    );
+    setAttrInputValues((prev) => ({ ...prev, [attrId]: "" }));
+    if (fieldErrors.options) {
+      setFieldErrors((p) => ({ ...p, options: "" }));
+    }
+  };
+
+  const handleRemoveValueFromAttribute = (attrId: string, valueToRemove: string) => {
+    setAttributes((prev) =>
+      prev.map((a) => {
+        if (a.id !== attrId) return a;
+        return { ...a, values: a.values.filter((v) => v !== valueToRemove) };
+      })
+    );
+  };
+
+  // Combination Counter Calculation
+  const validAttributes = useMemo(() => {
+    return attributes.filter((a) => a.values && a.values.length > 0);
+  }, [attributes]);
+
+  const potentialCombinationCount = useMemo(() => {
+    if (validAttributes.length === 0) return 0;
+    return validAttributes.reduce((acc, a) => acc * a.values.length, 1);
+  }, [validAttributes]);
+
+  // Generate Cartesian Product Variations (توليد المتغيرات)
+  const computeCombinations = (
+    currentAttributes: QuickProductAttribute[],
+    basePrice: string,
+    existingVariants: QuickGeneratedVariant[] = []
+  ): QuickGeneratedVariant[] => {
+    const activeAttrs = currentAttributes.filter(
+      (a) => a.values && a.values.length > 0
+    );
+    if (activeAttrs.length === 0) return [];
+
+    const combinations: { [key: string]: string }[][] = activeAttrs.map((attr) =>
+      attr.values.map((value) => ({ [attr.name]: value }))
+    );
+
+    const allCombos = combinations.reduce(
+      (acc, curr) => {
+        if (acc.length === 0) return curr.map((item) => [item]);
+        return acc.flatMap((combo) => curr.map((item) => [...combo, item]));
+      },
+      [] as { [key: string]: string }[][]
+    );
+
+    return allCombos.map((combo, idx) => {
+      const attributeValues = combo.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      const variantName = Object.values(attributeValues).join(" - ");
+
+      // Match against existing variants to preserve price/stock
+      const existing = existingVariants.find((ev) => {
+        if (ev.name.trim() === variantName.trim()) return true;
+        if (
+          ev.attributeValues &&
+          Object.keys(ev.attributeValues).length === Object.keys(attributeValues).length
+        ) {
+          return Object.entries(attributeValues).every(
+            ([k, v]) => ev.attributeValues[k] === v
+          );
+        }
+        return false;
+      });
+
+      return {
+        id: existing?.id || `var-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        name: variantName,
+        price: existing?.price !== undefined ? existing.price : (basePrice || ""),
+        stock: existing?.stock !== undefined ? existing.stock : "10",
+        attributeValues,
+      };
+    });
+  };
+
+  const handleGenerateVariations = () => {
+    if (validAttributes.length === 0) {
+      toast.error("يرجى إضافة قيم واحدة على الأقل لكل خاصية قبل التوليد");
+      return;
+    }
+    const generated = computeCombinations(attributes, price, variants);
+    setVariants(generated);
+    if (fieldErrors.options) {
+      setFieldErrors((p) => ({ ...p, options: "" }));
+    }
+    toast.success(`تم توليد ${generated.length} متغير بنجاح`);
+  };
+
+  const handleUpdateVariant = (
     id: string,
     field: "price" | "stock",
     value: string
   ) => {
-    setOptions((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, [field]: value } : o))
+    setVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
     );
+  };
+
+  const handleRemoveVariant = (id: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleApplyBasePriceToAll = () => {
+    if (!price) return;
+    setVariants((prev) => prev.map((v) => ({ ...v, price })));
+    toast.success(`تم تطبيق السعر ${price} ${displayCurrency} على جميع المتغيرات`);
+  };
+
+  const handleApplyBulkStockToAll = () => {
+    const trimmed = bulkStockValue.trim();
+    if (!trimmed || isNaN(Number(trimmed))) return;
+    setVariants((prev) => prev.map((v) => ({ ...v, stock: trimmed })));
+    toast.success(`تم تطبيق الكمية ${trimmed} على جميع المتغيرات`);
+    setBulkStockValue("");
   };
 
   // Validation
@@ -278,8 +476,12 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     if (comparePrice && Number(comparePrice) <= Number(price)) {
       errors.comparePrice = "السعر قبل الخصم يجب أن يكون أكبر من سعر البيع";
     }
-    if (hasOptions && options.length === 0) {
-      errors.options = "لقد قمت بتفعيل الخيارات، يرجى إضافة مقاس أو لون واحد على الأقل";
+    if (hasOptions) {
+      if (validAttributes.length === 0) {
+        errors.options = "لقد قمت بتفعيل المتغيرات، يرجى إضافة خاصية واحدة على الأقل وبها قيم (مثل المقاس أو اللون)";
+      } else if (variants.length === 0 && potentialCombinationCount === 0) {
+        errors.options = "يرجى إضافة قيم للمتغيرات ثم الضغط على توليد المتغيرات";
+      }
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -292,24 +494,40 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     setActionType(advanceToFullEditor ? "advance" : "publish");
 
     try {
-      // 1. Prepare Attributes and Variants payload if options exist
-      const productAttributes = hasOptions && options.length > 0
-        ? [
-            {
-              id: "options",
-              name: "خيارات المنتج",
-              slug: "options",
-              values: options.map((o) => o.name),
-              visible: true,
-              forVariations: true,
-              requiredForOrder: true,
-            },
-          ]
+      // If user configured attributes with values but forgot to click "توليد المتغيرات",
+      // auto-generate them now so they are not blocked or surprised.
+      let finalVariants = variants;
+      if (hasOptions && finalVariants.length === 0 && validAttributes.length > 0) {
+        finalVariants = computeCombinations(attributes, price, []);
+        setVariants(finalVariants);
+      }
+
+      // 1. Prepare Attributes and Variants payload
+      const productAttributes = hasOptions && validAttributes.length > 0
+        ? validAttributes.map((attr) => ({
+            id: attr.slug || attr.id,
+            name: attr.name,
+            slug: attr.slug || attr.name.toLowerCase().replace(/\s+/g, "_"),
+            values: attr.values,
+            visible: true,
+            forVariations: true,
+            requiredForOrder: true,
+          }))
         : [];
 
-      const totalCalculatedStock = hasOptions && options.length > 0
-        ? options.reduce((sum, o) => sum + (parseInt(o.stock, 10) || 0), 0)
+      const totalCalculatedStock = hasOptions && finalVariants.length > 0
+        ? finalVariants.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0)
         : parseInt(stock, 10) || 0;
+
+      const attributeStyles: Record<string, string> = {};
+      const requiredAttrKeys: string[] = [];
+      const attributeLabelsMap: Record<string, string> = {};
+
+      productAttributes.forEach((attr) => {
+        attributeStyles[attr.name] = "buttons";
+        requiredAttrKeys.push(attr.name);
+        attributeLabelsMap[attr.slug] = attr.name;
+      });
 
       const productPayload = {
         name: name.trim(),
@@ -329,14 +547,12 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
           shippingClass: "standard",
           enableCheckoutForm: true,
           warehouseId: warehouseId || undefined,
-          variantSettings: hasOptions && options.length > 0 ? {
-            styles: {
-              "خيارات المنتج": "buttons",
-            },
+          variantSettings: hasOptions && validAttributes.length > 0 ? {
+            styles: attributeStyles,
           } : undefined,
           aiOrderOptions: {
-            requiredAttributes: hasOptions && options.length > 1 ? ["options"] : [],
-            attributeLabels: hasOptions && options.length > 0 ? { options: "خيارات المنتج" } : {},
+            requiredAttributes: requiredAttrKeys,
+            attributeLabels: attributeLabelsMap,
           },
         }),
       };
@@ -354,23 +570,21 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       }
 
       // 3. Create Variants if enabled
-      if (hasOptions && options.length > 0) {
+      if (hasOptions && finalVariants.length > 0) {
         await Promise.all(
-          options.map(async (opt, idx) => {
+          finalVariants.map(async (v, idx) => {
             const variantPayload = {
-              name: opt.name,
-              type: opt.type,
-              price: opt.price ? parseFloat(opt.price) : parseFloat(price),
+              name: v.name,
+              type: "combination",
+              price: v.price ? parseFloat(v.price) : parseFloat(price),
               comparePrice: comparePrice ? parseFloat(comparePrice) : null,
-              stock: parseInt(opt.stock, 10) || 0,
+              stock: parseInt(v.stock, 10) || 0,
               trackInventory: true,
               isActive: true,
               sortOrder: idx,
               warehouseId: warehouseId || undefined,
               metadata: JSON.stringify({
-                attributeValues: {
-                  "خيارات المنتج": opt.name,
-                },
+                attributeValues: v.attributeValues,
                 shippingClass: "standard",
                 warehouseId: warehouseId || undefined,
               }),
@@ -378,7 +592,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             try {
               await productApi.createVariant(createdProductId, variantPayload);
             } catch (vErr) {
-              console.error("فشل إنشاء خيار:", opt.name, vErr);
+              console.error("فشل إنشاء المتغير:", v.name, vErr);
             }
           })
         );
@@ -399,6 +613,8 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       setSubmitting(false);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div
@@ -464,7 +680,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             )}
           </div>
 
-          {/* 2. Pricing & Category Grid */}
+          {/* 2. Pricing Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Sale Price */}
             <div>
@@ -520,7 +736,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Category & Stock Grid (with optional Warehouse selector) */}
+          {/* 3. Category & Warehouse Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Category with inline quick add and select */}
             <div>
@@ -660,13 +876,13 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
               </div>
             )}
 
-            {/* Initial Stock (Only shown when no variants are enabled) */}
+            {/* Initial Stock (Only manually editable when no variants are enabled) */}
             <div className={showWarehouseSelect ? "sm:col-span-2" : ""}>
               <label className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
                 الكمية المتوفرة بالمخزن
                 {hasOptions && (
                   <span className="text-[11px] font-normal text-indigo-600 dark:text-indigo-400 mr-1.5">
-                    (تُحسب تلقائياً من المقاسات)
+                    (تُحسب تلقائياً من مجموع المتغيرات)
                   </span>
                 )}
               </label>
@@ -674,7 +890,11 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
                 type="number"
                 min="0"
                 disabled={hasOptions}
-                value={hasOptions ? options.reduce((sum, o) => sum + (parseInt(o.stock, 10) || 0), 0) : stock}
+                value={
+                  hasOptions
+                    ? variants.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0)
+                    : stock
+                }
                 onChange={(e) => setStock(e.target.value)}
                 placeholder="10"
                 className="w-full px-3.5 py-2.5 text-sm tabular-nums bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-400 transition-all"
@@ -742,15 +962,15 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             </div>
           </div>
 
-          {/* 5. Options (Sizes & Colors) - Simplified */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          {/* 5. Attributes & Variations Section (المتغيرات والتركيبات) */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
                   هل للمنتج مقاسات أو ألوان؟
                 </span>
                 <p className="text-xs text-slate-400">
-                  فعل هذا الخيار إذا كان المنتج متوفراً بعدة مقاسات أو ألوان
+                  فعل هذا الخيار لتحديد الخصائص (مثل المقاس واللون) وتوليد المتغيرات
                 </p>
               </div>
 
@@ -762,10 +982,17 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
                 onClick={() => {
                   const next = !hasOptions;
                   setHasOptions(next);
-                  if (next && options.length === 0) {
-                    // Default to M & L as initial friendly options
-                    addOptionItem("مقاس M", "size");
-                    addOptionItem("مقاس L", "size");
+                  if (next && attributes.length === 0) {
+                    // Default to Size template with S, M, L
+                    const defaultTemplate = ATTRIBUTE_TEMPLATES[0];
+                    setAttributes([
+                      {
+                        id: `attr_${defaultTemplate.slug}_${Date.now()}`,
+                        name: defaultTemplate.name,
+                        slug: defaultTemplate.slug,
+                        values: ["M", "L", "XL"],
+                      },
+                    ]);
                   }
                 }}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
@@ -782,162 +1009,314 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
 
             {/* Options Body when Enabled */}
             {hasOptions && (
-              <div className="mt-4 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-4">
-                {/* Presets Chips */}
+              <div className="mt-4 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-5">
+                {/* 5.1. Attribute Selector / Templates */}
                 <div>
-                  <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    إضافة سريعة بنقرة واحدة:
-                  </span>
-                  <div className="space-y-2">
-                    {/* Clothing Sizes */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1">مقاسات ملابس:</span>
-                      {CLOTHING_SIZES.map((s) => {
-                        const optName = `مقاس ${s}`;
-                        const isAdded = options.some((o) => o.name === optName);
-                        return (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => (isAdded ? removeOptionItem(options.find((o) => o.name === optName)!.id) : addOptionItem(optName, "size"))}
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
-                              isAdded
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
-                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-                            }`}
-                          >
-                            {s} {isAdded && "✓"}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      1. تحديد المتغيرات والخصائص (Attributes)
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      اختر قالباً جاهزاً أو أضف خاصية جديدة
+                    </span>
+                  </div>
 
-                    {/* Shoe Sizes */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1">مقاسات أحذية:</span>
-                      {SHOE_SIZES.map((s) => {
-                        const optName = `مقاس ${s}`;
-                        const isAdded = options.some((o) => o.name === optName);
-                        return (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => (isAdded ? removeOptionItem(options.find((o) => o.name === optName)!.id) : addOptionItem(optName, "size"))}
-                            className={`px-2 py-0.5 text-xs font-semibold rounded-lg border transition-all ${
-                              isAdded
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
-                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-                            }`}
-                          >
-                            {s} {isAdded && "✓"}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* Template Badges */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {ATTRIBUTE_TEMPLATES.map((tmpl) => {
+                      const isAdded = attributes.some((a) => a.name === tmpl.name);
+                      return (
+                        <button
+                          key={tmpl.slug}
+                          type="button"
+                          onClick={() => handleAddAttributeFromTemplate(tmpl)}
+                          disabled={isAdded}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            isAdded
+                              ? "bg-slate-100 dark:bg-slate-800/80 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-75"
+                              : "bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 active:scale-97 shadow-2xs"
+                          }`}
+                        >
+                          <span>{tmpl.icon}</span>
+                          <span>{tmpl.name}</span>
+                          {isAdded ? (
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ مضاف</span>
+                          ) : (
+                            <PlusIcon className="w-3 h-3 text-indigo-500" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                    {/* Popular Colors */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1">ألوان شائعة:</span>
-                      {POPULAR_COLORS.map((c) => {
-                        const isAdded = options.some((o) => o.name === c);
-                        return (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => (isAdded ? removeOptionItem(options.find((o) => o.name === c)!.id) : addOptionItem(c, "color"))}
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
-                              isAdded
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
-                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-                            }`}
-                          >
-                            {c} {isAdded && "✓"}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* Custom Attribute Adder */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCustomAttrName}
+                      onChange={(e) => setNewCustomAttrName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCustomAttribute();
+                        }
+                      }}
+                      placeholder="أو اكتب اسم خاصية مخصصة (مثال: الخامة، السعة، الوزن)..."
+                      className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomAttribute}
+                      disabled={!newCustomAttrName.trim()}
+                      className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-97 disabled:opacity-50 rounded-lg transition-all shrink-0"
+                    >
+                      + إضافة خاصية
+                    </button>
                   </div>
                 </div>
 
-                {/* Custom Option Input */}
-                <div className="flex gap-2 pt-2 border-t border-indigo-100/60 dark:border-indigo-900/30">
-                  <input
-                    type="text"
-                    value={customOptionName}
-                    onChange={(e) => setCustomOptionName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && customOptionName.trim()) {
-                        e.preventDefault();
-                        addOptionItem(customOptionName.trim(), "custom");
-                        setCustomOptionName("");
-                      }
-                    }}
-                    placeholder="أو اكتب خياراً مخصصاً (مثال: 50 مل أو ذهبي)"
-                    className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (customOptionName.trim()) {
-                        addOptionItem(customOptionName.trim(), "custom");
-                        setCustomOptionName("");
-                      }
-                    }}
-                    className="px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 hover:bg-indigo-200 rounded-lg transition-colors"
-                  >
-                    إضافة الخيار
-                  </button>
-                </div>
+                {/* 5.2. Active Attributes Cards (المتغير وتحته قيمه) */}
+                {attributes.length > 0 && (
+                  <div className="space-y-3">
+                    {attributes.map((attr) => {
+                      const templateMatch = ATTRIBUTE_TEMPLATES.find((t) => t.name === attr.name);
+                      const currentInput = attrInputValues[attr.id] || "";
 
-                {/* Selected Options List */}
-                {options.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      قائمة الخيارات المحددة:
-                    </span>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-                      {options.map((opt) => (
+                      return (
                         <div
-                          key={opt.id}
-                          className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs"
+                          key={attr.id}
+                          className="p-3.5 bg-white dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-2xs space-y-3"
                         >
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate min-w-[90px]">
-                            {opt.name}
-                          </span>
+                          {/* Attribute Card Header */}
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">
+                                {templateMatch?.icon || "🏷️"}
+                              </span>
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {attr.name}
+                              </span>
+                              <span className="px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 rounded-full">
+                                {attr.values.length} {attr.values.length === 1 ? "قيمة" : "قيم"}
+                              </span>
+                            </div>
 
-                          <div className="flex items-center gap-2">
-                            {/* Option Price */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAttribute(attr.id)}
+                              title={`حذف خاصية ${attr.name}`}
+                              className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors p-1"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Values Chips Underneath Attribute (المتغير وتحته قيمه) */}
+                          <div>
+                            <span className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                              القيم المحددة لـ {attr.name}:
+                            </span>
+                            {attr.values.length === 0 ? (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                                لم تضف أي قيم بعد. اختر من الاقتراحات بالأسفل أو اكتب قيمة جديدة:
+                              </p>
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                                {attr.values.map((val) => (
+                                  <span
+                                    key={val}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40 rounded-lg shadow-2xs"
+                                  >
+                                    <span>{val}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveValueFromAttribute(attr.id, val)}
+                                      aria-label={`حذف القيمة ${val}`}
+                                      className="text-indigo-400 hover:text-rose-600 transition-colors mr-0.5"
+                                    >
+                                      <XMarkIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Suggested Values Quick-Click (if applicable) */}
+                            {templateMatch && (
+                              <div className="flex flex-wrap items-center gap-1 mb-2.5">
+                                <span className="text-[10px] text-slate-400 ml-1">اقتراحات سريعة:</span>
+                                {templateMatch.suggestedValues
+                                  .filter((sv) => !attr.values.includes(sv))
+                                  .map((sv) => (
+                                    <button
+                                      key={sv}
+                                      type="button"
+                                      onClick={() => handleAddValueToAttribute(attr.id, sv)}
+                                      className="px-2 py-0.5 text-[11px] font-medium bg-slate-50 dark:bg-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-600 rounded-md transition-all active:scale-95"
+                                    >
+                                      + {sv}
+                                    </button>
+                                  ))}
+                              </div>
+                            )}
+
+                            {/* Add Custom Value Input for this Attribute */}
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                value={currentInput}
+                                onChange={(e) =>
+                                  setAttrInputValues((prev) => ({
+                                    ...prev,
+                                    [attr.id]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && currentInput.trim()) {
+                                    e.preventDefault();
+                                    handleAddValueToAttribute(attr.id, currentInput);
+                                  }
+                                }}
+                                placeholder={`اكتب قيمة لـ ${attr.name} واضغط Enter (مثال: ${
+                                  attr.name === "اللون" ? "رمادي" : attr.name === "المقاس" ? "XXL" : "قيمة جديدة"
+                                })...`}
+                                className="flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddValueToAttribute(attr.id, currentInput)}
+                                disabled={!currentInput.trim()}
+                                className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40 rounded-lg transition-colors disabled:opacity-40 shrink-0"
+                              >
+                                + إضافة قيمة
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 5.3. Generation Action Banner (توليد المتغيرات) */}
+                {validAttributes.length > 0 && (
+                  <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <ArrowPathIcon className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                        <span className="text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                          توليد التركيبات والمتغيرات ({potentialCombinationCount})
+                        </span>
+                      </div>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                        سيتم دمج الخصائص:{" "}
+                        {validAttributes.map((a) => `${a.name} (${a.values.length})`).join(" × ")}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateVariations}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-97 shrink-0"
+                    >
+                      <ArrowPathIcon className="w-4 h-4" />
+                      <span>توليد المتغيرات ({potentialCombinationCount})</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* 5.4. Generated Variations Matrix / List (المتغيرات المولدة) */}
+                {variants.length > 0 && (
+                  <div className="space-y-3 pt-2 border-t border-indigo-100/80 dark:border-indigo-900/30">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          قائمة المتغيرات المولدة ({variants.length})
+                        </span>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          حدد السعر والكمية لكل متغير أو طبّق قيمة موحدة
+                        </p>
+                      </div>
+
+                      {/* Bulk Controls */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {price && (
+                          <button
+                            type="button"
+                            onClick={handleApplyBasePriceToAll}
+                            className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 rounded-lg border border-indigo-200 dark:border-indigo-800/40 transition-colors"
+                          >
+                            تطبيق السعر الأساسي ({price}) على الكل
+                          </button>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={bulkStockValue}
+                            onChange={(e) => setBulkStockValue(e.target.value)}
+                            placeholder="كمية موحدة"
+                            className="w-20 px-2 py-1 text-xs tabular-nums bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyBulkStockToAll}
+                            disabled={!bulkStockValue.trim()}
+                            className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 transition-colors"
+                          >
+                            تطبيق
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Variations Scrollable List */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                      {variants.map((v) => (
+                        <div
+                          key={v.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <TagIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                              {v.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            {/* Price */}
                             <div className="flex items-center gap-1">
                               <span className="text-[11px] text-slate-400">السعر:</span>
                               <input
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={opt.price}
-                                onChange={(e) => updateOptionItem(opt.id, "price", e.target.value)}
+                                value={v.price}
+                                onChange={(e) => handleUpdateVariant(v.id, "price", e.target.value)}
                                 placeholder={price || "0.00"}
-                                className="w-18 px-2 py-1 text-xs tabular-nums bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none"
+                                className="w-20 px-2 py-1 text-xs tabular-nums bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none"
                               />
                             </div>
 
-                            {/* Option Stock */}
+                            {/* Stock */}
                             <div className="flex items-center gap-1">
                               <span className="text-[11px] text-slate-400">الكمية:</span>
                               <input
                                 type="number"
                                 min="0"
-                                value={opt.stock}
-                                onChange={(e) => updateOptionItem(opt.id, "stock", e.target.value)}
+                                value={v.stock}
+                                onChange={(e) => handleUpdateVariant(v.id, "stock", e.target.value)}
                                 placeholder="10"
-                                className="w-16 px-2 py-1 text-xs tabular-nums bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none"
+                                className="w-18 px-2 py-1 text-xs tabular-nums bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none"
                               />
                             </div>
 
-                            {/* Delete Option */}
+                            {/* Delete variant */}
                             <button
                               type="button"
-                              onClick={() => removeOptionItem(opt.id)}
-                              aria-label={`حذف ${opt.name}`}
+                              onClick={() => handleRemoveVariant(v.id)}
+                              aria-label={`حذف متغير ${v.name}`}
                               className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
                             >
                               <TrashIcon className="w-4 h-4" />
@@ -948,6 +1327,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
                     </div>
                   </div>
                 )}
+
                 {fieldErrors.options && (
                   <p className="text-xs text-rose-500">{fieldErrors.options}</p>
                 )}
