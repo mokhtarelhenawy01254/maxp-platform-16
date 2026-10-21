@@ -12,6 +12,10 @@ import {
   ShieldCheckIcon,
   ChatBubbleBottomCenterTextIcon,
   TagIcon,
+  DocumentTextIcon,
+  MinusIcon,
+  ArrowsUpDownIcon,
+  PlayCircleIcon,
 } from "@heroicons/react/24/outline";
 import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
 
@@ -52,12 +56,15 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
 
   const quickElements = [
     { id: "container", label: "حاوية", type: "container", icon: Squares2X2Icon },
-    { id: "text", label: "عنوان", type: "richtext", icon: Bars3BottomLeftIcon },
+    { id: "heading", label: "عنوان", type: "heading", icon: Bars3BottomLeftIcon },
+    { id: "text", label: "نص", type: "text", icon: DocumentTextIcon },
     { id: "hero", label: "بانر رئيسي", type: "hero-banner", icon: QueueListIcon },
-    { id: "image", label: "صورة", type: "info-content", icon: PhotoIcon },
-    { id: "grid", label: "شبكة", type: "featured-products", icon: Squares2X2Icon },
-    { id: "button", label: "شريط عروض", type: "promo-strip", icon: CursorArrowRaysIcon },
-    { id: "form", label: "نموذج", type: "newsletter", icon: EnvelopeIcon },
+    { id: "image", label: "صورة", type: "image", icon: PhotoIcon },
+    { id: "button", label: "زر", type: "button", icon: CursorArrowRaysIcon },
+    { id: "icon", label: "أيقونة", type: "icon", icon: SparklesIcon },
+    { id: "divider", label: "فاصل", type: "divider", icon: MinusIcon },
+    { id: "spacer", label: "مسافة", type: "spacer", icon: ArrowsUpDownIcon },
+    { id: "video", label: "فيديو", type: "video", icon: PlayCircleIcon },
   ];
 
   const presets = [

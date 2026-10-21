@@ -70,6 +70,16 @@ const LookProgress = React.lazy(() => import('../sections/LookProgress'));
 const Dental3DShowcase = React.lazy(() => import('../sections/Dental3DShowcase'));
 const DentalSampleKit = React.lazy(() => import('../sections/DentalSampleKit'));
 
+// Independent element primitives (Ticket 5C)
+const HeadingElement = React.lazy(() => import('../sections/elements/HeadingElement'));
+const TextElement = React.lazy(() => import('../sections/elements/TextElement'));
+const ImageElement = React.lazy(() => import('../sections/elements/ImageElement'));
+const ButtonElement = React.lazy(() => import('../sections/elements/ButtonElement'));
+const IconElement = React.lazy(() => import('../sections/elements/IconElement'));
+const DividerElement = React.lazy(() => import('../sections/elements/DividerElement'));
+const SpacerElement = React.lazy(() => import('../sections/elements/SpacerElement'));
+const VideoElement = React.lazy(() => import('../sections/elements/VideoElement'));
+
 const baseComponentRegistry: Record<
   string,
   React.ComponentType<any>
@@ -140,6 +150,16 @@ const baseComponentRegistry: Record<
   'look-progress': LookProgress,
   'dental-3d-showcase': Dental3DShowcase,
   'dental-sample-kit': DentalSampleKit,
+
+  // Independent element primitives
+  heading: HeadingElement,
+  text: TextElement,
+  image: ImageElement,
+  button: ButtonElement,
+  icon: IconElement,
+  divider: DividerElement,
+  spacer: SpacerElement,
+  video: VideoElement,
 };
 
 /**

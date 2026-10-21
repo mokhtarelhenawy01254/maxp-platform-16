@@ -150,6 +150,215 @@ export const STOREFRONT_CUSTOM_PAGE_STARTER_SECTIONS = [
 ] as const;
 
 export const STOREFRONT_SECTION_MANIFEST = {
+  heading: {
+    label: "عنوان",
+    component: "heading",
+    pages: [],
+    variants: [],
+    fields: [
+      { key: "text", label: "نص العنوان", type: "text", placeholder: "عنوان رئيسي" },
+      {
+        key: "level",
+        label: "المستوى",
+        type: "select",
+        options: [
+          { value: "h2", label: "H2 (افتراضي)" },
+          { value: "h3", label: "H3 (فرعي)" },
+          { value: "h4", label: "H4 (مبسط)" },
+        ],
+      },
+      {
+        key: "align",
+        label: "المحاذاة",
+        type: "select",
+        options: [
+          { value: "start", label: "بداية (يمين)" },
+          { value: "center", label: "توسيط" },
+          { value: "end", label: "نهاية (يسار)" },
+        ],
+      },
+      { key: "color", label: "اللون", type: "text", placeholder: "accent أو #171717" },
+    ],
+  },
+  text: {
+    label: "نص",
+    component: "text",
+    pages: [],
+    variants: [],
+    fields: [
+      { key: "content", label: "محتوى النص", type: "textarea", placeholder: "أدخل النص هنا..." },
+      {
+        key: "size",
+        label: "الحجم",
+        type: "select",
+        options: [
+          { value: "sm", label: "صغير" },
+          { value: "md", label: "متوسط (افتراضي)" },
+          { value: "lg", label: "كبير" },
+        ],
+      },
+      {
+        key: "align",
+        label: "المحاذاة",
+        type: "select",
+        options: [
+          { value: "start", label: "بداية (يمين)" },
+          { value: "center", label: "توسيط" },
+          { value: "end", label: "نهاية (يسار)" },
+        ],
+      },
+    ],
+  },
+  image: {
+    label: "صورة",
+    component: "image",
+    pages: [],
+    variants: [],
+    fields: [
+      { key: "src", label: "رابط الصورة", type: "url", placeholder: "https://..." },
+      { key: "alt", label: "النص البديل", type: "text", placeholder: "وصف الصورة" },
+      { key: "href", label: "رابط التحويل", type: "url", placeholder: "/collections" },
+      {
+        key: "radius",
+        label: "استدارة الحواف",
+        type: "select",
+        options: [
+          { value: "store", label: "افتراضي المتجر (--store-radius)" },
+          { value: "none", label: "بدون استدارة (0)" },
+          { value: "sm", label: "صغير (4px)" },
+          { value: "md", label: "متوسط (8px)" },
+          { value: "lg", label: "كبير (16px)" },
+          { value: "full", label: "دائري كامل" },
+        ],
+      },
+    ],
+  },
+  button: {
+    label: "زر",
+    component: "button",
+    pages: [],
+    variants: [
+      { value: "primary", label: "أساسي" },
+      { value: "outline", label: "محدد" },
+      { value: "ghost", label: "شفاف" },
+    ],
+    fields: [
+      { key: "label", label: "نص الزر", type: "text", placeholder: "اضغط هنا" },
+      { key: "href", label: "رابط الزر", type: "url", placeholder: "#" },
+      {
+        key: "variant",
+        label: "نوع الزر",
+        type: "select",
+        options: [
+          { value: "primary", label: "أساسي" },
+          { value: "outline", label: "محدد" },
+          { value: "ghost", label: "شفاف" },
+        ],
+      },
+      {
+        key: "size",
+        label: "الحجم",
+        type: "select",
+        options: [
+          { value: "sm", label: "صغير" },
+          { value: "md", label: "متوسط" },
+          { value: "lg", label: "كبير" },
+        ],
+      },
+    ],
+  },
+  icon: {
+    label: "أيقونة",
+    component: "icon",
+    pages: [],
+    variants: [],
+    fields: [
+      { key: "name", label: "اسم الأيقونة", type: "text", placeholder: "sparkles, check, star, heart, truck, shield..." },
+      {
+        key: "size",
+        label: "الحجم",
+        type: "select",
+        options: [
+          { value: "sm", label: "صغير (16px)" },
+          { value: "md", label: "متوسط (24px)" },
+          { value: "lg", label: "كبير (36px)" },
+          { value: "xl", label: "كبير جداً (48px)" },
+        ],
+      },
+      { key: "color", label: "اللون", type: "text", placeholder: "accent أو #2563eb" },
+    ],
+  },
+  divider: {
+    label: "فاصل",
+    component: "divider",
+    pages: [],
+    variants: [],
+    fields: [
+      {
+        key: "thickness",
+        label: "السماكة",
+        type: "select",
+        options: [
+          { value: "1px", label: "1px (افتراضي)" },
+          { value: "2px", label: "2px" },
+          { value: "4px", label: "4px" },
+        ],
+      },
+      { key: "color", label: "اللون", type: "text", placeholder: "#e5e7eb أو accent" },
+      {
+        key: "width",
+        label: "العرض",
+        type: "select",
+        options: [
+          { value: "full", label: "كامل (100%)" },
+          { value: "3/4", label: "ثلاثة أرباع (75%)" },
+          { value: "1/2", label: "نصف (50%)" },
+          { value: "1/4", label: "ربع (25%)" },
+        ],
+      },
+    ],
+  },
+  spacer: {
+    label: "مسافة",
+    component: "spacer",
+    pages: [],
+    variants: [],
+    fields: [
+      {
+        key: "height",
+        label: "الارتفاع",
+        type: "select",
+        options: [
+          { value: "density", label: "كثافة المتجر تلقائياً (--store-density-gap)" },
+          { value: "sm", label: "صغير (12px)" },
+          { value: "md", label: "متوسط (24px)" },
+          { value: "lg", label: "كبير (48px)" },
+          { value: "xl", label: "كبير جداً (64px)" },
+        ],
+      },
+    ],
+  },
+  video: {
+    label: "فيديو",
+    component: "video",
+    pages: [],
+    variants: [],
+    fields: [
+      { key: "url", label: "رابط الفيديو (YouTube/Vimeo/MP4)", type: "url", placeholder: "https://www.youtube.com/watch?v=..." },
+      { key: "poster", label: "صورة الغلاف", type: "url", placeholder: "https://..." },
+      {
+        key: "ratio",
+        label: "نسبة الأبعاد",
+        type: "select",
+        options: [
+          { value: "16:9", label: "16:9 (عريض)" },
+          { value: "4:3", label: "4:3 (كلاسيكي)" },
+          { value: "1:1", label: "1:1 (مربع)" },
+          { value: "9:16", label: "9:16 (رأسي)" },
+        ],
+      },
+    ],
+  },
   "look-mosaic": {
     label: "فسيفساء اللوكات",
     component: "look-mosaic",
