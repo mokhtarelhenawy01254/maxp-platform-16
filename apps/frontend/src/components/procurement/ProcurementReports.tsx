@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   BarChart3, RefreshCw, Download, Filter, 
   RotateCcw, AlertTriangle, Users, FileText, 
@@ -47,6 +48,8 @@ const getDefaultDates = () => {
 };
 
 export default function ProcurementReports() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language !== 'en';
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'aging';
 
@@ -167,7 +170,7 @@ export default function ProcurementReports() {
     const todayStr = new Date().toISOString().split('T')[0];
 
     if (activeTab === 'aging' && agingData) {
-      const headers = ['رقم الفاتورة', 'المورد', 'تاريخ الاستحقاق', 'أيام التأخير', 'المبلغ المتبقي (ج.م)'];
+      const headers = ['رقم الفاتورة', 'المورد', 'تاريخ الاستحقاق', 'أيام التأخير', 'المبلغ المتبقي'];
       const rows: (string | number)[][] = [];
       const buckets = [agingData.current, agingData.days30, agingData.days60, agingData.days90, agingData.over90];
       buckets.forEach((b) => {
@@ -175,7 +178,7 @@ export default function ProcurementReports() {
           rows.push([
             inv.invoiceNumber,
             inv.supplierName || '—',
-            inv.dueDate ? formatShortDate(inv.dueDate, 'ar') : '—',
+            inv.dueDate ? formatShortDate(inv.dueDate, isRtl ? 'ar' : 'en') : '—',
             inv.daysPastDue,
             Number(inv.remainingAmount) || 0,
           ]);
@@ -183,7 +186,7 @@ export default function ProcurementReports() {
       });
       downloadCsv({ filename: `aging_debt_report_${todayStr}.csv`, headers, rows });
     } else if (activeTab === 'suppliers') {
-      const headers = ['اسم المورد', 'جهة الاتصال', 'الهاتف', 'عدد الأوامر', 'إجمالي الأوامر (ج.م)', 'عدد الفواتير', 'إجمالي الفواتير (ج.م)', 'عدد السدادات', 'إجمالي المسدد (ج.م)', 'الرصيد الحالي (ج.م)'];
+      const headers = ['اسم المورد', 'جهة الاتصال', 'الهاتف', 'عدد الأوامر', 'إجمالي الأوامر', 'عدد الفواتير', 'إجمالي الفواتير', 'عدد السدادات', 'إجمالي المسدد', 'الرصيد الحالي'];
       const rows = suppliersData.map((s) => [
         s.supplierName,
         s.contactPerson || '',
@@ -198,24 +201,24 @@ export default function ProcurementReports() {
       ]);
       downloadCsv({ filename: `suppliers_report_${todayStr}.csv`, headers, rows });
     } else if (activeTab === 'orders') {
-      const headers = ['رقم الأمر', 'المورد', 'تاريخ الطلب', 'تاريخ التسليم', 'عدد الأصناف', 'الإجمالي (ج.م)', 'الحالة'];
+      const headers = ['رقم الأمر', 'المورد', 'تاريخ الطلب', 'تاريخ التسليم', 'عدد الأصناف', 'الإجمالي', 'الحالة'];
       const rows = ordersData.orders.map((o) => [
         o.orderNumber,
         o.supplier?.name || '—',
-        o.orderDate ? formatShortDate(o.orderDate, 'ar') : '—',
-        o.expectedDeliveryDate ? formatShortDate(o.expectedDeliveryDate, 'ar') : '—',
+        o.orderDate ? formatShortDate(o.orderDate, isRtl ? 'ar' : 'en') : '—',
+        o.expectedDeliveryDate ? formatShortDate(o.expectedDeliveryDate, isRtl ? 'ar' : 'en') : '—',
         o.purchaseOrderItems?.length || 0,
         Number(o.totalAmount) || 0,
         o.status,
       ]);
       downloadCsv({ filename: `purchase_orders_report_${todayStr}.csv`, headers, rows });
     } else if (activeTab === 'invoices') {
-      const headers = ['رقم الفاتورة', 'المورد', 'تاريخ الفاتورة', 'تاريخ الاستحقاق', 'الإجمالي (ج.م)', 'المدفوع (ج.م)', 'المتبقي (ج.م)', 'الحالة'];
+      const headers = ['رقم الفاتورة', 'المورد', 'تاريخ الفاتورة', 'تاريخ الاستحقاق', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'];
       const rows = invoicesData.invoices.map((inv) => [
         inv.invoiceNumber,
         inv.supplier?.name || '—',
-        inv.invoiceDate ? formatShortDate(inv.invoiceDate, 'ar') : '—',
-        inv.dueDate ? formatShortDate(inv.dueDate, 'ar') : '—',
+        inv.invoiceDate ? formatShortDate(inv.invoiceDate, isRtl ? 'ar' : 'en') : '—',
+        inv.dueDate ? formatShortDate(inv.dueDate, isRtl ? 'ar' : 'en') : '—',
         Number(inv.totalAmount) || 0,
         Number(inv.paidAmount) || 0,
         Number(inv.remainingAmount) || 0,
@@ -223,19 +226,19 @@ export default function ProcurementReports() {
       ]);
       downloadCsv({ filename: `purchase_invoices_report_${todayStr}.csv`, headers, rows });
     } else if (activeTab === 'payments') {
-      const headers = ['رقم الدفعة', 'المورد', 'الفاتورة', 'تاريخ الدفع', 'طريقة الدفع', 'المرجع', 'المبلغ (ج.م)'];
+      const headers = ['رقم الدفعة', 'المورد', 'الفاتورة', 'تاريخ الدفع', 'طريقة الدفع', 'المرجع', 'المبلغ'];
       const rows = paymentsData.payments.map((p) => [
         p.paymentNumber,
         p.supplier?.name || '—',
         p.purchaseInvoice?.invoiceNumber || '',
-        p.paymentDate ? formatShortDate(p.paymentDate, 'ar') : '—',
+        p.paymentDate ? formatShortDate(p.paymentDate, isRtl ? 'ar' : 'en') : '—',
         p.paymentMethod,
         p.referenceNumber || '',
         Number(p.amount) || 0,
       ]);
       downloadCsv({ filename: `supplier_payments_report_${todayStr}.csv`, headers, rows });
     } else if (activeTab === 'products') {
-      const headers = ['اسم المنتج', 'إجمالي الكمية', 'إجمالي المشتريات (ج.م)', 'عدد الطلبيات'];
+      const headers = ['اسم المنتج', 'إجمالي الكمية', 'إجمالي المشتريات', 'عدد الطلبيات'];
       const rows = productsData.map((p) => [
         p.productName,
         Number(p.totalQuantity) || 0,
@@ -247,7 +250,7 @@ export default function ProcurementReports() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div>

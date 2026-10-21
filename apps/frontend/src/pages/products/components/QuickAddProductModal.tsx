@@ -33,11 +33,19 @@ interface CategoryOption {
   title?: string;
 }
 
-interface QuickAddProductModalProps {
+export interface WarehouseOption {
+  id: string;
+  name: string;
+}
+
+export interface QuickAddProductModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: (createdProduct: any) => void;
   initialCategories?: CategoryOption[];
+  warehouses?: WarehouseOption[];
+  defaultWarehouseId?: string;
+  showWarehouseSelect?: boolean;
 }
 
 const CLOTHING_SIZES = ["S", "M", "L", "XL", "XXL"];
@@ -49,6 +57,9 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   onClose,
   onSuccess,
   initialCategories = [],
+  warehouses,
+  defaultWarehouseId,
+  showWarehouseSelect = false,
 }) => {
   const navigate = useNavigate();
   const { currency } = useCurrency();
@@ -82,6 +93,49 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [actionType, setActionType] = useState<"publish" | "advance">("publish");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+  // Warehouse Selection
+  const [internalWarehouses, setInternalWarehouses] = useState<WarehouseOption[]>(warehouses || []);
+  const [warehouseId, setWarehouseId] = useState<string>(
+    defaultWarehouseId || (warehouses && warehouses.length > 0 ? warehouses[0].id : "")
+  );
+  const [loadingWarehouses, setLoadingWarehouses] = useState(false);
+
+  // Sync warehouses prop and fetch if needed
+  useEffect(() => {
+    if (!open) return;
+    if (warehouses && warehouses.length > 0) {
+      setInternalWarehouses(warehouses);
+      setWarehouseId((prev) => prev || defaultWarehouseId || warehouses[0].id);
+      return;
+    }
+    if (showWarehouseSelect) {
+      setLoadingWarehouses(true);
+      apiClient
+        .get("/warehouses")
+        .then((res) => {
+          const resData: any = res.data;
+          const list = resData?.data || (Array.isArray(resData) ? resData : []);
+          const validList: WarehouseOption[] = Array.isArray(list)
+            ? list.filter((w: any) => w && typeof w === "object" && w.id && w.name)
+            : [];
+          setInternalWarehouses(validList);
+          setWarehouseId((prev) => prev || defaultWarehouseId || validList[0]?.id || "");
+        })
+        .catch((err) => {
+          console.error("Failed to load warehouses:", err);
+        })
+        .finally(() => {
+          setLoadingWarehouses(false);
+        });
+    }
+  }, [open, warehouses, showWarehouseSelect, defaultWarehouseId]);
+
+  useEffect(() => {
+    if (defaultWarehouseId) {
+      setWarehouseId(defaultWarehouseId);
+    }
+  }, [defaultWarehouseId]);
 
   // Always load categories from API on open
   useEffect(() => {
@@ -148,6 +202,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     setHasOptions(false);
     setOptions([]);
     setCustomOptionName("");
+    setWarehouseId(defaultWarehouseId || (internalWarehouses[0]?.id || ""));
     setFieldErrors({});
     setSubmitting(false);
   };
@@ -219,6 +274,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
     if (!name.trim()) errors.name = "يرجى كتابة اسم المنتج";
     if (!price || Number(price) <= 0) errors.price = "يرجى إدخال سعر صحيح";
     if (!categoryId) errors.category = "يرجى اختيار قسم للمنتج";
+    if (showWarehouseSelect && !warehouseId) errors.warehouse = "يرجى اختيار المخزن";
     if (comparePrice && Number(comparePrice) <= Number(price)) {
       errors.comparePrice = "السعر قبل الخصم يجب أن يكون أكبر من سعر البيع";
     }
@@ -267,10 +323,12 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
         showAddToCartButton: true,
         images,
         mainImage: images[0] || null,
+        warehouseId: warehouseId || undefined,
         metadata: JSON.stringify({
           attributes: productAttributes,
           shippingClass: "standard",
           enableCheckoutForm: true,
+          warehouseId: warehouseId || undefined,
           variantSettings: hasOptions && options.length > 0 ? {
             styles: {
               "خيارات المنتج": "buttons",
@@ -308,11 +366,13 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
               trackInventory: true,
               isActive: true,
               sortOrder: idx,
+              warehouseId: warehouseId || undefined,
               metadata: JSON.stringify({
                 attributeValues: {
                   "خيارات المنتج": opt.name,
                 },
                 shippingClass: "standard",
+                warehouseId: warehouseId || undefined,
               }),
             };
             try {
@@ -460,7 +520,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Category & Stock Grid */}
+          {/* 3. Category & Stock Grid (with optional Warehouse selector) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Category with inline quick add and select */}
             <div>
@@ -562,8 +622,46 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
               )}
             </div>
 
+            {/* Warehouse Selector (shown when showWarehouseSelect is true) */}
+            {showWarehouseSelect && (
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                  المخزن <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={warehouseId}
+                  onChange={(e) => {
+                    setWarehouseId(e.target.value);
+                    if (fieldErrors.warehouse) setFieldErrors((p) => ({ ...p, warehouse: "" }));
+                  }}
+                  disabled={loadingWarehouses}
+                  className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                    fieldErrors.warehouse
+                      ? "border-rose-400 dark:border-rose-600"
+                      : "border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  <option value="">
+                    {loadingWarehouses
+                      ? "جارٍ تحميل المخازن..."
+                      : internalWarehouses.length === 0
+                      ? "-- لا توجد مخازن متاحة --"
+                      : "-- اختر المخزن --"}
+                  </option>
+                  {internalWarehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.warehouse && (
+                  <p className="mt-1 text-xs text-rose-500">{fieldErrors.warehouse}</p>
+                )}
+              </div>
+            )}
+
             {/* Initial Stock (Only shown when no variants are enabled) */}
-            <div>
+            <div className={showWarehouseSelect ? "sm:col-span-2" : ""}>
               <label className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
                 الكمية المتوفرة بالمخزن
                 {hasOptions && (

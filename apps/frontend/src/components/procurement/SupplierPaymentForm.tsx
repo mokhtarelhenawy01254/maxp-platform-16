@@ -21,9 +21,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { formatCurrency } from "../../utils/currency";
 import { formatShortDate } from "../../utils/dateFormat";
-import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-import "../../styles/dashboard-enhanced.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,9 +105,6 @@ const SupplierPaymentForm: React.FC = () => {
   const queryInvoiceId = searchParams.get("invoiceId");
 
   const isView = Boolean(id && id !== "new");
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
-  const glassClass = isDark ? "glass-effect-dark" : "glass-effect";
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -271,7 +266,7 @@ const SupplierPaymentForm: React.FC = () => {
 
   const currentPaymentAmount = parseFloat(formData.amount) || 0;
   const supplierBalance = Number(selectedSupplier?.currentBalance || 0);
-  const balanceAfterPayment = Math.max(0, supplierBalance - currentPaymentAmount);
+  const balanceAfterPayment = supplierBalance - currentPaymentAmount;
 
   const handleCreateQuickSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -569,12 +564,12 @@ const SupplierPaymentForm: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/procurement/supplier-payments")}
-            className="rounded-full micro-bounce"
+            className="rounded-full active:scale-[0.98] transition-transform duration-100"
           >
             <ArrowLeft className="size-5" />
           </Button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black gradient-text flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Banknote className="size-6 text-primary" />
               تسجيل سند صرف / دفعة جديدة للمورد
             </h1>
@@ -591,7 +586,7 @@ const SupplierPaymentForm: React.FC = () => {
           {/* Main Form Fields (8 cols) */}
           <div className="lg:col-span-8 space-y-5">
             {/* Supplier Selection Card */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-30 overflow-visible`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-30 overflow-visible bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4 overflow-visible">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Searchable Combobox for Supplier */}
@@ -823,7 +818,7 @@ const SupplierPaymentForm: React.FC = () => {
             </Card>
 
             {/* Payment Details & Method Card */}
-            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
+            <Card className="border border-border/70 shadow-2xs bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
                   <CreditCard className="size-4 text-primary" />
@@ -1017,10 +1012,10 @@ const SupplierPaymentForm: React.FC = () => {
 
           {/* Sticky Financial Receipt (4 cols on desktop) */}
           <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-4">
-            <Card className={`${glassClass} border-border/80 shadow-md`} size="sm">
+            <Card className="border border-border/70 shadow-2xs bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <h3 className="text-base font-bold gradient-text flex items-center gap-1.5">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                     <Banknote className="size-4 text-primary" />
                     الأثر المالي للسند
                   </h3>
@@ -1046,9 +1041,24 @@ const SupplierPaymentForm: React.FC = () => {
 
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="font-bold text-sm">الرصيد بعد السداد:</span>
-                    <span className="text-2xl font-black font-mono text-primary">
-                      {formatCurrency(balanceAfterPayment)}
-                    </span>
+                    <div className="text-end">
+                      <span
+                        className={`text-2xl font-black font-mono tabular-nums ${
+                          balanceAfterPayment < 0
+                            ? "text-blue-600 dark:text-blue-400"
+                            : balanceAfterPayment === 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-primary"
+                        }`}
+                      >
+                        {formatCurrency(balanceAfterPayment)}
+                      </span>
+                      {balanceAfterPayment < 0 && (
+                        <div className="text-[10px] text-blue-500 font-medium mt-0.5">
+                          رصيد دائن لصالحنا (دفعة مقدمة)
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {selectedInvoice && (
@@ -1079,7 +1089,7 @@ const SupplierPaymentForm: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="w-full h-12 text-base rounded-xl font-bold active:scale-[0.98] transition-transform duration-100 shadow-md bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     {saving ? (
                       <LoadingSpinner size="sm" />

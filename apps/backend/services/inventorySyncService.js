@@ -67,7 +67,7 @@ const ensureCompanyPrimaryWarehouse = async (prisma, companyId) => {
  */
 const syncProductToInventory = async (
   prisma,
-  { productId, companyId, stock, cost, userId, userName, isCreate = false } = {}
+  { productId, companyId, stock, cost, userId, userName, isCreate = false, warehouseId = null } = {}
 ) => {
   if (!productId || !companyId || stock === undefined || stock === null) {
     return null;
@@ -84,7 +84,24 @@ const syncProductToInventory = async (
       : null;
 
   const db = prisma || getSharedPrismaClient();
-  const warehouse = await ensureCompanyPrimaryWarehouse(db, companyId);
+  let warehouse = null;
+  if (warehouseId) {
+    warehouse = await db.warehouse.findFirst({
+      where: {
+        id: warehouseId,
+        companyId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        location: true,
+      },
+    });
+  }
+  if (!warehouse) {
+    warehouse = await ensureCompanyPrimaryWarehouse(db, companyId);
+  }
   if (!warehouse) {
     return null;
   }
@@ -259,7 +276,7 @@ const syncProductToInventory = async (
 const syncProductVariantsStock = async (
   prisma,
   productId,
-  { companyId, userId, userName } = {}
+  { companyId, userId, userName, warehouseId = null } = {}
 ) => {
   if (!productId) return 0;
   const db = prisma || getSharedPrismaClient();
@@ -297,6 +314,19 @@ const syncProductVariantsStock = async (
     });
   }
 
+  // Resolve target warehouse: explicit warehouseId or existing inventory row for this product
+  let targetWarehouseId = warehouseId || null;
+  if (!targetWarehouseId) {
+    const existingInventory = await db.inventory.findFirst({
+      where: { productId },
+      orderBy: { updatedAt: 'desc' },
+      select: { warehouseId: true },
+    });
+    if (existingInventory?.warehouseId) {
+      targetWarehouseId = existingInventory.warehouseId;
+    }
+  }
+
   // Sync to warehouse inventory
   await syncProductToInventory(db, {
     productId,
@@ -306,6 +336,7 @@ const syncProductVariantsStock = async (
     userId,
     userName,
     isCreate: false,
+    warehouseId: targetWarehouseId,
   });
 
   return totalStock;

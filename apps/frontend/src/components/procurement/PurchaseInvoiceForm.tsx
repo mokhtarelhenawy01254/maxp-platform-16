@@ -14,14 +14,13 @@ import {
   ChevronsUpDown,
   CreditCard,
   SlidersHorizontal,
+  Lightbulb,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { formatCurrency } from "../../utils/currency";
-import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-import "../../styles/dashboard-enhanced.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +50,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  ProcurementCatalogModal,
+  ProcurementItemCombobox,
+  ProcurementCatalogItem,
+  fetchProcurementCatalog,
+} from "./components";
 
 interface Supplier {
   id: string;
@@ -59,16 +64,6 @@ interface Supplier {
   mobile?: string;
   contactPerson?: string;
   currentBalance?: number;
-}
-
-interface CatalogItem {
-  id: string;
-  name: string;
-  sku?: string;
-  type: "product" | "dental_material";
-  cost: number;
-  category?: string;
-  unit?: string;
 }
 
 interface PurchaseOrderSummary {
@@ -82,6 +77,7 @@ interface PurchaseOrderSummary {
 interface InvoiceItem {
   id?: string;
   productId: string | null;
+  variantId?: string | null;
   productName: string;
   description: string;
   quantity: number;
@@ -104,16 +100,13 @@ const PurchaseInvoiceForm: React.FC = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const { t } = useTranslation();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
-  const glassClass = isDark ? "glass-effect-dark" : "glass-effect";
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [catalogItems, setCatalogItems] = useState<ProcurementCatalogItem[]>([]);
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [supplierOrders, setSupplierOrders] = useState<PurchaseOrderSummary[]>([]);
-  const [activeSearchRowIndex, setActiveSearchRowIndex] = useState<number | null>(null);
 
   // Supplier Search Combobox State
   const [supplierSearchOpen, setSupplierSearchOpen] = useState(false);
@@ -154,6 +147,7 @@ const PurchaseInvoiceForm: React.FC = () => {
   const [items, setItems] = useState<InvoiceItem[]>([
     {
       productId: null,
+      variantId: null,
       productName: "",
       description: "",
       quantity: 1,
@@ -161,6 +155,7 @@ const PurchaseInvoiceForm: React.FC = () => {
       taxRate: 0,
       discountRate: 0,
       totalPrice: 0,
+      notes: "",
     },
   ]);
 
@@ -225,49 +220,17 @@ const PurchaseInvoiceForm: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [suppliersRes, productsRes, materialsRes] = await Promise.all([
-        apiClient.get("/procurement/suppliers", { params: { limit: 200 } }).catch(() => ({ data: { suppliers: [] } })),
-        apiClient.get("/products", { params: { limit: 100 } }).catch(() => ({ data: { data: [] } })),
-        apiClient.get("/dental-lab/materials").catch(() => ({ data: { data: [] } })),
+      const [suppliersRes, catalogList] = await Promise.all([
+        apiClient
+          .get("/procurement/suppliers", { params: { limit: 200 } })
+          .catch(() => ({ data: { suppliers: [] } })),
+        fetchProcurementCatalog(""),
       ]);
 
       const loadedSuppliers: Supplier[] =
         suppliersRes?.data?.suppliers || suppliersRes?.data?.data || [];
       setSuppliers(loadedSuppliers);
-
-      const itemsList: CatalogItem[] = [];
-
-      // Dental Materials
-      const materials = materialsRes?.data?.data || [];
-      if (Array.isArray(materials)) {
-        materials.forEach((m: any) => {
-          itemsList.push({
-            id: m.id,
-            name: m.name,
-            sku: m.code,
-            type: "dental_material",
-            cost: Number(m.costPerUnit || 0),
-            category: m.category,
-            unit: m.unit,
-          });
-        });
-      }
-
-      // Store Products
-      const prods = productsRes?.data?.data || productsRes?.data?.products || [];
-      if (Array.isArray(prods)) {
-        prods.forEach((p: any) => {
-          itemsList.push({
-            id: p.id,
-            name: p.name,
-            sku: p.sku,
-            type: "product",
-            cost: Number(p.cost || p.price || 0),
-          });
-        });
-      }
-
-      setCatalogItems(itemsList);
+      setCatalogItems(catalogList);
     } catch (error) {
       console.error("Error fetching initial data:", error);
       toast.error(t("procurement.purchaseInvoiceForm.fetchError", "فشل في تحميل البيانات الأولية"));
@@ -320,17 +283,23 @@ const PurchaseInvoiceForm: React.FC = () => {
 
       if (Array.isArray(invoice.items) && invoice.items.length > 0) {
         setItems(
-          invoice.items.map((item: any) => ({
-            id: item.id,
-            productId: item.productId ?? null,
-            productName: item.productName || "",
-            description: item.description || "",
-            quantity: Number(item.quantity || 1),
-            unitPrice: Number(item.unitPrice || 0),
-            taxRate: Number(item.taxRate || 0),
-            discountRate: Number(item.discountRate || 0),
-            totalPrice: Number(item.totalPrice || 0),
-          })),
+          invoice.items.map((item: any) => {
+            const variantMatch = item.notes?.match(/\[variantId:([^\]]+)\]/);
+            const variantId = variantMatch ? variantMatch[1] : item.variantId || null;
+            return {
+              id: item.id,
+              productId: item.productId ?? null,
+              variantId,
+              productName: item.productName || "",
+              description: item.description || "",
+              quantity: Number(item.quantity || 1),
+              unitPrice: Number(item.unitPrice || 0),
+              taxRate: Number(item.taxRate || 0),
+              discountRate: Number(item.discountRate || 0),
+              totalPrice: Number(item.totalPrice || 0),
+              notes: item.notes || "",
+            };
+          }),
         );
       }
     } catch (error) {
@@ -375,9 +344,12 @@ const PurchaseInvoiceForm: React.FC = () => {
             const discount = subtotal * (discountRate / 100);
             const tax = (subtotal - discount) * (taxRate / 100);
             const totalPrice = subtotal - discount + tax;
+            const variantMatch = item.notes?.match(/\[variantId:([^\]]+)\]/);
+            const variantId = variantMatch ? variantMatch[1] : item.variantId || null;
 
             return {
               productId: item.productId || null,
+              variantId,
               productName: item.productName || "",
               description: item.description || "",
               quantity,
@@ -385,6 +357,7 @@ const PurchaseInvoiceForm: React.FC = () => {
               taxRate,
               discountRate,
               totalPrice,
+              notes: item.notes || "",
             };
           }),
         );
@@ -443,6 +416,7 @@ const PurchaseInvoiceForm: React.FC = () => {
       ...prev,
       {
         productId: null,
+        variantId: null,
         productName: "",
         description: "",
         quantity: 1,
@@ -450,6 +424,7 @@ const PurchaseInvoiceForm: React.FC = () => {
         taxRate: 0,
         discountRate: 0,
         totalPrice: 0,
+        notes: "",
       },
     ]);
   };
@@ -459,6 +434,7 @@ const PurchaseInvoiceForm: React.FC = () => {
       setItems([
         {
           productId: null,
+          variantId: null,
           productName: "",
           description: "",
           quantity: 1,
@@ -466,11 +442,50 @@ const PurchaseInvoiceForm: React.FC = () => {
           taxRate: 0,
           discountRate: 0,
           totalPrice: 0,
+          notes: "",
         },
       ]);
     } else {
       setItems((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleAddCatalogItems = (
+    selectedList: Array<{
+      productId: string | null;
+      variantId?: string | null;
+      productName: string;
+      unitPrice?: number;
+      quantity?: number;
+      sku?: string;
+      description?: string;
+    }>,
+  ) => {
+    setItems((prev) => {
+      const isEmptySingleItem =
+        prev.length === 1 &&
+        !prev[0].productName.trim() &&
+        prev[0].unitPrice === 0;
+
+      const newRows: InvoiceItem[] = selectedList.map((sel) => {
+        const qty = sel.quantity && sel.quantity > 0 ? sel.quantity : 1;
+        const price = Number(sel.unitPrice || 0);
+        return {
+          productId: sel.productId || null,
+          variantId: sel.variantId || null,
+          productName: sel.productName,
+          description: sel.description || (sel.sku ? `SKU: ${sel.sku}` : ""),
+          quantity: qty,
+          unitPrice: price,
+          taxRate: 0,
+          discountRate: 0,
+          totalPrice: qty * price,
+          notes: sel.variantId ? `[variantId:${sel.variantId}]` : "",
+        };
+      });
+
+      return isEmptySingleItem ? newRows : [...prev, ...newRows];
+    });
   };
 
   const calculateTotals = () => {
@@ -578,17 +593,23 @@ const PurchaseInvoiceForm: React.FC = () => {
         paymentMethod: totals.effectivePaid > 0 ? paymentMethod : undefined,
         treasuryAccountId: totals.effectivePaid > 0 ? treasuryAccountId || undefined : undefined,
         notes: combinedNotes,
-        items: items.map((it) => ({
-          productId: it.productId || null,
-          productName: it.productName.trim(),
-          description: it.description || "",
-          quantity: Number(it.quantity),
-          unitPrice: Number(it.unitPrice),
-          taxRate: Number(it.taxRate || 0),
-          discountRate: Number(it.discountRate || 0),
-          totalPrice: Number(it.totalPrice),
-          notes: it.notes || "",
-        })),
+        items: items.map((it) => {
+          let itemNotes = it.notes || "";
+          if (it.variantId && !itemNotes.includes(`[variantId:${it.variantId}]`)) {
+            itemNotes = itemNotes ? `${itemNotes} [variantId:${it.variantId}]` : `[variantId:${it.variantId}]`;
+          }
+          return {
+            productId: it.productId || null,
+            productName: it.productName.trim(),
+            description: it.description || "",
+            quantity: Number(it.quantity),
+            unitPrice: Number(it.unitPrice),
+            taxRate: Number(it.taxRate || 0),
+            discountRate: Number(it.discountRate || 0),
+            totalPrice: Number(it.totalPrice),
+            notes: itemNotes,
+          };
+        }),
       };
 
       if (isEdit) {
@@ -636,12 +657,12 @@ const PurchaseInvoiceForm: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/procurement/purchase-invoices")}
-            className="rounded-full micro-bounce"
+            className="rounded-full active:scale-[0.98] transition-transform duration-100"
           >
             <ArrowLeft className="size-5" />
           </Button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black gradient-text flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Receipt className="size-6 text-primary" />
               {isEdit
                 ? t("procurement.purchaseInvoiceForm.editTitle", "تعديل فاتورة مشتريات")
@@ -679,7 +700,7 @@ const PurchaseInvoiceForm: React.FC = () => {
           {/* Main Column (8 cols) */}
           <div className="lg:col-span-8 space-y-5">
             {/* Supplier & Header Metadata */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-30 overflow-visible`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-30 overflow-visible bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4 overflow-visible">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Searchable Combobox for Supplier */}
@@ -937,12 +958,12 @@ const PurchaseInvoiceForm: React.FC = () => {
             </Card>
 
             {/* Invoice Items Table */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-20 overflow-visible`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-20 overflow-visible bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-3.5 overflow-visible">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <PackageCheck className="size-5 text-primary" />
-                    <h2 className="text-base font-bold gradient-text">
+                    <h2 className="text-base font-bold text-foreground">
                       {t("procurement.purchaseInvoiceForm.itemsSection", "بنود الفاتورة")}
                     </h2>
                     <span className="text-[11px] text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded-full">
@@ -950,8 +971,11 @@ const PurchaseInvoiceForm: React.FC = () => {
                     </span>
                   </div>
 
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    💡 اضغط <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> في خانة السعر لإضافة سطر جديد فوراً
+                  <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+                    <Lightbulb className="size-3.5 text-amber-500 shrink-0" />
+                    <span>
+                      اضغط <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> في خانة السعر لإضافة سطر جديد فوراً
+                    </span>
                   </span>
                 </div>
 
@@ -986,92 +1010,30 @@ const PurchaseInvoiceForm: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item, index) => {
-                        const filteredCatalog = catalogItems.filter(
-                          (c) =>
-                            c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                            (c.sku &&
-                              c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
-                        );
-
-                        return (
-                          <TableRow key={index} className="hover:bg-muted/30 transition-colors">
-                            <TableCell className="relative overflow-visible py-2">
-                              <div className="relative">
-                                <Input
-                                  ref={(el) => (itemInputRefs.current[index] = el)}
-                                  placeholder={t(
-                                    "procurement.purchaseInvoiceForm.itemPlaceholder",
-                                    "اختر صنفاً أو اكتب اسمه...",
-                                  )}
-                                  value={item.productName}
-                                  onFocus={() => setActiveSearchRowIndex(index)}
-                                  onChange={(e) => {
-                                    updateItem(index, "productName", e.target.value);
-                                    setActiveSearchRowIndex(index);
-                                  }}
-                                  className="h-10 rounded-xl"
-                                />
-
-                                {/* Catalog Autocomplete Dropdown */}
-                                {activeSearchRowIndex === index &&
-                                  item.productName &&
-                                  filteredCatalog.length > 0 && (
-                                    <div
-                                      className="absolute top-full start-0 min-w-full sm:min-w-[320px] z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-2xl p-1.5 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
-                                      onMouseLeave={() => setActiveSearchRowIndex(null)}
-                                    >
-                                      {filteredCatalog.slice(0, 8).map((catItem) => (
-                                        <button
-                                          key={catItem.id}
-                                          type="button"
-                                          className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg hover:bg-muted text-start transition-colors"
-                                          onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            updateItemDetails(index, {
-                                              productId: catItem.type === "product" ? catItem.id : null,
-                                              productName: catItem.name,
-                                              unitPrice: catItem.cost || 0,
-                                              unit: catItem.unit,
-                                              description: catItem.category
-                                                ? `${catItem.category}${catItem.unit ? ` - ${catItem.unit}` : ""}`
-                                                : "",
-                                            });
-                                            setActiveSearchRowIndex(null);
-                                          }}
-                                        >
-                                          <div className="flex items-center gap-2 truncate">
-                                            <span className="font-semibold truncate">{catItem.name}</span>
-                                            {catItem.sku && (
-                                              <span className="text-[11px] text-muted-foreground font-mono">
-                                                ({catItem.sku})
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-2 shrink-0">
-                                            <span
-                                              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                                                catItem.type === "dental_material"
-                                                  ? "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20"
-                                                  : "bg-primary/10 text-primary border border-primary/20"
-                                              }`}
-                                            >
-                                              {catItem.type === "dental_material"
-                                                ? "خامة أسنان"
-                                                : "منتج"}
-                                            </span>
-                                            {catItem.cost > 0 && (
-                                              <span className="text-xs font-mono font-bold">
-                                                {formatCurrency(catItem.cost)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            </TableCell>
+                      {items.map((item, index) => (
+                        <TableRow key={index} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="relative overflow-visible py-2">
+                            <ProcurementItemCombobox
+                              value={item.productName}
+                              initialCatalog={catalogItems}
+                              placeholder={t(
+                                "procurement.purchaseInvoiceForm.itemPlaceholder",
+                                "اختر صنفاً أو اكتب اسمه...",
+                              )}
+                              onSelect={(selected) => {
+                                updateItemDetails(index, {
+                                  productId: selected.productId,
+                                  variantId: selected.variantId || null,
+                                  productName: selected.productName,
+                                  unitPrice:
+                                    selected.unitPrice !== undefined
+                                      ? selected.unitPrice
+                                      : item.unitPrice,
+                                  description: selected.description || item.description,
+                                });
+                              }}
+                            />
+                          </TableCell>
 
                             {/* Quantity */}
                             <TableCell className="py-2">
@@ -1146,137 +1108,117 @@ const PurchaseInvoiceForm: React.FC = () => {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
+                        ))}
                     </TableBody>
                   </Table>
                 </div>
 
                 {/* Mobile View: Single-depth cards per item */}
                 <div className="grid grid-cols-1 gap-3 md:hidden">
-                  {items.map((item, index) => {
-                    const filteredCatalog = catalogItems.filter(
-                      (c) =>
-                        c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                        (c.sku &&
-                          c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
-                    );
+                  {items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="p-3.5 rounded-xl border border-border bg-card/60 space-y-3 relative shadow-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
+                          بند #{index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(index)}
+                          className="text-red-500 hover:bg-red-500/10 h-7 px-2"
+                        >
+                          <Trash2 className="size-3.5 me-1" /> حذف
+                        </Button>
+                      </div>
 
-                    return (
-                      <div
-                        key={index}
-                        className="p-3.5 rounded-xl border border-border bg-card/60 space-y-3 relative shadow-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
-                            بند #{index + 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(index)}
-                            className="text-red-500 hover:bg-red-500/10 h-7 px-2"
-                          >
-                            <Trash2 className="size-3.5 me-1" /> حذف
-                          </Button>
-                        </div>
+                      <div className="space-y-1 relative">
+                        <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
+                        <ProcurementItemCombobox
+                          value={item.productName}
+                          initialCatalog={catalogItems}
+                          placeholder="ابحث أو اكتب اسم الصنف..."
+                          onSelect={(selected) => {
+                            updateItemDetails(index, {
+                              productId: selected.productId,
+                              variantId: selected.variantId || null,
+                              productName: selected.productName,
+                              unitPrice:
+                                selected.unitPrice !== undefined
+                                  ? selected.unitPrice
+                                  : item.unitPrice,
+                              description: selected.description || item.description,
+                            });
+                          }}
+                        />
+                      </div>
 
-                        <div className="space-y-1 relative">
-                          <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">الكمية</Label>
                           <Input
-                            ref={(el) => (itemInputRefs.current[index] = el)}
-                            placeholder="ابحث أو اكتب اسم الصنف..."
-                            value={item.productName}
-                            onFocus={() => setActiveSearchRowIndex(index)}
-                            onChange={(e) => {
-                              updateItem(index, "productName", e.target.value);
-                              setActiveSearchRowIndex(index);
-                            }}
-                            className="h-10 rounded-xl"
+                            type="number"
+                            min="1"
+                            step="any"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                            className="h-9 font-mono"
                           />
-                          {activeSearchRowIndex === index &&
-                            item.productName &&
-                            filteredCatalog.length > 0 && (
-                              <div
-                                className="absolute top-full start-0 min-w-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover shadow-2xl p-1 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95"
-                                onMouseLeave={() => setActiveSearchRowIndex(null)}
-                              >
-                                {filteredCatalog.slice(0, 8).map((catItem) => (
-                                  <button
-                                    key={catItem.id}
-                                    type="button"
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg hover:bg-muted text-start"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      updateItemDetails(index, {
-                                        productId: catItem.type === "product" ? catItem.id : null,
-                                        productName: catItem.name,
-                                        unitPrice: catItem.cost || 0,
-                                      });
-                                      setActiveSearchRowIndex(null);
-                                    }}
-                                  >
-                                    <span className="font-medium truncate">{catItem.name}</span>
-                                    <span className="text-primary font-mono">{formatCurrency(catItem.cost)}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                         </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">الكمية</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              step="any"
-                              value={item.quantity}
-                              onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                              className="h-9 font-mono"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">سعر الوحدة</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="any"
-                              value={item.unitPrice}
-                              onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
-                              onKeyDown={(e) => handlePriceKeyDown(e, index)}
-                              className="h-9 font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                          <span className="text-xs text-muted-foreground font-medium">
-                            إجمالي البند:
-                          </span>
-                          <span className="text-sm font-bold font-mono text-primary">
-                            {formatCurrency(item.totalPrice)}
-                          </span>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">سعر الوحدة</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
+                            onKeyDown={(e) => handlePriceKeyDown(e, index)}
+                            className="h-9 font-mono"
+                          />
                         </div>
                       </div>
-                    );
-                  })}
+
+                      <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          إجمالي البند:
+                        </span>
+                        <span className="text-sm font-bold font-mono text-primary">
+                          {formatCurrency(item.totalPrice)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addItem}
-                  className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
-                >
-                  <Plus className="size-4" /> {t("procurement.purchaseInvoiceForm.addItem", "إضافة بند جديد")}
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addItem}
+                    className="w-full sm:w-auto rounded-xl gap-2 active:scale-[0.98] transition-transform duration-100 text-sm h-10 font-semibold"
+                  >
+                    <Plus className="size-4" /> {t("procurement.purchaseInvoiceForm.addItem", "إضافة بند يدوي")}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setCatalogModalOpen(true)}
+                    className="w-full sm:w-auto rounded-xl gap-2 active:scale-[0.98] transition-transform duration-100 text-sm h-10 font-semibold"
+                  >
+                    <PackageCheck className="w-4 h-4 text-primary" />
+                    استعراض منتجات وخامات المتجر
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Notes Section */}
-            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
+            <Card className="border border-border/70 shadow-2xs bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-2">
                 <Label className="text-sm font-semibold">
                   {t("procurement.purchaseInvoiceForm.notesLabel", "ملاحظات الفاتورة والتسليم")}
@@ -1295,10 +1237,10 @@ const PurchaseInvoiceForm: React.FC = () => {
           {/* Sticky Financial Sidebar (4 cols on desktop) */}
           <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-4">
             {/* Live Financial Receipt Card */}
-            <Card className={`${glassClass} border-border/80 shadow-md`} size="sm">
+            <Card className="border border-border/70 shadow-2xs bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <h3 className="text-base font-bold gradient-text flex items-center gap-1.5">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                     <Receipt className="size-4 text-primary" />
                     {t("procurement.purchaseInvoiceForm.summaryTitle", "ملخص الحسابات")}
                   </h3>
@@ -1509,7 +1451,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="w-full h-12 text-base rounded-xl font-bold active:scale-[0.98] transition-transform duration-100 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {saving ? (
                       <LoadingSpinner size="sm" />
@@ -1620,6 +1562,13 @@ const PurchaseInvoiceForm: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ProcurementCatalogModal
+        open={catalogModalOpen}
+        onClose={() => setCatalogModalOpen(false)}
+        onSelectItems={handleAddCatalogItems}
+        initialItems={catalogItems}
+      />
     </div>
   );
 };

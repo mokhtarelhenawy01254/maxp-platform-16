@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { 
   ArrowRight, Building2, Phone, Mail, MapPin, 
   Calendar, Clock, PlusCircle, AlertCircle, RefreshCw, Printer 
@@ -70,6 +72,8 @@ interface TreasuryAccount {
 export default function SupplierDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isRtl = i18n.language !== 'en';
 
   const [supplier, setSupplier] = useState<SupplierDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,9 +148,10 @@ export default function SupplierDetails() {
         notes: paymentForm.notes || undefined,
       });
       setPaymentModalOpen(false);
+      toast.success('تم تسجيل الدفعة بنجاح');
       await fetchSupplierDetails();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'حدث خطأ أثناء تسجيل الدفعة');
+      toast.error(err?.response?.data?.message || 'حدث خطأ أثناء تسجيل الدفعة');
     } finally {
       setSubmittingPayment(false);
     }
@@ -180,7 +185,7 @@ export default function SupplierDetails() {
   const { aging, statement } = supplier;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto supplier-details-container" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto supplier-details-container" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Print-specific style rules */}
       <style>{`
         @media print {

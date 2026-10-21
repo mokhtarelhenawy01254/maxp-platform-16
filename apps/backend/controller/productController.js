@@ -2277,7 +2277,7 @@ const createProduct = async (req, res) => {
       ? await requireMerchantAccountForUser(req.user)
       : null;
 
-    const { name, description, price, category, categoryId, stock, sku, images, tags, hasPromotedAd, showFakeStock, metadata, variantSettings } = req.body;
+    const { name, description, price, category, categoryId, stock, sku, images, tags, hasPromotedAd, showFakeStock, metadata, variantSettings, warehouseId } = req.body;
 
     const normalizedName = typeof name === 'string' ? name.trim() : '';
     const parsedPrice = Number(price);
@@ -2554,6 +2554,9 @@ const createProduct = async (req, res) => {
       });
     } else {
       const actorName = req.user?.name || req.user?.email || 'System';
+      const resolvedWarehouseId = warehouseId || (typeof metadata === 'string' && metadata.includes('warehouseId') ? (() => {
+        try { return JSON.parse(metadata)?.warehouseId; } catch { return null; }
+      })() : null);
       await syncProductToInventory(getSharedPrismaClient(), {
         productId: product.id,
         companyId,
@@ -2562,6 +2565,7 @@ const createProduct = async (req, res) => {
         userId: req.user?.id || null,
         userName: actorName,
         isCreate: true,
+        warehouseId: resolvedWarehouseId || null,
       });
     }
 

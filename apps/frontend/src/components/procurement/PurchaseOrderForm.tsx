@@ -18,9 +18,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { formatCurrency } from "../../utils/currency";
-import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-import "../../styles/dashboard-enhanced.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,9 +76,6 @@ const PurchaseOrderForm: React.FC = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const { t } = useTranslation();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
-  const glassClass = isDark ? "glass-effect-dark" : "glass-effect";
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -482,12 +477,12 @@ const PurchaseOrderForm: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/procurement/purchase-orders")}
-            className="rounded-full micro-bounce"
+            className="rounded-full active:scale-[0.98] transition-transform duration-100"
           >
             <ArrowLeft className="size-5" />
           </Button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black gradient-text flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <ShoppingCart className="size-6 text-primary" />
               {isEdit
                 ? t("procurement.purchaseOrderForm.editTitle", "تعديل أمر شراء")
@@ -525,7 +520,7 @@ const PurchaseOrderForm: React.FC = () => {
           {/* Main Column (8 cols) */}
           <div className="lg:col-span-8 space-y-5">
             {/* Supplier & Header Metadata */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-30 overflow-visible`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-30 overflow-visible bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4 overflow-visible">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Searchable Combobox for Supplier */}
@@ -715,10 +710,10 @@ const PurchaseOrderForm: React.FC = () => {
             </Card>
 
             {/* Order Items Section */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-20 overflow-visible`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-20 overflow-visible bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4 overflow-visible">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-bold gradient-text flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                     <PackageCheck className="size-5 text-primary" />
                     {t("procurement.purchaseOrderForm.itemsSection", "الأصناف والخامات")}
                   </h2>
@@ -760,7 +755,7 @@ const PurchaseOrderForm: React.FC = () => {
                     <TableBody>
                       {items.map((item, index) => (
                         <TableRow key={index} className="hover:bg-muted/40 transition-colors">
-                          <TableCell className="relative overflow-visible">
+                          <TableCell className="overflow-visible">
                             <ProcurementItemCombobox
                               value={item.productName}
                               initialCatalog={catalogItems}
@@ -968,7 +963,7 @@ const PurchaseOrderForm: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={addItem}
-                    className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
+                    className="w-full sm:w-auto rounded-xl gap-2 active:scale-[0.98] transition-transform duration-100 text-sm h-10 font-semibold"
                   >
                     <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem", "إضافة بند جديد")}
                   </Button>
@@ -976,7 +971,7 @@ const PurchaseOrderForm: React.FC = () => {
                     type="button"
                     variant="secondary"
                     onClick={() => setCatalogModalOpen(true)}
-                    className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
+                    className="w-full sm:w-auto rounded-xl gap-2 active:scale-[0.98] transition-transform duration-100 text-sm h-10 font-semibold"
                   >
                     <ShoppingCart className="size-4" /> استعراض منتجات المتجر
                   </Button>
@@ -985,7 +980,7 @@ const PurchaseOrderForm: React.FC = () => {
             </Card>
 
             {/* Terms and Notes Section */}
-            <Card className={`${glassClass} border-border/70 shadow-sm relative z-10`} size="sm">
+            <Card className="border border-border/70 shadow-2xs relative z-10 bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-semibold">
@@ -1019,10 +1014,10 @@ const PurchaseOrderForm: React.FC = () => {
 
           {/* Sticky Financial Sidebar (4 cols on desktop) */}
           <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-4">
-            <Card className={`${glassClass} border-border/80 shadow-md`} size="sm">
+            <Card className="border border-border/70 shadow-2xs bg-card" size="sm">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <h3 className="text-base font-bold gradient-text flex items-center gap-1.5">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                     <ShoppingCart className="size-4 text-primary" />
                     {t("procurement.purchaseOrderForm.summaryTitle", "ملخص المبالغ")}
                   </h3>
@@ -1111,7 +1106,7 @@ const PurchaseOrderForm: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="w-full h-12 text-base rounded-xl font-bold active:scale-[0.98] transition-transform duration-100 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {saving ? (
                       <LoadingSpinner size="sm" />

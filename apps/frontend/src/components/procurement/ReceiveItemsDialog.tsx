@@ -26,10 +26,12 @@ import {
 export interface PurchaseOrderItemData {
   id: string;
   productId?: string | null;
+  variantId?: string | null;
   productName: string;
   quantity: number | string;
   receivedQuantity: number | string;
   unitPrice: number | string;
+  notes?: string | null;
   product?: {
     id: string;
     name: string;
@@ -54,6 +56,7 @@ interface Warehouse {
 
 interface ItemRowState {
   itemId: string;
+  variantId?: string | null;
   productName: string;
   sku?: string | null;
   ordered: number;
@@ -130,15 +133,20 @@ export const ReceiveItemsDialog: React.FC<ReceiveItemsDialogProps> = ({
       const ordered = parseFloat(String(item.quantity)) || 0;
       const receivedBefore = parseFloat(String(item.receivedQuantity)) || 0;
       const remaining = Math.max(0, ordered - receivedBefore);
+      const variantId =
+        item.variantId ||
+        (item.notes || "").match(/\[variantId:([^\]]+)\]/)?.[1] ||
+        null;
       return {
         itemId: item.id,
+        variantId,
         productName: item.productName || item.product?.name || "صنف",
         sku: item.product?.sku || null,
         ordered,
         receivedBefore,
         remaining,
         receivedNow: remaining > 0 ? String(remaining) : "0",
-        updateInventory: Boolean(item.productId),
+        updateInventory: Boolean(item.productId || variantId),
         warehouseId: defaultWarehouseId,
       };
     });
@@ -202,6 +210,7 @@ export const ReceiveItemsDialog: React.FC<ReceiveItemsDialogProps> = ({
       .filter((r) => parseFloat(r.receivedNow) > 0)
       .map((r) => ({
         itemId: r.itemId,
+        variantId: r.variantId || undefined,
         receivedQuantity: parseFloat(r.receivedNow),
         updateInventory: r.updateInventory,
         warehouseId: r.warehouseId || defaultWarehouseId || undefined,

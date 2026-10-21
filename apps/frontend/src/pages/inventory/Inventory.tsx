@@ -332,10 +332,10 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const handleInventoryProductCreated = async (product: { id: string; name?: string }) => {
+  const handleInventoryProductCreated = async () => {
+    setShowCreateProductModal(false);
     await fetchInventory();
     await fetchAlerts();
-    toast.success(`تم إضافة "${product.name || "المنتج"}" وإرساله للمراجعة بنجاح`);
   };
 
   const downloadCSV = () => {
@@ -501,11 +501,13 @@ const Inventory: React.FC = () => {
             تصدير CSV
           </button>
           <button
+            type="button"
             onClick={() => setShowCreateProductModal(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 shadow-2xs active:scale-[0.98] transition-all"
+            title="إنشاء طلب سريع / إضافة منتج"
           >
             <PlusIcon className="h-3.5 w-3.5" />
-            إضافة منتج للمخزن
+            إضافة منتج
           </button>
           {canEditAnyStock && (
             <button

@@ -66,6 +66,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 
 const PurchaseOrders: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.language !== "en";
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -159,16 +160,23 @@ const PurchaseOrders: React.FC = () => {
   };
 
   return (
-    <div className="p-3">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
-        <h1 className="text-2xl font-bold">{t("procurement.purchaseOrders.title")}</h1>
-        <Button onClick={() => navigate("/procurement/purchase-orders/new")}>
+    <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto" dir={isRtl ? "rtl" : "ltr"}>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            {t("procurement.purchaseOrders.title")}
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            إدارة ومتابعة أوامر الشراء الصادرة للموردين وحالات الاستلام
+          </p>
+        </div>
+        <Button onClick={() => navigate("/procurement/purchase-orders/new")} className="gap-2">
           <Plus className="size-4" /> {t("procurement.purchaseOrders.createNew")}
         </Button>
       </div>
 
       {error && (
-        <div className="flex items-center justify-between p-3.5 mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" />
             <span>{error}</span>
@@ -179,36 +187,35 @@ const PurchaseOrders: React.FC = () => {
         </div>
       )}
 
-      <Card className="mb-3">
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder={t("procurement.purchaseOrders.searchPlaceholder")}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="ps-8"
-              />
-            </div>
-            <div className="min-w-[200px]">
-              <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("procurement.purchaseOrders.filterStatus")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("procurement.purchaseOrders.all")}</SelectItem>
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Integrated Single-Surface Filter Bar */}
+      <div className="p-3 rounded-xl border border-border/70 bg-card">
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <div className="relative flex-1">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder={t("procurement.purchaseOrders.searchPlaceholder")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="ps-8"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="min-w-[200px]">
+            <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "")}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("procurement.purchaseOrders.filterStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("procurement.purchaseOrders.all")}</SelectItem>
+                {Object.entries(statusLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       <div className="hidden md:block rounded-xl border bg-card text-card-foreground">
         <Table>

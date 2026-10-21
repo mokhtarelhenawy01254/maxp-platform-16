@@ -1,5 +1,5 @@
 import { apiClient } from "../../../services/apiClient";
-import { ProcurementCatalogItem } from "./types";
+import { ProcurementCatalogItem, ProductCatalogGroup } from "./types";
 
 function extractImageUrl(img: unknown): string | null {
   if (!img) return null;
@@ -46,6 +46,11 @@ export async function fetchProcurementCatalog(
         productId: String(item.productId || item.id),
         variantId: item.variantId || null,
         name: String(item.name || item.productName || ""),
+        parentName:
+          item.parentName ||
+          (item.variantName
+            ? String(item.name || item.productName || "").replace(new RegExp(`\\s*-\\s*${item.variantName}$`), "")
+            : String(item.name || item.productName || "")),
         variantName: item.variantName || null,
         sku: item.sku || null,
         barcode: item.barcode || null,
@@ -150,3 +155,45 @@ export async function fetchProcurementCatalog(
     return [];
   }
 }
+
+export function groupCatalogItems(items: ProcurementCatalogItem[]): ProductCatalogGroup[] {
+  const map = new Map<string, ProductCatalogGroup>();
+
+  for (const item of items) {
+    const pId = item.productId || item.id;
+    let group = map.get(pId);
+    if (!group) {
+      const parentName =
+        item.parentName ||
+        (item.variantName
+          ? item.name.replace(new RegExp(`\\s*-\\s*${item.variantName}$`), "")
+          : item.name);
+
+      group = {
+        productId: pId,
+        name: parentName,
+        sku: item.sku,
+        barcode: item.barcode,
+        imageUrl: item.imageUrl,
+        category: item.category,
+        hasVariants: Boolean(item.variantId || item.variantName),
+        totalStock: 0,
+        minCost: item.cost,
+        maxCost: item.cost,
+        variants: [],
+      };
+      map.set(pId, group);
+    }
+
+    if (item.variantId || item.variantName) {
+      group.hasVariants = true;
+    }
+    group.totalStock += item.stock || 0;
+    group.minCost = Math.min(group.minCost, item.cost);
+    group.maxCost = Math.max(group.maxCost, item.cost);
+    group.variants.push(item);
+  }
+
+  return Array.from(map.values());
+}
+

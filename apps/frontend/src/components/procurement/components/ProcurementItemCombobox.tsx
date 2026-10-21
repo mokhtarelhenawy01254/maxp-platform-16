@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Package, ChevronsUpDown, Plus, Loader2, X } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { Package, ChevronsUpDown, Plus, Loader2, Layers } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "../../../utils/currency";
 import { ProcurementCatalogItem } from "./types";
-import { fetchProcurementCatalog } from "./procurementCatalogService";
+import {
+  fetchProcurementCatalog,
+  groupCatalogItems,
+} from "./procurementCatalogService";
 
 interface ProcurementItemComboboxProps {
   value: string;
@@ -35,18 +39,56 @@ export const ProcurementItemCombobox: React.FC<ProcurementItemComboboxProps> = (
   const [catalog, setCatalog] = useState<ProcurementCatalogItem[]>(initialCatalog);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dropdownCoords, setDropdownCoords] = useState<{
+    top: number;
+    left?: number;
+    right?: number;
+    minWidth: number;
+  } | null>(null);
+
+  const updateCoords = useCallback(() => {
+    if (!containerRef.current) return;
+    const r = containerRef.current.getBoundingClientRect();
+    const isRtl =
+      document.documentElement.dir === "rtl" || document.body.dir === "rtl";
+    setDropdownCoords({
+      top: r.bottom + 4,
+      ...(isRtl
+        ? { right: Math.max(8, window.innerWidth - r.right) }
+        : { left: Math.max(8, r.left) }),
+      minWidth: Math.max(380, r.width),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateCoords();
+    const onScrollOrResize = () => updateCoords();
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [isOpen, updateCoords]);
 
   useEffect(() => {
     if (initialCatalog.length > 0 && catalog.length === 0) {
       setCatalog(initialCatalog);
     }
-  }, [initialCatalog]);
+  }, [initialCatalog, catalog.length]);
 
-  // Click outside to close
+  // Click outside to close (handles portal dropdown safely)
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -90,7 +132,7 @@ export const ProcurementItemCombobox: React.FC<ProcurementItemComboboxProps> = (
 
   const handleSelectItem = (item: ProcurementCatalogItem) => {
     const displayName = item.variantName
-      ? `${item.name} (${item.variantName})`
+      ? `${item.parentName || item.name} - ${item.variantName}`
       : item.name;
 
     onSelect({
@@ -121,11 +163,17 @@ export const ProcurementItemCombobox: React.FC<ProcurementItemComboboxProps> = (
     return catalog.filter(
       (it) =>
         it.name.toLowerCase().includes(q) ||
+        (it.parentName && it.parentName.toLowerCase().includes(q)) ||
         (it.variantName && it.variantName.toLowerCase().includes(q)) ||
         (it.sku && it.sku.toLowerCase().includes(q)) ||
         (it.category && it.category.toLowerCase().includes(q)),
     );
   }, [catalog, value]);
+
+  // Group filtered catalog items hierarchically by parent product
+  const groupedCatalog = useMemo(() => {
+    return groupCatalogItems(filteredCatalog);
+  }, [filteredCatalog]);
 
   const hasExactMatch = useMemo(() => {
     const q = value.trim().toLowerCase();
@@ -133,12 +181,16 @@ export const ProcurementItemCombobox: React.FC<ProcurementItemComboboxProps> = (
     return catalog.some(
       (it) =>
         it.name.toLowerCase() === q ||
+        `${it.parentName || it.name} - ${it.variantName || ""}`.toLowerCase() === q ||
         `${it.name} (${it.variantName || ""})`.toLowerCase() === q,
     );
   }, [catalog, value]);
 
   return (
-    <div ref={containerRef} className={`relative w-full ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative w-full ${isOpen ? "z-50" : "z-auto"} ${className}`}
+    >
       <div className="relative">
         <Input
           value={value}
@@ -170,88 +222,137 @@ export const ProcurementItemCombobox: React.FC<ProcurementItemComboboxProps> = (
         </button>
       </div>
 
-      {/* Floating Dropdown */}
-      {isOpen && (
-        <div className="absolute top-full start-0 min-w-full sm:min-w-[340px] z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-2xl p-1 text-popover-foreground overscroll-contain animate-in fade-in-0 zoom-in-95">
-          {/* Free item option */}
-          {value.trim() && !hasExactMatch && (
-            <button
-              type="button"
-              onClick={handleSelectFree}
-              className="w-full flex items-center gap-2 p-2 text-xs rounded-lg text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 transition-colors text-start font-medium mb-1"
-            >
-              <Plus className="size-3.5 shrink-0" />
-              <span className="truncate">
-                استخدام كصنف حر: <strong>«{value}»</strong>
-              </span>
-            </button>
-          )}
-
-          {/* Catalog items list */}
-          {filteredCatalog.length === 0 ? (
-            <div className="p-4 text-center text-xs text-muted-foreground">
-              {loading ? "جاري البحث..." : "لا توجد منتجات مطابقة في الكتالوج"}
-            </div>
-          ) : (
-            filteredCatalog.slice(0, 20).map((catItem) => (
+      {/* Floating Hierarchical Dropdown rendered via React Portal */}
+      {isOpen &&
+        dropdownCoords &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "fixed",
+              top: `${dropdownCoords.top}px`,
+              ...(dropdownCoords.right !== undefined
+                ? { right: `${dropdownCoords.right}px` }
+                : { left: `${dropdownCoords.left}px` }),
+              width: `${dropdownCoords.minWidth}px`,
+              maxWidth: "calc(100vw - 24px)",
+              zIndex: 9999,
+            }}
+            className="max-h-72 overflow-y-auto rounded-xl border border-border bg-white dark:bg-card shadow-2xl p-2 text-foreground overscroll-contain animate-in fade-in-0 zoom-in-95 space-y-2"
+          >
+            {/* Free item option */}
+            {value.trim() && !hasExactMatch && (
               <button
-                key={catItem.id}
                 type="button"
-                onClick={() => handleSelectItem(catItem)}
-                className="w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs rounded-lg hover:bg-muted text-start transition-colors"
+                onClick={handleSelectFree}
+                className="w-full flex items-center gap-2 p-2 text-xs rounded-lg text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 transition-colors text-start font-medium"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="size-7 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border/40">
-                    {catItem.imageUrl ? (
-                      <img
-                        src={catItem.imageUrl}
-                        alt=""
-                        className="size-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <Package className="size-3.5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="font-semibold text-foreground truncate">
-                        {catItem.name}
+                <Plus className="size-3.5 shrink-0" />
+                <span className="truncate">
+                  استخدام كصنف حر: <strong>«{value}»</strong>
+                </span>
+              </button>
+            )}
+
+            {/* Grouped Catalog items */}
+            {groupedCatalog.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                {loading ? "جاري البحث..." : "لا توجد منتجات مطابقة في الكتالوج"}
+              </div>
+            ) : (
+              groupedCatalog.map((group) => (
+                <div
+                  key={group.productId}
+                  className="rounded-lg border border-border/50 bg-card/40 overflow-hidden"
+                >
+                  {/* Parent Product Header */}
+                  <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border/40 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="size-5 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border/40">
+                        {group.imageUrl ? (
+                          <img
+                            src={group.imageUrl}
+                            alt=""
+                            className="size-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Package className="size-3 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="font-bold text-xs text-foreground truncate">
+                        {group.name}
                       </span>
-                      {catItem.variantName && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-                          {catItem.variantName}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 text-[10px] text-muted-foreground font-mono">
+                      {group.hasVariants ? (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
+                          <Layers className="size-2.5" />
+                          {group.variants.length} متغيرات
                         </span>
+                      ) : (
+                        <span>المخزون: {group.totalStock}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
-                      {catItem.sku && <span>SKU: {catItem.sku}</span>}
-                      <span
-                        className={
-                          catItem.stock > 0
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-500"
-                        }
+                  </div>
+
+                  {/* Variants List or Single Item */}
+                  <div className="p-1 space-y-0.5">
+                    {group.hasVariants ? (
+                      group.variants.map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => handleSelectItem(v)}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-muted text-start transition-colors group"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="size-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors shrink-0" />
+                            <span className="font-semibold text-foreground text-xs truncate">
+                              {v.variantName || v.name}
+                            </span>
+                            {v.sku && (
+                              <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
+                                ({v.sku})
+                              </span>
+                            )}
+                            <span
+                              className={`text-[10px] font-mono px-1 rounded ${
+                                v.stock > 0
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-red-500/10 text-red-500"
+                              }`}
+                            >
+                              مخزون: {v.stock}
+                            </span>
+                          </div>
+
+                          <span className="font-bold font-mono text-foreground text-xs shrink-0">
+                            {formatCurrency(v.cost)}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      // Standalone product
+                      <button
+                        type="button"
+                        onClick={() => handleSelectItem(group.variants[0])}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-muted text-start transition-colors"
                       >
-                        مخزون: {catItem.stock}
-                      </span>
-                    </div>
+                        <span className="text-xs text-muted-foreground">اختيار هذا المنتج</span>
+                        <span className="font-bold font-mono text-foreground text-xs">
+                          {formatCurrency(group.minCost)}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                <div className="shrink-0 text-end">
-                  <span className="font-bold font-mono text-foreground text-xs block">
-                    {formatCurrency(catItem.cost)}
-                  </span>
-                  {catItem.type === "dental_material" && (
-                    <span className="text-[9px] text-cyan-600">خامة أسنان</span>
-                  )}
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+              ))
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
