@@ -738,7 +738,7 @@ export function useWhatsAppChatActions({
           setSelectedContact((prev) =>
             prev && prev.jid === contact.jid ? { ...prev, unreadCount: 0 } : prev,
           );
-          tToast.success("whatsapp.sidebar.markedAsReadSuccess", "تم تحديد المحادثة كمقروءة");
+          tToast.success("whatsapp.sidebar.markedAsReadSuccess", { defaultValue: "تم تحديد المحادثة كمقروءة" });
         } else {
           await api.post('/whatsapp/chats/unread', {
             sessionId,
@@ -766,7 +766,7 @@ export function useWhatsAppChatActions({
           setSelectedContact((prev) =>
             prev && prev.jid === contact.jid ? { ...prev, unreadCount: 1 } : prev,
           );
-          tToast.success("whatsappChat.success_select_9a6b", "تم تحديد المحادثة كغير مقروءة");
+          tToast.success("whatsappChat.success_select_9a6b", { defaultValue: "تم تحديد المحادثة كغير مقروءة" });
         }
         queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       } catch {
