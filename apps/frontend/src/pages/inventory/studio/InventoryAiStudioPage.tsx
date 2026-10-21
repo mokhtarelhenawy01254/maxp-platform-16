@@ -1,256 +1,29 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Package, Boxes, Sparkles, AlertTriangle } from "lucide-react";
-import { useAuth } from "../../../hooks/useAuthSimple";
-import {
-  AgentStudioLayout,
-  AgentStudioChatFeed,
-  AgentStudioSessionsDrawer,
-  useAgentStudioSessions,
-} from "../../../components/agent-studio";
-import type {
-  StudioEntity,
-  StudioAgentInfo,
-  StudioDraftAction,
-  StudioQuickPrompt,
-} from "../../../components/agent-studio";
-import { ProductOpportunityRadar } from "../../advertising/marketing-studio/ProductOpportunityRadar";
+import React from "react";
+import { Boxes } from "lucide-react";
+import { AgentStudioLayout, AgentStudioChatFeed } from "../../../components/agent-studio";
 import { InventoryActionCanvas } from "./InventoryActionCanvas";
-import {
-  chatWithInventoryAgent,
-  getInventoryActiveAgent,
-  getInventoryStudioSessions,
-  saveInventoryStudioSession,
-  deleteInventoryStudioSession,
-} from "../../../services/inventoryAiService";
+import { InventoryStudioDrawers } from "./components/InventoryStudioDrawers";
+import { useInventoryStudioController } from "./useInventoryStudioController";
+import { INVENTORY_QUICK_PROMPTS } from "./constants";
 
-const INVENTORY_WELCOME_TEXT =
-  "أهلاً بك. أنا وكيل إدارة المنتجات والمخزون والتسعير.\n\n" +
-  "أساعدك في فحص دقة المخزون، مراقبة هوامش الربح الصافية، إنشاء وإضافة المنتجات الجديدة من الصور والمواصفات، واقتراح تسعير تنافسي يحافظ على ربحية المتجر.\n\n" +
-  "يمكنك رفع صورة منتج جديد لإنشائه مباشرة أو فحص الأصناف الحالية.";
-
-const INVENTORY_QUICK_PROMPTS: StudioQuickPrompt[] = [
-  {
-    label: "إضافة منتج جديد بالذكاء الاصطناعي من صورة",
-    generatePrompt: () =>
-      "أريد إضافة منتج جديد إلى المتجر والمخزن. سأرفع صورة المنتج لتحديد الاسم والمواصفات والتسعير والكمية المناسبة وإنشائه.",
-  },
-  {
-    label: "إدراج منتج جديد متعدد المتغيرات",
-    generatePrompt: () =>
-      "أريد إضافة منتج جديد للمتجر متعدد الألوان والمقاسات. ساعدني في تحديد التصنيف وأكواد الصنف والتسعير الذكي.",
-  },
-  {
-    label: "فحص الأصناف منخفضة المخزون",
-    generatePrompt: () =>
-      "قم بجرد وفحص المنتجات التي اقتربت كمياتها من النفاد وحدد نقاط إعادة الطلب المقترحة.",
-  },
-  {
-    label: "مراجعة هوامش الربح والتسعير",
-    generatePrompt: (product) =>
-      product
-        ? `احسب هامش الربح الحالي لمنتج "${product.name}" بناءً على سعره (${product.price} ج.م) وتكلفته (${product.cost || 0} ج.م) واقترح سعراً تنافسياً مع الحفاظ على هامش لا يقل عن 35%.`
-        : "قم بتحليل أسعار وهوامش الربح للمنتجات واقترح تحسينات لزيادة العائد الإجمالي.",
-  },
-  {
-    label: "توقع نفاذ المخزون وحركة الطلب",
-    generatePrompt: (product) =>
-      product
-        ? `حلل معدل استهلاك منتج "${product.name}" وتوقع كم يوماً يكفي الرصيد الحالي (${product.stock || 0} قطعة).`
-        : "افحص سرعة دوران المخزون للأصناف الأكثر طلباً.",
-  },
-  {
-    label: "تسوية رصيد مخزون فعلي",
-    generatePrompt: (product) =>
-      product
-        ? `أريد تسجيل تعديل مسودة مخزون لمنتج "${product.name}" بناءً على جرد مخزني فعلي.`
-        : "كيف يمكنني تسوية أرصدة المخزون بعد الجرد الدوري؟",
-  },
-];
-
-const InventoryAiStudioPage: React.FC = () => {
-  const { user } = useAuth();
-  const companyId = user?.companyId || null;
-
-  // 1. Unified Cloud Session Management
-  const sessions = useAgentStudioSessions({
-    storagePrefix: "maxp_inventory_studio",
-    companyId,
-    defaultWelcomeText: INVENTORY_WELCOME_TEXT,
-    fetchCloudSessions: () => getInventoryStudioSessions(50),
-    saveCloudSession: saveInventoryStudioSession,
-    deleteCloudSession: deleteInventoryStudioSession,
-  });
-
-  // 2. Active Selection & Draft State
-  const [selectedProduct, setSelectedProduct] = useState<StudioEntity | null>(null);
-  const [activeDraft, setActiveDraft] = useState<StudioDraftAction | null>(null);
-  const [activeAgent, setActiveAgent] = useState<StudioAgentInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // 3. UI Drawers & Mobile View State
-  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
-  const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
-  const [mobileView, setMobileView] = useState<"CHAT" | "CANVAS">("CHAT");
-
-  // Load Active Agent for Inventory Studio
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const res = await getInventoryActiveAgent();
-        if (isMounted && res.success && res.agent) {
-          setActiveAgent(res.agent);
-        }
-      } catch (err) {
-        console.warn("[InventoryAiStudio] Could not load active agent:", err);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [companyId]);
-
-  // Handle User Message Sending
-  const handleSendMessage = async (textToSend: string, images?: string[]) => {
-    if (!textToSend.trim() && (!images || images.length === 0)) return;
-    if (loading) return;
-
-    const userMsg = {
-      id: `user-${Date.now()}`,
-      sender: "user" as const,
-      text: textToSend,
-      images: images && images.length > 0 ? images : undefined,
-      timestamp: new Date().toISOString(),
-    };
-
-    sessions.addMessageToActiveSession(userMsg);
-    setLoading(true);
-
-    const productPayload = selectedProduct
-      ? {
-          id: selectedProduct.id,
-          name: selectedProduct.name,
-          price: selectedProduct.price,
-          cost: selectedProduct.cost || 0,
-          stock: selectedProduct.stock || 0,
-        }
-      : undefined;
-
-    try {
-      const res = await chatWithInventoryAgent(
-        textToSend,
-        sessions.activeSession.id,
-        productPayload,
-        activeAgent?.id,
-        images
-      );
-
-      if (res.success) {
-        if (res.agentId && (!activeAgent || activeAgent.id !== res.agentId)) {
-          setActiveAgent((prev) => ({
-            id: res.agentId!,
-            name: prev?.name || "أكرم — اختصاصي إدارة وإدراج المنتجات",
-            role: prev?.role || "PRODUCT_CREATOR",
-            isRouted: true,
-          }));
-        }
-        const agentMsg = {
-          id: `agent-${Date.now()}`,
-          sender: "agent" as const,
-          text: res.reply || "تم فحص بيانات المخزون والتسعير.",
-          toolCalls: res.tool_calls,
-          timestamp: new Date().toISOString(),
-        };
-        sessions.addMessageToActiveSession(agentMsg);
-
-        // Parse any action drafts recommended by the agent
-        if (res.tool_calls && res.tool_calls.length > 0) {
-          for (const tool of res.tool_calls) {
-            const toolName = tool.name || "";
-            const args = tool.input || tool.args || {};
-
-            if (toolName.includes("price") || toolName.includes("update_price")) {
-              setActiveDraft({
-                id: `draft_${Date.now()}`,
-                type: "PRICE_CHANGE",
-                title: "تعديل سعر بيع مقترح",
-                entityId: selectedProduct?.id || args.productId || "",
-                entityName: selectedProduct?.name || args.productName || "المنتج",
-                currentValue: selectedProduct?.price,
-                proposedValue: Number(args.price || args.new_price || args.target_price) || 0,
-                reason: args.reason || "توصية تسعير بناءً على مراجعة التكلفة وهامش الربح",
-                status: "DRAFT",
-              });
-              if (window.innerWidth < 1024) setMobileView("CANVAS");
-              break;
-            } else if (toolName.includes("adjust") || toolName.includes("stock")) {
-              setActiveDraft({
-                id: `draft_${Date.now()}`,
-                type: "STOCK_ADJUSTMENT",
-                title: "تسوية رصيد مخزون مقترحة",
-                entityId: selectedProduct?.id || args.productId || "",
-                entityName: selectedProduct?.name || args.productName || "المنتج",
-                currentValue: selectedProduct?.stock,
-                proposedValue: Number(args.quantity || args.new_quantity || args.stock) || 0,
-                reason: args.reason || "تسوية جرد فعلي للمخزن",
-                status: "DRAFT",
-              });
-              if (window.innerWidth < 1024) setMobileView("CANVAS");
-              break;
-            }
-          }
-        }
-      } else {
-        const errorMsg = {
-          id: `err-${Date.now()}`,
-          sender: "agent" as const,
-          text: res.error || "تعذّر الحصول على رد من وكيل المخزون، يرجى المحاولة لاحقاً.",
-          timestamp: new Date().toISOString(),
-        };
-        sessions.addMessageToActiveSession(errorMsg);
-      }
-    } catch (err: any) {
-      const errorMsg = {
-        id: `err-${Date.now()}`,
-        sender: "agent" as const,
-        text: `حدث خطأ أثناء الاتصال بالوكيل: ${err.message}`,
-        timestamp: new Date().toISOString(),
-      };
-      sessions.addMessageToActiveSession(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statusBadge = useMemo(() => {
-    const stock = selectedProduct?.stock;
-    if (typeof stock !== "number") return null;
-
-    if (stock <= 0) {
-      return (
-        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>تنبيه: نفذ المخزون</span>
-        </div>
-      );
-    }
-
-    if (stock < 10) {
-      return (
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>تنبيه: مخزون حرج</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-        <Sparkles className="w-3.5 h-3.5" />
-        <span>المخزون في مستوى آمن</span>
-      </div>
-    );
-  }, [selectedProduct?.stock]);
+export const InventoryAiStudioPage: React.FC = () => {
+  const {
+    sessions,
+    selectedProduct,
+    setSelectedProduct,
+    activeDraft,
+    setActiveDraft,
+    activeAgent,
+    loading,
+    isProductPickerOpen,
+    setIsProductPickerOpen,
+    isSessionsDrawerOpen,
+    setIsSessionsDrawerOpen,
+    mobileView,
+    setMobileView,
+    handleSendMessage,
+    statusBadge,
+  } = useInventoryStudioController();
 
   return (
     <AgentStudioLayout
@@ -299,25 +72,19 @@ const InventoryAiStudioPage: React.FC = () => {
         />
       }
       extraDrawers={
-        <>
-          <ProductOpportunityRadar
-            isOpen={isProductPickerOpen}
-            onClose={() => setIsProductPickerOpen(false)}
-            selectedProduct={selectedProduct as any}
-            onSelectProduct={(p: any) => setSelectedProduct(p)}
-          />
-
-          <AgentStudioSessionsDrawer
-            isOpen={isSessionsDrawerOpen}
-            onClose={() => setIsSessionsDrawerOpen(false)}
-            sessions={sessions.sessions}
-            activeSessionId={sessions.activeSessionId}
-            onSelectSession={sessions.switchSession}
-            onNewSession={() => sessions.createNewSession()}
-            onDeleteSession={sessions.deleteSession}
-            title="جلسات استوديو المخزون"
-          />
-        </>
+        <InventoryStudioDrawers
+          isProductPickerOpen={isProductPickerOpen}
+          onCloseProductPicker={() => setIsProductPickerOpen(false)}
+          selectedProduct={selectedProduct}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          isSessionsDrawerOpen={isSessionsDrawerOpen}
+          onCloseSessionsDrawer={() => setIsSessionsDrawerOpen(false)}
+          sessions={sessions.sessions}
+          activeSessionId={sessions.activeSessionId}
+          onSelectSession={sessions.switchSession}
+          onNewSession={() => sessions.createNewSession()}
+          onDeleteSession={sessions.deleteSession}
+        />
       }
     />
   );
