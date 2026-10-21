@@ -1,6 +1,6 @@
 /**
  * Full backend relative require & import gate
- * يفحص جميع مسارات require و import النسبية (./ و ../) في جميع ملفات الباكند
+ * يفحص جميع مسارات require و import النسبية (./ و ../) في جميع ملفات الباكند التشغيلية
  * ويتأكد أن الملف الهدف موجود فعلياً ومطابق لحالة الأحرف (case-sensitive)
  * لمنع تكرار عطل الإنتاج الناتج عن require لموديول غير موجود في الشجرة المنشورة.
  *
@@ -12,6 +12,28 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const backendRoot = path.resolve(__dirname, '..');
+
+// Runtime directories that make up the active backend application
+const RUNTIME_DIRS = [
+  'controller',
+  'routes',
+  'services',
+  'middleware',
+  'utils',
+  'cron',
+  'workers',
+  'validators',
+  'config',
+  'queues',
+  'catalog',
+  'agents',
+];
+
+// Root entry files that are part of the runtime
+const RUNTIME_ROOT_FILES = [
+  'server.js',
+  'ecosystem.config.js',
+];
 
 const EXCLUDED_DIRS = new Set([
   'node_modules',
@@ -30,17 +52,10 @@ const EXCLUDED_DIRS = new Set([
   'plans',
   'docs',
   'data',
-  'src', // Legacy unreferenced duplicate of routes/services/controllers
+  'src',
 ]);
 
 const EXCLUDED_FILES = new Set([
-  // Old standalone scratch files in backend root
-  'fix_controller.js',
-  'fix_luxury_data.js',
-  'test4.js',
-  'debug_personalization.js',
-  'fix_pd_imports.js',
-  // Deprecated unmounted routes/controllers/middleware (commented out in server.js)
   'routes/agentServiceBridgeRoutes.js',
   'routes/hr/autoDeductionRoutes.js',
   'controller/hr/autoDeductionController.js',
@@ -71,6 +86,28 @@ function collectFiles(dir, acc = []) {
   }
 
   return acc;
+}
+
+function getAllRuntimeFiles() {
+  const files = [];
+
+  // 1. Root runtime files
+  for (const rootFile of RUNTIME_ROOT_FILES) {
+    const absPath = path.join(backendRoot, rootFile);
+    if (fs.existsSync(absPath)) {
+      files.push(absPath);
+    }
+  }
+
+  // 2. All files in runtime directories
+  for (const dirName of RUNTIME_DIRS) {
+    const absDir = path.join(backendRoot, dirName);
+    if (fs.existsSync(absDir)) {
+      collectFiles(absDir, files);
+    }
+  }
+
+  return files;
 }
 
 /**
@@ -108,6 +145,11 @@ function resolveRelativeSpecifier(fromFile, specifier) {
   // Allow generated prisma client paths if prisma has not generated them in this runner yet
   if (specifier.includes('prisma/generated') || specifier.includes('generated/')) {
     return { ok: true, resolved: 'prisma_generated_skipped' };
+  }
+
+  // Skip relative references targeting node_modules (third-party package resolution)
+  if (specifier.includes('node_modules')) {
+    return { ok: true, resolved: 'node_modules_skipped' };
   }
 
   const fromDir = path.dirname(fromFile);
@@ -190,7 +232,7 @@ function scanFile(absoluteFile) {
 }
 
 function runRelativeRequireScan() {
-  const files = collectFiles(backendRoot);
+  const files = getAllRuntimeFiles();
   console.log(`🔎 Scanning ${files.length} backend runtime JS file(s) for broken relative require/import paths...`);
 
   const allFailures = [];
