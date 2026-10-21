@@ -1,22 +1,28 @@
+/** @vitest-environment jsdom */
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import CustomerLists from '../CustomerLists';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
     i18n: { language: 'ar', dir: () => 'rtl' },
   }),
 }));
 
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 const listsResponse = {
   success: true,
@@ -43,41 +49,45 @@ const listsResponse = {
   ],
 };
 
-jest.mock('../../../services/broadcastService', () => ({
+vi.mock('../../../services/broadcastService', () => ({
   broadcastService: {
-    getCustomerLists: jest.fn(),
-    getCustomersInListPaginated: jest.fn(),
-    createCustomerList: jest.fn(),
-    updateCustomerList: jest.fn(),
-    deleteCustomerList: jest.fn(),
-    refreshCustomerListCount: jest.fn(),
-    previewCustomerListCount: jest.fn(),
+    getCustomerLists: vi.fn(),
+    getCustomersInListPaginated: vi.fn(),
+    createCustomerList: vi.fn(),
+    updateCustomerList: vi.fn(),
+    deleteCustomerList: vi.fn(),
+    refreshCustomerListCount: vi.fn(),
+    previewCustomerListCount: vi.fn(),
   },
 }));
 
-jest.mock('../../../services/customerService', () => ({
+vi.mock('../../../services/customerService', () => ({
   customerService: {
-    getDistinctTags: jest.fn().mockResolvedValue([{ name: 'VIP' }, { name: 'جدد' }]),
+    getDistinctTags: vi.fn().mockResolvedValue([{ name: 'VIP' }, { name: 'جدد' }]),
   },
 }));
 
-const { broadcastService } = require('../../../services/broadcastService') as {
-  broadcastService: {
-    getCustomerLists: jest.Mock;
-    getCustomersInListPaginated: jest.Mock;
-    createCustomerList: jest.Mock;
-    updateCustomerList: jest.Mock;
-    deleteCustomerList: jest.Mock;
-    refreshCustomerListCount: jest.Mock;
-    previewCustomerListCount: jest.Mock;
-  };
+import { broadcastService } from '../../../services/broadcastService';
+
+const mockBroadcastService = broadcastService as unknown as {
+  getCustomerLists: ReturnType<typeof vi.fn>;
+  getCustomersInListPaginated: ReturnType<typeof vi.fn>;
+  createCustomerList: ReturnType<typeof vi.fn>;
+  updateCustomerList: ReturnType<typeof vi.fn>;
+  deleteCustomerList: ReturnType<typeof vi.fn>;
+  refreshCustomerListCount: ReturnType<typeof vi.fn>;
+  previewCustomerListCount: ReturnType<typeof vi.fn>;
 };
 
 describe('CustomerLists', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
-    jest.clearAllMocks();
-    broadcastService.getCustomerLists.mockResolvedValue(listsResponse);
-    broadcastService.previewCustomerListCount.mockResolvedValue({ success: true, data: { count: 123 } });
+    vi.clearAllMocks();
+    mockBroadcastService.getCustomerLists.mockResolvedValue(listsResponse);
+    mockBroadcastService.previewCustomerListCount.mockResolvedValue({ success: true, data: { count: 123 } });
   });
 
   const renderPage = () =>
@@ -88,7 +98,7 @@ describe('CustomerLists', () => {
       </MemoryRouter>,
     );
 
-  test('يعرض العناوين والقوائم والإحصائيات', async () => {
+  it('يعرض العناوين والقوائم والإحصائيات', async () => {
     renderPage();
 
     expect(await screen.findByText('إدارة قوائم العملاء')).toBeInTheDocument();
@@ -98,7 +108,7 @@ describe('CustomerLists', () => {
     expect(screen.getByText('٤٢')).toBeInTheDocument();
   });
 
-  test('يقوم بفلترة القوائم بالبحث', async () => {
+  it('يقوم بفلترة القوائم بالبحث', async () => {
     renderPage();
     await screen.findByText('عملاء VIP');
 
@@ -109,7 +119,7 @@ describe('CustomerLists', () => {
     expect(screen.getByText('عملاء VIP')).toBeInTheDocument();
   });
 
-  test('يفتح نافذة الإنشاء ويعرض معاينة العدد', async () => {
+  it('يفتح نافذة الإنشاء ويعرض معاينة العدد', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('عملاء VIP');
@@ -118,13 +128,13 @@ describe('CustomerLists', () => {
     expect(await screen.findByText('إنشاء قائمة عملاء جديدة')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(broadcastService.previewCustomerListCount).toHaveBeenCalled();
+      expect(mockBroadcastService.previewCustomerListCount).toHaveBeenCalled();
     });
   });
 
-  test('ينشئ قائمة جديدة عند الحفظ', async () => {
+  it('ينشئ قائمة جديدة عند الحفظ', async () => {
     const user = userEvent.setup();
-    broadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'new' } });
+    mockBroadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'new' } });
     renderPage();
     await screen.findByText('عملاء VIP');
 
@@ -137,13 +147,13 @@ describe('CustomerLists', () => {
     await user.click(screen.getByRole('button', { name: 'إنشاء القائمة' }));
 
     await waitFor(() => {
-      expect(broadcastService.createCustomerList).toHaveBeenCalledWith(
+      expect(mockBroadcastService.createCustomerList).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'قائمة تجريبية' }),
       );
     });
   });
 
-  test('يفتح التعديل لقائمة مخصصة مع بياناتها', async () => {
+  it('يفتح التعديل لقائمة مخصصة مع بياناتها', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('عملاء VIP');
@@ -154,9 +164,9 @@ describe('CustomerLists', () => {
     expect(screen.getByLabelText('اسم القائمة *')).toHaveValue('عملاء VIP');
   });
 
-  test('يحذف قائمة مخصصة بعد التأكيد', async () => {
+  it('يحذف قائمة مخصصة بعد التأكيد', async () => {
     const user = userEvent.setup();
-    broadcastService.deleteCustomerList.mockResolvedValue({ success: true });
+    mockBroadcastService.deleteCustomerList.mockResolvedValue({ success: true });
     renderPage();
     await screen.findByText('عملاء VIP');
 
@@ -166,11 +176,11 @@ describe('CustomerLists', () => {
     await user.click(screen.getByRole('button', { name: 'حذف' }));
 
     await waitFor(() => {
-      expect(broadcastService.deleteCustomerList).toHaveBeenCalledWith('list_vip');
+      expect(mockBroadcastService.deleteCustomerList).toHaveBeenCalledWith('list_vip');
     });
   });
 
-  test('زر واتساب ينقل إلى template-broadcast مع listId', async () => {
+  it('زر واتساب ينقل إلى template-broadcast مع listId', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('عملاء VIP');
@@ -180,9 +190,9 @@ describe('CustomerLists', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/whatsapp/template-broadcast?listId=list_vip');
   });
 
-  test('يعرض أعضاء القائمة في الـ Sheet مع الترقيم', async () => {
+  it('يعرض أعضاء القائمة في الـ Sheet مع الترقيم', async () => {
     const user = userEvent.setup();
-    broadcastService.getCustomersInListPaginated.mockResolvedValue({
+    mockBroadcastService.getCustomersInListPaginated.mockResolvedValue({
       success: true,
       data: [
         { id: 'c1', name: 'محمد أحمد', phone: '201000', email: '', lastActivity: '2026-01-01', status: 'active', rating: 'EXCELLENT', tags: '', totalSpent: 5000, ordersCount: 5, rfmScore: 76, rfmTier: 'gold' },
@@ -201,25 +211,25 @@ describe('CustomerLists', () => {
     expect(await screen.findByText('محمد أحمد')).toBeInTheDocument();
     expect(screen.getByText('سارة علي')).toBeInTheDocument();
     expect(screen.getByText(/ذهبي/)).toBeInTheDocument();
-    expect(broadcastService.getCustomersInListPaginated).toHaveBeenCalledWith('list_vip', 1, 20, '');
+    expect(mockBroadcastService.getCustomersInListPaginated).toHaveBeenCalledWith('list_vip', 1, 20, '');
   });
 
-  test('ينسخ قائمة مخصصة (Duplicate)', async () => {
+  it('ينسخ قائمة مخصصة (Duplicate)', async () => {
     const user = userEvent.setup();
-    broadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'copy' } });
+    mockBroadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'copy' } });
     renderPage();
     await screen.findByText('عملاء VIP');
 
     await user.click(screen.getAllByRole('button', { name: /نسخ/ })[0]);
 
     await waitFor(() => {
-      expect(broadcastService.createCustomerList).toHaveBeenCalledWith(
+      expect(mockBroadcastService.createCustomerList).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'عملاء VIP (نسخة)' }),
       );
     });
   });
 
-  test('يعرض قوالب RFM في نافذة الإنشاء', async () => {
+  it('يعرض قوالب RFM في نافذة الإنشاء', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('عملاء VIP');
@@ -233,7 +243,7 @@ describe('CustomerLists', () => {
     expect(screen.getByText('عملاء جدد')).toBeInTheDocument();
   });
 
-  test('اختيار قالب RFM يضبط المعايير ويعاين العدد', async () => {
+  it('اختيار قالب RFM يضبط المعايير ويعاين العدد', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('عملاء VIP');
@@ -244,7 +254,7 @@ describe('CustomerLists', () => {
     await user.click(screen.getByText('أفضل العملاء'));
 
     await waitFor(() => {
-      expect(broadcastService.previewCustomerListCount).toHaveBeenCalledWith(
+      expect(mockBroadcastService.previewCustomerListCount).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'preset', preset: 'champions' }),
       );
     });
