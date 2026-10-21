@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
-import type { StorefrontPageConfig } from "../types/theme.types";
-import { PageComposer, type RenderSectionFrameArgs } from "../engine/PageComposer";
+import { PageComposer } from "../engine/PageComposer";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useStorePage } from "../../hooks/useStorePage";
-import StorefrontSkeleton from "../components/StorefrontSkeleton";
 import StorefrontNotFound from "../components/StorefrontNotFound";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
-import { buildStorefrontPath } from "../utils/paths";
 import { sanitizeStorefrontHtml } from "../utils/html";
+import { getStorefrontLocale, getLocaleDirection, localizePageConfig } from "../i18n";
+
 const DynamicStorefrontPage: React.FC = () => {
   const { theme } = useStorefrontTheme();
   const { settings, isLoading: settingsLoading } = useStorefrontSettings();
@@ -19,6 +18,16 @@ const DynamicStorefrontPage: React.FC = () => {
     "*": string;
   }>();
   const location = useLocation();
+  const locale = getStorefrontLocale(location.search);
+  const direction = getLocaleDirection(locale);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.dir = direction;
+      document.documentElement.lang = locale;
+    }
+  }, [direction, locale]);
+
   const runtimeText = useMemo(
     () =>
       createStorefrontThemeTextReplacer({
@@ -30,11 +39,16 @@ const DynamicStorefrontPage: React.FC = () => {
   );
   const resolvedPageKey = [pageSlug, pageSplat].filter(Boolean).join("/");
   const pageConfig = resolvedPageKey
-    ? theme.pages[resolvedPageKey] || theme.pages[pageSlug]
+    ? theme.pages[resolvedPageKey] || (pageSlug ? theme.pages[pageSlug] : undefined)
     : undefined;
 
+  const localizedPageConfig = useMemo(() => {
+    if (!pageConfig) return undefined;
+    return localizePageConfig(pageConfig, locale);
+  }, [pageConfig, locale]);
+
   const hasSections = Boolean(
-    pageConfig && Array.isArray(pageConfig.sections) && pageConfig.sections.length > 0
+    localizedPageConfig && Array.isArray(localizedPageConfig.sections) && localizedPageConfig.sections.length > 0
   );
 
   // If page exists in designTokens/theme with sections, render via PageComposer directly.
@@ -47,19 +61,20 @@ const DynamicStorefrontPage: React.FC = () => {
 
   // Sync dynamic page metadata with browser head
   useEffect(() => {
-    const storeName =
-      settings?.storefront?.settings?.storeName ||
-      settings?.storefront?.name ||
+    const rawStoreName =
+      settings?.storefront?.settings?.["storeName"] ||
+      (settings?.storefront as Record<string, any> | undefined)?.["name"] ||
       theme.header?.brandName ||
       theme.name ||
-      '';
+      "";
+    const storeName = typeof rawStoreName === "string" ? rawStoreName : "";
 
-    if (hasSections && pageConfig) {
+    if (hasSections && localizedPageConfig) {
       const pageTitle =
-        (pageConfig as any).title?.trim() ||
-        (pageConfig as any).label?.trim() ||
+        (localizedPageConfig as any).title?.trim() ||
+        (localizedPageConfig as any).label?.trim() ||
         pageSlug ||
-        '';
+        "";
       document.title = pageTitle ? `${pageTitle} | ${storeName}` : storeName;
       return;
     }
@@ -72,26 +87,28 @@ const DynamicStorefrontPage: React.FC = () => {
 
     const metaDesc =
       dbPage.metaDescription?.trim() ||
-      dbPage.content?.replace(/<[^>]*>/g, '').slice(0, 160).trim();
+      dbPage.content?.replace(/<[^>]*>/g, "").slice(0, 160).trim();
     if (metaDesc) {
       let descEl = document.querySelector<HTMLMetaElement>('meta[name="description"]');
       if (!descEl) {
-        descEl = document.createElement('meta');
-        descEl.setAttribute('name', 'description');
+        descEl = document.createElement("meta");
+        descEl.setAttribute("name", "description");
         document.head.appendChild(descEl);
       }
-      descEl.setAttribute('content', metaDesc);
+      descEl.setAttribute("content", metaDesc);
     }
-  }, [dbPage, settings, theme, hasSections, pageConfig, pageSlug]);
+  }, [dbPage, settings, theme, hasSections, localizedPageConfig, pageSlug]);
 
-  if (hasSections && pageConfig) {
+  if (hasSections && localizedPageConfig) {
     return (
-      <PageComposer
-        pageConfig={pageConfig}
-        layout={resolveStorefrontPageLayout(pageConfig)}
-        runtimeText={runtimeText}
-        renderSectionFrame={StorefrontSectionFrame}
-      />
+      <div dir={direction} data-storefront-locale={locale} className="w-full">
+        <PageComposer
+          pageConfig={localizedPageConfig}
+          layout={resolveStorefrontPageLayout(localizedPageConfig)}
+          runtimeText={runtimeText}
+          renderSectionFrame={StorefrontSectionFrame}
+        />
+      </div>
     );
   }
 
@@ -105,17 +122,17 @@ const DynamicStorefrontPage: React.FC = () => {
 
   if (shouldFetchDbPage && dbPage) {
     return (
-      <div className="custom-store-page container max-w-4xl mx-auto px-4 py-12 md:py-16 space-y-8 text-start" dir={theme.direction}>
+      <div className="custom-store-page container max-w-4xl mx-auto px-4 py-12 md:py-16 space-y-8 text-start" dir={direction} data-storefront-locale={locale}>
         <div className="border-b border-muted pb-6">
           <h1 className="text-3xl md:text-4xl font-extrabold font-heading text-foreground">
             {dbPage.title}
           </h1>
           <p className="text-xs text-muted-foreground mt-2">
-            {theme.direction === "rtl" ? "آخر تحديث" : "Last updated"}:{" "}
-            {new Date(dbPage.updatedAt).toLocaleDateString(theme.direction === "rtl" ? "ar-EG" : "en-US", {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
+            {direction === "rtl" ? "آخر تحديث" : "Last updated"}:{" "}
+            {new Date(dbPage.updatedAt).toLocaleDateString(direction === "rtl" ? "ar-EG" : "en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
             })}
           </p>
         </div>
@@ -127,20 +144,20 @@ const DynamicStorefrontPage: React.FC = () => {
     );
   }
 
-  if (!resolvedPageKey || (!pageConfig && !dbPage)) {
+  if (!resolvedPageKey || (!localizedPageConfig && !dbPage)) {
     return <StorefrontNotFound />;
   }
 
   return (
-    <PageComposer
-      pageConfig={pageConfig}
-      layout={resolveStorefrontPageLayout(pageConfig)}
-      runtimeText={runtimeText}
-      renderSectionFrame={StorefrontSectionFrame}
-    />
+    <div dir={direction} data-storefront-locale={locale} className="w-full">
+      <PageComposer
+        pageConfig={localizedPageConfig || pageConfig!}
+        layout={resolveStorefrontPageLayout(localizedPageConfig || pageConfig!)}
+        runtimeText={runtimeText}
+        renderSectionFrame={StorefrontSectionFrame}
+      />
+    </div>
   );
 };
-
-
 
 export default DynamicStorefrontPage;

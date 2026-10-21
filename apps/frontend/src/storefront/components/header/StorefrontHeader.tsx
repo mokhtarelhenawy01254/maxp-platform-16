@@ -49,6 +49,7 @@ import MobileBottomNav from "../MobileBottomNav";
 import GracefulHeader from "../GracefulHeader";
 import GracefulFooter from "../GracefulFooter";
 import GracefulScrollTop from "../GracefulScrollTop";
+import LanguageSwitcher from "../LanguageSwitcher";
 import "../../styles/conversion-animations.css";
 import {
   extractShopStudioConfig,
@@ -3761,6 +3762,7 @@ const StorefrontHeader: React.FC<{
                   </button>
                 )}
 
+                <LanguageSwitcher />
                 {/* Cart or Auth */}
                 {!isIntruderNft && showCart && (
                   <button

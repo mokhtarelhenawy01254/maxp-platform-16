@@ -9,6 +9,7 @@ import {
   LinkIcon,
   PhotoIcon,
   TagIcon,
+  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioInspectorTab, StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
@@ -17,6 +18,7 @@ import { StudioInspectorLayoutTab } from "./inspector/StudioInspectorLayoutTab";
 import { StudioContainerControls } from "./inspector/StudioContainerControls";
 import { StudioInspectorContentTab } from "./inspector/StudioInspectorContentTab";
 import { StudioInspectorAiTab } from "./inspector/StudioInspectorAiTab";
+import { StudioI18nTab } from "./StudioI18nTab";
 import { resolveEffectiveSectionSettings, hasDeviceOverrides, getDeviceOverridesCount } from "./utils/studioStyleUtils";
 
 interface StudioPropertyInspectorProps {
@@ -107,6 +109,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
     { id: "layout", label: "تخطيط", icon: Squares2X2Icon },
     { id: "content", label: "محتوى", icon: DocumentTextIcon },
     { id: "interactions", label: "تجاوب", icon: SparklesIcon },
+    { id: "i18n" as StudioInspectorTab, label: "اللغة", icon: GlobeAltIcon },
   ];
 
   return (
@@ -543,6 +546,16 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 onBatchUpdateFields={onBatchUpdateFields}
                 onResetDeviceOverrides={onResetDeviceOverrides}
                 onSwitchDevice={onSwitchDevice}
+              />
+            )}
+
+            {activeTab === ("i18n" as StudioInspectorTab) && (
+              <StudioI18nTab
+                sectionType={sectionType}
+                settings={settings}
+                onUpdateField={onUpdateField}
+                onBatchUpdateFields={onBatchUpdateFields}
+                onSave={onSave}
               />
             )}
           </>
