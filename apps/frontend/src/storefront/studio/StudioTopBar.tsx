@@ -16,8 +16,9 @@ import {
   ChevronDownIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import type { StudioDeviceMode, StudioZoomLevel, StudioPageDefinition } from "./StudioTypes";
+import type { StudioDeviceMode, StudioZoomLevel, StudioPageDefinition, PageStyleScope } from "./StudioTypes";
 import { StudioPageSelector } from "./StudioPageSelector";
+import { StudioPageStylePopover } from "./StudioPageStylePopover";
 
 interface StudioTopBarProps {
   storeName?: string;
@@ -25,6 +26,10 @@ interface StudioTopBarProps {
   activePageKey: string;
   customPages?: StudioPageDefinition[];
   onOpenCreatePageModal?: () => void;
+  pageStyle?: PageStyleScope;
+  onApplyPageStylePreset?: (presetId: string) => void;
+  onUpdatePageStyle?: (partial: Partial<PageStyleScope>) => void;
+  onResetPageStyle?: () => void;
   deviceMode: StudioDeviceMode;
   hasPendingChanges: boolean;
   canUndo: boolean;
@@ -56,6 +61,10 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   activePageKey,
   customPages,
   onOpenCreatePageModal,
+  pageStyle,
+  onApplyPageStylePreset,
+  onUpdatePageStyle,
+  onResetPageStyle,
   deviceMode,
   hasPendingChanges,
   canUndo,
@@ -100,14 +109,24 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
           م
         </div>
 
-        {/* Site / Page Selector */}
-        <div className="flex items-center gap-1">
+        {/* Site / Page Selector & Page Style */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <StudioPageSelector
             activePageKey={activePageKey}
             onPageChange={onPageChange}
             customPages={customPages}
             onOpenCreatePageModal={onOpenCreatePageModal}
           />
+          {onApplyPageStylePreset && (
+            <StudioPageStylePopover
+              activePageKey={activePageKey}
+              customPages={customPages}
+              pageStyle={pageStyle}
+              onApplyPreset={onApplyPageStylePreset}
+              onUpdateStyle={onUpdatePageStyle || (() => {})}
+              onResetStyle={onResetPageStyle || (() => {})}
+            />
+          )}
         </div>
 
         {/* Mobile Elements Button */}

@@ -10,7 +10,14 @@ import {
 } from './themeResolverCore';
 
 export type { StorefrontThemeInput } from './themeResolverCore';
-export { extractStorefrontThemePresetId } from './themeResolverCore';
+export {
+  extractStorefrontThemePresetId,
+  resolveStorefrontThemeFromPreset,
+  resolvePageStyleVars,
+  extractPageStyles,
+  PAGE_STYLE_DENSITY_GAPS,
+  PAGE_STYLE_PRESETS,
+} from './themeResolverCore';
 
 export const resolveStorefrontTheme = (
   input?: StorefrontThemeInput,

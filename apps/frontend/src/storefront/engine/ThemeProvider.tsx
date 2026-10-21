@@ -6,6 +6,7 @@ import {
   resolveRuntimeStorefrontTheme,
   type StorefrontThemeInput,
 } from './runtimeThemeResolver';
+import { resolvePageStyleVars } from './themeResolverCore';
 
 interface ThemeContextType {
   theme: StorefrontTheme;
@@ -108,7 +109,8 @@ export const StorefrontThemeProvider: React.FC<{
   initialTheme?: StorefrontThemeInput,
   scoped?: boolean,
   blockUntilResolved?: boolean,
-}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false }) => {
+  activePageKey?: string,
+}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false, activePageKey }) => {
   const [theme, setTheme] = useState<StorefrontTheme | null>(() =>
     blockUntilResolved ? null : createStorefrontThemeFallback(initialTheme),
   );
@@ -215,7 +217,13 @@ export const StorefrontThemeProvider: React.FC<{
       if (theme.tokens.productCard.surfaceOpacity) setVar('--product-card-surface-opacity', theme.tokens.productCard.surfaceOpacity);
     }
 
-  }, [theme, scoped]);
+    // 5. Apply Page Style Scope tokens (--store-accent, --store-font-family, --store-density-gap, --store-radius)
+    const pageVars = resolvePageStyleVars(theme, activePageKey || (theme as any)?.activePageKey);
+    Object.entries(pageVars).forEach(([key, value]) => {
+      setVar(key, value);
+    });
+
+  }, [theme, scoped, activePageKey]);
 
   // Dynamically load only the Google Fonts required by the active theme
   useEffect(() => {

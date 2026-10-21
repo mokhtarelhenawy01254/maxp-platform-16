@@ -12,6 +12,7 @@ import {
   StorefrontThemeProvider,
   useStorefrontTheme,
 } from "./engine/ThemeProvider";
+import { resolvePageStyleVars } from "./engine/themeResolverCore";
 import type { StorefrontThemeInput } from "./engine/runtimeThemeResolver";
 import { PageComposer, type RenderSectionFrameArgs } from "./engine/PageComposer";
 import { useCartStore } from "./store/useCartStore";
@@ -282,6 +283,29 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     layoutRouteSegments[0] === "store"
       ? layoutRouteSegments.slice(1)
       : layoutRouteSegments;
+
+  const activePageKey = useMemo(() => {
+    if (layoutStorefrontSegments.length === 0) return "home";
+    const seg0 = layoutStorefrontSegments[0];
+    if (seg0 === "shop" || seg0 === "products" || seg0 === "catalog") {
+      return layoutStorefrontSegments.length > 1 && (seg0 === "product" || seg0 === "products") ? "pdp" : "shop";
+    }
+    if (seg0 === "product") return "pdp";
+    if (seg0 === "cart") return "cart";
+    if (seg0 === "checkout") return "checkout";
+    if (seg0 === "thank-you") return "thank-you";
+    if (seg0 === "sale") return "sale";
+    if (seg0 === "collections") return "collections";
+    if (seg0 === "size-guide") return "size-guide";
+    if (seg0 === "shipping") return "shipping";
+    if (seg0 === "privacy") return "privacy";
+    if (seg0 === "terms") return "terms";
+    return seg0;
+  }, [layoutStorefrontSegments]);
+
+  const pageStyleVars = useMemo(() => {
+    return resolvePageStyleVars(theme, activePageKey);
+  }, [theme, activePageKey]);
   const isProductImageLandingPage =
     layoutStorefrontSegments[0] === "lp" ||
     layoutStorefrontSegments[0] === "landing";
@@ -1458,7 +1482,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </>
       ) : null}
 
-      <main className="flex-1">
+      <main
+        className="flex-1"
+        style={{
+          ...pageStyleVars,
+          '--accent': 'var(--store-accent)',
+          '--radius': 'var(--store-radius)',
+        } as React.CSSProperties}
+      >
         <Routes>
           {renderScopedRoutes("store")}
           {renderScopedRoutes()}

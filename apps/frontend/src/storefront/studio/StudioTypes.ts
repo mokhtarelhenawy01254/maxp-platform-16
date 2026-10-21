@@ -186,3 +186,90 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
     ],
   },
 ];
+
+export type PageStyleDensity = "compact" | "normal" | "airy";
+
+export interface PageStyleScope {
+  accent?: string;
+  fontFamily?: string;
+  density?: PageStyleDensity;
+  radius?: number;
+  preset?: string;
+}
+
+export type PageStylesMap = Record<string, PageStyleScope>;
+
+export interface PageStylePreset {
+  id: "editorial" | "bold" | "minimal" | "dark-luxe" | "loud" | "calm" | (string & {});
+  label: string;
+  description: string;
+  accent: string;
+  fontFamily: string;
+  density: PageStyleDensity;
+  radius: number;
+  badgeText?: string;
+}
+
+export const PAGE_STYLE_PRESETS: PageStylePreset[] = [
+  {
+    id: "editorial",
+    label: "تحريري راقٍ (Editorial)",
+    description: "كريمي وخط سيريف فخم ومسافات متسعة",
+    accent: "#8B5E3C",
+    fontFamily: "'Playfair Display', 'Amiri', 'Georgia', serif",
+    density: "airy",
+    radius: 4,
+    badgeText: "سيريف هوائي",
+  },
+  {
+    id: "bold",
+    label: "جريء وقوي (Bold)",
+    description: "أسود وليموني مشع عالي التباين وزوايا حادة",
+    accent: "#CCFF00",
+    fontFamily: "'Syne', 'Changa', 'Impact', sans-serif",
+    density: "normal",
+    radius: 0,
+    badgeText: "ليموني حاد",
+  },
+  {
+    id: "minimal",
+    label: "مينيمال تقني (Minimal)",
+    description: "أبيض وأزرق ملكي بهندسة مضغوطة نظيفة",
+    accent: "#2563EB",
+    fontFamily: "'Inter', 'IBM Plex Sans Arabic', sans-serif",
+    density: "compact",
+    radius: 8,
+    badgeText: "أزرق مضغوط",
+  },
+  {
+    id: "dark-luxe",
+    label: "فخامة داكنة (Dark Luxe)",
+    description: "فحمي ملكي ولمسات ذهبية وزوايا ناعمة",
+    accent: "#D4AF37",
+    fontFamily: "'Cinzel', 'Marcellus', 'Cairo', serif",
+    density: "normal",
+    radius: 12,
+    badgeText: "فحمي ذهبي",
+  },
+  {
+    id: "loud",
+    label: "صاخب وحيوي (Loud)",
+    description: "أحمر ناري وأصفر وطاقة شبابية مرحة",
+    accent: "#EF4444",
+    fontFamily: "'Cabinet Grotesk', 'Rubik', sans-serif",
+    density: "compact",
+    radius: 16,
+    badgeText: "أحمر دائري",
+  },
+  {
+    id: "calm",
+    label: "سكينة وطمأنينة (Calm)",
+    description: "تركواز مائي ورمادي فاتح وتوازن مريح",
+    accent: "#0D9488",
+    fontFamily: "'Plus Jakarta Sans', 'Almarai', sans-serif",
+    density: "airy",
+    radius: 20,
+    badgeText: "تركواز هوائي",
+  },
+];
+

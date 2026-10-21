@@ -8,7 +8,8 @@ import { resolveStorefrontTheme } from "../../engine/themeResolver";
 import { useCartStore } from "../../store/useCartStore";
 import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
 import { isStorefrontSectionKnown } from "../../sections/manifest";
-import type { StudioDeviceMode } from "../StudioTypes";
+import type { StudioDeviceMode, PageStyleScope, PageStylesMap } from "../StudioTypes";
+import { PAGE_STYLE_PRESETS } from "../StudioTypes";
 import {
   findNodeByKey,
   findNodeAndParent,
@@ -176,8 +177,77 @@ export function useStorefrontStudioState({
       themeId,
       theme: baseTheme,
       designTokens: currentDesignTokens,
+      activePageKey,
     });
-  }, [themeId, currentDesignTokens]);
+  }, [themeId, currentDesignTokens, activePageKey]);
+
+  const activePageStyle = useMemo<PageStyleScope | undefined>(() => {
+    const styles = currentDesignTokens?.pageStyles as PageStylesMap | undefined;
+    return styles?.[activePageKey];
+  }, [currentDesignTokens, activePageKey]);
+
+  const handleApplyPageStylePreset = useCallback(
+    (presetId: string) => {
+      const preset = PAGE_STYLE_PRESETS.find((p) => p.id === presetId);
+      if (!preset) return;
+      const currentTokens = currentDesignTokensRef.current || {};
+      const existingPageStyles = (currentTokens.pageStyles as PageStylesMap) || {};
+      const nextStyles: PageStylesMap = {
+        ...existingPageStyles,
+        [activePageKey]: {
+          preset: preset.id,
+          accent: preset.accent,
+          fontFamily: preset.fontFamily,
+          density: preset.density,
+          radius: preset.radius,
+        },
+      };
+      const nextTokens = {
+        ...currentTokens,
+        pageStyles: nextStyles,
+      };
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success(`تم تطبيق طابع «${preset.label}» على صفحة ${activePageKey}`);
+    },
+    [activePageKey, handleDesignTokensChange, onSave]
+  );
+
+  const handleUpdatePageStyle = useCallback(
+    (partial: Partial<PageStyleScope>) => {
+      const currentTokens = currentDesignTokensRef.current || {};
+      const existingPageStyles = (currentTokens.pageStyles as PageStylesMap) || {};
+      const currentForPage = existingPageStyles[activePageKey] || {};
+      const nextStyles: PageStylesMap = {
+        ...existingPageStyles,
+        [activePageKey]: {
+          ...currentForPage,
+          ...partial,
+        },
+      };
+      const nextTokens = {
+        ...currentTokens,
+        pageStyles: nextStyles,
+      };
+      handleDesignTokensChange(nextTokens);
+    },
+    [activePageKey, handleDesignTokensChange]
+  );
+
+  const handleResetPageStyle = useCallback(() => {
+    const currentTokens = currentDesignTokensRef.current || {};
+    const existingPageStyles = (currentTokens.pageStyles as PageStylesMap) || {};
+    if (!existingPageStyles[activePageKey]) return;
+    const nextStyles = { ...existingPageStyles };
+    delete nextStyles[activePageKey];
+    const nextTokens = {
+      ...currentTokens,
+      pageStyles: nextStyles,
+    };
+    handleDesignTokensChange(nextTokens);
+    onSave();
+    toast.info(`تمت استعادة الطابع الافتراضي لصفحة ${activePageKey}`);
+  }, [activePageKey, handleDesignTokensChange, onSave]);
 
   const setActivePageKey = useCallback(
     (pageKey: string) => {
@@ -822,5 +892,9 @@ export function useStorefrontStudioState({
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
     handleResetDeviceOverrides,
+    activePageStyle,
+    handleApplyPageStylePreset,
+    handleUpdatePageStyle,
+    handleResetPageStyle,
   };
 }

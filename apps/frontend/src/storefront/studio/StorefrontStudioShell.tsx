@@ -39,6 +39,7 @@ import {
 } from "./StudioTypes";
 import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
+import { resolvePageStyleVars } from "../engine/themeResolverCore";
 import type { StorefrontThemeInput } from "../engine/themeResolver";
 import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
@@ -224,6 +225,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
     handleResetDeviceOverrides,
+    activePageStyle,
+    handleApplyPageStylePreset,
+    handleUpdatePageStyle,
+    handleResetPageStyle,
   } = useStorefrontStudioState({
     themeId,
     externalDesignTokens,
@@ -549,6 +554,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         activePageKey={activePageKey}
         customPages={customPages}
         onOpenCreatePageModal={() => setShowCreatePageModal(true)}
+        pageStyle={activePageStyle}
+        onApplyPageStylePreset={handleApplyPageStylePreset}
+        onUpdatePageStyle={handleUpdatePageStyle}
+        onResetPageStyle={handleResetPageStyle}
         deviceMode={deviceMode}
         hasPendingChanges={hasPendingChanges}
         canUndo={canUndo}
@@ -719,9 +728,18 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
           {/* Center Live Stage */}
           <StudioCanvasStage deviceMode={deviceMode} zoomLevel={zoomLevel}>
-            <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
+            <StorefrontThemeProvider
+              initialTheme={previewTheme as unknown as StorefrontThemeInput}
+              activePageKey={activePageKey}
+            >
               <div
                 className="relative min-h-[800px] bg-background"
+                style={{
+                  ...resolvePageStyleVars(previewTheme, activePageKey, activePageStyle),
+                  fontFamily: activePageStyle?.fontFamily ? 'var(--store-font-family)' : undefined,
+                  '--accent': 'var(--store-accent)',
+                  '--radius': 'var(--store-radius)',
+                } as React.CSSProperties}
                 onDragOver={(e) => {
                   const types = Array.from(e.dataTransfer.types || []);
                   if (

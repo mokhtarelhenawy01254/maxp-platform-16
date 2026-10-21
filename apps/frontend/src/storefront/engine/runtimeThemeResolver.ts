@@ -7,7 +7,14 @@ import {
 } from './themeResolverCore';
 
 export type { StorefrontThemeInput } from './themeResolverCore';
-export { extractStorefrontThemePresetId } from './themeResolverCore';
+export {
+  extractStorefrontThemePresetId,
+  resolveStorefrontThemeFromPreset,
+  resolvePageStyleVars,
+  extractPageStyles,
+  PAGE_STYLE_DENSITY_GAPS,
+  PAGE_STYLE_PRESETS,
+} from './themeResolverCore';
 import { resolveStorefrontThemeId } from '../themes';
 
 const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {

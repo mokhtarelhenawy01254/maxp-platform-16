@@ -11,9 +11,37 @@ import type {
   StorefrontFooterConfig,
   StorefrontSEOConfig,
 } from '../types/theme.types';
-import { DEFAULT_STOREFRONT_THEME_ID } from './themeDefaults';
+import {
+  DEFAULT_STOREFRONT_THEME_ID,
+  DEFAULT_PAGE_STYLE_DENSITY_GAP,
+  DEFAULT_PAGE_STYLE_RADIUS,
+} from './themeDefaults';
 import { applyStorefrontContentOverrides } from '../utils/contentOverrides';
 import { applyStorefrontPageOverrides } from '../utils/pageOverrides';
+import type {
+  PageStyleDensity,
+  PageStyleScope,
+  PageStylesMap,
+  PageStylePreset,
+} from '../studio/StudioTypes';
+import { PAGE_STYLE_PRESETS } from '../studio/StudioTypes';
+
+export type { PageStyleDensity, PageStyleScope, PageStylesMap, PageStylePreset };
+export { PAGE_STYLE_PRESETS };
+
+export const PAGE_STYLE_DENSITY_GAPS: Record<PageStyleDensity, string> = {
+  compact: '0.75rem',
+  normal: '1.5rem',
+  airy: '2.5rem',
+};
+
+export interface ResolvedPageStyleVars {
+  '--store-accent': string;
+  '--store-font-family': string;
+  '--store-density-gap': string;
+  '--store-radius': string;
+  [key: string]: string;
+}
 
 type PartialTokens = {
   colors?: Partial<StorefrontThemeColors>;
@@ -33,9 +61,12 @@ export type StorefrontThemeInput = Partial<StorefrontTheme> & {
   typography?: Partial<StorefrontThemeTypography>;
   shape?: Partial<StorefrontThemeShape>;
   productCard?: Partial<StorefrontThemeProductCardTokens>;
+  activePageKey?: string;
+  pageStyles?: Record<string, PageStyleScope>;
   designTokens?: PartialTokens & {
     contentOverrides?: unknown;
     pageOverrides?: unknown;
+    pageStyles?: Record<string, PageStyleScope>;
     seo?: Partial<StorefrontSEOConfig>;
   };
   contentOverrides?: unknown;
@@ -43,8 +74,10 @@ export type StorefrontThemeInput = Partial<StorefrontTheme> & {
   settings?: {
     theme?: string;
     themeId?: string;
+    pageStyles?: Record<string, PageStyleScope>;
     designTokens?: PartialTokens & {
       contentOverrides?: unknown;
+      pageStyles?: Record<string, PageStyleScope>;
     };
     contentOverrides?: unknown;
     [key: string]: unknown;
@@ -354,6 +387,123 @@ const extractSEOConfig = (input?: StorefrontThemeInput): Partial<StorefrontSEOCo
   };
 };
 
+export const extractPageStyles = (
+  input?: StorefrontThemeInput,
+): Record<string, PageStyleScope> => {
+  const inputRecord: Record<string, unknown> = isRecord(input) ? input : {};
+  const settings = isRecord(inputRecord['settings'])
+    ? (inputRecord['settings'] as Record<string, unknown>)
+    : {};
+  const topLevelDesignTokens = isRecord(inputRecord['designTokens'])
+    ? (inputRecord['designTokens'] as Record<string, unknown>)
+    : {};
+  const settingsDesignTokens = isRecord(settings?.['designTokens'])
+    ? (settings['designTokens'] as Record<string, unknown>)
+    : {};
+
+  const sources: Array<Record<string, unknown>> = [
+    isRecord(settingsDesignTokens['pageStyles'])
+      ? (settingsDesignTokens['pageStyles'] as Record<string, unknown>)
+      : {},
+    isRecord(topLevelDesignTokens['pageStyles'])
+      ? (topLevelDesignTokens['pageStyles'] as Record<string, unknown>)
+      : {},
+    isRecord(settings['pageStyles'])
+      ? (settings['pageStyles'] as Record<string, unknown>)
+      : {},
+    isRecord(inputRecord['pageStyles'])
+      ? (inputRecord['pageStyles'] as Record<string, unknown>)
+      : {},
+  ];
+
+  const result: Record<string, PageStyleScope> = {};
+  for (const source of sources) {
+    for (const [key, val] of Object.entries(source)) {
+      if (isRecord(val)) {
+        const item = val as Record<string, unknown>;
+        const scope: PageStyleScope = {};
+        if (typeof item['accent'] === 'string' && item['accent'].trim()) {
+          scope.accent = item['accent'].trim();
+        }
+        if (typeof item['fontFamily'] === 'string' && item['fontFamily'].trim()) {
+          scope.fontFamily = item['fontFamily'].trim();
+        }
+        if (
+          item['density'] === 'compact' ||
+          item['density'] === 'normal' ||
+          item['density'] === 'airy'
+        ) {
+          scope.density = item['density'];
+        }
+        if (typeof item['radius'] === 'number' && !isNaN(item['radius'])) {
+          scope.radius = item['radius'];
+        }
+        if (typeof item['preset'] === 'string' && item['preset'].trim()) {
+          scope.preset = item['preset'].trim();
+        }
+        if (Object.keys(scope).length > 0) {
+          result[key] = {
+            ...(result[key] || {}),
+            ...scope,
+          };
+        }
+      }
+    }
+  }
+
+  return result;
+};
+
+export const resolvePageStyleVars = (
+  theme?: StorefrontTheme,
+  pageKey?: string,
+  explicitStyle?: PageStyleScope,
+): ResolvedPageStyleVars => {
+  const pKey = pageKey || 'home';
+  const pageStyle =
+    explicitStyle ||
+    (theme as any)?.pageStyles?.[pKey] ||
+    (theme?.pages?.[pKey] as any)?.pageStyle ||
+    undefined;
+
+  // 1. Accent fallback
+  const accent =
+    pageStyle?.accent?.trim() ||
+    theme?.tokens?.colors?.accent ||
+    theme?.tokens?.colors?.primary ||
+    '#2563eb';
+
+  // 2. Font family fallback
+  const fontFamily =
+    pageStyle?.fontFamily?.trim() ||
+    theme?.tokens?.typography?.bodyFont ||
+    theme?.tokens?.typography?.headingFont ||
+    'inherit';
+
+  // 3. Density gap fallback
+  const density = pageStyle?.density || 'normal';
+  const densityGap = PAGE_STYLE_DENSITY_GAPS[density] || DEFAULT_PAGE_STYLE_DENSITY_GAP;
+
+  // 4. Radius fallback
+  let radius: string;
+  if (typeof pageStyle?.radius === 'number') {
+    radius = `${pageStyle.radius}px`;
+  } else if (typeof (pageStyle as any)?.radius === 'string' && (pageStyle as any).radius.trim()) {
+    radius = (pageStyle as any).radius.trim();
+  } else if (theme?.tokens?.shape?.borderRadius) {
+    radius = theme.tokens.shape.borderRadius;
+  } else {
+    radius = DEFAULT_PAGE_STYLE_RADIUS;
+  }
+
+  return {
+    '--store-accent': accent,
+    '--store-font-family': fontFamily,
+    '--store-density-gap': densityGap,
+    '--store-radius': radius,
+  };
+};
+
 export const extractStorefrontThemePresetId = (
   input?: StorefrontThemeInput,
 ): string => {
@@ -577,6 +727,20 @@ export const resolveStorefrontThemeFromPreset = (
   if (normalizedTheme.tokens?.typography) {
     normalizedTheme.tokens.typography.direction = resolvedDirection;
   }
+
+  const pageStyles = extractPageStyles(input);
+  if (pageStyles && Object.keys(pageStyles).length > 0) {
+    (normalizedTheme as any).pageStyles = pageStyles;
+    Object.entries(pageStyles).forEach(([pKey, pStyle]) => {
+      if (normalizedTheme.pages && normalizedTheme.pages[pKey]) {
+        (normalizedTheme.pages[pKey] as any).pageStyle = pStyle;
+      }
+    });
+  }
+
+  const activePageKey = input?.activePageKey || (input as any)?.pageKey || 'home';
+  (normalizedTheme as any).activePageKey = activePageKey;
+  (normalizedTheme as any).pageStyleVars = resolvePageStyleVars(normalizedTheme, activePageKey);
 
   return normalizedTheme;
 };
