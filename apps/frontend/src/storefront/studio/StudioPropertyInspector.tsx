@@ -14,6 +14,7 @@ import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioInspectorTab, StudioDeviceMode, StudioSelectedElement } from "./StudioTypes";
 import { StudioInspectorDesignTab } from "./inspector/StudioInspectorDesignTab";
 import { StudioInspectorLayoutTab } from "./inspector/StudioInspectorLayoutTab";
+import { StudioContainerControls } from "./inspector/StudioContainerControls";
 import { StudioInspectorContentTab } from "./inspector/StudioInspectorContentTab";
 import { StudioInspectorAiTab } from "./inspector/StudioInspectorAiTab";
 import { resolveEffectiveSectionSettings, hasDeviceOverrides, getDeviceOverridesCount } from "./utils/studioStyleUtils";
@@ -496,11 +497,21 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
             )}
 
             {activeTab === "layout" && (
-              <StudioInspectorLayoutTab
-                settings={effectiveSettings}
-                onUpdateField={onUpdateField}
-                onBatchUpdateFields={onBatchUpdateFields}
-              />
+              sectionType === "container" ? (
+                <StudioContainerControls
+                  settings={settings}
+                  deviceMode={deviceMode}
+                  onUpdateField={onUpdateField}
+                  onBatchUpdateFields={onBatchUpdateFields}
+                  onSave={onSave}
+                />
+              ) : (
+                <StudioInspectorLayoutTab
+                  settings={effectiveSettings}
+                  onUpdateField={onUpdateField}
+                  onBatchUpdateFields={onBatchUpdateFields}
+                />
+              )
             )}
 
             {activeTab === "content" && (

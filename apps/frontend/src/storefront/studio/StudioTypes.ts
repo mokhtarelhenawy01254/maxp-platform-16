@@ -35,6 +35,19 @@ export interface StudioSelectedElement {
   currentImage?: string;
 }
 
+export interface ContainerResponsiveSettings {
+  direction?: "column" | "row";
+  columns?: number;
+  gap?: number;
+  align?: "start" | "center" | "end" | "stretch";
+  wrap?: boolean;
+  paddingTop?: number | string;
+  paddingBottom?: number | string;
+  paddingLeft?: number | string;
+  paddingRight?: number | string;
+  [key: string]: unknown;
+}
+
 export interface ContainerSettings {
   direction?: "column" | "row";
   gap?: number;
@@ -43,12 +56,20 @@ export interface ContainerSettings {
   wrap?: boolean;
   paddingTop?: number | string;
   paddingBottom?: number | string;
+  paddingLeft?: number | string;
+  paddingRight?: number | string;
+  responsive?: {
+    mobile?: ContainerResponsiveSettings;
+    tablet?: ContainerResponsiveSettings;
+    [key: string]: ContainerResponsiveSettings | undefined;
+  };
   [key: string]: unknown;
 }
 
 export const DEFAULT_CONTAINER_SETTINGS: ContainerSettings = {
   direction: "column",
   gap: 12,
+  columns: 1,
   align: "stretch",
   wrap: false,
 };

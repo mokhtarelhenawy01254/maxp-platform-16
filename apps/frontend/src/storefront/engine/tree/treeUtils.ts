@@ -1,4 +1,9 @@
-import { SectionNode, DEFAULT_CONTAINER_SETTINGS } from "../../studio/StudioTypes";
+import {
+  SectionNode,
+  ContainerSettings,
+  DEFAULT_CONTAINER_SETTINGS,
+  StudioDeviceMode,
+} from "../../studio/StudioTypes";
 
 /**
  * Checks if a given section node is a container
@@ -333,4 +338,69 @@ export function getAllSectionKeys(nodes: Array<string | SectionNode>): string[] 
   if (!Array.isArray(nodes)) return [];
   const normalized = normalizeSectionTree(nodes);
   return flattenSectionTree(normalized).map((item) => item.node.key as string);
+}
+
+/**
+ * Resolves effective container settings for a given device mode ("desktop" | "tablet" | "mobile").
+ * Implements the responsive cascade: desktop -> tablet -> mobile.
+ */
+export function resolveContainerSettings(
+  settings?: ContainerSettings | Record<string, unknown> | null,
+  deviceMode: StudioDeviceMode | "desktop" | "tablet" | "mobile" = "desktop"
+): ContainerSettings {
+  if (!settings) {
+    return { ...DEFAULT_CONTAINER_SETTINGS };
+  }
+
+  const base: ContainerSettings = {
+    direction: (settings.direction as any) || DEFAULT_CONTAINER_SETTINGS.direction || "column",
+    gap: typeof settings.gap === "number" ? settings.gap : (DEFAULT_CONTAINER_SETTINGS.gap ?? 12),
+    columns: typeof settings.columns === "number" ? settings.columns : (DEFAULT_CONTAINER_SETTINGS.columns ?? 1),
+    align: (settings.align as any) || DEFAULT_CONTAINER_SETTINGS.align || "stretch",
+    wrap: typeof settings.wrap === "boolean" ? settings.wrap : Boolean(DEFAULT_CONTAINER_SETTINGS.wrap),
+    paddingTop: settings.paddingTop,
+    paddingBottom: settings.paddingBottom,
+    paddingLeft: settings.paddingLeft,
+    paddingRight: settings.paddingRight,
+    responsive: settings.responsive as any,
+  };
+
+  const responsive = settings.responsive as ContainerSettings["responsive"];
+  if (!responsive || typeof responsive !== "object") {
+    return base;
+  }
+
+  // Tablet override cascade
+  if (deviceMode === "tablet" || deviceMode === "mobile") {
+    const tablet = responsive.tablet;
+    if (tablet && typeof tablet === "object") {
+      if (tablet.direction !== undefined) base.direction = tablet.direction;
+      if (tablet.columns !== undefined) base.columns = tablet.columns;
+      if (tablet.gap !== undefined) base.gap = tablet.gap;
+      if (tablet.align !== undefined) base.align = tablet.align;
+      if (tablet.wrap !== undefined) base.wrap = tablet.wrap;
+      if (tablet.paddingTop !== undefined) base.paddingTop = tablet.paddingTop;
+      if (tablet.paddingBottom !== undefined) base.paddingBottom = tablet.paddingBottom;
+      if (tablet.paddingLeft !== undefined) base.paddingLeft = tablet.paddingLeft;
+      if (tablet.paddingRight !== undefined) base.paddingRight = tablet.paddingRight;
+    }
+  }
+
+  // Mobile override cascade (highest precedence)
+  if (deviceMode === "mobile") {
+    const mobile = responsive.mobile;
+    if (mobile && typeof mobile === "object") {
+      if (mobile.direction !== undefined) base.direction = mobile.direction;
+      if (mobile.columns !== undefined) base.columns = mobile.columns;
+      if (mobile.gap !== undefined) base.gap = mobile.gap;
+      if (mobile.align !== undefined) base.align = mobile.align;
+      if (mobile.wrap !== undefined) base.wrap = mobile.wrap;
+      if (mobile.paddingTop !== undefined) base.paddingTop = mobile.paddingTop;
+      if (mobile.paddingBottom !== undefined) base.paddingBottom = mobile.paddingBottom;
+      if (mobile.paddingLeft !== undefined) base.paddingLeft = mobile.paddingLeft;
+      if (mobile.paddingRight !== undefined) base.paddingRight = mobile.paddingRight;
+    }
+  }
+
+  return base;
 }

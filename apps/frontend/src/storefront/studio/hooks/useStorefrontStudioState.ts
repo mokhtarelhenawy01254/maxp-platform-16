@@ -22,6 +22,18 @@ import {
 } from "../../engine/tree/treeUtils";
 import { RESPONSIVE_STYLE_FIELDS } from "../utils/studioStyleUtils";
 
+export const CONTAINER_RESPONSIVE_FIELDS = new Set<string>([
+  "direction",
+  "columns",
+  "gap",
+  "align",
+  "wrap",
+  "paddingTop",
+  "paddingBottom",
+  "paddingLeft",
+  "paddingRight",
+]);
+
 const STUDIO_STARTER_SETTINGS: Record<string, Record<string, any>> = {
   "hero-banner": {
     title: "مرحبًا بكم في متجرنا",
@@ -539,67 +551,83 @@ export function useStorefrontStudioState({
       const pageKey = activePageKeyRef.current;
       const pageConfig = activePageConfigRef.current;
 
-      const nextSections = currentSections.map((s: any, idx: number) => {
-        const key = getSectionKey(s, idx);
-        if (key !== sectionKeyToUpdate) return s;
+      const updateSectionNodeRecursive = (items: any[]): any[] => {
+        return items.map((s: any, idx: number) => {
+          const key = getSectionKey(s, idx);
+          if (key === sectionKeyToUpdate) {
+            const base = typeof s === "string" ? { type: s } : { ...s };
+            const baseSettings =
+              typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+            const baseConfig =
+              typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
 
-        const base = typeof s === "string" ? { type: s } : { ...s };
-        const baseSettings =
-          typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
-        const baseConfig =
-          typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
+            if (device === "mobile" || device === "tablet") {
+              const existingResponsive = {
+                ...(baseSettings.responsive || base.responsive || baseConfig.responsive || {}),
+              };
+              const existingDeviceOverrides = {
+                ...(existingResponsive[device] || {}),
+              };
 
-        if (device === "mobile" || device === "tablet") {
-          const existingResponsive = {
-            ...(baseSettings.responsive || base.responsive || baseConfig.responsive || {}),
-          };
-          const existingDeviceOverrides = {
-            ...(existingResponsive[device] || {}),
-          };
+              Object.entries(updates).forEach(([field, value]) => {
+                if (field === "responsive" && typeof value === "object" && value !== null) {
+                  Object.assign(existingResponsive, value);
+                } else if (RESPONSIVE_STYLE_FIELDS.has(field) || CONTAINER_RESPONSIVE_FIELDS.has(field)) {
+                  if (value === undefined || value === null || value === "") {
+                    delete existingDeviceOverrides[field];
+                  } else {
+                    existingDeviceOverrides[field] = value;
+                  }
+                } else {
+                  baseSettings[field] = value;
+                  base[field] = value;
+                  baseConfig[field] = value;
+                }
+              });
 
-          Object.entries(updates).forEach(([field, value]) => {
-            if (RESPONSIVE_STYLE_FIELDS.has(field)) {
-              if (value === undefined || value === null || value === "") {
-                delete existingDeviceOverrides[field];
-              } else {
-                existingDeviceOverrides[field] = value;
-              }
+              const nextResponsive = {
+                ...existingResponsive,
+                [device]: existingDeviceOverrides,
+              };
+
+              baseSettings.responsive = nextResponsive;
+              base.responsive = nextResponsive;
+              baseConfig.responsive = nextResponsive;
             } else {
-              baseSettings[field] = value;
-              base[field] = value;
-              baseConfig[field] = value;
+              Object.entries(updates).forEach(([field, value]) => {
+                baseSettings[field] = value;
+                base[field] = value;
+                baseConfig[field] = value;
+              });
+
+              if (baseSettings.responsive) {
+                baseConfig.responsive = baseSettings.responsive;
+              }
             }
-          });
 
-          const nextResponsive = {
-            ...existingResponsive,
-            [device]: existingDeviceOverrides,
-          };
+            base.settings = baseSettings;
+            base.config = baseConfig;
 
-          baseSettings.responsive = nextResponsive;
-          base.responsive = nextResponsive;
-          baseConfig.responsive = nextResponsive;
-        } else {
-          Object.entries(updates).forEach(([field, value]) => {
-            baseSettings[field] = value;
-            base[field] = value;
-            baseConfig[field] = value;
-          });
-
-          if (baseSettings.responsive) {
-            baseConfig.responsive = baseSettings.responsive;
+            return {
+              ...base,
+              settings: baseSettings,
+              config: baseConfig,
+              ...(Array.isArray(s.children) ? { children: s.children } : {}),
+            };
           }
-        }
 
-        base.settings = baseSettings;
-        base.config = baseConfig;
+          if (s && typeof s === "object" && Array.isArray(s.children) && s.children.length > 0) {
+            return {
+              ...s,
+              children: updateSectionNodeRecursive(s.children),
+            };
+          }
 
-        return {
-          ...base,
-          settings: baseSettings,
-          config: baseConfig,
-        };
-      });
+          return s;
+        });
+      };
+
+      const nextSections = updateSectionNodeRecursive(currentSections);
 
       activeSectionsRef.current = nextSections;
 
