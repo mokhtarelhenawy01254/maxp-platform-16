@@ -571,4 +571,57 @@ describe('Wave 8: Customer Portal Suite (بوابة العميل — تقدم م
     expect(details.payments.items[0].status).toBe('PAID');
     expect(details.payments.items[1].status).toBe('PENDING');
   });
+
+  test('7. Regression Guard (Wave 8.1): Customer queries must NOT select non-existent `name` field', async () => {
+    const capturedSelects = [];
+    const origFindFirst = mockPrisma.customerOrder.findFirst;
+    const origFindUnique = mockPrisma.customerOrder.findUnique;
+
+    mockPrisma.customerOrder.findFirst = async (args) => {
+      if (args?.include?.customer?.select) {
+        capturedSelects.push(args.include.customer.select);
+        if ('name' in args.include.customer.select) {
+          throw new Error('Unknown field `name` for select statement on model `Customer`');
+        }
+      }
+      return origFindFirst(args);
+    };
+
+    mockPrisma.customerOrder.findUnique = async (args) => {
+      if (args?.include?.customer?.select) {
+        capturedSelects.push(args.include.customer.select);
+        if ('name' in args.include.customer.select) {
+          throw new Error('Unknown field `name` for select statement on model `Customer`');
+        }
+      }
+      return origFindUnique(args);
+    };
+
+    try {
+      const order = await mockPrisma.customerOrder.create({
+        data: {
+          companyId: 'comp_guard',
+          orderNumber: 'CO-GUARD-01',
+          brandName: 'Guard Brand',
+          portalToken: 'token_guard_12345',
+          portalEnabled: true,
+          status: 'IN_PRODUCTION',
+        },
+      });
+
+      const ctx = await CustomerPortalService.getContext(order.portalToken);
+      expect(ctx.orderNumber).toBe('CO-GUARD-01');
+
+      const details = await CustomerPortalService.getOrderDetails(order.portalToken);
+      expect(details.orderNumber).toBe('CO-GUARD-01');
+
+      expect(capturedSelects.length).toBeGreaterThanOrEqual(2);
+      for (const sel of capturedSelects) {
+        expect(sel.name).toBeUndefined();
+      }
+    } finally {
+      mockPrisma.customerOrder.findFirst = origFindFirst;
+      mockPrisma.customerOrder.findUnique = origFindUnique;
+    }
+  });
 });

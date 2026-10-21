@@ -125,7 +125,7 @@ class CustomerPortalService {
       where: { portalToken: cleanToken },
       include: {
         customer: {
-          select: { id: true, firstName: true, lastName: true, name: true, phone: true, email: true },
+          select: { id: true, firstName: true, lastName: true, phone: true, email: true },
         },
       },
     });
@@ -305,7 +305,7 @@ class CustomerPortalService {
       where: { id: verifiedOrder.id },
       include: {
         customer: {
-          select: { firstName: true, lastName: true, name: true, phone: true },
+          select: { firstName: true, lastName: true, phone: true },
         },
         payments: {
           orderBy: { createdAt: 'asc' },

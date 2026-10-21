@@ -287,7 +287,6 @@ class ManufacturingFactoryAgreementService {
             orderNumber: true,
             status: true,
             plannedQuantity: true,
-            unit: true,
             brandName: true,
           },
         },

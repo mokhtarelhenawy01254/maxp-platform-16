@@ -592,4 +592,34 @@ describe('Wave 7: Partner Factory Agreements & Payments Test Suite', () => {
     // Other factory has 0 stages assigned on MO-2026-00006
     assert.strictEqual(otherAssignments.length, 0);
   });
+
+  test('7. Regression Guard (Wave 7.1): ProductionOrder query must NOT select non-existent `unit` field', async () => {
+    let capturedOrderSelect = null;
+    const origFindFirst = prismaMock.factoryAgreement.findFirst;
+    prismaMock.factoryAgreement.findFirst = async (args) => {
+      if (args?.include?.order?.select) {
+        capturedOrderSelect = args.include.order.select;
+        if ('unit' in capturedOrderSelect) {
+          throw new Error('Unknown field `unit` for select statement on model `ProductionOrder`');
+        }
+      }
+      return origFindFirst(args);
+    };
+
+    try {
+      const agr = await ManufacturingFactoryAgreementService.createAgreement(companyId, mockUser, {
+        partnerFactoryId: 'cmvg97qwh002sjut55f0svrjn',
+        orderId: 'ord_mo_00006',
+        title: 'اتفاقية فحص حقل unit',
+        totalValue: 5000,
+      });
+
+      const fetched = await ManufacturingFactoryAgreementService.getAgreementById(companyId, agr.id);
+      assert.ok(fetched);
+      assert.ok(capturedOrderSelect, 'order select must be captured');
+      assert.strictEqual(capturedOrderSelect.unit, undefined, 'unit MUST NOT be selected');
+    } finally {
+      prismaMock.factoryAgreement.findFirst = origFindFirst;
+    }
+  });
 });
