@@ -1,22 +1,25 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import CancellationSettingsPage from "../CancellationSettingsPage";
 import { cancellationService } from "../../../services/cancellationService";
 
-jest.mock("../../../services/cancellationService", () => ({
+vi.mock("../../../services/cancellationService", () => ({
   cancellationService: {
-    getCategories: jest.fn(),
-    getReasons: jest.fn(),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    createReason: jest.fn(),
-    updateReason: jest.fn(),
-    deleteReason: jest.fn(),
+    getCategories: vi.fn(),
+    getReasons: vi.fn(),
+    createCategory: vi.fn(),
+    updateCategory: vi.fn(),
+    createReason: vi.fn(),
+    updateReason: vi.fn(),
+    deleteReason: vi.fn(),
   },
 }));
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
@@ -79,9 +82,17 @@ const mockReasons = [
 
 describe("CancellationSettingsPage Suite", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (cancellationService.getCategories as jest.Mock).mockResolvedValue({ data: mockCategories });
-    (cancellationService.getReasons as jest.Mock).mockResolvedValue({ data: mockReasons });
+    vi.clearAllMocks();
+    vi.mocked(cancellationService.getCategories).mockResolvedValue({
+      data: mockCategories,
+    } as unknown as Awaited<ReturnType<typeof cancellationService.getCategories>>);
+    vi.mocked(cancellationService.getReasons).mockResolvedValue({
+      data: mockReasons,
+    } as unknown as Awaited<ReturnType<typeof cancellationService.getReasons>>);
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("renders categories and cancellation reasons table cleanly", async () => {
@@ -94,17 +105,16 @@ describe("CancellationSettingsPage Suite", () => {
       expect(screen.getAllByText("تغيير رأي العميل").length).toBeGreaterThan(0);
       expect(screen.getByText("تأخر الشحن")).toBeInTheDocument();
       expect(screen.getByText("وجد سعراً أفضل")).toBeInTheDocument();
+      expect(screen.getByText(/^\s*نشط\s*$/)).toBeInTheDocument();
+      expect(screen.getByText(/^\s*غير نشط\s*$/)).toBeInTheDocument();
     });
-
-    expect(screen.getByText("نشط")).toBeInTheDocument();
-    expect(screen.getByText("غير نشط")).toBeInTheDocument();
   });
 
   it("opens CategoryModal, fills input, and saves new category", async () => {
     const user = userEvent.setup();
-    (cancellationService.createCategory as jest.Mock).mockResolvedValue({
+    vi.mocked(cancellationService.createCategory).mockResolvedValue({
       data: { id: "cat-3", name: "جودة المنتج" },
-    });
+    } as unknown as Awaited<ReturnType<typeof cancellationService.createCategory>>);
 
     render(<CancellationSettingsPage />);
     await waitFor(() => expect(screen.getAllByText("مشاكل الشحن").length).toBeGreaterThan(0));
@@ -127,9 +137,9 @@ describe("CancellationSettingsPage Suite", () => {
 
   it("opens ReasonModal, fills inputs, and creates new reason", async () => {
     const user = userEvent.setup();
-    (cancellationService.createReason as jest.Mock).mockResolvedValue({
+    vi.mocked(cancellationService.createReason).mockResolvedValue({
       data: { id: "res-3", reason: "منتج تالف", categoryId: "cat-1" },
-    });
+    } as unknown as Awaited<ReturnType<typeof cancellationService.createReason>>);
 
     render(<CancellationSettingsPage />);
     await waitFor(() => expect(screen.getAllByText("مشاكل الشحن").length).toBeGreaterThan(0));
