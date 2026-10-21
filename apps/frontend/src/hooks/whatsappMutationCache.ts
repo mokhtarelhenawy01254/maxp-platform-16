@@ -28,6 +28,7 @@ export const updateConversationPages = <T extends ConversationsCacheData | undef
     if (!Array.isArray(page.conversations)) return page;
 
     let pageChanged = false;
+    let unreadCountReduction = 0;
     const conversations = page.conversations.map((contact) => {
       if (normalizeWhatsAppCacheJid(contact.jid) !== targetJid) {
         return contact;
@@ -35,8 +36,25 @@ export const updateConversationPages = <T extends ConversationsCacheData | undef
 
       pageChanged = true;
       changed = true;
-      return updater(contact);
+      const updated = updater(contact);
+      if ((contact.unreadCount || 0) > 0 && (updated.unreadCount || 0) === 0) {
+        unreadCountReduction++;
+      }
+      return updated;
     });
+
+    if (pageChanged && page.counts && typeof page.counts === "object") {
+      const counts = page.counts as Record<string, any>;
+      const currentUnread = typeof counts.unread === "number" ? counts.unread : 0;
+      return {
+        ...page,
+        conversations,
+        counts: {
+          ...counts,
+          unread: Math.max(0, currentUnread - unreadCountReduction),
+        },
+      };
+    }
 
     return pageChanged ? { ...page, conversations } : page;
   });

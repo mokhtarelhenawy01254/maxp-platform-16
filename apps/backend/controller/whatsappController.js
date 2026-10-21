@@ -1692,25 +1692,68 @@ async function markAsRead(req, res) {
         // Resolve target session from DB only (skip in-memory check — markAsRead
         // works on DB even if the socket is disconnected/reconnecting)
         let targetSessionId = sessionId;
+        const normalizedJid = WhatsAppMessageHandler.formatJid ? WhatsAppMessageHandler.formatJid(remoteJid) : remoteJid;
+
         if (sessionId === 'all') {
-            const anySession = await getSharedPrismaClient().whatsAppSession.findFirst({
-                where: { companyId },
-                orderBy: { lastConnectedAt: 'desc' }
+            // First search if this contact belongs to any session within the company
+            const existingContact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                where: {
+                    OR: [
+                        { jid: remoteJid },
+                        { jid: normalizedJid }
+                    ],
+                    whatsAppSession: { companyId }
+                },
+                select: { sessionId: true }
             });
-            if (!anySession) {
-                return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+
+            if (existingContact?.sessionId) {
+                targetSessionId = existingContact.sessionId;
+            } else {
+                const anySession = await getSharedPrismaClient().whatsAppSession.findFirst({
+                    where: { companyId },
+                    orderBy: { lastConnectedAt: 'desc' }
+                });
+                if (!anySession) {
+                    return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+                }
+                targetSessionId = anySession.id;
             }
-            targetSessionId = anySession.id;
         } else {
             const session = await getSharedPrismaClient().whatsAppSession.findFirst({
                 where: { id: sessionId, companyId }
             });
             if (!session) {
-                return res.status(404).json({ error: 'الجلسة غير موجودة' });
+                const existingContact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                    where: {
+                        OR: [
+                            { jid: remoteJid },
+                            { jid: normalizedJid }
+                        ],
+                        whatsAppSession: { companyId }
+                    },
+                    select: { sessionId: true }
+                });
+                if (existingContact?.sessionId) {
+                    targetSessionId = existingContact.sessionId;
+                } else {
+                    return res.status(404).json({ error: 'الجلسة غير موجودة' });
+                }
             }
         }
 
         await WhatsAppMessageHandler.markAsRead(targetSessionId, remoteJid);
+
+        try {
+            const socketService = require('../services/socketService');
+            socketService.sendToCompany(companyId, 'whatsapp:conversation:read', {
+                sessionId: targetSessionId,
+                remoteJid,
+                jid: normalizedJid
+            });
+        } catch (sockErr) {
+            // non-fatal
+        }
 
         res.json({ success: true });
     } catch (error) {
@@ -2881,11 +2924,21 @@ async function markChatUnread(req, res) {
         }
 
         // Update local DB if needed (optional, as unread count comes from messages usually)
-        if (unread) {
+        if (unread === true || unread === 'true') {
             await getSharedPrismaClient().whatsAppContact.updateMany({
                 where: { sessionId: targetSessionId, jid },
                 data: { unreadCount: { increment: 1 } } // Artificial increment
             });
+        } else {
+            await WhatsAppMessageHandler.markAsRead(targetSessionId, jid);
+            try {
+                const socketService = require('../services/socketService');
+                socketService.sendToCompany(companyId, 'whatsapp:conversation:read', {
+                    sessionId: targetSessionId,
+                    remoteJid: jid,
+                    jid
+                });
+            } catch (sockErr) {}
         }
 
         res.json({ success: true });

@@ -752,6 +752,55 @@ export function useWhatsAppChatSocket({
       );
     };
 
+    const handleConversationRead = (data: { sessionId?: string; remoteJid?: string; jid?: string }) => {
+      const readJid = data.jid || data.remoteJid;
+      if (!readJid) return;
+      const targetNormJid = normalizeJid(readJid);
+
+      setSelectedContact((prev) => {
+        if (!prev) return prev;
+        if (normalizeJid(prev.jid) === targetNormJid) {
+          return { ...prev, unreadCount: 0 };
+        }
+        return prev;
+      });
+
+      queryClient.setQueriesData<ConversationsCache>(
+        { queryKey: ['whatsapp', 'conversations'] },
+        (old) => {
+          if (!old?.pages?.length) return old;
+          let changed = false;
+          const pages = old.pages.map((page) => {
+            if (!Array.isArray(page.conversations)) return page;
+            let pageChanged = false;
+            let unreadDiff = 0;
+            const conversations = page.conversations.map((c: Contact) => {
+              if (normalizeJid(c.jid) === targetNormJid) {
+                if ((c.unreadCount || 0) > 0) {
+                  unreadDiff++;
+                }
+                pageChanged = true;
+                changed = true;
+                return { ...c, unreadCount: 0 };
+              }
+              return c;
+            });
+            if (pageChanged) {
+              const updatedCounts = page.counts
+                ? {
+                    ...page.counts,
+                    unread: Math.max(0, (page.counts.unread || 0) - unreadDiff),
+                  }
+                : page.counts;
+              return { ...page, conversations, counts: updatedCounts };
+            }
+            return page;
+          });
+          return changed ? { ...old, pages } : old;
+        },
+      );
+    };
+
     socket.on('whatsapp:message:new', handleNewMessage);
     socket.on('whatsapp:message:reaction', handleMessageReaction);
     socket.on('whatsapp:message:status', handleMessageStatus);
@@ -762,6 +811,7 @@ export function useWhatsAppChatSocket({
     socket.on('whatsapp:message:unpinned', handleMessageUnpinned);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stopped_typing', handleUserStoppedTyping);
+    socket.on('whatsapp:conversation:read', handleConversationRead);
 
     return () => {
       socket.off('whatsapp:message:new', handleNewMessage);
@@ -774,6 +824,7 @@ export function useWhatsAppChatSocket({
       socket.off('whatsapp:message:unpinned', handleMessageUnpinned);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);
+      socket.off('whatsapp:conversation:read', handleConversationRead);
 
       if (loadContactsTimeoutRef.current) {
         clearTimeout(loadContactsTimeoutRef.current);

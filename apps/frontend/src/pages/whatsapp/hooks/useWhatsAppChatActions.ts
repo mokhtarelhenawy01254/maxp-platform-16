@@ -704,20 +704,76 @@ export function useWhatsAppChatActions({
 
   const handleMarkUnread = useCallback(
     async (contact: Contact) => {
-      if (!selectedSession) return;
+      const sessionId =
+        contact.sessionId ||
+        (selectedSession === 'all' ? null : selectedSession) ||
+        activeSessionId;
+      if (!sessionId || !contact.jid) return;
+
+      const isUnread = (contact.unreadCount || 0) > 0;
       try {
-        await api.post(`/whatsapp/chats/unread`, {
-          sessionId: contact.sessionId || selectedSession,
-          jid: contact.jid,
-          unread: true,
-        });
-        tToast.success("whatsappChat.success_select_9a6b");
+        if (isUnread) {
+          await api.post('/whatsapp/messages/read', {
+            sessionId,
+            remoteJid: contact.jid,
+          });
+          queryClient.setQueriesData<any>(
+            { queryKey: ['whatsapp', 'conversations'] },
+            (old: any) => {
+              if (!old?.pages?.length) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page: any) => ({
+                  ...page,
+                  conversations: (page.conversations || []).map((c: Contact) =>
+                    c.jid === contact.jid ? { ...c, unreadCount: 0 } : c,
+                  ),
+                  counts: page.counts
+                    ? { ...page.counts, unread: Math.max(0, (page.counts.unread || 0) - 1) }
+                    : page.counts,
+                })),
+              };
+            },
+          );
+          setSelectedContact((prev) =>
+            prev && prev.jid === contact.jid ? { ...prev, unreadCount: 0 } : prev,
+          );
+          tToast.success("whatsapp.sidebar.markedAsReadSuccess", "تم تحديد المحادثة كمقروءة");
+        } else {
+          await api.post('/whatsapp/chats/unread', {
+            sessionId,
+            jid: contact.jid,
+            unread: true,
+          });
+          queryClient.setQueriesData<any>(
+            { queryKey: ['whatsapp', 'conversations'] },
+            (old: any) => {
+              if (!old?.pages?.length) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page: any) => ({
+                  ...page,
+                  conversations: (page.conversations || []).map((c: Contact) =>
+                    c.jid === contact.jid ? { ...c, unreadCount: 1 } : c,
+                  ),
+                  counts: page.counts
+                    ? { ...page.counts, unread: (page.counts.unread || 0) + 1 }
+                    : page.counts,
+                })),
+              };
+            },
+          );
+          setSelectedContact((prev) =>
+            prev && prev.jid === contact.jid ? { ...prev, unreadCount: 1 } : prev,
+          );
+          tToast.success("whatsappChat.success_select_9a6b", "تم تحديد المحادثة كغير مقروءة");
+        }
         queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       } catch {
         tToast.error("whatsappChat.failed_select_status_be9a");
       }
     },
-    [selectedSession, queryClient],
+    [selectedSession, activeSessionId, setSelectedContact, queryClient],
   );
 
   const handleBlockContact = useCallback(

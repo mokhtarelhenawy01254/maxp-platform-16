@@ -1465,6 +1465,15 @@ async function markAsRead(sessionId, remoteJid) {
                 },
                 data: { unreadCount: 0 }
             });
+            if (remoteJid && remoteJid !== jid) {
+                await getSharedPrismaClient().whatsAppContact.updateMany({
+                    where: {
+                        sessionId,
+                        jid: remoteJid
+                    },
+                    data: { unreadCount: 0 }
+                });
+            }
         } catch (updateError) {
             if (isPermissionError(updateError)) {
                 if (process.env.NODE_ENV === 'development') {

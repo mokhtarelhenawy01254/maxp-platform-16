@@ -1855,7 +1855,7 @@ if (typeof window !== "undefined") {
   p["/analytics"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
   p["/analytics/orders"] = () => import("./pages/Analytics/orders/OverviewDashboard");
   p["/analytics/store"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
-  p["/whatsapp"] = () => import("./pages/whatsapp-inbox/WhatsAppChat");
+  p["/whatsapp"] = () => import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppChat }));
   p["/pos"] = () => import("./pages/pos/PosPage");
   p["/tickets"] = () => import("./pages/tickets/TurboTickets");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");

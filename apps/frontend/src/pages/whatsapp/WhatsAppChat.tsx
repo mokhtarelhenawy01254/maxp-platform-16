@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuthSimple';
 import useSocket from '@/hooks/useSocket';
 import type { Contact } from '@/hooks/useWhatsAppQueries';
+import { useMarkAsRead } from '@/hooks/useWhatsAppMutations';
 
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
@@ -44,6 +45,8 @@ const WhatsAppChatContent: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newMessage, setNewMessage] = useState('');
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const markAsReadMutation = useMarkAsRead();
+  const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Modular Hooks
   const chatData = useWhatsAppChatData();
@@ -92,12 +95,51 @@ const WhatsAppChatContent: React.FC = () => {
     conversations: chatData.conversations,
     normalizeContactJid,
     setTypingUsers,
-    markAsReadMutation: {
-      mutate: () => {
-        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
-      },
-    },
+    markAsReadMutation,
   });
+
+  // Automatically mark conversation as read when opened/selected
+  useEffect(() => {
+    if (!chatData.selectedContact) return;
+    const contact = chatData.selectedContact;
+    const targetSessionId =
+      contact.sessionId ||
+      (chatData.selectedSession === 'all' ? null : chatData.selectedSession) ||
+      chatData.activeSessionId;
+
+    if (!targetSessionId || !contact.jid) return;
+
+    if (markAsReadTimeoutRef.current) {
+      clearTimeout(markAsReadTimeoutRef.current);
+      markAsReadTimeoutRef.current = null;
+    }
+
+    markAsReadTimeoutRef.current = setTimeout(() => {
+      markAsReadMutation.mutate({
+        sessionId: targetSessionId,
+        remoteJid: contact.jid,
+      });
+
+      if ((contact.unreadCount || 0) > 0) {
+        chatData.setSelectedContact((prev) =>
+          prev && prev.jid === contact.jid ? { ...prev, unreadCount: 0 } : prev,
+        );
+      }
+    }, 200);
+
+    return () => {
+      if (markAsReadTimeoutRef.current) {
+        clearTimeout(markAsReadTimeoutRef.current);
+        markAsReadTimeoutRef.current = null;
+      }
+    };
+  }, [
+    chatData.selectedContact?.jid,
+    chatData.selectedContact?.sessionId,
+    chatData.selectedSession,
+    chatData.activeSessionId,
+    markAsReadMutation,
+  ]);
 
   // Navigation Hook
   const chatNav = useWhatsAppChatNavigation({
