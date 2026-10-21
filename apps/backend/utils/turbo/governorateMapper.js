@@ -132,6 +132,21 @@ function getTurboGovernorateName(governorate, contextCity = '', fullAddress = ''
   const cleanedGov = cleanLocationName(governorate);
   const trimmed = String(cleanedGov || '').trim();
 
+  // فحص استباقي: إذا كان العنوان أو المدينة يحتوي على مناطق تتبع أطراف القاهرة والجيزة في تربو
+  // (مثل حدائق الأهرام، حدائق أكتوبر، هضبة الأهرام، حدائق المهندسين، حدائق العاصمة)
+  if (contextCity || fullAddress) {
+    const combined = `${contextCity || ''} ${fullAddress || ''}`;
+    const compoundDistricts = [
+      'حدائق الاهرام', 'حدائق الأهرام', 'هضبة الاهرام', 'هضبة الأهرام',
+      'حدائق اكتوبر', 'حدائق أكتوبر', 'حدائق المهندسين', 'حدائق العاصمة',
+      'سكن مصر حدائق اكتوبر', 'كمباوند الواحه حدائق اكتوبر'
+    ];
+    const nCombined = normalizeArabic(combined);
+    if (compoundDistricts.some(d => nCombined.includes(normalizeArabic(d)))) {
+      return 'أطراف القاهرة والجيزة';
+    }
+  }
+
   // Direct key check in GOVERNORATE_MAP (handles numeric IDs '1', '2' and exact keys)
   if (trimmed && GOVERNORATE_MAP[trimmed]) {
     return GOVERNORATE_MAP[trimmed];

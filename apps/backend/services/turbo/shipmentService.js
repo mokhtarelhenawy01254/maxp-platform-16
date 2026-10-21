@@ -77,6 +77,16 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
       if (bareArea.length >= 3 && nAddress.includes(bareArea)) {
         return area.name;
       }
+
+      // Check if area starts with street/district prefix (e.g. 'شارع زغلول' -> 'زغلول')
+      const bareStreet = na.replace(/^(?:شارع|ش|طريق|ميدان|حي|حى|منطقة|منطقه)\s+/, '').replace(/^ال/, '').trim();
+      // Guard: do not match if bareStreet is just the governorate name (e.g. 'ميدان الجيزة' -> 'جيزة' matching 'الجيزة' in address)
+      const nGovBare = nGov.replace(/^ال/, '');
+      if (bareStreet !== nGov && bareStreet !== nGovBare && !govNamesList.includes(bareStreet)) {
+        if (bareStreet.length >= 3 && nAddress.includes(bareStreet)) {
+          return area.name;
+        }
+      }
     }
   }
 
@@ -126,14 +136,41 @@ function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govNa
   }
 
   // 6. Safe Central Fallback for Turbo:
-  const govAreaMatch = areas.find(a => normalizeArabic(a.name) === nGov || normalizeArabic(a.name).includes(nGov));
+  // استبعاد المنشآت غير السكنية كالملاعب والمطارات والموانئ من أن تكون منطقة افتراضية
+  const nonFallbackKeywords = ['ستاد', 'استاد', 'مطار', 'صالة', 'صاله', 'ميناء', 'مينا'];
+
+  // 6a. مطابقة تامة لاسم المحافظة كمنطقة (دون استخدام includes لتجنب التقاط ستاد القاهرة أو مطار القاهرة)
+  const govAreaMatch = areas.find(a => normalizeArabic(a.name) === nGov);
   if (govAreaMatch) return govAreaMatch.name;
 
+  // 6b. المناطق المركزية الرئيسية المعتمدة لكل محافظة
+  const centralNames = [
+    'وسط البلد', 'ميدان الجيزة', 'محطة الرمل', 'المنشية', 'التحرير',
+    'الازبكية', 'الرئيسي', 'المركز الرئيسي', 'حدائق الاهرام'
+  ];
+  for (const cName of centralNames) {
+    const nCName = normalizeArabic(cName);
+    const found = areas.find(a => {
+      const na = normalizeArabic(a.name);
+      return na === nCName || na.includes(nCName);
+    });
+    if (found) return found.name;
+  }
+
+  // 6c. البحث عن منطقة تحتوي على 'رئيسي' أو 'مركز' أو 'عام' مع استبعاد الملاعب والمطارات
   const mainCenterMatch = areas.find(a => {
     const na = normalizeArabic(a.name);
+    if (nonFallbackKeywords.some(k => na.includes(k))) return false;
     return na.includes('رئيسي') || na.includes('مركز') || na.includes('عام');
   });
   if (mainCenterMatch) return mainCenterMatch.name;
+
+  // 6d. أول منطقة آمنة ليست ملعباً أو مطاراً
+  const firstSafe = areas.find(a => {
+    const na = normalizeArabic(a.name);
+    return !nonFallbackKeywords.some(k => na.includes(k));
+  });
+  if (firstSafe) return firstSafe.name;
 
   if (areas.length > 0 && areas[0].name) {
     return areas[0].name;

@@ -108,12 +108,13 @@ export const CustomerAddressSection: React.FC<CustomerAddressSectionProps> = ({
             <span>
               {(() => {
                 if (!order.customerAddress) return t("orders.notSpecified");
+                let rawAddr = order.customerAddress;
                 if (
-                  typeof order.customerAddress === "string" &&
-                  order.customerAddress.trim().startsWith("{")
+                  typeof rawAddr === "string" &&
+                  rawAddr.trim().startsWith("{")
                 ) {
                   try {
-                    const parsed = JSON.parse(order.customerAddress);
+                    const parsed = JSON.parse(rawAddr);
                     const parts = [];
                     if (parsed.street) parts.push(parsed.street);
                     if (parsed.building)
@@ -125,14 +126,21 @@ export const CustomerAddressSection: React.FC<CustomerAddressSectionProps> = ({
                     if (parsed.city && parsed.city !== parsed.governorate)
                       parts.push(parsed.city);
                     if (parsed.governorate) parts.push(parsed.governorate);
-                    return parts.length > 0
-                      ? parts.join(", ")
-                      : order.customerAddress;
+                    rawAddr = parts.length > 0 ? parts.join(", ") : rawAddr;
                   } catch (e) {
-                    return order.customerAddress;
+                    rawAddr = order.customerAddress;
                   }
                 }
-                return order.customerAddress;
+                const cleaned = String(rawAddr)
+                  .replace(/,\s*\d+:[^,]+,\s*\d+/g, '')
+                  .replace(/\b\d+:[^,]+,\s*\d+\b/g, '')
+                  .replace(/\b\d+:[^\s,]+/g, '')
+                  .replace(/,\s*\d+\s*$/g, '')
+                  .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+                  .replace(/[،\s]*,[،\s]*,/g, ',')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                return cleaned || rawAddr;
               })()}
             </span>
           </div>

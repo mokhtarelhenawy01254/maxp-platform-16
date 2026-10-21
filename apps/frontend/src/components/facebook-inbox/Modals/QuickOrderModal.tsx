@@ -1269,10 +1269,17 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         customerId: convCustomerId,
         customerPhone: phone,
         customerName: customerName.trim(),
-        customerAddress: address,
-        governorate: city,
-        city: area || city,
-        area: area || city,
+        customerAddress: (address || "")
+          .replace(/,\s*\d+:[^,]+,\s*\d+/g, "")
+          .replace(/\b\d+:[^,]+,\s*\d+\b/g, "")
+          .replace(/\b\d+:[^\s,]+/g, "")
+          .replace(/,\s*\d+\s*$/g, "")
+          .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, "")
+          .replace(/\s+/g, " ")
+          .trim(),
+        governorate: (city || "").replace(/^\d+:/, "").trim(),
+        city: (area || city || "").replace(/^\d+:/, "").trim(),
+        area: (area || city || "").replace(/^\d+:/, "").trim(),
         notes: notes,
         status: isScheduledOrder ? "SCHEDULED" : status,
         paymentMethod: paymentMethod,

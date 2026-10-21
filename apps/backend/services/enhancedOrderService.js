@@ -1142,17 +1142,22 @@ class EnhancedOrderService {
     const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
 
     const { getTurboGovernorateName, isUnspecified } = require('../utils/turbo/governorateMapper');
-    let resolvedGov = (!isUnspecified(rawGovInput) ? getTurboGovernorateName(rawGovInput, rawCityInput, addrText) : null);
+    const { stripTechnicalCodesFromAddress, cleanLocationName } = require('../utils/turbo/addressParser');
+
+    const cleanAddrText = stripTechnicalCodesFromAddress(addrText);
+    const cleanCustomerAddr = stripTechnicalCodesFromAddress(typeof data.customerAddress === 'string' ? data.customerAddress : '') || cleanAddrText;
+
+    let resolvedGov = (!isUnspecified(rawGovInput) ? getTurboGovernorateName(rawGovInput, rawCityInput, cleanAddrText) : null);
     if (!resolvedGov && !isUnspecified(rawCityInput)) {
-      resolvedGov = getTurboGovernorateName(rawCityInput, '', addrText);
+      resolvedGov = getTurboGovernorateName(rawCityInput, '', cleanAddrText);
     }
-    if (!resolvedGov && addrText) {
-      resolvedGov = getTurboGovernorateName('', rawCityInput, addrText);
+    if (!resolvedGov && cleanAddrText) {
+      resolvedGov = getTurboGovernorateName('', rawCityInput, cleanAddrText);
     }
 
-    const addrGov = resolvedGov || rawGovInput || 'غير محدد';
-    const addrCity = (!isUnspecified(rawCityInput) ? rawCityInput : (rawAreaInput || addrGov));
-    const addrArea = rawAreaInput || '';
+    const addrGov = resolvedGov || cleanLocationName(rawGovInput) || 'غير محدد';
+    const addrCity = cleanLocationName(!isUnspecified(rawCityInput) ? rawCityInput : (rawAreaInput || addrGov));
+    const addrArea = cleanLocationName(rawAreaInput || '');
     const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
 
     // استخراج attribution تلقائياً لو الطلب من محادثة
@@ -1217,14 +1222,14 @@ class EnhancedOrderService {
       customerEmail: data.customerEmail || customer.email,
       governorate: addrGov,
       city: addrCity,
-      customerAddress: data.customerAddress || '',
+      customerAddress: cleanCustomerAddr || '',
 
       // عناوين الشحن والفواتير
       shippingAddress: JSON.stringify({
         governorate: addrGov,
         city: addrCity,
         area: addrArea,
-        address: addrText,
+        address: cleanAddrText,
         phone: addrPhone,
         country: 'مصر'
       }),
@@ -1232,7 +1237,7 @@ class EnhancedOrderService {
         governorate: addrGov,
         city: addrCity,
         area: addrArea,
-        address: addrText,
+        address: cleanAddrText,
         phone: addrPhone,
         country: 'مصر'
       }),

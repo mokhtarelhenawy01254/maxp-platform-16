@@ -3,6 +3,34 @@
  * ╪»┘ê╪º┘ä ╪¬╪¡┘ä┘è┘ä ┘ê╪¬┘å╪╕┘è┘ü ╪º┘ä╪╣┘å┘ê╪º┘å ┘ä╪┤╪¡┘å Turbo
  */
 
+/**
+ * Strips technical dropdown codes, IDs, and metadata suffixes (e.g. ", 4219:رسلان, 2" or "3958:ترسا هرم")
+ * from street address text.
+ */
+function stripTechnicalCodesFromAddress(addressText) {
+  if (!addressText || typeof addressText !== 'string') return '';
+  let cleaned = addressText.trim();
+  if (!cleaned) return '';
+
+  // 1. Strip comma followed by ID:Area, ID (e.g. ", 4219:رسلان, 2" or ", 3958:ترسا هرم, 2")
+  cleaned = cleaned.replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/,\s*\d+:[^,]+,\s*\d+/gi, ' ');
+
+  // 2. Strip standalone ID:Area, ID (e.g. "4219:رسلان, 2")
+  cleaned = cleaned.replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/\b\d+:[^,]+,\s*\d+\b/gi, ' ');
+
+  // 3. Strip standalone ID:Area (e.g. "4219:رسلان" or "3958:ترسا هرم")
+  cleaned = cleaned.replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/\b\d+:[^\s,]+/gi, ' ');
+
+  // 4. Strip trailing standalone state/gov numeric ID at the very end (e.g. ", 2" or ", 1")
+  cleaned = cleaned.replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/,\s*\d+\s*$/g, '');
+
+  return cleaned
+    .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+    .replace(/[،\s]*,[،\s]*,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function cleanLocationName(location) {
   if (!location) return '';
   return location.toString().replace(/^\d+:/, '').trim();
@@ -240,6 +268,9 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
   // Strip standalone mobile numbers if embedded in the address text
   streetText = streetText.replace(/01[0-9]{9}/g, '');
 
+  // Strip technical codes and dropdown suffixes (e.g. ", 4219:رسلان, 2")
+  streetText = stripTechnicalCodesFromAddress(streetText);
+
   // Strip customer name if embedded in the address
   if (options.customerName) {
     const nameParts = String(options.customerName).trim().split(/\s+/).filter(p => p.length > 2);
@@ -369,7 +400,7 @@ function normalizeGuestShippingAddress(rawShippingAddress) {
  */
 function stripMatchedAreaFromAddress(addressText, areaName, options = {}) {
   if (!addressText || typeof addressText !== 'string') return '';
-  let cleaned = addressText.trim();
+  let cleaned = stripTechnicalCodesFromAddress(addressText.trim());
   if (!cleaned) return '';
 
   const areasToStrip = [];
@@ -407,7 +438,7 @@ function stripMatchedAreaFromAddress(addressText, areaName, options = {}) {
 
       const potential = cleaned.replace(areaPattern, ' ');
       const candidateTrimmed = potential
-        .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+        .replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -418,7 +449,7 @@ function stripMatchedAreaFromAddress(addressText, areaName, options = {}) {
   }
 
   cleaned = cleaned
-    .replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
+    .replace(/^(?:ف|في|فى|عند)\s+/i, "").replace(/^[,\s\-\:\.\t،\-–\/]+|[,\s\-\:\.\t،\-–\/]+$/g, '')
     .replace(/[،\s]*,[،\s]*,/g, ',')
     .replace(/\s+/g, ' ')
     .trim();
@@ -427,6 +458,7 @@ function stripMatchedAreaFromAddress(addressText, areaName, options = {}) {
 }
 
 module.exports = {
+  stripTechnicalCodesFromAddress,
   cleanLocationName,
   parseShippingAddress,
   getShippingAddressFields,
