@@ -2,7 +2,7 @@ import React from "react";
 import type { StorefrontPageConfig, StorefrontPageLayout } from "../types/theme.types";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { RenderSectionFrameArgs } from "../engine/PageComposer";
-import { buildSectionStyle, hasDeviceOverrides } from "../studio/utils/studioStyleUtils";
+import { buildSectionStyle, hasDeviceOverrides, generateResponsiveCss } from "../studio/utils/studioStyleUtils";
 import { useCurrentBreakpoint } from "../hooks/useCurrentBreakpoint";
 
 export const resolveStorefrontPageLayout = (
@@ -38,14 +38,24 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
       ? (sectionEntry.settings || sectionEntry)
       : undefined;
 
-  // Resolve responsive styles for the live breakpoint (Ticket 2G)
+  const sectionKey =
+    typeof sectionEntry === "object" && sectionEntry?.key
+      ? sectionEntry.key
+      : `sf-section-${index}`;
+
+  // Resolve responsive styles for the live breakpoint (Ticket 2G / 5R)
   const sectionStyle = buildSectionStyle(settings, undefined, currentBreakpoint);
   const hasResponsive = hasDeviceOverrides(settings, "mobile") || hasDeviceOverrides(settings, "tablet");
+
+  // Generate responsive media query styles for live storefront window resizing (Ticket 5R / 5B pattern)
+  const sectionSelector = `[data-section-key="${sectionKey}"]`;
+  const responsiveCss = generateResponsiveCss(settings, sectionSelector);
 
   return (
     <div
       data-storefront-section="true"
       data-section-index={index}
+      data-section-key={sectionKey}
       data-section-type={typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type}
       data-device-breakpoint={currentBreakpoint}
       data-has-responsive={hasResponsive ? "true" : undefined}
@@ -53,6 +63,12 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
       className={reveal ? `sf-reveal ${index > 0 ? 'mt-6 sm:mt-12' : ''}` : index > 0 ? 'mt-6 sm:mt-12' : ''}
       data-reveal-delay={reveal ? (index % 5) + 1 : undefined}
     >
+      {responsiveCss && (
+        <style
+          data-section-style={sectionKey}
+          dangerouslySetInnerHTML={{ __html: responsiveCss }}
+        />
+      )}
       {element}
     </div>
   );

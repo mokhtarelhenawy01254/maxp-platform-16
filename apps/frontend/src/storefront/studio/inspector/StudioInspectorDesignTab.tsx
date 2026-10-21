@@ -15,15 +15,18 @@ import {
   FreeNumberInput,
 } from "./StudioDimensionControls";
 import { StudioShadowControls } from "./StudioShadowControls";
-import { normalizeArabicDigits, parseFreeNumber } from "../utils/studioStyleUtils";
+import { normalizeArabicDigits, parseFreeNumber, isPropertyOverridden } from "../utils/studioStyleUtils";
 import { StudioSectionVariantSelector } from "./StudioSectionVariantSelector";
+import { ResponsiveFieldBadge } from "./StudioResponsiveControls";
 
 interface StudioInspectorDesignTabProps {
   sectionType: string;
   settings: Record<string, any>;
   deviceMode?: StudioDeviceMode;
+  rawSettings?: Record<string, any>;
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
+  onResetField?: (field: string) => void;
   onSave?: () => void;
 }
 
@@ -31,8 +34,10 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   sectionType,
   settings,
   deviceMode = "desktop",
+  rawSettings,
   onUpdateField,
   onBatchUpdateFields,
+  onResetField,
   onSave,
 }) => {
   const [openAcc, setOpenAcc] = useState<{ [key: string]: boolean }>({
@@ -52,6 +57,8 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   const currentColor = settings.backgroundColor || settings.bgColor || "#ffffff";
   const customCss = settings.customCss || "";
 
+  const targetSource = rawSettings || settings;
+
   // Border radius numeric resolution
   const currentRadiusNum = parseFreeNumber(
     settings.borderRadius === "none"
@@ -64,6 +71,12 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
       ? 24
       : settings.borderRadius,
     0
+  );
+
+  const isRadiusCustomized = isPropertyOverridden(
+    targetSource,
+    "borderRadius",
+    deviceMode as "mobile" | "tablet"
   );
 
   const colorSwatches = [
@@ -92,6 +105,7 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         onBatchUpdateFields={onBatchUpdateFields}
         onSave={onSave}
       />
+
       {/* 1. Accordion: خلفية (Fill & Background) */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button
@@ -182,6 +196,10 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
               min={0}
               max={100}
               placeholder="0"
+              deviceMode={deviceMode}
+              isCustomized={isRadiusCustomized}
+              propName="borderRadius"
+              onReset={() => onResetField ? onResetField("borderRadius") : onUpdateField("borderRadius", null)}
               onChange={(val) => onUpdateField("borderRadius", val)}
             />
 
@@ -258,12 +276,18 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
           <div className="p-3 bg-white space-y-3">
             <StudioPaddingControl
               settings={settings}
+              deviceMode={deviceMode}
+              rawSettings={targetSource}
+              onResetField={onResetField}
               onUpdateField={onUpdateField}
               onBatchUpdateFields={onBatchUpdateFields}
             />
             <div className="border-t border-[#f0f1f3] pt-2">
               <StudioMarginControl
                 settings={settings}
+                deviceMode={deviceMode}
+                rawSettings={targetSource}
+                onResetField={onResetField}
                 onUpdateField={onUpdateField}
               />
             </div>
@@ -290,6 +314,9 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
           <div className="p-3 bg-white">
             <StudioDimensionsLayoutControl
               settings={settings}
+              deviceMode={deviceMode}
+              rawSettings={targetSource}
+              onResetField={onResetField}
               onUpdateField={onUpdateField}
             />
           </div>
@@ -315,29 +342,116 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
         </button>
 
         {openAcc.typography && (
-          <div className="p-3 bg-white space-y-2">
-            <span className="block text-[10px] font-bold text-[#8a8f96]">
-              محاذاة النصوص
-            </span>
-            <div className="flex rounded-lg border border-[#ececee] bg-[#f6f7f8] p-1">
-              {[
-                { id: "right", label: "يمين" },
-                { id: "center", label: "وسط" },
-                { id: "left", label: "يسار" },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onUpdateField("align", item.id)}
-                  className={`flex-1 rounded-md py-1 text-center text-[10.5px] font-medium transition-all ${
-                    (settings.align || "right") === item.id
-                      ? "bg-white text-[#2b6cf6] shadow-xs font-bold"
-                      : "text-[#6f747b] hover:text-[#17181c]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+          <div className="p-3 bg-white space-y-3">
+            {/* Font Size (Ticket 5R) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="block text-[10px] font-bold text-[#8a8f96]">
+                  حجم الخط (Font Size)
+                </span>
+                {isPropertyOverridden(targetSource, "fontSize", deviceMode as "mobile" | "tablet") &&
+                  deviceMode !== "desktop" && (
+                    <ResponsiveFieldBadge
+                      deviceMode={deviceMode}
+                      isCustomized={true}
+                      propName="fontSize"
+                      onReset={() => onResetField ? onResetField("fontSize") : onUpdateField("fontSize", null)}
+                    />
+                  )}
+              </div>
+              <FreeNumberInput
+                label="حجم الخط (px)"
+                value={settings.fontSize ?? 16}
+                min={10}
+                max={96}
+                placeholder="16"
+                deviceMode={deviceMode}
+                isCustomized={isPropertyOverridden(targetSource, "fontSize", deviceMode as "mobile" | "tablet")}
+                propName="fontSize"
+                onReset={() => onResetField ? onResetField("fontSize") : onUpdateField("fontSize", null)}
+                onChange={(val) => onUpdateField("fontSize", val)}
+              />
+              <div className="grid grid-cols-4 gap-1 pt-0.5">
+                {[
+                  { label: "14px", val: 14 },
+                  { label: "16px", val: 16 },
+                  { label: "18px", val: 18 },
+                  { label: "24px", val: 24 },
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => onUpdateField("fontSize", opt.val)}
+                    className={`rounded border py-1 text-center text-[9.5px] transition-all ${
+                      parseFreeNumber(settings.fontSize, 16) === opt.val
+                        ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-[#2b6cf6] font-bold"
+                        : "border-[#ececee] bg-[#f6f7f8] text-[#6f747b] hover:text-[#17181c]"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Alignment / Content Alignment */}
+            <div className="space-y-1.5 border-t border-[#f0f1f3] pt-2">
+              <div className="flex items-center justify-between">
+                <span className="block text-[10px] font-bold text-[#8a8f96]">
+                  محاذاة المحتوى والنصوص (Content Align)
+                </span>
+                {(isPropertyOverridden(targetSource, "contentAlign", deviceMode as "mobile" | "tablet") ||
+                  isPropertyOverridden(targetSource, "align", deviceMode as "mobile" | "tablet")) &&
+                  deviceMode !== "desktop" && (
+                    <ResponsiveFieldBadge
+                      deviceMode={deviceMode}
+                      isCustomized={true}
+                      propName="contentAlign"
+                      onReset={() => {
+                        if (onResetField) {
+                          onResetField("contentAlign");
+                          onResetField("align");
+                        } else {
+                          onUpdateField("contentAlign", null);
+                          onUpdateField("align", null);
+                        }
+                      }}
+                    />
+                  )}
+              </div>
+              <div className="flex rounded-lg border border-[#ececee] bg-[#f6f7f8] p-1">
+                {[
+                  { id: "right", label: "يمين", ca: "start" },
+                  { id: "center", label: "وسط", ca: "center" },
+                  { id: "left", label: "يسار", ca: "start" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          align: item.id,
+                          contentAlign: item.ca,
+                        });
+                      } else {
+                        onUpdateField("align", item.id);
+                        onUpdateField("contentAlign", item.ca);
+                      }
+                    }}
+                    className={`flex-1 rounded-md py-1 text-center text-[10.5px] font-medium transition-all ${
+                      ((settings.contentAlign === "center" && item.id === "center") ||
+                       (settings.contentAlign === "start" && item.id === "right" && !settings.align) ||
+                       (settings.align === item.id) ||
+                       (!settings.contentAlign && !settings.align && item.id === "right"))
+                        ? "bg-white text-[#2b6cf6] shadow-xs font-bold"
+                        : "text-[#6f747b] hover:text-[#17181c]"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

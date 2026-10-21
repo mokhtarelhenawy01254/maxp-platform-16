@@ -434,6 +434,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
     handleResetDeviceOverrides,
+    handleResetPropertyOverride,
     activePageStyle,
     handleApplyPageStylePreset,
     handleUpdatePageStyle,
@@ -1336,6 +1337,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                   onUpdateField={(field, val) => handleUpdateSectionField(field, val, deviceMode)}
                   onBatchUpdateFields={(updates) => handleBatchUpdateSectionFields(updates, selectedSectionKey, deviceMode)}
                   onResetDeviceOverrides={(dev) => handleResetDeviceOverrides(selectedSectionKey, dev)}
+                  onResetPropertyOverride={(prop, dev) => handleResetPropertyOverride(prop, dev as any, selectedSectionKey)}
                   onOpenImagePicker={handleOpenImagePickerModal}
                   onSwitchDevice={setDeviceMode}
                   onSave={onSave}

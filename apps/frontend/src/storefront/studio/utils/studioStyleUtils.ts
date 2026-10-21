@@ -32,10 +32,69 @@ export const RESPONSIVE_STYLE_FIELDS = new Set<string>([
   "fontSize",
   "align",
   "textAlign",
+  "contentAlign",
   "backgroundColor",
   "bgColor",
   "spacing",
 ]);
+
+/**
+ * The core 9 Per-Breakpoint styling properties targeted by Ticket 5R:
+ * paddingTop, paddingBottom, paddingLeft, paddingRight,
+ * marginTop, marginBottom, borderRadius, fontSize, contentAlign.
+ */
+export const PER_BREAKPOINT_PROPERTIES = [
+  "paddingTop",
+  "paddingBottom",
+  "paddingLeft",
+  "paddingRight",
+  "marginTop",
+  "marginBottom",
+  "borderRadius",
+  "fontSize",
+  "contentAlign",
+] as const;
+
+export type PerBreakpointProperty = (typeof PER_BREAKPOINT_PROPERTIES)[number];
+
+/**
+ * Checks if a specific property is overridden for a specific device.
+ */
+export function isPropertyOverridden(
+  settings?: Record<string, any> | null,
+  property?: string | null,
+  device: "tablet" | "mobile" = "mobile"
+): boolean {
+  if (!settings || !property) return false;
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+  if (!responsive || typeof responsive !== "object") return false;
+  const deviceOverrides = responsive[device];
+  if (!deviceOverrides || typeof deviceOverrides !== "object") return false;
+  const val = deviceOverrides[property];
+  return val !== undefined && val !== null && val !== "";
+}
+
+/**
+ * Gets the raw overridden value of a property for a device, if any.
+ */
+export function getPropertyOverrideValue(
+  settings?: Record<string, any> | null,
+  property?: string | null,
+  device: "tablet" | "mobile" = "mobile"
+): any {
+  if (!settings || !property) return undefined;
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+  if (!responsive || typeof responsive !== "object") return undefined;
+  const deviceOverrides = responsive[device];
+  if (!deviceOverrides || typeof deviceOverrides !== "object") return undefined;
+  return deviceOverrides[property];
+}
 
 /**
  * Checks if a section settings object has non-empty overrides for a specific device.
@@ -348,13 +407,154 @@ export function buildSectionStyle(
     }
   }
 
-  // 9. Text Alignment
-  if (effective.align || effective.textAlign) {
-    const alignVal = effective.align || effective.textAlign;
+  // 9. Text Alignment / Content Alignment
+  const alignVal = effective.contentAlign || effective.align || effective.textAlign;
+  if (alignVal) {
+    if (alignVal === "start") {
+      style.textAlign = "start";
+    } else if (alignVal === "end") {
+      style.textAlign = "end";
+    } else
     if (alignVal === "center" || alignVal === "right" || alignVal === "left" || alignVal === "justify") {
       style.textAlign = alignVal as React.CSSProperties["textAlign"];
     }
   }
 
   return style;
+}
+
+export interface GenerateResponsiveCssOptions {
+  tabletMin?: number;
+  tabletMax?: number;
+  mobileMax?: number;
+}
+
+/**
+ * Generates pure CSS media query declarations for responsive style overrides
+ * (Ticket 5R / 5B pattern).
+ * Cascades: base -> tablet -> mobile.
+ */
+export function generateResponsiveCss(
+  settings?: Record<string, any> | null,
+  selector?: string | null,
+  options: GenerateResponsiveCssOptions = {}
+): string | null {
+  if (!settings || !selector) return null;
+  const responsive =
+    settings.responsive ||
+    settings.config?.responsive ||
+    settings.settings?.responsive;
+  if (!responsive || typeof responsive !== "object") return null;
+
+  const tabletOverrides = responsive.tablet;
+  const mobileOverrides = responsive.mobile;
+
+  const hasTablet = Boolean(
+    tabletOverrides &&
+      typeof tabletOverrides === "object" &&
+      Object.keys(tabletOverrides).length > 0
+  );
+  const hasMobile = Boolean(
+    mobileOverrides &&
+      typeof mobileOverrides === "object" &&
+      Object.keys(mobileOverrides).length > 0
+  );
+
+  if (!hasTablet && !hasMobile) return null;
+
+  const tabletMin = options.tabletMin ?? 768;
+  const tabletMax = options.tabletMax ?? 1023.98;
+  const mobileMax = options.mobileMax ?? 767.98;
+
+  const buildDeclarations = (device: "tablet" | "mobile"): string[] => {
+    const effective = resolveEffectiveSectionSettings(settings, device);
+    const decls: string[] = [];
+
+    // Padding
+    if (effective.paddingTop !== undefined && effective.paddingTop !== null) {
+      decls.push(`padding-top: ${parseFreeNumber(effective.paddingTop)}px !important;`);
+    } else if (effective.padding !== undefined && effective.padding !== null) {
+      decls.push(`padding-top: ${parseFreeNumber(effective.padding)}px !important;`);
+    }
+
+    if (effective.paddingBottom !== undefined && effective.paddingBottom !== null) {
+      decls.push(`padding-bottom: ${parseFreeNumber(effective.paddingBottom)}px !important;`);
+    } else if (effective.padding !== undefined && effective.padding !== null) {
+      decls.push(`padding-bottom: ${parseFreeNumber(effective.padding)}px !important;`);
+    }
+
+    if (effective.paddingLeft !== undefined && effective.paddingLeft !== null) {
+      decls.push(`padding-left: ${parseFreeNumber(effective.paddingLeft)}px !important;`);
+    } else if (effective.padding !== undefined && effective.padding !== null) {
+      decls.push(`padding-left: ${parseFreeNumber(effective.padding)}px !important;`);
+    }
+
+    if (effective.paddingRight !== undefined && effective.paddingRight !== null) {
+      decls.push(`padding-right: ${parseFreeNumber(effective.paddingRight)}px !important;`);
+    } else if (effective.padding !== undefined && effective.padding !== null) {
+      decls.push(`padding-right: ${parseFreeNumber(effective.padding)}px !important;`);
+    }
+
+    // Margin
+    if (effective.marginTop !== undefined && effective.marginTop !== null) {
+      decls.push(`margin-top: ${parseFreeNumber(effective.marginTop)}px !important;`);
+    }
+    if (effective.marginBottom !== undefined && effective.marginBottom !== null) {
+      decls.push(`margin-bottom: ${parseFreeNumber(effective.marginBottom)}px !important;`);
+    }
+
+    // Border Radius
+    const radius = resolveBorderRadius(effective.borderRadius);
+    if (radius !== undefined) {
+      decls.push(`border-radius: ${radius} !important;`);
+    }
+
+    // Font Size
+    if (effective.fontSize !== undefined && effective.fontSize !== null) {
+      const fSize = parseFreeNumber(effective.fontSize);
+      if (fSize > 0) {
+        decls.push(`font-size: ${fSize}px !important;`);
+      }
+    }
+
+    // Content Alignment / Text Alignment
+    const align = effective.contentAlign || effective.align || effective.textAlign;
+    if (align) {
+      if (align === "center" || align === "right" || align === "left" || align === "justify") {
+        decls.push(`text-align: ${align} !important;`);
+      } else if (align === "start") {
+        decls.push(`text-align: start !important;`);
+      } else if (align === "end") {
+        decls.push(`text-align: end !important;`);
+      }
+    }
+
+    return decls;
+  };
+
+  const rules: string[] = [];
+
+  if (hasTablet) {
+    const tabletDecls = buildDeclarations("tablet");
+    if (tabletDecls.length > 0) {
+      rules.push(
+        `@media (min-width: ${tabletMin}px) and (max-width: ${tabletMax}px) {\n  ${selector} {\n    ${tabletDecls.join(
+          "\n    "
+        )}\n  }\n}`
+      );
+    }
+  }
+
+  if (hasMobile) {
+    const mobileDecls = buildDeclarations("mobile");
+    if (mobileDecls.length > 0) {
+      rules.push(
+        `@media (max-width: ${mobileMax}px) {\n  ${selector} {\n    ${mobileDecls.join(
+          "\n    "
+        )}\n  }\n}`
+      );
+    }
+  }
+
+  return rules.length > 0 ? rules.join("\n") : null;
 }

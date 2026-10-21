@@ -656,38 +656,50 @@ export function useStorefrontStudioState(props: UseStorefrontStudioStateProps & 
   const handleResetDeviceOverrides = useCallback(
     (sectionKey: string, device: "mobile" | "tablet" = "mobile") => {
       const currentSections = activeSectionsRef.current;
-      const targetIndex = currentSections.findIndex(
-        (s: any, idx: number) => getSectionKey(s, idx) === sectionKey
-      );
-      if (targetIndex === -1) return;
 
-      const target = currentSections[targetIndex];
-      const base = typeof target === "string" ? { type: target } : { ...target };
-      const baseSettings =
-        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+      const resetRecursive = (items: any[]): any[] => {
+        return items.map((s: any, idx: number) => {
+          const key = getSectionKey(s, idx);
+          if (key === sectionKey) {
+            const base = typeof s === "string" ? { type: s } : { ...s };
+            const baseSettings =
+              typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
 
-      const responsive = {
-        ...(baseSettings.responsive || base.responsive || base.config?.responsive || {}),
+            const responsive = {
+              ...(baseSettings.responsive || base.responsive || base.config?.responsive || {}),
+            };
+
+            if (responsive[device]) {
+              delete responsive[device];
+            }
+
+            baseSettings.responsive = responsive;
+            base.responsive = responsive;
+            const baseConfig =
+              typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
+            baseConfig.responsive = responsive;
+            base.config = baseConfig;
+
+            return {
+              ...base,
+              settings: baseSettings,
+              config: baseConfig,
+              ...(Array.isArray(s.children) ? { children: s.children } : {}),
+            };
+          }
+
+          if (s && typeof s === "object" && Array.isArray(s.children) && s.children.length > 0) {
+            return {
+              ...s,
+              children: resetRecursive(s.children),
+            };
+          }
+
+          return s;
+        });
       };
 
-      if (responsive[device]) {
-        delete responsive[device];
-      }
-
-      baseSettings.responsive = responsive;
-      base.responsive = responsive;
-      const baseConfig =
-        typeof base.config === "object" && base.config !== null ? { ...base.config } : {};
-      baseConfig.responsive = responsive;
-      base.config = baseConfig;
-
-      const nextSections = [...currentSections];
-      nextSections[targetIndex] = {
-        ...base,
-        settings: baseSettings,
-        config: baseConfig,
-      };
-
+      const nextSections = resetRecursive(currentSections);
       activeSectionsRef.current = nextSections;
 
       const currentTokens = currentDesignTokensRef.current;
@@ -717,6 +729,15 @@ export function useStorefrontStudioState(props: UseStorefrontStudioStateProps & 
       );
     },
     [themeId, handleDesignTokensChange, onSave]
+  );
+
+  const handleResetPropertyOverride = useCallback(
+    (property: string, device: "mobile" | "tablet" = "mobile", targetSectionKey?: string) => {
+      const sectionKeyToUpdate = targetSectionKey || selectedSectionKey;
+      if (!sectionKeyToUpdate) return;
+      handleBatchUpdateSectionFields({ [property]: null }, sectionKeyToUpdate, device);
+    },
+    [handleBatchUpdateSectionFields, selectedSectionKey]
   );
 
   const handleRenameSection = useCallback(
@@ -1257,6 +1278,7 @@ export function useStorefrontStudioState(props: UseStorefrontStudioStateProps & 
     handleUpdateSectionField,
     handleBatchUpdateSectionFields,
     handleResetDeviceOverrides,
+    handleResetPropertyOverride,
     activePageStyle,
     handleApplyPageStylePreset,
     handleUpdatePageStyle,

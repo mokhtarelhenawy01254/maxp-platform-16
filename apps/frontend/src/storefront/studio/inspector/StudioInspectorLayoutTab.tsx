@@ -1,21 +1,30 @@
 import React, { useState } from "react";
 import { ChevronDownIcon, Squares2X2Icon, ArrowsPointingOutIcon } from "@heroicons/react/24/outline";
+import type { StudioDeviceMode } from "../StudioTypes";
 import {
   StudioPaddingControl,
   StudioMarginControl,
   StudioDimensionsLayoutControl,
 } from "./StudioDimensionControls";
+import { isPropertyOverridden } from "../utils/studioStyleUtils";
+import { ResponsiveFieldBadge } from "./StudioResponsiveControls";
 
 interface StudioInspectorLayoutTabProps {
   settings: Record<string, any>;
+  deviceMode?: StudioDeviceMode;
+  rawSettings?: Record<string, any>;
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
+  onResetField?: (field: string) => void;
 }
 
 export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> = ({
   settings,
+  deviceMode = "desktop",
+  rawSettings,
   onUpdateField,
   onBatchUpdateFields,
+  onResetField,
 }) => {
   const [openAcc, setOpenAcc] = useState<{ [key: string]: boolean }>({
     spacing: true,
@@ -26,9 +35,15 @@ export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> =
     setOpenAcc((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const align = settings.align || "right";
+  const targetSource = rawSettings || settings;
+  const align = settings.contentAlign === "center" ? "center" : (settings.align || "right");
   const containerWidth = settings.containerWidth || "fluid";
   const spacingPreset = settings.spacing || "normal";
+
+  const isAlignCustomized =
+    (isPropertyOverridden(targetSource, "contentAlign", deviceMode as "mobile" | "tablet") ||
+     isPropertyOverridden(targetSource, "align", deviceMode as "mobile" | "tablet")) &&
+    deviceMode !== "desktop";
 
   return (
     <div className="space-y-3.5 select-none text-[11.5px] text-[#17181c]">
@@ -55,6 +70,9 @@ export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> =
             {/* Free Padding with Link Toggle */}
             <StudioPaddingControl
               settings={settings}
+              deviceMode={deviceMode}
+              rawSettings={targetSource}
+              onResetField={onResetField}
               onUpdateField={onUpdateField}
               onBatchUpdateFields={onBatchUpdateFields}
             />
@@ -63,6 +81,9 @@ export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> =
             <div className="border-t border-[#f0f1f3] pt-2.5">
               <StudioMarginControl
                 settings={settings}
+                deviceMode={deviceMode}
+                rawSettings={targetSource}
+                onResetField={onResetField}
                 onUpdateField={onUpdateField}
               />
             </div>
@@ -166,19 +187,47 @@ export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> =
 
             {/* Container Alignment */}
             <div className="border-t border-[#f0f1f3] pt-2.5 space-y-1.5">
-              <span className="block text-[10px] font-bold text-[#8a8f96]">
-                المحاذاة والاتجاه (Alignment)
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="block text-[10px] font-bold text-[#8a8f96]">
+                  المحاذاة والاتجاه (Alignment)
+                </span>
+                {isAlignCustomized && (
+                  <ResponsiveFieldBadge
+                    deviceMode={deviceMode}
+                    isCustomized={true}
+                    propName="contentAlign"
+                    onReset={() => {
+                      if (onResetField) {
+                        onResetField("contentAlign");
+                        onResetField("align");
+                      } else {
+                        onUpdateField("contentAlign", null);
+                        onUpdateField("align", null);
+                      }
+                    }}
+                  />
+                )}
+              </div>
               <div className="flex rounded-lg border border-[#ececee] bg-[#f6f7f8] p-1">
                 {[
-                  { id: "right", label: "يمين" },
-                  { id: "center", label: "وسط" },
-                  { id: "left", label: "يسار" },
+                  { id: "right", label: "يمين", ca: "start" },
+                  { id: "center", label: "وسط", ca: "center" },
+                  { id: "left", label: "يسار", ca: "start" },
                 ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => onUpdateField("align", item.id)}
+                    onClick={() => {
+                      if (onBatchUpdateFields) {
+                        onBatchUpdateFields({
+                          align: item.id,
+                          contentAlign: item.ca,
+                        });
+                      } else {
+                        onUpdateField("align", item.id);
+                        onUpdateField("contentAlign", item.ca);
+                      }
+                    }}
                     className={`flex-1 rounded-md py-1 text-center text-[10.5px] font-medium transition-all ${
                       align === item.id
                         ? "bg-white text-[#2b6cf6] shadow-xs font-bold"
@@ -195,6 +244,9 @@ export const StudioInspectorLayoutTab: React.FC<StudioInspectorLayoutTabProps> =
             <div className="border-t border-[#f0f1f3] pt-2.5">
               <StudioDimensionsLayoutControl
                 settings={settings}
+                deviceMode={deviceMode}
+                rawSettings={targetSource}
+                onResetField={onResetField}
                 onUpdateField={onUpdateField}
               />
             </div>

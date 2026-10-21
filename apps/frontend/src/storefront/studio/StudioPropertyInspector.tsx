@@ -30,6 +30,7 @@ interface StudioPropertyInspectorProps {
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
   onResetDeviceOverrides?: (device: "mobile" | "tablet") => void;
+  onResetPropertyOverride?: (property: string, device?: StudioDeviceMode) => void;
   onOpenImagePicker?: () => void;
   onSwitchDevice?: (device: StudioDeviceMode) => void;
   onSave?: () => void;
@@ -46,6 +47,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   onUpdateField,
   onBatchUpdateFields,
   onResetDeviceOverrides,
+  onResetPropertyOverride,
   onOpenImagePicker,
   onSwitchDevice = () => {},
   onSave,
@@ -490,6 +492,8 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 sectionType={sectionType}
                 settings={effectiveSettings}
                 deviceMode={deviceMode}
+                rawSettings={settings}
+                onResetField={(field) => onResetPropertyOverride ? onResetPropertyOverride(field, deviceMode) : onUpdateField(field, null)}
                 onUpdateField={onUpdateField}
                 onBatchUpdateFields={onBatchUpdateFields}
                 onSave={onSave}
@@ -501,6 +505,8 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 <StudioContainerControls
                   settings={settings}
                   deviceMode={deviceMode}
+                rawSettings={settings}
+                onResetField={(field) => onResetPropertyOverride ? onResetPropertyOverride(field, deviceMode) : onUpdateField(field, null)}
                   onUpdateField={onUpdateField}
                   onBatchUpdateFields={onBatchUpdateFields}
                   onSave={onSave}
@@ -508,6 +514,9 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
               ) : (
                 <StudioInspectorLayoutTab
                   settings={effectiveSettings}
+                  deviceMode={deviceMode}
+                  rawSettings={settings}
+                  onResetField={(field) => onResetPropertyOverride ? onResetPropertyOverride(field, deviceMode) : onUpdateField(field, null)}
                   onUpdateField={onUpdateField}
                   onBatchUpdateFields={onBatchUpdateFields}
                 />
@@ -528,6 +537,8 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 sectionType={sectionType}
                 settings={settings}
                 deviceMode={deviceMode}
+                rawSettings={settings}
+                onResetField={(field) => onResetPropertyOverride ? onResetPropertyOverride(field, deviceMode) : onUpdateField(field, null)}
                 onUpdateField={onUpdateField}
                 onBatchUpdateFields={onBatchUpdateFields}
                 onResetDeviceOverrides={onResetDeviceOverrides}

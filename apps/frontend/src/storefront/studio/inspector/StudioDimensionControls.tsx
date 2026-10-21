@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { LinkIcon } from "@heroicons/react/24/outline";
-import { normalizeArabicDigits, parseFreeNumber } from "../utils/studioStyleUtils";
+import { normalizeArabicDigits, parseFreeNumber, isPropertyOverridden } from "../utils/studioStyleUtils";
+import type { StudioDeviceMode } from "../StudioTypes";
+import { ResponsiveFieldBadge } from "./StudioResponsiveControls";
 
 interface FreeNumberInputProps {
   label: string;
@@ -12,6 +14,10 @@ interface FreeNumberInputProps {
   placeholder?: string;
   unit?: string;
   type?: "number" | "text";
+  isCustomized?: boolean;
+  deviceMode?: StudioDeviceMode;
+  onReset?: () => void;
+  propName?: string;
 }
 
 export const FreeNumberInput: React.FC<FreeNumberInputProps> = ({
@@ -24,6 +30,10 @@ export const FreeNumberInput: React.FC<FreeNumberInputProps> = ({
   placeholder = "0",
   unit = "px",
   type = "number",
+  isCustomized = false,
+  deviceMode = "desktop",
+  onReset,
+  propName,
 }) => {
   const numValue = value !== undefined && value !== null ? parseFreeNumber(value) : "";
 
@@ -43,7 +53,17 @@ export const FreeNumberInput: React.FC<FreeNumberInputProps> = ({
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 focus-within:border-[#2b6cf6] focus-within:bg-white transition-colors">
-      <span className="text-[10px] text-[#8a8f96] font-medium shrink-0">{label}</span>
+      <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+        <span className="text-[10px] text-[#8a8f96] font-medium shrink-0">{label}</span>
+        {isCustomized && deviceMode !== "desktop" && (
+          <ResponsiveFieldBadge
+            deviceMode={deviceMode}
+            isCustomized={isCustomized}
+            onReset={onReset}
+            propName={propName}
+          />
+        )}
+      </div>
       <div className="flex items-center gap-1">
         <input
           type={type}
@@ -67,16 +87,22 @@ export const FreeNumberInput: React.FC<FreeNumberInputProps> = ({
   );
 };
 
-interface StudioPaddingControlProps {
+export interface StudioPaddingControlProps {
   settings: Record<string, any>;
+  deviceMode?: StudioDeviceMode;
+  rawSettings?: Record<string, any>;
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
+  onResetField?: (field: string) => void;
 }
 
 export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
   settings,
+  deviceMode = "desktop",
+  rawSettings,
   onUpdateField,
   onBatchUpdateFields,
+  onResetField,
 }) => {
   const [isLinked, setIsLinked] = useState<boolean>(settings.paddingLinked ?? true);
 
@@ -84,6 +110,19 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
   const paddingBottom = parseFreeNumber(settings.paddingBottom ?? settings.padding, 24);
   const paddingRight = parseFreeNumber(settings.paddingRight ?? settings.padding, 32);
   const paddingLeft = parseFreeNumber(settings.paddingLeft ?? settings.padding, 32);
+
+  // Check responsive overrides
+  const targetSource = rawSettings || settings;
+  const isTopCustomized = isPropertyOverridden(targetSource, "paddingTop", deviceMode as "mobile" | "tablet");
+  const isBottomCustomized = isPropertyOverridden(targetSource, "paddingBottom", deviceMode as "mobile" | "tablet");
+  const isRightCustomized = isPropertyOverridden(targetSource, "paddingRight", deviceMode as "mobile" | "tablet");
+  const isLeftCustomized = isPropertyOverridden(targetSource, "paddingLeft", deviceMode as "mobile" | "tablet");
+  const isAnyPaddingCustomized =
+    isTopCustomized ||
+    isBottomCustomized ||
+    isRightCustomized ||
+    isLeftCustomized ||
+    isPropertyOverridden(targetSource, "padding", deviceMode as "mobile" | "tablet");
 
   const handleUpdate = (direction: "top" | "bottom" | "right" | "left", val: number) => {
     if (isLinked) {
@@ -113,6 +152,30 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
     }
   };
 
+  const handleResetPaddingAll = () => {
+    if (onResetField) {
+      onResetField("paddingTop");
+      onResetField("paddingBottom");
+      onResetField("paddingRight");
+      onResetField("paddingLeft");
+      onResetField("padding");
+    } else if (onBatchUpdateFields) {
+      onBatchUpdateFields({
+        paddingTop: null,
+        paddingBottom: null,
+        paddingRight: null,
+        paddingLeft: null,
+        padding: null,
+      });
+    } else {
+      onUpdateField("paddingTop", null);
+      onUpdateField("paddingBottom", null);
+      onUpdateField("paddingRight", null);
+      onUpdateField("paddingLeft", null);
+      onUpdateField("padding", null);
+    }
+  };
+
   const handleToggleLinked = () => {
     const nextLinked = !isLinked;
     setIsLinked(nextLinked);
@@ -122,7 +185,17 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold text-[#3f434a]">الحشوة الداخلية (Padding)</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-[#3f434a]">الحشوة الداخلية (Padding)</span>
+          {isAnyPaddingCustomized && deviceMode !== "desktop" && (
+            <ResponsiveFieldBadge
+              deviceMode={deviceMode}
+              isCustomized={isAnyPaddingCustomized}
+              propName="padding"
+              onReset={handleResetPaddingAll}
+            />
+          )}
+        </div>
         <button
           type="button"
           onClick={handleToggleLinked}
@@ -142,6 +215,10 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
         <FreeNumberInput
           label="موحد (كل الاتجاهات)"
           value={paddingTop}
+          deviceMode={deviceMode}
+          isCustomized={isAnyPaddingCustomized}
+          onReset={handleResetPaddingAll}
+          propName="padding"
           onChange={(val) => handleUpdate("top", val)}
         />
       ) : (
@@ -149,21 +226,37 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
           <FreeNumberInput
             label="أعلى"
             value={paddingTop}
+            deviceMode={deviceMode}
+            isCustomized={isTopCustomized}
+            propName="paddingTop"
+            onReset={() => onResetField ? onResetField("paddingTop") : onUpdateField("paddingTop", null)}
             onChange={(val) => handleUpdate("top", val)}
           />
           <FreeNumberInput
             label="أسفل"
             value={paddingBottom}
+            deviceMode={deviceMode}
+            isCustomized={isBottomCustomized}
+            propName="paddingBottom"
+            onReset={() => onResetField ? onResetField("paddingBottom") : onUpdateField("paddingBottom", null)}
             onChange={(val) => handleUpdate("bottom", val)}
           />
           <FreeNumberInput
             label="يمين"
             value={paddingRight}
+            deviceMode={deviceMode}
+            isCustomized={isRightCustomized}
+            propName="paddingRight"
+            onReset={() => onResetField ? onResetField("paddingRight") : onUpdateField("paddingRight", null)}
             onChange={(val) => handleUpdate("right", val)}
           />
           <FreeNumberInput
             label="يسار"
             value={paddingLeft}
+            deviceMode={deviceMode}
+            isCustomized={isLeftCustomized}
+            propName="paddingLeft"
+            onReset={() => onResetField ? onResetField("paddingLeft") : onUpdateField("paddingLeft", null)}
             onChange={(val) => handleUpdate("left", val)}
           />
         </div>
@@ -190,30 +283,71 @@ export const StudioPaddingControl: React.FC<StudioPaddingControlProps> = ({
   );
 };
 
-interface StudioMarginControlProps {
+export interface StudioMarginControlProps {
   settings: Record<string, any>;
+  deviceMode?: StudioDeviceMode;
+  rawSettings?: Record<string, any>;
   onUpdateField: (field: string, value: any) => void;
+  onResetField?: (field: string) => void;
 }
 
 export const StudioMarginControl: React.FC<StudioMarginControlProps> = ({
   settings,
+  deviceMode = "desktop",
+  rawSettings,
   onUpdateField,
+  onResetField,
 }) => {
   const marginTop = parseFreeNumber(settings.marginTop, 0);
   const marginBottom = parseFreeNumber(settings.marginBottom, 0);
 
+  const targetSource = rawSettings || settings;
+  const isTopCustomized = isPropertyOverridden(targetSource, "marginTop", deviceMode as "mobile" | "tablet");
+  const isBottomCustomized = isPropertyOverridden(targetSource, "marginBottom", deviceMode as "mobile" | "tablet");
+  const isAnyMarginCustomized = isTopCustomized || isBottomCustomized;
+
+  const handleResetMarginAll = () => {
+    if (onResetField) {
+      onResetField("marginTop");
+      onResetField("marginBottom");
+      onResetField("margin");
+    } else {
+      onUpdateField("marginTop", null);
+      onUpdateField("marginBottom", null);
+      onUpdateField("margin", null);
+    }
+  };
+
   return (
     <div className="space-y-2">
-      <span className="block text-[10px] font-bold text-[#3f434a]">الهامش الخارجي (Margin)</span>
+      <div className="flex items-center justify-between">
+        <span className="block text-[10px] font-bold text-[#3f434a]">الهامش الخارجي (Margin)</span>
+        {isAnyMarginCustomized && deviceMode !== "desktop" && (
+          <ResponsiveFieldBadge
+            deviceMode={deviceMode}
+            isCustomized={isAnyMarginCustomized}
+            propName="margin"
+            onReset={handleResetMarginAll}
+          />
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <FreeNumberInput
           label="أعلى"
           value={marginTop}
+          deviceMode={deviceMode}
+          isCustomized={isTopCustomized}
+          propName="marginTop"
+          onReset={() => onResetField ? onResetField("marginTop") : onUpdateField("marginTop", null)}
           onChange={(val) => onUpdateField("marginTop", val)}
         />
         <FreeNumberInput
           label="أسفل"
           value={marginBottom}
+          deviceMode={deviceMode}
+          isCustomized={isBottomCustomized}
+          propName="marginBottom"
+          onReset={() => onResetField ? onResetField("marginBottom") : onUpdateField("marginBottom", null)}
           onChange={(val) => onUpdateField("marginBottom", val)}
         />
       </div>
@@ -221,26 +355,50 @@ export const StudioMarginControl: React.FC<StudioMarginControlProps> = ({
   );
 };
 
-interface StudioDimensionsLayoutControlProps {
+export interface StudioDimensionsLayoutControlProps {
   settings: Record<string, any>;
+  deviceMode?: StudioDeviceMode;
+  rawSettings?: Record<string, any>;
   onUpdateField: (field: string, value: any) => void;
+  onResetField?: (field: string) => void;
 }
 
 export const StudioDimensionsLayoutControl: React.FC<StudioDimensionsLayoutControlProps> = ({
   settings,
+  deviceMode = "desktop",
+  rawSettings,
   onUpdateField,
+  onResetField,
 }) => {
   const minHeight = parseFreeNumber(settings.minHeight, 0);
   const gap = parseFreeNumber(settings.gap, 0);
 
+  const targetSource = rawSettings || settings;
+  const isMinHeightCustomized = isPropertyOverridden(targetSource, "minHeight", deviceMode as "mobile" | "tablet");
+  const isGapCustomized = isPropertyOverridden(targetSource, "gap", deviceMode as "mobile" | "tablet");
+
   return (
     <div className="space-y-2.5">
       <div className="space-y-1.5">
-        <span className="block text-[10px] font-bold text-[#3f434a]">الارتفاع الأدنى (Min-Height)</span>
+        <div className="flex items-center justify-between">
+          <span className="block text-[10px] font-bold text-[#3f434a]">الارتفاع الأدنى (Min-Height)</span>
+          {isMinHeightCustomized && deviceMode !== "desktop" && (
+            <ResponsiveFieldBadge
+              deviceMode={deviceMode}
+              isCustomized={isMinHeightCustomized}
+              propName="minHeight"
+              onReset={() => onResetField ? onResetField("minHeight") : onUpdateField("minHeight", null)}
+            />
+          )}
+        </div>
         <FreeNumberInput
           label="الارتفاع الأدنى"
           value={minHeight}
           placeholder="تلقائي (auto)"
+          deviceMode={deviceMode}
+          isCustomized={isMinHeightCustomized}
+          propName="minHeight"
+          onReset={() => onResetField ? onResetField("minHeight") : onUpdateField("minHeight", null)}
           onChange={(val) => onUpdateField("minHeight", val)}
         />
         <div className="flex items-center gap-1 pt-0.5">
@@ -267,11 +425,25 @@ export const StudioDimensionsLayoutControl: React.FC<StudioDimensionsLayoutContr
       </div>
 
       <div className="space-y-1.5">
-        <span className="block text-[10px] font-bold text-[#3f434a]">فجوة الشبكة (Grid Gap)</span>
+        <div className="flex items-center justify-between">
+          <span className="block text-[10px] font-bold text-[#3f434a]">فجوة الشبكة (Grid Gap)</span>
+          {isGapCustomized && deviceMode !== "desktop" && (
+            <ResponsiveFieldBadge
+              deviceMode={deviceMode}
+              isCustomized={isGapCustomized}
+              propName="gap"
+              onReset={() => onResetField ? onResetField("gap") : onUpdateField("gap", null)}
+            />
+          )}
+        </div>
         <FreeNumberInput
           label="فجوة العناصر"
           value={gap}
           placeholder="0"
+          deviceMode={deviceMode}
+          isCustomized={isGapCustomized}
+          propName="gap"
+          onReset={() => onResetField ? onResetField("gap") : onUpdateField("gap", null)}
           onChange={(val) => onUpdateField("gap", val)}
         />
       </div>

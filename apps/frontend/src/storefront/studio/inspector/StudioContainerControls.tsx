@@ -14,6 +14,7 @@ import {
   DEFAULT_CONTAINER_SETTINGS,
 } from "../StudioTypes";
 import { parseFreeNumber } from "../utils/studioStyleUtils";
+import { ResponsiveFieldBadge } from "./StudioResponsiveControls";
 
 export interface StudioContainerControlsProps {
   settings: Record<string, any> | ContainerSettings;
@@ -144,6 +145,29 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
       } else {
         Object.entries(updates).forEach(([k, v]) => onUpdateField(k, v));
       }
+    }
+    onSave?.();
+  };
+
+  const handleResetProp = (field: string) => {
+    if (isDeviceOverrideMode) {
+      const nextOverrides = { ...(responsiveObj[deviceMode] || {}) };
+      delete (nextOverrides as any)[field];
+      const nextResponsive = {
+        ...responsiveObj,
+        [deviceMode]: nextOverrides,
+      };
+      if (onBatchUpdateFields) {
+        onBatchUpdateFields({
+          [field]: null,
+          responsive: nextResponsive,
+        });
+      } else {
+        onUpdateField("responsive", nextResponsive);
+        onUpdateField(field, null);
+      }
+    } else {
+      onUpdateField(field, null);
     }
     onSave?.();
   };
@@ -484,9 +508,28 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
         {openAcc.padding && (
           <div className="p-3 bg-white space-y-3" data-control="container-padding">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8a8f96]">
-                الحشو الداخلي (Padding)
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-[#8a8f96]">
+                  الحشو الداخلي (Padding)
+                </span>
+                {isDeviceOverrideMode &&
+                  (currentDeviceOverrides.paddingTop !== undefined ||
+                   currentDeviceOverrides.paddingBottom !== undefined ||
+                   currentDeviceOverrides.paddingLeft !== undefined ||
+                   currentDeviceOverrides.paddingRight !== undefined) && (
+                    <ResponsiveFieldBadge
+                      deviceMode={deviceMode}
+                      isCustomized={true}
+                      propName="padding"
+                      onReset={() => {
+                        handleResetProp("paddingTop");
+                        handleResetProp("paddingBottom");
+                        handleResetProp("paddingLeft");
+                        handleResetProp("paddingRight");
+                      }}
+                    />
+                  )}
+              </div>
               <button
                 type="button"
                 onClick={handleTogglePaddingLinked}
@@ -509,6 +552,20 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
                 min={0}
                 max={200}
                 unit="px"
+                deviceMode={deviceMode}
+                isCustomized={
+                  currentDeviceOverrides.paddingTop !== undefined ||
+                  currentDeviceOverrides.paddingBottom !== undefined ||
+                  currentDeviceOverrides.paddingLeft !== undefined ||
+                  currentDeviceOverrides.paddingRight !== undefined
+                }
+                propName="padding"
+                onReset={() => {
+                  handleResetProp("paddingTop");
+                  handleResetProp("paddingBottom");
+                  handleResetProp("paddingLeft");
+                  handleResetProp("paddingRight");
+                }}
                 onChange={(val) => handlePaddingChange("top", val)}
               />
             ) : (
@@ -519,6 +576,10 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
                   min={0}
                   max={200}
                   unit="px"
+                  deviceMode={deviceMode}
+                  isCustomized={currentDeviceOverrides.paddingTop !== undefined}
+                  propName="paddingTop"
+                  onReset={() => handleResetProp("paddingTop")}
                   onChange={(val) => handlePaddingChange("top", val)}
                 />
                 <FreeNumberInput
@@ -527,6 +588,10 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
                   min={0}
                   max={200}
                   unit="px"
+                  deviceMode={deviceMode}
+                  isCustomized={currentDeviceOverrides.paddingBottom !== undefined}
+                  propName="paddingBottom"
+                  onReset={() => handleResetProp("paddingBottom")}
                   onChange={(val) => handlePaddingChange("bottom", val)}
                 />
                 <FreeNumberInput
@@ -535,6 +600,10 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
                   min={0}
                   max={200}
                   unit="px"
+                  deviceMode={deviceMode}
+                  isCustomized={currentDeviceOverrides.paddingRight !== undefined}
+                  propName="paddingRight"
+                  onReset={() => handleResetProp("paddingRight")}
                   onChange={(val) => handlePaddingChange("right", val)}
                 />
                 <FreeNumberInput
@@ -543,6 +612,10 @@ export const StudioContainerControls: React.FC<StudioContainerControlsProps> = (
                   min={0}
                   max={200}
                   unit="px"
+                  deviceMode={deviceMode}
+                  isCustomized={currentDeviceOverrides.paddingLeft !== undefined}
+                  propName="paddingLeft"
+                  onReset={() => handleResetProp("paddingLeft")}
                   onChange={(val) => handlePaddingChange("left", val)}
                 />
               </div>

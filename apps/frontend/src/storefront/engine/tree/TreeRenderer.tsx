@@ -84,6 +84,28 @@ export const TreeRenderer: React.FC<TreeRendererProps> = ({
               typeof settings.paddingRight === "number"
                 ? `${settings.paddingRight}px`
                 : settings.paddingRight,
+            marginTop:
+              (settings as any).marginTop !== undefined
+                ? (typeof (settings as any).marginTop === "number" ? `${(settings as any).marginTop}px` : (settings as any).marginTop)
+                : undefined,
+            marginBottom:
+              (settings as any).marginBottom !== undefined
+                ? (typeof (settings as any).marginBottom === "number" ? `${(settings as any).marginBottom}px` : (settings as any).marginBottom)
+                : undefined,
+            borderRadius:
+              (settings as any).borderRadius !== undefined
+                ? (typeof (settings as any).borderRadius === "number" ? `${(settings as any).borderRadius}px` : (settings as any).borderRadius)
+                : undefined,
+            fontSize:
+              (settings as any).fontSize !== undefined
+                ? (typeof (settings as any).fontSize === "number" ? `${(settings as any).fontSize}px` : (settings as any).fontSize)
+                : undefined,
+            textAlign:
+              (settings as any).contentAlign === "center"
+                ? "center"
+                : (settings as any).contentAlign === "start"
+                ? "start"
+                : (settings as any).textAlign || undefined,
             width: "100%",
           };
 
@@ -109,6 +131,11 @@ export const TreeRenderer: React.FC<TreeRendererProps> = ({
                     ${tab.paddingBottom !== undefined ? `padding-bottom: ${typeof tab.paddingBottom === "number" ? `${tab.paddingBottom}px` : tab.paddingBottom} !important;` : ""}
                     ${tab.paddingLeft !== undefined ? `padding-left: ${typeof tab.paddingLeft === "number" ? `${tab.paddingLeft}px` : tab.paddingLeft} !important;` : ""}
                     ${tab.paddingRight !== undefined ? `padding-right: ${typeof tab.paddingRight === "number" ? `${tab.paddingRight}px` : tab.paddingRight} !important;` : ""}
+                    ${(tab as any).marginTop !== undefined ? `margin-top: ${typeof (tab as any).marginTop === "number" ? `${(tab as any).marginTop}px` : (tab as any).marginTop} !important;` : ""}
+                    ${(tab as any).marginBottom !== undefined ? `margin-bottom: ${typeof (tab as any).marginBottom === "number" ? `${(tab as any).marginBottom}px` : (tab as any).marginBottom} !important;` : ""}
+                    ${(tab as any).borderRadius !== undefined ? `border-radius: ${typeof (tab as any).borderRadius === "number" ? `${(tab as any).borderRadius}px` : (tab as any).borderRadius} !important;` : ""}
+                    ${(tab as any).fontSize !== undefined ? `font-size: ${typeof (tab as any).fontSize === "number" ? `${(tab as any).fontSize}px` : (tab as any).fontSize} !important;` : ""}
+                    ${(tab as any).contentAlign ? `text-align: ${(tab as any).contentAlign === "center" ? "center" : "start"} !important;` : ""}
                   }
                 }
               `);
@@ -128,6 +155,11 @@ export const TreeRenderer: React.FC<TreeRendererProps> = ({
                     ${mob.paddingBottom !== undefined ? `padding-bottom: ${typeof mob.paddingBottom === "number" ? `${mob.paddingBottom}px` : mob.paddingBottom} !important;` : ""}
                     ${mob.paddingLeft !== undefined ? `padding-left: ${typeof mob.paddingLeft === "number" ? `${mob.paddingLeft}px` : mob.paddingLeft} !important;` : ""}
                     ${mob.paddingRight !== undefined ? `padding-right: ${typeof mob.paddingRight === "number" ? `${mob.paddingRight}px` : mob.paddingRight} !important;` : ""}
+                    ${(mob as any).marginTop !== undefined ? `margin-top: ${typeof (mob as any).marginTop === "number" ? `${(mob as any).marginTop}px` : (mob as any).marginTop} !important;` : ""}
+                    ${(mob as any).marginBottom !== undefined ? `margin-bottom: ${typeof (mob as any).marginBottom === "number" ? `${(mob as any).marginBottom}px` : (mob as any).marginBottom} !important;` : ""}
+                    ${(mob as any).borderRadius !== undefined ? `border-radius: ${typeof (mob as any).borderRadius === "number" ? `${(mob as any).borderRadius}px` : (mob as any).borderRadius} !important;` : ""}
+                    ${(mob as any).fontSize !== undefined ? `font-size: ${typeof (mob as any).fontSize === "number" ? `${(mob as any).fontSize}px` : (mob as any).fontSize} !important;` : ""}
+                    ${(mob as any).contentAlign ? `text-align: ${(mob as any).contentAlign === "center" ? "center" : "start"} !important;` : ""}
                   }
                 }
               `);

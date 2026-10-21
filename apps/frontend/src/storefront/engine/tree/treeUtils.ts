@@ -362,6 +362,11 @@ export function resolveContainerSettings(
     paddingBottom: settings.paddingBottom,
     paddingLeft: settings.paddingLeft,
     paddingRight: settings.paddingRight,
+    marginTop: (settings as any).marginTop,
+    marginBottom: (settings as any).marginBottom,
+    borderRadius: (settings as any).borderRadius,
+    fontSize: (settings as any).fontSize,
+    contentAlign: (settings as any).contentAlign,
     responsive: settings.responsive as any,
   };
 
@@ -383,6 +388,11 @@ export function resolveContainerSettings(
       if (tablet.paddingBottom !== undefined) base.paddingBottom = tablet.paddingBottom;
       if (tablet.paddingLeft !== undefined) base.paddingLeft = tablet.paddingLeft;
       if (tablet.paddingRight !== undefined) base.paddingRight = tablet.paddingRight;
+      if ((tablet as any).marginTop !== undefined) (base as any).marginTop = (tablet as any).marginTop;
+      if ((tablet as any).marginBottom !== undefined) (base as any).marginBottom = (tablet as any).marginBottom;
+      if ((tablet as any).borderRadius !== undefined) (base as any).borderRadius = (tablet as any).borderRadius;
+      if ((tablet as any).fontSize !== undefined) (base as any).fontSize = (tablet as any).fontSize;
+      if ((tablet as any).contentAlign !== undefined) (base as any).contentAlign = (tablet as any).contentAlign;
     }
   }
 
@@ -399,6 +409,11 @@ export function resolveContainerSettings(
       if (mobile.paddingBottom !== undefined) base.paddingBottom = mobile.paddingBottom;
       if (mobile.paddingLeft !== undefined) base.paddingLeft = mobile.paddingLeft;
       if (mobile.paddingRight !== undefined) base.paddingRight = mobile.paddingRight;
+      if ((mobile as any).marginTop !== undefined) (base as any).marginTop = (mobile as any).marginTop;
+      if ((mobile as any).marginBottom !== undefined) (base as any).marginBottom = (mobile as any).marginBottom;
+      if ((mobile as any).borderRadius !== undefined) (base as any).borderRadius = (mobile as any).borderRadius;
+      if ((mobile as any).fontSize !== undefined) (base as any).fontSize = (mobile as any).fontSize;
+      if ((mobile as any).contentAlign !== undefined) (base as any).contentAlign = (mobile as any).contentAlign;
     }
   }
 
