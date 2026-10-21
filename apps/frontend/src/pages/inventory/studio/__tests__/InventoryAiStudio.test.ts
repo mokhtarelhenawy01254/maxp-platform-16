@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { StudioEntity, StudioDraftAction, StudioSession } from "../../../../components/agent-studio/types";
 
 describe("Inventory AI Studio - Telemetry & Strategy Engine", () => {
