@@ -13,6 +13,7 @@ export PATH="$NODE_BIN:$PATH"
 
 # 🛡️ Automated Rollback & Fault Tolerance
 ROLLBACK_FRONTEND_BACKUP=""
+ROLLBACK_BACKEND_DIR=""
 
 on_deploy_error() {
   local exit_code="$?"
@@ -24,11 +25,40 @@ on_deploy_error() {
     echo "✅ Frontend index.html restored to previous working version"
   fi
 
-  if [ -n "$PM2_BIN" ]; then
+  if [ -n "$ROLLBACK_BACKEND_DIR" ] && [ -d "$ROLLBACK_BACKEND_DIR" ] && [ "$(ls -A "$ROLLBACK_BACKEND_DIR" 2>/dev/null)" ]; then
+    echo "⏪ [ROLLBACK] Restoring previous backend files from snapshot: $ROLLBACK_BACKEND_DIR..."
+    sudo rsync -a --delete \
+      --exclude node_modules \
+      --exclude uploads \
+      --exclude logs \
+      --exclude prisma/generated \
+      "$ROLLBACK_BACKEND_DIR/" /var/www/backend2/ || true
+    echo "✅ Previous working backend files restored to /var/www/backend2/"
+    if [ -n "$PM2_BIN" ]; then
+      echo "🔄 [ROLLBACK] Reloading PM2 with restored previous backend..."
+      cd /var/www/backend2
+      NODE_ENV=production "$PM2_BIN" reload ecosystem.config.js --env production --update-env 2>/dev/null || \
+      NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env 2>/dev/null || true
+      "$PM2_BIN" save 2>/dev/null || true
+    fi
+  elif [ -n "$PM2_BIN" ]; then
     echo "🩺 [ROLLBACK] Verifying backend process state..."
     if ! "$PM2_BIN" list 2>/dev/null | grep -q "online.*maxp-backend"; then
-      echo "⏪ [ROLLBACK] maxp-backend process is offline — restarting previous working backend..."
-      "$PM2_BIN" restart maxp-backend 2>/dev/null || "$PM2_BIN" start /var/www/backend2/server.js --name maxp-backend 2>/dev/null || true
+      echo "⏪ [ROLLBACK] maxp-backend process is offline — attempting zero-downtime reload..."
+      cd /var/www/backend2 2>/dev/null || true
+      NODE_ENV=production "$PM2_BIN" reload ecosystem.config.js --env production --update-env 2>/dev/null || true
+    fi
+  fi
+
+  # Send Telegram notification if configured
+  if [ -f "/var/www/backend2/.env" ]; then
+    TELEGRAM_BOT_TOKEN="$(grep '^TELEGRAM_BOT_TOKEN=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"
+    TELEGRAM_CHAT_ID="$(grep '^TELEGRAM_ADMIN_CHAT_ID=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"
+    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+      ALERT_MSG="🚨 [MAXP-DEPLOY] Production deployment failed (exit code $exit_code at line $1). Automatic rollback executed to previous working revision."
+      curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+        -d "chat_id=${TELEGRAM_CHAT_ID}" \
+        -d "text=${ALERT_MSG}" >/dev/null 2>&1 || true
     fi
   fi
 
@@ -345,6 +375,21 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   # Save .env if it exists in backend2
   if [ -f "/var/www/backend2/.env" ]; then
     sudo cp /var/www/backend2/.env /tmp/backend_env_backup.env
+  fi
+
+  # 💾 Create rollback snapshot of current working backend code before applying new files
+  ROLLBACK_BACKEND_DIR="/tmp/maxp_backend_rollback_${GITHUB_RUN_ID:-$$}"
+  sudo rm -rf "$ROLLBACK_BACKEND_DIR"
+  sudo mkdir -p "$ROLLBACK_BACKEND_DIR"
+  if [ -d "/var/www/backend2" ] && [ -f "/var/www/backend2/server.js" ]; then
+    echo "💾 Creating rollback snapshot of working backend in $ROLLBACK_BACKEND_DIR..."
+    sudo rsync -a \
+      --exclude node_modules \
+      --exclude uploads \
+      --exclude logs \
+      --exclude prisma/generated \
+      /var/www/backend2/ "$ROLLBACK_BACKEND_DIR/" || true
+    echo "✅ Rollback snapshot created."
   fi
 
   sudo mkdir -p /var/www/backend2
@@ -743,6 +788,22 @@ if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" delete backend1 || true
   "$PM2_BIN" delete chat-backend || true
 
+  # Remove legacy, duplicate, and hanging _old_ PM2 processes
+  echo "🧹 Cleaning up legacy, duplicate, and hanging _old_ PM2 processes..."
+  node -e '
+    const { execSync } = require("child_process");
+    const pm2 = process.argv[1];
+    try {
+      const list = JSON.parse(execSync(`"${pm2}" jlist`, { encoding: "utf8" }));
+      for (const p of list) {
+        if (p.name && (p.name.includes("_old_") || p.name === "backend1" || p.name === "chat-backend")) {
+          console.log(`🧹 Deleting stale process ${p.name} (pm_id: ${p.pm_id})`);
+          try { execSync(`"${pm2}" delete ${p.pm_id}`); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  ' "$PM2_BIN" || true
+
   cd /var/www/backend2
   if [ -f "scripts/seed-swan-test-course.js" ]; then
     echo "🎓 Seeding Swan Academy Test Course & Demo Student..."
@@ -752,13 +813,32 @@ if [ -n "$PM2_BIN" ]; then
     echo "🖼️ Updating Course 1 Thumbnail (1080x1080)..."
     NODE_ENV=production timeout 60 node scripts/update-course1-thumbnail.js || echo "⚠️ update-course1-thumbnail skipped, continuing..."
   fi
-  echo "🚀 Starting/reloading ecosystem (backend + worker)..."
-  NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env || "$PM2_BIN" reload ecosystem.config.js --env production --update-env || true
+
+  # Capture baseline restart count for maxp-backend
+  INITIAL_RESTARTS=$(node -e '
+    const jlist = JSON.parse(process.argv[1] || "[]");
+    const count = jlist
+      .filter(p => p.name === "maxp-backend")
+      .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
+    console.log(count);
+  ' "$("$PM2_BIN" jlist 2>/dev/null || echo '[]')")
+  echo "ℹ️ Baseline maxp-backend restart count before reload: ${INITIAL_RESTARTS:-0}"
+
+  # 🧪 Pre-Flight Server Load Check before PM2 touches the new code
+  echo "🧪 Verifying server.js dry-run load on production before PM2 reload..."
+  if ! NODE_ENV=production timeout 30 node -e "require('./server.js'); console.log('✅ server.js pre-flight require passed'); process.exit(0);"; then
+    echo "❌ [FATAL] server.js dry-run require failed! Missing module or syntax error detected. Aborting before touching PM2."
+    exit 1
+  fi
+
+  echo "🚀 Reloading ecosystem with zero-downtime (cluster instances = 2)..."
+  NODE_ENV=production "$PM2_BIN" reload ecosystem.config.js --env production --update-env || \
+  NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env || true
   "$PM2_BIN" save
 
   sleep 3
 
-  echo "📋 PM2 status after restart:"
+  echo "📋 PM2 status after reload:"
   "$PM2_BIN" list
 
   if "$PM2_BIN" list | grep -q "maxp-backend"; then
@@ -774,7 +854,7 @@ if [ -n "$PM2_BIN" ]; then
     exit 1
   fi
 
-  echo "🩺 Verifying backend health after reload..."
+  echo "🩺 Verifying backend health & PM2 stability after zero-downtime reload (5 consecutive 200s within 60s)..."
   HEALTH_PORT=""
   for env_file in /var/www/backend2/.env.production /var/www/backend2/.env; do
     CANDIDATE_PORT="$(read_env_port "$env_file" || true)"
@@ -796,25 +876,63 @@ if [ -n "$PM2_BIN" ]; then
   done
 
   ACTIVE_HEALTH_PORT=""
-  HEALTH_MAX_ATTEMPTS=30
-  HEALTH_SLEEP_SECONDS=5
-  for attempt in $(seq 1 "$HEALTH_MAX_ATTEMPTS"); do
+  HEALTH_START_TIME=$(date +%s)
+  HEALTH_TIMEOUT_SECONDS=60
+  CONSECUTIVE_SUCCESSES=0
+  TARGET_CONSECUTIVE_SUCCESSES=5
+  GATE_PASSED=false
+  MAX_ALLOWED_RESTARTS=3
+
+  while [ $(($(date +%s) - HEALTH_START_TIME)) -lt "$HEALTH_TIMEOUT_SECONDS" ]; do
+    CURRENT_TIME=$(date +%s)
+    ELAPSED=$((CURRENT_TIME - HEALTH_START_TIME))
+
+    # Check for crash loop / restart surge
+    CURRENT_RESTARTS=$(node -e '
+      const jlist = JSON.parse(process.argv[1] || "[]");
+      const count = jlist
+        .filter(p => p.name === "maxp-backend")
+        .reduce((sum, p) => sum + (p.pm2_env?.restart_time || 0), 0);
+      console.log(count);
+    ' "$("$PM2_BIN" jlist 2>/dev/null || echo '[]')")
+
+    RESTART_DELTA=$((CURRENT_RESTARTS - INITIAL_RESTARTS))
+    if [ "$RESTART_DELTA" -gt "$MAX_ALLOWED_RESTARTS" ]; then
+      echo "🚨 [FATAL] maxp-backend crash-loop detected! Restarts increased by $RESTART_DELTA (max allowed: $MAX_ALLOWED_RESTARTS) within ${ELAPSED}s."
+      echo "📋 PM2 error logs (last 50 lines):"
+      "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
+      exit 1
+    fi
+
+    # Probe HTTP health endpoint
+    HEALTH_HTTP_CODE="000"
     for port in $HEALTH_PORT_CANDIDATES; do
-      echo "🩺 Health attempt $attempt/$HEALTH_MAX_ATTEMPTS: http://127.0.0.1:$port/api/v1/health"
-      if curl -fsS --max-time 20 "http://127.0.0.1:$port/api/v1/health" >/dev/null; then
+      CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:$port/api/v1/health" || echo "000")
+      if [ "$CODE" = "200" ]; then
+        HEALTH_HTTP_CODE="200"
         ACTIVE_HEALTH_PORT="$port"
-        break 2
+        break
       fi
     done
 
-    if [ "$attempt" -lt "$HEALTH_MAX_ATTEMPTS" ]; then
-      echo "⏳ Backend not healthy yet; waiting $HEALTH_SLEEP_SECONDS seconds before retry..."
-      sleep "$HEALTH_SLEEP_SECONDS"
+    if [ "$HEALTH_HTTP_CODE" = "200" ]; then
+      CONSECUTIVE_SUCCESSES=$((CONSECUTIVE_SUCCESSES + 1))
+      echo "✅ Health check probe $CONSECUTIVE_SUCCESSES/$TARGET_CONSECUTIVE_SUCCESSES passed (HTTP 200, elapsed: ${ELAPSED}s, restart delta: $RESTART_DELTA)"
+      if [ "$CONSECUTIVE_SUCCESSES" -ge "$TARGET_CONSECUTIVE_SUCCESSES" ]; then
+        GATE_PASSED=true
+        echo "🎉 Health gate PASSED: 5 consecutive HTTP 200 responses verified with stable PM2 (0 crash loop)!"
+        break
+      fi
+      sleep 2
+    else
+      echo "⏳ Health probe returned $HEALTH_HTTP_CODE (elapsed: ${ELAPSED}s). Resetting consecutive counter to 0."
+      CONSECUTIVE_SUCCESSES=0
+      sleep 2
     fi
   done
 
-  if [ -z "$ACTIVE_HEALTH_PORT" ]; then
-    echo "❌ Backend health check failed after deploy"
+  if [ "$GATE_PASSED" != "true" ]; then
+    echo "❌ [FATAL] Health gate failed! Could not achieve 5 consecutive HTTP 200 responses within $HEALTH_TIMEOUT_SECONDS seconds."
     echo "🔎 Tried ports:$HEALTH_PORT_CANDIDATES"
     ss -ltnp | grep -E '3007|3008' || true
     "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
@@ -1024,6 +1142,9 @@ fi
 trap - ERR
 if [ -n "$ROLLBACK_FRONTEND_BACKUP" ] && [ -f "$ROLLBACK_FRONTEND_BACKUP" ]; then
   sudo rm -f "$ROLLBACK_FRONTEND_BACKUP" || true
+fi
+if [ -n "$ROLLBACK_BACKEND_DIR" ] && [ -d "$ROLLBACK_BACKEND_DIR" ]; then
+  sudo rm -rf "$ROLLBACK_BACKEND_DIR" || true
 fi
 rm -f /tmp/maxp_deploy_expected_entry
 

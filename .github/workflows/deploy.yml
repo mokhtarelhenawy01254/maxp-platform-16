@@ -54,6 +54,7 @@ jobs:
       prisma-changed: ${{ steps.diff-check.outputs.prisma-changed }}
       ai-changed: ${{ steps.diff-check.outputs.ai-changed }}
       copilot-changed: ${{ steps.diff-check.outputs.copilot-changed }}
+      manufacturing-changed: ${{ steps.diff-check.outputs.manufacturing-changed }}
 
     steps:
       - name: Checkout code
@@ -102,6 +103,13 @@ jobs:
       - name: Full Backend Syntax Gate
         working-directory: ./apps/backend
         run: node scripts/check_syntax.js
+        continue-on-error: false
+
+      # 🛡️ RELATIVE REQUIRE SAFETY GATE — scans all relative require paths across backend files.
+      # Blocks deploy BEFORE reaching the server if any required module/file is missing from the tree.
+      - name: Backend Relative Requires Gate
+        working-directory: ./apps/backend
+        run: node scripts/check_requires.js
         continue-on-error: false
 
       - name: Enforce AI Agent File Size Guard
@@ -170,6 +178,13 @@ jobs:
             echo "copilot-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+          # 1c. Manufacturing Partner Agreements Lifecycle
+          if echo "$CHANGED" | grep -qE "apps/backend/(controller/manufacturingController|services/manufacturingFactoryAgreementService|routes/manufacturingRoutes|tests/controller/manufacturingFactoryAgreements)"; then
+            echo "manufacturing-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "manufacturing-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
           # 2. Frontend Changes (apps/frontend, shared, nginx_configs, customer-portal guard)
           if echo "$CHANGED" | grep -qE "^(apps/frontend/|shared/|nginx_configs/|scripts/check-customer-portal-routing\.js)"; then
             echo "fe-needed=true" >> "$GITHUB_OUTPUT"
@@ -228,7 +243,7 @@ jobs:
       # Only install backend deps + run the backend regressions when
       # backend test surfaces actually changed — otherwise skip (saves ~56s/deploy).
       - name: Install Backend Test Dependencies
-        if: steps.diff-check.outputs.fb-changed == 'true' || steps.diff-check.outputs.copilot-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true' || steps.diff-check.outputs.copilot-changed == 'true' || steps.diff-check.outputs.manufacturing-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npm ci --ignore-scripts
@@ -272,6 +287,13 @@ jobs:
         working-directory: ./apps/backend
         run: |
           npm test -- --testPathPattern="(tests/controller/aiAgentChatController.history.test.js|tests/services/aiServiceAdminClient.attachments.test.js)"
+        continue-on-error: false
+
+      - name: Run Manufacturing Factory Agreements Regression Tests
+        if: steps.diff-check.outputs.manufacturing-changed == 'true'
+        working-directory: ./apps/backend
+        run: |
+          npm test -- --testPathPattern="tests/controller/manufacturingFactoryAgreements.regression.test.js"
         continue-on-error: false
 
       # Build Frontend (skipped when only backend files changed)

@@ -2078,7 +2078,7 @@ async function getTemplateHealth(req, res) {
       let wabaPlaceholderCount = 0;
       if (sessionId && canonicalTemplate?.metaTemplateName) {
         try {
-          const { countMetaPlaceholders } = require('../../utils/metaTemplateVariables');
+          const { countMetaPlaceholders } = require('../utils/metaTemplateVariables');
           const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
           const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
           const metaObj = Array.isArray(metaTemplates)

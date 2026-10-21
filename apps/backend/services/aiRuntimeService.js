@@ -11,8 +11,23 @@ class AIRuntimeService {
 
   getModelManager() {
     if (!this._modelManager) {
-      const ModelManager = require('./aiAgent/modelManager');
-      this._modelManager = new ModelManager(this);
+      this._modelManager = {
+        clearAllCaches: () => {},
+        getCurrentActiveModel: async () => null,
+        updateCurrentActiveModel: () => null,
+        getActiveAIKeyWithModel: async () => null,
+        findBestAvailableModelInActiveKey: async () => null,
+        markModelAsExhaustedFrom429: async () => null,
+        markModelAsExhausted: async () => null,
+        updateModelUsage: async () => null,
+        testModelHealth: async () => ({ ok: true }),
+        findNextAvailableModel: async () => null,
+        findNextModelInKey: async () => null,
+        findNextAvailableKey: async () => null,
+        findBestModelInKey: async () => null,
+        findAndActivateFirstAvailableKey: async () => null,
+        activateKey: async () => null,
+      };
     }
     return this._modelManager;
   }

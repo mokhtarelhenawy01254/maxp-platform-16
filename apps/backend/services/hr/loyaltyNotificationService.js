@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Loyalty Points Expiry WhatsApp Notification Service
  * ╪«╪»┘à╪⌐ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘å╪¬┘ç╪º╪í ╪╡┘ä╪º╪¡┘è╪⌐ ┘å┘é╪º╪╖ ╪º┘ä┘ê┘ä╪º╪í ╪╣╪¿╪▒ ┘ê╪º╪¬╪│╪º╪¿
  *
@@ -6,7 +6,7 @@
  * (┘é╪¿┘ä 7 ╪ú┘è╪º┘à ┘ê┘é╪¿┘ä 48 ╪│╪º╪╣╪⌐) ╪¿╪º╪│╪¬╪«╪»╪º┘à Meta Cloud WhatsApp API.
  */
 
-const { getSharedPrismaClient } = require('../../sharedDatabase');
+const { getSharedPrismaClient } = require('../sharedDatabase');
 const MetaCloudProvider = require('../whatsapp/providers/MetaCloudProvider');
 // ╪«╪»┘à╪⌐ ╪º┘ä┘ê┘ä╪º╪í (┘à╪╡╪»┘æ╪▒╪⌐ ┘â┘Ç instance) ΓÇö ╪¬┘Å╪╢╪º┘ü ╪Ñ┘ä┘è┘ç╪º getExpiringPoints ┘à┘å ┘ê┘â┘è┘ä ╪ó╪«╪▒
 const customerLoyaltyService = require('./customerLoyaltyService');
