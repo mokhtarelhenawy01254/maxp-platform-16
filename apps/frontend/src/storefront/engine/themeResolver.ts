@@ -14,6 +14,7 @@ export {
   extractStorefrontThemePresetId,
   resolveStorefrontThemeFromPreset,
   resolvePageStyleVars,
+  resolveActivePageKeyFromPath,
   extractPageStyles,
   PAGE_STYLE_DENSITY_GAPS,
   PAGE_STYLE_PRESETS,

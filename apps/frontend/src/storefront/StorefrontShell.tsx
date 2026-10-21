@@ -12,7 +12,7 @@ import {
   StorefrontThemeProvider,
   useStorefrontTheme,
 } from "./engine/ThemeProvider";
-import { resolvePageStyleVars } from "./engine/themeResolverCore";
+import { resolvePageStyleVars, resolveActivePageKeyFromPath } from "./engine/themeResolverCore";
 import type { StorefrontThemeInput } from "./engine/runtimeThemeResolver";
 import { PageComposer, type RenderSectionFrameArgs } from "./engine/PageComposer";
 import { useCartStore } from "./store/useCartStore";
@@ -144,8 +144,9 @@ const MarketplacePreviewCartBootstrap = React.lazy(() =>
 
 
 /* ─────────────────── Layout ─────────────────── */
-const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
+const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey?: string }> = ({
   previewThemeId,
+  activePageKey: propActivePageKey,
 }) => {
   const { theme } = useStorefrontTheme();
   const { settings } = useStorefrontSettings();
@@ -285,23 +286,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       : layoutRouteSegments;
 
   const activePageKey = useMemo(() => {
-    if (layoutStorefrontSegments.length === 0) return "home";
-    const seg0 = layoutStorefrontSegments[0];
-    if (seg0 === "shop" || seg0 === "products" || seg0 === "catalog") {
-      return layoutStorefrontSegments.length > 1 && (seg0 === "product" || seg0 === "products") ? "pdp" : "shop";
-    }
-    if (seg0 === "product") return "pdp";
-    if (seg0 === "cart") return "cart";
-    if (seg0 === "checkout") return "checkout";
-    if (seg0 === "thank-you") return "thank-you";
-    if (seg0 === "sale") return "sale";
-    if (seg0 === "collections") return "collections";
-    if (seg0 === "size-guide") return "size-guide";
-    if (seg0 === "shipping") return "shipping";
-    if (seg0 === "privacy") return "privacy";
-    if (seg0 === "terms") return "terms";
-    return seg0;
-  }, [layoutStorefrontSegments]);
+    if (propActivePageKey) return propActivePageKey;
+    return resolveActivePageKeyFromPath(location.pathname);
+  }, [propActivePageKey, location.pathname]);
 
   const pageStyleVars = useMemo(() => {
     return resolvePageStyleVars(theme, activePageKey);
@@ -1488,6 +1475,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           ...pageStyleVars,
           '--accent': 'var(--store-accent)',
           '--radius': 'var(--store-radius)',
+          ...(pageStyleVars['--store-bg'] ? { backgroundColor: pageStyleVars['--store-bg'] } : {}),
         } as React.CSSProperties}
       >
         <Routes>
@@ -1531,6 +1519,9 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
   const location = useLocation();
   const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
   const routeSegments = normalizedPath.split("/").filter(Boolean);
+  const activePageKey = useMemo(() => {
+    return resolveActivePageKeyFromPath(location.pathname);
+  }, [location.pathname]);
   const storefrontSegments =
     routeSegments[0] === "store" ? routeSegments.slice(1) : routeSegments;
   const isStandaloneProductLanding =
@@ -1607,9 +1598,16 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
   }
 
   return (
-    <StorefrontThemeProvider initialTheme={initialTheme} blockUntilResolved>
+    <StorefrontThemeProvider
+      initialTheme={initialTheme}
+      blockUntilResolved
+      activePageKey={activePageKey}
+    >
       <StorefrontHead />
-      <StorefrontLayout previewThemeId={previewThemeId} />
+      <StorefrontLayout
+        previewThemeId={previewThemeId}
+        activePageKey={activePageKey}
+      />
     </StorefrontThemeProvider>
   );
 };

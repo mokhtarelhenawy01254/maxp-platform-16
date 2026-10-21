@@ -11,11 +11,12 @@ export {
   extractStorefrontThemePresetId,
   resolveStorefrontThemeFromPreset,
   resolvePageStyleVars,
+  resolveActivePageKeyFromPath,
   extractPageStyles,
   PAGE_STYLE_DENSITY_GAPS,
   PAGE_STYLE_PRESETS,
 } from './themeResolverCore';
-import { resolveStorefrontThemeId } from '../themes';
+import { resolveStorefrontThemeId, getStorefrontThemePreset, normalizeStorefrontThemeCommercePages } from '../themes';
 
 const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {
   [DEFAULT_STOREFRONT_THEME_ID]: () =>
@@ -109,7 +110,7 @@ export const resolveRuntimeStorefrontTheme = async (
   try {
     const baseTheme = await loadRuntimeThemePreset(presetId);
     if (baseTheme) {
-      return resolveStorefrontThemeFromPreset(input, baseTheme, { presetId });
+      return resolveStorefrontThemeFromPreset(input, baseTheme, { presetId, normalizeTheme: normalizeStorefrontThemeCommercePages });
     }
   } catch {
     // Fall back to the default theme asset below if the requested preset is unavailable.
@@ -120,10 +121,20 @@ export const resolveRuntimeStorefrontTheme = async (
     if (defaultTheme) {
       return resolveStorefrontThemeFromPreset(input, defaultTheme, {
         presetId: DEFAULT_STOREFRONT_THEME_ID,
+        normalizeTheme: normalizeStorefrontThemeCommercePages,
       });
     }
   } catch {
     // Ignore secondary fallback errors
+  }
+
+  try {
+    const staticBase = getStorefrontThemePreset(presetId);
+    if (staticBase) {
+      return resolveStorefrontThemeFromPreset(input, staticBase, { presetId, normalizeTheme: normalizeStorefrontThemeCommercePages });
+    }
+  } catch {
+    // Ignore static fallback errors
   }
 
   return resolveStorefrontThemeFromPreset(

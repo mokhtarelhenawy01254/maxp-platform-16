@@ -6,11 +6,13 @@ import {
   resolveRuntimeStorefrontTheme,
   type StorefrontThemeInput,
 } from './runtimeThemeResolver';
-import { resolvePageStyleVars } from './themeResolverCore';
+import { resolvePageStyleVars, resolveActivePageKeyFromPath, extractPageStyles, type ResolvedPageStyleVars } from './themeResolverCore';
 
 interface ThemeContextType {
   theme: StorefrontTheme;
   setTheme: (theme: StorefrontTheme) => void;
+  activePageKey?: string;
+  pageStyleVars?: ResolvedPageStyleVars;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -47,36 +49,56 @@ const createStorefrontThemeFallback = (
       ? initialTheme.name
       : 'Storefront';
 
-  return {
+  const initialColors =
+    initialTheme?.designTokens?.colors ||
+    initialTheme?.tokens?.colors ||
+    initialTheme?.colors;
+
+  const fallback: StorefrontTheme = {
     id: themeId,
     name: fallbackName,
     direction: fallbackDirection,
     tokens: {
       colors: {
-        primary: '24 76% 54%',
-        primaryForeground: '36 100% 98%',
-        secondary: '34 56% 94%',
-        secondaryForeground: '24 36% 20%',
-        accent: '18 76% 54%',
-        accentForeground: '36 100% 98%',
-        background: '36 100% 98%',
-        foreground: '25 30% 15%',
-        muted: '32 36% 92%',
-        mutedForeground: '24 16% 38%',
-        border: '30 32% 84%',
-        card: '0 0% 100%',
-        cardForeground: '25 30% 15%',
-        ring: '24 76% 54%',
+        primary: (initialColors?.primary as string) || '24 76% 54%',
+        primaryForeground: (initialColors?.primaryForeground as string) || '36 100% 98%',
+        secondary: (initialColors?.secondary as string) || '34 56% 94%',
+        secondaryForeground: (initialColors?.secondaryForeground as string) || '24 36% 20%',
+        accent: (initialColors?.accent as string) || '18 76% 54%',
+        accentForeground: (initialColors?.accentForeground as string) || '36 100% 98%',
+        background: (initialColors?.background as string) || '36 100% 98%',
+        foreground: (initialColors?.foreground as string) || '25 30% 15%',
+        muted: (initialColors?.muted as string) || '32 36% 92%',
+        mutedForeground: (initialColors?.mutedForeground as string) || '24 16% 38%',
+        border: (initialColors?.border as string) || '30 32% 84%',
+        card: (initialColors?.card as string) || '0 0% 100%',
+        cardForeground: (initialColors?.cardForeground as string) || '25 30% 15%',
+        ring: (initialColors?.ring as string) || (initialColors?.primary as string) || '24 76% 54%',
       },
       typography: {
-        headingFont: '"IBM Plex Sans Arabic", sans-serif',
-        bodyFont: '"IBM Plex Sans Arabic", sans-serif',
-        baseSize: '16px',
+        headingFont:
+          initialTheme?.designTokens?.typography?.headingFont ||
+          initialTheme?.tokens?.typography?.headingFont ||
+          '"IBM Plex Sans Arabic", sans-serif',
+        bodyFont:
+          initialTheme?.designTokens?.typography?.bodyFont ||
+          initialTheme?.tokens?.typography?.bodyFont ||
+          '"IBM Plex Sans Arabic", sans-serif',
+        baseSize:
+          initialTheme?.designTokens?.typography?.baseSize ||
+          initialTheme?.tokens?.typography?.baseSize ||
+          '16px',
         direction: fallbackDirection,
       },
       shape: {
-        borderRadius: '1rem',
-        buttonRadius: '999px',
+        borderRadius:
+          initialTheme?.designTokens?.shape?.borderRadius ||
+          initialTheme?.tokens?.shape?.borderRadius ||
+          '1rem',
+        buttonRadius:
+          initialTheme?.designTokens?.shape?.buttonRadius ||
+          initialTheme?.tokens?.shape?.buttonRadius ||
+          '999px',
       },
       productCard: {
         borderRadius: '1rem',
@@ -102,6 +124,18 @@ const createStorefrontThemeFallback = (
       'thank-you': createEmptyPage(),
     },
   };
+
+  const pageStyles = extractPageStyles(initialTheme);
+  if (pageStyles && Object.keys(pageStyles).length > 0) {
+    (fallback as any).pageStyles = pageStyles;
+    Object.entries(pageStyles).forEach(([pKey, pStyle]) => {
+      if (fallback.pages && fallback.pages[pKey]) {
+        (fallback.pages[pKey] as any).pageStyle = pStyle;
+      }
+    });
+  }
+
+  return fallback;
 };
 
 export const StorefrontThemeProvider: React.FC<{ 
@@ -110,7 +144,34 @@ export const StorefrontThemeProvider: React.FC<{
   scoped?: boolean,
   blockUntilResolved?: boolean,
   activePageKey?: string,
-}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false, activePageKey }) => {
+}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false, activePageKey: propActivePageKey }) => {
+  const resolveCurrentPageKey = React.useCallback(() => {
+    if (propActivePageKey) return propActivePageKey;
+    if (typeof window !== 'undefined' && window.location?.pathname) {
+      return resolveActivePageKeyFromPath(window.location.pathname);
+    }
+    return (initialTheme as any)?.activePageKey || 'home';
+  }, [propActivePageKey, initialTheme]);
+
+  const [activePageKey, setActivePageKey] = useState<string>(resolveCurrentPageKey);
+
+  useEffect(() => {
+    setActivePageKey(resolveCurrentPageKey());
+  }, [propActivePageKey, resolveCurrentPageKey]);
+
+  useEffect(() => {
+    if (propActivePageKey !== undefined) return;
+    if (typeof window === 'undefined') return;
+
+    const handleLocationChange = () => {
+      setActivePageKey(resolveActivePageKeyFromPath(window.location.pathname));
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, [propActivePageKey]);
   const [theme, setTheme] = useState<StorefrontTheme | null>(() =>
     blockUntilResolved ? null : createStorefrontThemeFallback(initialTheme),
   );
@@ -217,11 +278,21 @@ export const StorefrontThemeProvider: React.FC<{
       if (theme.tokens.productCard.surfaceOpacity) setVar('--product-card-surface-opacity', theme.tokens.productCard.surfaceOpacity);
     }
 
-    // 5. Apply Page Style Scope tokens (--store-accent, --store-font-family, --store-density-gap, --store-radius)
-    const pageVars = resolvePageStyleVars(theme, activePageKey || (theme as any)?.activePageKey);
+    // 5. Apply Page Style Scope tokens (--store-accent, --store-bg, --store-font-family, --store-density-gap, --store-radius)
+    const pageVars = resolvePageStyleVars(theme, activePageKey);
     Object.entries(pageVars).forEach(([key, value]) => {
       setVar(key, value);
     });
+
+    if (pageVars['--store-accent']) {
+      setVar('--accent', pageVars['--store-accent']);
+    }
+    if (pageVars['--store-radius']) {
+      setVar('--radius', pageVars['--store-radius']);
+    }
+    if (pageVars['--store-bg']) {
+      setVar('--store-bg', pageVars['--store-bg']);
+    }
 
   }, [theme, scoped, activePageKey]);
 
@@ -274,16 +345,25 @@ export const StorefrontThemeProvider: React.FC<{
     }
   }, [theme?.tokens?.typography?.headingFont, theme?.tokens?.typography?.bodyFont]);
 
+  const resolvedPageVars = React.useMemo(() => {
+    return theme ? resolvePageStyleVars(theme, activePageKey) : ({} as ResolvedPageStyleVars);
+  }, [theme, activePageKey]);
+
   if (!theme) {
     return <StorefrontSkeleton />;
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme) }}>
+    <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
       <div 
         id="storefront-engine-root" 
         className="storefront-container isolation-auto min-h-screen bg-background text-foreground"
-        style={{ fontFamily: 'var(--font-sans)' }}
+        style={{
+          fontFamily: 'var(--font-sans)',
+          ...resolvedPageVars,
+          '--accent': 'var(--store-accent)',
+          '--radius': 'var(--store-radius)',
+        } as React.CSSProperties}
       >
         {children}
       </div>

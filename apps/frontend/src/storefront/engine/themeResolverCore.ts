@@ -37,6 +37,7 @@ export const PAGE_STYLE_DENSITY_GAPS: Record<PageStyleDensity, string> = {
 
 export interface ResolvedPageStyleVars {
   '--store-accent': string;
+  '--store-bg': string;
   '--store-font-family': string;
   '--store-density-gap': string;
   '--store-radius': string;
@@ -400,6 +401,12 @@ export const extractPageStyles = (
   const settingsDesignTokens = isRecord(settings?.['designTokens'])
     ? (settings['designTokens'] as Record<string, unknown>)
     : {};
+  const storefrontObj = isRecord(inputRecord['storefront'])
+    ? (inputRecord['storefront'] as Record<string, unknown>)
+    : {};
+  const storefrontDesignTokens = isRecord(storefrontObj['designTokens'])
+    ? (storefrontObj['designTokens'] as Record<string, unknown>)
+    : {};
 
   const sources: Array<Record<string, unknown>> = [
     isRecord(settingsDesignTokens['pageStyles'])
@@ -408,13 +415,32 @@ export const extractPageStyles = (
     isRecord(topLevelDesignTokens['pageStyles'])
       ? (topLevelDesignTokens['pageStyles'] as Record<string, unknown>)
       : {},
+    isRecord(storefrontDesignTokens['pageStyles'])
+      ? (storefrontDesignTokens['pageStyles'] as Record<string, unknown>)
+      : {},
     isRecord(settings['pageStyles'])
       ? (settings['pageStyles'] as Record<string, unknown>)
+      : {},
+    isRecord(storefrontObj['pageStyles'])
+      ? (storefrontObj['pageStyles'] as Record<string, unknown>)
       : {},
     isRecord(inputRecord['pageStyles'])
       ? (inputRecord['pageStyles'] as Record<string, unknown>)
       : {},
   ];
+
+  if (isRecord(inputRecord['pages'])) {
+    const pagesObj = inputRecord['pages'] as Record<string, unknown>;
+    const pageStylesFromPages: Record<string, unknown> = {};
+    for (const [pKey, pVal] of Object.entries(pagesObj)) {
+      if (isRecord(pVal) && isRecord((pVal as Record<string, unknown>)['pageStyle'])) {
+        pageStylesFromPages[pKey] = (pVal as Record<string, unknown>)['pageStyle'];
+      }
+    }
+    if (Object.keys(pageStylesFromPages).length > 0) {
+      sources.push(pageStylesFromPages);
+    }
+  }
 
   const result: Record<string, PageStyleScope> = {};
   for (const source of sources) {
@@ -424,6 +450,13 @@ export const extractPageStyles = (
         const scope: PageStyleScope = {};
         if (typeof item['accent'] === 'string' && item['accent'].trim()) {
           scope.accent = item['accent'].trim();
+        }
+        if (typeof item['background'] === 'string' && item['background'].trim()) {
+          scope.background = item['background'].trim();
+        } else if (typeof item['bg'] === 'string' && item['bg'].trim()) {
+          scope.background = item['bg'].trim();
+        } else if (typeof item['backgroundColor'] === 'string' && item['backgroundColor'].trim()) {
+          scope.background = item['backgroundColor'].trim();
         }
         if (typeof item['fontFamily'] === 'string' && item['fontFamily'].trim()) {
           scope.fontFamily = item['fontFamily'].trim();
@@ -437,6 +470,11 @@ export const extractPageStyles = (
         }
         if (typeof item['radius'] === 'number' && !isNaN(item['radius'])) {
           scope.radius = item['radius'];
+        } else if (typeof item['radius'] === 'string' && item['radius'].trim()) {
+          const parsed = parseFloat(item['radius']);
+          if (!isNaN(parsed)) {
+            scope.radius = parsed;
+          }
         }
         if (typeof item['preset'] === 'string' && item['preset'].trim()) {
           scope.preset = item['preset'].trim();
@@ -460,36 +498,81 @@ export const resolvePageStyleVars = (
   explicitStyle?: PageStyleScope,
 ): ResolvedPageStyleVars => {
   const pKey = pageKey || 'home';
-  const pageStyle =
-    explicitStyle ||
-    (theme as any)?.pageStyles?.[pKey] ||
-    (theme?.pages?.[pKey] as any)?.pageStyle ||
-    undefined;
+  const pageStylesMap = (theme as any)?.pageStyles as Record<string, PageStyleScope> | undefined;
 
-  // 1. Accent fallback
+  const candidateKeys = [pKey];
+  if (pKey === 'pdp') candidateKeys.push('product', 'products');
+  if (pKey === 'product' || pKey === 'products') candidateKeys.push('pdp');
+  if (pKey.startsWith('pages/')) candidateKeys.push(pKey.slice('pages/'.length));
+  else candidateKeys.push('pages/' + pKey);
+
+  let pageStyle: PageStyleScope | undefined = explicitStyle;
+  if (!pageStyle) {
+    for (const key of candidateKeys) {
+      if (pageStylesMap?.[key]) {
+        pageStyle = pageStylesMap[key];
+        break;
+      }
+      if ((theme?.pages?.[key] as any)?.pageStyle) {
+        pageStyle = (theme?.pages?.[key] as any).pageStyle;
+        break;
+      }
+    }
+  }
+
+  // Look up preset if specified
+  const preset = pageStyle?.preset
+    ? PAGE_STYLE_PRESETS.find((p) => p.id === pageStyle!.preset)
+    : undefined;
+
+  // 1. Accent fallback: pageStyle.accent > preset.accent > theme.colors.accent > theme.colors.primary > '#2563eb'
   const accent =
     pageStyle?.accent?.trim() ||
+    preset?.accent ||
     theme?.tokens?.colors?.accent ||
     theme?.tokens?.colors?.primary ||
     '#2563eb';
 
-  // 2. Font family fallback
+  // 2. Background fallback: pageStyle.background/bg > theme.colors.background > '#ffffff'
+  const explicitBg =
+    pageStyle?.background?.trim() ||
+    (pageStyle as any)?.bg?.trim() ||
+    (pageStyle as any)?.backgroundColor?.trim();
+
+  let background: string;
+  if (explicitBg) {
+    background = explicitBg;
+  } else if (theme?.tokens?.colors?.background) {
+    const themeBg = theme.tokens.colors.background.trim();
+    if (themeBg.startsWith('#') || themeBg.startsWith('rgb') || themeBg.startsWith('hsl')) {
+      background = themeBg;
+    } else {
+      background = 'hsl(' + themeBg + ')';
+    }
+  } else {
+    background = '#ffffff';
+  }
+
+  // 3. Font family fallback: pageStyle.fontFamily > preset.fontFamily > theme bodyFont > theme headingFont > 'inherit'
   const fontFamily =
     pageStyle?.fontFamily?.trim() ||
+    preset?.fontFamily ||
     theme?.tokens?.typography?.bodyFont ||
     theme?.tokens?.typography?.headingFont ||
     'inherit';
 
-  // 3. Density gap fallback
-  const density = pageStyle?.density || 'normal';
+  // 4. Density gap fallback: pageStyle.density > preset.density > 'normal'
+  const density = pageStyle?.density || preset?.density || 'normal';
   const densityGap = PAGE_STYLE_DENSITY_GAPS[density] || DEFAULT_PAGE_STYLE_DENSITY_GAP;
 
-  // 4. Radius fallback
+  // 5. Radius fallback: pageStyle.radius > preset.radius > theme borderRadius > DEFAULT_PAGE_STYLE_RADIUS
   let radius: string;
   if (typeof pageStyle?.radius === 'number') {
     radius = `${pageStyle.radius}px`;
   } else if (typeof (pageStyle as any)?.radius === 'string' && (pageStyle as any).radius.trim()) {
     radius = (pageStyle as any).radius.trim();
+  } else if (preset && typeof preset.radius === 'number') {
+    radius = `${preset.radius}px`;
   } else if (theme?.tokens?.shape?.borderRadius) {
     radius = theme.tokens.shape.borderRadius;
   } else {
@@ -498,10 +581,47 @@ export const resolvePageStyleVars = (
 
   return {
     '--store-accent': accent,
+    '--store-bg': background,
     '--store-font-family': fontFamily,
     '--store-density-gap': densityGap,
     '--store-radius': radius,
   };
+};
+
+export const resolveActivePageKeyFromPath = (pathname?: string): string => {
+  if (!pathname || typeof pathname !== 'string') return 'home';
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  const segments = normalizedPath.split('/').filter(Boolean);
+  const storefrontSegments = segments[0] === 'store' ? segments.slice(1) : segments;
+
+  if (storefrontSegments.length === 0) return 'home';
+
+  const seg0 = storefrontSegments[0];
+  if (seg0 === 'shop' || seg0 === 'products' || seg0 === 'catalog') {
+    if (storefrontSegments.length > 1) {
+      if (storefrontSegments[1] === 'page' && storefrontSegments[2]) {
+        return storefrontSegments.slice(2).join('/');
+      }
+      return 'pdp';
+    }
+    return 'shop';
+  }
+  if (seg0 === 'product') return 'pdp';
+  if (seg0 === 'pages' && storefrontSegments.length > 1) {
+    return storefrontSegments.slice(1).join('/');
+  }
+  if (seg0 === 'cart') return 'cart';
+  if (seg0 === 'checkout') return 'checkout';
+  if (seg0 === 'thank-you') return 'thank-you';
+  if (seg0 === 'sale') return 'sale';
+  if (seg0 === 'collections') return 'collections';
+  if (seg0 === 'size-guide') return 'size-guide';
+  if (seg0 === 'shipping') return 'shipping';
+  if (seg0 === 'privacy') return 'privacy';
+  if (seg0 === 'terms') return 'terms';
+  if (seg0 === 'returns') return 'returns';
+
+  return storefrontSegments.join('/');
 };
 
 export const extractStorefrontThemePresetId = (
