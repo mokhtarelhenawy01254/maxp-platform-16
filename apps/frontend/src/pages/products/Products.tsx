@@ -1,15 +1,6 @@
-import React, { useState, useRef, useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import React from "react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import {
-  PhotoIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
-import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
-import { getImageUrl } from "../../utils/imageUrl";
 
 // Sub-components
 import ProductsHeader from "./components/ProductsHeader";
@@ -22,21 +13,17 @@ import ProductsEmptyState from "./components/ProductsEmptyState";
 import { BulkConvertModal } from "./components/BulkConvertModal";
 import ProductMobileCard from "./components/ProductMobileCard";
 import { QuickAddProductModal } from "./components/QuickAddProductModal";
+import { ProductsGrid } from "./components/ProductsGrid";
+import { ProductsImportCSVModal } from "./components/ProductsImportCSVModal";
 
-// Hooks & Types
-import { useProducts } from "./hooks/useProducts";
-import { getStockStatusColor, getStockStatusText, getStockStatus } from "./components/ProductsTypes";
-import {
-  getWorkflowStatusColor,
-  getWorkflowStatusLabel,
-  isPublishedWorkflow,
-} from "./utils/workflow";
+// Page Controller Hook
+import { useProductsPageController } from "./hooks/useProductsPageController";
 
 // ================================================
 // Products Page - Main container
 // ================================================
 
-const Products: React.FC = () => {
+export const Products: React.FC = () => {
   const {
     products,
     isLoading,
@@ -75,8 +62,6 @@ const Products: React.FC = () => {
     handleSort,
     handleSelectAll,
     handleSelectProduct,
-    handleBulkVisibility,
-    handleBulkDelete,
     clearSelection,
     resetFilters,
     startQuickEdit,
@@ -84,229 +69,43 @@ const Products: React.FC = () => {
     setEditPrice,
     setEditStock,
     setEditSku,
-    saveQuickEdit,
-    handleDuplicate,
     workflowLoadingId,
-    handleWorkflowAction,
     handleDelete,
-    handleDeleteAll,
     loadProducts,
     prepareStorefrontContext,
-    getStorefrontUrl
-  } = useProducts();
-
-  const { t, i18n: i18nInstance } = useTranslation();
-  const isEn = Boolean(i18nInstance.language && i18nInstance.language.startsWith("en"));
+    getStorefrontUrl,
+    isEn,
+    viewMode,
+    setViewMode,
+    showAdvancedFilters,
+    setShowAdvancedFilters,
+    showImportModal,
+    setShowImportModal,
+    showQuickAddModal,
+    setShowQuickAddModal,
+    showBulkConvertModal,
+    setShowBulkConvertModal,
+    fileInputRef,
+    bulkConvertSourceIds,
+    bulkConvertSourceProducts,
+    onBulkVisibility,
+    onBulkTrackInventory,
+    onBulkDelete,
+    handleBulkConvertSuccess,
+    onWorkflowAction,
+    onSaveQuickEdit,
+    onDuplicate,
+    onDeleteAll,
+    handleExport,
+    handleImportCSV,
+    handleStatClick,
+  } = useProductsPageController();
 
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
 
-  // View mode
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onBulkVisibility = async (isHidden: boolean) => {
-    try {
-      const count = await handleBulkVisibility(isHidden);
-      if (count) toast.success(isEn ? `Successfully ${isHidden ? 'hidden' : 'shown'} ${count} products` : `تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح`);
-    } catch (err) {
-      toast.error(isEn ? `Error while ${isHidden ? 'hiding' : 'showing'} products` : `حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}`);
-    }
-  };
-
-  const onBulkTrackInventory = async (enabled: boolean) => {
-    try {
-      const { apiClient } = await import("../../services/apiClient");
-      const ids = Array.from(selectedProducts);
-      if (ids.length === 0) return;
-      const r = await apiClient.patch("products/bulk/track-inventory", { productIds: ids, trackInventory: enabled, includeVariants: true });
-      const cnt = r?.data?.data?.productsUpdated || ids.length;
-      toast.success(isEn ? `Successfully ${enabled ? 'enabled' : 'disabled'} inventory tracking for ${cnt} products` : `تم ${enabled ? 'تفعيل' : 'إيقاف'} تتبع المخزون لـ ${cnt} منتج`);
-      clearSelection();
-      await loadProducts();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || (isEn ? "Failed to update inventory tracking" : "فشل تحديث تتبع المخزون"));
-    }
-  };
-
-  const onBulkDelete = async () => {
-    try {
-      const count = await handleBulkDelete();
-      if (count) toast.success(isEn ? `Successfully deleted ${count} products` : `تم حذف ${count} منتج بنجاح`);
-    } catch (err) {
-      toast.error(isEn ? "Failed to delete selected products" : "فشل حذف المنتجات المحددة");
-    }
-  };
-
-  // تحويل جماعي: المنتجات المحددة → عروض تقديمية لمنتج أصلي واحد
-  const [showBulkConvertModal, setShowBulkConvertModal] = useState(false);
-
-  const bulkConvertSourceIds = useMemo(
-    () => Array.from(selectedProducts),
-    [selectedProducts],
-  );
-
-  const bulkConvertSourceProducts = useMemo(() => {
-    const byId = new Map(products.map((p: any) => [p.id, p]));
-    return bulkConvertSourceIds
-      .map((id) => {
-        const p = byId.get(id);
-        return { id, name: p?.name || id };
-      })
-      .filter(Boolean);
-  }, [bulkConvertSourceIds, products]);
-
-  const handleBulkConvertSuccess = async (result: {
-    convertedCount: number;
-    skippedCount: number;
-  }) => {
-    setShowBulkConvertModal(false);
-    clearSelection();
-    await loadProducts();
-    if (result.convertedCount > 0) {
-      toast.success(
-        `تم تحويل ${result.convertedCount} منتج إلى عروض تقديمية${
-          result.skippedCount > 0 ? `، وتم تخطي ${result.skippedCount}` : ""
-        }`,
-      );
-    } else {
-      toast.error("لم يتم تحويل أي منتج — راجع المنتجات المحددة");
-    }
-  };
-
-  const onWorkflowAction = async (
-    product: any,
-    action: "save_draft" | "submit_review" | "approve" | "reject" | "publish" | "unpublish",
-  ) => {
-    try {
-      let rejectionReason: string | null = null;
-      if (action === "reject") {
-        rejectionReason = prompt("سبب الرفض (اختياري):")?.trim() || null;
-      }
-
-      await handleWorkflowAction(product.id, action, rejectionReason);
-
-      const messages: Record<string, string> = {
-        save_draft: "تم حفظ المنتج كمسودة",
-        submit_review: "تم إرسال المنتج للمراجعة",
-        approve: "تم اعتماد المنتج بنجاح",
-        reject: "تم رفض المنتج",
-        publish: "تم نشر المنتج بنجاح",
-        unpublish: "تم إلغاء نشر المنتج",
-      };
-      toast.success(messages[action] || "تم تحديث حالة المنتج");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || "حدث خطأ أثناء تحديث الحالة");
-    }
-  };
-
-  const onSaveQuickEdit = async (id: string) => {
-    try {
-      const success = await saveQuickEdit(id);
-      if (success) toast.success("تم تحديث المنتج بنجاح");
-      else toast.error("فشل تحديث المنتج");
-    } catch (err) {
-      toast.error("حدث خطأ أثناء حفظ التعديل السريع");
-    }
-  };
-
-  const onDuplicate = async (product: any) => {
-    try {
-      const success = await handleDuplicate(product);
-      if (success) toast.success(`✅ تم نسخ المنتج "${product.name}" بنجاح`);
-      else toast.error("فشل نسخ المنتج");
-    } catch (err: any) {
-      toast.error(`❌ ${err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ غير متوقع"}`);
-    }
-  };
-
-  const onDeleteAll = async () => {
-    try {
-      const result = await handleDeleteAll();
-      if (result) {
-        toast.success(`تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح`);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "حدث خطأ أثناء حذف المنتجات");
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      const { apiClient } = await import("../../services/apiClient");
-      const r = await apiClient.get("products/export", { params: { format: "csv" }, responseType: "blob" });
-      if (r.status === 200) {
-        const blob = new Blob([r.data], { type: "text/csv" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `products-${new Date().toISOString().split("T")[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        toast.success("تم تصدير ملف المنتجات بنجاح");
-      }
-    } catch {
-      toast.error("فشل تصدير ملف المنتجات");
-    }
-  };
-
-  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const { apiClient } = await import("../../services/apiClient");
-      const text = await file.text();
-      const lines = text.split("\n").filter((l) => l.trim());
-      const dataLines = lines.slice(1);
-      const toImport = dataLines
-        .map((line) => {
-          const values = line.split(",");
-          return {
-            name: values[0]?.trim() || "",
-            sku: values[1]?.trim() || `SKU-${Date.now()}`,
-            price: parseFloat(values[2] || "0") || 0,
-            stock: parseInt(values[4] || "0", 10) || 0,
-            isActive: true,
-          };
-        })
-        .filter((p) => p.name);
-      let count = 0;
-      for (const p of toImport) {
-        const r = await apiClient.post("products", p);
-        if (r.status === 200 || r.status === 201) count++;
-      }
-      loadProducts();
-      setShowImportModal(false);
-      toast.success(`تم استيراد ${count} منتج بنجاح`);
-    } catch (err) {
-      toast.error("فشل استيراد ملف المنتجات");
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleStatClick = (type: "all" | "published" | "low-stock" | "out-of-stock") => {
-    if (type === "all") {
-      handleFilterChange("statusFilter", "all");
-      handleFilterChange("stockFilter", "all");
-    } else if (type === "published") {
-      handleFilterChange("statusFilter", filters.statusFilter === "published" ? "all" : "published");
-      handleFilterChange("stockFilter", "all");
-    } else if (type === "low-stock") {
-      handleFilterChange("stockFilter", filters.stockFilter === "low-stock" ? "all" : "low-stock");
-      handleFilterChange("statusFilter", "all");
-    } else if (type === "out-of-stock") {
-      handleFilterChange("stockFilter", filters.stockFilter === "out-of-stock" ? "all" : "out-of-stock");
-      handleFilterChange("statusFilter", "all");
-    }
-  };
-
   return (
-    <div className="space-y-3 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-5 font-sans" dir="rtl">
       <ProductsHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -356,15 +155,15 @@ const Products: React.FC = () => {
       />
 
       {isLoading && (
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">جاري تحميل المنتجات...</p>
+        <div className="bg-card rounded-xl shadow-xs border border-border/70 p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-3" />
+          <p className="text-muted-foreground text-xs font-medium">جاري تحميل المنتجات...</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
-          <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-xs text-red-600">
+          <p>{error}</p>
         </div>
       )}
 
@@ -452,81 +251,15 @@ const Products: React.FC = () => {
       )}
 
       {!isLoading && !error && products.length > 0 && viewMode === "grid" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {paginatedProducts.map((product) => {
-            const stockStatus = getStockStatus(product);
-            return (
-              <div
-                key={product.id}
-                className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 ${canSelectProducts && selectedProducts.has(product.id) ? "ring-2 ring-indigo-500" : ""}`}
-              >
-                <div className="relative">
-                  {canSelectProducts && (
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.has(product.id)}
-                      onChange={() => handleSelectProduct(product.id)}
-                      className="absolute top-2 right-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded z-10"
-                    />
-                  )}
-                  <a
-                    href={getStorefrontUrl(product)}
-                    onClick={prepareStorefrontContext}
-                    className="block"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {product.mainImage || (product.images && product.images.length > 0) ? (
-                      <img
-                        src={getImageUrl(product.mainImage || product.images[0], "small") || ""}
-                        alt={product.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-48 object-cover"
-                        onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                        <PhotoIcon className="h-12 w-12 text-gray-400" />
-                      </div>
-                    )}
-                  </a>
-                  <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
-                    <span
-                      className={`inline-flex px-2 py-1 text-[11px] font-semibold rounded-full ${getWorkflowStatusColor(
-                        product.workflow.status,
-                        product.workflow,
-                      )}`}
-                    >
-                      {getWorkflowStatusLabel(product.workflow.status, product.workflow)}
-                    </span>
-                    {!isPublishedWorkflow(product.workflow) && (
-                      <span className="rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
-                        Preview
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="p-4">
-                  <a
-                    href={`/products/${product.id}/edit`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-semibold text-gray-900 dark:text-white truncate block hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                  >
-                    {product.name}
-                  </a>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatPrice(product.price)}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getStockStatusColor(stockStatus)}`}>
-                      {getStockStatusText(stockStatus)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ProductsGrid
+          products={paginatedProducts}
+          canSelectProducts={canSelectProducts}
+          selectedProducts={selectedProducts}
+          onSelectProduct={handleSelectProduct}
+          getStorefrontUrl={getStorefrontUrl}
+          prepareStorefrontContext={prepareStorefrontContext}
+          formatPrice={formatPrice}
+        />
       )}
 
       {!isLoading && !error && sortedProducts.length > 0 && (
@@ -539,36 +272,20 @@ const Products: React.FC = () => {
           hasActiveFilters={hasActiveFilters}
           sortedProductsLength={sortedProducts.length}
           onPageChange={setCurrentPage}
-          onItemsPerPageChange={(count) => { setItemsPerPage(count); setCurrentPage(1); }}
+          onItemsPerPageChange={(count) => {
+            setItemsPerPage(count);
+            setCurrentPage(1);
+          }}
         />
       )}
 
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {isEn ? "Import Products from CSV" : "استيراد منتجات من CSV"}
-              </h3>
-              <button onClick={() => setShowImportModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleImportCSV}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
-            />
-            <div className="mt-4 flex justify-end">
-              <button onClick={() => setShowImportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200">
-                {isEn ? "Cancel" : "إلغاء"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductsImportCSVModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportCSV={handleImportCSV}
+        fileInputRef={fileInputRef}
+        isEn={isEn}
+      />
 
       {showBulkConvertModal && bulkConvertSourceIds.length > 0 && (
         <BulkConvertModal
