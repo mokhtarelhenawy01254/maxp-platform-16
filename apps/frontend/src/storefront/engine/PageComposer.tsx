@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { ComponentRegistry } from './ComponentRegistry';
+import { TreeRenderer } from './tree/TreeRenderer';
 import {
   StorefrontPageConfig,
   StorefrontPageLayout,
@@ -551,6 +552,18 @@ export const PageComposer: React.FC<PageComposerProps> = ({
   ) => {
     const sectionId = getSectionId(sectionEntry, index);
     const componentKey = getSectionComponentKey(sectionEntry, index);
+    if (sectionId === 'container') {
+      return (
+        <TreeRenderer
+          key={`container-${index}`}
+          nodes={[(renderedSectionEntry as any) || { type: 'container' }]}
+          renderLeafSection={(childNode, childIdx) => renderSection(childNode, childIdx)}
+          renderSectionFrame={renderSectionFrame}
+          isEditor={Boolean(renderSectionFrame)}
+        />
+      );
+    }
+
     const SectionComponent = ComponentRegistry[sectionId];
     const renderedSectionEntry =
       runtimeText?.shouldReplaceThemeBrand && typeof sectionEntry !== 'string'
@@ -873,7 +886,12 @@ export const PageComposer: React.FC<PageComposerProps> = ({
   // Default: vertical stack
   return (
     <div className="storefront-page-composer flex flex-col w-full h-full">
-      {indexedSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+      <TreeRenderer
+        nodes={indexedSections.map(({ sectionEntry }) => sectionEntry)}
+        renderLeafSection={(node, index) => renderSection(node, index)}
+        renderSectionFrame={renderSectionFrame}
+        isEditor={Boolean(renderSectionFrame)}
+      />
     </div>
   );
 };

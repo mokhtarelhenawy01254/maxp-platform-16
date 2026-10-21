@@ -164,6 +164,10 @@ interface StudioSortableSectionProps {
   onDelete: () => void;
   onLibraryDragOver?: (targetSlot: number) => void;
   onLibraryDrop?: (sectionType: string, targetSlot: number) => void;
+  onLibraryDropIntoContainer?: (sectionType: string, containerKey: string) => void;
+  isContainer?: boolean;
+  parentKey?: string;
+  depth?: number;
   children: React.ReactNode;
 }
 
@@ -196,6 +200,10 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   onDelete,
   onLibraryDragOver,
   onLibraryDrop,
+  onLibraryDropIntoContainer,
+  isContainer = false,
+  parentKey,
+  depth = 0,
   children,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -457,6 +465,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       data-is-hidden={hidden ? "true" : "false"}
       data-is-locked={locked ? "true" : "false"}
       data-device-mode={deviceMode}
+      data-is-container={sectionType === "container" ? "true" : "false"}
+      data-section-depth={depth}
       data-has-responsive-overrides={hasActiveDeviceOverrides ? "true" : undefined}
       onClick={handleSectionClick}
       onDoubleClick={handleSectionDoubleClick}

@@ -35,6 +35,36 @@ export interface StudioSelectedElement {
   currentImage?: string;
 }
 
+export interface ContainerSettings {
+  direction?: "column" | "row";
+  gap?: number;
+  columns?: number;
+  align?: "start" | "center" | "end" | "stretch";
+  wrap?: boolean;
+  paddingTop?: number | string;
+  paddingBottom?: number | string;
+  [key: string]: unknown;
+}
+
+export const DEFAULT_CONTAINER_SETTINGS: ContainerSettings = {
+  direction: "column",
+  gap: 12,
+  align: "stretch",
+  wrap: false,
+};
+
+export interface SectionNode {
+  type: string;
+  key?: string;
+  id?: string;
+  label?: string;
+  hidden?: boolean;
+  locked?: boolean;
+  settings?: Record<string, unknown> | ContainerSettings;
+  children?: SectionNode[];
+  [key: string]: unknown;
+}
+
 
 export interface StudioQuickElement {
   id: string;

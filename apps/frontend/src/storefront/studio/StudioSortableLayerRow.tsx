@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Bars3Icon,
+  Squares2X2Icon,
   ChevronDownIcon,
   ChevronUpIcon,
   DocumentDuplicateIcon,
@@ -24,6 +25,12 @@ export interface StudioSortableLayerRowProps {
   isLocked: boolean;
   isSelected: boolean;
   totalSections: number;
+  depth?: number;
+  isContainer?: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  childrenCount?: number;
+  parentKey?: string;
   onSelect: () => void;
   onRename: (newLabel: string) => void;
   onToggleVisibility: () => void;
@@ -43,6 +50,12 @@ export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
   isLocked,
   isSelected,
   totalSections,
+  depth = 0,
+  isContainer = false,
+  isCollapsed = false,
+  onToggleCollapse,
+  childrenCount,
+  parentKey,
   onSelect,
   onRename,
   onToggleVisibility,
@@ -108,6 +121,8 @@ export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
       data-studio-layer-row={sectionKey}
       data-is-hidden={isHidden ? "true" : "false"}
       data-is-locked={isLocked ? "true" : "false"}
+      data-layer-depth={depth}
+      data-is-container={isContainer ? "true" : "false"}
       className={`group relative flex items-center justify-between rounded-xl border p-2 transition-all cursor-pointer ${
         isSelected
           ? "border-[#2b6cf6] bg-[#2b6cf6]/15 text-white shadow-xs ring-1 ring-[#2b6cf6]/40"
@@ -144,6 +159,25 @@ export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
         >
           <GripDotsIcon className="h-3.5 w-3.5" />
         </button>
+
+        {isContainer && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleCollapse?.();
+            }}
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-white/10 text-[#8a8f96] hover:text-white transition-colors"
+            title={isCollapsed ? "فتح الحاوية" : "طي الحاوية"}
+            aria-label={isCollapsed ? "فتح الحاوية" : "طي الحاوية"}
+          >
+            <ChevronDownIcon
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                isCollapsed ? "-rotate-90 rtl:rotate-90" : ""
+              }`}
+            />
+          </button>
+        )}
 
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${

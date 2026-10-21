@@ -15,6 +15,22 @@ import {
 } from "@heroicons/react/24/outline";
 import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
 
+const CONTAINER_THUMBNAIL = `data:image/svg+xml;utf8,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+    <rect width="240" height="80" rx="8" fill="#181a20"/>
+    <rect x="10" y="10" width="220" height="60" rx="6" fill="#20242d" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <rect x="20" y="18" width="60" height="44" rx="4" fill="#2d3340" stroke="#4b5563" stroke-width="1"/>
+    <rect x="26" y="24" width="30" height="4" rx="2" fill="#60a5fa"/>
+    <rect x="26" y="32" width="46" height="3" rx="1.5" fill="#94a3b8"/>
+    <rect x="90" y="18" width="60" height="44" rx="4" fill="#2d3340" stroke="#4b5563" stroke-width="1"/>
+    <rect x="96" y="24" width="30" height="4" rx="2" fill="#10b981"/>
+    <rect x="96" y="32" width="46" height="3" rx="1.5" fill="#94a3b8"/>
+    <rect x="160" y="18" width="60" height="44" rx="4" fill="#2d3340" stroke="#4b5563" stroke-width="1"/>
+    <rect x="166" y="24" width="30" height="4" rx="2" fill="#f59e0b"/>
+    <rect x="166" y="32" width="46" height="3" rx="1.5" fill="#94a3b8"/>
+  </svg>
+`.trim())}`;
+
 interface StudioElementsPanelProps {
   onAddSection: (sectionType: string, insertAtIndex?: number) => void;
   onOpenFullCatalog: () => void;
@@ -35,6 +51,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
 
   const quickElements = [
+    { id: "container", label: "حاوية", type: "container", icon: Squares2X2Icon },
     { id: "text", label: "عنوان", type: "richtext", icon: Bars3BottomLeftIcon },
     { id: "hero", label: "بانر رئيسي", type: "hero-banner", icon: QueueListIcon },
     { id: "image", label: "صورة", type: "info-content", icon: PhotoIcon },
@@ -138,7 +155,10 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             {filteredElements.map((el) => {
-              const thumbnail = getStudioSectionThumbnail(el.type);
+              const thumbnail =
+                el.type === "container"
+                  ? CONTAINER_THUMBNAIL
+                  : getStudioSectionThumbnail(el.type);
               return (
                 <div
                   key={el.id}

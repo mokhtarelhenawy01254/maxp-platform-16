@@ -9,6 +9,16 @@ import { useCartStore } from "../../store/useCartStore";
 import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
 import { isStorefrontSectionKnown } from "../../sections/manifest";
 import type { StudioDeviceMode } from "../StudioTypes";
+import {
+  findNodeByKey,
+  findNodeAndParent,
+  updateNodeInTree,
+  removeNodeFromTree,
+  insertNodeInTree,
+  moveNodeInTree,
+  reorderNodeChildren,
+  getAllSectionKeys,
+} from "../../engine/tree/treeUtils";
 import { RESPONSIVE_STYLE_FIELDS } from "../utils/studioStyleUtils";
 
 const STUDIO_STARTER_SETTINGS: Record<string, Record<string, any>> = {
@@ -274,15 +284,15 @@ export function useStorefrontStudioState({
   };
 
   const handleMoveSection = useCallback(
-    (index: number, direction: "up" | "down") => {
+    (index: number, direction: "up" | "down", parentKey?: string) => {
       const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= activeSections.length) return;
+      const nextSections = reorderNodeChildren(
+        activeSections,
+        parentKey || null,
+        index,
+        targetIndex
+      );
 
-      const normalizedSections = activeSections.map((s: any, idx: number) => {
-        const key = getSectionKey(s, idx);
-        return typeof s === "string" ? { type: s, key } : { ...s, key: s.key || key };
-      });
-      const nextSections = arrayMove(normalizedSections, index, targetIndex);
       const nextPages = {
         ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
         ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
@@ -301,16 +311,57 @@ export function useStorefrontStudioState({
     [activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
   );
 
-  const handleDuplicateSection = (index: number) => {
-    const sectionToDup = activeSections[index];
-    if (!sectionToDup) return;
+  const handleMoveSectionToContainer = useCallback(
+    (sourceKey: string, targetContainerKey: string | null, targetIndex?: number) => {
+      const nextSections = moveNodeInTree(
+        activeSections,
+        sourceKey,
+        targetContainerKey,
+        targetIndex
+      );
 
-    const nextSections = [...activeSections];
-    const cloned = JSON.parse(JSON.stringify(sectionToDup));
-    if (typeof cloned === "object" && cloned !== null) {
-      cloned.key = `${cloned.type || "section"}-${Date.now()}`;
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
+      };
+
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+    },
+    [activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
+  );
+
+  const handleDuplicateSection = (index: number, parentKey?: string) => {
+    const found = parentKey
+      ? findNodeByKey(activeSections, parentKey)?.children?.[index]
+      : activeSections[index];
+    if (!found) return;
+
+    const cloned = JSON.parse(JSON.stringify(found));
+    cloned.key = `${cloned.type || "section"}-${Date.now()}`;
+    if (cloned.children && Array.isArray(cloned.children)) {
+      const regenKeys = (children: any[]) => {
+        children.forEach((c: any, i: number) => {
+          c.key = `${c.type || "section"}-${Date.now()}-${i}`;
+          if (c.children) regenKeys(c.children);
+        });
+      };
+      regenKeys(cloned.children);
     }
-    nextSections.splice(index + 1, 0, cloned);
+
+    const nextSections = insertNodeInTree(
+      activeSections,
+      parentKey || null,
+      cloned,
+      index + 1
+    );
 
     const nextPages = {
       ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
@@ -761,6 +812,7 @@ export function useStorefrontStudioState({
     handleDesignTokensChange,
     handleDragEnd,
     handleMoveSection,
+    handleMoveSectionToContainer,
     handleDuplicateSection,
     handleDeleteSection,
     handleAddSection,

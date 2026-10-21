@@ -782,7 +782,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type
                         )?.label ||
                         getStorefrontSectionManifest(componentKey)?.label ||
-                        getStorefrontSectionLabel(sectionId);
+                        (sectionId === "container" ? "حاوية" : getStorefrontSectionLabel(sectionId));
                       const sectionType =
                         typeof sectionEntry === "string"
                           ? sectionEntry
@@ -833,6 +833,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           onLibraryDragOver={(slot) => setLibraryDropSlot(slot)}
                           onLibraryDrop={(secType, slot) => {
                             handleAddSection(secType, slot);
+                            setLibraryDropSlot(null);
+                            setDraggingLibraryItem(null);
+                          }}
+                          onLibraryDropIntoContainer={(secType, containerKey) => {
+                            handleAddSection(secType, undefined, containerKey);
                             setLibraryDropSlot(null);
                             setDraggingLibraryItem(null);
                           }}
