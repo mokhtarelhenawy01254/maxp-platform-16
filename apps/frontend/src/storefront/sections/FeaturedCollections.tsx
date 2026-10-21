@@ -1001,7 +1001,7 @@ const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({
   const isCafeDemo = theme.id === "cafe-demo";
   const isVelaFashion = theme.id === "vela-fashion-eg";
   const isAtelierNova = theme.id === "atelier-nova";
-  const variant = normalizeFeaturedCollectionsVariant(section?.variant);
+  const variant = normalizeFeaturedCollectionsVariant(settings?.variant || section?.variant);
   const isElessiVariant =
     variant === "elessi-bag-categories" ||
     variant === "elessi-merch-panels" ||

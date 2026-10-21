@@ -16,6 +16,7 @@ import {
 } from "./StudioDimensionControls";
 import { StudioShadowControls } from "./StudioShadowControls";
 import { normalizeArabicDigits, parseFreeNumber } from "../utils/studioStyleUtils";
+import { StudioSectionVariantSelector } from "./StudioSectionVariantSelector";
 
 interface StudioInspectorDesignTabProps {
   sectionType: string;
@@ -23,6 +24,7 @@ interface StudioInspectorDesignTabProps {
   deviceMode?: StudioDeviceMode;
   onUpdateField: (field: string, value: any) => void;
   onBatchUpdateFields?: (updates: Record<string, any>) => void;
+  onSave?: () => void;
 }
 
 export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> = ({
@@ -31,6 +33,7 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
   deviceMode = "desktop",
   onUpdateField,
   onBatchUpdateFields,
+  onSave,
 }) => {
   const [openAcc, setOpenAcc] = useState<{ [key: string]: boolean }>({
     fill: true,
@@ -81,6 +84,14 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
 
   return (
     <div className="space-y-3 select-none text-[11.5px] text-[#17181c]">
+      {/* 0. شكل القسم (Section Variant Selector) */}
+      <StudioSectionVariantSelector
+        sectionType={sectionType}
+        settings={settings}
+        onUpdateField={onUpdateField}
+        onBatchUpdateFields={onBatchUpdateFields}
+        onSave={onSave}
+      />
       {/* 1. Accordion: خلفية (Fill & Background) */}
       <div className="overflow-hidden rounded-lg border border-[#ececee]">
         <button

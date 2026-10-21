@@ -208,7 +208,7 @@ const Newsletter: React.FC<NewsletterProps> = ({ section, settings }) => {
   const { theme } = useStorefrontTheme();
   const isRtl = theme.direction === 'rtl';
   const emailInputId = React.useId();
-  const variant = normalizeNewsletterVariant(section?.variant);
+  const variant = normalizeNewsletterVariant(settings?.variant || section?.variant);
   const contentAlign = resolveSectionContentAlign(
     settings?.contentAlign,
     theme.tokens?.layout?.contentAlign,

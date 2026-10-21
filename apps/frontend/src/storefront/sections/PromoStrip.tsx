@@ -30,15 +30,10 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
   const isFakhama = theme.id === 'fakhama-elite';
   const isSmartBazaar = theme.id === 'smart-bazaar';
   const isKhemetLuxe = theme.id === 'khemet-luxe-eg' || theme.id === 'khemet-luxe-v2';
-  const isBenefitRibbon =
-    typeof section?.variant === 'string' &&
-    section.variant.trim().toLowerCase() === 'benefit-ribbon';
-  const isSaleSignal =
-    typeof section?.variant === 'string' &&
-    section.variant.trim().toLowerCase() === 'sale-signal';
-  const isButcherProofMarquee =
-    typeof section?.variant === 'string' &&
-    section.variant.trim().toLowerCase() === 'butcher-proof-marquee';
+  const rawVariant = String(settings?.variant || section?.variant || '').trim().toLowerCase();
+  const isBenefitRibbon = rawVariant === 'benefit-ribbon';
+  const isSaleSignal = rawVariant === 'sale-signal';
+  const isButcherProofMarquee = rawVariant === 'butcher-proof-marquee';
   const badge = settings?.['badge'] || 'عرض خاص';
   const message =
     (settings?.['message'] as string) ||
@@ -110,7 +105,7 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
     );
   }
 
-  if (isWomenFashion && isSaleSignal) {
+  if (isSaleSignal) {
     return (
       <section className="w-full border-y border-[#efd7d2] bg-[linear-gradient(90deg,#fff8f5_0%,#fff0ea_52%,#fff9f6_100%)] py-3 md:py-4">
         <div className="container px-4 md:px-6">

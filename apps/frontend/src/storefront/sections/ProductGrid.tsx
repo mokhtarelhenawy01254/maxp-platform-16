@@ -475,7 +475,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const studioGridVariant = hasCustomShopStudio
     ? STUDIO_CARD_VARIANT_TO_GRID_VARIANT[studioProductCardVariant] || 'standard'
     : 'standard';
-  const variant = normalizeGridVariant(section?.variant, studioGridVariant);
+  const variant = normalizeGridVariant(settings?.variant || section?.variant, studioGridVariant);
   const isElessiBagGrid = variant === 'elessi-bag-grid';
   const isElessiBagShopGrid = variant === 'elessi-bag-shop-grid';
   const isElessiSpotlightGrid = variant === 'elessi-spotlight-grid';

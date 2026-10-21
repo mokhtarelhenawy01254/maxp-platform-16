@@ -135,7 +135,7 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
   const isSmartBazaar = theme.id === 'smart-bazaar';
   const isDistrictMarket = theme.id === 'district-market';
   const isKidsPlay = theme.id === 'kids-play';
-  const variant = normalizeFeaturesBarVariant(section?.variant);
+  const variant = normalizeFeaturesBarVariant(settings?.variant || section?.variant);
   const isSystemAssurance = variant === 'system-assurance';
   const isButcherProofBoard = variant === 'butcher-proof-board';
   const isPastelAdvantages = variant === 'store-advantages-pastel';
