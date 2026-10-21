@@ -98,10 +98,17 @@ const WhatsAppChatContent: React.FC = () => {
     markAsReadMutation,
   });
 
+  const markAsReadRef = useRef(markAsReadMutation);
+  useEffect(() => {
+    markAsReadRef.current = markAsReadMutation;
+  }, [markAsReadMutation]);
+
   // Automatically mark conversation as read when opened/selected
   useEffect(() => {
     if (!chatData.selectedContact) return;
     const contact = chatData.selectedContact;
+    if ((contact.unreadCount || 0) <= 0) return;
+
     const targetSessionId =
       contact.sessionId ||
       (chatData.selectedSession === 'all' ? null : chatData.selectedSession) ||
@@ -115,16 +122,14 @@ const WhatsAppChatContent: React.FC = () => {
     }
 
     markAsReadTimeoutRef.current = setTimeout(() => {
-      markAsReadMutation.mutate({
+      markAsReadRef.current.mutate({
         sessionId: targetSessionId,
         remoteJid: contact.jid,
       });
 
-      if ((contact.unreadCount || 0) > 0) {
-        chatData.setSelectedContact((prev) =>
-          prev && prev.jid === contact.jid ? { ...prev, unreadCount: 0 } : prev,
-        );
-      }
+      chatData.setSelectedContact((prev) =>
+        prev && prev.jid === contact.jid ? { ...prev, unreadCount: 0 } : prev,
+      );
     }, 200);
 
     return () => {
@@ -136,9 +141,9 @@ const WhatsAppChatContent: React.FC = () => {
   }, [
     chatData.selectedContact?.jid,
     chatData.selectedContact?.sessionId,
+    chatData.selectedContact?.unreadCount,
     chatData.selectedSession,
     chatData.activeSessionId,
-    markAsReadMutation,
   ]);
 
   // Navigation Hook

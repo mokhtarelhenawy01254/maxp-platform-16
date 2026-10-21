@@ -122,6 +122,11 @@ export function useWhatsAppChatSocket({
     }
   }, []);
 
+  const markAsReadRef = useRef(markAsReadMutation);
+  useEffect(() => {
+    markAsReadRef.current = markAsReadMutation;
+  }, [markAsReadMutation]);
+
   const debouncedMarkAsRead = useCallback(
     (sessionId: string, remoteJid: string) => {
       const pending = pendingMarkAsReadRef.current;
@@ -143,7 +148,7 @@ export function useWhatsAppChatSocket({
       markAsReadTimeoutRef.current = setTimeout(() => {
         const pendingCall = pendingMarkAsReadRef.current;
         if (pendingCall) {
-          markAsReadMutation.mutate(
+          markAsReadRef.current.mutate(
             {
               sessionId: pendingCall.sessionId,
               remoteJid: pendingCall.remoteJid,
@@ -164,7 +169,7 @@ export function useWhatsAppChatSocket({
         markAsReadTimeoutRef.current = null;
       }, 600);
     },
-    [markAsReadMutation],
+    [],
   );
 
   // Sync selected contact details with conversation changes

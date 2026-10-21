@@ -1685,8 +1685,8 @@ async function markAsRead(req, res) {
         const { companyId } = req.user;
         const { sessionId, remoteJid } = req.body;
 
-        if (!sessionId || !remoteJid) {
-            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        if (!sessionId || !remoteJid || typeof sessionId !== 'string' || typeof remoteJid !== 'string') {
+            return res.status(400).json({ error: 'البيانات غير مكتملة أو غير صالحة' });
         }
 
         // Resolve target session from DB only (skip in-memory check — markAsRead
@@ -1723,7 +1723,9 @@ async function markAsRead(req, res) {
             const session = await getSharedPrismaClient().whatsAppSession.findFirst({
                 where: { id: sessionId, companyId }
             });
-            if (!session) {
+            if (session) {
+                targetSessionId = session.id;
+            } else {
                 const existingContact = await getSharedPrismaClient().whatsAppContact.findFirst({
                     where: {
                         OR: [
@@ -2904,8 +2906,8 @@ async function markChatUnread(req, res) {
         const { companyId } = req.user;
         const { sessionId, jid, unread } = req.body;
 
-        if (!sessionId || !jid) {
-            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        if (!sessionId || !jid || typeof sessionId !== 'string' || typeof jid !== 'string') {
+            return res.status(400).json({ error: 'البيانات غير مكتملة أو غير صالحة' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);

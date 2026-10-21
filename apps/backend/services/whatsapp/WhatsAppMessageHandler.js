@@ -1386,6 +1386,9 @@ async function deleteMessage(sessionId, remoteJid, messageId, forEveryone = fals
  */
 async function markAsRead(sessionId, remoteJid) {
     try {
+        if (!sessionId || !remoteJid || typeof sessionId !== 'string' || typeof remoteJid !== 'string') {
+            return { success: false, error: 'Invalid sessionId or remoteJid' };
+        }
         const session = WhatsAppManager.getSession(sessionId);
 
         // We don't throw error if session is not connected, we just skip socket update
