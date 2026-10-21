@@ -7,6 +7,7 @@ import {
   type StorefrontThemeInput,
 } from './runtimeThemeResolver';
 import { resolvePageStyleVars, resolveActivePageKeyFromPath, extractPageStyles, type ResolvedPageStyleVars } from './themeResolverCore';
+import { getStorefrontLocale } from '../i18n';
 
 interface ThemeContextType {
   theme: StorefrontTheme;
@@ -225,6 +226,21 @@ export const StorefrontThemeProvider: React.FC<{
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || scoped) return;
+    const handleLocaleChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ locale?: string; direction?: string }>;
+      const nextDir = customEvent.detail?.direction || (customEvent.detail?.locale === 'en' ? 'ltr' : 'rtl');
+      const nextLang = customEvent.detail?.locale || 'ar';
+      if (typeof document !== 'undefined' && document.documentElement) {
+        document.documentElement.dir = nextDir;
+        document.documentElement.lang = nextLang;
+      }
+    };
+    window.addEventListener('storefront:locale-change', handleLocaleChange);
+    return () => window.removeEventListener('storefront:locale-change', handleLocaleChange);
+  }, [scoped]);
+
+  useEffect(() => {
     if (!theme) return;
 
     const targetElement = scoped ? document.getElementById('storefront-engine-root') : document.documentElement;
@@ -232,9 +248,10 @@ export const StorefrontThemeProvider: React.FC<{
     if (!targetElement) return;
 
     if (!scoped) {
-      const resolvedDirection = theme.direction || theme.tokens?.typography?.direction || 'rtl';
+      const activeLocale = typeof window !== 'undefined' ? getStorefrontLocale(window.location?.search) : 'ar';
+      const resolvedDirection = activeLocale === 'en' ? 'ltr' : (theme.direction || theme.tokens?.typography?.direction || 'rtl');
       document.documentElement.dir = resolvedDirection;
-      document.documentElement.lang = resolvedDirection === 'ltr' ? 'en' : 'ar';
+      document.documentElement.lang = activeLocale === 'en' ? 'en' : (resolvedDirection === 'ltr' ? 'en' : 'ar');
     }
 
     const setVar = (key: string, value: string) => {

@@ -14,6 +14,7 @@ const STOREFRONT_PREVIEW_QUERY_KEYS = [
   "previewTheme",
   "previewSource",
   "previewAdminOrigin",
+  "lang",
 ] as const;
 
 const isIpAddress = (hostname: string): boolean =>

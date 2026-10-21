@@ -122,6 +122,7 @@ export { resolveStorefrontPageLayout, StorefrontSectionFrame };
 
 import DynamicStorefrontPage from './pages/DynamicStorefrontPage';
 import CollectionCategoryPage from './pages/CollectionCategoryPage';
+import { getStorefrontLocale, getLocaleDirection, type StorefrontLocale } from './i18n';
 
 
 
@@ -160,9 +161,17 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
     () => new URLSearchParams(location.search),
     [location.search],
   );
+  const currentLocale = useMemo(
+    () => getStorefrontLocale(location.search),
+    [location.search],
+  );
+  const currentDirection = useMemo(
+    () => getLocaleDirection(currentLocale),
+    [currentLocale],
+  );
   const documentLanguage = useMemo(
-    () => resolveStorefrontDocumentLanguage(theme),
-    [theme],
+    () => (currentLocale === "en" ? "en" : resolveStorefrontDocumentLanguage(theme)),
+    [currentLocale, theme],
   );
   const runtimeText = useMemo(
     () =>
@@ -237,9 +246,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
     const previousHtmlLang = html.getAttribute("lang");
     const previousBodyDir = body?.getAttribute("dir") ?? null;
 
-    html.setAttribute("dir", theme.direction);
+    html.setAttribute("dir", currentDirection);
     html.setAttribute("lang", documentLanguage);
-    body?.setAttribute("dir", theme.direction);
+    body?.setAttribute("dir", currentDirection);
 
     return () => {
       if (previousHtmlDir === null) {
@@ -264,7 +273,25 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
         body.setAttribute("dir", previousBodyDir);
       }
     };
-  }, [documentLanguage, theme.direction]);
+  }, [currentDirection, documentLanguage]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleLocaleChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ locale?: StorefrontLocale; direction?: string }>).detail;
+      if (detail && typeof document !== "undefined") {
+        if (detail.direction) {
+          document.documentElement.dir = detail.direction;
+          document.body?.setAttribute("dir", detail.direction);
+        }
+        if (detail.locale) {
+          document.documentElement.lang = detail.locale;
+        }
+      }
+    };
+    window.addEventListener("storefront:locale-change", handleLocaleChange);
+    return () => window.removeEventListener("storefront:locale-change", handleLocaleChange);
+  }, []);
 
   const shopLayoutFallback = useMemo(() => {
     if (!hasShopStudioConfig(settings?.storefront)) {
@@ -859,6 +886,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
       layout={resolveStorefrontPageLayout(theme.pages.home)}
       runtimeText={runtimeText}
       renderSectionFrame={StorefrontSectionFrame}
+      locale={currentLocale}
     />
   );
   const shopPageElement = (
@@ -985,6 +1013,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
         )}
         runtimeText={runtimeText}
         renderSectionFrame={StorefrontSectionFrame}
+        locale={currentLocale}
       />
     </div>
   );
@@ -1149,6 +1178,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
         layout={resolveStorefrontPageLayout(theme.pages.pdp, "product-detail")}
         runtimeText={runtimeText}
         renderSectionFrame={StorefrontSectionFrame}
+        locale={currentLocale}
       />
     </div>
   );
@@ -1240,6 +1270,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
         layout={resolveStorefrontPageLayout(theme.pages.cart, "sidebar-right")}
         runtimeText={runtimeText}
         renderSectionFrame={StorefrontSectionFrame}
+        locale={currentLocale}
       />
     </div>
   );
@@ -1278,6 +1309,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
         prioritizeSidebarOnMobile={isKhemetLuxe}
         runtimeText={runtimeText}
         renderSectionFrame={StorefrontSectionFrame}
+        locale={currentLocale}
       />
     </div>
   );
@@ -1290,6 +1322,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
       layout={resolveStorefrontPageLayout(theme.pages["thank-you"], "stack")}
       runtimeText={runtimeText}
       renderSectionFrame={StorefrontSectionFrame}
+      locale={currentLocale}
     />
   );
   const registrationPageElement = (
@@ -1301,6 +1334,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
       layout={resolveStorefrontPageLayout(theme.pages["registration"], "stack")}
       runtimeText={runtimeText}
       renderSectionFrame={StorefrontSectionFrame}
+      locale={currentLocale}
     />
   );
   const notFoundElement = <StorefrontNotFound />;
@@ -1391,7 +1425,8 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null; activePageKey
   return (
     <div
       className="storefront-shell flex min-h-screen flex-col relative"
-      dir={theme.direction}
+      dir={currentDirection}
+      data-storefront-locale={currentLocale}
     >
       {previewThemeId ? (
         <React.Suspense fallback={null}>

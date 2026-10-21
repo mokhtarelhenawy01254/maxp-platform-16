@@ -17,6 +17,13 @@ import {
 } from '../sections/manifest';
 import { buildStorefrontPath } from '../utils/paths';
 import { sanitizeStorefrontSectionConfig } from '../utils/runtimeBrandText';
+import { useInRouterContext, useLocation } from 'react-router-dom';
+import {
+  getStorefrontLocale,
+  localizePageConfig,
+  localizeSectionSettings,
+  type StorefrontLocale,
+} from '../i18n';
 
 interface PageComposerProps {
   pageConfig: StorefrontPageConfig;
@@ -28,6 +35,7 @@ interface PageComposerProps {
     shouldReplaceThemeBrand: boolean;
     replaceThemeBrandText: (value?: string | null) => string;
   };
+  locale?: StorefrontLocale;
 }
 
 export interface RenderSectionFrameArgs {
@@ -424,13 +432,21 @@ const isProductDetailCompanionSection = (sectionId: string, componentKey: string
   (componentKey === 'conversion-stack' && sectionId !== 'product-info');
 
 export const PageComposer: React.FC<PageComposerProps> = ({
-  pageConfig,
+  pageConfig: rawPageConfig,
   layout = 'stack',
   prioritizeSidebarOnMobile = false,
   renderSectionFrame,
   runtimeText,
+  locale: propLocale,
 }) => {
   const cartItems = useCartStore((state) => state.items);
+  const inRouter = useInRouterContext();
+  const location = inRouter ? useLocation() : null;
+  const activeLocale = propLocale || getStorefrontLocale(location?.search);
+
+  const pageConfig = React.useMemo(() => {
+    return localizePageConfig(rawPageConfig, activeLocale);
+  }, [rawPageConfig, activeLocale]);
 
   if (!pageConfig || !pageConfig.sections) {
     return <div className="p-8 text-center text-muted-foreground">No sections configured for this page.</div>;
@@ -565,10 +581,18 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     }
 
     const SectionComponent = ComponentRegistry[sectionId];
-    const renderedSectionEntry =
+    const brandSanitizedSectionEntry =
       runtimeText?.shouldReplaceThemeBrand && typeof sectionEntry !== 'string'
         ? sanitizeStorefrontSectionConfig(sectionEntry, runtimeText.replaceThemeBrandText)
         : sectionEntry;
+
+    const renderedSectionEntry =
+      typeof brandSanitizedSectionEntry !== 'string' && brandSanitizedSectionEntry?.settings
+        ? {
+            ...brandSanitizedSectionEntry,
+            settings: localizeSectionSettings(brandSanitizedSectionEntry.settings, activeLocale),
+          }
+        : brandSanitizedSectionEntry;
     if (!SectionComponent) {
       if (import.meta.env.DEV) {
         return (

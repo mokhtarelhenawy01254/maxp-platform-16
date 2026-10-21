@@ -96,6 +96,39 @@ export function localizeSectionSettings<T extends Record<string, any>>(
     }
   }
 
+  // Synonym mappings so any section component querying either heading/title or buttonText/ctaText finds the localized value
+  const titleVal = enOverrides["title"] ?? enOverrides["heading"];
+  if (titleVal !== undefined && titleVal !== null && titleVal !== "") {
+    result["title"] = titleVal;
+    result["heading"] = titleVal;
+  }
+
+  const subtitleVal = enOverrides["subtitle"] ?? enOverrides["description"] ?? enOverrides["subheading"];
+  if (subtitleVal !== undefined && subtitleVal !== null && subtitleVal !== "") {
+    result["subtitle"] = subtitleVal;
+    result["description"] = subtitleVal;
+    result["subheading"] = subtitleVal;
+  }
+
+  const eyebrowVal = enOverrides["eyebrow"] ?? enOverrides["badge"] ?? enOverrides["tagline"];
+  if (eyebrowVal !== undefined && eyebrowVal !== null && eyebrowVal !== "") {
+    result["eyebrow"] = eyebrowVal;
+    result["badge"] = eyebrowVal;
+    result["tagline"] = eyebrowVal;
+  }
+
+  const ctaVal =
+    enOverrides["ctaText"] ??
+    enOverrides["buttonText"] ??
+    enOverrides["primaryCtaText"] ??
+    enOverrides["primaryButtonText"];
+  if (ctaVal !== undefined && ctaVal !== null && ctaVal !== "") {
+    result["ctaText"] = ctaVal;
+    result["buttonText"] = ctaVal;
+    result["primaryCtaText"] = ctaVal;
+    result["primaryButtonText"] = ctaVal;
+  }
+
   return result as T;
 }
 
@@ -139,35 +172,38 @@ export function localizePageConfig(
     const pageLevelSectionOverride = pageI18nEn?.[sectionId] || pageI18nEn?.[sectionEntry.type];
 
     const currentSettings = ((sectionEntry.settings || {}) as Record<string, any>);
-    const sectionI18n = (currentSettings["i18n"] as Record<string, any> | undefined) || ((sectionEntry as Record<string, any>)["i18n"] as Record<string, any> | undefined);
-    const sectionI18nEn = sectionI18n?.["en"];
+    const localizedSettings = localizeSectionSettings(currentSettings, locale);
 
-    const mergedEnOverrides: Record<string, any> = {
+    const mergedWithPageLevel: Record<string, any> = {
+      ...localizedSettings,
       ...(typeof pageLevelSectionOverride === "object" ? pageLevelSectionOverride : {}),
-      ...(typeof sectionI18nEn === "object" ? sectionI18nEn : {}),
     };
-
-    if (Object.keys(mergedEnOverrides).length === 0) {
-      return sectionEntry;
-    }
-
-    const nextSettings: Record<string, any> = { ...currentSettings };
-    for (const [key, val] of Object.entries(mergedEnOverrides)) {
-      if (val !== undefined && val !== null && val !== "") {
-        nextSettings[key] = val;
-      }
-    }
 
     const nextSection: StorefrontSectionConfig = {
       ...sectionEntry,
-      settings: nextSettings,
+      settings: mergedWithPageLevel,
     };
 
-    // Keep direct text fields on section root in sync if they exist
-    for (const key of ["title", "heading", "subtitle", "description", "eyebrow", "badge", "ctaText", "buttonText"]) {
-      if (mergedEnOverrides[key] !== undefined && mergedEnOverrides[key] !== null && mergedEnOverrides[key] !== "") {
-        (nextSection as Record<string, any>)[key] = mergedEnOverrides[key];
-      }
+    // Keep direct text fields on section root in sync
+    const titleVal = mergedWithPageLevel["title"] ?? mergedWithPageLevel["heading"];
+    if (titleVal !== undefined && titleVal !== null && titleVal !== "") {
+      (nextSection as Record<string, any>)["title"] = titleVal;
+      (nextSection as Record<string, any>)["heading"] = titleVal;
+    }
+
+    const subtitleVal = mergedWithPageLevel["subtitle"] ?? mergedWithPageLevel["description"];
+    if (subtitleVal !== undefined && subtitleVal !== null && subtitleVal !== "") {
+      (nextSection as Record<string, any>)["subtitle"] = subtitleVal;
+      (nextSection as Record<string, any>)["description"] = subtitleVal;
+    }
+
+    const ctaVal =
+      mergedWithPageLevel["ctaText"] ??
+      mergedWithPageLevel["buttonText"] ??
+      mergedWithPageLevel["primaryCtaText"];
+    if (ctaVal !== undefined && ctaVal !== null && ctaVal !== "") {
+      (nextSection as Record<string, any>)["ctaText"] = ctaVal;
+      (nextSection as Record<string, any>)["buttonText"] = ctaVal;
     }
 
     return nextSection;
