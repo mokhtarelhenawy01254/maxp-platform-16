@@ -359,6 +359,103 @@ export const STOREFRONT_SECTION_MANIFEST = {
       },
     ],
   },
+  "whatsapp-cta": {
+    label: "زر واتساب",
+    component: "whatsapp-cta",
+    pages: [],
+    variants: [
+      { value: "green", label: "أخضر واتساب (افتراضي)" },
+      { value: "primary", label: "لون المتجر الأساسي" },
+      { value: "outline", label: "محدد (Outline)" },
+    ],
+    fields: [
+      { key: "phone", label: "رقم الواتساب (دولي/محلي)", type: "text", placeholder: "+20 100 123 4567 أو 01001234567" },
+      { key: "message", label: "الرسالة المجهزة", type: "textarea", placeholder: "مرحباً، أود الاستفسار عن المنتجات" },
+      { key: "label", label: "نص الزر", type: "text", placeholder: "تواصل عبر واتساب" },
+      { key: "subtitle", label: "نص فرعي توضيحي", type: "text", placeholder: "رد سريع خلال دقائق" },
+      {
+        key: "variant",
+        label: "نمط الزر",
+        type: "select",
+        options: [
+          { value: "green", label: "أخضر واتساب (افتراضي)" },
+          { value: "primary", label: "لون المتجر الأساسي" },
+          { value: "outline", label: "محدد" },
+        ],
+      },
+    ],
+  },
+  "payment-methods": {
+    label: "طرق الدفع",
+    component: "payment-methods",
+    pages: [],
+    variants: [
+      { value: "badges", label: "شارات نصية مع أيقونات" },
+    ],
+    fields: [
+      { key: "title", label: "عنوان القسم", type: "text", placeholder: "طرق الدفع المتاحة" },
+      {
+        key: "methods",
+        label: "طرق الدفع (مفصولة بفاصلة)",
+        type: "text",
+        placeholder: "cod, visa, mastercard, paymob, fawry, instapay, wallet",
+        helperText: "الخيارات: cod, visa, mastercard, paymob, fawry, instapay, wallet",
+      },
+      {
+        key: "align",
+        label: "المحاذاة",
+        type: "select",
+        options: [
+          { value: "center", label: "توسيط (افتراضي)" },
+          { value: "start", label: "بداية (يمين)" },
+          { value: "end", label: "نهاية (يسار)" },
+        ],
+      },
+      { key: "note", label: "ملاحظة أمان إضافية", type: "text", placeholder: "جميع المعاملات مشفرة وآمنة 100%" },
+    ],
+  },
+  "shipping-partners": {
+    label: "شركاء الشحن",
+    component: "shipping-partners",
+    pages: [],
+    variants: [
+      { value: "badges", label: "شارات أسماء الشركات" },
+    ],
+    fields: [
+      { key: "title", label: "عنوان القسم", type: "text", placeholder: "شركاء الشحن والتوصيل" },
+      {
+        key: "partners",
+        label: "شركات الشحن (مفصولة بفاصلة)",
+        type: "text",
+        placeholder: "bosta, aramex, egypt-post, courier",
+        helperText: "الخيارات: bosta, aramex, egypt-post, courier",
+      },
+      { key: "note", label: "ملاحظة موعد الشحن", type: "text", placeholder: "الشحن خلال 48 ساعة لمعظم المحافظات" },
+    ],
+  },
+  "cod-badge": {
+    label: "شارة الدفع عند الاستلام",
+    component: "cod-badge",
+    pages: [],
+    variants: [
+      { value: "soft", label: "ناعم (Soft Emerald)" },
+      { value: "bold", label: "بارز (Solid Green)" },
+      { value: "outline", label: "محدد (Outline)" },
+    ],
+    fields: [
+      { key: "text", label: "نص الشارة", type: "text", placeholder: "الدفع عند الاستلام متاح" },
+      {
+        key: "style",
+        label: "نمط الشارة",
+        type: "select",
+        options: [
+          { value: "soft", label: "ناعم (افتراضي)" },
+          { value: "bold", label: "بارز (Solid)" },
+          { value: "outline", label: "محدد (Outline)" },
+        ],
+      },
+    ],
+  },
   "look-mosaic": {
     label: "فسيفساء اللوكات",
     component: "look-mosaic",

@@ -80,6 +80,12 @@ const DividerElement = React.lazy(() => import('../sections/elements/DividerElem
 const SpacerElement = React.lazy(() => import('../sections/elements/SpacerElement'));
 const VideoElement = React.lazy(() => import('../sections/elements/VideoElement'));
 
+// Egypt Integrations Elements (Ticket EG-1)
+const WhatsAppCtaElement = React.lazy(() => import('../sections/elements/WhatsAppCtaElement'));
+const PaymentMethodsElement = React.lazy(() => import('../sections/elements/PaymentMethodsElement'));
+const ShippingPartnersElement = React.lazy(() => import('../sections/elements/ShippingPartnersElement'));
+const CodBadgeElement = React.lazy(() => import('../sections/elements/CodBadgeElement'));
+
 const baseComponentRegistry: Record<
   string,
   React.ComponentType<any>
@@ -160,6 +166,12 @@ const baseComponentRegistry: Record<
   divider: DividerElement,
   spacer: SpacerElement,
   video: VideoElement,
+
+  // Egypt Integrations Elements (Ticket EG-1)
+  'whatsapp-cta': WhatsAppCtaElement,
+  'payment-methods': PaymentMethodsElement,
+  'shipping-partners': ShippingPartnersElement,
+  'cod-badge': CodBadgeElement,
 };
 
 /**
