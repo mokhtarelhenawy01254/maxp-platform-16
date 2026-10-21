@@ -86,6 +86,16 @@ export interface SectionNode {
   [key: string]: unknown;
 }
 
+export interface SavedStudioSection {
+  id: string;
+  label: string;
+  type: string;
+  settings?: Record<string, unknown> | ContainerSettings;
+  children?: SectionNode[];
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
 
 export interface StudioQuickElement {
   id: string;

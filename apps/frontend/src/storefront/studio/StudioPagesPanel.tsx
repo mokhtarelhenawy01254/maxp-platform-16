@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   XMarkIcon,
   HomeIcon,
@@ -15,8 +15,13 @@ import {
   ShieldCheckIcon,
   DocumentTextIcon,
   PlusIcon,
+  TrashIcon,
+  DocumentDuplicateIcon,
+  PencilSquareIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_PAGES, type StudioPageDefinition } from "./StudioTypes";
+import { useStudioBridge } from "./hooks/useStorefrontStudioState";
 
 interface StudioPagesPanelProps {
   activePageKey: string;
@@ -25,6 +30,9 @@ interface StudioPagesPanelProps {
   pageSectionCounts?: Record<string, number>;
   customPages?: StudioPageDefinition[];
   onOpenCreatePageModal?: () => void;
+  onDeletePage?: (pageKey: string) => void;
+  onDuplicatePage?: (pageKey: string) => void;
+  onRenamePage?: (pageKey: string, newTitle: string) => void;
 }
 
 const PAGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -49,7 +57,18 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
   pageSectionCounts = {},
   customPages = [],
   onOpenCreatePageModal,
+  onDeletePage,
+  onDuplicatePage,
+  onRenamePage,
 }) => {
+  const bridge = useStudioBridge();
+  const handleDelete = onDeletePage || bridge.handleDeletePage;
+  const handleDuplicate = onDuplicatePage || bridge.handleDuplicatePage;
+  const handleRename = onRenamePage || bridge.handleRenamePage;
+
+  const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
+  const [renamingTitle, setRenamingTitle] = useState<string>("");
+  const [deletingPageId, setDeletingPageId] = useState<string | null>(null);
   return (
     <div className="flex h-full w-[280px] max-w-[85vw] shrink-0 flex-col border-e border-[#0c0d0f] bg-[#202226] text-[#e8eaee] select-none z-10">
       {/* Header */}
@@ -93,46 +112,64 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
             const sectionCount = pageSectionCounts[page.id];
 
             return (
-              <button
+              <div
                 key={page.id}
-                type="button"
-                onClick={() => onSelectPage(page.id)}
-                className={`w-full text-start flex items-start gap-3 rounded-xl border p-2.5 transition-all ${
+                className={`w-full text-start flex items-center justify-between gap-2 rounded-xl border p-2 transition-all ${
                   isActive
                     ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-white shadow-xs ring-1 ring-[#2b6cf6]/30"
                     : "border-[#33363c] bg-[#26292f] text-[#c3c7cd] hover:border-[#424752] hover:bg-[#2a2e36] hover:text-white"
                 }`}
               >
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                    isActive ? "bg-[#2b6cf6] text-white" : "bg-[#1d1f24] text-[#8fa4c8]"
-                  }`}
+                <button
+                  type="button"
+                  onClick={() => onSelectPage(page.id)}
+                  className="flex flex-1 items-start gap-3 min-w-0 text-start"
                 >
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      isActive ? "bg-[#2b6cf6] text-white" : "bg-[#1d1f24] text-[#8fa4c8]"
+                    }`}
+                  >
+                    <Icon className="h-4.5 w-4.5" />
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11.5px] font-bold truncate">{page.label}</span>
-                    {isActive && (
-                      <span className="flex items-center gap-0.5 text-[9.5px] text-[#60a5fa] font-bold">
-                        <CheckCircleIcon className="h-3 w-3" />
-                        <span>الحالية</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11.5px] font-bold truncate">{page.label}</span>
+                      {isActive && (
+                        <span className="flex items-center gap-0.5 text-[9.5px] text-[#60a5fa] font-bold">
+                          <CheckCircleIcon className="h-3 w-3" />
+                          <span>الحالية</span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-[#8a8f96] line-clamp-1 mt-0.5">
+                      {page.description}
+                    </p>
+                    {typeof sectionCount === "number" && (
+                      <span className="inline-block mt-1 text-[9.5px] font-mono text-[#717782]">
+                        {sectionCount} {sectionCount === 1 ? "قسم" : "أقسام"}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#8a8f96] line-clamp-1 mt-0.5">
-                    {page.description}
-                  </p>
-                  {typeof sectionCount === "number" && (
-                    <span className="inline-block mt-1 text-[9.5px] font-mono text-[#717782]">
-                      {sectionCount} {sectionCount === 1 ? "قسم" : "أقسام"}
-                    </span>
-                  )}
-                </div>
+                </button>
 
-                <ChevronLeftIcon className="h-4 w-4 shrink-0 text-[#676c76] self-center rtl:rotate-180" />
-              </button>
+                <div className="flex items-center gap-1 shrink-0 self-center">
+                  <button
+                    type="button"
+                    data-testid={`duplicate-page-${page.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicate(page.id);
+                    }}
+                    className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-white transition-colors"
+                    title="تكرار الصفحة"
+                  >
+                    <DocumentDuplicateIcon className="h-3.5 w-3.5" />
+                  </button>
+                  <ChevronLeftIcon className="h-4 w-4 shrink-0 text-[#676c76] rtl:rotate-180" />
+                </div>
+              </div>
             );
           })}
         </div>
@@ -157,47 +194,177 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
               const isActive = activePageKey === page.id;
               const sectionCount = pageSectionCounts[page.id];
 
+              if (renamingPageId === page.id) {
+                return (
+                  <div
+                    key={page.id}
+                    className="flex flex-col gap-2 rounded-xl border border-[#2b6cf6] bg-[#1d1f24] p-2.5 shadow-sm"
+                  >
+                    <span className="text-[10px] text-[#8b9199] font-bold">إعادة تسمية الصفحة</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={renamingTitle}
+                        onChange={(e) => setRenamingTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && renamingTitle.trim()) {
+                            handleRename(page.id, renamingTitle.trim());
+                            setRenamingPageId(null);
+                          } else if (e.key === "Escape") {
+                            setRenamingPageId(null);
+                          }
+                        }}
+                        autoFocus
+                        data-testid={`rename-input-${page.id}`}
+                        className="flex-1 bg-[#26292f] border border-[#3b414d] rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-[#2b6cf6] font-bold"
+                        placeholder="اسم الصفحة"
+                      />
+                      <button
+                        type="button"
+                        data-testid={`rename-save-${page.id}`}
+                        onClick={() => {
+                          if (renamingTitle.trim()) {
+                            handleRename(page.id, renamingTitle.trim());
+                            setRenamingPageId(null);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg bg-[#2b6cf6] text-white hover:bg-[#2b6cf6]/80 active:scale-95 transition-all"
+                        title="حفظ"
+                      >
+                        <CheckIcon className="h-3.5 w-3.5 stroke-[2.5]" />
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`rename-cancel-${page.id}`}
+                        onClick={() => setRenamingPageId(null)}
+                        className="p-1.5 rounded-lg bg-[#2c2f35] text-[#8a8f96] hover:text-white"
+                        title="إلغاء"
+                      >
+                        <XMarkIcon className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (deletingPageId === page.id) {
+                return (
+                  <div
+                    key={page.id}
+                    className="flex flex-col gap-2 rounded-xl border border-red-500/40 bg-red-950/30 p-2.5 shadow-sm"
+                  >
+                    <p className="text-[11px] text-red-200 font-bold leading-tight">
+                      هل أنت متأكد من حذف صفحة «{page.label}»؟
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        data-testid={`confirm-delete-${page.id}`}
+                        onClick={() => {
+                          handleDelete(page.id);
+                          setDeletingPageId(null);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold active:scale-95 transition-all shadow-xs"
+                      >
+                        تأكيد الحذف
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`cancel-delete-${page.id}`}
+                        onClick={() => setDeletingPageId(null)}
+                        className="px-2.5 py-1 rounded-lg bg-[#2c2f35] hover:bg-[#343840] text-[#c3c7cd] hover:text-white text-[10px]"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
-                <button
+                <div
                   key={page.id}
-                  type="button"
-                  onClick={() => onSelectPage(page.id)}
-                  className={`w-full text-start flex items-start gap-3 rounded-xl border p-2.5 transition-all ${
+                  className={`group w-full text-start flex items-center justify-between gap-1 rounded-xl border p-2 transition-all ${
                     isActive
                       ? "border-[#2b6cf6] bg-[#2b6cf6]/10 text-white shadow-xs ring-1 ring-[#2b6cf6]/30"
                       : "border-[#33363c] bg-[#26292f] text-[#c3c7cd] hover:border-[#424752] hover:bg-[#2a2e36] hover:text-white"
                   }`}
                 >
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      isActive ? "bg-[#2b6cf6] text-white" : "bg-[#1d1f24] text-[#8fa4c8]"
-                    }`}
+                  <button
+                    type="button"
+                    onClick={() => onSelectPage(page.id)}
+                    className="flex flex-1 items-start gap-2.5 min-w-0 text-start"
                   >
-                    <DocumentTextIcon className="h-4.5 w-4.5" />
-                  </div>
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        isActive ? "bg-[#2b6cf6] text-white" : "bg-[#1d1f24] text-[#8fa4c8]"
+                      }`}
+                    >
+                      <DocumentTextIcon className="h-4.5 w-4.5" />
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[11.5px] font-bold truncate">{page.label}</span>
-                      {isActive && (
-                        <span className="flex items-center gap-0.5 text-[9.5px] text-[#60a5fa] font-bold">
-                          <CheckCircleIcon className="h-3 w-3" />
-                          <span>الحالية</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11.5px] font-bold truncate">{page.label}</span>
+                        {isActive && (
+                          <span className="flex items-center gap-0.5 text-[9.5px] text-[#60a5fa] font-bold">
+                            <CheckCircleIcon className="h-3 w-3" />
+                            <span>الحالية</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#8a8f96] font-mono truncate mt-0.5" dir="ltr">
+                        {page.description}
+                      </p>
+                      {typeof sectionCount === "number" && (
+                        <span className="inline-block mt-1 text-[9.5px] font-mono text-[#717782]">
+                          {sectionCount} {sectionCount === 1 ? "قسم" : "أقسام"}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-[#8a8f96] font-mono truncate mt-0.5" dir="ltr">
-                      {page.description}
-                    </p>
-                    {typeof sectionCount === "number" && (
-                      <span className="inline-block mt-1 text-[9.5px] font-mono text-[#717782]">
-                        {sectionCount} {sectionCount === 1 ? "قسم" : "أقسام"}
-                      </span>
-                    )}
-                  </div>
+                  </button>
 
-                  <ChevronLeftIcon className="h-4 w-4 shrink-0 text-[#676c76] self-center rtl:rotate-180" />
-                </button>
+                  {/* Actions for custom pages: Duplicate, Rename, Delete */}
+                  <div className="flex items-center gap-0.5 shrink-0 self-center">
+                    <button
+                      type="button"
+                      data-testid={`duplicate-page-${page.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicate(page.id);
+                      }}
+                      className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-white transition-colors"
+                      title="تكرار الصفحة"
+                    >
+                      <DocumentDuplicateIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`rename-page-${page.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRenamingPageId(page.id);
+                        setRenamingTitle(page.label);
+                      }}
+                      className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-white transition-colors"
+                      title="إعادة تسمية"
+                    >
+                      <PencilSquareIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`delete-page-${page.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingPageId(page.id);
+                      }}
+                      className="p-1 rounded-md text-[#8a8f96] hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                      title="حذف الصفحة"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               );
             })
           )}

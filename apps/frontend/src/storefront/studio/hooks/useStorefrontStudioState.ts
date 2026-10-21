@@ -8,8 +8,8 @@ import { resolveStorefrontTheme } from "../../engine/themeResolver";
 import { useCartStore } from "../../store/useCartStore";
 import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
 import { isStorefrontSectionKnown } from "../../sections/manifest";
-import type { StudioDeviceMode, PageStyleScope, PageStylesMap } from "../StudioTypes";
-import { PAGE_STYLE_PRESETS } from "../StudioTypes";
+import type { StudioDeviceMode, PageStyleScope, PageStylesMap, SavedStudioSection } from "../StudioTypes";
+import { PAGE_STYLE_PRESETS, STUDIO_PAGES } from "../StudioTypes";
 import {
   findNodeByKey,
   findNodeAndParent,
@@ -98,12 +98,13 @@ export const getSectionKey = (section: any, index: number): string => {
   return section?.key || `${section?.type || "section"}-${index}`;
 };
 
-export function useStorefrontStudioState({
-  themeId,
-  externalDesignTokens,
-  onChange,
-  onSave,
-}: UseStorefrontStudioStateProps) {
+export function useStorefrontStudioState(props: UseStorefrontStudioStateProps & { designTokens?: Record<string, unknown> }) {
+  const {
+    themeId,
+    onChange,
+    onSave,
+  } = props;
+  const externalDesignTokens = props.externalDesignTokens || props.designTokens || {};
   const [activePageKey, setActivePageKeyInternal] = useState<string>("home");
   const [selectedSectionKey, setSelectedSectionKey] = useState<string>("");
 
@@ -892,6 +893,342 @@ export function useStorefrontStudioState({
     [handleBatchUpdateSectionFields]
   );
 
+  // ─────────────────────────────────────────────────────────────
+  // Ticket QW-A: Page Management (Delete, Duplicate, Rename)
+  // ─────────────────────────────────────────────────────────────
+  const handleDeletePage = useCallback(
+    (pageKey: string) => {
+      const isThemePage = STUDIO_PAGES.some((p) => p.id === pageKey);
+      if (isThemePage) {
+        toast.error("لا يمكن حذف صفحات الثيم الأساسية الـ12");
+        return false;
+      }
+
+      const currentTokens = currentDesignTokensRef.current || {};
+      const currentPages = { ...((currentTokens.pages as Record<string, unknown>) || {}) };
+      const currentOverrides = { ...((currentTokens.pageOverrides as Record<string, unknown>) || {}) };
+
+      delete currentPages[pageKey];
+      delete currentOverrides[pageKey];
+
+      let nextStyles = currentTokens.pageStyles;
+      if (nextStyles && typeof nextStyles === "object" && (nextStyles as any)[pageKey]) {
+        nextStyles = { ...(nextStyles as any) };
+        delete (nextStyles as any)[pageKey];
+      }
+
+      const nextTokens = {
+        ...currentTokens,
+        pages: currentPages,
+        pageOverrides: currentOverrides,
+        ...(nextStyles ? { pageStyles: nextStyles } : {}),
+      };
+
+      if (activePageKeyRef.current === pageKey) {
+        setActivePageKeyInternal("home");
+        setSelectedSectionKey("");
+      }
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success("تم حذف الصفحة بنجاح");
+      return true;
+    },
+    [handleDesignTokensChange, onSave]
+  );
+
+  const handleDuplicatePage = useCallback(
+    (pageKey: string) => {
+      const currentTokens = currentDesignTokensRef.current || {};
+      const currentPages = (currentTokens.pages as Record<string, any>) || {};
+      const currentOverrides = (currentTokens.pageOverrides as Record<string, any>) || {};
+      const themePage = previewTheme.pages?.[pageKey];
+
+      const origData = currentOverrides[pageKey] || currentPages[pageKey] || themePage || {};
+      const origLabel =
+        origData.label || origData.title || STUDIO_PAGES.find((p) => p.id === pageKey)?.label || pageKey;
+
+      let candidateSlug = `${pageKey}-copy`;
+      let counter = 2;
+      const existingPageKeys = new Set([
+        ...STUDIO_PAGES.map((p) => p.id),
+        ...Object.keys(currentPages),
+        ...Object.keys(currentOverrides),
+      ]);
+      while (existingPageKeys.has(candidateSlug)) {
+        candidateSlug = `${pageKey}-copy-${counter}`;
+        counter++;
+      }
+
+      const newLabel = `${origLabel} (نسخة)`;
+
+      const origSections = Array.isArray(origData.sections) ? origData.sections : [];
+      const clonedSections = JSON.parse(JSON.stringify(origSections)).map((s: any, idx: number) => {
+        const base = typeof s === "string" ? { type: s } : s;
+        base.key = `${base.type || "section"}-${Date.now()}-${idx}`;
+        if (base.children && Array.isArray(base.children)) {
+          const regen = (children: any[]) => {
+            children.forEach((c: any, i: number) => {
+              c.key = `${c.type || "section"}-${Date.now()}-${i}`;
+              if (c.children && Array.isArray(c.children)) regen(c.children);
+            });
+          };
+          regen(base.children);
+        }
+        return base;
+      });
+
+      const newPageConfig = {
+        id: candidateSlug,
+        slug: candidateSlug,
+        title: newLabel,
+        label: newLabel,
+        sections: clonedSections,
+      };
+
+      const nextPages = {
+        ...currentPages,
+        [candidateSlug]: newPageConfig,
+      };
+      const nextPageOverrides = {
+        ...currentOverrides,
+        [candidateSlug]: newPageConfig,
+      };
+
+      const nextTokens = {
+        ...currentTokens,
+        pages: nextPages,
+        pageOverrides: nextPageOverrides,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      setActivePageKeyInternal(candidateSlug);
+      setSelectedSectionKey("");
+      onSave();
+      toast.success(`تم تكرار الصفحة بنجاح: ${newLabel}`);
+      return candidateSlug;
+    },
+    [previewTheme, handleDesignTokensChange, onSave]
+  );
+
+  const handleRenamePage = useCallback(
+    (pageKey: string, newTitle: string) => {
+      const trimmed = newTitle.trim();
+      if (!trimmed) return;
+
+      const currentTokens = currentDesignTokensRef.current || {};
+      const currentPages = { ...((currentTokens.pages as Record<string, any>) || {}) };
+      const currentOverrides = { ...((currentTokens.pageOverrides as Record<string, any>) || {}) };
+
+      const existingPage = currentPages[pageKey] || currentOverrides[pageKey] || {};
+      const updatedPage = {
+        ...existingPage,
+        id: pageKey,
+        title: trimmed,
+        label: trimmed,
+      };
+
+      currentPages[pageKey] = updatedPage;
+      currentOverrides[pageKey] = updatedPage;
+
+      const nextTokens = {
+        ...currentTokens,
+        pages: currentPages,
+        pageOverrides: currentOverrides,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success("تمت إعادة تسمية الصفحة بنجاح");
+    },
+    [handleDesignTokensChange, onSave]
+  );
+
+  // ─────────────────────────────────────────────────────────────
+  // Ticket QW-A: Saved Sections + «أقسامي» Library
+  // ─────────────────────────────────────────────────────────────
+  const savedSections = useMemo<SavedStudioSection[]>(() => {
+    return Array.isArray(currentDesignTokens?.savedSections)
+      ? (currentDesignTokens.savedSections as SavedStudioSection[])
+      : [];
+  }, [currentDesignTokens]);
+
+  const handleSaveSection = useCallback(
+    (customLabel?: string) => {
+      const currentSections = activeSectionsRef.current;
+      const targetConfig =
+        currentSections.find(
+          (s: any, idx: number) => getSectionKey(s, idx) === selectedSectionKey
+        ) || selectedSectionConfig;
+
+      if (!targetConfig) {
+        toast.error("يرجى تحديد قسم في الكانفس أولاً لحفظه في مكتبة أقسامك");
+        return null;
+      }
+
+      const clean = JSON.parse(JSON.stringify(targetConfig));
+      delete clean.key;
+      delete clean.id;
+      if (clean.children && Array.isArray(clean.children)) {
+        const stripKeys = (children: any[]) => {
+          children.forEach((c: any) => {
+            delete c.key;
+            delete c.id;
+            if (c.children && Array.isArray(c.children)) stripKeys(c.children);
+          });
+        };
+        stripKeys(clean.children);
+      }
+
+      const finalLabel =
+        customLabel?.trim() || clean.label || clean.settings?.title || clean.type || "قسم مخصص";
+
+      const newSaved: SavedStudioSection = {
+        id: `saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        label: finalLabel,
+        type: clean.type,
+        settings: clean.settings || {},
+        ...(clean.children ? { children: clean.children } : {}),
+        createdAt: new Date().toISOString(),
+      };
+
+      const currentTokens = currentDesignTokensRef.current || {};
+      const currentSaved: SavedStudioSection[] = Array.isArray(currentTokens.savedSections)
+        ? (currentTokens.savedSections as SavedStudioSection[])
+        : [];
+
+      // Max 50 items: prepend newest and drop oldest
+      const nextSaved = [newSaved, ...currentSaved].slice(0, 50);
+
+      const nextTokens = {
+        ...currentTokens,
+        savedSections: nextSaved,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success(`تم حفظ القسم «${finalLabel}» في مكتبة أقسامي`);
+      return newSaved;
+    },
+    [selectedSectionKey, selectedSectionConfig, handleDesignTokensChange, onSave]
+  );
+
+  const handleDeleteSavedSection = useCallback(
+    (id: string) => {
+      const currentTokens = currentDesignTokensRef.current || {};
+      const currentSaved: SavedStudioSection[] = Array.isArray(currentTokens.savedSections)
+        ? (currentTokens.savedSections as SavedStudioSection[])
+        : [];
+
+      const nextSaved = currentSaved.filter((s) => s.id !== id);
+
+      const nextTokens = {
+        ...currentTokens,
+        savedSections: nextSaved,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.info("تم حذف القسم من مكتبة أقسامي");
+    },
+    [handleDesignTokensChange, onSave]
+  );
+
+  const handleAddSavedSection = useCallback(
+    (saved: SavedStudioSection, insertAtIndex?: number) => {
+      const cloned = JSON.parse(JSON.stringify(saved));
+      const newKey = `${cloned.type || "section"}-${Date.now()}`;
+      const newSection: any = {
+        type: cloned.type,
+        key: newKey,
+        label: cloned.label,
+        settings: cloned.settings ? { ...cloned.settings } : {},
+      };
+
+      if (cloned.children && Array.isArray(cloned.children)) {
+        const assignKeys = (children: any[]) => {
+          children.forEach((c: any, i: number) => {
+            c.key = `${c.type || "section"}-${Date.now()}-${i}`;
+            if (c.children && Array.isArray(c.children)) assignKeys(c.children);
+          });
+        };
+        const childrenClone = JSON.parse(JSON.stringify(cloned.children));
+        assignKeys(childrenClone);
+        newSection.children = childrenClone;
+      }
+
+      const baseSections = activeSectionsRef.current;
+      let nextSections: any[];
+      if (
+        typeof insertAtIndex === "number" &&
+        insertAtIndex >= 0 &&
+        insertAtIndex <= baseSections.length
+      ) {
+        nextSections = [...baseSections];
+        nextSections.splice(insertAtIndex, 0, newSection);
+      } else {
+        nextSections = [...baseSections, newSection];
+      }
+
+      const currentTokens = currentDesignTokensRef.current || {};
+      const pageKey = activePageKeyRef.current;
+      const pageConfig = activePageConfigRef.current;
+
+      const nextPages = {
+        ...((currentTokens.pages as Record<string, unknown>) || {}),
+        ...((currentTokens.pageOverrides as Record<string, unknown>) || {}),
+        [pageKey]: {
+          ...pageConfig,
+          sections: nextSections,
+        },
+      };
+
+      setSelectedSectionKey(newKey);
+
+      const nextTokens = {
+        ...currentTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      };
+
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success(`تمت إضافة «${cloned.label}» إلى الصفحة`);
+      return newKey;
+    },
+    [handleDesignTokensChange, onSave]
+  );
+
+  // Sync to global bridge for component decoupling
+  useEffect(() => {
+    globalBridgeState = {
+      currentDesignTokens,
+      activePageKey,
+      selectedSectionKey,
+      selectedSectionConfig,
+      savedSections,
+      handleDeletePage,
+      handleDuplicatePage,
+      handleRenamePage,
+      handleSaveSection,
+      handleDeleteSavedSection,
+      handleAddSavedSection,
+    };
+    bridgeListeners.forEach((fn) => fn());
+  }, [
+    currentDesignTokens,
+    activePageKey,
+    selectedSectionKey,
+    selectedSectionConfig,
+    savedSections,
+    handleDeletePage,
+    handleDuplicatePage,
+    handleRenamePage,
+    handleSaveSection,
+    handleDeleteSavedSection,
+    handleAddSavedSection,
+  ]);
+
   return {
     activePageKey,
     setActivePageKey,
@@ -924,5 +1261,59 @@ export function useStorefrontStudioState({
     handleApplyPageStylePreset,
     handleUpdatePageStyle,
     handleResetPageStyle,
+    // Ticket QW-A exports
+    savedSections,
+    handleSaveSection,
+    handleDeleteSavedSection,
+    handleAddSavedSection,
+    handleDeletePage,
+    handleDuplicatePage,
+    handleRenamePage,
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Studio Bridge Interface & Hook
+// ─────────────────────────────────────────────────────────────
+export interface StudioBridgeState {
+  currentDesignTokens: Record<string, unknown>;
+  activePageKey: string;
+  selectedSectionKey: string;
+  selectedSectionConfig: any;
+  savedSections: SavedStudioSection[];
+  handleDeletePage: (pageKey: string) => boolean | void;
+  handleDuplicatePage: (pageKey: string) => string | undefined;
+  handleRenamePage: (pageKey: string, newTitle: string) => void;
+  handleSaveSection: (customLabel?: string) => SavedStudioSection | null;
+  handleDeleteSavedSection: (id: string) => void;
+  handleAddSavedSection: (saved: SavedStudioSection, insertAtIndex?: number) => string | void;
+}
+
+let globalBridgeState: StudioBridgeState = {
+  currentDesignTokens: {},
+  activePageKey: "home",
+  selectedSectionKey: "",
+  selectedSectionConfig: null,
+  savedSections: [],
+  handleDeletePage: () => false,
+  handleDuplicatePage: () => undefined,
+  handleRenamePage: () => {},
+  handleSaveSection: () => null,
+  handleDeleteSavedSection: () => {},
+  handleAddSavedSection: () => undefined,
+};
+
+const bridgeListeners = new Set<() => void>();
+
+export function useStudioBridge(): StudioBridgeState {
+  const [state, setState] = useState<StudioBridgeState>(globalBridgeState);
+  useEffect(() => {
+    setState(globalBridgeState);
+    const listener = () => setState(globalBridgeState);
+    bridgeListeners.add(listener);
+    return () => {
+      bridgeListeners.delete(listener);
+    };
+  }, []);
+  return state;
 }
