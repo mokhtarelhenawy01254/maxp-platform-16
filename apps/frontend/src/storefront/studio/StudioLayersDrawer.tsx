@@ -44,6 +44,18 @@ export interface StudioLayersDrawerProps {
   onTabChange: (tab: StudioLeftPanelTab) => void;
   onUpdateThemeTokens?: (tokens: Record<string, unknown>) => void;
   onCollapse?: () => void;
+  onSectionContextMenu?: (
+    e: React.MouseEvent,
+    info: {
+      sectionKey: string;
+      index: number;
+      parentKey?: string;
+      label: string;
+      isHidden: boolean;
+      isLocked: boolean;
+      totalSections: number;
+    }
+  ) => void;
 }
 
 export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
@@ -63,6 +75,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   onTabChange,
   onUpdateThemeTokens,
   onCollapse,
+  onSectionContextMenu,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [collapsedContainers, setCollapsedContainers] = useState<Record<string, boolean>>({});
@@ -223,6 +236,17 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                           onMoveDown={() => onMoveSection(index, "down", parentKey)}
                           onDuplicate={() => onDuplicateSection(index, parentKey)}
                           onDelete={() => onDeleteSection(sectionKey)}
+                          onContextMenu={(e) => {
+                            onSectionContextMenu?.(e, {
+                              sectionKey,
+                              index,
+                              parentKey,
+                              label,
+                              isHidden,
+                              isLocked,
+                              totalSections: items.length,
+                            });
+                          }}
                         />
                         {isContainer && !isCollapsed && children.length > 0 && (
                           <div className="flex flex-col space-y-2">

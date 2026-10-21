@@ -165,6 +165,7 @@ interface StudioSortableSectionProps {
   onLibraryDragOver?: (targetSlot: number) => void;
   onLibraryDrop?: (sectionType: string, targetSlot: number) => void;
   onLibraryDropIntoContainer?: (sectionType: string, containerKey: string) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   isContainer?: boolean;
   parentKey?: string;
   depth?: number;
@@ -201,6 +202,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   onLibraryDragOver,
   onLibraryDrop,
   onLibraryDropIntoContainer,
+  onContextMenu,
   isContainer = false,
   parentKey,
   depth = 0,
@@ -359,6 +361,20 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
     };
   }, [inlineEditing, onUpdateField, onBatchUpdateFields, onSave]);
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const isInput = Boolean(
+      target.closest("input, textarea, select, [contenteditable='true']")
+    );
+    if (isInput) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect();
+    onContextMenu?.(e);
+  };
+
   const handleSectionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (locked) {
@@ -470,6 +486,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
       data-has-responsive-overrides={hasActiveDeviceOverrides ? "true" : undefined}
       onClick={handleSectionClick}
       onDoubleClick={handleSectionDoubleClick}
+      onContextMenu={handleContextMenu}
       onDragOver={(e) => {
         const types = Array.from(e.dataTransfer.types || []);
         if (

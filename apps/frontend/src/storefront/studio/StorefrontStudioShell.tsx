@@ -26,6 +26,18 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import type { StudioPageDefinition } from "./StudioTypes";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 import { toast } from "sonner";
+import {
+  ChevronUpIcon,
+  ChevronDownIcon,
+  DocumentDuplicateIcon,
+  ClipboardDocumentIcon,
+  ClipboardDocumentCheckIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import "./storefront-studio.css";
 
 import {
@@ -45,6 +57,238 @@ import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import { useStorefrontStudioState, getSectionKey } from "./hooks/useStorefrontStudioState";
 import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
+
+export interface StudioContextMenuState {
+  x: number;
+  y: number;
+  sectionKey: string;
+  index: number;
+  parentKey?: string;
+  totalSections: number;
+  isHidden: boolean;
+  isLocked: boolean;
+  label: string;
+}
+
+export interface StudioContextMenuProps {
+  state: StudioContextMenuState;
+  hasClipboard: boolean;
+  onClose: () => void;
+  onDuplicate: () => void;
+  onCopy: () => void;
+  onPasteAfter: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onToggleVisibility: () => void;
+  onToggleLock: () => void;
+  onDelete: () => void;
+}
+
+export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
+  state,
+  hasClipboard,
+  onClose,
+  onDuplicate,
+  onCopy,
+  onPasteAfter,
+  onMoveUp,
+  onMoveDown,
+  onToggleVisibility,
+  onToggleLock,
+  onDelete,
+}) => {
+  const { x, y, index, totalSections, isHidden, isLocked, label } = state;
+
+  const menuWidth = 210;
+  const menuHeight = 310;
+  const clampedX =
+    typeof window !== "undefined"
+      ? Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8))
+      : x;
+  const clampedY =
+    typeof window !== "undefined"
+      ? Math.max(8, Math.min(y, window.innerHeight - menuHeight - 8))
+      : y;
+
+  return (
+    <>
+      {/* Invisible backdrop to dismiss on outside click */}
+      <div
+        data-studio-context-backdrop="true"
+        className="fixed inset-0 z-[999] bg-transparent"
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
+
+      {/* Context Menu Popup */}
+      <div
+        data-testid="studio-context-menu"
+        data-studio-context-menu="true"
+        dir="rtl"
+        style={{ top: clampedY, left: clampedX }}
+        className="fixed z-[1000] w-[210px] rounded-xl border border-[#33363c] bg-[#1a1c22]/98 p-1.5 text-[#e8eaee] shadow-2xl backdrop-blur-md select-none ring-1 ring-black/40 text-xs"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with section name */}
+        <div className="px-2.5 py-1.5 mb-1 border-b border-[#2d3139] flex items-center justify-between text-[11px] font-bold text-[#9ba0a8]">
+          <span className="truncate max-w-[140px] text-white">{label}</span>
+          <span className="text-[10px] font-mono text-[#60a5fa]">#{index + 1}</span>
+        </div>
+
+        {/* 1. تكرار */}
+        <button
+          type="button"
+          data-studio-context-menu-item="duplicate"
+          onClick={() => {
+            onDuplicate();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <DocumentDuplicateIcon className="h-4 w-4 text-[#8fa4c8]" />
+            <span>تكرار</span>
+          </div>
+        </button>
+
+        {/* 2. نسخ */}
+        <button
+          type="button"
+          data-studio-context-menu-item="copy"
+          onClick={() => {
+            onCopy();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <ClipboardDocumentIcon className="h-4 w-4 text-[#8fa4c8]" />
+            <span>نسخ</span>
+          </div>
+          <kbd className="rounded bg-[#282b33] px-1.5 py-0.5 text-[9px] font-mono text-[#8a8f96]">Ctrl+C</kbd>
+        </button>
+
+        {/* 3. لصق بعد */}
+        <button
+          type="button"
+          data-studio-context-menu-item="paste"
+          disabled={!hasClipboard}
+          onClick={() => {
+            if (!hasClipboard) return;
+            onPasteAfter();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+        >
+          <div className="flex items-center gap-2">
+            <ClipboardDocumentCheckIcon className="h-4 w-4 text-[#8fa4c8]" />
+            <span>لصق بعد</span>
+          </div>
+          <kbd className="rounded bg-[#282b33] px-1.5 py-0.5 text-[9px] font-mono text-[#8a8f96]">Ctrl+V</kbd>
+        </button>
+
+        <div className="my-1 border-t border-[#2d3139]" />
+
+        {/* 4. تحريك لأعلى */}
+        <button
+          type="button"
+          data-studio-context-menu-item="move-up"
+          disabled={index === 0 || isLocked}
+          onClick={() => {
+            onMoveUp();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+        >
+          <div className="flex items-center gap-2">
+            <ChevronUpIcon className="h-4 w-4 text-[#8fa4c8]" />
+            <span>تحريك لأعلى</span>
+          </div>
+        </button>
+
+        {/* 5. تحريك لأسفل */}
+        <button
+          type="button"
+          data-studio-context-menu-item="move-down"
+          disabled={index === totalSections - 1 || isLocked}
+          onClick={() => {
+            onMoveDown();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+        >
+          <div className="flex items-center gap-2">
+            <ChevronDownIcon className="h-4 w-4 text-[#8fa4c8]" />
+            <span>تحريك لأسفل</span>
+          </div>
+        </button>
+
+        <div className="my-1 border-t border-[#2d3139]" />
+
+        {/* 6. إخفاء / إظهار */}
+        <button
+          type="button"
+          data-studio-context-menu-item="toggle-visibility"
+          onClick={() => {
+            onToggleVisibility();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            {isHidden ? (
+              <EyeIcon className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <EyeSlashIcon className="h-4 w-4 text-amber-400" />
+            )}
+            <span>{isHidden ? "إظهار في المتجر" : "إخفاء من المتجر"}</span>
+          </div>
+        </button>
+
+        {/* 7. قفل / فك قفل */}
+        <button
+          type="button"
+          data-studio-context-menu-item="toggle-lock"
+          onClick={() => {
+            onToggleLock();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            {isLocked ? (
+              <LockOpenIcon className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <LockClosedIcon className="h-4 w-4 text-amber-400" />
+            )}
+            <span>{isLocked ? "فك قفل القسم" : "قفل القسم"}</span>
+          </div>
+        </button>
+
+        <div className="my-1 border-t border-[#2d3139]" />
+
+        {/* 8. حذف */}
+        <button
+          type="button"
+          data-studio-context-menu-item="delete"
+          onClick={() => {
+            onDelete();
+            onClose();
+          }}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <TrashIcon className="h-4 w-4 text-red-400" />
+            <span>حذف القسم</span>
+          </div>
+        </button>
+      </div>
+    </>
+  );
+};
 
 interface StorefrontStudioShellProps {
   themeId: string;
@@ -83,6 +327,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [dbCustomPages, setDbCustomPages] = useState<
     Array<{ id: string; slug: string; title: string; pageType: string }>
   >([]);
+  const [contextMenu, setContextMenu] = useState<StudioContextMenuState | null>(null);
+  const [clipboardSection, setClipboardSection] = useState<any | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,43 +398,6 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (showImagePickerModal) {
-          setShowImagePickerModal(false);
-        } else if (showCatalogModal) {
-          setShowCatalogModal(false);
-        } else if (showSpacingOverlay) {
-          setShowSpacingOverlay(false);
-          toast.info("تم إخفاء أداة المسافات");
-        }
-      }
-
-      // Studio Zoom keyboard shortcuts: Ctrl+= / Ctrl+- / Ctrl+0 (Cmd on Mac)
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable);
-      if ((e.ctrlKey || e.metaKey) && !isInput) {
-        if (e.key === "=" || e.key === "+") {
-          e.preventDefault();
-          handleZoomIn();
-        } else if (e.key === "-" || e.key === "_") {
-          e.preventDefault();
-          handleZoomOut();
-        } else if (e.key === "0" || e.code === "Digit0" || e.code === "Numpad0") {
-          e.preventDefault();
-          handleZoomReset();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showImagePickerModal, showCatalogModal, isLeftDrawerOpen, isInspectorOpen, leftRailTab, deviceMode]);
-
-  useEffect(() => {
     if (typeof document === "undefined") return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -236,13 +445,186 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     onSave,
   });
 
+  // Section Copy Handler (In-memory deep clone)
+  const handleCopySection = useCallback(
+    (targetKey?: string) => {
+      const keyToCopy = targetKey || selectedSectionKey;
+      if (!keyToCopy) return;
+
+      const findRecursive = (items: any[]): any | null => {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const k = getSectionKey(item, i);
+          if (k === keyToCopy) return item;
+          if (item && Array.isArray(item.children)) {
+            const inChild = findRecursive(item.children);
+            if (inChild) return inChild;
+          }
+        }
+        return null;
+      };
+
+      const found = findRecursive(activeSections);
+      if (!found) return;
+
+      const cloned = JSON.parse(JSON.stringify(found));
+      setClipboardSection(cloned);
+      toast.success("تم نسخ القسم");
+    },
+    [activeSections, selectedSectionKey]
+  );
+
+  // Section Paste Handler (Paste After target/active section)
+  const handlePasteSection = useCallback(
+    (targetKey?: string, atIndex?: number) => {
+      if (!clipboardSection) {
+        toast.info("لا يوجد قسم في الحافظة للصقه");
+        return;
+      }
+
+      const cloned = JSON.parse(JSON.stringify(clipboardSection));
+      const timestamp = Date.now();
+      const rand = Math.floor(Math.random() * 1000);
+      cloned.key = `${cloned.type || "section"}-${timestamp}-${rand}`;
+
+      if (cloned.children && Array.isArray(cloned.children)) {
+        const regenKeys = (children: any[], prefix = "") => {
+          children.forEach((c: any, i: number) => {
+            c.key = `${c.type || "section"}-${timestamp}-${prefix}${i}`;
+            if (c.children && Array.isArray(c.children)) {
+              regenKeys(c.children, `${prefix}${i}-`);
+            }
+          });
+        };
+        regenKeys(cloned.children, "child-");
+      }
+
+      let insertIndex = activeSections.length;
+      if (typeof atIndex === "number" && atIndex >= 0 && atIndex <= activeSections.length) {
+        insertIndex = atIndex + 1;
+      } else {
+        const keyToTarget = targetKey || selectedSectionKey;
+        if (keyToTarget) {
+          const foundIdx = activeSections.findIndex(
+            (s: any, idx: number) => getSectionKey(s, idx) === keyToTarget
+          );
+          if (foundIdx !== -1) {
+            insertIndex = foundIdx + 1;
+          }
+        }
+      }
+
+      const nextSections = [...activeSections];
+      nextSections.splice(insertIndex, 0, cloned);
+
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
+      };
+
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+
+      setSelectedSectionKey(cloned.key);
+      toast.success("تم لصق القسم");
+    },
+    [
+      clipboardSection,
+      activeSections,
+      currentDesignTokens,
+      activePageKey,
+      activePageConfig,
+      handleDesignTokensChange,
+      selectedSectionKey,
+      setSelectedSectionKey,
+    ]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (contextMenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          setContextMenu(null);
+          return;
+        }
+        if (showImagePickerModal) {
+          setShowImagePickerModal(false);
+        } else if (showCatalogModal) {
+          setShowCatalogModal(false);
+        } else if (showSpacingOverlay) {
+          setShowSpacingOverlay(false);
+          toast.info("تم إخفاء أداة المسافات");
+        }
+      }
+
+      // Input check: prevent hijacking shortcuts when user is in input/textarea/select/contenteditable
+      const target = e.target as HTMLElement | null;
+      const isInput = Boolean(
+        target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT" ||
+            target.isContentEditable ||
+            (typeof target.closest === "function" &&
+              Boolean(target.closest("input, textarea, select, [contenteditable='true']"))))
+      );
+
+      if (!isInput && (e.ctrlKey || e.metaKey)) {
+        if (e.key === "c" || e.key === "C") {
+          if (selectedSectionKey) {
+            e.preventDefault();
+            handleCopySection(selectedSectionKey);
+          }
+        } else if (e.key === "v" || e.key === "V") {
+          if (clipboardSection) {
+            e.preventDefault();
+            handlePasteSection(selectedSectionKey);
+          }
+        } else if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          handleZoomIn();
+        } else if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          handleZoomOut();
+        } else if (e.key === "0" || e.code === "Digit0" || e.code === "Numpad0") {
+          e.preventDefault();
+          handleZoomReset();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    contextMenu,
+    selectedSectionKey,
+    clipboardSection,
+    handleCopySection,
+    handlePasteSection,
+    showImagePickerModal,
+    showCatalogModal,
+    showSpacingOverlay,
+    isLeftDrawerOpen,
+    isInspectorOpen,
+    leftRailTab,
+    deviceMode,
+  ]);
+
   // Two-way Selection Sync: smoothly scroll canvas into view when section is selected
   useEffect(() => {
     if (!selectedSectionKey) return;
     const sectionEl = document.querySelector(
       `[data-studio-sortable-section="true"][data-section-key="${selectedSectionKey}"]`
     );
-    if (sectionEl) {
+    if (sectionEl && typeof sectionEl.scrollIntoView === "function") {
       sectionEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [selectedSectionKey]);
@@ -702,6 +1084,20 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                       onTabChange={(nextTab) => setLayersPanelTab(nextTab)}
                       onUpdateThemeTokens={handleDesignTokensChange}
                       onCollapse={() => setIsLeftDrawerOpen(false)}
+                      onSectionContextMenu={(e, info) => {
+                        setSelectedSectionKey(info.sectionKey);
+                        setContextMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          sectionKey: info.sectionKey,
+                          index: info.index,
+                          parentKey: info.parentKey,
+                          totalSections: info.totalSections,
+                          isHidden: info.isHidden,
+                          isLocked: info.isLocked,
+                          label: info.label,
+                        });
+                      }}
                     />
                   </div>
                 )}
@@ -848,6 +1244,18 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           onMoveDown={() => handleMoveSection(index, "down")}
                           onDuplicate={() => handleDuplicateSection(index)}
                           onDelete={() => handleDeleteSection(stableKey)}
+                          onContextMenu={(e) => {
+                            setContextMenu({
+                              x: e.clientX,
+                              y: e.clientY,
+                              sectionKey: stableKey,
+                              index,
+                              totalSections: activeSections.length,
+                              isHidden: isSectionHidden,
+                              isLocked: isSectionLocked,
+                              label: sectionLabel,
+                            });
+                          }}
                           onLibraryDragOver={(slot) => setLibraryDropSlot(slot)}
                           onLibraryDrop={(secType, slot) => {
                             handleAddSection(secType, slot);
@@ -1047,6 +1455,23 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           selectedSectionConfig?.image || selectedSectionConfig?.backgroundImage || ""
         }
       />
+
+      {/* Right-click Context Menu */}
+      {contextMenu && (
+        <StudioContextMenu
+          state={contextMenu}
+          hasClipboard={Boolean(clipboardSection)}
+          onClose={() => setContextMenu(null)}
+          onDuplicate={() => handleDuplicateSection(contextMenu.index, contextMenu.parentKey)}
+          onCopy={() => handleCopySection(contextMenu.sectionKey)}
+          onPasteAfter={() => handlePasteSection(contextMenu.sectionKey, contextMenu.index)}
+          onMoveUp={() => handleMoveSection(contextMenu.index, "up", contextMenu.parentKey)}
+          onMoveDown={() => handleMoveSection(contextMenu.index, "down", contextMenu.parentKey)}
+          onToggleVisibility={() => handleToggleSectionVisibility(contextMenu.sectionKey)}
+          onToggleLock={() => handleToggleSectionLock(contextMenu.sectionKey)}
+          onDelete={() => handleDeleteSection(contextMenu.sectionKey)}
+        />
+      )}
     </div>
   );
 

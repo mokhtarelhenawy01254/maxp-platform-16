@@ -39,6 +39,7 @@ export interface StudioSortableLayerRowProps {
   onMoveDown: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
@@ -64,6 +65,7 @@ export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
   onMoveDown,
   onDuplicate,
   onDelete,
+  onContextMenu,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
@@ -113,11 +115,26 @@ export const StudioSortableLayerRow: React.FC<StudioSortableLayerRowProps> = ({
     setIsEditing(false);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      isEditing ||
+      Boolean(target.closest("input, textarea, select, [contenteditable='true']"))
+    ) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect();
+    onContextMenu?.(e);
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
+      onContextMenu={handleContextMenu}
       data-studio-layer-row={sectionKey}
       data-is-hidden={isHidden ? "true" : "false"}
       data-is-locked={isLocked ? "true" : "false"}
