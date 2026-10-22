@@ -159,7 +159,7 @@ Any design resembling generic LLM output or blindly imposing developer-tool aest
 
 ## Rule: Post-Task Automatic Git Push Rule (Conditional on Passing Browser Verification)
 1. **Mandatory Quality Gate:** You MUST strictly pass the Browser Self-Verification above BEFORE executing this push rule. Pushing unverified code is strictly prohibited.
-2. **Commit & Push Execution:** After passing verification, automatically stage changes, craft a descriptive commit message, and push directly to `https://github.com/shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions` (`origin` remote).
+2. **Commit & Push Execution:** After passing verification, automatically stage changes, craft a descriptive commit message, and push directly to `https://github.com/mokhtarelhenawy01254/maxp-platform-16` (`origin` remote).
 3. **ABSOLUTE BAN — Force Push is PERMANENTLY FORBIDDEN:** Never force push under any circumstance.
 
 

@@ -3,7 +3,7 @@
 > **الوثيقة:** وثيقة التصميم الفني والمعماري لمنتج التصنيع وإدارة خطوط الإنتاج.  
 > **المرجع:** `C:\maxp-knowledge\_reports\2026-10-14-two-products-master-plan.md` وتيكت `2026-10-14-agy-accounting-wave1-ticket.md`.  
 > **السيناريو الأول:** مصانع الملابس الجاهزة والمنسوجات (Garment & Apparel Manufacturing).  
-> **الجهة:** Antigravity (المشروع: `maxp-platform-13` · الريبو الرسمي: `shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions`).  
+> **الجهة:** Antigravity (المشروع: `maxp-platform-16` · الريبو الرسمي: `mokhtarelhenawy01254/maxp-platform-16`).  
 > **التاريخ:** 2026-10-14.  
 > **الحالة:** تصميم معتمد — صفر كود تصنيع في هذه الدفعة (كود التصنيع يبدأ في الدفعة ٣).
 

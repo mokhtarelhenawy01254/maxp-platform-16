@@ -1,6 +1,6 @@
 # تنسيق الوكلاء المتعددين على نفس المستودع (Cross-Agent Coordination)
 
-> هذا المستودع يعمل عليه **أكثر من إيجينت في نفس الوقت** (Antigravity IDE Agent + Hermes Agent + أي أداة أخرى مثل Codex/OpenCode)، وعلى أكثر من جهاز/نسخة (clone) تدفع إلى `origin` = `shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions`.
+> هذا المستودع يعمل عليه **أكثر من إيجينت في نفس الوقت** (Antigravity IDE Agent + Hermes Agent + أي أداة أخرى مثل Codex/OpenCode)، وعلى أكثر من جهاز/نسخة (clone) تدفع إلى `origin` = `mokhtarelhenawy01254/maxp-platform-16`.
 > الأدلة على التعارضات السابقة موجودة في الريبو نفسه: stashes مسمّاة `wip-before-pull...`، فروع `recovery/*` (منها `recovery/pre-forcepush-...`)، وسباقات push متكررة مع طرف آخر يرفع أثناء النهار.
 > الهدف من هذه المنظومة: **منع التكرار والتضارب** بين الوكلاء — قفل كتابة واحد، سجل موحد، وبوابة رفع آمنة.
 

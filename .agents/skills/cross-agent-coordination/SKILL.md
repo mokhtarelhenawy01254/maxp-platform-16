@@ -5,7 +5,7 @@ description: "تنسيق الوكلاء المتعددين على نفس الم�
 
 # Cross-Agent Coordination (تنسيق الوكلاء المتعددين)
 
-> المستودع مشترك: أكثر من إيجينت (Antigravity + Hermes + غيرهم) يشتغل على نفس الـ working tree، وأكثر من جهاز يرفع إلى `origin` (shroukmagdi74-source/https-github.com-shroukmagdi74-source-maxperformance15-actions). هذه المهارة تُبقي الجميع منسقين.
+> المستودع مشترك: أكثر من إيجينت (Antigravity + Hermes + غيرهم) يشتغل على نفس الـ working tree، وأكثر من جهاز يرفع إلى `origin` (mokhtarelhenawy01254/maxp-platform-16). هذه المهارة تُبقي الجميع منسقين.
 
 ## القواعد الإلزامية
 
