@@ -44,7 +44,7 @@ jobs:
             "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/verify_demo_company_h.js"
 
       - name: Run seed on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}

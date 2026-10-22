@@ -39,7 +39,7 @@ jobs:
             "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/inject_products_centr_fekrya.js"
 
       - name: Run injection on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
