@@ -46,7 +46,7 @@ jobs:
           echo "✅ Scripts uploaded to /tmp"
 
       - name: Execute test on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           PASSWORD: ${{ github.event.inputs.password || secrets.SWAN_ADMIN_PASSWORD }}
         with:

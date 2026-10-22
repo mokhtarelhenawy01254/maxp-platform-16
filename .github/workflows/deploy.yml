@@ -620,7 +620,7 @@ jobs:
 
       - name: Run Deployment Script on Server
         if: steps.check-deploy-latest.outputs.proceed == 'true'
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
