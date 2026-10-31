@@ -721,9 +721,26 @@ export const PageComposer: React.FC<PageComposerProps> = ({
   if (layout === 'sidebar-left' && indexedSections.length > 1 && hasSection(['filters-sidebar'])) {
     const sidebarIndex = findSectionIndex(['filters-sidebar'], 0);
     const sidebarSection = pageConfig.sections[sidebarIndex]!;
-    const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
+    const topSectionIds = new Set(['hero-banner', 'shop-command-bar', 'promo-strip']);
+    const topSections = indexedSections.filter(({ sectionEntry, index }) => {
+      if (index === sidebarIndex) return false;
+      const sectionId = getSectionId(sectionEntry, index);
+      const componentKey = getSectionComponentKey(sectionEntry, index);
+      return topSectionIds.has(sectionId) || topSectionIds.has(componentKey);
+    });
+    const mainSections = indexedSections.filter(({ sectionEntry, index }) => {
+      if (index === sidebarIndex) return false;
+      const sectionId = getSectionId(sectionEntry, index);
+      const componentKey = getSectionComponentKey(sectionEntry, index);
+      return !(topSectionIds.has(sectionId) || topSectionIds.has(componentKey));
+    });
     return (
       <div className="storefront-page-composer w-full px-4 md:px-6 py-8">
+        {topSections.length > 0 ? (
+          <div className="mb-6 flex flex-col gap-6">
+            {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+          </div>
+        ) : null}
         {!renderSectionFrame && (
           <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
         )}
@@ -748,9 +765,26 @@ export const PageComposer: React.FC<PageComposerProps> = ({
       preferLast: true,
     });
     const sidebarSection = pageConfig.sections[sidebarIndex]!;
-    const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
+    const topSectionIds = new Set(['hero-banner', 'shop-command-bar', 'promo-strip']);
+    const topSections = indexedSections.filter(({ sectionEntry, index }) => {
+      if (index === sidebarIndex) return false;
+      const sectionId = getSectionId(sectionEntry, index);
+      const componentKey = getSectionComponentKey(sectionEntry, index);
+      return topSectionIds.has(sectionId) || topSectionIds.has(componentKey);
+    });
+    const mainSections = indexedSections.filter(({ sectionEntry, index }) => {
+      if (index === sidebarIndex) return false;
+      const sectionId = getSectionId(sectionEntry, index);
+      const componentKey = getSectionComponentKey(sectionEntry, index);
+      return !(topSectionIds.has(sectionId) || topSectionIds.has(componentKey));
+    });
     return (
       <div className="storefront-page-composer w-full px-3 py-2 sm:px-4 md:px-6 sm:py-8">
+        {topSections.length > 0 ? (
+          <div className="mb-6 flex flex-col gap-6">
+            {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+          </div>
+        ) : null}
         {!renderSectionFrame && (
           <div className="mb-2 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
         )}
