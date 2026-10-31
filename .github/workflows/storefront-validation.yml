@@ -66,7 +66,7 @@ jobs:
 
       - name: Install Playwright Chromium
         working-directory: ./apps/frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium chromium-headless-shell && node ./node_modules/playwright/cli.js install chromium chromium-headless-shell
 
       - name: Start Frontend Preview Server
         working-directory: ./apps/frontend
