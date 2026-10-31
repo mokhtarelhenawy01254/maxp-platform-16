@@ -13,11 +13,15 @@ describe("Storefront Slug Auto-Redirect", () => {
 
   beforeEach(() => {
     mockPrisma = {
+      homepageTemplate: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       storePage: {
         findFirst: jest.fn().mockResolvedValue(null),
       },
       product: {
         findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       productLandingPage: {
         findFirst: jest.fn(),
@@ -295,5 +299,93 @@ describe("Storefront Slug Auto-Redirect", () => {
     await handleStorefrontShell(req, res, next);
 
     expect(res.redirect).toHaveBeenCalledWith(301, "/product/Hagar_Khfaf?ref=fb");
+  });
+
+  it("queries products on /shop route with valid Prisma fields (no invalid image field)", async () => {
+    mockPrisma.product.findMany.mockResolvedValue([
+      {
+        id: "prod-shop-1",
+        name: "Test Shoe",
+        slug: "test-shoe",
+        mainImage: "https://example.com/shoe.jpg",
+        images: JSON.stringify(["https://example.com/shoe.jpg"]),
+      },
+    ]);
+
+    const req = {
+      method: "GET",
+      path: "/shop",
+      url: "/shop",
+      originalUrl: "/shop",
+      companyId: "comp-1",
+      company: { id: "comp-1", name: "Soco Store" },
+      headers: {
+        host: "soco.maxp.online",
+        accept: "text/html,application/xhtml+xml",
+      },
+      get: jest.fn((h) => (h === "host" ? "soco.maxp.online" : null)),
+      protocol: "https",
+    };
+
+    const res = {
+      redirect: jest.fn(),
+      set: jest.fn(),
+      setHeader: jest.fn(),
+      removeHeader: jest.fn(),
+      getHeader: jest.fn().mockReturnValue(null),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    };
+
+    const next = jest.fn();
+
+    await handleStorefrontShell(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(mockPrisma.product.findMany).toHaveBeenCalled();
+    const findManyCall = mockPrisma.product.findMany.mock.calls[0][0];
+    expect(findManyCall.select).toBeDefined();
+    expect(findManyCall.select.image).toBeUndefined();
+    expect(findManyCall.select.mainImage).toBe(true);
+    expect(findManyCall.select.images).toBe(true);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("gracefully catches and handles errors from product.findMany on /shop without crashing the shell", async () => {
+    mockPrisma.product.findMany.mockRejectedValue(
+      new Error("Unknown field `image` for select statement on model `Product`."),
+    );
+
+    const req = {
+      method: "GET",
+      path: "/shop",
+      url: "/shop",
+      originalUrl: "/shop",
+      companyId: "comp-1",
+      company: { id: "comp-1", name: "Soco Store" },
+      headers: {
+        host: "soco.maxp.online",
+        accept: "text/html,application/xhtml+xml",
+      },
+      get: jest.fn((h) => (h === "host" ? "soco.maxp.online" : null)),
+      protocol: "https",
+    };
+
+    const res = {
+      redirect: jest.fn(),
+      set: jest.fn(),
+      setHeader: jest.fn(),
+      removeHeader: jest.fn(),
+      getHeader: jest.fn().mockReturnValue(null),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    };
+
+    const next = jest.fn();
+
+    await handleStorefrontShell(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

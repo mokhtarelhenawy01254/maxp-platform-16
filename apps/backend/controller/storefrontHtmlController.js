@@ -200,7 +200,6 @@ exports.handleStorefrontShell = async (req, res, next) => {
       "name",
       "description",
       "metadata",
-      "image",
       "mainImage",
       "images",
       "price",
@@ -338,7 +337,6 @@ exports.handleStorefrontShell = async (req, res, next) => {
                     id: true,
                     name: true,
                     slug: true,
-                    image: true,
                     mainImage: true,
                     images: true,
                   },
@@ -424,24 +422,31 @@ exports.handleStorefrontShell = async (req, res, next) => {
           : Promise.resolve(null),
         isShopRoute
           ? safeQuery(() =>
-              prisma.product.findMany({
-                where: {
-                  companyId: req.companyId,
-                  isActive: true,
-                  deletedAt: null,
-                  isHidden: false,
-                },
-                take: 30,
-                orderBy: { createdAt: "desc" },
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  image: true,
-                  mainImage: true,
-                  images: true,
-                },
-              }),
+              prisma.product
+                .findMany({
+                  where: {
+                    companyId: req.companyId,
+                    isActive: true,
+                    deletedAt: null,
+                    isHidden: false,
+                  },
+                  take: 30,
+                  orderBy: { createdAt: "desc" },
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    mainImage: true,
+                    images: true,
+                  },
+                })
+                .catch((error) => {
+                  console.warn(
+                    "⚠️ [STOREFRONT-HTML] Failed to fetch shop products for SEO:",
+                    error?.message || error,
+                  );
+                  return [];
+                }),
             )
           : Promise.resolve(null),
       ]);
