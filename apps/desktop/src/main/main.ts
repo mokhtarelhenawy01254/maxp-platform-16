@@ -1805,7 +1805,7 @@ function registerIpcHandlers(): void {
         };
       }
 
-      autoUpdater.setFeedURL({ provider: 'generic', url: 'https://maxp.online/download/' });
+      autoUpdater.setFeedURL({ provider: 'generic', url: 'https://maxp.online/downloads/' });
       const result = await autoUpdater.checkForUpdates();
       if (result && result.updateInfo && result.updateInfo.version !== currentVersion) {
         return {
@@ -2411,11 +2411,11 @@ function initAutoUpdater(): void {
     // Direct generic download from maxp.online server without GitHub authentication restrictions
     autoUpdater.setFeedURL({
       provider: 'generic',
-      url: 'https://maxp.online/download/',
+      url: 'https://maxp.online/downloads/',
     });
 
     autoUpdater.on('checking-for-update', () => {
-      console.log('[Updater] Checking for updates from https://maxp.online/download/...');
+      console.log('[Updater] Checking for updates from https://maxp.online/downloads/...');
       mainWindow?.webContents.send('update:status', { stage: 'checking' });
     });
 

@@ -1,6 +1,6 @@
 {
   "name": "maxp-desktop-monitor",
-  "version": "1.0.100",
+  "version": "1.0.101",
   "description": "MaxP Workspace — Enterprise desktop productivity & tasks cockpit",
   "main": "dist/main/main/main.js",
   "author": "MaxP Cloud",
@@ -61,7 +61,7 @@
     ],
     "publish": {
       "provider": "generic",
-      "url": "https://maxp.online/download/"
+      "url": "https://maxp.online/downloads/"
     },
     "win": {
       "target": ["nsis", "dir"],
