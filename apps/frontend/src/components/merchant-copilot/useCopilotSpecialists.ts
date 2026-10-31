@@ -39,6 +39,9 @@ export function useCopilotSpecialists({
           routeAgentMap?: Record<string, string>;
         }>('/ai/chat/specialists');
 
+        // Provision/ensure specialist agent in background if required app is active
+        apiClient.post('/agent-manager/agents/ensure', { role: 'HR_ASSISTANT' }).catch(() => {});
+
         if (!isMounted) return;
 
         const serverSpecialists = res.data?.specialists;

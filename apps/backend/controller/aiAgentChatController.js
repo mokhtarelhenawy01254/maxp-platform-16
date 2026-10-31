@@ -1093,6 +1093,22 @@ async function getSpecialists(req, res) {
           'كيف يمكن تحسين معدل رد خدمة العملاء على واتساب؟',
         ],
       },
+      {
+        id: 'hr-assistant-agent',
+        slug: 'hr-assistant-agent',
+        name: 'مروة — مستشارة شؤون الموظفين',
+        role: 'HR_ASSISTANT',
+        title: 'شؤون الموظفين والاستفسارات الإدارية',
+        description: 'ملفك الوظيفي، حضورك، رصيد إجازاتك، وقسيمة راتبك — وتقديم طلبات الإجازة والاستئذان والسلفة.',
+        badge: 'الموارد البشرية',
+        icon: '🧑‍💼',
+        requiresApp: 'hr-core',
+        suggestedPrompts: [
+          'رصيد إجازاتي كام؟',
+          'سجّل لي طلب إجازة يوم 2/11',
+          'في حد من الفريق مش مسجّل حضور النهاردة؟',
+        ],
+      },
     ];
 
     // Build unified specialists list from actual company agents
@@ -1132,6 +1148,7 @@ async function getSpecialists(req, res) {
           isDefault,
           hasDashboardChannel,
           allowedChannels: agentChannels,
+          requiresApp: a.requiresApp || baseMatch?.requiresApp,
           suggestedPrompts: baseMatch?.suggestedPrompts || [
             `أعطني ملخصاً عن أداء ${a.name || a.role}`,
             'ما هي أهم النواقص أو العمليات المعلقة لديك الآن؟',
@@ -1156,6 +1173,14 @@ async function getSpecialists(req, res) {
       }
       finalSpecialists.sort((x, y) => (y.isDefault ? 1 : 0) - (x.isDefault ? 1 : 0));
     }
+
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
+    const installed = await getSharedPrismaClient().companyApp.findMany({
+      where: { companyId, status: 'ACTIVE' },
+      select: { app: { select: { slug: true } } },
+    });
+    const installedSlugs = new Set(installed.map((r) => r.app?.slug).filter(Boolean));
+    finalSpecialists = finalSpecialists.filter((s) => !s.requiresApp || installedSlugs.has(s.requiresApp));
 
     return res.json({
       success: true,

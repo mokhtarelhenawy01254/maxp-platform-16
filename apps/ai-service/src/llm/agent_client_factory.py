@@ -126,6 +126,9 @@ def build_agent_client(
     tools: list[Any] | None = None,
     system_prompt: str | None = None,
 ) -> Any:
+    if os.getenv("AGENT_LLM_MODE") == "scripted":
+        from src.llm.scripted_client import ScriptedAgentClient
+        return ScriptedAgentClient(tools=tools, system_prompt=system_prompt, model=model or "scripted")
     if not model:
         raise ValueError("model is required for LLM client creation")
     from src.llm.key_resolver import get_active_key_sync
@@ -150,6 +153,9 @@ async def build_agent_client_async(
     system_prompt: str | None = None,
     company_id: str | None = None,
 ) -> Any:
+    if os.getenv("AGENT_LLM_MODE") == "scripted":
+        from src.llm.scripted_client import ScriptedAgentClient
+        return ScriptedAgentClient(tools=tools, system_prompt=system_prompt, model=model or "scripted")
     if not model:
         raise ValueError("model is required for LLM client creation")
     client = await _resolve_and_build(model, company_id)

@@ -41,12 +41,26 @@ class LeaveService {
       // التحقق من وجود الموظف وأنه ينتمي للشركة
       console.log('🔍 [Debug Leave] Employee lookup params:', { employeeId, companyId });
 
-      const employee = await this.prisma.user.findFirst({
+      let employee = await this.prisma.user.findFirst({
         where: {
           id: employeeId,
           companyId: companyId
         }
       });
+
+      if (!employee) {
+        const empRecord = await this.prisma.employee.findFirst({
+          where: { id: employeeId, companyId },
+        });
+        if (empRecord?.userId) {
+          employee = await this.prisma.user.findFirst({
+            where: { id: empRecord.userId, companyId },
+          });
+          if (employee) {
+            employeeId = empRecord.userId;
+          }
+        }
+      }
 
       console.log('🔍 [Debug Leave] Employee lookup result:', {
         employeeId,
@@ -419,7 +433,7 @@ class LeaveService {
       }
 
       // 🛡️ Security Check: Prevent Self-Approval (unless user is COMPANY_ADMIN or SUPER_ADMIN)
-      if (request.userId === approverEmployeeId) {
+      if (request.userId === approverEmployeeId || (approverUserId && request.userId === approverUserId)) {
         console.log(`⚠️ [LEAVE-APPROVE] Self-approval detected. Request userId: ${request.userId}, Approver employeeId: ${approverEmployeeId}`);
         console.log(`🔍 [LEAVE-APPROVE] Checking approver role. approverUserId: ${approverUserId}`);
 

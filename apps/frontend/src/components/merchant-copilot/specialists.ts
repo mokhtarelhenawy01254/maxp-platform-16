@@ -8,6 +8,7 @@ export interface SpecialistAgent {
   badge: string;
   icon?: string;
   isDefault?: boolean;
+  requiresApp?: string;
   suggestedPrompts: string[];
 }
 
@@ -81,6 +82,22 @@ export const SPECIALIST_AGENTS: SpecialistAgent[] = [
     suggestedPrompts: [
       'هات لي أفضل زوايا وهوكات إعلانات المنافسين الشغالة حالياً',
       'ما العروض الترويجية الأكثر تكراراً في سوقنا هذا الشهر؟',
+    ],
+  },
+  {
+    id: 'hr-assistant-agent',
+    slug: 'hr-assistant-agent',
+    name: 'مروة — مستشارة شؤون الموظفين',
+    role: 'HR_ASSISTANT',
+    title: 'شؤون الموظفين والاستفسارات الإدارية',
+    description: 'ملفك الوظيفي، حضورك، رصيد إجازاتك، وقسيمة راتبك — وتقديم طلبات الإجازة والاستئذان والسلفة.',
+    badge: 'الموارد البشرية',
+    icon: '🧑‍💼',
+    requiresApp: 'hr-core',
+    suggestedPrompts: [
+      'رصيد إجازاتي كام؟',
+      'سجّل لي طلب إجازة يوم 2/11',
+      'في حد من الفريق مش مسجّل حضور النهاردة؟',
     ],
   },
 ];

@@ -28,6 +28,41 @@ function extractToolFromDraftId(draftId) {
   return parts.length >= 3 ? parts[2] : String(draftId || '');
 }
 
+function mapApprovalRow(row) {
+  let params = {};
+  try {
+    params = typeof row.inputSnapshot === 'string' ? JSON.parse(row.inputSnapshot) : (row.inputSnapshot || {});
+  } catch (_) {
+    params = {};
+  }
+  let meta = {};
+  try {
+    meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {});
+  } catch (_) {
+    meta = {};
+  }
+
+  return {
+    id: row.id,
+    draft_id: row.id,
+    company_id: row.companyId,
+    thread_id: row.conversationId || '',
+    action_type: row.toolName,
+    action_args: params,
+    toolName: row.toolName,
+    params,
+    reasoning: row.reason || meta.reasoning || '',
+    estimatedImpact: meta.estimatedImpact || 'Unknown',
+    status: (row.status || 'PENDING').toLowerCase(),
+    channel: row.channel || 'dashboard',
+    source: row.source || 'ai_agent',
+    created_at: row.createdAt ? row.createdAt.toISOString() : null,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+    expiresAt: row.expiresAt ? row.expiresAt.toISOString() : null,
+    conversationId: row.conversationId || '',
+  };
+}
+
 function buildApprovalNote({ approved, result, draftId }) {
   const tool = result?.action_type || extractToolFromDraftId(draftId);
   if (!approved) {
@@ -64,7 +99,22 @@ router.get('/', async (req, res) => {
   try {
     const companyId = req.user?.companyId || req.headers['x-company-id'] || req.query.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const status = req.query.status || 'pending';
+    const status = String(req.query.status || 'pending');
+
+    if (!isAiServiceEnabled(companyId)) {
+      const prisma = getSharedPrismaClient();
+      const rows = await prisma.aiToolApprovalRequest.findMany({
+        where: {
+          companyId,
+          status: { in: [status.toLowerCase(), status.toUpperCase()] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      const approvals = rows.map(mapApprovalRow);
+      return res.json({ success: true, approvals, count: approvals.length });
+    }
+
     const result = await aiSdkClient.listApprovals({ companyId, status });
     return res.json({ success: true, approvals: result.approvals, count: result.count });
   } catch (error) {
@@ -77,6 +127,14 @@ router.post('/:id/approve', async (req, res) => {
   try {
     const companyId = req.user?.companyId || req.headers['x-company-id'] || req.body?.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+
+    if (!isAiServiceEnabled(companyId)) {
+      return res.status(409).json({
+        error: 'AI_SERVICE_OFF',
+        message: 'خدمة الذكاء الاصطناعي متوقفة — لا يمكن تنفيذ الأدوات من الباك.',
+      });
+    }
+
     const decidedBy = req.user?.username || 'merchant';
     const resumeResult = await aiSdkClient.resumeWorkflow({
       companyId,
@@ -130,6 +188,14 @@ router.post('/:id/reject', async (req, res) => {
   try {
     const companyId = req.user?.companyId || req.headers['x-company-id'] || req.body?.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+
+    if (!isAiServiceEnabled(companyId)) {
+      return res.status(409).json({
+        error: 'AI_SERVICE_OFF',
+        message: 'خدمة الذكاء الاصطناعي متوقفة — لا يمكن تنفيذ الأدوات من الباك.',
+      });
+    }
+
     const decidedBy = req.user?.username || 'merchant';
     const rejectResult = await aiSdkClient.resumeWorkflow({
       companyId,

@@ -299,30 +299,14 @@ class EmployeeService {
    */
   async getEmployeeByUserId(companyId, userId) {
     try {
-      const user = await this.prisma.user.findFirst({
-        where: {
-          id: userId,
-          companyId
-        },
+      return await this.prisma.employee.findFirst({
+        where: { companyId, userId },
         include: {
-          departmentRelation: {
-            select: {
-              id: true,
-              name: true,
-              color: true
-            }
-          },
-          positionRelation: {
-            select: {
-              id: true,
-              title: true,
-              level: true
-            }
-          }
-        }
+          department: { select: { id: true, name: true } },
+          position:   { select: { id: true, title: true } },
+          manager:    { select: { id: true, firstName: true, lastName: true } },
+        },
       });
-
-      return user;
     } catch (error) {
       console.error('❌ Error getting employee by userId:', error);
       throw new EmployeeError('حدث خطأ أثناء جلب بيانات الموظف');

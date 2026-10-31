@@ -66,27 +66,13 @@ async function getMyProfile(req, res) {
       });
     }
 
-    // Fetch employee data from Employee table to get extra fields
-    const prisma = getSharedPrismaClient();
-    const empExtra = await prisma.employee.findFirst({
-      where: { userId: userId },
+    const { toSelfProfile } = require('../services/hr/employeeProfileService');
+    const userRow = await getSharedPrismaClient().user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true },
     });
 
-    if (empExtra) {
-      // Merge extra fields to the user object!
-      employee.city = empExtra.city;
-      employee.address = empExtra.address;
-      employee.country = empExtra.country;
-      employee.maritalStatus = empExtra.maritalStatus;
-      employee.emergencyContactName = empExtra.emergencyContactName;
-      employee.emergencyContactRelation = empExtra.emergencyContactRelation;
-      employee.emergencyContactPhone = empExtra.emergencyContactPhone;
-      employee.gender = empExtra.gender;
-      employee.dateOfBirth = empExtra.dateOfBirth;
-      employee.nationalId = empExtra.nationalId;
-    }
-
-    res.json({ success: true, employee });
+    res.json({ success: true, employee: toSelfProfile(employee, userRow) });
   } catch (error) {
     console.error("❌ Error getting my profile:", error);
     res.status(500).json({
@@ -2785,7 +2771,7 @@ async function createLeaveRequest(req, res) {
           .json({ error: "لم يتم العثور على ملف الموظف الخاص بك" });
       }
 
-      employeeId = employee.id;
+      employeeId = employee.userId || employee.id;
       console.log(`   Resolved EmployeeID: ${employeeId}`);
     }
 
@@ -3146,7 +3132,7 @@ async function getLeaveBalance(req, res) {
 
     // Security Check: User must be checking their own balance OR have management role
     const isOwner =
-      currentUserEmployee && currentUserEmployee.id === employeeId;
+      currentUserEmployee && (currentUserEmployee.id === employeeId || currentUserEmployee.userId === employeeId);
     const canManageOthers = [
       "SUPER_ADMIN",
       "COMPANY_ADMIN",

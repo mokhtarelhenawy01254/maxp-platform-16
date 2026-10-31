@@ -292,9 +292,17 @@ class HrRepository(BaseRepository):
             {"cid": company_id, "eid": employee_id, "limit": limit},
         )
 
+        advances = await self.get_my_advances(
+            company_id=company_id,
+            user_id=user_id or "",
+            employee_id=employee_id,
+            limit=limit,
+        )
+
         return {
             "leaves": [dict(r) for r in leaves.mappings().all()],
             "permissions": [dict(r) for r in permissions.mappings().all()],
+            "advances": advances,
         }
 
     async def get_payslip(

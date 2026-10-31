@@ -6,6 +6,7 @@ from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
 import src.db.session as _db_mod
+from src.tools.backend_client import BackendAPIError, get_backend_client
 from src.tools.repositories.hr_repository import HrRepository
 
 
@@ -214,19 +215,44 @@ async def hr_leave_request_create(input_data: HrLeaveRequestCreateInput) -> dict
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف لربط الطلب به"}
 
-        user_id = emp.get("userId") or input_data.user_id or emp["id"]
+        uid = emp.get("userId") or input_data.user_id or emp["id"]
 
-        result = await repo.create_leave_request(
-            company_id=company_id,
-            user_id=user_id,
-            employee_id=emp["id"],
-            leave_type=input_data.leave_type,
-            start_date=input_data.start_date,
-            end_date=input_data.end_date,
-            reason=input_data.reason,
-        )
+    client = get_backend_client()
+    payload = {
+        "employeeId": uid,
+        "type": input_data.leave_type.upper(),
+        "startDate": input_data.start_date,
+        "endDate": input_data.end_date,
+        "reason": input_data.reason,
+    }
+    try:
+        res = await client.create_hr_leave_request(company_id=company_id, payload=payload)
+    except BackendAPIError as exc:
+        return {"error": exc.message, "code": exc.error_code}
+    except Exception as exc:
+        return {"error": str(exc)}
 
-    return result
+    leave_obj = res.get("leave") or res.get("data") or res
+    req_id = leave_obj.get("id") or res.get("request_id") or ""
+    status = leave_obj.get("status") or "PENDING"
+    total_days = leave_obj.get("totalDays") or leave_obj.get("total_days")
+    if total_days is None:
+        try:
+            from datetime import datetime
+            d1 = datetime.strptime(input_data.start_date, "%Y-%m-%d").date()
+            d2 = datetime.strptime(input_data.end_date, "%Y-%m-%d").date()
+            total_days = max(1, (d2 - d1).days + 1)
+        except Exception:
+            total_days = 1
+
+    return {
+        "request_id": str(req_id),
+        "leave_type": input_data.leave_type.upper(),
+        "start_date": input_data.start_date,
+        "end_date": input_data.end_date,
+        "total_days": total_days,
+        "status": status,
+    }
 
 
 def _format_hr_leave_request_create(res: dict[str, Any]) -> str:
@@ -277,17 +303,45 @@ async def hr_permission_request_create(input_data: HrPermissionRequestCreateInpu
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
 
-        result = await repo.create_permission_request(
-            company_id=company_id,
-            employee_id=emp["id"],
-            date_str=input_data.date,
-            start_time=input_data.start_time,
-            end_time=input_data.end_time,
-            reason=input_data.reason,
-            permission_type=input_data.permission_type,
-        )
+        uid = emp.get("userId") or input_data.user_id or emp["id"]
 
-    return result
+    client = get_backend_client()
+    payload = {
+        "employeeId": uid,
+        "date": input_data.date,
+        "startTime": input_data.start_time,
+        "endTime": input_data.end_time,
+        "reason": input_data.reason,
+        "type": input_data.permission_type,
+    }
+    try:
+        res = await client.create_hr_permission_request(company_id=company_id, payload=payload)
+    except BackendAPIError as exc:
+        return {"error": exc.message, "code": exc.error_code}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+    perm_obj = res.get("data") or res.get("permission") or res
+    req_id = perm_obj.get("id") or res.get("request_id") or ""
+    status = perm_obj.get("status") or "PENDING"
+    total_hours = perm_obj.get("totalHours") or perm_obj.get("total_hours")
+    if total_hours is None:
+        try:
+            from datetime import datetime
+            t1 = datetime.strptime(input_data.start_time, "%H:%M")
+            t2 = datetime.strptime(input_data.end_time, "%H:%M")
+            total_hours = max(0.5, round((t2 - t1).total_seconds() / 3600.0, 2))
+        except Exception:
+            total_hours = 1.0
+
+    return {
+        "request_id": str(req_id),
+        "date": input_data.date,
+        "start_time": input_data.start_time,
+        "end_time": input_data.end_time,
+        "total_hours": float(total_hours),
+        "status": status,
+    }
 
 
 def _format_hr_permission_request_create(res: dict[str, Any]) -> str:
@@ -350,9 +404,10 @@ def _format_hr_requests_status(res: dict[str, Any]) -> str:
 
     leaves = res.get("leaves") or []
     permissions = res.get("permissions") or []
+    advances = res.get("advances") or []
 
-    if not leaves and not permissions:
-        return "لا توجد طلبات إجازات أو أذونات مسجلة مؤخراً."
+    if not leaves and not permissions and not advances:
+        return "لا توجد طلبات إجازات أو أذونات أو سلف مسجلة مؤخراً."
 
     lines = []
     if leaves:
@@ -367,6 +422,13 @@ def _format_hr_requests_status(res: dict[str, Any]) -> str:
         for pm in permissions:
             p_date = str(pm.get("date") or "")[:10]
             lines.append(f"- {p_date}: من {pm.get('startTime')} إلى {pm.get('endTime')} ({pm.get('totalHours')} ساعة) -> الحالة: {pm.get('status')}")
+
+    if advances:
+        lines.append("طلبات السلف الأخيرة:")
+        for adv in advances:
+            dt = str(adv.get("createdAt") or "")[:10]
+            amt = float(adv.get("amount") or 0)
+            lines.append(f"- طلب سلفة بتاريخ {dt}: مبلغ {amt:,.2f} ج.م -> الحالة: {adv.get('status')}")
 
     return "\n".join(lines)
 
@@ -570,16 +632,39 @@ async def hr_advance_request_create(input_data: HrAdvanceRequestCreateInput) -> 
             return {"error": "لم يتم العثور على سجل الموظف لربط طلب السلفة به"}
 
         uid = emp.get("userId") or input_data.user_id or emp["id"]
-        res = await repo.create_advance_request(
-            company_id=company_id,
-            user_id=uid,
-            employee_id=emp["id"],
-            amount=input_data.amount,
-            reason=input_data.reason,
-            installments_count=input_data.installments_count,
-        )
 
-    return res
+    inst_count = max(1, int(input_data.installments_count or 1))
+    monthly_amt = round(float(input_data.amount) / inst_count, 2)
+
+    client = get_backend_client()
+    payload = {
+        "employeeId": uid,
+        "amount": input_data.amount,
+        "reason": input_data.reason,
+        "installmentsCount": inst_count,
+    }
+    try:
+        res = await client.create_hr_advance_request(company_id=company_id, payload=payload)
+    except BackendAPIError as exc:
+        return {"error": exc.message, "code": exc.error_code}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+    adv_obj = res.get("data") or res.get("request") or res
+    req_id = adv_obj.get("id") or res.get("request_id") or ""
+    status = adv_obj.get("status") or "PENDING"
+    amount = float(adv_obj.get("amount") or input_data.amount)
+    monthly_amount = float(adv_obj.get("monthlyAmount") or adv_obj.get("monthly_amount") or monthly_amt)
+    installments_count = int(adv_obj.get("installmentsCount") or adv_obj.get("installments_count") or inst_count)
+
+    return {
+        "success": True,
+        "request_id": str(req_id),
+        "amount": amount,
+        "installments_count": installments_count,
+        "monthly_amount": monthly_amount,
+        "status": status,
+    }
 
 
 def _format_hr_advance_request_create(res: dict[str, Any]) -> str:

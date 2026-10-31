@@ -390,6 +390,20 @@ router.post('/delegate', async (req, res) => {
   }
 });
 
+router.post('/agents/ensure', async (req, res) => {
+  const companyId = req.user?.companyId;
+  const role = String(req.body?.role || '').toUpperCase();
+  if (role !== 'HR_ASSISTANT') return res.status(400).json({ success: false, error: 'unsupported_role' });
+  try {
+    const hrApp = await prisma().companyApp.findFirst({ where: { companyId, status: 'ACTIVE', app: { slug: 'hr-core' } } });
+    if (!hrApp) return res.json({ success: true, created: false, skipped: 'APP_NOT_INSTALLED' });
+    const result = await aiServiceAdminClient.spawnAgent({ companyId, role, templateSlug: 'hr-assistant-agent' });
+    return res.json({ success: true, created: Boolean(result?.id), agent: result });
+  } catch (e) {
+    return res.json({ success: true, created: false, skipped: 'AI_SERVICE_OFF' }); // لا 500
+  }
+});
+
 router.get('/profiles', async (req, res) => {
   try {
     const companyId = getCompanyId(req);

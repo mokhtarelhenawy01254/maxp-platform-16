@@ -41,6 +41,8 @@ from src.tools.registry import (
     ADVANCED_TOOL_NAMES,
     WRITE_TOOL_NAMES,
 )
+from src.tools.backend_client import BackendAPIError
+from src.llm.scripted_client import ScriptedAgentClient
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -248,18 +250,22 @@ async def test_hr_my_advances_execution():
 @pytest.mark.asyncio
 async def test_hr_advance_request_create_execution():
     fake_emp = {"id": "emp_01", "userId": "usr_1"}
-    fake_created = {
+    fake_res = {
         "success": True,
-        "request_id": "adv_999",
-        "amount": 1500.0,
-        "installments_count": 3,
-        "monthly_amount": 500.0,
-        "status": "PENDING",
+        "data": {
+            "id": "adv_999",
+            "amount": 1500.0,
+            "installmentsCount": 3,
+            "monthlyAmount": 500.0,
+            "status": "PENDING",
+        }
     }
-    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo, \
+         patch("src.tools.definitions.hr.get_backend_client") as MockBackend:
         mock_instance = MockRepo.return_value
         mock_instance.get_employee = AsyncMock(return_value=fake_emp)
-        mock_instance.create_advance_request = AsyncMock(return_value=fake_created)
+        mock_client = MockBackend.return_value
+        mock_client.create_hr_advance_request = AsyncMock(return_value=fake_res)
 
         res = await hr_advance_request_create(HrAdvanceRequestCreateInput(
             company_id="comp_1",
@@ -271,11 +277,181 @@ async def test_hr_advance_request_create_execution():
         assert res["success"] is True
         assert res["amount"] == 1500.0
         assert res["monthly_amount"] == 500.0
+        assert res["status"] == "PENDING"
 
         formatted = _format_hr_advance_request_create(res)
         assert "تم تسجيل طلب السلفة المالية بنجاح" in formatted
         assert "1,500" in formatted
         assert "500" in formatted
+
+
+@pytest.mark.asyncio
+async def test_hr_leave_request_create_calls_backend_client():
+    fake_emp = {"id": "emp_01", "userId": "usr_1"}
+    fake_api_res = {
+        "success": True,
+        "leave": {
+            "id": "leave_req_01",
+            "type": "ANNUAL",
+            "startDate": "2026-11-02",
+            "endDate": "2026-11-04",
+            "totalDays": 3,
+            "status": "PENDING",
+        }
+    }
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo, \
+         patch("src.tools.definitions.hr.get_backend_client") as MockBackend:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_client = MockBackend.return_value
+        mock_client.create_hr_leave_request = AsyncMock(return_value=fake_api_res)
+
+        res = await hr_leave_request_create(HrLeaveRequestCreateInput(
+            company_id="comp_1",
+            user_id="usr_1",
+            leave_type="ANNUAL",
+            start_date="2026-11-02",
+            end_date="2026-11-04",
+            reason="إجازة سنوية اعتيادية",
+        ))
+        assert res["request_id"] == "leave_req_01"
+        assert res["status"] == "PENDING"
+        assert res["total_days"] == 3
+        mock_client.create_hr_leave_request.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_hr_leave_request_create_backend_api_error():
+    fake_emp = {"id": "emp_01", "userId": "usr_1"}
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo, \
+         patch("src.tools.definitions.hr.get_backend_client") as MockBackend:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_client = MockBackend.return_value
+        mock_client.create_hr_leave_request = AsyncMock(
+            side_effect=BackendAPIError("رصيد الإجازات غير كافٍ", status_code=400, error_code="INSUFFICIENT_BALANCE")
+        )
+
+        res = await hr_leave_request_create(HrLeaveRequestCreateInput(
+            company_id="comp_1",
+            user_id="usr_1",
+            leave_type="ANNUAL",
+            start_date="2026-11-02",
+            end_date="2026-11-04",
+            reason="إجازة سنوية",
+        ))
+        assert res["error"] == "رصيد الإجازات غير كافٍ"
+        assert res["code"] == "INSUFFICIENT_BALANCE"
+
+
+@pytest.mark.asyncio
+async def test_hr_leave_request_create_nonexistent_employee():
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=None)
+
+        res = await hr_leave_request_create(HrLeaveRequestCreateInput(
+            company_id="comp_1",
+            user_id="usr_unknown",
+            leave_type="ANNUAL",
+            start_date="2026-11-02",
+            end_date="2026-11-04",
+            reason="إجازة سنوية",
+        ))
+        assert "لم يتم العثور على سجل الموظف" in res["error"]
+
+
+@pytest.mark.asyncio
+async def test_hr_permission_request_create_calls_backend_client():
+    fake_emp = {"id": "emp_01", "userId": "usr_1"}
+    fake_api_res = {
+        "success": True,
+        "data": {
+            "id": "perm_req_01",
+            "type": "NON_DEDUCTIBLE",
+            "date": "2026-11-05",
+            "startTime": "09:00",
+            "endTime": "11:00",
+            "totalHours": 2.0,
+            "status": "PENDING",
+        }
+    }
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo, \
+         patch("src.tools.definitions.hr.get_backend_client") as MockBackend:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_client = MockBackend.return_value
+        mock_client.create_hr_permission_request = AsyncMock(return_value=fake_api_res)
+
+        res = await hr_permission_request_create(HrPermissionRequestCreateInput(
+            company_id="comp_1",
+            user_id="usr_1",
+            date="2026-11-05",
+            start_time="09:00",
+            end_time="11:00",
+            reason="موعد بنكي رسمي",
+            permission_type="NON_DEDUCTIBLE",
+        ))
+        assert res["request_id"] == "perm_req_01"
+        assert res["status"] == "PENDING"
+        assert res["total_hours"] == 2.0
+        mock_client.create_hr_permission_request.assert_awaited_once()
+
+
+def test_hr_approval_classification():
+    assert "hr_leave_request_create" in WRITE_TOOL_NAMES
+    assert "hr_permission_request_create" in WRITE_TOOL_NAMES
+    assert "hr_advance_request_create" in WRITE_TOOL_NAMES
+
+
+@pytest.mark.asyncio
+async def test_hr_scripted_agent_client_scenario():
+    # Scenario: User asks "رصيد إجازاتي كام؟" -> LLM calls hr_leave_balance -> receives tool output -> answers
+    scenario = [
+        {
+            "text": "",
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "function": {
+                        "name": "hr_leave_balance",
+                        "arguments": '{"company_id": "comp_1", "user_id": "usr_1"}'
+                    }
+                }
+            ]
+        },
+        {
+            "text": "رصيد إجازاتك السنوية المتبقية 14 يوماً والمرضية 13 يوماً.",
+            "tool_calls": []
+        }
+    ]
+    scripted_client = ScriptedAgentClient(scenario=scenario)
+    assert scripted_client.provider == "scripted"
+
+    # Step 1: LLM request returns tool call
+    resp1 = await scripted_client.get_response([{"role": "user", "content": "رصيد إجازاتي كام؟"}])
+    assert len(resp1.tool_calls) == 1
+    assert resp1.tool_calls[0]["function"]["name"] == "hr_leave_balance"
+
+    # Tool execution with fake repo
+    fake_emp = {"id": "emp_01", "userId": "usr_1", "firstName": "سارة", "lastName": "أحمد"}
+    fake_balance = {"annual_remaining": 14, "sick_remaining": 13, "annual_total": 21}
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_instance.get_leave_balance = AsyncMock(return_value=fake_balance)
+
+        tool_result = await hr_leave_balance(HrLeaveBalanceInput(company_id="comp_1", user_id="usr_1"))
+        assert tool_result["annual_remaining"] == 14
+
+    # Step 2: Final response
+    resp2 = await scripted_client.get_response([
+        {"role": "user", "content": "رصيد إجازاتي كام؟"},
+        {"role": "assistant", "content": "", "tool_calls": resp1.tool_calls},
+        {"role": "tool", "content": str(tool_result)}
+    ])
+    assert "14 يوماً" in resp2.text
+    assert len(resp2.tool_calls) == 0
 
 
 @pytest.mark.asyncio
@@ -292,3 +468,23 @@ async def test_hr_attendance_today_execution():
         formatted = _format_hr_attendance_today(res)
         assert "42" in formatted
         assert "حضور" in formatted
+
+
+@pytest.mark.asyncio
+async def test_hr_requests_status_includes_advances():
+    fake_emp = {"id": "emp_01", "userId": "usr_1"}
+    fake_status = {
+        "leaves": [{"type": "ANNUAL", "startDate": "2026-11-01", "endDate": "2026-11-03", "totalDays": 3, "status": "PENDING"}],
+        "permissions": [{"date": "2026-11-04", "startTime": "09:00", "endTime": "10:00", "totalHours": 1.0, "status": "APPROVED"}],
+        "advances": [{"createdAt": "2026-11-01", "amount": 1000.0, "status": "PENDING"}],
+    }
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_instance.get_requests_status = AsyncMock(return_value=fake_status)
+
+        res = await hr_requests_status(HrRequestsStatusInput(company_id="comp_1", user_id="usr_1"))
+        assert len(res["advances"]) == 1
+        formatted = _format_hr_requests_status(res)
+        assert "طلبات السلف الأخيرة" in formatted
+        assert "1,000" in formatted

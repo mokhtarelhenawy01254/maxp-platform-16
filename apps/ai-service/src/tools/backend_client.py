@@ -671,6 +671,18 @@ class BackendClient:
             headers={"x-company-id": company_id},
         )
 
+    async def create_hr_leave_request(self, company_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/hr/leaves", json_body=payload,
+                                   headers={"x-company-id": company_id})
+
+    async def create_hr_permission_request(self, company_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/hr/permissions", json_body=payload,
+                                   headers={"x-company-id": company_id})
+
+    async def create_hr_advance_request(self, company_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/hr/advances", json_body=payload,
+                                   headers={"x-company-id": company_id})
+
     async def reply_shipping_ticket(
         self, company_id: str, ticket_id: str | int, message: str
     ) -> dict[str, Any]:
