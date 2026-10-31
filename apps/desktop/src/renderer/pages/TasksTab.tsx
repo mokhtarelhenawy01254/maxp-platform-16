@@ -1043,11 +1043,6 @@ export const TasksTab: React.FC = () => {
     return true;
   });
 
-  const revisionCount = tasks.filter((t) => {
-    const s = String(t.status || '').toUpperCase();
-    return s !== 'COMPLETED' && isTaskReturned(t);
-  }).length;
-
   const urgentCount = tasks.filter(
     (t) => String(t.priority || '').toUpperCase() === 'URGENT' && String(t.status || '').toUpperCase() !== 'COMPLETED'
   ).length;
