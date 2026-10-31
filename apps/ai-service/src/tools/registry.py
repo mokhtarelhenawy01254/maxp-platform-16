@@ -116,6 +116,10 @@ ADVANCED_TOOL_NAMES: set[str] = {
     # Store Suite (Complete Store Bundle)
     "unified_inbox_manage",
     "facebook_pages_connected_list",
+    # Carrier ticket threads & customer answering (shipping-agent T26)
+    "shipping_thread_list",
+    "shipping_thread_get",
+    "shipping_customer_answer",
 }
 
 GATED_CORE_TOOL_NAMES: set[str] = {
@@ -159,6 +163,7 @@ WRITE_TOOL_NAMES: set[str] = {
     "shipping_update",
     "shipping_company_connect",
     "shipping_company_toggle",
+    "shipping_thread_reply",
     "hotel_reserve",
     "hotel_cancel_reservation",
     "hr_leave_request_create",

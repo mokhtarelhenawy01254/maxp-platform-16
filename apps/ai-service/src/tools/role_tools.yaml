@@ -186,6 +186,10 @@ roles:
     - whatsapp_send
     - agent_handoff_to
     - delayed_orders_check
+    - shipping_thread_list
+    - shipping_thread_get
+    - shipping_thread_reply
+    - shipping_customer_answer
 
   VOICE_ORDER_CONFIRMATION:
     - order_lookup

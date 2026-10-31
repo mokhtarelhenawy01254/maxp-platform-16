@@ -538,14 +538,39 @@ const ensureDemoShippingCompanies = async (prisma, companyId) => {
   return carriers;
 };
 
+const TICKET_PROVIDERS = {
+  TURBO: require('./shipping/adapters/turboTicketAdapter'),
+  DEMO: require('./shipping/adapters/demoTicketAdapter'),
+  MANUAL: require('./shipping/adapters/manualTicketAdapter'),
+};
+
+function getTicketAdapter({ providerKey, integrationMode, credentials } = {}) {
+  const rawKey = String(providerKey || '').trim().toUpperCase();
+  const rawMode = String(integrationMode || '').trim().toUpperCase();
+  const normKey = normalizeProviderKey(providerKey);
+  const normMode = normalizeIntegrationMode(integrationMode);
+
+  // NOTE: PROVIDER_KEYS has no 'DEMO' entry (DEMO is an integration mode), so a
+  // raw providerKey of 'DEMO' normalizes to MANUAL. Honour it explicitly here.
+  if (rawKey === 'DEMO' || rawMode.endsWith('_DEMO') || normMode.endsWith('_DEMO') || normKey === 'DEMO' || normKey.endsWith('_DEMO')) {
+    return TICKET_PROVIDERS.DEMO;
+  }
+  if (normKey === 'TURBO') {
+    return TICKET_PROVIDERS.TURBO;
+  }
+  return TICKET_PROVIDERS.MANUAL;
+}
+
 module.exports = {
   PROVIDER_KEYS,
   DEMO_CARRIER_DEFINITIONS,
+  TICKET_PROVIDERS,
   normalizeProviderKey,
   normalizeIntegrationMode,
   normalizeSettings,
   createProviderShipment,
   ensureDemoShippingCompanies,
+  getTicketAdapter,
   safeJsonParse,
   safeJsonStringify,
 };

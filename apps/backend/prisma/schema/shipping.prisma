@@ -27,3 +27,41 @@ model ShippingCompany {
   @@index([integrationMode])
   @@map("shipping_companies")
 }
+
+model CarrierTicket {
+  id            String   @id @default(cuid())
+  companyId     String
+  providerKey   String   // TURBO | DEMO | MANUAL
+  externalId    String
+  orderId       String?
+  shipmentId    String?
+  code          String?  // رقم الطلب/التتبع
+  subject       String?
+  status        String   @default("OPEN")   // OPEN | PENDING_MERCHANT | PENDING_CUSTOMER | RESOLVED | CLOSED
+  lastMessageAt DateTime?
+  unreadCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([companyId, providerKey, externalId])
+  @@index([companyId, status, lastMessageAt])
+  @@index([orderId])
+  @@map("carrier_tickets")
+}
+
+model CarrierTicketMessage {
+  id         String   @id @default(cuid())
+  ticketId   String
+  companyId  String
+  direction  String   // INBOUND (من الشركة) | OUTBOUND (مننا)
+  externalId String   // معرّف المزوّد أو hash ثابت (body+sentAt) — dedupe
+  body       String   @db.Text
+  authorName String?
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@unique([companyId, ticketId, externalId])
+  @@index([ticketId, createdAt])
+  @@map("carrier_ticket_messages")
+}
+

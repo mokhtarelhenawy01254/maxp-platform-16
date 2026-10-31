@@ -430,6 +430,9 @@ const TurboTickets = React.lazy(() => import("./pages/tickets/TurboTickets"));
 const ShippingCompanies = React.lazy(
   () => import("./pages/shipping/ShippingCompanies"),
 );
+const CarrierInboxPage = React.lazy(
+  () => import("./pages/shipping/CarrierInboxPage"),
+);
 const UnifiedShipmentsPage = React.lazy(
   () => import("./pages/orders/UnifiedShipmentsPage"),
 );
@@ -7180,6 +7183,16 @@ const AppContent = () => {
                 <Route
                   path="/apps/shipping"
                   element={<Navigate to="/shipping-companies" replace />}
+                />
+                <Route
+                  path="/shipping/carrier-inbox"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                        <CarrierInboxPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
                 />
                 <Route
                   path="/shipping-companies"

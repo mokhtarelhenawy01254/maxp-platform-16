@@ -20,6 +20,100 @@ function resolveCompanyId(req) {
 }
 
 /**
+ * Deterministic offline response resolver for shipping-agent when AI service is off (T26 §4.5)
+ */
+async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
+  try {
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
+    const prisma = getSharedPrismaClient();
+
+    const cleanMsg = String(messageText || '').replace(/[؟?!.,:;()\[\]]/g, ' ');
+    const tokens = cleanMsg.split(/\s+/).filter(Boolean);
+    const ignoreWords = new Set([
+      'الأوردر', 'اوردر', 'الاوردر', 'أوردراتي', 'طلبي', 'الطلب', 'شحنتي', 'الشحنة',
+      'بتاعي', 'بتاعتي', 'فين', 'رقمه', 'رقم', 'كود', 'تتبع', 'حالة', 'عايز', 'اعرف',
+      'مساء', 'صباح', 'الخير', 'السلام', 'عليكم', 'order', 'shipment', 'where', 'is', 'my',
+      'يا', 'باشا', 'لو', 'سمحت', 'ممكن', 'شغال', 'معانا', 'هو', 'هي', 'ده', 'دي'
+    ]);
+
+    let candidateCode = null;
+    for (const t of tokens) {
+      const cleanToken = t.replace(/[#]/g, '').trim();
+      if (cleanToken && !ignoreWords.has(cleanToken) && cleanToken.length >= 2) {
+        if (/^[A-Za-z0-9\-_]+$/.test(cleanToken)) {
+          candidateCode = cleanToken;
+          break;
+        }
+      }
+    }
+
+    if (!candidateCode) {
+      return 'أهلاً بك! أنا مروان منسق الشحن والعمليات اللوجستية. يرجى تزويدي برقم الأوردر أو رقم بوليصة الشحن لمتابعة حالته وتحديد موعد التسليم بدقة.';
+    }
+
+    // Try finding order in company scope
+    const order = await prisma.order.findFirst({
+      where: {
+        companyId,
+        OR: [
+          { orderNumber: candidateCode },
+          { id: candidateCode },
+          { turboTrackingNumber: candidateCode },
+          { bostaTrackingNumber: candidateCode },
+        ],
+      },
+      include: {
+        shipments: {
+          include: { shippingCompany: true },
+        },
+      },
+    });
+
+    if (order) {
+      const shipment = order.shipments?.[0];
+      const carrierName = shipment?.shippingCompany?.name || (order.turboTrackingNumber ? 'Turbo' : (order.bostaTrackingNumber ? 'Bosta' : 'شركة الشحن'));
+      const trackingCode = shipment?.trackingNumber || shipment?.externalShipmentId || order.turboTrackingNumber || order.bostaTrackingNumber || 'غير متوفر';
+
+      const statusTranslations = {
+        'PENDING': 'قيد المعالجة والتجهيز',
+        'PROCESSING': 'جاري تجهيز الشحنة بالمستودع',
+        'CONFIRMED': 'مؤكد وفي انتظار الاستلام من شركة الشحن',
+        'SHIPPED': 'تم تسليمها لشركة الشحن وفي طريقها للتوزيع',
+        'OUT_FOR_DELIVERY': 'خرجت مع المندوب للتسليم اليوم',
+        'DELIVERED': 'تم التسليم للعميل بنجاح',
+        'CANCELLED': 'تم إلغاء الطلب',
+        'RETURNED': 'مرتجع للمتجر',
+      };
+      const statusAr = statusTranslations[order.status] || order.status;
+
+      return `طلبك رقم #${order.orderNumber} مسجل لدى ${carrierName}. حالة الشحنة الحالية: ${statusAr}. رقم التتبع: ${trackingCode}.`;
+    }
+
+    // Try finding shipment directly in company scope
+    const directShipment = await prisma.shipment.findFirst({
+      where: {
+        companyId,
+        OR: [
+          { trackingNumber: candidateCode },
+          { externalShipmentId: candidateCode },
+        ],
+      },
+      include: { shippingCompany: true, order: true },
+    });
+
+    if (directShipment) {
+      const carrierName = directShipment.shippingCompany?.name || 'شركة الشحن';
+      return `شحنتك رقم ${candidateCode} مسجلة لدى ${carrierName}. الحالة الحالية: ${directShipment.status}.`;
+    }
+
+    return `لم يتم العثور على أوردر أو شحنة برقم '${candidateCode}' تابعة لمتجرك. يرجى مراجعة الرقم والتأكد منه.`;
+  } catch (err) {
+    console.warn('[AI-CHAT-CTRL] resolveShippingAgentOfflineAnswer error:', err.message);
+    return null;
+  }
+}
+
+/**
  * POST /api/v1/ai/chat/message
  * Body: { message: string, sessionId?: string }
  */
@@ -232,6 +326,18 @@ async function sendMessage(req, res) {
             category: 'SYSTEM_ERROR',
           }).catch(() => {});
         } catch (_) {}
+      }
+    }
+
+    if (!result && targetAgentId === 'shipping-agent') {
+      const offlineAnswer = await resolveShippingAgentOfflineAnswer(companyId, effectiveMessage);
+      if (offlineAnswer) {
+        result = {
+          reply: offlineAnswer,
+          threadId: activeSessionId,
+          agentInfo: { id: targetAgentId, status: 'offline_deterministic' },
+          session: { id: activeSessionId },
+        };
       }
     }
 
@@ -1107,6 +1213,21 @@ async function getSpecialists(req, res) {
           'رصيد إجازاتي كام؟',
           'سجّل لي طلب إجازة يوم 2/11',
           'في حد من الفريق مش مسجّل حضور النهاردة؟',
+        ],
+      },
+      {
+        id: 'shipping-agent',
+        slug: 'shipping-agent',
+        name: 'مروان — منسق الشحن والعمليات اللوجستية',
+        role: 'SHIPPING',
+        title: 'منسق الشحن ومتابعة التوصيل وشركات الشحن',
+        description: 'متابعة بوالص وحالات الشحن، الرد على شركات الشحن وتذاكر الدعم، والرد على استفسارات العملاء بخصوص الشحنات.',
+        badge: 'الشحن واللوجستيات',
+        requiresApp: 'order-shipping-turbo',
+        suggestedPrompts: [
+          'ما هي الشحنات المتأخرة التي تحتاج تذكرة أو متابعة مع شركة الشحن؟',
+          'افحص رسائل وتحديثات شركة الشحن على التذاكر المفتوحة',
+          'ما حالة شحنة العميل وما آخر تحديث من المندوب؟',
         ],
       },
     ];

@@ -1251,6 +1251,7 @@ app.use("/api/v1/system-incidents", require("./routes/systemIncidentRoutes"));
 app.use("/api/system-incidents", require("./routes/systemIncidentRoutes"));
 app.use("/api/v1/shipping-companies", shippingCompaniesRoutes);
 app.use("/api/v1/shipments", shipmentsRoutes);
+app.use("/api/v1/shipping-agent", require("./routes/shippingAgentRoutes"));
 app.use("/api/v1/shipping-settlement", shippingSettlementRoutes);
 app.use("/api/v1/couriers", courierRoutes);
 app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
@@ -1347,6 +1348,17 @@ if (shouldOwnSingletonWork()) {
         "❌ [VOICE-CALL-CRON] Failed to start voice call queue cron:",
         error,
       );
+    }
+  }
+
+  // Start Carrier Ticket Sync cron (every 15 min) — T26
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const carrierTicketSyncCron = require("./cron/carrierTicketSyncCron");
+      carrierTicketSyncCron.start();
+      console.log("✅ [CARRIER-SYNC] Carrier ticket sync cron started (every 15 min)");
+    } catch (error) {
+      console.error("❌ [CARRIER-SYNC] Failed to start carrier ticket sync cron:", error);
     }
   }
 

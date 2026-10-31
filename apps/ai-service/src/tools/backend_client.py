@@ -40,8 +40,6 @@ class BackendClient:
     def __init__(self) -> None:
         settings = get_settings()
         api_url = settings.maxp_api_url.rstrip("/")
-        if "maxp.online" in api_url or "mokhtarelhenawy.online" in api_url or "localhost" in api_url or "127.0.0.1" in api_url:
-            api_url = "http://127.0.0.1:3007"
         self.base_url = api_url
         self.token = settings.maxp_service_token
         self._client: httpx.AsyncClient | None = None
@@ -701,6 +699,40 @@ class BackendClient:
         return await self._request(
             "GET", f"/api/v1/turbo/orders/{order_or_tracking_code}/track",
             params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
+    async def get_shipping_threads(
+        self, company_id: str, status: str | None = None, unread_only: bool = False, limit: int = 25
+    ) -> dict[str, Any]:
+        """Fetch carrier ticket threads from shipping agent service."""
+        params: dict[str, Any] = {"limit": limit}
+        if status:
+            params["status"] = status
+        if unread_only:
+            params["unreadOnly"] = "true"
+        return await self._request(
+            "GET", "/api/v1/shipping-agent/threads",
+            params=params,
+            headers={"x-company-id": company_id},
+        )
+
+    async def get_shipping_thread(
+        self, company_id: str, thread_id: str
+    ) -> dict[str, Any]:
+        """Fetch single carrier ticket thread and messages."""
+        return await self._request(
+            "GET", f"/api/v1/shipping-agent/threads/{thread_id}",
+            headers={"x-company-id": company_id},
+        )
+
+    async def reply_shipping_thread(
+        self, company_id: str, thread_id: str, message: str
+    ) -> dict[str, Any]:
+        """Send a reply to a carrier ticket thread."""
+        return await self._request(
+            "POST", f"/api/v1/shipping-agent/threads/{thread_id}/reply",
+            json_body={"message": message},
             headers={"x-company-id": company_id},
         )
 

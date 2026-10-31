@@ -455,3 +455,83 @@ async def test_shipping_update_executes_backend_update(monkeypatch):
     ))
     assert result["success"] is True
     assert captured["data"]["shippingAddress"] == "22 New Street"
+
+
+def test_shipping_thread_tools_classification():
+    """Verify that shipping_thread_reply is classified as a WRITE tool requiring approval,
+    and reading tools are classified in read/advanced sets."""
+    from src.tools.registry import WRITE_TOOL_NAMES, ADVANCED_TOOL_NAMES, get_tool
+
+    assert "shipping_thread_reply" in WRITE_TOOL_NAMES
+    assert "shipping_thread_list" in ADVANCED_TOOL_NAMES
+    assert "shipping_thread_get" in ADVANCED_TOOL_NAMES
+    assert "shipping_customer_answer" in ADVANCED_TOOL_NAMES
+
+    reply_tool = get_tool("shipping_thread_reply")
+    assert reply_tool is not None
+    assert reply_tool.approval_mode == "always_require"
+
+
+@pytest.mark.asyncio
+async def test_shipping_thread_reply_executes_via_backend(monkeypatch):
+    """shipping_thread_reply must call backend_client.reply_shipping_thread."""
+    captured = {}
+
+    class _MockClient:
+        async def reply_shipping_thread(self, company_id, thread_id, message):
+            captured.update(company_id=company_id, thread_id=thread_id, message=message)
+            return {"success": True, "message": "Replied"}
+
+    monkeypatch.setattr("src.tools.backend_client.get_backend_client", lambda: _MockClient())
+    from src.tools.definitions.shipping_threads import (
+        ShippingThreadReplyInput,
+        shipping_thread_reply,
+    )
+
+    result = await shipping_thread_reply(ShippingThreadReplyInput(
+        thread_id="th_123", message="العنوان مؤكد", company_id="comp_qa",
+    ))
+    assert result["status"] == "EXECUTED"
+    assert result["data"]["success"] is True
+    assert captured["thread_id"] == "th_123"
+    assert captured["message"] == "العنوان مؤكد"
+
+
+@pytest.mark.asyncio
+async def test_shipping_customer_answer_deterministic(monkeypatch):
+    """shipping_customer_answer must return factual answer without hallucinations."""
+    class _MockClient:
+        async def track_shipment_by_code(self, company_id, code):
+            if code == "EXISTING-123":
+                return {
+                    "success": True,
+                    "data": {
+                        "status": "OUT_FOR_DELIVERY",
+                        "shippingCompany": "Turbo",
+                        "captainName": "أحمد",
+                        "lastUpdate": "اليوم 10:00 ص",
+                    },
+                }
+            return {"success": False, "status": 404}
+
+    monkeypatch.setattr("src.tools.backend_client.get_backend_client", lambda: _MockClient())
+    from src.tools.definitions.shipping_threads import (
+        ShippingCustomerAnswerInput,
+        shipping_customer_answer,
+    )
+
+    found_res = await shipping_customer_answer(ShippingCustomerAnswerInput(
+        order_or_tracking_code="EXISTING-123", company_id="comp_qa",
+    ))
+    assert found_res["success"] is True
+    assert found_res["found"] is True
+    assert "Turbo" in found_res["answer"]
+    assert "خرجت مع المندوب" in found_res["answer"]
+
+    not_found_res = await shipping_customer_answer(ShippingCustomerAnswerInput(
+        order_or_tracking_code="UNKNOWN-999", company_id="comp_qa",
+    ))
+    assert not_found_res["success"] is True
+    assert not_found_res["found"] is False
+    assert "لم يتم العثور" in not_found_res["answer"]
+

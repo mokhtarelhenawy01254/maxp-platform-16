@@ -49,7 +49,11 @@
     "customer_info",
     "whatsapp_send",
     "agent_handoff_to",
-    "delayed_orders_check"
+    "delayed_orders_check",
+    "shipping_thread_list",
+    "shipping_thread_get",
+    "shipping_thread_reply",
+    "shipping_customer_answer"
   ],
   "allowedSkills": [
     "order-support"
