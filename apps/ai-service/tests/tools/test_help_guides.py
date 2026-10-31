@@ -8,6 +8,7 @@ Pure stdlib + asserts, runnable both ways:
 from __future__ import annotations
 
 import ast
+import re
 import asyncio
 import os
 import sys
@@ -176,6 +177,53 @@ def test_async_help_guide_invocation():
     # Tool registration attributes
     assert help_guide_tool.name == "help_guide"
     assert help_guide_tool.input_model == HelpGuideInput
+
+
+
+
+def test_all_guide_screens_exist_in_frontend_app_tsx():
+    """Verify that every screen URL in HELP_GUIDES exists in frontend App.tsx (0 dead links) (SUP-5)."""
+    repo_root = os.path.dirname(os.path.dirname(_AI_SERVICE_DIR))
+    app_tsx_path = os.path.join(repo_root, "apps", "frontend", "src", "App.tsx")
+    assert os.path.isfile(app_tsx_path), f"App.tsx not found at {app_tsx_path}"
+
+    with open(app_tsx_path, "r", encoding="utf-8") as f:
+        app_content = f.read()
+
+    routes = set(re.findall(r'path=["\']([^"\']+)["\']', app_content))
+    assert len(routes) > 100, f"Expected >100 routes in App.tsx, found {len(routes)}"
+
+    dead_screens = []
+    total_screens = 0
+    for slug, guide in HELP_GUIDES.items():
+        for screen in guide.get("screens", []):
+            total_screens += 1
+            clean_path = screen.replace("https://maxp.online", "")
+            if clean_path not in routes:
+                dead_screens.append((slug, screen, clean_path))
+
+    assert not dead_screens, f"Dead screen links found in HELP_GUIDES: {dead_screens}"
+
+
+def test_help_guides_zero_forbidden_promise_or_discount_phrases():
+    """Verify 0 forbidden promise/discount phrases in HELP_GUIDES (SUP-4 & SUP-5)."""
+    forbidden_phrases = [
+        "أوعدك",
+        "هنعمل لك",
+        "خصم مضمون",
+        "ميزة جاية",
+        "هتنزل الأسبوع الجاي",
+        "هينزل بكره",
+        "مضمون 100%",
+    ]
+    violations = []
+    for slug, guide in HELP_GUIDES.items():
+        text = str(guide)
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                violations.append((slug, phrase))
+
+    assert not violations, f"Forbidden phrases found in HELP_GUIDES: {violations}"
 
 
 if __name__ == "__main__":

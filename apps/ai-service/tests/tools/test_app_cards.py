@@ -146,6 +146,27 @@ def _has_arabic(text: str) -> bool:
     return any("\u0600" <= ch <= "\u06ff" for ch in text)
 
 
+def test_app_cards_zero_forbidden_promise_or_discount_phrases():
+    """Verify 0 forbidden promise/discount phrases in all APP_CARDS (SUP-4 & SUP-5)."""
+    forbidden_phrases = [
+        "أوعدك",
+        "هنعمل لك",
+        "خصم مضمون",
+        "ميزة جاية",
+        "هتنزل الأسبوع الجاي",
+        "هينزل بكره",
+        "مضمون 100%",
+    ]
+    violations = []
+    for slug, card in APP_CARDS.items():
+        text = str(card)
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                violations.append((slug, phrase))
+
+    assert not violations, f"Forbidden phrases found in APP_CARDS: {violations}"
+
+
 # ===========================================================================
 # 1. App Cards Unit Tests
 # ===========================================================================

@@ -26,6 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from src.evals.golden_cases import known_capabilities, load_cases, validate
 from src.tools.app_cards import APP_CARDS
+from src.tools.definitions.help_guides import HELP_GUIDES, search_guides
+import re
 
 
 GOLDEN_FILE = AI_SERVICE_DIR / "evals" / "golden" / "app_cases.json"
@@ -187,11 +189,151 @@ def test_negative_catalog_app_mismatch():
     )
 
 
+
+
+def test_twenty_how_to_golden_queries_return_expected_slug_first_attempt():
+    """Verify all 20 real how-to golden questions return the exact expected slug on the first try (SUP-5)."""
+    data = load_cases(GOLDEN_FILE)
+    cases = [c for c in data.get("cases", []) if c.get("expected_slug") is not None]
+    assert len(cases) == 20, f"Expected exactly 20 how-to cases with expected_slug, found {len(cases)}"
+
+    print("\n  --- 20 Real 'How-To' Questions Benchmark Report ---")
+    print(f"  {'#':<3} | {'Merchant Question':<28} | {'Expected Slug':<28} | {'Actual Slug':<28} | {'Score':<6} | {'Status'}")
+    print("  " + "-" * 105)
+
+    passed = 0
+    failures = []
+    for idx, c in enumerate(cases, 1):
+        q = c["question"]
+        expected_slug = c["expected_slug"]
+        res = search_guides(q)
+        top = res["results"][0] if res.get("count", 0) > 0 else None
+        actual_slug = top["slug"] if top else None
+        score = top["score"] if top else 0
+        is_ok = (actual_slug == expected_slug)
+        if is_ok:
+            passed += 1
+            status = "PASS"
+        else:
+            status = "FAIL"
+            failures.append((q, expected_slug, actual_slug))
+
+        print(f"  {idx:<3} | {q:<28} | {expected_slug:<28} | {str(actual_slug):<28} | {score:<6} | {status}")
+
+    print("  " + "-" * 105)
+    print(f"  Benchmark Result: {passed}/20 passed on top-1 result.\n")
+
+    assert passed == 20, f"Expected 20/20 passed, but {len(failures)} failed: {failures}"
+
+
+def test_out_of_scope_golden_case_returns_zero_results_and_ticket_suggestion():
+    """Verify out-of-scope question returns 0 results, 'مفيش دليل', and suggests ticket link (SUP-5)."""
+    data = load_cases(GOLDEN_FILE)
+    cases = [c for c in data.get("cases", []) if c.get("id") == "sup-out-of-scope-stocks-1"]
+    assert len(cases) == 1, "Missing sup-out-of-scope-stocks-1 case"
+    case = cases[0]
+
+    res = search_guides(case["question"])
+    assert res["count"] == 0, f"Expected 0 results for out-of-scope question, got {res['count']}"
+    assert len(res["results"]) == 0
+    assert "مفيش دليل" in res.get("message_ar", ""), f"Expected 'مفيش دليل' in message_ar, got '{res.get('message_ar')}'"
+    assert res.get("support_ticket_link_suggested") is True, "Expected support_ticket_link_suggested=True"
+
+
+def test_identity_disclosure_golden_case_contract():
+    """Verify identity disclosure contract: 'أنا مساعد آلي من فريق MaxP' (SUP-4 & SUP-5)."""
+    data = load_cases(GOLDEN_FILE)
+    cases = [c for c in data.get("cases", []) if c.get("id") == "sup-identity-disclosure-1"]
+    assert len(cases) == 1, "Missing sup-identity-disclosure-1 case"
+    case = cases[0]
+
+    expected_disclosure = case.get("expected_disclosure")
+    assert expected_disclosure == "أنا مساعد آلي من فريق MaxP"
+
+    # Also verify that both agent SOUL.md files contain this exact disclosure
+    exec_soul_path = REPO_ROOT / "apps" / "backend" / "agents" / "executive-assistant-agent" / "SOUL.md"
+    assert exec_soul_path.exists(), f"Missing {exec_soul_path}"
+    exec_soul = exec_soul_path.read_text(encoding="utf-8")
+    assert "أنا مساعد آلي من فريق MaxP" in exec_soul, "executive-assistant-agent/SOUL.md must contain disclosure"
+
+    sup_soul_path = REPO_ROOT / "apps" / "backend" / "agents" / "support-agent" / "SOUL.md"
+    assert sup_soul_path.exists(), f"Missing {sup_soul_path}"
+    sup_soul = sup_soul_path.read_text(encoding="utf-8")
+    assert "أنا مساعد آلي من فريق MaxP" in sup_soul, "support-agent/SOUL.md must contain disclosure"
+
+
+def test_golden_replies_have_zero_forbidden_promise_or_discount_phrases():
+    """Verify 0 forbidden promise/discount phrases in goldens, app_cards, and help_guides (SUP-4 & SUP-5)."""
+    forbidden_phrases = [
+        "أوعدك",
+        "هنعمل لك",
+        "خصم مضمون",
+        "ميزة جاية",
+        "هتنزل الأسبوع الجاي",
+        "هينزل بكره",
+        "مضمون 100%",
+    ]
+    data = load_cases(GOLDEN_FILE)
+    violations = []
+
+    # Check app_cases.json
+    for c in data.get("cases", []):
+        text = str(c)
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                violations.append((f"case:{c.get('id')}", phrase))
+
+    # Check APP_CARDS
+    for slug, card in APP_CARDS.items():
+        text = str(card)
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                violations.append((f"app_card:{slug}", phrase))
+
+    # Check HELP_GUIDES
+    for slug, guide in HELP_GUIDES.items():
+        text = str(guide)
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                violations.append((f"help_guide:{slug}", phrase))
+
+    assert not violations, f"Forbidden promise/discount phrases detected: {violations}"
+
+
+def test_all_guide_screens_exist_in_frontend_app_tsx():
+    """Verify that every screen URL in HELP_GUIDES exists in frontend App.tsx (0 dead links) (SUP-5)."""
+    app_tsx_path = REPO_ROOT / "apps" / "frontend" / "src" / "App.tsx"
+    assert app_tsx_path.is_file(), f"App.tsx not found at {app_tsx_path}"
+
+    with open(app_tsx_path, "r", encoding="utf-8") as f:
+        app_content = f.read()
+
+    routes = set(re.findall(r'path=["\']([^"\']+)["\']', app_content))
+    assert len(routes) > 100, f"Expected >100 routes in App.tsx, found {len(routes)}"
+
+    dead_screens = []
+    total_screens_checked = 0
+    for slug, guide in HELP_GUIDES.items():
+        for screen in guide.get("screens", []):
+            clean_path = screen.replace("https://maxp.online", "")
+            total_screens_checked += 1
+            if clean_path not in routes:
+                dead_screens.append((slug, screen, clean_path))
+
+    assert not dead_screens, f"Dead screen links found in HELP_GUIDES: {dead_screens}"
+    print(f"\n  [Screens Audit] Checked {total_screens_checked} guide screen URLs across {len(HELP_GUIDES)} guides -> 0 dead links.")
+
+
 def run_all_tests() -> int:
     """Standalone test runner displaying comprehensive results and coverage."""
     tests = [
         ("Real Golden Cases Validation", test_real_golden_cases_validate_clean),
         ("27 Apps Coverage (>=3 cases each)", test_coverage_all_27_slugs_at_least_three_cases),
+        ("20 Real 'How-To' Questions (Top-1 Slug)", test_twenty_how_to_golden_queries_return_expected_slug_first_attempt),
+        ("Out-of-Scope Fallback & Ticket Suggestion", test_out_of_scope_golden_case_returns_zero_results_and_ticket_suggestion),
+        ("Identity Disclosure Contract", test_identity_disclosure_golden_case_contract),
+        ("Zero Forbidden Promise / Discount Phrases", test_golden_replies_have_zero_forbidden_promise_or_discount_phrases),
+        ("Zero Dead Links in Help Guide Screens", test_all_guide_screens_exist_in_frontend_app_tsx),
         ("Negative: Hallucinated Capability", test_negative_fake_capability),
         ("Negative: Write Capability Missing Approval", test_negative_write_capability_without_approval),
         ("Negative: Empty / Short Question (<8 chars)", test_negative_empty_or_short_question),

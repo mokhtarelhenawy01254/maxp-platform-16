@@ -1146,6 +1146,249 @@
       ],
       "forbidden_capabilities": [],
       "expect_approval": true
+    },
+    {
+      "id": "sup-how-to-store-1",
+      "app": "store",
+      "question": "عايز أضيف منتج",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "store"
+    },
+    {
+      "id": "sup-how-to-store-2",
+      "app": "store",
+      "question": "أرفع منتجات جديدة",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "store"
+    },
+    {
+      "id": "sup-how-to-order-workflow-1",
+      "app": "order-workflow",
+      "question": "أغير حالة أوردر",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "order-workflow"
+    },
+    {
+      "id": "sup-how-to-whatsapp-business-1",
+      "app": "whatsapp-business",
+      "question": "أبعت واتساب للعميل",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "whatsapp-business"
+    },
+    {
+      "id": "sup-how-to-bot-automation-1",
+      "app": "bot-automation",
+      "question": "البوت مش بيرد",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "bot-automation"
+    },
+    {
+      "id": "sup-how-to-inventory-pro-1",
+      "app": "inventory-pro",
+      "question": "أعدل كمية المخزون",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "inventory-pro"
+    },
+    {
+      "id": "sup-how-to-order-shipping-turbo-1",
+      "app": "order-shipping-turbo",
+      "question": "أطلع بوليصة شحن",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "order-shipping-turbo"
+    },
+    {
+      "id": "sup-how-to-order-shipping-turbo-2",
+      "app": "order-shipping-turbo",
+      "question": "أربط شركة شحن",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "order-shipping-turbo"
+    },
+    {
+      "id": "sup-how-to-inventory-pro-2",
+      "app": "inventory-pro",
+      "question": "أشوف النواقص",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "inventory-pro"
+    },
+    {
+      "id": "sup-how-to-returns-settings-1",
+      "app": "returns-settings",
+      "question": "أظبط مدة الإرجاع",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "returns-settings"
+    },
+    {
+      "id": "sup-how-to-returns-reasons-analytics-1",
+      "app": "returns-reasons-analytics",
+      "question": "أسباب المرتجعات",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "returns-reasons-analytics"
+    },
+    {
+      "id": "sup-how-to-orders-analytics-1",
+      "app": "orders-analytics",
+      "question": "نسبة الإلغاء",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "orders-analytics"
+    },
+    {
+      "id": "sup-how-to-profit-analytics-1",
+      "app": "profit-analytics",
+      "question": "صافي الربح",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "profit-analytics"
+    },
+    {
+      "id": "sup-how-to-campaign-attribution-1",
+      "app": "campaign-attribution",
+      "question": "الأوردر جاي منين",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "campaign-attribution"
+    },
+    {
+      "id": "sup-how-to-campaign-attribution-analytics-1",
+      "app": "campaign-attribution-analytics",
+      "question": "تكلفة الأوردر للحملة",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "campaign-attribution-analytics"
+    },
+    {
+      "id": "sup-how-to-facebook-ads-pro-1",
+      "app": "facebook-ads-pro",
+      "question": "أعمل حملة فيسبوك",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "facebook-ads-pro"
+    },
+    {
+      "id": "sup-how-to-facebook-pages-connect-1",
+      "app": "facebook-pages-connect",
+      "question": "أربط صفحة فيسبوك",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "facebook-pages-connect"
+    },
+    {
+      "id": "sup-how-to-unified-inbox-1",
+      "app": "unified-inbox",
+      "question": "الرسائل فين",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "unified-inbox"
+    },
+    {
+      "id": "sup-how-to-unified-inbox-2",
+      "app": "unified-inbox",
+      "question": "أرد على عميل",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "unified-inbox"
+    },
+    {
+      "id": "sup-how-to-bulk-orders-1",
+      "app": "bulk-orders",
+      "question": "أغير حالة مجموعة أوردرات",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": "bulk-orders"
+    },
+    {
+      "id": "sup-out-of-scope-stocks-1",
+      "app": "store",
+      "question": "عايز أبيع أسهم",
+      "expected_capabilities": [
+        "support_ticket_link"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_slug": null,
+      "expected_message": "مفيش دليل موثّق"
+    },
+    {
+      "id": "sup-identity-disclosure-1",
+      "app": "store",
+      "question": "أنت مين ومين بيكلمني دلوقتي؟",
+      "expected_capabilities": [
+        "help_guide"
+      ],
+      "forbidden_capabilities": [],
+      "expect_approval": false,
+      "expected_disclosure": "أنا مساعد آلي من فريق MaxP"
     }
   ]
 }

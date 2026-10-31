@@ -546,6 +546,9 @@ class PromptTemplateRegistry:
         parts.append(f"Tone: {tone}")
         parts.append(f"Formality: {formality}")
 
+        if runtime_role in ("EXECUTIVE_ASSISTANT", "SUPPORT") or template.role in ("EXECUTIVE_ASSISTANT", "SUPPORT"):
+            parts.append("Representative Identity: أنت ممثل فريق MaxP داخل حساب التاجر. عند السؤال المباشر عن الهوية، صرّح نصاً: «أنا مساعد آلي من فريق MaxP».")
+
         if template.channels:
             parts.append(f"Channels: {', '.join(template.channels)}")
 
@@ -616,16 +619,27 @@ class PromptTemplateRegistry:
     @staticmethod
     def _build_failure_protocol(template: PromptTemplate) -> str:
         """Build failure protocol from template handoffs."""
-        base = (
-            "If you cannot fulfill the request:\n"
-            "1. Clearly inform the user why.\n"
-            "2. Suggest an alternative if available.\n"
-            "3. Escalate to human support when needed.\n\n"
-            "If you don't know the answer to a customer's question and cannot find it "
-            "through your available tools or knowledge base, use the knowledge_ask_merchant "
-            "tool to request the information from the merchant. Then tell the customer "
-            "you will check and get back to them."
-        )
+        if template.role in ("EXECUTIVE_ASSISTANT", "SUPPORT"):
+            base = (
+                "Hierarchy of Operation (Strict 4 Modes):\n"
+                "1. EXECUTE: If a tool is available and safe, execute it immediately and summarize in one line.\n"
+                "2. EXPLAIN: If user asks how to do something or where a screen is ('إزاي/فين/منين'), call help_guide tool first and provide numbered steps and exact screen links.\n"
+                "3. HANDOFF: If the task requires a specialist agent, transfer via agent_handoff_to.\n"
+                "4. SUGGEST TICKET: If technical issue, bug, or manual support is needed, call support_ticket_link to give the merchant a prefilled link (merchant sends it themselves; never create tickets directly).\n\n"
+                "ZERO-INFORMATION FALLBACK: If no mode applies, say clearly 'مش عندي معلومة موثّقة' and suggest opening a support ticket via support_ticket_link.\n"
+                "PROHIBITIONS: Zero promises of discounts/future features/dates; zero invented links/steps; company_id scoped strictly to current session."
+            )
+        else:
+            base = (
+                "If you cannot fulfill the request:\n"
+                "1. Clearly inform the user why.\n"
+                "2. Suggest an alternative if available.\n"
+                "3. Escalate to human support when needed.\n\n"
+                "If you don't know the answer to a customer's question and cannot find it "
+                "through your available tools or knowledge base, use the knowledge_ask_merchant "
+                "tool to request the information from the merchant. Then tell the customer "
+                "you will check and get back to them."
+            )
 
         if template.handoffs:
             handoff_lines = []
