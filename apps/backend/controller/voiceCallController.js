@@ -67,7 +67,7 @@ async function getOrderCallLogs(req, res) {
         ],
       },
       include: {
-        user: { select: { id: true, name: true, email: true, firstName: true, lastName: true } },
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
         order: { select: { id: true, orderNumber: true, status: true } },
         guestOrder: { select: { id: true, orderNumber: true, status: true } },
       },
@@ -75,7 +75,20 @@ async function getOrderCallLogs(req, res) {
       take: 50,
     });
 
-    return res.json({ success: true, data: logs });
+    const sanitizedLogs = logs.map((log) => {
+      const u = log.user;
+      return {
+        ...log,
+        user: u
+          ? {
+              ...u,
+              name: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'مستخدم',
+            }
+          : null,
+      };
+    });
+
+    return res.json({ success: true, data: sanitizedLogs });
   } catch (error) {
     console.error('[VOICE-CONTROLLER] getOrderCallLogs error:', error.message);
     return res.status(500).json({ success: false, message: error.message });

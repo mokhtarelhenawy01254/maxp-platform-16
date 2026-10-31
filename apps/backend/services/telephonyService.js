@@ -470,7 +470,7 @@ class TelephonyService {
     const prisma = getSharedPrismaClient();
 
     const cleanCartId = String(orderId).replace(/^CART-/i, '');
-    return await prisma.callAttemptLog.findMany({
+    const logs = await prisma.callAttemptLog.findMany({
       where: {
         companyId,
         OR: [
@@ -488,6 +488,19 @@ class TelephonyService {
         }
       },
       orderBy: { createdAt: 'desc' }
+    });
+
+    return logs.map((log) => {
+      const u = log.user;
+      return {
+        ...log,
+        user: u
+          ? {
+              ...u,
+              name: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'مستخدم'
+            }
+          : null
+      };
     });
   }
 
