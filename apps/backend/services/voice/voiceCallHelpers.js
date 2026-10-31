@@ -7,12 +7,14 @@ const { getSharedPrismaClient } = require('../sharedDatabase');
 
 const DEFAULT_SETTINGS = {
   enabled: true,
-  provider: 'VAPI',
+  autoCallEnabled: true,
+  provider: 'SIMULATION',
   startHour: 10,
   endHour: 22,
   agentVoice: 'eleven_multilingual_v2',
   maxCallsNoAnswer: 3,
   intervalMinutes: 30,
+  simulatedOutcome: 'reached',
 };
 
 /**
@@ -48,10 +50,50 @@ function isCallingWindowPermitted(settings = {}, now = new Date()) {
   const startHour = settings.startHour ?? DEFAULT_SETTINGS.startHour;
   const endHour = settings.endHour ?? DEFAULT_SETTINGS.endHour;
 
-  if (startHour <= endHour) {
+  if (startHour === endHour) {
+    return false;
+  }
+
+  if (startHour < endHour) {
     return currentHour >= startHour && currentHour < endHour;
   }
   return currentHour >= startHour || currentHour < endHour;
+}
+
+/**
+ * Calculate the next Date when the calling window opens
+ */
+function nextWindowStart(settings = {}, now = new Date()) {
+  const startHour = settings.startHour ?? DEFAULT_SETTINGS.startHour;
+  const endHour = settings.endHour ?? DEFAULT_SETTINGS.endHour;
+
+  if (isCallingWindowPermitted(settings, now)) {
+    return new Date(now.getTime());
+  }
+
+  const next = new Date(now.getTime());
+  next.setMinutes(0, 0, 0);
+
+  if (startHour === endHour) {
+    // Zero window: schedule for tomorrow at startHour
+    next.setDate(next.getDate() + 1);
+    next.setHours(startHour);
+    return next;
+  }
+
+  if (startHour < endHour) {
+    if (now.getHours() < startHour) {
+      next.setHours(startHour);
+    } else {
+      next.setDate(next.getDate() + 1);
+      next.setHours(startHour);
+    }
+  } else {
+    // Overnight window (e.g. 22:00 to 06:00). Current time is between 06:00 and 22:00
+    next.setHours(startHour);
+  }
+
+  return next;
 }
 
 /**
@@ -109,5 +151,6 @@ module.exports = {
   DEFAULT_SETTINGS,
   normalizeCallingPhone,
   isCallingWindowPermitted,
+  nextWindowStart,
   resolveVoiceCredentials,
 };

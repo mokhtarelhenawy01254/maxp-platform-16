@@ -1336,6 +1336,20 @@ if (shouldOwnSingletonWork()) {
     );
   }
 
+  // Start Voice Call Queue Cron (AI Order Confirmation Calls)
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      const voiceCallQueueCron = require("./cron/voiceCallQueueCron");
+      voiceCallQueueCron.start();
+      console.log("✅ [VOICE-CALL-CRON] Voice Call Queue Cron started");
+    } catch (error) {
+      console.error(
+        "❌ [VOICE-CALL-CRON] Failed to start voice call queue cron:",
+        error,
+      );
+    }
+  }
+
   // Start Billing Cron Service
   try {
     billingCronService.start();

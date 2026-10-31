@@ -21,4 +21,8 @@ router.get('/logs/:orderId', verifyToken.requireRole(ADMIN_ROLES), voiceCallCont
 router.get('/settings', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.getVoiceSettings);
 router.put('/settings', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.updateVoiceSettings);
 
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/simulate-result', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.simulateCallResult);
+}
+
 module.exports = router;

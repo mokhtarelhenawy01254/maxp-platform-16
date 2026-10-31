@@ -2775,21 +2775,20 @@ router.post('/', async (req, res) => {
       const companySettings = typeof company.settings === 'string' ? JSON.parse(company.settings) : (company.settings || {});
       const voiceSettings = companySettings.voiceSettings || {};
       if (voiceSettings.autoCallEnabled && (createdOrder?.id || order?.id)) {
-        const voiceCallService = require('../services/voice/voiceCallService');
-        voiceCallService.dispatchOrderConfirmationCall({
+        const { enqueueCall } = require('../services/voice/voiceCallQueue');
+        await enqueueCall({
           companyId: company.id,
-          orderId: createdOrder?.id || order?.id,
+          orderId: createdOrder?.id || (order?.id && !order?.guestEmail ? order.id : null),
+          guestOrderId: order?.guestEmail ? order.id : null,
           orderNumber: order?.orderNumber || createdOrder?.orderNumber || orderNumber,
-          customerPhone: order?.guestPhone || createdOrder?.customerPhone,
+          phone: order?.guestPhone || createdOrder?.customerPhone,
           customerName: order?.guestName || createdOrder?.customerName,
           total: Number(order?.finalTotal || finalTotal || 0),
-          force: false,
-        }).catch((voiceErr) => {
-          console.warn('[VOICE-AUTO-CALL] Auto confirmation call skipped/failed (non-blocking):', voiceErr.message);
+          metadata: { source: 'storefront', paymentMethod },
         });
       }
     } catch (voiceDispatchErr) {
-      console.warn('[VOICE-AUTO-CALL] Failed to check voice settings:', voiceDispatchErr.message);
+      console.warn('[VOICE-AUTO-CALL] Failed to check voice settings or enqueue call:', voiceDispatchErr.message);
     }
 
     try {

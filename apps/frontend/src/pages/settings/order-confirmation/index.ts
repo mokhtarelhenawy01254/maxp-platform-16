@@ -5,5 +5,6 @@ export * from "./OrderConfirmationDistributionSection";
 export * from "./OrderConfirmationEligibleUsersCard";
 export * from "./OrderConfirmationCustomRulesSection";
 export * from "./OrderConfirmationCallCycleCard";
+export * from "./OrderConfirmationVoiceCard";
 export * from "./OrderConfirmationSaveBar";
 export * from "./useOrderConfirmationSettingsController";

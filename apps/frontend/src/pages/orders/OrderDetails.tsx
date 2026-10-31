@@ -3,6 +3,7 @@ import { OrderDetailsHeaderWrapper } from "./components/OrderDetailsHeaderWrappe
 import OrderDetailsMainContent from "./components/OrderDetailsMainContent";
 import OrderDetailsSidebar from "./components/OrderDetailsSidebar";
 import OrderReturnCard from "./components/OrderReturnCard";
+import OrderCallTimeline from "../../components/orders/OrderCallTimeline";
 import { OrderDetailsModalsHost } from "./components/OrderDetailsModalsHost";
 import { OrderDetailsNotFound } from "./components/OrderDetailsNotFound";
 import { useOrderDetailsController } from "./hooks/useOrderDetailsController";
@@ -147,6 +148,11 @@ export const OrderDetails: React.FC = () => {
           />
         </div>
       )}
+
+      {/* AI Voice Call Timeline */}
+      <div className="mt-6">
+        <OrderCallTimeline orderId={order.id} />
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-flow-col-dense lg:grid-cols-3">
         {/* RIGHT COLUMN (Main Info) */}

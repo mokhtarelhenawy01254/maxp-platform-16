@@ -6,6 +6,7 @@ import {
   OrderConfirmationEligibleUsersCard,
   OrderConfirmationCustomRulesSection,
   OrderConfirmationCallCycleCard,
+  OrderConfirmationVoiceCard,
   OrderConfirmationSaveBar,
 } from "./order-confirmation";
 
@@ -137,6 +138,8 @@ const OrderConfirmationSettings: React.FC = () => {
         onChangeMaxCalls={(val) => setSettings({ ...settings, maxCallsNoAnswer: val })}
         onChangeIntervalMinutes={(val) => setSettings({ ...settings, intervalMinutes: val })}
       />
+
+      <OrderConfirmationVoiceCard />
 
       <OrderConfirmationSaveBar saving={saving} onSave={handleSave} />
     </div>
