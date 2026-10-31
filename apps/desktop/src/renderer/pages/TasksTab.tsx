@@ -582,6 +582,17 @@ export const TasksTab: React.FC = () => {
   const userRole = String(currentUser?.role || '').toUpperCase();
   const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
 
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() => {
+    const urlStr = typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '';
+    const hasQuery = urlStr.includes('?');
+    if (hasQuery) {
+      return parseUnifiedFiltersFromUrl(urlStr);
+    }
+    return typeof loadPersistedUnifiedFilters === 'function'
+      ? loadPersistedUnifiedFilters()
+      : defaultUnifiedTaskFilters;
+  });
+
   // If a non-admin user somehow has activeView === 'all', reset it to 'my-tasks'
   useEffect(() => {
     if (currentUser && !isAdminOrManager && activeView === 'all') {
@@ -930,17 +941,6 @@ export const TasksTab: React.FC = () => {
     }
     return false;
   };
-
-  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() => {
-    const urlStr = typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '';
-    const hasQuery = urlStr.includes('?');
-    if (hasQuery) {
-      return parseUnifiedFiltersFromUrl(urlStr);
-    }
-    return typeof loadPersistedUnifiedFilters === 'function'
-      ? loadPersistedUnifiedFilters()
-      : defaultUnifiedTaskFilters;
-  });
 
   // Base tasks filtered by non-status unified filters (e.g. team member assignedTo)
   // so that tab badges immediately and accurately reflect that member's tasks!
