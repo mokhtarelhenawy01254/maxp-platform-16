@@ -1794,7 +1794,11 @@ const taskController = {
         }
 
         const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
-        const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
+        const hasEvidencePayload = Boolean((req.body && req.body.evidence && typeof req.body.evidence === "object" && Object.keys(req.body.evidence).length)
+          || (req.body && (req.body.changeType || req.body.commitOrPath || req.body.pageUrl || req.body.numbersBeforeAfter
+            || req.body.notTestedScope || req.body.proofAttachmentId || req.body.beforeAttachmentId || req.body.afterAttachmentId)));
+        // مهمة في IN_REVIEW مسموح تضيف لها الدليل من غير ما ترجعها للشغل — كانت بتترفض فتتحول لـ422 أو تتساب من غير دليل.
+        const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && (existingTask.status !== "IN_REVIEW" || hasEvidencePayload);
         const isApproving = (existingTask.status === "IN_REVIEW" || existingTask.status !== "COMPLETED") && normalizedStatus === "COMPLETED";
         const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
@@ -2142,7 +2146,11 @@ const taskController = {
       }
 
       const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
-      const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
+      const hasEvidencePayload = Boolean((req.body && req.body.evidence && typeof req.body.evidence === "object" && Object.keys(req.body.evidence).length)
+          || (req.body && (req.body.changeType || req.body.commitOrPath || req.body.pageUrl || req.body.numbersBeforeAfter
+            || req.body.notTestedScope || req.body.proofAttachmentId || req.body.beforeAttachmentId || req.body.afterAttachmentId)));
+        // مهمة في IN_REVIEW مسموح تضيف لها الدليل من غير ما ترجعها للشغل — كانت بتترفض فتتحول لـ422 أو تتساب من غير دليل.
+        const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && (existingTask.status !== "IN_REVIEW" || hasEvidencePayload);
       const isApproving = (existingTask.status === "IN_REVIEW" || existingTask.status !== "COMPLETED") && normalizedStatus === "COMPLETED";
       const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
