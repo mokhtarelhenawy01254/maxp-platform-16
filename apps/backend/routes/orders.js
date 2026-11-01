@@ -24,6 +24,7 @@ const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
 const { getCustomerFirstOrderInfo, getCustomerOrderHistory } = require('../utils/sessionDetailsHelper');
+const { buildAffiliateOrderWhere } = require('../utils/affiliateOrderFilter');
 const { resolveIpLocation, isLocalOrPrivateIp } = require('../utils/ipGeoLookup');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 const {
@@ -3281,7 +3282,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    // فلتر المتجر/الشركة: السوبر أدمن فقط يمكنه تمرير companyId صريح في الـ query
+    const requestedCompanyId =
+      req.user?.role === 'SUPER_ADMIN' ? String(req.query.companyId || '').trim() : '';
+    const companyId = requestedCompanyId || merchant?.companyId || req.user?.companyId;
 
     // Debug logging (development only)
     if (process.env.NODE_ENV !== 'production') {
@@ -3394,8 +3398,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     disableGuestOrderScope(guestWhereClause, merchant);
 
     // 🕵️ Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
-    let affiliateIds = String(req.query.affiliateId || '')
-      .split(',').map((s) => s.trim()).filter(Boolean);
+    // الفلترة الفعلية على orders.affiliateId فقط، والطلبات بدون مسوق لا تظهر أبدًا
+    let affiliateIdParam = req.query.affiliateId;
 
     // 🔒 Security: If user is an AFFILIATE, enforce their own affiliateId
     if (req.user.role === 'AFFILIATE') {
@@ -3403,7 +3407,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         where: { userId: req.user.id }
       });
       if (affiliate) {
-        affiliateIds = [affiliate.id];
+        affiliateIdParam = affiliate.id;
       } else {
         // If user is affiliate role but no affiliate profile, return empty
         return res.json({
@@ -3414,12 +3418,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    if (affiliateIds.length > 0) {
-      const affiliateFilter = affiliateIds.length === 1
-        ? affiliateIds[0]
-        : { in: affiliateIds };
-      whereClause.affiliateId = affiliateFilter;
-      guestWhereClause.affiliateId = affiliateFilter;
+    const affiliateWhere = buildAffiliateOrderWhere(affiliateIdParam);
+    if (affiliateWhere) {
+      whereClause.affiliateId = affiliateWhere.affiliateId;
+      guestWhereClause.affiliateId = affiliateWhere.affiliateId;
     }
 
     // Filter by Creator (if specified)
@@ -3434,7 +3436,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       userId: req.user.id,
       affiliateIdArg: req.query.affiliateId,
       createdByArg: req.query.createdBy,
-      resolvedAffiliateId: affiliateIds,
+      resolvedAffiliateId: affiliateWhere ? affiliateWhere.affiliateId : null,
       merchantId: merchant?.id || null,
       requestedMerchantIds,
       requestedFulfillmentSources,
@@ -8187,7 +8189,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 // Export Orders
 router.get('/export', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    // فلتر المتجر/الشركة: السوبر أدمن فقط يمكنه تمرير companyId صريح في الـ query
+    const requestedCompanyId =
+      req.user?.role === 'SUPER_ADMIN' ? String(req.query.companyId || '').trim() : '';
+    const companyId = requestedCompanyId || req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
     const { status, paymentStatus, search, startDate, endDate } = req.query;
@@ -8196,6 +8201,14 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
     // Build Filters (Same as /simple)
     const whereClause = { companyId };
     const guestWhereClause = { companyId };
+
+    // نفس منطق فلتر المسوق المستخدم في قائمة الطلبات (orders.affiliateId فقط)
+    const affiliateWhere = buildAffiliateOrderWhere(req.query.affiliateId);
+    if (affiliateWhere) {
+      whereClause.affiliateId = affiliateWhere.affiliateId;
+      guestWhereClause.affiliateId = affiliateWhere.affiliateId;
+    }
+
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
 
     const sourceTypes = String(sourceType || '')

@@ -8,7 +8,7 @@ import type {
   MerchantSettlementSummary,
 } from "../ordersConstants";
 import type { OrdersFilters } from "../ordersFilterTypes";
-import type { AffiliateFilterOption } from "../utils/orderTransformer";
+import type { AffiliateFilterOption, AffiliateStoreOption } from "../utils/orderTransformer";
 
 export interface OrdersToolbarSectionProps {
   filters: OrdersFilters;
@@ -20,6 +20,9 @@ export interface OrdersToolbarSectionProps {
   filterablePaymentStatuses: Array<{ code: string; name: string }>;
   merchantOptions: MerchantFilterOption[];
   affiliateOptions: AffiliateFilterOption[];
+  storeOptions?: AffiliateStoreOption[];
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   showOrderSourceFilter: boolean;
   showUnifiedOperationFilters: boolean;
   showMerchantOperationFilters: boolean;
@@ -61,6 +64,9 @@ export const OrdersToolbarSection: React.FC<OrdersToolbarSectionProps> = ({
   filterablePaymentStatuses,
   merchantOptions,
   affiliateOptions,
+  storeOptions,
+  affiliateOptionsError,
+  onRetryAffiliates,
   showOrderSourceFilter,
   showUnifiedOperationFilters,
   showMerchantOperationFilters,
@@ -99,6 +105,9 @@ export const OrdersToolbarSection: React.FC<OrdersToolbarSectionProps> = ({
         filterablePaymentStatuses={filterablePaymentStatuses}
         merchantOptions={merchantOptions}
         affiliateOptions={affiliateOptions}
+        storeOptions={storeOptions}
+        affiliateOptionsError={affiliateOptionsError}
+        onRetryAffiliates={onRetryAffiliates}
         showOrderSourceFilter={showOrderSourceFilter}
         showUnifiedOperationFilters={showUnifiedOperationFilters}
         showMerchantOperationFilters={showMerchantOperationFilters}

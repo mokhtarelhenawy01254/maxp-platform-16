@@ -7,6 +7,7 @@ import type {
   OrderStatusDefinition,
   MerchantFilterOption,
   AffiliateFilterOption,
+  AffiliateStoreOption,
   ActiveCarrierOption,
   UseOrdersLookupDataParams,
   UseOrdersLookupDataReturn,
@@ -16,6 +17,7 @@ export type {
   OrderStatusDefinition,
   MerchantFilterOption,
   AffiliateFilterOption,
+  AffiliateStoreOption,
   ActiveCarrierOption,
   UseOrdersLookupDataParams,
   UseOrdersLookupDataReturn,
@@ -38,6 +40,10 @@ export const useOrdersLookupData = ({
   const [paymentStatuses, setPaymentStatuses] = useState<OrderStatusDefinition[]>(defaultPaymentStatuses);
   const [merchantOptions, setMerchantOptions] = useState<MerchantFilterOption[]>([]);
   const [affiliateOptions, setAffiliateOptions] = useState<AffiliateFilterOption[]>([]);
+  const [storeOptions, setStoreOptions] = useState<AffiliateStoreOption[]>([]);
+  const [affiliateOptionsError, setAffiliateOptionsError] = useState("");
+  const [affiliateOptionsLoading, setAffiliateOptionsLoading] = useState(false);
+  const [affiliateRetryToken, setAffiliateRetryToken] = useState(0);
   const [merchantSettlementSummary, setMerchantSettlementSummary] = useState<any | null>(null);
   const [merchantSettlementLoading, setMerchantSettlementLoading] = useState(false);
   const [merchantSettlementError, setMerchantSettlementError] = useState("");
@@ -115,68 +121,105 @@ export const useOrdersLookupData = ({
     if (!isAdmin || isMerchant) {
       setMerchantOptions([]);
       setAffiliateOptions([]);
+      setStoreOptions([]);
+      setAffiliateOptionsError("");
+      setAffiliateOptionsLoading(false);
       return;
     }
 
     let isMounted = true;
 
-    const fetchUnifiedOperationOptions = async () => {
-      const cacheKey = ["unified-operation-options", companyId];
-      const cached = queryClient.getQueryData<{
-        merchants: MerchantFilterOption[];
-        affiliates: AffiliateFilterOption[];
-      }>(cacheKey);
+    const fetchMerchants = async () => {
+      const cacheKey = ["merchant-filter-options", companyId];
+      const cached = queryClient.getQueryData<MerchantFilterOption[]>(cacheKey);
 
       if (cached) {
-        if (isMounted) {
-          setMerchantOptions(cached.merchants || []);
-          setAffiliateOptions(cached.affiliates || []);
-        }
+        if (isMounted) setMerchantOptions(cached);
         return;
       }
 
-      const [merchantsResult, affiliatesResult] = await Promise.allSettled([
-        apiClient.get<{ success: boolean; data?: MerchantFilterOption[] }>("/merchants", {
-          _skipErrorToast: true,
-        }),
-        apiClient.get<{ success: boolean; data?: AffiliateFilterOption[] }>("/affiliates/list", {
-          _skipErrorToast: true,
-        }),
-      ]);
-
-      if (!isMounted) return;
-
-      const merchants =
-        merchantsResult.status === "fulfilled" &&
-        merchantsResult.value.data.success &&
-        Array.isArray(merchantsResult.value.data.data)
-          ? merchantsResult.value.data.data
-          : [];
-      const affiliates =
-        affiliatesResult.status === "fulfilled" &&
-        affiliatesResult.value.data.success &&
-        Array.isArray(affiliatesResult.value.data.data)
-          ? affiliatesResult.value.data.data
-          : [];
-
-      queryClient.setQueryData(cacheKey, { merchants, affiliates });
-      setMerchantOptions(merchants);
-      setAffiliateOptions(affiliates);
-
-      if (merchantsResult.status === "rejected" || affiliatesResult.status === "rejected") {
-        console.warn("Failed to load some unified order operation filters:", {
-          merchantsError: merchantsResult.status === "rejected" ? merchantsResult.reason : undefined,
-          affiliatesError: affiliatesResult.status === "rejected" ? affiliatesResult.reason : undefined,
-        });
+      try {
+        const response = await apiClient.get<{ success: boolean; data?: MerchantFilterOption[] }>(
+          "/merchants",
+          { _skipErrorToast: true },
+        );
+        if (!isMounted) return;
+        const merchants =
+          response.data?.success && Array.isArray(response.data.data) ? response.data.data : [];
+        if (response.data?.success) {
+          queryClient.setQueryData(cacheKey, merchants);
+        }
+        setMerchantOptions(merchants);
+      } catch (error) {
+        if (!isMounted) return;
+        setMerchantOptions([]);
+        console.warn("Failed to load merchant filter options:", error);
       }
     };
 
-    void fetchUnifiedOperationOptions();
+    // 🎯 مصدر الحقيقة: كل من يملك عمولة على طلبات الشركة (وليس الدور الوظيفي فقط)
+    const fetchAffiliateOptions = async () => {
+      setAffiliateOptionsLoading(true);
+      setAffiliateOptionsError("");
+
+      try {
+        const response = await apiClient.get<{
+          success: boolean;
+          data?: AffiliateFilterOption[];
+          message?: string;
+        }>("/affiliates/order-filter-options", {
+          _skipErrorToast: true,
+        });
+
+        if (!isMounted) return;
+
+        if (!response.data?.success || !Array.isArray(response.data.data)) {
+          throw new Error(response.data?.message || "Invalid affiliate filter payload");
+        }
+
+        setAffiliateOptions(response.data.data);
+        setAffiliateOptionsError("");
+      } catch (error) {
+        if (!isMounted) return;
+        // لا نبتلع الخطأ: 403/500 يجب أن يظهر كرسالة إعادة محاولة بدل "لا توجد نتائج"
+        console.warn("Failed to load affiliate filter options:", error);
+        setAffiliateOptions([]);
+        setAffiliateOptionsError(
+          i18n.t("orders.affiliatesLoadError", {
+            defaultValue: "تعذّر تحميل المسوقين — إعادة المحاولة",
+          }),
+        );
+      } finally {
+        if (isMounted) setAffiliateOptionsLoading(false);
+      }
+    };
+
+    // فلتر المتجر/الشركة: الشركات التي لديها نشاط تسويقي فعلي مع عدد الطلبات
+    const fetchStoreOptions = async () => {
+      try {
+        const response = await apiClient.get<{ success: boolean; data?: AffiliateStoreOption[] }>(
+          "/affiliates/stores",
+          { _skipErrorToast: true },
+        );
+        if (!isMounted) return;
+        const stores =
+          response.data?.success && Array.isArray(response.data.data) ? response.data.data : [];
+        setStoreOptions(stores);
+      } catch (error) {
+        if (!isMounted) return;
+        setStoreOptions([]);
+        console.warn("Failed to load affiliate store filter options:", error);
+      }
+    };
+
+    void fetchMerchants();
+    void fetchAffiliateOptions();
+    void fetchStoreOptions();
 
     return () => {
       isMounted = false;
     };
-  }, [isAdmin, isMerchant, companyId]);
+  }, [isAdmin, isMerchant, companyId, affiliateRetryToken]);
 
   // 3. Fetch Active Carriers
   useEffect(() => {
@@ -344,6 +387,10 @@ export const useOrdersLookupData = ({
     paymentStatusMap,
     merchantOptions,
     affiliateOptions,
+    storeOptions,
+    affiliateOptionsError,
+    affiliateOptionsLoading,
+    retryAffiliateOptions: () => setAffiliateRetryToken((token) => token + 1),
     merchantSettlementSummary,
     merchantSettlementLoading,
     merchantSettlementError,

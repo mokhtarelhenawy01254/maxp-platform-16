@@ -1546,13 +1546,21 @@ router.get("/admin/payouts", verifyToken.authenticateToken, async (req, res) => 
 });
 
 /**
- * قائمة المسوقين (للإدارة)
+ * معرف الشركة المستهدف لقوائم المسوقين
+ * (السوبر أدمن يمكنه تمرير companyId صريح)
  */
-router.get("/", verifyToken.authenticateToken, async (req, res) => {
+const resolveAffiliateListCompanyId = (req) =>
+  req.user.role === "SUPER_ADMIN"
+    ? req.query.companyId || req.user.companyId
+    : req.user.companyId;
+
+/**
+ * قائمة المسوقين الموحدة: نفس المصدر لصفحة إدارة المسوقين وفلاتر صفحة الطلبات
+ * حتى تتطابق الأعداد في كل مكان.
+ */
+const listAffiliatesHandler = async (req, res) => {
   try {
-    const companyId = req.user.role === "SUPER_ADMIN"
-      ? (req.query.companyId || req.user.companyId)
-      : req.user.companyId;
+    const companyId = resolveAffiliateListCompanyId(req);
 
     if (!companyId) {
       return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
@@ -1564,31 +1572,54 @@ router.get("/", verifyToken.authenticateToken, async (req, res) => {
         .json({ success: false, message: "ليس لديك صلاحية" });
     }
 
-    const affiliates = await affiliateService.listAffiliates(companyId);
+    const affiliates = await affiliateService.listAffiliatesWithOrderStats(companyId);
     res.json({ success: true, data: affiliates });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-router.get("/list", verifyToken.authenticateToken, async (req, res) => {
+/**
+ * قائمة المسوقين (للإدارة)
+ */
+router.get("/", verifyToken.authenticateToken, listAffiliatesHandler);
+
+router.get("/list", verifyToken.authenticateToken, listAffiliatesHandler);
+
+/**
+ * خيارات فلتر المسوقين في صفحة الطلبات
+ * (الاسم + الكود + عدد الطلبات + إجمالي العمولة + بادج "مسوق في شركة تانية")
+ */
+router.get("/order-filter-options", verifyToken.authenticateToken, listAffiliatesHandler);
+
+/**
+ * المتاجر/الشركات التي لديها نشاط تسويقي فعلي مع عدد الطلبات
+ * تستخدم في فلتر المتجر/الشركة داخل صفحة الطلبات وفي التصدير.
+ */
+router.get("/stores", verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user.role === "SUPER_ADMIN"
-      ? (req.query.companyId || req.user.companyId)
-      : req.user.companyId;
-
-    if (!companyId) {
-      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
-    }
-
     if (!canViewAffiliates(req.user)) {
       return res
         .status(403)
         .json({ success: false, message: "ليس لديك صلاحية" });
     }
 
-    const affiliates = await affiliateService.listAffiliates(companyId);
-    res.json({ success: true, data: affiliates });
+    const requestedCompanyIds = String(req.query.companyIds || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const companyIds =
+      req.user.role === "SUPER_ADMIN"
+        ? requestedCompanyIds
+        : [req.user.companyId].filter(Boolean);
+
+    if (companyIds.length === 0 && req.user.role !== "SUPER_ADMIN") {
+      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+    }
+
+    const stores = await affiliateService.listAffiliateStores({ companyIds });
+    res.json({ success: true, data: stores });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

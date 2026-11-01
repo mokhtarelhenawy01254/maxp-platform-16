@@ -8,6 +8,10 @@ interface OrdersOperationsFilterSectionProps {
   filters: OrdersFilters;
   merchantOptionsList: MultiSelectOption[];
   affiliateOptionsList: MultiSelectOption[];
+  storeOptionsList?: MultiSelectOption[];
+  showStoreFilter?: boolean;
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   fulfillmentOptions: MultiSelectOption[];
   operationOptions: MultiSelectOption[];
   settlementOptions: MultiSelectOption[];
@@ -27,6 +31,10 @@ export const OrdersOperationsFilterSection: React.FC<OrdersOperationsFilterSecti
   filters,
   merchantOptionsList,
   affiliateOptionsList,
+  storeOptionsList = [],
+  showStoreFilter = false,
+  affiliateOptionsError,
+  onRetryAffiliates,
   fulfillmentOptions,
   operationOptions,
   settlementOptions,
@@ -43,6 +51,27 @@ export const OrdersOperationsFilterSection: React.FC<OrdersOperationsFilterSecti
         <Truck className="h-4 w-4 text-primary shrink-0" />
         <span>{t("orders.unifiedOperations", { defaultValue: "العمليات والتنفيذ والشحن" })}</span>
       </div>
+
+      {showStoreFilter && (
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+            <Store className="h-3.5 w-3.5" />
+            <span>{t("orders.affiliateStoreFilter", { defaultValue: "المتجر / الشركة" })}</span>
+          </label>
+          <MultiSelectFilter
+            ariaLabel={String(
+              t("orders.affiliateStoreFilter", { defaultValue: "المتجر / الشركة" }),
+            )}
+            placeholder={String(
+              t("orders.allAffiliateStores", { defaultValue: "كل المتاجر النشطة تسويقيًا" }),
+            )}
+            options={storeOptionsList}
+            value={filters.companyId || []}
+            onChange={(next) => onFilterChange("companyId", next)}
+            {...multiSelectCommon}
+          />
+        </div>
+      )}
 
       {showMerchantOperationFilters && (
         <div className="space-y-1.5">
@@ -73,8 +102,22 @@ export const OrdersOperationsFilterSection: React.FC<OrdersOperationsFilterSecti
             options={affiliateOptionsList}
             value={filters.affiliateId}
             onChange={(next) => onFilterChange("affiliateId", next)}
+            errorText={affiliateOptionsError || undefined}
+            onRetry={onRetryAffiliates}
             {...multiSelectCommon}
           />
+          {affiliateOptionsError && (
+            <button
+              type="button"
+              onClick={() => onRetryAffiliates?.()}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-[11px] font-semibold text-destructive transition hover:bg-destructive/15"
+            >
+              <span className="truncate">{affiliateOptionsError}</span>
+              <span className="shrink-0 rounded-lg border border-destructive/30 px-2 py-0.5">
+                {t("orders.retryNow", { defaultValue: "إعادة المحاولة" })}
+              </span>
+            </button>
+          )}
         </div>
       )}
 

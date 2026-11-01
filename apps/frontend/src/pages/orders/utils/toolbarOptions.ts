@@ -6,6 +6,7 @@ import type {
   MerchantFilterOption,
   AffiliateFilterOption,
 } from "../Orders";
+import type { AffiliateStoreOption } from "./orderTransformer";
 
 export interface QuickViewItem {
   key: string;
@@ -123,7 +124,53 @@ export const buildAffiliateOptionsList = (
   affiliateOptions: AffiliateFilterOption[],
   getAffiliateDisplayName: (affiliate: AffiliateFilterOption) => string,
 ): MultiSelectOption[] =>
-  affiliateOptions.map((affiliateOption) => ({
-    code: affiliateOption.id,
-    name: getAffiliateDisplayName(affiliateOption),
+  affiliateOptions.map((affiliateOption) => {
+    const displayName =
+      affiliateOption.name ||
+      getAffiliateDisplayName(affiliateOption) ||
+      affiliateOption.affiliateCode ||
+      affiliateOption.id;
+    const code =
+      affiliateOption.affiliateCode && affiliateOption.affiliateCode !== "PENDING"
+        ? affiliateOption.affiliateCode
+        : "";
+
+    // كل صف يعرض: الاسم + الكود + عدد الطلبات + إجمالي العمولة + بادج الشركة الأخرى
+    const details: string[] = [];
+    if (typeof affiliateOption.orderCount === "number") {
+      details.push(`${affiliateOption.orderCount} طلب`);
+    }
+    if (
+      typeof affiliateOption.totalCommission === "number" &&
+      affiliateOption.totalCommission > 0
+    ) {
+      details.push(
+        `عمولة ${affiliateOption.totalCommission.toLocaleString("ar-EG", {
+          maximumFractionDigits: 2,
+        })}`,
+      );
+    }
+    if (affiliateOption.isOtherCompany) {
+      details.push("مسوق في شركة تانية");
+    }
+    if (affiliateOption.isPendingAffiliateRecord) {
+      details.push("بانتظار التفعيل");
+    }
+
+    return {
+      code: affiliateOption.affiliateId || affiliateOption.id,
+      name: code ? `${displayName} — ${code}` : displayName,
+      description: details.join(" · "),
+      // صفوف "بانتظار التفعيل" لا تملك affiliateId فلا يمكن الفلترة عليها
+      disabled: !affiliateOption.affiliateId && affiliateOption.canFilterOrders === false,
+    };
+  });
+
+export const buildStoreOptionsList = (
+  storeOptions: AffiliateStoreOption[],
+): MultiSelectOption[] =>
+  storeOptions.map((storeOption) => ({
+    code: storeOption.companyId,
+    name: storeOption.companyName || storeOption.companyId,
+    description: `${storeOption.orderCount} طلب · ${storeOption.activeMarketersCount} مسوق نشط`,
   }));

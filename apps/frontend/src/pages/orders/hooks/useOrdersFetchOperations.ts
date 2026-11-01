@@ -80,6 +80,7 @@ export function useOrdersFetchOperations({
       const usesUnifiedOperationFilters = Boolean(
         filters.merchantId.length > 0 ||
           filters.affiliateId.length > 0 ||
+          (filters.companyId?.length || 0) > 0 ||
           filters.fulfillmentSource.length > 0 ||
           filters.merchantOperationStatus.length > 0 ||
           filters.merchantSettlementStatus.length > 0,
@@ -179,6 +180,8 @@ export function useOrdersFetchOperations({
         if (filters.sourceType.length > 0) queryParams.sourceType = filters.sourceType.join(",");
         if (filters.merchantId.length > 0) queryParams.merchantId = filters.merchantId.join(",");
         if (filters.affiliateId.length > 0) queryParams.affiliateId = filters.affiliateId.join(",");
+        if (filters.companyId && filters.companyId.length > 0)
+          queryParams.companyId = filters.companyId.join(",");
         if (filters.fulfillmentSource.length > 0)
           queryParams.fulfillmentSource = filters.fulfillmentSource.join(",");
         if (filters.merchantOperationStatus.length > 0)

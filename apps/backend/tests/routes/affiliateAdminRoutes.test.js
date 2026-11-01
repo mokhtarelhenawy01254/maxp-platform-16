@@ -56,6 +56,8 @@ jest.mock("../../services/sharedDatabase", () => ({
 
 jest.mock("../../services/affiliateService", () => ({
   listAffiliates: jest.fn(),
+  listAffiliatesWithOrderStats: jest.fn(),
+  listAffiliateStores: jest.fn(),
   updateAffiliateStatus: jest.fn(),
   updateAffiliateDocumentReview: jest.fn(),
   getAffiliateReviewHistory: jest.fn(),
@@ -178,7 +180,7 @@ describe("affiliate admin routes", () => {
   });
 
   test("lists affiliates for the current company only", async () => {
-    affiliateService.listAffiliates.mockResolvedValue([
+    affiliateService.listAffiliatesWithOrderStats.mockResolvedValue([
       { id: "affiliate-1", companyId: "company-1" },
     ]);
 
@@ -186,7 +188,7 @@ describe("affiliate admin routes", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(affiliateService.listAffiliates).toHaveBeenCalledWith("company-1");
+    expect(affiliateService.listAffiliatesWithOrderStats).toHaveBeenCalledWith("company-1");
   });
 
   test("updates affiliate status only when the affiliate belongs to the current company", async () => {

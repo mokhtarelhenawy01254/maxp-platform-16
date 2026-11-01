@@ -33,6 +33,7 @@ export function useOrdersFilterStats(filters: OrdersFilters): UseOrdersFilterSta
     if (filters.sourceType.length > 0) count += filters.sourceType.length;
     if (filters.merchantId.length > 0) count += filters.merchantId.length;
     if (filters.affiliateId.length > 0) count += filters.affiliateId.length;
+    if (filters.companyId && filters.companyId.length > 0) count += filters.companyId.length;
     if (filters.fulfillmentSource.length > 0) count += filters.fulfillmentSource.length;
     if (filters.merchantOperationStatus.length > 0) count += filters.merchantOperationStatus.length;
     if (filters.merchantSettlementStatus.length > 0) count += filters.merchantSettlementStatus.length;
