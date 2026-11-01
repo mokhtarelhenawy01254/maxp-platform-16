@@ -2912,6 +2912,22 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/super-admin/facebook-integrations"
+              element={
+                <Layout>
+                  <MetaAppsManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/facebook-apps"
+              element={
+                <Layout>
+                  <MetaAppsManagement />
+                </Layout>
+              }
+            />
+            <Route
               path="/super-admin/platform-signup-coupons"
               element={
                 <Layout>
@@ -3377,6 +3393,10 @@ const AppContent = () => {
                       <AgentMarketplacePage />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/agents"
+                  element={<Navigate to="/admin/agent-profiles" replace />}
                 />
                 <Route
                   path="/agents/market"

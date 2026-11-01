@@ -77,6 +77,10 @@ const saveFacebookOAuthConfig = (config) => {
     whatsappAppSecret: normalizeCredential(config?.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(config?.whatsappConfigId),
     whatsappWebhookVerifyToken: normalizeCredential(config?.whatsappWebhookVerifyToken),
+    growthAppId: normalizeCredential(config?.growthAppId),
+    growthAppSecret: normalizeCredential(config?.growthAppSecret),
+    growthConfigId: normalizeCredential(config?.growthConfigId || config?.growthLoginConfigId),
+    growthWebhookVerifyToken: normalizeCredential(config?.growthWebhookVerifyToken),
     updatedAt: new Date().toISOString(),
   };
 
@@ -104,7 +108,7 @@ const getFacebookOAuthConfig = () => {
       normalizeCredential(stored.facebookWebhookVerifyToken) ||
       normalizeCredential(process.env.FACEBOOK_VERIFY_TOKEN) ||
       normalizeCredential(process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN) ||
-      "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314",
+      "",
     whatsappAppId: chooseCredential(stored.whatsappAppId),
     whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(stored.whatsappConfigId),
@@ -150,10 +154,26 @@ const getFacebookAppKeyConfig = (key = "primary") => {
       return primaryConfig;
     }
 
-    const growthAppId = chooseCredential(process.env.FACEBOOK_GROWTH_APP_ID, process.env.FB_GROWTH_APP_ID);
-    const growthAppSecret = chooseCredential(process.env.FACEBOOK_GROWTH_APP_SECRET, process.env.FB_GROWTH_APP_SECRET);
-    const growthLoginConfigId = normalizeCredential(process.env.FACEBOOK_GROWTH_LOGIN_CONFIG_ID || process.env.FB_GROWTH_LOGIN_CONFIG_ID);
+    const stored = getStoredFacebookOAuthConfig() || {};
+
+    const growthAppId = chooseCredential(
+      stored.growthAppId,
+      process.env.FACEBOOK_GROWTH_APP_ID,
+      process.env.FB_GROWTH_APP_ID
+    );
+    const growthAppSecret = chooseCredential(
+      stored.growthAppSecret,
+      process.env.FACEBOOK_GROWTH_APP_SECRET,
+      process.env.FB_GROWTH_APP_SECRET
+    );
+    const growthLoginConfigId = normalizeCredential(
+      stored.growthConfigId ||
+      stored.growthLoginConfigId ||
+      process.env.FACEBOOK_GROWTH_LOGIN_CONFIG_ID ||
+      process.env.FB_GROWTH_LOGIN_CONFIG_ID
+    );
     const growthWebhookVerifyToken = chooseCredential(
+      stored.growthWebhookVerifyToken,
       process.env.FACEBOOK_GROWTH_WEBHOOK_VERIFY_TOKEN,
       process.env.FACEBOOK_GROWTH_VERIFY_TOKEN,
       process.env.FB_GROWTH_VERIFY_TOKEN,
@@ -228,8 +248,6 @@ const getFacebookWebhookVerifyTokens = () => {
     process.env.FACEBOOK_GROWTH_VERIFY_TOKEN,
     process.env.FB_GROWTH_WEBHOOK_VERIFY_TOKEN,
     process.env.FB_GROWTH_VERIFY_TOKEN,
-    "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314",
-    "simple_chat_verify_token_2025",
   ];
 
   return new Set(

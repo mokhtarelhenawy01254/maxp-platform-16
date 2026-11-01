@@ -366,6 +366,11 @@ export const getSuperAdminMenuGroups = (
         path: "/super-admin/facebook-oauth", // path="/super-admin/facebook-oauth"
       },
       {
+        text: t("superAdmin.sidebar.metaApps") || "تطبيقات فيسبوك المزدوجة (Primary + Growth)",
+        icon: ic(Layers, "h-4 w-4"),
+        path: "/super-admin/facebook-integrations",
+      },
+      {
         text: t("superAdmin.sidebar.metaPixel") || "بكسل المنصة Meta Pixel",
         icon: ic(Activity, "h-4 w-4"),
         path: "/super-admin/platform-site-meta-pixel", // path="/super-admin/platform-site-meta-pixel"
