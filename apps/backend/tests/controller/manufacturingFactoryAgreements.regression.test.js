@@ -83,6 +83,9 @@ jest.mock('../../utils/verifyToken', () => ({
     req.companyId = 'comp_test_456';
     next();
   },
+  // routes في manufacturingRoutes بتحمي بعض الـendpoints بـrequireRole
+  requireRole: () => (req, res, next) => next(),
+  authorizeRole: () => (req, res, next) => next(),
 }));
 
 jest.mock('../../middleware/checkAppAccess', () => ({
