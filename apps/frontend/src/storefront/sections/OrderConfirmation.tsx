@@ -7,11 +7,12 @@ import {
   OrderConfirmationUpsell,
   OrderConfirmationUtilitySection,
   resolveShippingLocation,
+  sanitizeOrderConfirmationCopy,
   useOrderConfirmationController,
   type OrderConfirmationProps,
 } from './order-confirmation';
 
-export { resolveShippingLocation };
+export { resolveShippingLocation, sanitizeOrderConfirmationCopy };
 export type { OrderConfirmationProps };
 
 export const OrderConfirmation: React.FC<OrderConfirmationProps> = (props) => {
@@ -130,7 +131,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = (props) => {
             showRecommended={ctrl.showRecommended}
             resolvedOrderReference={ctrl.resolvedOrderReference}
             purchaseItems={ctrl.purchaseItems}
-            settings={settings}
+            settings={ctrl.sanitizedSettings || settings}
             prefersArabicCopy={ctrl.prefersArabicCopy}
             isPcHub={ctrl.isPcHub}
             isRoseBoutique={ctrl.isSoftAftercare}

@@ -35,7 +35,7 @@ export const OrderConfirmationUpsell: React.FC<OrderConfirmationUpsellProps> = (
           : 'Displays, add-ons, and upgrades that fit the same buying decision.'
         : isRoseBoutique
         ? prefersArabicCopy
-          ? 'إكسسوارات وطبقات خفيفة قريبة من الطلب الحالي، لو حبيتي تضيفي لمسة أخيرة.'
+          ? 'إكسسوارات وطبقات خفيفة قريبة من الطلب الحالي، لو حبيت تضيف لمسة أخيرة.'
           : 'Light layers and accessories that stay close to the same boutique mood.'
         : prefersArabicCopy
         ? 'إضافات مناسبة للطلب الحالي لو حبيت تزود حاجة خفيفة.'
@@ -62,7 +62,7 @@ export const OrderConfirmationUpsell: React.FC<OrderConfirmationUpsellProps> = (
           : 'Quick add'
         : isRoseBoutique
         ? prefersArabicCopy
-          ? 'أضيفيها للسلة'
+          ? 'أضف للسلة'
           : 'Add to cart'
         : prefersArabicCopy
         ? 'أضف للسلة'
@@ -75,7 +75,7 @@ export const OrderConfirmationUpsell: React.FC<OrderConfirmationUpsellProps> = (
           : 'Review options'
         : isRoseBoutique
         ? prefersArabicCopy
-          ? 'شاهدي التفاصيل'
+          ? 'عرض التفاصيل'
           : 'View details'
         : prefersArabicCopy
         ? 'اختر الإضافات'

@@ -422,16 +422,16 @@
             "description": "فريقنا سيبدأ بتجهيز طلبك وسيصلك اتصال لتأكيد موعد الشحن خلال 24 ساعة.",
             "continueShoppingText": "العودة للمتجر",
             "orderNumberPrefix": "رقم الطلب:",
-            "supportText": "هل تحتاجين مساعدة؟ تواصلي معنا عبر",
+            "supportText": "هل تحتاج مساعدة؟ تواصل معنا عبر",
             "statusLabel": "قيد التجهيز",
             "whatsappSupportLabel": "دعم عبر واتساب",
             "whatsappMessage": "مرحباً، أود الاستفسار عن طلبي الأخير.",
             "recommendedTitle": "ممكن يعجبك كمان",
-            "recommendedSubtitle": "موديلات قريبة من نفس الارتفاع أو الراحة لو حبيتي تضيفي اختيارًا أخيرًا.",
+            "recommendedSubtitle": "موديلات قريبة من نفس الارتفاع أو الراحة لو حبيت تضيف اختيارًا أخيرًا.",
             "recommendedLimit": 3,
             "recommendedBadge": "خطوة أخيرة",
-            "recommendedCtaLabel": "أضيفيها للسلة",
-            "recommendedChooseOptionsLabel": "شاهدي المقاسات",
+            "recommendedCtaLabel": "أضف للسلة",
+            "recommendedChooseOptionsLabel": "عرض المقاسات",
             "recommendedVariantChoicesLabel": "مقاسات متاحة"
           }
         }

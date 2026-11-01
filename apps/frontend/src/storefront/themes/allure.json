@@ -123,7 +123,7 @@
       {"type": "checkout-form", "variant": "split", "settings": {"contactDescription": "قسّمنا الدفع لبطاقات أوضح.", "shippingDescription": "حقول الشحن مرتبة لتسريع الإدخال.", "notesDescription": "أضيفي ملاحظات التغليف أو التوصيل.", "enableInStorePickup": true}},
       {"type": "payment", "variant": "cards", "settings": {"subtitle": "بطاقات دفع أوضح مع ملخص حي.", "summaryDescription": "الإجمالي والشحن في بلوك واحد.", "securityText": "الدفع مشفّر ومحمي"}}
     ]},
-    "thank-you": {"sections": [{"type": "order-confirmation", "settings": {"title": "تم تأكيد الطلب", "description": "شكرًا لتسوقك من Allure. نجهّز طلبك الآن.", "continueShoppingText": "مواصلة التسوق", "orderNumberPrefix": "رقم الطلب:", "supportText": "تحتاجين مساعدة؟ تواصل معنا عبر"}}]},
+    "thank-you": {"sections": [{"type": "order-confirmation", "settings": {"title": "تم تأكيد الطلب", "description": "شكرًا لتسوقك من Allure. نجهّز طلبك الآن.", "continueShoppingText": "مواصلة التسوق", "orderNumberPrefix": "رقم الطلب:", "supportText": "تحتاج مساعدة؟ تواصل معنا عبر"}}]},
     "lookbook": {"pageGoal": "discovery", "sections": [
       {"type": "hero-banner", "variant": "centered", "settings": {"title": "دليل الإطلالات", "subtitle": "لوكات مكتملة مستوحاة من تشكيلاتنا.", "ctaText": "تسوّقي اللوك", "ctaLink": "/shop"}},
       {"type": "lookbook-showcase", "variant": "masonry", "settings": {"title": "كل الإطلالات", "subtitle": "صفّحي وأضيفي القطعة بضغطة.", "limit": 12}}

@@ -122,7 +122,7 @@ export const softGracefulBlueprint: StorefrontTemplateBlueprint = {
     },
     cart: { sections: [{ type: "cart-items", settings: { title: "سلة التسوق" } }, { type: "order-summary", settings: { title: "ملخص الطلب" } }] },
     checkout: { sections: [{ type: "checkout-form" }, { type: "payment" }, { type: "order-summary" }] },
-    "thank-you": { sections: [{ type: "order-confirmation", settings: { title: "تم تأكيد طلبك", description: "شكراً لطلبك من Graceful.", continueShoppingText: "تابعي التسوق" } }] },
+    "thank-you": { sections: [{ type: "order-confirmation", settings: { title: "تم تأكيد طلبك", description: "شكراً لطلبك من Graceful.", continueShoppingText: "متابعة التسوق" } }] },
   },
   metadata: { notes: ["مستوحى من Soft Graceful Shopify — curated collections + seasonal + occasion + hotspot + slide-out cart"] },
 };

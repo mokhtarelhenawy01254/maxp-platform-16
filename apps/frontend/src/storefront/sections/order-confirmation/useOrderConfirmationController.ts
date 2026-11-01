@@ -41,8 +41,67 @@ import {
   type TrackedOrderSummary,
 } from './types';
 
+export function sanitizeOrderConfirmationCopy<T extends string | undefined>(text: T): T {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/لكِ/g, 'لك')
+    .replace(/تابعي التسوق/g, 'متابعة التسوق')
+    .replace(/كمّلي التسوق/g, 'مواصلة التسوق')
+    .replace(/شاهدي تنسيقات أخرى/g, 'تصفح المزيد من المنتجات')
+    .replace(/شاهدي بقية المجموعة/g, 'تصفح بقية المجموعة')
+    .replace(/ارجعي للتسوق/g, 'العودة للتسوق')
+    .replace(/معاكي/g, 'معك')
+    .replace(/تحتاجين مساعدة؟/g, 'تحتاج مساعدة؟')
+    .replace(/هل تحتاجين مساعدة؟/g, 'هل تحتاج مساعدة؟')
+    .replace(/تحتاجين تعديل المقاس/g, 'تحتاج تعديل المقاس')
+    .replace(/تواصلي معنا/g, 'تواصل معنا')
+    .replace(/إذا احتجتِ/g, 'إذا احتجت')
+    .replace(/لو محتاجة/g, 'لو محتاج')
+    .replace(/لو حبيتي/g, 'لو حبيت')
+    .replace(/لو حابة/g, 'لو حابب')
+    .replace(/تابعي حالة الطلب/g, 'متابعة حالة الطلب')
+    .replace(/راجعي حالة الطلب/g, 'متابعة حالة الطلب')
+    .replace(/أدخلي نفس/g, 'أدخل نفس')
+    .replace(/اكتبي نفس/g, 'اكتب نفس')
+    .replace(/اعرضي آخر/g, 'اعرض آخر')
+    .replace(/اعرضي حالة/g, 'اعرض حالة')
+    .replace(/تحققي من/g, 'تحقق من')
+    .replace(/أعيدي نفس/g, 'أعد نفس')
+    .replace(/كرري نفس/g, 'كرر نفس')
+    .replace(/رجّعي نفس/g, 'أعد نفس')
+    .replace(/رجعيها/g, 'أعدها')
+    .replace(/أضيفي نفس/g, 'أضف نفس')
+    .replace(/أضيفي للسلة/g, 'أضف للسلة')
+    .replace(/أضيفيها للسلة/g, 'أضفها للسلة')
+    .replace(/شاهدي التفاصيل/g, 'عرض التفاصيل')
+    .replace(/شوفي التفاصيل/g, 'عرض التفاصيل')
+    .replace(/شاهدي المقاسات/g, 'عرض المقاسات')
+    .replace(/اختاري المقاس/g, 'اختر المقاس')
+    .replace(/لو تحبين/g, 'لو تحب')
+    .replace(/تتوقعينها/g, 'تتوقعها') as T;
+}
+
 export const useOrderConfirmationController = (props: OrderConfirmationProps) => {
-  const { section, settings } = props;
+  const { section, settings: rawSettings } = props;
+  const settings = useMemo(() => {
+    if (!rawSettings) return rawSettings;
+    const sanitized = { ...rawSettings };
+    if (sanitized.title) sanitized.title = sanitizeOrderConfirmationCopy(sanitized.title);
+    if (sanitized.description) sanitized.description = sanitizeOrderConfirmationCopy(sanitized.description);
+    if (sanitized.continueShoppingText) sanitized.continueShoppingText = sanitizeOrderConfirmationCopy(sanitized.continueShoppingText);
+    if (sanitized.supportText) sanitized.supportText = sanitizeOrderConfirmationCopy(sanitized.supportText);
+    if (sanitized.trackOrderTitle) sanitized.trackOrderTitle = sanitizeOrderConfirmationCopy(sanitized.trackOrderTitle);
+    if (sanitized.trackOrderDescription) sanitized.trackOrderDescription = sanitizeOrderConfirmationCopy(sanitized.trackOrderDescription);
+    if (sanitized.trackOrderButtonText) sanitized.trackOrderButtonText = sanitizeOrderConfirmationCopy(sanitized.trackOrderButtonText);
+    if (sanitized.reorderTitle) sanitized.reorderTitle = sanitizeOrderConfirmationCopy(sanitized.reorderTitle);
+    if (sanitized.reorderDescription) sanitized.reorderDescription = sanitizeOrderConfirmationCopy(sanitized.reorderDescription);
+    if (sanitized.reorderButtonText) sanitized.reorderButtonText = sanitizeOrderConfirmationCopy(sanitized.reorderButtonText);
+    if (sanitized.recommendedTitle) sanitized.recommendedTitle = sanitizeOrderConfirmationCopy(sanitized.recommendedTitle);
+    if (sanitized.recommendedSubtitle) sanitized.recommendedSubtitle = sanitizeOrderConfirmationCopy(sanitized.recommendedSubtitle);
+    if (sanitized.recommendedCtaLabel) sanitized.recommendedCtaLabel = sanitizeOrderConfirmationCopy(sanitized.recommendedCtaLabel);
+    if (sanitized.recommendedChooseOptionsLabel) sanitized.recommendedChooseOptionsLabel = sanitizeOrderConfirmationCopy(sanitized.recommendedChooseOptionsLabel);
+    return sanitized;
+  }, [rawSettings]);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -229,11 +288,11 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
         : `Thanks for shopping with ${storeName}. Your order is logged and our team is reviewing stock, protection, and shipping before fulfillment.`)
       : isKhemetLuxe
         ? (prefersArabicCopy
-          ? `استلمنا طلبك في ${storeName}، وهنراجع المقاس والعنوان ونتواصل معاكي لتأكيد الشحن خلال 24 ساعة.`
+          ? `استلمنا طلبك في ${storeName}، وهنراجع المقاس والعنوان ونتواصل معك لتأكيد الشحن خلال 24 ساعة.`
           : `We received your order at ${storeName} and will confirm the size, address, and shipping details within 24 hours.`)
       : isRoseBoutique
           ? (prefersArabicCopy
-            ? `شكرًا لتسوقك من ${storeName}. سنراجع المقاس والعنوان بهدوء قبل التجهيز، ونرسل لكِ تحديثات أقرب خطوة بخطوة حتى يصل الطلب بشكل أوضح وأسهل.`
+            ? `شكرًا لتسوقك من ${storeName}. سنراجع المقاس والعنوان بهدوء قبل التجهيز، ونرسل لك تحديثات أقرب خطوة بخطوة حتى يصل الطلب بشكل أوضح وأسهل.`
           : `Thanks for shopping with ${storeName}. We are softly reviewing size, address, and preparation details before dispatch.`)
       : (prefersArabicCopy
         ? `شكرًا لتسوقك من ${storeName}. فريقنا بدأ تجهيز طلبك وسيتواصل معك لتأكيد بيانات الشحن.`
@@ -243,9 +302,9 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     (isPcHub
       ? (prefersArabicCopy ? 'تابع تصفح الأجهزة' : 'Browse more gear')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'كمّلي التسوق' : 'Continue shopping')
+        ? (prefersArabicCopy ? 'مواصلة التسوق' : 'Continue shopping')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'شاهدي تنسيقات أخرى' : 'Browse more looks')
+          ? (prefersArabicCopy ? 'تصفح المزيد من المنتجات' : 'Browse more looks')
         : (prefersArabicCopy ? 'مواصلة التسوق' : 'Continue shopping'));
   const orderNumberPrefix = settings?.orderNumberPrefix || (prefersArabicCopy ? 'رقم الطلب:' : 'Order number:');
   const supportText =
@@ -256,10 +315,10 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
         : 'Need a spec change or company invoice? Reach us via')
       : isKhemetLuxe
         ? (prefersArabicCopy
-          ? 'لو حبيتي تسألي عن الشحن أو تعدلي العنوان، كلمينا على'
+          ? 'لو حبيت تسأل عن الشحن أو تعدل العنوان، تواصل معنا على'
           : 'Need a shipping or address update? Reach us via')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'إذا احتجتِ تعديلًا على المقاس أو العنوان تواصلي معنا عبر' : 'Need a size or address update? Reach us via')
+          ? (prefersArabicCopy ? 'إذا احتجت تعديلًا على المقاس أو العنوان تواصل معنا عبر' : 'Need a size or address update? Reach us via')
         : (prefersArabicCopy ? 'تحتاج مساعدة؟ تواصل معنا عبر' : 'Need help? Reach us via'));
   const statusLabel =
     (isPcHub ? pcHubStatusExperience?.pillLabel : settings?.statusLabel) ||
@@ -289,9 +348,9 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     (isPcHub
       ? (prefersArabicCopy ? 'تابع حالة التجهيز' : 'Track the prep status')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'راجعي حالة الطلب' : 'Review order status')
+        ? (prefersArabicCopy ? 'متابعة حالة الطلب' : 'Review order status')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'راجعي حالة الطلب' : 'Review order status')
+          ? (prefersArabicCopy ? 'متابعة حالة الطلب' : 'Review order status')
         : (prefersArabicCopy ? 'تتبع هذا الطلب' : 'Track this order'));
   const trackOrderDescription =
     settings?.trackOrderDescription ||
@@ -301,11 +360,11 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
         : 'Use the same checkout phone number to see the latest prep, review, and shipping update.')
       : isKhemetLuxe
         ? (prefersArabicCopy
-          ? 'اكتبي نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على التأكيد والتجهيز والشحن.'
+          ? 'اكتب نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على التأكيد والتجهيز والشحن.'
           : 'Use the same checkout phone number to view the latest confirmation, prep, and shipping update.')
       : isRoseBoutique
           ? (prefersArabicCopy
-            ? 'أدخلي نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على المراجعة والتجهيز والشحن.'
+            ? 'أدخل نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على المراجعة والتجهيز والشحن.'
             : 'Use the same checkout phone number to review the latest confirmation, prep, and shipping update.')
       : (prefersArabicCopy
         ? 'تحقق من أحدث حالة للطلب باستخدام نفس رقم الهاتف الذي استُخدم أثناء إتمام الطلب.'
@@ -315,9 +374,9 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     (isPcHub
       ? (prefersArabicCopy ? 'اعرض آخر تحديث' : 'Show latest update')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'اعرضي حالة الطلب' : 'Show order status')
+        ? (prefersArabicCopy ? 'اعرض حالة الطلب' : 'Show order status')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'اعرضي آخر تحديث' : 'Show latest update')
+          ? (prefersArabicCopy ? 'اعرض آخر تحديث' : 'Show latest update')
         : (prefersArabicCopy ? 'تحقق من حالة الطلب' : 'Check order status'));
   const trackOrderPhoneLabel =
     settings?.trackOrderPhoneLabel ||
@@ -331,9 +390,9 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     (isPcHub
       ? (prefersArabicCopy ? 'أعد نفس التجهيزة بسرعة' : 'Rebuild the same setup fast')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'رجّعي نفس الاختيارات للسلة' : 'Bring the same picks back to cart')
+        ? (prefersArabicCopy ? 'أعد نفس الاختيارات للسلة' : 'Bring the same picks back to cart')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'أعيدي نفس الاختيارات بسهولة' : 'Rebuild the same picks easily')
+          ? (prefersArabicCopy ? 'أعد نفس الاختيارات بسهولة' : 'Rebuild the same picks easily')
         : (prefersArabicCopy ? 'أعد طلب نفس المنتجات' : 'Reorder the same items'));
   const reorderDescription =
     settings?.reorderDescription ||
@@ -343,11 +402,11 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
         : 'Return the same device and add-ons to the cart in one step for a repeat setup.')
       : isKhemetLuxe
         ? (prefersArabicCopy
-          ? 'لو حبيتي تكرري نفس الموديلات أو تعدلي المقاس في خطوة جديدة، رجعيها للسلة بضغطة واحدة.'
+          ? 'لو حبيت تكرر نفس الموديلات أو تعدل المقاس في خطوة جديدة، أعدها للسلة بضغطة واحدة.'
           : 'Bring the same styles back to the cart in one step if you want to repeat or adjust the order.')
       : isRoseBoutique
           ? (prefersArabicCopy
-            ? 'لو حبيتي تكرري نفس القطع أو تبني طلبًا قريبًا منها، رجعيها إلى السلة بضغطة واحدة.'
+            ? 'لو حبيت تكرر نفس القطع أو تجهز طلبًا قريبًا منها، أعدها إلى السلة بضغطة واحدة.'
             : 'Bring the same pieces back to cart in one step if you want to rebuild a similar order.')
       : (prefersArabicCopy
         ? 'أضف منتجات الطلب الأصلي إلى السلة مرة واحدة وكمّل التجربة بسرعة.'
@@ -357,18 +416,18 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     (isPcHub
       ? (prefersArabicCopy ? 'أضف نفس التجهيزة للسلة' : 'Add the same setup to cart')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'رجّعي المنتجات للسلة' : 'Add the same picks to cart')
+        ? (prefersArabicCopy ? 'أعد المنتجات للسلة' : 'Add the same picks to cart')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'أضيفي نفس القطع للسلة' : 'Add the same pieces to cart')
+          ? (prefersArabicCopy ? 'أضف نفس القطع للسلة' : 'Add the same pieces to cart')
         : (prefersArabicCopy ? 'أضف هذه المنتجات مرة أخرى' : 'Add these items again'));
   const reorderSuccessText =
     settings?.reorderSuccessText ||
     (isPcHub
       ? (prefersArabicCopy ? 'رجّعنا نفس التجهيزة إلى السلة.' : 'The same setup is back in the cart.')
       : isKhemetLuxe
-        ? (prefersArabicCopy ? 'رجعنا نفس الاختيارات للسلة.' : 'The same picks are back in the cart.')
+        ? (prefersArabicCopy ? 'أعدنا نفس الاختيارات للسلة.' : 'The same picks are back in the cart.')
       : isRoseBoutique
-          ? (prefersArabicCopy ? 'رجعنا نفس الاختيارات إلى السلة.' : 'The same picks are back in the cart.')
+          ? (prefersArabicCopy ? 'أعدنا نفس الاختيارات إلى السلة.' : 'The same picks are back in the cart.')
         : (prefersArabicCopy ? 'تمت إضافة منتجات الطلب إلى السلة.' : 'The order items were added back to cart.'));
   const whatsappUrl = `https://wa.me/${resolvedWhatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
   const homePath = buildStorefrontPath(location.pathname, '/', location.search);
@@ -1063,6 +1122,7 @@ export const useOrderConfirmationController = (props: OrderConfirmationProps) =>
     handleSupportEmailClick,
     handleTrackOrderSubmit,
     handleReorder,
+    sanitizedSettings: settings,
     // Styling classes
     shellClassName,
     containerClassName,

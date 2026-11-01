@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import OrderConfirmation, { resolveShippingLocation } from '../OrderConfirmation';
+import OrderConfirmation, { resolveShippingLocation, sanitizeOrderConfirmationCopy } from '../OrderConfirmation';
 
 // Mock dependencies
 vi.mock('../../engine/ThemeProvider', () => ({
@@ -122,5 +122,48 @@ describe('OrderConfirmation (Modular Coordinator)', () => {
       address: '15 Tahrir Square, Cairo',
     };
     expect(resolveShippingLocation(objAddress)).toBe('15 Tahrir Square, Cairo');
+  });
+
+  it('sanitizes legacy feminine copy in order confirmation settings and copy fallbacks', () => {
+    expect(sanitizeOrderConfirmationCopy('تابعي التسوق')).toBe('متابعة التسوق');
+    expect(sanitizeOrderConfirmationCopy('شكراً، ونرسل لكِ تحديثات مستمرة')).toBe('شكراً، ونرسل لك تحديثات مستمرة');
+    expect(sanitizeOrderConfirmationCopy('كمّلي التسوق')).toBe('مواصلة التسوق');
+    expect(sanitizeOrderConfirmationCopy('شاهدي تنسيقات أخرى')).toBe('تصفح المزيد من المنتجات');
+    expect(sanitizeOrderConfirmationCopy('سنتواصل معاكي لتأكيد الشحن')).toBe('سنتواصل معك لتأكيد الشحن');
+    expect(sanitizeOrderConfirmationCopy('تابعي حالة الطلب')).toBe('متابعة حالة الطلب');
+  });
+
+  it('neutralizes legacy feminine settings when rendering OrderConfirmation', () => {
+    renderWithProviders(
+      <OrderConfirmation
+        settings={{
+          continueShoppingText: 'تابعي التسوق',
+          description: 'سنراجع المقاس والعنوان، ونرسل لكِ تحديثات أولاً بأول.',
+          supportText: 'إذا احتجتِ مساعدة تواصلي معنا عبر',
+          supportEmail: 'support@store.com',
+          trackOrderTitle: 'تابعي حالة الطلب',
+        }}
+      />,
+      '/order-confirmation?orderNumber=ORD-101',
+    );
+
+    expect(screen.queryByText('تابعي التسوق')).toBeNull();
+    expect(screen.queryByText(/لكِ/)).toBeNull();
+    expect(screen.queryByText(/احتجتِ/)).toBeNull();
+
+    expect(screen.getByText('متابعة التسوق')).toBeDefined();
+    expect(screen.getByText('سنراجع المقاس والعنوان، ونرسل لك تحديثات أولاً بأول.')).toBeDefined();
+    expect(screen.getByText('إذا احتجت مساعدة تواصل معنا عبر')).toBeDefined();
+  });
+
+  it('renders default fallback copy cleanly without feminine terms', () => {
+    renderWithProviders(
+      <OrderConfirmation />,
+      '/order-confirmation?orderNumber=ORD-DEFAULT',
+    );
+
+    expect(screen.getByText(/شكرًا لتسوقك من Test Store/)).toBeDefined();
+    expect(screen.getByText(/سيتواصل معك لتأكيد بيانات الشحن/)).toBeDefined();
+    expect(screen.getByText('مواصلة التسوق')).toBeDefined();
   });
 });
