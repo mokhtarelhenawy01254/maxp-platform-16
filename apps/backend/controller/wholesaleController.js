@@ -166,6 +166,78 @@ const wholesaleController = {
       res.json({ success: true, ...result });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   },
+
+  // Daily Workspace Queue & Actions
+  async getManageQueue(req, res) {
+    try {
+      const data = await wholesaleService.getManageQueue({
+        companyId: req.user.companyId,
+        distributorId: req.query.distributorId,
+        period: req.query.period,
+        limit: req.query.limit,
+      });
+      res.json({ success: true, ...data });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async confirmOrder(req, res) {
+    try {
+      const orderId = req.params.orderId || req.params.id || req.body.orderId;
+      const data = await wholesaleService.confirmWholesaleOrder(
+        orderId,
+        req.user.companyId,
+        req.user.id,
+        req.body.notes
+      );
+      res.json({
+        success: true,
+        message: 'تم تأكيد طلب الجملة وتسجيل الفاتورة في كشف الحساب بنجاح',
+        data,
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async suspendDistributor(req, res) {
+    try {
+      const id = req.params.id || req.body.distributorId;
+      const data = await wholesaleService.suspendDistributor(
+        id,
+        req.user.companyId,
+        req.body.reason,
+        req.user.id
+      );
+      res.json({
+        success: true,
+        message: 'تم إيقاف حساب الموزع بنجاح',
+        data,
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async resumeDistributor(req, res) {
+    try {
+      const id = req.params.id || req.body.distributorId;
+      const data = await wholesaleService.resumeDistributor(
+        id,
+        req.user.companyId,
+        req.body.reason,
+        req.user.id
+      );
+      res.json({
+        success: true,
+        message: 'تم إعادة تفعيل حساب الموزع بنجاح',
+        data,
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
 };
 
 module.exports = wholesaleController;

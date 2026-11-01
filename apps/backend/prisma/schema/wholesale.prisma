@@ -119,3 +119,47 @@ model WholesaleStatement {
   @@index([periodStart, periodEnd])
   @@map("wholesale_statements")
 }
+
+model WholesaleChangeRequest {
+  id          String    @id @default(cuid())
+  companyId   String
+  entityType  String    // CUSTOMER | PRICE_LIST_ITEM | PRICE_LIST
+  entityId    String    // id of WholesaleCustomer or WholesalePriceListItem
+  field       String    // creditLimit | price | isActive
+  oldValue    String?
+  newValue    String
+  reason      String    // mandatory reason for request
+  requestedBy String    // userId
+  approvedBy  String?   // userId
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([companyId, status])
+  @@index([createdAt])
+  @@map("wholesale_change_requests")
+}
+
+model WholesaleAuditLog {
+  id          String    @id @default(cuid())
+  companyId   String
+  entityType  String    // CUSTOMER | PRICE_LIST | PRICE_LIST_ITEM | CHANGE_REQUEST
+  entityId    String
+  action      String    // CREATE | UPDATE | APPROVE | REJECT | SUSPEND | ACTIVATE
+  field       String?
+  oldValue    String?
+  newValue    String?
+  reason      String?
+  performedBy String    // userId
+  metadata    String?   // JSON string
+  createdAt   DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([companyId, action])
+  @@index([createdAt])
+  @@map("wholesale_audit_logs")
+}
+

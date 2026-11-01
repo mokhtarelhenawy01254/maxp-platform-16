@@ -45,8 +45,26 @@ export const SampleOrdersPage: React.FC = () => {
 
   // Modals & Drawer
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingSample, setEditingSample] = useState<SampleOrder | null>(null);
+  const [deletingSample, setDeletingSample] = useState<SampleOrder | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedSample, setSelectedSample] = useState<SampleOrder | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!deletingSample) return;
+    try {
+      setDeleteLoading(true);
+      await manufacturingApi.deleteSampleOrder(deletingSample.id);
+      setDeletingSample(null);
+      await fetchSamples();
+    } catch (err: any) {
+      console.error('Failed to delete sample order', err);
+      alert(err?.response?.data?.message || err?.message || 'تعذر حذف أمر العينة');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   useEffect(() => {
     manufacturingApi
@@ -447,13 +465,30 @@ export const SampleOrdersPage: React.FC = () => {
 
                       {/* Action */}
                       <td className="py-3 px-4 text-left whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenDrawer(s)}
-                          className="px-3 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-1"
-                        >
-                          <span>عرض</span>
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenDrawer(s)}
+                            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-1"
+                            title="عرض تفاصيل العينة"
+                          >
+                            <span>عرض</span>
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setEditingSample(s)}
+                            className="p-1.5 rounded-md hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                            title="تعديل أمر العينة"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingSample(s)}
+                            className="p-1.5 rounded-md hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                            title="حذف أمر العينة"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -463,6 +498,58 @@ export const SampleOrdersPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Sample Modal */}
+      <EditSampleModal
+        isOpen={!!editingSample}
+        onClose={() => setEditingSample(null)}
+        sample={editingSample}
+        onUpdated={fetchSamples}
+      />
+
+      {/* Delete Sample Confirmation Dialog */}
+      {deletingSample && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">حذف أمر العينة</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  هل أنت متأكد من حذف أمر العينة رقم{' '}
+                  <span className="font-mono font-bold text-foreground">{deletingSample.sampleNumber}</span> ({deletingSample.productName})؟
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/60">
+              سيتم حذف كافة المصاريف والدفعات والمراحل وملاحظات التصميم المرتبطة بأمر العينة بشكل نهائي.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setDeletingSample(null)}
+                disabled={deleteLoading}
+                className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted text-foreground transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteLoading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Sample Modal */}
       <CreateSampleModal

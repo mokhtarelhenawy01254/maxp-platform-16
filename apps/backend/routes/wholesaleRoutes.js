@@ -45,4 +45,13 @@ router.get('/dashboard', ctrl.dashboard);
 // Reports
 router.get('/debts/aging', ctrl.debtAgingReport);
 
+// Daily Workspace Queue & Actions (B2B Workspace)
+router.get('/manage/queue', ctrl.getManageQueue);
+router.post('/manage/orders/:orderId/confirm', ctrl.confirmOrder);
+router.post('/orders/:orderId/confirm', ctrl.confirmOrder);
+router.post('/manage/distributors/:id/suspend', ctrl.suspendDistributor);
+router.post('/customers/:id/suspend', ctrl.suspendDistributor);
+router.post('/manage/distributors/:id/resume', ctrl.resumeDistributor);
+router.post('/customers/:id/resume', ctrl.resumeDistributor);
+
 module.exports = router;

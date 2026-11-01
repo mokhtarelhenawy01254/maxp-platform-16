@@ -7254,325 +7254,344 @@ async function getMyCompaniesOrders(req, res) {
       return res.status(401).json({ success: false, error: "Authentication required" });
     }
 
-    const { getSharedPrismaClient } = require("../services/sharedDatabase");
-    const prisma = getSharedPrismaClient();
-    const permissionService = require("../services/permissionService");
+    const tenantContext = require("../services/tenantContext");
+    return await tenantContext.bypass(async () => {
+      const { getSharedPrismaClient } = require("../services/sharedDatabase");
+      const prisma = getSharedPrismaClient();
+      const permissionService = require("../services/permissionService");
 
-    // 1. Resolve user's active company memberships
-    const userCompanies = await prisma.userCompany.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            logo: true,
-            currency: true,
-            isActive: true,
-          },
+      // 1. Resolve user's active company memberships across all companies
+      const userCompanies = await prisma.userCompany.findMany({
+        where: {
+          userId,
+          isActive: true,
         },
-      },
-    });
-
-    if (!userCompanies || userCompanies.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          totalsByCompany: [],
-          totalOrders: 0,
-          orders: [],
-          pageInfo: {
-            hasNextPage: false,
-            nextCursor: null,
-            limit: 25,
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+              currency: true,
+              isActive: true,
+            },
           },
         },
       });
-    }
 
-    const accessibleCompanyIds = userCompanies.map((uc) => uc.companyId);
-    const companiesMap = {};
-    userCompanies.forEach((uc) => {
-      if (uc.company) {
+      if (!userCompanies || userCompanies.length === 0) {
+        console.log(`[MY-COMPANIES-ORDERS] userId=${userId} | accessibleCompanyIds.length=0 | targetCompanyIds.length=0 | totalsByCompany: []`);
+        return res.json({
+          success: true,
+          data: {
+            totalsByCompany: [],
+            totalOrders: 0,
+            orders: [],
+            pageInfo: {
+              hasNextPage: false,
+              nextCursor: null,
+              limit: 25,
+            },
+          },
+        });
+      }
+
+      // Filter only valid, active companies
+      const activeMemberships = userCompanies.filter((uc) => uc.company && uc.company.isActive !== false);
+      const accessibleCompanyIds = activeMemberships.map((uc) => uc.companyId);
+      const companiesMap = {};
+      activeMemberships.forEach((uc) => {
         companiesMap[uc.companyId] = uc.company;
-      }
-    });
-
-    // 2. Validate client-provided companyIds (Must be a subset of accessibleCompanyIds)
-    let targetCompanyIds = accessibleCompanyIds;
-    if (req.query.companyIds) {
-      const rawIds = Array.isArray(req.query.companyIds)
-        ? req.query.companyIds
-        : String(req.query.companyIds)
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-
-      // 🔒 Strict security check: 403 if client requests any unauthorized company
-      const hasUnauthorized = rawIds.some((id) => !accessibleCompanyIds.includes(id));
-      if (hasUnauthorized) {
-        return res.status(403).json({
-          success: false,
-          code: "FORBIDDEN_COMPANY_ACCESS",
-          error: "طلب تصفية لشركة غير مصرح لك بالوصول إليها",
-        });
-      }
-
-      if (rawIds.length > 0) {
-        targetCompanyIds = rawIds;
-      }
-    }
-
-    // 3. Calculate per-company permissions independently for this user
-    const permissionsMap = {};
-    for (const cId of targetCompanyIds) {
-      if (req.user?.role === "SUPER_ADMIN") {
-        permissionsMap[cId] = {
-          canView: true,
-          canEdit: true,
-          canChangeStatus: true,
-          canCancel: true,
-        };
-        continue;
-      }
-
-      const uc = userCompanies.find((u) => u.companyId === cId);
-      if (!uc || !uc.isActive) {
-        permissionsMap[cId] = {
-          canView: false,
-          canEdit: false,
-          canChangeStatus: false,
-          canCancel: false,
-        };
-        continue;
-      }
-
-      if (uc.role === "OWNER") {
-        permissionsMap[cId] = {
-          canView: true,
-          canEdit: true,
-          canChangeStatus: true,
-          canCancel: true,
-        };
-        continue;
-      }
-
-      try {
-        const perms = await permissionService.getUserPermissions(userId, cId);
-        const canView = perms.includes("orders.view");
-        const canEdit = perms.includes("orders.edit");
-        const canChangeStatus = perms.includes("orders.status.change");
-        const canCancel =
-          perms.includes("orders.delete") ||
-          perms.includes("orders.status.change") ||
-          perms.includes("orders.edit");
-
-        permissionsMap[cId] = {
-          canView,
-          canEdit,
-          canChangeStatus,
-          canCancel,
-        };
-      } catch (permErr) {
-        console.warn(`[MY-COMPANIES-ORDERS] Error loading perms for company ${cId}:`, permErr.message);
-        permissionsMap[cId] = {
-          canView: false,
-          canEdit: false,
-          canChangeStatus: false,
-          canCancel: false,
-        };
-      }
-    }
-
-    // Filter to only companies the user has permission to view
-    const viewableCompanyIds = targetCompanyIds.filter((id) => permissionsMap[id]?.canView);
-    if (viewableCompanyIds.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          totalsByCompany: targetCompanyIds.map((cId) => ({
-            companyId: cId,
-            companyName: companiesMap[cId]?.name || cId,
-            count: 0,
-          })),
-          totalOrders: 0,
-          orders: [],
-          pageInfo: {
-            hasNextPage: false,
-            nextCursor: null,
-            limit: 25,
-          },
-        },
       });
-    }
 
-    // 4. Build Filter Conditions for Orders
-    const filterWhere = {};
+      // 2. Validate client-provided companyIds (Must be a subset of accessibleCompanyIds)
+      let targetCompanyIds = accessibleCompanyIds;
+      if (req.query.companyIds && req.query.companyIds !== "ALL") {
+        const rawIds = Array.isArray(req.query.companyIds)
+          ? req.query.companyIds
+          : String(req.query.companyIds)
+              .split(",")
+              .map((s) => s.trim())
+              .filter((id) => Boolean(id) && id !== "ALL");
 
-    // Status filter
-    const statusQuery = req.query.status ? String(req.query.status).trim() : null;
-    if (statusQuery && statusQuery.toUpperCase() !== "ALL" && statusQuery.toUpperCase() !== "ANY") {
-      const statusUpper = statusQuery.toUpperCase();
-      filterWhere.OR = [
-        { status: statusUpper },
-        { customStatusCode: statusUpper },
-      ];
-    }
+        // 🔒 Strict security check: 403 if client requests any unauthorized company
+        const hasUnauthorized = rawIds.some((id) => !accessibleCompanyIds.includes(id));
+        if (hasUnauthorized) {
+          return res.status(403).json({
+            success: false,
+            code: "FORBIDDEN_COMPANY_ACCESS",
+            error: "طلب تصفية لشركة غير مصرح لك بالوصول إليها",
+          });
+        }
 
-    // Date range filter
-    const startDate = req.query.startDate || req.query.from;
-    const endDate = req.query.endDate || req.query.to;
-    if (startDate || endDate) {
-      const dateFilter = {};
-      if (startDate) {
-        const s = new Date(startDate);
-        if (!isNaN(s.getTime())) {
-          s.setHours(0, 0, 0, 0);
-          dateFilter.gte = s;
+        if (rawIds.length > 0) {
+          targetCompanyIds = rawIds;
         }
       }
-      if (endDate) {
-        const e = new Date(endDate);
-        if (!isNaN(e.getTime())) {
-          e.setHours(23, 59, 59, 999);
-          dateFilter.lte = e;
+
+      // 3. Calculate per-company permissions independently for this user across all accessible companies
+      const permissionsMap = {};
+      for (const cId of accessibleCompanyIds) {
+        if (req.user?.role === "SUPER_ADMIN") {
+          permissionsMap[cId] = {
+            canView: true,
+            canEdit: true,
+            canChangeStatus: true,
+            canCancel: true,
+          };
+          continue;
+        }
+
+        const uc = activeMemberships.find((u) => u.companyId === cId);
+        if (!uc || !uc.isActive) {
+          permissionsMap[cId] = {
+            canView: false,
+            canEdit: false,
+            canChangeStatus: false,
+            canCancel: false,
+          };
+          continue;
+        }
+
+        if (uc.role === "OWNER") {
+          permissionsMap[cId] = {
+            canView: true,
+            canEdit: true,
+            canChangeStatus: true,
+            canCancel: true,
+          };
+          continue;
+        }
+
+        try {
+          const perms = await permissionService.getUserPermissions(userId, cId);
+          const canView = perms.includes("orders.view");
+          const canEdit = perms.includes("orders.edit");
+          const canChangeStatus = perms.includes("orders.status.change");
+          const canCancel =
+            perms.includes("orders.delete") ||
+            perms.includes("orders.status.change") ||
+            perms.includes("orders.edit");
+
+          permissionsMap[cId] = {
+            canView,
+            canEdit,
+            canChangeStatus,
+            canCancel,
+          };
+        } catch (permErr) {
+          console.warn(`[MY-COMPANIES-ORDERS] Error loading perms for company ${cId}:`, permErr.message);
+          permissionsMap[cId] = {
+            canView: false,
+            canEdit: false,
+            canChangeStatus: false,
+            canCancel: false,
+          };
         }
       }
-      if (dateFilter.gte || dateFilter.lte) {
-        filterWhere.createdAt = dateFilter;
-      }
-    }
 
-    // Search filter (customer name, customer phone, orderNumber)
-    const searchQuery = req.query.search || req.query.q;
-    if (searchQuery && String(searchQuery).trim()) {
-      const term = String(searchQuery).trim();
-      const searchConditions = [
-        { orderNumber: { contains: term, mode: "insensitive" } },
-        { customerName: { contains: term, mode: "insensitive" } },
-        { customerPhone: { contains: term } },
-      ];
+      // Filter to all companies the user has permission to view
+      const allViewableCompanyIds = accessibleCompanyIds.filter((id) => permissionsMap[id]?.canView);
+      const targetViewableCompanyIds = targetCompanyIds.filter((id) => permissionsMap[id]?.canView);
 
-      if (filterWhere.AND) {
-        filterWhere.AND.push({ OR: searchConditions });
-      } else {
-        filterWhere.AND = [{ OR: searchConditions }];
-      }
-    }
-
-    // 5. Calculate per-company totals
-    const totalsByCompany = await Promise.all(
-      viewableCompanyIds.map(async (cId) => {
-        const count = await prisma.order.count({
-          where: {
-            ...filterWhere,
-            companyId: cId,
-          },
-        });
-        return {
+      if (allViewableCompanyIds.length === 0) {
+        const emptyTotals = accessibleCompanyIds.map((cId) => ({
           companyId: cId,
           companyName: companiesMap[cId]?.name || cId,
-          count,
-        };
-      }),
-    );
-    const totalOrdersCount = totalsByCompany.reduce((sum, item) => sum + item.count, 0);
-
-    // 6. Keyset Pagination Execution
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
-    let keysetWhere = {};
-    if (req.query.cursor) {
-      const cursorObj = decodeOrderKeysetCursor(req.query.cursor);
-      if (cursorObj) {
-        keysetWhere = {
-          OR: [
-            { createdAt: { lt: cursorObj.createdAt } },
-            {
-              createdAt: cursorObj.createdAt,
-              id: { lt: cursorObj.id },
+          count: 0,
+        }));
+        console.log(
+          `[MY-COMPANIES-ORDERS] userId=${userId} | accessibleCompanyIds.length=${accessibleCompanyIds.length} | targetCompanyIds.length=${targetCompanyIds.length} | totalsByCompany:`,
+          JSON.stringify(emptyTotals)
+        );
+        return res.json({
+          success: true,
+          data: {
+            totalsByCompany: emptyTotals,
+            totalOrders: 0,
+            orders: [],
+            pageInfo: {
+              hasNextPage: false,
+              nextCursor: null,
+              limit: 25,
             },
-          ],
-        };
+          },
+        });
       }
-    }
 
-    const queryWhere = {
-      ...filterWhere,
-      companyId: { in: viewableCompanyIds },
-      ...keysetWhere,
-    };
+      // 4. Build Filter Conditions for Orders
+      const filterWhere = {};
 
-    const rows = await prisma.order.findMany({
-      where: queryWhere,
-      take: limit + 1,
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      include: {
-        company: { select: { id: true, name: true, currency: true } },
-        customer: { select: { firstName: true, lastName: true, phone: true } },
-      },
-    });
+      // Status filter
+      const statusQuery = req.query.status ? String(req.query.status).trim() : null;
+      if (statusQuery && statusQuery.toUpperCase() !== "ALL" && statusQuery.toUpperCase() !== "ANY") {
+        const statusUpper = statusQuery.toUpperCase();
+        filterWhere.OR = [
+          { status: statusUpper },
+          { customStatusCode: statusUpper },
+        ];
+      }
 
-    let hasNextPage = false;
-    let nextCursor = null;
-    if (rows.length > limit) {
-      hasNextPage = true;
-      rows.pop();
-      const lastRow = rows[rows.length - 1];
-      nextCursor = encodeOrderKeysetCursor(lastRow.createdAt, lastRow.id);
-    }
+      // Date range filter
+      const startDate = req.query.startDate || req.query.from;
+      const endDate = req.query.endDate || req.query.to;
+      if (startDate || endDate) {
+        const dateFilter = {};
+        if (startDate) {
+          const s = new Date(startDate);
+          if (!isNaN(s.getTime())) {
+            s.setHours(0, 0, 0, 0);
+            dateFilter.gte = s;
+          }
+        }
+        if (endDate) {
+          const e = new Date(endDate);
+          if (!isNaN(e.getTime())) {
+            e.setHours(23, 59, 59, 999);
+            dateFilter.lte = e;
+          }
+        }
+        if (dateFilter.gte || dateFilter.lte) {
+          filterWhere.createdAt = dateFilter;
+        }
+      }
 
-    // 7. Format order rows with company information and permissions
-    const formattedOrders = rows.map((order) => {
-      const companyPerms = permissionsMap[order.companyId] || {
-        canView: false,
-        canEdit: false,
-        canChangeStatus: false,
-        canCancel: false,
+      // Search filter (customer name, customer phone, orderNumber)
+      const searchQuery = req.query.search || req.query.q;
+      if (searchQuery && String(searchQuery).trim()) {
+        const term = String(searchQuery).trim();
+        const searchConditions = [
+          { orderNumber: { contains: term, mode: "insensitive" } },
+          { customerName: { contains: term, mode: "insensitive" } },
+          { customerPhone: { contains: term } },
+        ];
+
+        if (filterWhere.AND) {
+          filterWhere.AND.push({ OR: searchConditions });
+        } else {
+          filterWhere.AND = [{ OR: searchConditions }];
+        }
+      }
+
+      // 5. Calculate per-company totals across ALL active viewable companies (including 0 counts)
+      const totalsByCompany = await Promise.all(
+        allViewableCompanyIds.map(async (cId) => {
+          const count = await prisma.order.count({
+            where: {
+              ...filterWhere,
+              companyId: cId,
+            },
+          });
+          return {
+            companyId: cId,
+            companyName: companiesMap[cId]?.name || cId,
+            count: count || 0,
+          };
+        }),
+      );
+      const totalOrdersCount = totalsByCompany.reduce((sum, item) => sum + item.count, 0);
+
+      // (أ) Diagnostic logging: log req.user.id + accessibleCompanyIds.length + targetCompanyIds.length + totalsByCompany
+      console.log(
+        `[MY-COMPANIES-ORDERS] userId=${userId} | accessibleCompanyIds.length=${accessibleCompanyIds.length} | targetCompanyIds.length=${targetCompanyIds.length} | totalsByCompany:`,
+        JSON.stringify(totalsByCompany)
+      );
+
+      // 6. Keyset Pagination Execution
+      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+      let keysetWhere = {};
+      if (req.query.cursor) {
+        const cursorObj = decodeOrderKeysetCursor(req.query.cursor);
+        if (cursorObj) {
+          keysetWhere = {
+            OR: [
+              { createdAt: { lt: cursorObj.createdAt } },
+              {
+                createdAt: cursorObj.createdAt,
+                id: { lt: cursorObj.id },
+              },
+            ],
+          };
+        }
+      }
+
+      const queryWhere = {
+        ...filterWhere,
+        companyId: { in: targetViewableCompanyIds },
+        ...keysetWhere,
       };
 
-      const customerName =
-        order.customerName ||
-        (order.customer
-          ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim()
-          : "") ||
-        "عميل غير محدد";
+      const rows = targetViewableCompanyIds.length > 0
+        ? await prisma.order.findMany({
+            where: queryWhere,
+            take: limit + 1,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            include: {
+              company: { select: { id: true, name: true, currency: true } },
+              customer: { select: { firstName: true, lastName: true, phone: true } },
+            },
+          })
+        : [];
 
-      const customerPhone = order.customerPhone || order.customer?.phone || "";
+      let hasNextPage = false;
+      let nextCursor = null;
+      if (rows.length > limit) {
+        hasNextPage = true;
+        rows.pop();
+        const lastRow = rows[rows.length - 1];
+        nextCursor = encodeOrderKeysetCursor(lastRow.createdAt, lastRow.id);
+      }
 
-      return {
-        id: order.id,
-        companyId: order.companyId,
-        companyName: order.company?.name || companiesMap[order.companyId]?.name || "غير معروف",
-        orderNumber: order.orderNumber,
-        customer: {
-          name: customerName,
-          phone: customerPhone,
+      // 7. Format order rows with company information and permissions
+      const formattedOrders = rows.map((order) => {
+        const companyPerms = permissionsMap[order.companyId] || {
+          canView: false,
+          canEdit: false,
+          canChangeStatus: false,
+          canCancel: false,
+        };
+
+        const customerName =
+          order.customerName ||
+          (order.customer
+            ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim()
+            : "") ||
+          "عميل غير محدد";
+
+        const customerPhone = order.customerPhone || order.customer?.phone || "";
+
+        return {
+          id: order.id,
+          companyId: order.companyId,
+          companyName: order.company?.name || companiesMap[order.companyId]?.name || "غير معروف",
+          orderNumber: order.orderNumber,
+          customer: {
+            name: customerName,
+            phone: customerPhone,
+          },
+          customerName,
+          customerPhone,
+          status: order.customStatusCode || order.status,
+          total: Number(order.total) || 0,
+          currency: order.currency || order.company?.currency || "EGP",
+          createdAt: order.createdAt,
+          permissions: companyPerms,
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          totalsByCompany,
+          totalOrders: totalOrdersCount,
+          orders: formattedOrders,
+          pageInfo: {
+            hasNextPage,
+            nextCursor,
+            limit,
+          },
         },
-        customerName,
-        customerPhone,
-        status: order.customStatusCode || order.status,
-        total: Number(order.total) || 0,
-        currency: order.currency || order.company?.currency || "EGP",
-        createdAt: order.createdAt,
-        permissions: companyPerms,
-      };
-    });
-
-    return res.json({
-      success: true,
-      data: {
-        totalsByCompany,
-        totalOrders: totalOrdersCount,
-        orders: formattedOrders,
-        pageInfo: {
-          hasNextPage,
-          nextCursor,
-          limit,
-        },
-      },
+      });
     });
   } catch (error) {
     console.error("❌ Error in getMyCompaniesOrders:", error);

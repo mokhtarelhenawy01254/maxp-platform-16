@@ -698,6 +698,384 @@ const wholesaleService = {
       },
     };
   },
+
+  // ── Daily Workspace Queue (4 Blocks + Counts) ──
+  async getManageQueue({ companyId, distributorId, period = 'today', limit = 50 }) {
+    const prisma = getSharedPrismaClient();
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+
+    // Date range calculation
+    let periodStartDate = null;
+    const now = new Date();
+    if (period === 'today') {
+      periodStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    } else if (period === 'week') {
+      periodStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (period === 'month') {
+      periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    }
+
+    // 1. Pending Wholesale Orders (Block 1) - uses compound index [companyId, status, createdAt]
+    const pendingWhere = {
+      companyId,
+      status: 'PENDING',
+      OR: [
+        { wholesaleCustomerId: distributorId || { not: null } },
+        { orderSource: 'WHOLESALE' },
+      ],
+    };
+    if (distributorId) {
+      pendingWhere.OR = [
+        { wholesaleCustomerId: distributorId },
+        { customerId: distributorId, orderSource: 'WHOLESALE' },
+      ];
+    }
+    if (periodStartDate) {
+      pendingWhere.createdAt = { gte: periodStartDate };
+    }
+
+    // 2. Active Wholesale Customers for Over-Limit detection (Block 2)
+    const customerWhere = {
+      companyId,
+      currentBalance: { gt: 0 },
+    };
+    if (distributorId) {
+      customerWhere.id = distributorId;
+    }
+
+    // 3. Suspended Wholesale Customers (Block 3) - uses index [companyId, isActive]
+    const suspendedWhere = {
+      companyId,
+      isActive: false,
+    };
+    if (distributorId) {
+      suspendedWhere.id = distributorId;
+    }
+
+    // 4. Processing / Active Fulfillment Orders (Block 4) - uses compound index [companyId, status, createdAt]
+    const fulfillmentWhere = {
+      companyId,
+      status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED'] },
+      OR: [
+        { wholesaleCustomerId: distributorId || { not: null } },
+        { orderSource: 'WHOLESALE' },
+      ],
+    };
+    if (distributorId) {
+      fulfillmentWhere.OR = [
+        { wholesaleCustomerId: distributorId },
+        { customerId: distributorId, orderSource: 'WHOLESALE' },
+      ];
+    }
+    if (periodStartDate) {
+      fulfillmentWhere.createdAt = { gte: periodStartDate };
+    }
+
+    // Execute queries in parallel to avoid N+1 bottlenecks
+    const [
+      pendingOrders,
+      pendingCount,
+      pendingSum,
+      allBalanceCustomers,
+      suspendedWc,
+      fulfillmentOrders,
+      fulfillmentCount,
+      fulfillmentSum,
+    ] = await Promise.all([
+      prisma.order.findMany({
+        where: pendingWhere,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          wholesaleCustomer: {
+            select: { id: true, currentBalance: true, creditLimit: true, isActive: true, notes: true },
+          },
+          orderItems: {
+            select: { id: true, productName: true, quantity: true, price: true, total: true },
+          },
+        },
+      }),
+      prisma.order.count({ where: pendingWhere }),
+      prisma.order.aggregate({ where: pendingWhere, _sum: { total: true } }),
+      prisma.wholesaleCustomer.findMany({
+        where: customerWhere,
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        },
+        orderBy: { currentBalance: 'desc' },
+        take: 200,
+      }),
+      prisma.wholesaleCustomer.findMany({
+        where: suspendedWhere,
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: limitNum,
+      }),
+      prisma.order.findMany({
+        where: fulfillmentWhere,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          wholesaleCustomer: { select: { id: true, currentBalance: true, creditLimit: true } },
+          orderItems: {
+            select: { id: true, productName: true, quantity: true, price: true, total: true },
+          },
+        },
+      }),
+      prisma.order.count({ where: fulfillmentWhere }),
+      prisma.order.aggregate({ where: fulfillmentWhere, _sum: { total: true } }),
+    ]);
+
+    // Format Block 1: Pending Orders
+    const mappedPending = pendingOrders.map((o) => {
+      const total = Number(o.total || 0);
+      const wc = o.wholesaleCustomer;
+      const balance = Number(wc?.currentBalance || 0);
+      const limit = Number(wc?.creditLimit || 0);
+      const isOverLimit = limit > 0 && (balance + total > limit || balance > limit);
+      const excessAmount = limit > 0 && balance + total > limit ? balance + total - limit : 0;
+      const customerName = o.customer
+        ? `${o.customer.firstName || ''} ${o.customer.lastName || ''}`.trim()
+        : (o.customerName || 'تاجر جملة');
+      const customerPhone = o.customer?.phone || o.customerPhone || '—';
+
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        createdAt: o.createdAt,
+        status: o.status,
+        total,
+        itemCount: o.orderItems ? o.orderItems.length : 0,
+        items: (o.orderItems || []).map((it) => ({
+          id: it.id,
+          productName: it.productName,
+          quantity: it.quantity,
+          price: Number(it.price || 0),
+          total: Number(it.total || 0),
+        })),
+        distributor: {
+          id: wc?.id || o.wholesaleCustomerId || null,
+          customerId: o.customerId,
+          name: customerName,
+          phone: customerPhone,
+          currentBalance: balance,
+          creditLimit: limit,
+          isOverLimit,
+          excessAmount,
+          isActive: wc ? wc.isActive : true,
+        },
+      };
+    });
+
+    // Format Block 2: Over-Limit Customers
+    const overLimitList = allBalanceCustomers
+      .filter((c) => Number(c.creditLimit) > 0 && Number(c.currentBalance) > Number(c.creditLimit))
+      .map((c) => {
+        const balance = Number(c.currentBalance || 0);
+        const limit = Number(c.creditLimit || 0);
+        const excess = balance - limit;
+        const utilization = limit > 0 ? (balance / limit) * 100 : 100;
+        const name = c.customer
+          ? `${c.customer.firstName || ''} ${c.customer.lastName || ''}`.trim()
+          : 'موزع معتمد';
+        return {
+          id: c.id,
+          customerId: c.customerId,
+          name,
+          phone: c.customer?.phone || '—',
+          currentBalance: balance,
+          creditLimit: limit,
+          excessAmount: excess,
+          utilizationPercent: Math.round(utilization),
+          isActive: c.isActive,
+          notes: c.notes,
+          updatedAt: c.updatedAt,
+        };
+      });
+
+    // Format Block 3: Suspended Customers
+    const suspendedList = suspendedWc.map((c) => {
+      const name = c.customer
+        ? `${c.customer.firstName || ''} ${c.customer.lastName || ''}`.trim()
+        : 'موزع موقوف';
+      return {
+        id: c.id,
+        customerId: c.customerId,
+        name,
+        phone: c.customer?.phone || '—',
+        currentBalance: Number(c.currentBalance || 0),
+        creditLimit: Number(c.creditLimit || 0),
+        notes: c.notes || 'لا يوجد سبب مسجل',
+        isActive: false,
+        updatedAt: c.updatedAt,
+      };
+    });
+
+    // Format Block 4: Fulfillment / Processing Orders
+    const mappedFulfillment = fulfillmentOrders.map((o) => {
+      const customerName = o.customer
+        ? `${o.customer.firstName || ''} ${o.customer.lastName || ''}`.trim()
+        : (o.customerName || 'تاجر جملة');
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        total: Number(o.total || 0),
+        createdAt: o.createdAt,
+        confirmedAt: o.confirmedAt,
+        itemCount: o.orderItems ? o.orderItems.length : 0,
+        distributor: {
+          id: o.wholesaleCustomer?.id || o.wholesaleCustomerId || null,
+          customerId: o.customerId,
+          name: customerName,
+          phone: o.customer?.phone || o.customerPhone || '—',
+        },
+      };
+    });
+
+    const totalOverLimitAmount = overLimitList.reduce((acc, c) => acc + c.excessAmount, 0);
+    const pendingOrdersAmount = Number(pendingSum?._sum?.total || 0);
+    const fulfillmentOrdersAmount = Number(fulfillmentSum?._sum?.total || 0);
+
+    return {
+      counts: {
+        pendingOrdersCount: pendingCount,
+        pendingOrdersAmount,
+        overLimitDistributorsCount: overLimitList.length,
+        totalOverLimitAmount,
+        suspendedDistributorsCount: suspendedList.length,
+        processingOrdersCount: fulfillmentCount,
+        processingOrdersAmount: fulfillmentOrdersAmount,
+      },
+      groups: {
+        pendingOrders: mappedPending,
+        overLimitDistributors: overLimitList,
+        suspendedDistributors: suspendedList,
+        processingOrders: mappedFulfillment,
+      },
+      filters: {
+        companyId,
+        distributorId: distributorId || null,
+        period,
+        periodStartDate: periodStartDate ? periodStartDate.toISOString() : null,
+      },
+    };
+  },
+
+  // ── Confirm Wholesale Order (Calls confirmation center + ensures recordOrderInvoice) ──
+  async confirmWholesaleOrder(orderId, companyId, userId = null, notes = null) {
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        companyId,
+      },
+    });
+    if (!order) {
+      const err = new Error('طلب الجملة غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // 1. Invoke standard order confirmation logic
+    const orderConfirmationService = require('./orderConfirmationService');
+    const confirmationResult = await orderConfirmationService.confirmOrder(
+      companyId,
+      order.id,
+      userId,
+      notes || 'تأكيد من شاشة العمل اليومية لإدارة الموزعين'
+    );
+
+    // 2. Fetch fresh order state
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+    });
+
+    // 3. Guarantee invoice recording (idempotent: safe if already recorded by confirmation hook)
+    let invoiceTransaction = null;
+    try {
+      invoiceTransaction = await this.recordOrderInvoice(updatedOrder || order);
+    } catch (invoiceErr) {
+      console.warn('⚠️ [WHOLESALE-MANAGE] Auto-invoice guarantee warning:', invoiceErr.message);
+    }
+
+    return {
+      order: updatedOrder || order,
+      invoiceTransaction,
+      confirmationResult,
+    };
+  },
+
+  // ── Suspend Distributor Account with Reason ──
+  async suspendDistributor(id, companyId, reason, userId = null) {
+    const prisma = getSharedPrismaClient();
+    const wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id, companyId },
+      include: { customer: true },
+    });
+    if (!wc) {
+      const err = new Error('الموزع غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (!reason || !String(reason).trim()) {
+      const err = new Error('سبب إيقاف الموزع مطلوب');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const nowStr = new Date().toISOString().split('T')[0];
+    const suspensionEntry = `[إيقاف حساب - ${nowStr}]: ${String(reason).trim()}`;
+    const newNotes = wc.notes ? `${suspensionEntry}\n${wc.notes}` : suspensionEntry;
+
+    const updated = await prisma.wholesaleCustomer.update({
+      where: { id: wc.id },
+      data: {
+        isActive: false,
+        notes: newNotes,
+      },
+      include: {
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+      },
+    });
+
+    return updated;
+  },
+
+  // ── Resume Distributor Account with Reason ──
+  async resumeDistributor(id, companyId, reason = null, userId = null) {
+    const prisma = getSharedPrismaClient();
+    const wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id, companyId },
+      include: { customer: true },
+    });
+    if (!wc) {
+      const err = new Error('الموزع غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const nowStr = new Date().toISOString().split('T')[0];
+    const resumeEntry = `[إعادة تفعيل - ${nowStr}]${reason && String(reason).trim() ? `: ${String(reason).trim()}` : ''}`;
+    const newNotes = wc.notes ? `${resumeEntry}\n${wc.notes}` : resumeEntry;
+
+    const updated = await prisma.wholesaleCustomer.update({
+      where: { id: wc.id },
+      data: {
+        isActive: true,
+        notes: newNotes,
+      },
+      include: {
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+      },
+    });
+
+    return updated;
+  },
 };
 
 module.exports = { wholesaleService, WHOLESALE_PERMISSIONS: { VIEW: 'wholesale.view', CREATE: 'wholesale.create', EDIT: 'wholesale.edit', DELETE: 'wholesale.delete' } };
