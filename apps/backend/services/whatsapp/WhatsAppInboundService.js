@@ -693,14 +693,18 @@ async function updateMessageStatus(companyId, messageId, status, options = {}) {
   );
 
   if (messagesToUpdate.length > 0) {
+    const updateData = {
+      status,
+      updatedAt: new Date()
+    };
+    if (errors && errors.length > 0) {
+      updateData.metadata = JSON.stringify({ errors });
+    }
     await prisma.whatsAppMessage.updateMany({
       where: {
         id: { in: messagesToUpdate.map((message) => message.id) }
       },
-      data: {
-        status,
-        updatedAt: new Date()
-      }
+      data: updateData
     });
   }
 

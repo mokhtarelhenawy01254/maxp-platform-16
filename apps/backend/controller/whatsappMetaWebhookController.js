@@ -334,7 +334,12 @@ async function postWebhook(req, res) {
         const statuses = value.statuses || [];
 
         for (const msg of messages) {
-          const remoteJid = `${msg.from}@s.whatsapp.net`;
+          const cleanFrom = msg.from && String(msg.from).replace(/\D/g, '');
+          if (!cleanFrom || cleanFrom.length < 6) {
+            console.warn('⚠️ [META-WEBHOOK] Ignored incoming message with invalid from:', msg.from);
+            continue;
+          }
+          const remoteJid = `${cleanFrom}@s.whatsapp.net`;
           const normalized = normalizeMetaMessage(msg);
 
           const savedMessage = await saveIncomingMessage({
@@ -392,6 +397,9 @@ async function postWebhook(req, res) {
           const errors = Array.isArray(status.errors) ? status.errors : [];
           const recipientId = status.recipient_id || null;
           const timestamp = status.timestamp ? Number(status.timestamp) * 1000 : Date.now();
+          if (mappedStatus === 'FAILED' || errors.length > 0) {
+            console.warn(`⚠️ [META-STATUS-FAILED] Message ${status.id} (recipient: ${recipientId || 'unknown'}) failed:`, JSON.stringify(errors));
+          }
           await updateMessageStatus(companyId, status.id, mappedStatus, {
             errors,
             recipientId,
