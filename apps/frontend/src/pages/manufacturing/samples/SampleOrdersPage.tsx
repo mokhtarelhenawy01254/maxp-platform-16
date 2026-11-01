@@ -9,12 +9,16 @@ import {
   Calendar,
   Layers,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import { manufacturingApi, SampleOrder, PartnerFactory } from '../manufacturingApi';
 import { SampleMetricsBar } from './SampleMetricsBar';
 import { SampleStatusBadge, MaterialSourceBadge } from './SampleStatusBadge';
 import { CreateSampleModal } from './CreateSampleModal';
+import { EditSampleModal } from './EditSampleModal';
 import { SampleDetailDrawer } from './SampleDetailDrawer';
 
 const customerDisplayName = (s: SampleOrder) => {
