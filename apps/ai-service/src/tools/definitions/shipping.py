@@ -110,6 +110,23 @@ class ShipmentTrackInput(BaseModel):
         return data
 
 
+class CourierStatusInput(BaseModel):
+    tracking_code: str = Field(
+        description="Shipment tracking number, order number, or AWB to check courier/delivery captain status for"
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        if isinstance(data, dict) and "tracking_code" not in data:
+            for alias in ("order_number", "order_id", "orderNumber", "tracking_number", "trackingNumber", "awb", "code", "phone"):
+                if alias in data and data[alias]:
+                    data["tracking_code"] = str(data[alias])
+                    break
+        return data
+
+
 class DelayedOrdersCheckInput(BaseModel):
     days_threshold: int = Field(
         default=2,
@@ -931,6 +948,77 @@ def _format_delayed_orders_check(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+async def courier_status(input_data: CourierStatusInput) -> dict[str, Any]:
+    """Check the delivery courier/captain status, name, phone, branch, and notes for an order or shipment."""
+    track_res = await shipment_track(
+        ShipmentTrackInput(
+            tracking_code=input_data.tracking_code,
+            company_id=input_data.company_id,
+        )
+    )
+    if not track_res.get("found"):
+        return track_res
+
+    live_data = track_res.get("liveCarrierData") or {}
+    captain_name = track_res.get("captainName") or live_data.get("captainName") or ""
+    captain_phone = track_res.get("captainPhone") or live_data.get("captainPhone") or ""
+    branch_name = track_res.get("branchName") or live_data.get("branchName") or ""
+    delay_reason = live_data.get("delayReason") or live_data.get("turboDelayReason") or ""
+
+    return {
+        "found": True,
+        "hasCaptain": bool(captain_name),
+        "orderNumber": track_res.get("orderNumber"),
+        "trackingCode": track_res.get("trackingCode"),
+        "carrier": track_res.get("carrier") or track_res.get("shippingCompany"),
+        "status": track_res.get("status"),
+        "captainName": captain_name or None,
+        "captainPhone": captain_phone or None,
+        "branchName": branch_name or None,
+        "delayReason": delay_reason or None,
+        "customerName": track_res.get("customerName"),
+        "governorate": track_res.get("governorate"),
+        "city": track_res.get("city"),
+    }
+
+
+def _format_courier_status(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("found"):
+        return res.get("message") or f"لم يتم العثور على بيانات المندوب للطلب/الشحنة {res.get('trackingCode')}."
+    order_num = res.get("orderNumber") or ""
+    carrier = res.get("carrier") or "شركة الشحن"
+    captain_name = res.get("captainName")
+    captain_phone = res.get("captainPhone")
+    branch = res.get("branchName")
+    status = res.get("status") or "قيد التوصيل"
+    delay_reason = res.get("delayReason")
+
+    lines = [f"بيانات وحالة المندوب للطلب #{order_num}:"]
+    lines.append(f"• شركة الشحن: {carrier}")
+    if captain_name:
+        lines.append(f"• اسم المندوب: {captain_name}")
+        if captain_phone:
+            lines.append(f"• هاتف المندوب: {captain_phone}")
+    else:
+        lines.append("• المندوب: لم يُحدد مندوب بالاسم حتى الآن (الشحنة في مسار النقل أو فرع التوزيع).")
+    if branch:
+        lines.append(f"• فرع التوصيل: {branch}")
+    lines.append(f"• حالة الشحنة: {status}")
+    if delay_reason:
+        lines.append(f"• ملاحظات / سبب التأخير: {delay_reason}")
+    return "\n".join(lines)
+
+
+courier_status_tool = FunctionTool(
+    name="courier_status",
+    description="Check the delivery courier/captain status, name, contact number, branch, and current delivery state for an order or tracking number directly from the database and logistics carrier.",
+    func=courier_status,
+    input_model=CourierStatusInput,
+    format_result=_format_courier_status,
+)
+
+
 delayed_orders_check_tool = FunctionTool(
     name="delayed_orders_check",
     description="Fetch and inspect delayed orders and shipments waiting for follow-up with shipping carriers. Use to find orders stuck with couriers or exceeding delivery duration.",
@@ -950,6 +1038,7 @@ __all_tools__ = [
     shipping_company_areas_tool,
     search_area_by_text_tool,
     shipment_track_tool,
+    courier_status_tool,
     shipping_ticket_categories_tool,
     shipping_ticket_list_tool,
     shipping_ticket_get_tool,

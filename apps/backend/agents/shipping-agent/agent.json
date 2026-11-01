@@ -37,6 +37,7 @@
     "shipping_update",
     "shipping_zone_set",
     "shipment_track",
+    "courier_status",
     "shipping_ticket_create",
     "shipping_ticket_reply",
     "shipping_ticket_get",

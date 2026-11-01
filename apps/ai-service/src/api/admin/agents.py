@@ -747,6 +747,27 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         allowed_tools = body.allowed_tools or []
         allowed_skills = body.allowed_skills or []
 
+    # Enforce 0 duplicate shipping agents per company (T26 §4.1)
+    if role == "SHIPPING" or template_slug == "shipping-agent":
+        existing_shipping = await session.execute(
+            select(AgentModel).where(
+                AgentModel.company_id == body.company_id,
+                or_(
+                    AgentModel.role == "SHIPPING",
+                    AgentModel.template_slug == "shipping-agent",
+                ),
+                AgentModel.status != "ARCHIVED",
+            )
+        )
+        existing_ship_agent = existing_shipping.scalars().first()
+        if existing_ship_agent:
+            logger.info(
+                "Shipping agent already exists for company, returning existing instance to prevent duplicates",
+                company_id=body.company_id,
+                agent_id=existing_ship_agent.id,
+            )
+            return AgentRead.model_validate(existing_ship_agent)
+
     existing = await session.execute(
         select(AgentModel).where(
             AgentModel.company_id == body.company_id,
@@ -855,6 +876,113 @@ async def list_agents(
     stmt = stmt.limit(limit)
     result = await session.execute(stmt)
     return [_agent_to_read(a) for a in result.scalars().all()]
+
+
+async def _record_shipping_agent_run(
+    session: AsyncSession,
+    company_id: str,
+    agent_id: str,
+    question: str,
+    reply: str,
+    tools: list[Any],
+    status: str,
+    customer_id: str,
+    thread_id: str,
+):
+    """Record durable agent execution run into public.ai_agent_runs (T26 §4.3)."""
+    try:
+        c_res = await session.execute(
+            text('SELECT name FROM public.companies WHERE id = :cid LIMIT 1'),
+            {"cid": company_id},
+        )
+        c_row = c_res.mappings().one_or_none()
+        company_name = c_row["name"] if c_row else company_id
+
+        u_name = "المستخدم"
+        u_email = ""
+        if customer_id and customer_id != "sandbox-user":
+            u_res = await session.execute(
+                text('SELECT "firstName", "lastName", email FROM public.users WHERE id = :uid LIMIT 1'),
+                {"uid": customer_id},
+            )
+            u_row = u_res.mappings().one_or_none()
+            if u_row:
+                full_name = f"{u_row.get('firstName') or ''} {u_row.get('lastName') or ''}".strip()
+                if full_name:
+                    u_name = full_name
+                u_email = str(u_row.get("email") or "")
+
+        task_id = f"task_{agent_id}_{thread_id[:32]}"
+        meta_json = json.dumps({
+            "companyName": company_name,
+            "userName": u_name,
+            "userEmail": u_email,
+            "threadId": thread_id,
+        }, ensure_ascii=False)
+
+        await session.execute(
+            text("""
+                INSERT INTO public.ai_agent_tasks (
+                    id, "companyId", "agentId", title, description, status, priority, metadata, "createdAt", "updatedAt"
+                ) VALUES (
+                    :tid, :cid, :aid, 'متابعة الشحن والتسليم اللوجستي', :desc, 'COMPLETED', 'medium', :meta::jsonb, NOW(), NOW()
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    status = 'COMPLETED',
+                    "updatedAt" = NOW()
+            """),
+            {
+                "tid": task_id,
+                "cid": company_id,
+                "aid": agent_id,
+                "desc": (question or "")[:500],
+                "meta": meta_json,
+            },
+        )
+
+        tool_items = tools if tools else [None]
+        for idx, t in enumerate(tool_items):
+            t_name = str((t.get("tool") if isinstance(t, dict) else None) or "shipment_track")
+            t_args = (t.get("arguments") or t.get("args") or {}) if isinstance(t, dict) else {}
+            t_res = (t.get("result") or reply) if isinstance(t, dict) else reply
+            output_payload = json.dumps({
+                "question": question,
+                "tool": t_name,
+                "toolArgs": t_args,
+                "result": t_res,
+                "reply": reply,
+                "companyName": company_name,
+                "userName": u_name,
+                "userEmail": u_email,
+            }, ensure_ascii=False, default=str)
+
+            run_id = f"run_{secrets.token_urlsafe(16)}"
+            await session.execute(
+                text("""
+                    INSERT INTO public.ai_agent_runs (
+                        id, "taskId", "companyId", "agentId", "stepName", "stepIndex", status, output, "createdAt"
+                    ) VALUES (
+                        :rid, :tid, :cid, :aid, :sname, :sidx, :st, :out::jsonb, NOW()
+                    )
+                """),
+                {
+                    "rid": run_id,
+                    "tid": task_id,
+                    "cid": company_id,
+                    "aid": agent_id,
+                    "sname": t_name,
+                    "sidx": idx,
+                    "st": "SUCCESS" if status == "ok" else "FAILED",
+                    "out": output_payload,
+                },
+            )
+        await session.commit()
+    except Exception as exc:
+        logger.warning("Failed to record shipping agent execution into durable ledger", error=str(exc))
+        try:
+            await session.rollback()
+        except Exception:
+            pass
 
 
 @router.post("/agents/chat", response_model=AgentChatResponse)
@@ -989,6 +1117,21 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
                             break
         if not reply_text:
             reply_text = "أهلاً بحضرتك يا فندم، راجعت البيانات بالكامل وأنا معاك وتحت أمرك في أي استفسار 😊"
+
+    # Durable ledger recording for shipping agent executions (T26 §4.3)
+    if agent.role == "SHIPPING" or getattr(agent, "template_slug", None) == "shipping-agent":
+        await _record_shipping_agent_run(
+            session=session,
+            company_id=body.company_id,
+            agent_id=agent.id,
+            question=body.message or "",
+            reply=reply_text or "",
+            tools=list(tools) if isinstance(tools, list) else [],
+            status=status,
+            customer_id=body.customer_id or "sandbox-user",
+            thread_id=thread_id,
+        )
+
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,

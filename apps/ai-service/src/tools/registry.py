@@ -139,6 +139,8 @@ READ_TOOL_NAMES: set[str] = (CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "support_ticket_link",
     "help_guide",
     "delayed_orders_check",
+    "shipment_track",
+    "courier_status",
 }) - GATED_CORE_TOOL_NAMES
 
 
@@ -447,6 +449,8 @@ from src.tools.definitions.shipping import (  # noqa: E402 F401
     ShippingCompanyGovernoratesInput,
     ShippingCompanyAreasInput,
     SearchAreaByTextInput,
+    ShipmentTrackInput,
+    CourierStatusInput,
 )
 from src.tools.definitions.governance import (  # noqa: E402 F401
     SchedulerCreateJobInput,

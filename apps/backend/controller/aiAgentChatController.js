@@ -29,6 +29,45 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
     const prisma = getSharedPrismaClient();
 
     const cleanMsg = String(messageText || '').replace(/[؟?!.,:;()\[\]]/g, ' ');
+    const isCourierQuery = /(مندوب|كابتن|السائق|توصيل|captain|courier)/i.test(messageText);
+    const isDelayedQuery = /(متأخر|متأخرة|التأخير|تأخير|delayed)/i.test(messageText);
+
+    // Handle delayed orders query
+    if (isDelayedQuery && !/ORD-[A-Za-z0-9\-]+/i.test(messageText)) {
+      const delayedOrders = await prisma.order.findMany({
+        where: {
+          companyId,
+          status: { in: ['PROCESSING', 'CONFIRMED', 'SHIPPED'] },
+          updatedAt: { lte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+        },
+        take: 10,
+        orderBy: { updatedAt: 'asc' },
+        include: { shipments: { include: { shippingCompany: true } } },
+      });
+
+      if (!delayedOrders || delayedOrders.length === 0) {
+        return {
+          reply: 'لا توجد طلبات متأخرة حالياً مسجلة في متجرك تتجاوز مدة التوصيل المحددة.',
+          toolName: 'delayed_orders_check',
+          toolArgs: { days_threshold: 2 },
+          toolResult: { count: 0, items: [] },
+        };
+      }
+
+      const listStr = delayedOrders.map(o => {
+        const days = Math.floor((Date.now() - new Date(o.updatedAt).getTime()) / (24 * 3600 * 1000));
+        const captain = o.turboCaptainName ? ` | المندوب: ${o.turboCaptainName}` : '';
+        return `• طلب #${o.orderNumber} (حالة: ${o.status}) — متأخر منذ ${days} يوم${captain}`;
+      }).join('\n');
+
+      return {
+        reply: `تم العثور على ${delayedOrders.length} طلب متأخر في المتجر:\n${listStr}`,
+        toolName: 'delayed_orders_check',
+        toolArgs: { days_threshold: 2, limit: 10 },
+        toolResult: { count: delayedOrders.length, items: delayedOrders.map(o => ({ orderNumber: o.orderNumber, status: o.status })) },
+      };
+    }
+
     const tokens = cleanMsg.split(/\s+/).filter(Boolean);
     const ignoreWords = new Set([
       'الأوردر', 'اوردر', 'الاوردر', 'أوردراتي', 'طلبي', 'الطلب', 'شحنتي', 'الشحنة',
@@ -49,7 +88,10 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
     }
 
     if (!candidateCode) {
-      return 'أهلاً بك! أنا مروان منسق الشحن والعمليات اللوجستية. يرجى تزويدي برقم الأوردر أو رقم بوليصة الشحن لمتابعة حالته وتحديد موعد التسليم بدقة.';
+      return {
+        reply: 'أهلاً بك! أنا مروان منسق الشحن والعمليات اللوجستية. يرجى تزويدي برقم الأوردر أو رقم بوليصة الشحن لمتابعة حالته وتحديد موعد التسليم بدقة.',
+        toolName: null,
+      };
     }
 
     // Try finding order in company scope
@@ -60,7 +102,6 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
           { orderNumber: candidateCode },
           { id: candidateCode },
           { turboTrackingNumber: candidateCode },
-          { bostaTrackingNumber: candidateCode },
         ],
       },
       include: {
@@ -72,8 +113,8 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
 
     if (order) {
       const shipment = order.shipments?.[0];
-      const carrierName = shipment?.shippingCompany?.name || (order.turboTrackingNumber ? 'Turbo' : (order.bostaTrackingNumber ? 'Bosta' : 'شركة الشحن'));
-      const trackingCode = shipment?.trackingNumber || shipment?.externalShipmentId || order.turboTrackingNumber || order.bostaTrackingNumber || 'غير متوفر';
+      const carrierName = shipment?.shippingCompany?.name || (order.turboTrackingNumber ? 'Turbo' : 'شركة الشحن');
+      const trackingCode = shipment?.trackingNumber || shipment?.externalShipmentId || order.turboTrackingNumber || 'غير متوفر';
 
       const statusTranslations = {
         'PENDING': 'قيد المعالجة والتجهيز',
@@ -87,7 +128,34 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
       };
       const statusAr = statusTranslations[order.status] || order.status;
 
-      return `طلبك رقم #${order.orderNumber} مسجل لدى ${carrierName}. حالة الشحنة الحالية: ${statusAr}. رقم التتبع: ${trackingCode}.`;
+      if (isCourierQuery) {
+        const captainName = order.turboCaptainName || shipment?.courierName;
+        const captainPhone = order.turboCaptainPhone || shipment?.courierPhone;
+        const branchName = order.turboBranchName || shipment?.branchName;
+
+        let courierReply = `بيانات وحالة المندوب للطلب #${order.orderNumber}:\n• شركة الشحن: ${carrierName}\n• حالة الشحنة: ${statusAr}`;
+        if (captainName) {
+          courierReply += `\n• اسم المندوب: ${captainName}`;
+          if (captainPhone) courierReply += `\n• هاتف المندوب: ${captainPhone}`;
+        } else {
+          courierReply += '\n• المندوب: لم يُعين مندوب بالاسم بعد (الشحنة في مسار التجهيز أو النقل بين الفروع).';
+        }
+        if (branchName) courierReply += `\n• فرع التوزيع: ${branchName}`;
+
+        return {
+          reply: courierReply,
+          toolName: 'courier_status',
+          toolArgs: { tracking_code: candidateCode },
+          toolResult: { found: true, orderNumber: order.orderNumber, carrier: carrierName, captainName, captainPhone, branchName, status: order.status },
+        };
+      }
+
+      return {
+        reply: `طلبك رقم #${order.orderNumber} مسجل لدى ${carrierName}. حالة الشحنة الحالية: ${statusAr}. رقم التتبع: ${trackingCode}.`,
+        toolName: 'shipment_track',
+        toolArgs: { tracking_code: candidateCode },
+        toolResult: { found: true, orderNumber: order.orderNumber, carrier: carrierName, status: order.status, trackingNumber: trackingCode },
+      };
     }
 
     // Try finding shipment directly in company scope
@@ -104,13 +172,113 @@ async function resolveShippingAgentOfflineAnswer(companyId, messageText) {
 
     if (directShipment) {
       const carrierName = directShipment.shippingCompany?.name || 'شركة الشحن';
-      return `شحنتك رقم ${candidateCode} مسجلة لدى ${carrierName}. الحالة الحالية: ${directShipment.status}.`;
+      return {
+        reply: `شحنتك رقم ${candidateCode} مسجلة لدى ${carrierName}. الحالة الحالية: ${directShipment.status}.`,
+        toolName: 'shipment_track',
+        toolArgs: { tracking_code: candidateCode },
+        toolResult: { found: true, trackingNumber: candidateCode, carrier: carrierName, status: directShipment.status },
+      };
     }
 
-    return `لم يتم العثور على أوردر أو شحنة برقم '${candidateCode}' تابعة لمتجرك. يرجى مراجعة الرقم والتأكد منه.`;
+    return {
+      reply: `لم يتم العثور على أوردر أو شحنة برقم '${candidateCode}' تابعة لمتجرك. يرجى مراجعة الرقم والتأكد منه.`,
+      toolName: 'shipment_track',
+      toolArgs: { tracking_code: candidateCode },
+      toolResult: { found: false, code: candidateCode },
+    };
   } catch (err) {
     console.warn('[AI-CHAT-CTRL] resolveShippingAgentOfflineAnswer error:', err.message);
     return null;
+  }
+}
+
+/**
+ * Record durable agent execution run into public.ai_agent_runs (T26 §4.3)
+ */
+async function recordAgentExecutionRun({ companyId, userId, agentId, question, reply, toolCalls, status = 'SUCCESS', sessionId }) {
+  try {
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
+    const prisma = getSharedPrismaClient();
+
+    const [company, user] = await Promise.all([
+      prisma.company.findUnique({
+        where: { id: companyId },
+        select: { name: true },
+      }).catch(() => null),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      }).catch(() => null),
+    ]);
+
+    const companyName = company?.name || companyId;
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'المستخدم';
+    const userEmail = user?.email || '';
+
+    const taskId = `task_${agentId || 'shipping-agent'}_${String(sessionId || Date.now()).replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 32)}`;
+    await prisma.aiAgentTask.upsert({
+      where: { id: taskId },
+      create: {
+        id: taskId,
+        companyId,
+        agentId: String(agentId || 'shipping-agent'),
+        title: 'متابعة الشحن والعمليات اللوجستية',
+        description: question ? String(question).slice(0, 500) : 'استعلام شحن',
+        status: 'COMPLETED',
+        priority: 'medium',
+        metadata: {
+          companyName,
+          userName,
+          userEmail,
+          sessionId,
+        },
+      },
+      update: {
+        status: 'COMPLETED',
+        updatedAt: new Date(),
+      },
+    }).catch(err => {
+      console.warn('[AI-CHAT-CTRL] aiAgentTask upsert warning:', err.message);
+    });
+
+    const toolsExecuted = Array.isArray(toolCalls) && toolCalls.length > 0 ? toolCalls : [null];
+    for (let idx = 0; idx < toolsExecuted.length; idx++) {
+      const tc = toolsExecuted[idx];
+      const toolName = tc ? (tc.name || tc.tool || 'shipment_track') : 'shipment_track';
+      const toolArgs = tc ? (tc.arguments || tc.args || {}) : {};
+      const toolResult = tc ? (tc.result || tc.output || reply) : reply;
+      const runId = `run_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+
+      await prisma.aiAgentRun.create({
+        data: {
+          id: runId,
+          taskId,
+          companyId,
+          agentId: String(agentId || 'shipping-agent'),
+          stepName: toolName,
+          stepIndex: idx,
+          status,
+          output: {
+            question,
+            tool: toolName,
+            toolArgs,
+            result: toolResult,
+            reply,
+            companyName,
+            userName,
+            userEmail,
+          },
+          costTokens: 0,
+          latencyMs: 0,
+          modelUsed: 'deepseek-flash',
+          createdAt: new Date(),
+        },
+      }).catch(err => {
+        console.warn('[AI-CHAT-CTRL] aiAgentRun create warning:', err.message);
+      });
+    }
+  } catch (err) {
+    console.warn('[AI-CHAT-CTRL] recordAgentExecutionRun error:', err.message);
   }
 }
 
@@ -330,11 +498,19 @@ async function sendMessage(req, res) {
       }
     }
 
-    if (!result && targetAgentId === 'shipping-agent') {
+    if (!result && (targetAgentId === 'shipping-agent' || targetAgentId === 'SHIPPING' || targetAgentId === 'agent_GfVBpwVwdOlDTA-Qas-vvA' || targetAgentId === 'agent_2VmDQK2O6qYRk4YGAaQLnw')) {
       const offlineAnswer = await resolveShippingAgentOfflineAnswer(companyId, effectiveMessage);
       if (offlineAnswer) {
+        const replyText = typeof offlineAnswer === 'object' ? offlineAnswer.reply : offlineAnswer;
+        const toolCalls = (typeof offlineAnswer === 'object' && offlineAnswer.toolName) ? [{
+          name: offlineAnswer.toolName,
+          arguments: offlineAnswer.toolArgs || {},
+          output: offlineAnswer.toolResult || {},
+          status: 'success',
+        }] : [];
         result = {
-          reply: offlineAnswer,
+          reply: replyText,
+          toolCalls,
           threadId: activeSessionId,
           agentInfo: { id: targetAgentId, status: 'offline_deterministic' },
           session: { id: activeSessionId },
@@ -409,6 +585,28 @@ async function sendMessage(req, res) {
         images: Array.isArray(assistantAttachments) && assistantAttachments.length > 0
           ? assistantAttachments.map(a => (typeof a === 'string' ? a : (a.url || a.data_url || ''))).filter(Boolean)
           : undefined,
+      });
+    }
+
+    // Durable ledger recording for shipping agent executions (T26 §4.3)
+    const isShippingTarget = targetAgentId === 'shipping-agent' ||
+      targetAgentId === 'SHIPPING' ||
+      targetAgentId === 'agent_GfVBpwVwdOlDTA-Qas-vvA' ||
+      targetAgentId === 'agent_2VmDQK2O6qYRk4YGAaQLnw' ||
+      (Array.isArray(result?.toolCalls) && result.toolCalls.some(tc => ['shipment_track', 'courier_status', 'delayed_orders_check', 'shipping_ticket_create'].includes(tc?.name || tc?.tool)));
+
+    if (isShippingTarget && result?.reply) {
+      recordAgentExecutionRun({
+        companyId,
+        userId,
+        agentId: targetAgentId || 'shipping-agent',
+        question: effectiveMessage,
+        reply: result.reply,
+        toolCalls: result.toolCalls || [],
+        status: 'SUCCESS',
+        sessionId: activeSessionId,
+      }).catch(err => {
+        console.warn('[AI-CHAT-CTRL] recordAgentExecutionRun error:', err.message);
       });
     }
 
