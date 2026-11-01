@@ -102,6 +102,27 @@ const PreparationOrderCardHeader = ({
                 {shortageFollowUpVisual.label}
               </span>
             ) : null}
+
+            {(() => {
+              const origId = order.originalOrderId || (order.metadata as any)?.originalOrderId;
+              const origNum = order.originalOrderNumber || (order.metadata as any)?.originalOrderNumber;
+              if (!origId && !origNum) return null;
+              return (
+                <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/30 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:border-purple-600/50 dark:bg-purple-950/60 dark:text-purple-300">
+                  <span>استبدال</span>
+                  {origNum ? (
+                    <Link
+                      to={`/orders/${encodeURIComponent(origNum)}`}
+                      className="font-mono underline hover:text-purple-900 dark:hover:text-purple-100"
+                      title={`فتح الأوردر الأصلي #${origNum}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      (أصل: #{origNum})
+                    </Link>
+                  ) : null}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Customer + location */}

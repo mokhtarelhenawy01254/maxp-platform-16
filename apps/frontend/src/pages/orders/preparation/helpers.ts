@@ -187,14 +187,24 @@ export const getEffectivePreparationStatus = (
   metadata: unknown,
 ): string => {
   const normalizedStatus = toUpper(status);
-  if (TERMINAL_NON_PREPARATION_STATUSES.has(normalizedStatus)) {
-    return normalizedStatus;
-  }
-
   const metadataObject = parseMaybeJsonObject(metadata);
   const metadataStatus = toUpper(
     String(metadataObject[PREPARATION_STATUS_METADATA_KEY] || ""),
   );
+
+  // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
+  if (
+    normalizedStatus === "EXCHANGED" &&
+    (toUpper(String(metadataObject["requestType"] || "")) === "EXCHANGE" ||
+      Boolean(metadataObject["originalOrderId"])) &&
+    !metadataStatus
+  ) {
+    return "PENDING_PREPARATION";
+  }
+
+  if (TERMINAL_NON_PREPARATION_STATUSES.has(normalizedStatus)) {
+    return normalizedStatus;
+  }
 
   return metadataStatus || normalizedStatus;
 };

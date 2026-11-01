@@ -84,6 +84,26 @@ export const PreparationOrdersTableRowMainCells: React.FC<PreparationOrdersTable
               {shortageFollowUpVisual.label}
             </span>
           ) : null}
+          {(() => {
+            const origId = order.originalOrderId || (order.metadata as any)?.originalOrderId;
+            const origNum = order.originalOrderNumber || (order.metadata as any)?.originalOrderNumber;
+            if (!origId && !origNum) return null;
+            return (
+              <span className="inline-flex items-center gap-1 rounded border border-purple-500/30 bg-purple-50 px-1.5 py-0.2 text-[10px] font-semibold text-purple-700 dark:border-purple-600/50 dark:bg-purple-950/60 dark:text-purple-300">
+                <span>استبدال</span>
+                {origNum ? (
+                  <Link
+                    to={`/orders/${encodeURIComponent(origNum)}`}
+                    className="font-mono underline hover:text-purple-900 dark:hover:text-purple-100"
+                    title={`فتح الأوردر الأصلي #${origNum}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    (أصل: #{origNum})
+                  </Link>
+                ) : null}
+              </span>
+            );
+          })()}
         </div>
       </td>
 

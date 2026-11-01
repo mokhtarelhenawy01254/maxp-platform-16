@@ -65,6 +65,8 @@ export interface SimpleOrder {
   shipments?: SimpleOrderShipment[];
   printCount?: number;
   printedAt?: string | null;
+  originalOrderId?: string | null;
+  originalOrderNumber?: string | null;
 }
 
 export interface InventoryRecord {
@@ -279,6 +281,8 @@ export interface ApiOrderResponse {
   shipments?: ApiOrderShipmentResponse[] | null;
   printCount?: number;
   printedAt?: string | null;
+  originalOrderId?: string | null;
+  originalOrderNumber?: string | null;
 }
 
 export interface ApiInventoryResponse {

@@ -724,6 +724,56 @@ router.post('/', manualOrderAccess, async (req, res) => {
       }
     }
 
+    // 🔄 فحص منع استبدال مكرر (Task 4b5b8635)
+    const isExchangeRequest =
+      req.body?.requestType === 'exchange' ||
+      String(req.body?.status || '').toUpperCase() === 'EXCHANGED';
+
+    if (isExchangeRequest) {
+      const targetOrigId = validatedOriginalOrder?.id || req.body?.originalOrderId || null;
+      const targetOrigNum = validatedOriginalOrder?.orderNumber || req.body?.originalOrderNumber || null;
+
+      let effectiveOrigId = targetOrigId;
+      let effectiveOrigNum = targetOrigNum;
+
+      if (!effectiveOrigId && effectiveOrigNum) {
+        const foundOrig = await getSharedPrismaClient().order.findFirst({
+          where: { companyId: req.user.companyId, orderNumber: effectiveOrigNum },
+          select: { id: true, orderNumber: true }
+        });
+        if (foundOrig) {
+          effectiveOrigId = foundOrig.id;
+          effectiveOrigNum = foundOrig.orderNumber;
+        }
+      }
+
+      if (effectiveOrigId) {
+        // منع استبدال مكرر: فحص وجود أوردر استبدال مفتوح لنفس الطلب الأصلي
+        const openExchangeRows = await getSharedPrismaClient().$queryRawUnsafe(
+          `SELECT o."id", o."orderNumber", o."status"::text AS "status"
+           FROM "orders" o
+           WHERE o."companyId" = $1
+             AND o."status"::text NOT IN ('DELIVERED', 'CANCELLED', 'LOST')
+             AND (
+               o."metadata"::jsonb->>'originalOrderId' = $2
+               OR ($3::text IS NOT NULL AND o."metadata"::jsonb->>'originalOrderNumber' = $3)
+             )
+           LIMIT 1`,
+          req.user.companyId,
+          effectiveOrigId,
+          effectiveOrigNum || null
+        );
+
+        if (Array.isArray(openExchangeRows) && openExchangeRows.length > 0) {
+          return res.status(400).json({
+            success: false,
+            code: 'OPEN_EXCHANGE_ALREADY_EXISTS',
+            message: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر'
+          });
+        }
+      }
+    }
+
     if (affiliateId) {
       const productIds = Array.from(
         new Set(
@@ -928,8 +978,20 @@ router.post('/', manualOrderAccess, async (req, res) => {
       }
     }
 
+    let finalStatus = req.body?.status;
+    let finalRequestType = req.body?.requestType;
+    if (isExchangeRequest) {
+      finalRequestType = 'exchange';
+      // أوردر الاستبدال الجديد يدخل دورة التنفيذ بحالة PENDING_PREPARATION وليس EXCHANGED (Task 4b5b8635)
+      if (!finalStatus || String(finalStatus).toUpperCase() === 'EXCHANGED') {
+        finalStatus = 'PENDING_PREPARATION';
+      }
+    }
+
     const orderData = {
       ...req.body,
+      status: finalStatus,
+      requestType: finalRequestType,
       products,
       productId: req.body.productId || products[0]?.productId || null,
       productName: req.body.productName || products.map(p => p.productName).filter(Boolean).join(', ') || null,
@@ -983,6 +1045,25 @@ router.post('/', manualOrderAccess, async (req, res) => {
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     if (result.success) {
+      // 🔄 تحويل الطلب الأصلي المستبدل إلى EXCHANGED (Task 4b5b8635)
+      if (isExchangeRequest) {
+        const targetOrigId = validatedOriginalOrder?.id || req.body?.originalOrderId || null;
+        const targetOrigNum = validatedOriginalOrder?.orderNumber || req.body?.originalOrderNumber || null;
+        if (targetOrigId || targetOrigNum) {
+          try {
+            const orderService = require('../services/orderService');
+            await orderService.updateOrderStatus(
+              targetOrigId || targetOrigNum,
+              req.user.companyId,
+              'EXCHANGED',
+              `تم استبدال الطلب بطلب جديد #${result.order.orderNumber}`
+            );
+            console.log(`✅ [EXCHANGE] Original order ${targetOrigNum || targetOrigId} status updated to EXCHANGED`);
+          } catch (origUpdateErr) {
+            console.warn(`⚠️ [EXCHANGE] Failed to update original order status:`, origUpdateErr.message);
+          }
+        }
+      }
       // 🚧 تعليق الطلب اليدوي (مخفي + ماسك) فقط عندما:
       // اشتراك الطلبات اليدوية منتهي + المحفظة بدون رصيد (مفيش فلوس للتجديد).
       // الطلب مش بيتحاسب بفلوس (مجاني) — بيتحرر تلقائيًا لما الاشتراك يتفعّل.

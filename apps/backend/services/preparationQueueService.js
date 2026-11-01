@@ -484,14 +484,20 @@ const getOrderHoldDetails = (order) => {
 
 const getEffectivePreparationStatus = (status, metadata, customStatusCode = null) => {
   const normalizedStatus = toPreparationUpper(status);
-  if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
-    return normalizedStatus;
-  }
-
   const metadataObject = parsePreparationJsonObject(metadata);
   const metadataStatus = toPreparationUpper(
     metadataObject[PREPARATION_STATUS_METADATA_KEY]
   );
+
+  // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
+  const isExchangeReplacement =
+    normalizedStatus === 'EXCHANGED' &&
+    (toPreparationUpper(metadataObject.requestType) === 'EXCHANGE' || Boolean(metadataObject.originalOrderId)) &&
+    !metadataStatus;
+
+  if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
+    return normalizedStatus;
+  }
 
   if (metadataStatus && !PREPARATION_TERMINAL_STATUSES.has(metadataStatus)) {
     return metadataStatus;
@@ -502,6 +508,10 @@ const getEffectivePreparationStatus = (status, metadata, customStatusCode = null
     if (customUpper && !PREPARATION_TERMINAL_STATUSES.has(customUpper)) {
       return customUpper;
     }
+  }
+
+  if (isExchangeReplacement) {
+    return 'PENDING_PREPARATION';
   }
 
   return metadataStatus || normalizedStatus;
@@ -828,9 +838,15 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
           : []
       );
 
+  const parsedRegularMetadata = parsePreparationJsonObject(order.metadata);
+  const originalOrderId = parsedRegularMetadata.originalOrderId || null;
+  const originalOrderNumber = parsedRegularMetadata.originalOrderNumber || null;
+
   return {
     id: order.orderNumber,
     orderNumber: order.orderNumber,
+    originalOrderId,
+    originalOrderNumber,
     customerName: finalCustomerName,
     customerPhone: hasLimitedMerchantView ? '' : (order.customer?.phone || order.customerPhone || ''),
     customerEmail: hasLimitedMerchantView ? '' : (order.customer?.email || order.customerEmail || ''),
@@ -940,9 +956,15 @@ const mapGuestOrderToSimple = (order) => {
     };
   }
 
+  const parsedRegularMetadata = parsePreparationJsonObject(order.metadata);
+  const originalOrderId = parsedRegularMetadata.originalOrderId || null;
+  const originalOrderNumber = parsedRegularMetadata.originalOrderNumber || null;
+
   return {
     id: order.orderNumber,
     orderNumber: order.orderNumber,
+    originalOrderId,
+    originalOrderNumber,
     customerName: order.guestName || '',
     customerPhone: order.guestPhone || '',
     customerEmail: order.guestEmail || '',
@@ -1358,7 +1380,13 @@ const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata, customS
   if (useMetadata) {
     const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), NULLIF(${tableAlias}."customStatusCode", ''), ${tableAlias}."status"::text)`;
     const placeholders = statuses.map((s) => builder.pushValue(s));
-    return `${effectiveStatus} IN (${placeholders.join(', ')})`;
+    const baseCondition = `${effectiveStatus} IN (${placeholders.join(', ')})`;
+    if (stage === 'WAITING') {
+      // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
+      const exchangeExceptionCondition = `(${tableAlias}."status"::text = 'EXCHANGED' AND (${tableAlias}."metadata"::jsonb->>'requestType' = 'exchange' OR ${tableAlias}."metadata"::jsonb->>'originalOrderId' IS NOT NULL) AND (${tableAlias}."metadata"::jsonb->>'preparationStatus' IS NULL OR ${tableAlias}."metadata"::jsonb->>'preparationStatus' = ''))`;
+      return `(${baseCondition} OR ${exchangeExceptionCondition})`;
+    }
+    return baseCondition;
   }
 
   const placeholders = statuses.map((s) => builder.pushValue(s));
@@ -1476,15 +1504,21 @@ const fetchPreparationCandidateRows = async ({
 
     builder.add(builder.equals('o."companyId"', companyId));
 
+    // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
+    const exchangeExceptionSql = `(o."status"::text = 'EXCHANGED' AND (o."metadata"::jsonb->>'requestType' = 'exchange' OR o."metadata"::jsonb->>'originalOrderId' IS NOT NULL) AND (o."metadata"::jsonb->>'preparationStatus' IS NULL OR o."metadata"::jsonb->>'preparationStatus' = ''))`;
+
     if (customPrepCodes && customPrepCodes.length > 0) {
       const customPlaceholders = customPrepCodes.map((c) => builder.pushValue(c));
       const termPlaceholders = PREPARATION_DB_TERMINAL_STATUSES.map((s) => builder.pushValue(s));
       const absPlaceholders = [...PREPARATION_TERMINAL_STATUSES].map((s) => builder.pushValue(s));
       builder.add(
-        `((o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR o."customStatusCode" IN (${customPlaceholders.join(', ')})) AND o."status"::text NOT IN (${absPlaceholders.join(', ')}))`
+        `(((o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR o."customStatusCode" IN (${customPlaceholders.join(', ')})) AND o."status"::text NOT IN (${absPlaceholders.join(', ')})) OR ${exchangeExceptionSql})`
       );
     } else {
-      builder.add(builder.notInList('o."status"::text', PREPARATION_DB_TERMINAL_STATUSES));
+      const termPlaceholders = PREPARATION_DB_TERMINAL_STATUSES.map((s) => builder.pushValue(s));
+      builder.add(
+        `(o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR ${exchangeExceptionSql})`
+      );
     }
 
     if (affiliateId) {

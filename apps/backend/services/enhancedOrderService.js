@@ -218,6 +218,51 @@ class EnhancedOrderService {
       // إنشاء رقم الطلب
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
+      // 🔄 معالجة طلبات الاستبدال (Task 4b5b8635):
+      // أوردر الاستبدال الجديد يدخل دورة التنفيذ الطبيعية بحالة PENDING_PREPARATION وليس EXCHANGED
+      const isExchangeOrder =
+        data.requestType === 'exchange' ||
+        String(data.status || '').toUpperCase() === 'EXCHANGED';
+
+      if (isExchangeOrder) {
+        data.requestType = 'exchange';
+        if (!data.status || String(data.status).toUpperCase() === 'EXCHANGED') {
+          data.status = 'PENDING_PREPARATION';
+        }
+
+        // فحص منع استبدال مكرر
+        if (data.originalOrderId || data.originalOrderNumber) {
+          try {
+            const openExchangeRows = await this.getPrisma().$queryRawUnsafe(
+              `SELECT o."id", o."orderNumber", o."status"::text AS "status"
+               FROM "orders" o
+               WHERE o."companyId" = $1
+                 AND o."status"::text NOT IN ('DELIVERED', 'CANCELLED', 'LOST')
+                 AND (
+                   o."metadata"::jsonb->>'originalOrderId' = $2
+                   OR ($3::text IS NOT NULL AND o."metadata"::jsonb->>'originalOrderNumber' = $3)
+                 )
+               LIMIT 1`,
+              data.companyId,
+              data.originalOrderId || '',
+              data.originalOrderNumber || null
+            );
+
+            if (Array.isArray(openExchangeRows) && openExchangeRows.length > 0) {
+              return {
+                success: false,
+                statusCode: 400,
+                code: 'OPEN_EXCHANGE_ALREADY_EXISTS',
+                message: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر',
+                error: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر'
+              };
+            }
+          } catch (dupCheckErr) {
+            console.warn('⚠️ [EXCHANGE] Open exchange check error:', dupCheckErr.message);
+          }
+        }
+      }
+
       // توحيد الحالات
       const normalizedStatus = (data.status || 'CONFIRMED').toUpperCase();
       data.status = isValidOrderStatusEnum(normalizedStatus) ? normalizedStatus : 'CONFIRMED';
@@ -327,6 +372,22 @@ class EnhancedOrderService {
 
       // إنشاء الطلب في قاعدة البيانات
       const order = await this.createOrderInDatabase(orderData);
+
+      // 🔄 تحويل الطلب الأصلي المستبدل إلى EXCHANGED (Task 4b5b8635)
+      if (isExchangeOrder && (data.originalOrderId || data.originalOrderNumber)) {
+        try {
+          const orderService = require('./orderService');
+          await orderService.updateOrderStatus(
+            data.originalOrderId || data.originalOrderNumber,
+            data.companyId,
+            'EXCHANGED',
+            `تم استبدال الطلب بطلب جديد #${order.orderNumber}`
+          );
+        } catch (origErr) {
+          console.warn('⚠️ [ENHANCED-ORDER] Failed to update original order to EXCHANGED:', origErr.message);
+        }
+      }
+
       // تسجيل الإحصائيات
       await this.logOrderCreation(order);
 
@@ -1276,7 +1337,12 @@ class EnhancedOrderService {
       companyId: data.companyId,
 
       // حالة الطلب
-      status: (data.status && isValidOrderStatusEnum(data.status)) ? data.status : 'CONFIRMED',
+      status: (() => {
+        if (data.requestType === 'exchange' && (!data.status || String(data.status).toUpperCase() === 'EXCHANGED')) {
+          return 'PENDING_PREPARATION';
+        }
+        return (data.status && isValidOrderStatusEnum(data.status)) ? data.status : 'CONFIRMED';
+      })(),
       paymentStatus: data.paymentStatus || 'PENDING',
       paymentMethod: data.paymentMethod || 'CASH',
 
