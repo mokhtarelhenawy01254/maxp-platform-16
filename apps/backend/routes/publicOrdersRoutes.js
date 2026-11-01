@@ -1356,8 +1356,9 @@ router.post('/', async (req, res) => {
     // Calculate shipping using the same governorate matching logic as the public quote endpoint.
     let shippingCost = 0;
     let matchingZone = null;
+    let shippingQuote = null;
     if (shippingAddress?.governorate) {
-      const shippingQuote = await resolvePublicShippingQuote({
+      shippingQuote = await resolvePublicShippingQuote({
         companyId: company.id,
         governorate: shippingAddress.governorate,
         shippingClassCounts,
@@ -1381,7 +1382,7 @@ router.post('/', async (req, res) => {
           '✅ [CREATE-ORDER] Shipping cost calculated:',
           shippingCost,
           'for governorate:',
-          shippingQuote.governorate || shippingAddress.governorate,
+          shippingQuote?.governorate || shippingAddress.governorate,
         );
       } else {
         console.log('⚠️ [CREATE-ORDER] No matching shipping zone found for:', shippingAddress.governorate);
