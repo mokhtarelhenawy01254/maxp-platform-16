@@ -12,6 +12,7 @@ const socketService = require('../../services/socketService');
 const path = require('path');
 const telegramBotService = require('../../services/TelegramBotService');
 const { sendProductionFacebookMessage } = require('../../utils/production-facebook-fix');
+const { computeFacebookWindow } = require('../../utils/facebookWindow');
 const { conversationCache } = require('../../utils/cachingUtils');
 const {
   normalizeStoredAssetUrl,
@@ -126,13 +127,10 @@ const postMessageConverstation = async (req, res) => {
       }, 3);
 
       const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed for conversation ${id}. Last inbound: ${lastInboundAt?.toISOString() || 'None'}, expired ${hoursSinceExpiration}h ago. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
