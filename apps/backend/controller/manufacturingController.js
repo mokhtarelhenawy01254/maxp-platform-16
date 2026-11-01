@@ -156,6 +156,28 @@ class ManufacturingController {
     }
   }
 
+  static async updateOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const userId = req.user?.id || null;
+      const order = await ManufacturingService.updateOrder(companyId, req.params.id, req.body, userId);
+      res.json({ success: true, data: order, message: 'تم تعديل أمر الإنتاج بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const userId = req.user?.id || null;
+      const result = await ManufacturingService.deleteOrder(companyId, req.params.id, userId);
+      res.json({ success: true, message: result.message });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
   static async releaseOrder(req, res) {
     try {
       const companyId = ManufacturingController.getCompanyId(req);
@@ -326,6 +348,16 @@ class ManufacturingController {
       const companyId = ManufacturingController.getCompanyId(req);
       const order = await ManufacturingContractService.updateCustomerOrder(companyId, req.params.id, req.body);
       res.json({ success: true, data: order, message: 'تم تحديث أمر العميل بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteCustomerOrder(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const result = await ManufacturingContractService.deleteCustomerOrder(companyId, req.params.id);
+      res.json({ success: true, message: result.message });
     } catch (error) {
       res.status(error.statusCode || 400).json({ success: false, message: error.message });
     }

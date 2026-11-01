@@ -13,6 +13,9 @@ import {
   Check,
   Ban,
   TrendingUp,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import {
@@ -21,6 +24,7 @@ import {
   ProductionOrderStatus,
 } from '../manufacturingApi';
 import { NewOrderWizardModal } from './NewOrderWizardModal';
+import { EditOrderModal } from './modals/EditOrderModal';
 
 const customerLabel = (o: ProductionOrder) =>
   o.customer ? `${o.customer.firstName ?? ''} ${o.customer.lastName ?? ''}`.trim()
@@ -40,6 +44,24 @@ export const ManufacturingOrdersPage: React.FC = () => {
   const [customerFilter, setCustomerFilter] = useState<string>('ALL');
   const [factoryFilter, setFactoryFilter] = useState<string>('ALL');
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<ProductionOrder | null>(null);
+  const [deletingOrder, setDeletingOrder] = useState<ProductionOrder | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDeleteOrder = async () => {
+    if (!deletingOrder) return;
+    setDeleteLoading(true);
+    try {
+      await manufacturingApi.deleteOrder(deletingOrder.id);
+      setDeletingOrder(null);
+      loadOrders();
+    } catch (err: any) {
+      console.error('Failed to delete order', err);
+      alert(err?.response?.data?.message || err?.message || 'تعذر حذف أمر الإنتاج');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const loadOrders = async () => {
     try {
@@ -419,13 +441,30 @@ export const ManufacturingOrdersPage: React.FC = () => {
                           {new Date(ord.createdAt).toLocaleDateString('ar-EG', { dateStyle: 'short' })}
                         </td>
                         <td className="p-3 text-center">
-                          <Link
-                            to={`/manufacturing/orders/${ord.id}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>فتح</span>
-                          </Link>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Link
+                              to={`/manufacturing/orders/${ord.id}`}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                              title="فتح تفاصيل الأمر"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>فتح</span>
+                            </Link>
+                            <button
+                              onClick={() => setEditingOrder(ord)}
+                              className="p-1.5 rounded-lg hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                              title="تعديل أمر الإنتاج"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingOrder(ord)}
+                              className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                              title="حذف أمر الإنتاج"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -445,6 +484,58 @@ export const ManufacturingOrdersPage: React.FC = () => {
           navigate(`/manufacturing/orders/${newOrder.id}`);
         }}
       />
+
+      {/* Edit Order Modal */}
+      <EditOrderModal
+        isOpen={!!editingOrder}
+        onClose={() => setEditingOrder(null)}
+        order={editingOrder}
+        onUpdated={loadOrders}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {deletingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">حذف أمر الإنتاج</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  هل أنت متأكد من حذف أمر الإنتاج رقم{' '}
+                  <span className="font-mono font-bold text-foreground">{deletingOrder.orderNumber}</span>؟
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/60">
+              سيتم حذف سجلات الصرف والاستلام والتالف وفك الارتباط بعقود التشغيل بشكل نهائي.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setDeletingOrder(null)}
+                disabled={deleteLoading}
+                className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted text-foreground transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteOrder}
+                disabled={deleteLoading}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteLoading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1202,6 +1202,14 @@ export const manufacturingApi = {
     const res = await apiClient.post('/manufacturing/orders', data);
     return res.data?.data;
   },
+  updateOrder: async (id: string, data: Record<string, any>): Promise<ProductionOrder> => {
+    const res = await apiClient.patch(`/manufacturing/orders/${id}`, data);
+    return res.data?.data;
+  },
+  deleteOrder: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/orders/${id}`);
+    return res.data;
+  },
   releaseOrder: async (id: string): Promise<ProductionOrder> => {
     const res = await apiClient.post(`/manufacturing/orders/${id}/release`);
     return res.data?.data;

@@ -2669,6 +2669,142 @@ class ManufacturingService {
       userId
     );
   }
+
+  /**
+   * Update production order details
+   */
+  static async updateOrder(companyId, orderId, data, userId) {
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.productionOrder.findFirst({
+      where: { id: orderId, companyId },
+    });
+    if (!existing) {
+      const err = new Error('أمر الإنتاج غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const updateData = {};
+    if (data.orderType !== undefined) updateData.orderType = data.orderType;
+    if (data.brandName !== undefined) updateData.brandName = data.brandName;
+    if (data.customerCountry !== undefined) updateData.customerCountry = data.customerCountry;
+    if (data.deliveryAddress !== undefined) updateData.deliveryAddress = data.deliveryAddress;
+    if (data.deliveryMethod !== undefined) updateData.deliveryMethod = data.deliveryMethod;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+    if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+    if (data.plannedQuantity !== undefined) {
+      const q = Number(data.plannedQuantity);
+      if (q > 0) updateData.plannedQuantity = q;
+    }
+    if (data.salePricePerUnit !== undefined) {
+      updateData.salePricePerUnit = data.salePricePerUnit !== null ? Number(data.salePricePerUnit) : null;
+    }
+
+    const updated = await prisma.productionOrder.update({
+      where: { id: orderId },
+      data: updateData,
+      include: {
+        bom: { include: { product: true } },
+        customer: true,
+        stages: { orderBy: { sequence: 'asc' } },
+        factoryAgreement: true,
+        customerOrder: true,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Delete production order and cascade related child records
+   */
+  static async deleteOrder(companyId, orderId, userId) {
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.productionOrder.findFirst({
+      where: { id: orderId, companyId },
+    });
+    if (!existing) {
+      const err = new Error('أمر الإنتاج غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete material issue items and material issues
+      if (tx.materialIssueItem && tx.materialIssue) {
+        const issues = await tx.materialIssue.findMany({
+          where: { orderId },
+          select: { id: true },
+        });
+        const issueIds = issues.map((i) => i.id);
+        if (issueIds.length > 0) {
+          await tx.materialIssueItem.deleteMany({
+            where: { issueId: { in: issueIds } },
+          });
+          await tx.materialIssue.deleteMany({
+            where: { id: { in: issueIds } },
+          });
+        }
+      }
+
+      // 2. Delete finished goods receipts and items
+      if (tx.finishedGoodsReceiptItem && tx.finishedGoodsReceipt) {
+        const receipts = await tx.finishedGoodsReceipt.findMany({
+          where: { orderId },
+          select: { id: true },
+        });
+        const receiptIds = receipts.map((r) => r.id);
+        if (receiptIds.length > 0) {
+          await tx.finishedGoodsReceiptItem.deleteMany({
+            where: { receiptId: { in: receiptIds } },
+          });
+          await tx.finishedGoodsReceipt.deleteMany({
+            where: { id: { in: receiptIds } },
+          });
+        }
+      }
+
+      // 3. Delete scrap records
+      if (tx.scrapRecord) {
+        await tx.scrapRecord.deleteMany({ where: { orderId } });
+      }
+
+      // 4. Delete attachments
+      if (tx.manufacturingAttachment) {
+        await tx.manufacturingAttachment.deleteMany({ where: { orderId } });
+      }
+
+      // 5. Delete notification logs
+      if (tx.manufacturingNotificationLog) {
+        await tx.manufacturingNotificationLog.deleteMany({
+          where: { entityType: 'PRODUCTION_ORDER', entityId: orderId },
+        });
+      }
+
+      // 6. Unlink factory agreements
+      if (tx.factoryAgreement) {
+        await tx.factoryAgreement.updateMany({
+          where: { orderId },
+          data: { orderId: null },
+        });
+      }
+
+      // 7. Delete variant matrices and stages
+      if (tx.productionOrderVariantMatrix) {
+        await tx.productionOrderVariantMatrix.deleteMany({ where: { orderId } });
+      }
+      if (tx.productionOrderStage) {
+        await tx.productionOrderStage.deleteMany({ where: { orderId } });
+      }
+
+      // 8. Delete the production order
+      await tx.productionOrder.delete({ where: { id: orderId } });
+    });
+
+    return { success: true, message: 'تم حذف أمر الإنتاج بنجاح' };
+  }
 }
 
 module.exports = ManufacturingService;

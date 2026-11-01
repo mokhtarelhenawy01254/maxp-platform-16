@@ -50,6 +50,9 @@ router.post('/boms/:id/resolve-variants', controller.resolveVariantRequirements)
 // ============================================================================
 router.get('/orders/:id/cost-analysis', controller.getOrderCostAnalysis);
 router.get('/orders/:id', controller.getOrderById);
+router.patch('/orders/:id', controller.updateOrder);
+router.put('/orders/:id', controller.updateOrder);
+router.delete('/orders/:id', controller.deleteOrder);
 router.get('/orders', controller.listOrders);
 router.post('/orders', controller.createOrder);
 router.post('/orders/:id/release', controller.releaseOrder);
@@ -74,6 +77,7 @@ router.get('/customer-orders', controller.listCustomerOrders);
 router.post('/customer-orders', controller.createCustomerOrder);
 router.get('/customer-orders/:id', controller.getCustomerOrderById);
 router.patch('/customer-orders/:id', controller.updateCustomerOrder);
+router.delete('/customer-orders/:id', controller.deleteCustomerOrder);
 router.post('/customer-orders/:id/children', controller.linkOrCreateChildOrder);
 
 router.get('/customer-orders/:id/payments', controller.listCustomerOrderPayments);

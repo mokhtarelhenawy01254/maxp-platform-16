@@ -714,6 +714,58 @@ class ManufacturingContractService {
       customerOrder: fullOrder,
     };
   }
+
+  /**
+   * Delete customer order and clean up child linkages
+   */
+  static async deleteCustomerOrder(companyId, id) {
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.customerOrder.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) {
+      const err = new Error('عقد العميل غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Unlink child production orders
+      if (tx.productionOrder) {
+        await tx.productionOrder.updateMany({
+          where: { customerOrderId: id },
+          data: { customerOrderId: null },
+        });
+      }
+
+      // Unlink child factory agreements
+      if (tx.factoryAgreement) {
+        await tx.factoryAgreement.updateMany({
+          where: { customerOrderId: id },
+          data: { customerOrderId: null },
+        });
+      }
+
+      // Delete customer order payments
+      if (tx.customerOrderPayment) {
+        await tx.customerOrderPayment.deleteMany({
+          where: { customerOrderId: id },
+        });
+      }
+
+      // Delete portal links if any
+      if (tx.customerOrderPortalLink) {
+        await tx.customerOrderPortalLink.deleteMany({
+          where: { customerOrderId: id },
+        });
+      }
+
+      // Delete the customer order
+      await tx.customerOrder.delete({ where: { id } });
+    });
+
+    return { success: true, message: 'تم حذف عقد العميل بنجاح' };
+  }
 }
 
 module.exports = ManufacturingContractService;

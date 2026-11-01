@@ -758,16 +758,28 @@ class ManufacturingSampleService {
       throw err;
     }
 
+    if (existing.status === 'CONVERTED' || existing.convertedOrderId) {
+      const err = new Error('لا يمكن تعديل عينة تم تحويلها بالفعل إلى أمر إنتاج');
+      err.statusCode = 400;
+      throw err;
+    }
+
     const nonReceiptKeys = Object.keys(data).filter(
-      (k) => !['sampleReceived', 'receivedAt'].includes(k)
+      (k) => !['sampleReceived', 'receivedAt', 'status', 'allowNonDraft'].includes(k)
     );
-    if (existing.status !== 'DRAFT' && nonReceiptKeys.length > 0) {
+    if (!data.allowNonDraft && existing.status !== 'DRAFT' && nonReceiptKeys.length > 0) {
       const err = new Error('لا يمكن تعديل بيانات العينة إلا في حالة المسودة (DRAFT)');
       err.statusCode = 400;
       throw err;
     }
 
     const updateData = {};
+    if (data.status !== undefined) {
+      const validStatuses = ['DRAFT', 'IN_PROGRESS', 'APPROVED', 'REJECTED', 'CANCELLED'];
+      if (validStatuses.includes(data.status)) {
+        updateData.status = data.status;
+      }
+    }
     if (data.sampleReceived !== undefined) {
       const isRec = data.sampleReceived === true || data.sampleReceived === 'true';
       updateData.sampleReceived = isRec;
@@ -928,8 +940,8 @@ class ManufacturingSampleService {
       throw err;
     }
 
-    if (existing.status !== 'DRAFT') {
-      const err = new Error('لا يمكن حذف العينة إلا في حالة المسودة (DRAFT)');
+    if (existing.status === 'CONVERTED' || existing.convertedOrderId) {
+      const err = new Error('لا يمكن حذف عينة تم تحويلها بالفعل إلى أمر إنتاج');
       err.statusCode = 400;
       throw err;
     }
@@ -938,8 +950,26 @@ class ManufacturingSampleService {
       if (tx.sampleOrderExpense) {
         await tx.sampleOrderExpense.deleteMany({ where: { sampleOrderId: id } });
       }
-      await tx.sampleOrderStage.deleteMany({ where: { sampleOrderId: id } });
-      await tx.sampleOrderAttachment.deleteMany({ where: { sampleOrderId: id } });
+      if (tx.samplePayment) {
+        await tx.samplePayment.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.sampleComponent) {
+        await tx.sampleComponent.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.sampleShareLink) {
+        await tx.sampleShareLink.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.sampleOrderStage) {
+        await tx.sampleOrderStage.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.sampleOrderAttachment) {
+        await tx.sampleOrderAttachment.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.manufacturingNotificationLog) {
+        await tx.manufacturingNotificationLog.deleteMany({
+          where: { entityType: 'SAMPLE_ORDER', entityId: id },
+        });
+      }
       await tx.sampleOrder.delete({ where: { id } });
     });
 
