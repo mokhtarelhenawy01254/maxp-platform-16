@@ -13,6 +13,9 @@ import {
   TrendingUp,
   AlertCircle,
   Building2,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import {
@@ -21,6 +24,7 @@ import {
   CustomerOrderStatus,
 } from '../manufacturingApi';
 import { NewCustomerOrderModal } from './modals/NewCustomerOrderModal';
+import { EditCustomerOrderModal } from './modals/EditCustomerOrderModal';
 
 export const CustomerOrdersListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +38,24 @@ export const CustomerOrdersListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<CustomerOrder | null>(null);
+  const [deletingOrder, setDeletingOrder] = useState<CustomerOrder | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!deletingOrder) return;
+    try {
+      setDeleteLoading(true);
+      await manufacturingApi.deleteCustomerOrder(deletingOrder.id);
+      setDeletingOrder(null);
+      await loadData();
+    } catch (err: any) {
+      console.error('Failed to delete customer order', err);
+      alert(err?.response?.data?.message || err?.message || 'تعذر حذف أمر العميل');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -329,13 +351,29 @@ export const CustomerOrdersListPage: React.FC = () => {
                         </td>
 
                         <td className="py-3 px-4 text-center">
-                          <button
-                            onClick={() => navigate(`/manufacturing/customer-orders/${ord.id}`)}
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition"
-                            title="عرض تفاصيل العقد"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => navigate(`/manufacturing/customer-orders/${ord.id}`)}
+                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition"
+                              title="عرض تفاصيل العقد"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingOrder(ord)}
+                              className="p-1.5 rounded-md hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                              title="تعديل العقد"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingOrder(ord)}
+                              className="p-1.5 rounded-md hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                              title="حذف العقد"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -346,6 +384,58 @@ export const CustomerOrdersListPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Order Modal */}
+      <EditCustomerOrderModal
+        isOpen={!!editingOrder}
+        onClose={() => setEditingOrder(null)}
+        order={editingOrder}
+        onUpdated={loadData}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {deletingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">حذف عقد العميل</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  هل أنت متأكد من حذف عقد العميل رقم{' '}
+                  <span className="font-mono font-bold text-foreground">{deletingOrder.orderNumber}</span>؟
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/60">
+              سيتم فك ارتباط أي أوامر إنتاج تشغيلية وحذف جدول الدفعات المرتبط بهذا العقد بشكل نهائي.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setDeletingOrder(null)}
+                disabled={deleteLoading}
+                className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted text-foreground transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition shadow-sm disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteLoading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Order Modal */}
       <NewCustomerOrderModal
