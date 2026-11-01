@@ -56,7 +56,15 @@ async function isVerifyTokenValid(token) {
     return true;
   }
 
-  // 3. Check session level token stored in DB
+  // 3. Check platform-wide verify tokens (default token, simple chat token, maxp_verify_token)
+  const platformTokens = typeof facebookAppConfig.getFacebookWebhookVerifyTokens === 'function'
+    ? facebookAppConfig.getFacebookWebhookVerifyTokens()
+    : new Set();
+  if (platformTokens.has(token) || token === 'maxp_verify_token') {
+    return true;
+  }
+
+  // 4. Check session level token stored in DB
   const match = await getSharedPrismaClient().whatsAppSession.findFirst({
     where: {
       provider: 'META_CLOUD',
