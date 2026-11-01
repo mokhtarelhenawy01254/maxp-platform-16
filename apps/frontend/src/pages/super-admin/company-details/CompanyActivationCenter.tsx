@@ -1,11 +1,19 @@
-import { CheckCircle2, Cog, Loader2, Package, Sparkles, Layers, Zap } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Loader2, Layers, Zap, AlertTriangle, Sparkles } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
-import { Switch } from "../../../components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog";
 import { EmptyState } from "./EmptyState";
-import { formatCurrency } from "./helpers";
+import { formatCurrency, formatNumber, getStatusMeta } from "./helpers";
 
 interface ActivationItem {
   slug: string;
@@ -22,24 +30,29 @@ interface ActivationItem {
 }
 
 function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall: (app: ActivationItem) => void; action: string }) {
+  const pricingMeta = getStatusMeta("pricingModel", app.pricingModel);
   return (
-    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 last:border-b-0">
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Zap className="size-4" />
         </div>
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-foreground">{app.name}</p>
+            <p className="text-sm font-bold text-foreground">{app.name}</p>
             {app.isInstalled ? (
               <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300">مفعل</Badge>
             ) : null}
             {app.pricingModel ? (
-              <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-2 py-0.5 text-[11px]">{app.pricingModel === "FREE" ? "مجاني" : app.pricingModel === "PAY_PER_USE" ? "حسب الاستخدام" : "اشتراك"}</Badge>
+              <Badge variant="outline" className={`rounded-full px-2 py-0.5 text-[11px] ${pricingMeta.className}`}>
+                {pricingMeta.label}
+              </Badge>
             ) : null}
           </div>
           {app.description ? <p className="text-xs text-muted-foreground line-clamp-1">{app.description}</p> : null}
-          <p className="text-xs font-bold text-foreground/70">{app.monthlyPrice ? formatCurrency(app.monthlyPrice) : "—"}</p>
+          <p className="text-xs font-bold text-foreground/80">
+            {app.monthlyPrice && app.monthlyPrice > 0 ? `${formatCurrency(app.monthlyPrice)} / شهرياً` : "بدون اشتراك شهري ثابت"}
+          </p>
         </div>
       </div>
       <Button type="button" variant={app.isInstalled ? "outline" : "default"} size="sm" className="h-9 shrink-0 rounded-lg px-4 text-xs font-semibold"
@@ -54,18 +67,20 @@ function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall
 
 function BundleItemRow({ bundle, onSubscribe, action }: { bundle: ActivationItem; onSubscribe: (slug: string) => void; action: string }) {
   return (
-    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 last:border-b-0">
       <div className="flex items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
           <Layers className="size-4" />
         </div>
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-foreground">{bundle.name}</p>
+            <p className="text-sm font-bold text-foreground">{bundle.name}</p>
             {bundle.isComplete ? (
               <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300">مكتملة</Badge>
             ) : null}
-            <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-2 py-0.5 text-[11px]">{bundle.installedCount ?? 0}/{bundle.totalApps ?? 0}</Badge>
+            <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-2 py-0.5 text-[11px] font-mono">
+              {formatNumber(bundle.installedCount ?? 0)}/{formatNumber(bundle.totalApps ?? 0)} أداة
+            </Badge>
           </div>
           {bundle.description ? <p className="text-xs text-muted-foreground line-clamp-1">{bundle.description}</p> : null}
         </div>
@@ -74,7 +89,7 @@ function BundleItemRow({ bundle, onSubscribe, action }: { bundle: ActivationItem
         onClick={() => onSubscribe(bundle.slug)} disabled={bundle.isComplete || action === bundle.slug}
       >
         {action === bundle.slug ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : bundle.isComplete ? <CheckCircle2 className="ml-1.5 size-3.5" /> : <Layers className="ml-1.5 size-3.5" />}
-        {bundle.isComplete ? "مشترك" : "اشتراك"}
+        {bundle.isComplete ? "مشترك" : "اشتراك في الباقة"}
       </Button>
     </div>
   );
@@ -96,90 +111,164 @@ export function CompanyActivationCenter({
   handleToggleFeature: (feature: string, enabled: boolean) => void;
   toggleFeatureLoading: boolean;
 }) {
-  const uninstalledCount = orderedCatalogApps.filter((a) => !a.isInstalled).length;
-  const aiToolsEnabled = (() => {
-    if (!company?.settings) return false;
-    try { const s = JSON.parse(company.settings); return s.aiToolsEnabled === true; } catch { return false; }
-  })();
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+  const uninstalledApps = orderedCatalogApps.filter((a) => !a.isInstalled);
+  const uninstalledCount = uninstalledApps.length;
+
+  const totalMonthlyCost = uninstalledApps.reduce((acc, app) => acc + (Number(app.monthlyPrice) || 0), 0);
+  const subscriptionAppsCount = uninstalledApps.filter((a) => a.pricingModel === "SUBSCRIPTION" || a.pricingModel === "HYBRID").length;
+  const payPerUseCount = uninstalledApps.filter((a) => a.pricingModel === "PAY_PER_USE").length;
+  const freeAppsCount = uninstalledApps.filter((a) => a.pricingModel === "FREE").length;
+
+  const handleConfirmAndActivate = () => {
+    setConfirmModalOpen(false);
+    handleActivateAllTools();
+  };
 
   return (
-    <Card className="rounded-2xl border" id="company-activation-center">
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="text-xl font-bold">مركز التفعيل</CardTitle>
-          <CardDescription>تصفح وفعّل الأدوات والباقات المتاحة لهذه الشركة بنقرة واحدة.</CardDescription>
-        </div>
-        {uninstalledCount > 0 ? (
-          <Button type="button" className="rounded-2xl" onClick={handleActivateAllTools} disabled={installAllLoading}>
-            {installAllLoading ? <Loader2 className="ml-1.5 size-4 animate-spin" /> : <Sparkles className="ml-1.5 size-4" />}
-            تفعيل الكل ({uninstalledCount})
-          </Button>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {activationError ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-300">{activationError}</div>
-        ) : null}
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Cog className="size-4 text-muted-foreground" />
-            <h4 className="text-sm font-semibold text-foreground">خاصيات إضافية</h4>
+    <>
+      <Card className="rounded-2xl border" id="company-activation-center">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold">مركز التفعيل والاشتراكات</CardTitle>
+            <CardDescription>تصفح وفعّل الأدوات والباقات المتاحة لهذه الشركة بشكل فوري.</CardDescription>
           </div>
-          <Separator />
-          <div className="flex items-center justify-between gap-4 py-3">
-            <div className="space-y-0.5">
-              <p className="text-sm font-bold text-foreground">أدوات الذكاء الاصطناعي</p>
-              <p className="text-xs text-muted-foreground">السماح للشركة باستخدام أدوات AI المخصصة (AI Skills & AI Tools)</p>
+          {uninstalledCount > 0 ? (
+            <Button
+              type="button"
+              className="rounded-xl font-bold bg-primary text-primary-foreground shadow-sm gap-1.5"
+              onClick={() => setConfirmModalOpen(true)}
+              disabled={installAllLoading}
+            >
+              {installAllLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              تفعيل الكل ({formatNumber(uninstalledCount)})
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {activationError ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              {activationError}
             </div>
-            <Switch
-              checked={aiToolsEnabled}
-              onCheckedChange={(checked) => handleToggleFeature("aiToolsEnabled", checked)}
-              disabled={toggleFeatureLoading}
-            />
-          </div>
-        </div>
+          ) : null}
 
-        {activationLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-primary/60" />
-          </div>
-        ) : (
-          <>
-            {resolvedBundles.length ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Layers className="size-4 text-amber-600" />
-                  <h4 className="text-sm font-semibold text-foreground">الباقات المتاحة</h4>
-                </div>
-                <Separator />
-                <div className="divide-y divide-border/20">
-                  {resolvedBundles.map((bundle) => (
-                    <BundleItemRow key={bundle.slug} bundle={bundle} onSubscribe={handleSubscribeBundle} action={bundleAction} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
+          {/* Apps Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <h3 className="text-sm font-black text-foreground">الأدوات المستقلة ({formatNumber(orderedCatalogApps.length)})</h3>
+              <span className="text-xs text-muted-foreground">
+                المفعل: {formatNumber(orderedCatalogApps.filter((a) => a.isInstalled).length)} أداة
+              </span>
+            </div>
             {orderedCatalogApps.length ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Package className="size-4 text-primary" />
-                  <h4 className="text-sm font-semibold text-foreground">الأدوات المتاحة ({orderedCatalogApps.length})</h4>
-                </div>
-                <Separator />
-                <div className="divide-y divide-border/20">
-                  {orderedCatalogApps.map((app) => (
-                    <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} />
-                  ))}
-                </div>
+              <div className="divide-y divide-border/20">
+                {orderedCatalogApps.map((app) => (
+                  <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} />
+                ))}
               </div>
             ) : (
-              <EmptyState message="لا توجد أدوات متاحة للتفعيل حاليًا." icon={Package} />
+              <EmptyState icon={Zap} message="لا توجد أدوات متاحة في المتجر حالياً." />
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+
+          <Separator />
+
+          {/* Bundles Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <h3 className="text-sm font-black text-foreground">الباقات المتكاملة ({formatNumber(resolvedBundles.length)})</h3>
+              <span className="text-xs text-muted-foreground">مجموعات أدوات مخصصة للأنشطة المختلفة</span>
+            </div>
+            {resolvedBundles.length ? (
+              <div className="divide-y divide-border/20">
+                {resolvedBundles.map((bundle) => (
+                  <BundleItemRow key={bundle.slug} bundle={bundle} onSubscribe={handleSubscribeBundle} action={bundleAction} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState icon={Layers} message="لا توجد باقات جاهزة متاحة حالياً." />
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Modal for Bulk Activation with Pricing Breakdown */}
+      <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5 text-primary">
+              <Sparkles className="size-5" />
+              <DialogTitle className="text-lg font-black">تأكيد التفعيل الجماعي للأدوات</DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
+              أنت على وشك تفعيل كافة الأدوات غير المثبتة للشركة ({formatNumber(uninstalledCount)} أداة). يرجى مراجعة تفاصيل التكلفة أدناه قبل المتابعة.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-2">
+            {/* Cost Breakdown Card */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">عدد الأدوات المراد تفعيلها:</span>
+                <span className="font-bold text-foreground">{formatNumber(uninstalledCount)} أداة</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">إجمالي رسوم الاشتراكات الشهرية:</span>
+                <span className="font-black text-primary text-base">
+                  {totalMonthlyCost > 0 ? `${formatCurrency(totalMonthlyCost, company?.currency || "EGP")} / شهرياً` : "0.00 ج.م (مجاناً)"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/10 text-xs">
+                <Badge variant="outline" className="bg-background/80">
+                  {formatNumber(subscriptionAppsCount)} باشتراك شهري
+                </Badge>
+                <Badge variant="outline" className="bg-background/80">
+                  {formatNumber(payPerUseCount)} حسب الاستخدام
+                </Badge>
+                <Badge variant="outline" className="bg-background/80">
+                  {formatNumber(freeAppsCount)} مجانية بالكامل
+                </Badge>
+              </div>
+            </div>
+
+            {/* List of tools to activate */}
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-muted-foreground">الأدوات التي سيتم تثبيتها:</p>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-2 divide-y divide-border/20 text-xs">
+                {uninstalledApps.map((app) => (
+                  <div key={app.slug} className="flex items-center justify-between py-1.5 px-2">
+                    <span className="font-medium text-foreground">{app.name}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {app.monthlyPrice && app.monthlyPrice > 0 ? formatCurrency(app.monthlyPrice, company?.currency || "EGP") : "مجاني"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 border border-amber-200 dark:border-amber-800/60">
+              <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+              <p>
+                سيتم تفعيل هذه الأدوات تلقائيًا للشركة، وستبدأ دورات الفوترة بحسب الشروط الخاصة بكل أداة.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setConfirmModalOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary text-primary-foreground font-bold shadow-sm"
+              onClick={handleConfirmAndActivate}
+            >
+              تأكيد وتفعيل {formatNumber(uninstalledCount)} أداة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

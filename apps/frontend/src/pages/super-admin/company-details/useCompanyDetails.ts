@@ -553,17 +553,55 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     { icon: Boxes, label: "الأدوات النشطة", value: formatNumber(review.usage?.activeApps || 0), hint: `فشل مدفوعات ${formatNumber(review.billing?.stats?.failedPayments || 0)}`, tone: "border-violet-200/80 bg-[linear-gradient(135deg,rgba(245,243,255,0.96),rgba(233,213,255,0.8))] text-violet-900 dark:border-violet-900/60 dark:bg-[linear-gradient(135deg,rgba(76,29,149,0.42),rgba(109,40,217,0.2))] dark:text-violet-100" },
   ] : [];
 
+  const unifiedKpiStats = useMemo<UnifiedKpiStats>(() => {
+    const totalUsers = review?.userStats?.total ?? company?._count?.users ?? companyUsers.length;
+    const activeUsers = review?.userStats?.active ?? companyUsers.filter((u) => u.isActive).length;
+    const inactiveUsers = Math.max(0, totalUsers - activeUsers);
+
+    return {
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        inactive: inactiveUsers,
+      },
+      customers: company?._count?.customers || 0,
+      ordersThisMonth: (review?.limits?.entries?.find((e) => e.key === "orders")?.current) || 0,
+      products: company?._count?.products || 0,
+      facebookPages: company?._count?.facebookPages || facebookPages.length || 0,
+      walletBalance: review?.wallet?.balance || 0,
+      monthlyFee: review?.subscription?.monthlyFee || 0,
+      subscriptionStatus: review?.subscription?.status || "ACTIVE",
+      openTickets: companyTickets.filter((t) => t.status === "OPEN" || t.status === "IN_PROGRESS").length,
+      activeApps: review?.usage?.activeApps || 0,
+    };
+  }, [review, company, companyUsers, facebookPages.length, companyTickets]);
+
   const detailMetrics: Metric[] = company ? [
-    { icon: Users, label: "المستخدمين", value: getCount(company, "users"), hint: `${activeUsersCount} نشط / ${inactiveUsersCount} غير نشط` },
-    { icon: Building2, label: "العملاء", value: getCount(company, "customers"), hint: "قاعدة العملاء الحالية" },
-    { icon: Facebook, label: "صفحات فيسبوك", value: getCount(company, "facebookPages") || facebookPages.length, hint: pagesLoading ? "جاري التحميل..." : "قنوات الربط الحالية" },
+    {
+      icon: Users,
+      label: "أعضاء الفريق",
+      value: formatNumber(unifiedKpiStats.users.total),
+      hint: `${formatNumber(unifiedKpiStats.users.active)} نشط • ${formatNumber(unifiedKpiStats.users.inactive)} موقوف`,
+    },
+    {
+      icon: Building2,
+      label: "قاعدة العملاء",
+      value: formatNumber(unifiedKpiStats.customers),
+      hint: "إجمالي العملاء المسجلين",
+    },
+    {
+      icon: Facebook,
+      label: "صفحات فيسبوك",
+      value: formatNumber(unifiedKpiStats.facebookPages),
+      hint: pagesLoading ? "جاري التحميل..." : "قنوات الربط الحالية",
+    },
   ] : [];
 
   return {
     navigate, isMobile, company, loading, error, review, reviewCurrency, limitEntries, nextBillingDate,
     scrollToActivationSection, reviewAlerts, detailMetrics, financialMetrics, ownerUser,
     refreshCompanyWorkspace, refreshing,
-    openTopUpModal, openEditModal, handleLoginAsAdmin,
+    openTopUpModal, openEditModal, handleLoginAsAdmin, impersonating, unifiedKpiStats,
     bundleAction, appAction, installAllLoading, activationLoading, activationError,
     orderedCatalogApps, resolvedBundles, appNameBySlug,
     handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,

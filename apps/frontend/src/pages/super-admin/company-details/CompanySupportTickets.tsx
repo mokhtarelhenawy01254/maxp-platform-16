@@ -2,14 +2,8 @@ import { MessageSquare, Ticket } from "lucide-react";
 import type { TicketListItem } from "./companyDetailsTypes";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { formatDateTime } from "./helpers";
+import { formatDateTime, getStatusMeta } from "./helpers";
 import { EmptyState } from "./EmptyState";
-
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: "مفتوحة",
-  IN_PROGRESS: "قيد المعالجة",
-  CLOSED: "مغلقة",
-};
 
 const PRIORITY_LABELS: Record<string, string> = {
   LOW: "منخفضة",
@@ -39,48 +33,42 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
 
   return (
     <div className="space-y-2">
-      {tickets.slice(0, 5).map((ticket) => (
-        <div key={ticket.id} className="flex items-center justify-between rounded-xl border p-3">
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-bold text-foreground">{ticket.subject}</span>
-              <StatusBadge status={ticket.status} />
+      {tickets.slice(0, 8).map((ticket) => {
+        const statusMeta = getStatusMeta("ticket", ticket.status);
+        return (
+          <div key={ticket.id} className="flex items-center justify-between rounded-xl border border-border/50 bg-card p-3.5 transition-colors hover:bg-muted/30">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="truncate text-sm font-bold text-foreground">{ticket.subject}</span>
+                <Badge variant="outline" className={statusMeta.className}>
+                  {statusMeta.label}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono text-[11px] font-semibold">{ticket.ticketId}</span>
+                <span>•</span>
+                <span>أولوية {PRIORITY_LABELS[ticket.priority] || ticket.priority}</span>
+                {ticket.user ? (
+                  <>
+                    <span>•</span>
+                    <span>{ticket.user.firstName} {ticket.user.lastName}</span>
+                  </>
+                ) : null}
+                <span>•</span>
+                <span>{formatDateTime(ticket.createdAt)}</span>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>{ticket.ticketId}</span>
-              <span>•</span>
-              <span>{PRIORITY_LABELS[ticket.priority] || ticket.priority}</span>
-              {ticket.user ? (
-                <>
-                  <span>•</span>
-                  <span>{ticket.user.firstName} {ticket.user.lastName}</span>
-                </>
-              ) : null}
-              <span>•</span>
-              <span>{formatDateTime(ticket.createdAt)}</span>
-            </div>
+            <Button type="button" variant="ghost" size="sm" className="mr-2 shrink-0 rounded-lg hover:bg-primary/10 hover:text-primary" asChild>
+              <a href={`/support/admin/tickets/${ticket.id}`} title="فتح التذكرة">
+                <MessageSquare className="size-4" />
+              </a>
+            </Button>
           </div>
-          <Button type="button" variant="ghost" size="sm" className="mr-2 shrink-0 rounded-lg" asChild>
-            <a href={`/support/admin/tickets/${ticket.id}`}><MessageSquare className="size-3.5" /></a>
-          </Button>
-        </div>
-      ))}
-      {tickets.length > 5 ? (
-        <p className="pt-1 text-center text-xs text-muted-foreground">وعرض {tickets.length - 5} تذاكر أخرى</p>
+        );
+      })}
+      {tickets.length > 8 ? (
+        <p className="pt-1 text-center text-xs text-muted-foreground">وعرض {tickets.length - 8} تذاكر أخرى في شاشة الدعم</p>
       ) : null}
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    OPEN: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300",
-    IN_PROGRESS: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-300",
-    CLOSED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300",
-  };
-  return (
-    <Badge variant="outline" className={colors[status] || ""}>
-      {STATUS_LABELS[status] || status}
-    </Badge>
   );
 }

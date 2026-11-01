@@ -21,19 +21,35 @@ export interface CompanyData {
   trialModeEnabled?: boolean;
   trialStartedAt?: string | null;
   trialEndsAt?: string | null;
-  _count?: { users?: number; customers?: number; facebookPages?: number };
+  _count?: {
+    users?: number;
+    customers?: number;
+    facebookPages?: number;
+    products?: number;
+    conversations?: number;
+  };
 }
 
 export interface CompanyUser {
-  id: string; firstName: string; lastName: string; email: string;
-  phone?: string; role: string; isActive: boolean;
-  createdAt: string; lastLoginAt: string;
-  employee?: { employeeNumber: string };
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt?: string;
+  employee?: { employeeNumber?: string };
 }
 
 export interface FacebookPage {
-  id: string; pageName?: string; pageId: string;
-  status: string; connectedAt?: string; createdAt?: string;
+  id: string;
+  pageName?: string;
+  pageId: string;
+  status: string;
+  connectedAt?: string;
+  createdAt?: string;
 }
 
 export interface TicketListItem {
@@ -55,21 +71,44 @@ export interface ActivityEntry {
   description: string;
   severity: string;
   createdAt: string;
+  metadata?: string;
 }
 
 export interface CompanyReview {
   wallet?: {
-    balance: number; totalDeposited: number; totalSpent: number;
-    currency: string; updatedAt: string;
-    recentTransactions?: Array<{ id: string; type: string; amount: number; createdAt: string; description?: string; status?: string }>;
+    balance: number;
+    totalDeposited: number;
+    totalSpent: number;
+    currency: string;
+    updatedAt: string;
+    recentTransactions?: Array<{
+      id: string;
+      type: string;
+      amount: number;
+      createdAt: string;
+      description?: string;
+      status?: string;
+    }>;
   };
   subscription?: {
-    id: string; monthlyFee: number; status: string;
-    nextBillingDate?: string; failedAttempts: number;
-    lastBillingDate?: string; billingDay?: number;
+    id: string;
+    monthlyFee: number;
+    status: string;
+    nextBillingDate?: string;
+    failedAttempts: number;
+    lastBillingDate?: string;
+    billingDay?: number;
   };
   billing?: {
-    stats?: { unpaidInvoices: number; overdueInvoices: number; pendingReceipts: number; failedPayments: number; pendingPayments?: number; paidInvoices?: number; totalInvoices?: number };
+    stats?: {
+      unpaidInvoices: number;
+      overdueInvoices: number;
+      pendingReceipts: number;
+      failedPayments: number;
+      pendingPayments?: number;
+      paidInvoices?: number;
+      totalInvoices?: number;
+    };
     invoices?: any[];
     payments?: any[];
     receipts?: any[];
@@ -80,13 +119,51 @@ export interface CompanyReview {
   };
   usage?: {
     costs?: { total: number; subscriptions: number; usage: number };
-    totalActions: number; totalQuantity: number; activeApps: number;
+    totalActions: number;
+    totalQuantity: number;
+    activeApps: number;
     installedApps?: any[];
-    usageBreakdown?: Array<{ feature: string; totalActions: number; totalQuantity: number; totalCost: number }>;
+    usageBreakdown?: Array<{
+      feature: string;
+      totalActions: number;
+      totalQuantity: number;
+      totalCost: number;
+    }>;
   };
   limits?: {
-    entries?: Array<{ key: string; label: string; current: number; limit: number; percentage: number; remaining: number; isUnlimited: boolean; bonus?: number }>;
+    entries?: Array<{
+      key: string;
+      label: string;
+      current: number;
+      limit: number;
+      percentage: number;
+      remaining: number;
+      isUnlimited: boolean;
+      bonus?: number;
+    }>;
     features?: { advancedReports?: boolean; apiAccess?: boolean };
     coupon?: { name?: string; appliedCode: string; benefitSummary: string[] };
   };
+  userStats?: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
+export interface UnifiedKpiStats {
+  users: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  customers: number;
+  ordersThisMonth: number;
+  products: number;
+  facebookPages: number;
+  walletBalance: number;
+  monthlyFee: number;
+  subscriptionStatus: string;
+  openTickets: number;
+  activeApps: number;
 }
