@@ -114,11 +114,20 @@ describe("useOrdersLookupData hook", () => {
           },
         });
       }
-      if (url === "/affiliates/list") {
+      if (url === "/affiliates/order-filter-options") {
         return Promise.resolve({
           data: {
             success: true,
-            data: [{ id: "aff-1", name: "Affiliate Beta" }],
+            data: [
+              {
+                id: "aff-1",
+                affiliateId: "aff-1",
+                name: "Affiliate Beta",
+                affiliateCode: "54DF7030",
+                orderCount: 139,
+                canFilterOrders: true,
+              },
+            ],
           },
         });
       }
@@ -144,6 +153,8 @@ describe("useOrdersLookupData hook", () => {
       expect(result.current.merchantOptions[0].name).toBe("Merchant Alpha");
       expect(result.current.affiliateOptions).toHaveLength(1);
       expect(result.current.affiliateOptions[0].name).toBe("Affiliate Beta");
+      expect(result.current.affiliateOptions[0].orderCount).toBe(139);
+      expect(result.current.affiliateOptionsError).toBe("");
     });
   });
 
@@ -227,5 +238,54 @@ describe("useOrdersLookupData hook", () => {
 
     expect(result.current.merchantSettlementSummary?.merchant?.name).toBe("Specific Merchant");
     expect(result.current.merchantSettlementError).toBe("");
+  });
+
+  it("surfaces a retryable error instead of an empty marketers list when the request fails", async () => {
+    let affiliateCalls = 0;
+
+    (apiClient.get as jest.Mock).mockImplementation((url: string) => {
+      if (url === "/affiliates/order-filter-options") {
+        affiliateCalls += 1;
+        if (affiliateCalls === 1) {
+          return Promise.reject(Object.assign(new Error("Forbidden"), { status: 403 }));
+        }
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [{ id: "aff-1", affiliateId: "aff-1", affiliateCode: "54DF7030", orderCount: 139 }],
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    const { result } = renderHook(() =>
+      useOrdersLookupData({
+        companyId: "comp-1",
+        isAdmin: true,
+        isMerchant: false,
+        canSelectOrders: true,
+        merchantFilterLength: 0,
+        defaultOrderStatuses: mockDefaultOrderStatuses,
+        defaultPaymentStatuses: mockDefaultPaymentStatuses,
+        normalizeStatusCode,
+        getApiErrorMessage,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.affiliateOptionsError).toBe("orders.affiliatesLoadError");
+    });
+
+    expect(result.current.affiliateOptions).toEqual([]);
+
+    act(() => {
+      result.current.retryAffiliateOptions();
+    });
+
+    await waitFor(() => {
+      expect(result.current.affiliateOptions).toHaveLength(1);
+      expect(result.current.affiliateOptionsError).toBe("");
+    });
   });
 });

@@ -21,6 +21,10 @@ export interface OrdersFilterDrawerProps {
   sourceOptions: MultiSelectOption[];
   merchantOptionsList: MultiSelectOption[];
   affiliateOptionsList: MultiSelectOption[];
+  storeOptionsList?: MultiSelectOption[];
+  showStoreFilter?: boolean;
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   fulfillmentOptions: MultiSelectOption[];
   operationOptions: MultiSelectOption[];
   settlementOptions: MultiSelectOption[];
@@ -45,6 +49,10 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
   sourceOptions,
   merchantOptionsList,
   affiliateOptionsList,
+  storeOptionsList = [],
+  showStoreFilter = false,
+  affiliateOptionsError,
+  onRetryAffiliates,
   fulfillmentOptions,
   operationOptions,
   settlementOptions,
@@ -136,6 +144,10 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               filters={filters}
               merchantOptionsList={merchantOptionsList}
               affiliateOptionsList={affiliateOptionsList}
+              storeOptionsList={storeOptionsList}
+              showStoreFilter={showStoreFilter}
+              affiliateOptionsError={affiliateOptionsError}
+              onRetryAffiliates={onRetryAffiliates}
               fulfillmentOptions={fulfillmentOptions}
               operationOptions={operationOptions}
               settlementOptions={settlementOptions}

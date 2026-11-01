@@ -1,5 +1,9 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibility');
+const {
+  mergeAffiliateMarketers,
+  summarizeAffiliateStores,
+} = require('../utils/affiliateOrderFilter');
 
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_AFFILIATE_STATUSES = new Set(['PENDING', 'ACTIVE', 'SUSPENDED']);
@@ -1473,6 +1477,177 @@ class AffiliateService {
       return results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } catch (error) {
       console.error('❌ [AFFILIATE] Error listing affiliates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * قائمة المسوقين الموحدة (مصدر الحقيقة الوحيد لفلاتر الطلبات وصفحة إدارة المسوقين).
+   *
+   * تختلف عن listAffiliates في أنها لا تعتمد على الدور الوظيفي فقط، بل تدمج:
+   *  1. كل سجلات Affiliate الخاصة بالشركة (المصدر المالي).
+   *  2. أعضاء الشركة بدور AFFILIATE وليست لديهم سجل Affiliate (بانتظار التفعيل).
+   *  3. كل affiliateId موجود على طلبات الشركة حتى لو كان المسوق مسجلًا في شركة أخرى.
+   *  4. سجلات Affiliate يملكها أعضاء في هذه الشركة لكنها مسجلة في شركة أخرى.
+   *
+   * كل صف يحتوي: affiliateId (للفلترة على orders.affiliateId) + الكود + الاسم
+   * + orderCount + totalCommission + isOtherCompany + canFilterOrders.
+   */
+  async listAffiliatesWithOrderStats(companyId) {
+    try {
+      const prisma = this.prisma;
+      const userSelect = {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      };
+
+      // 1. سجلات المسوقين المالية + عضويات الشركة + إحصاءات الطلبات والعمولات
+      const [ownAffiliates, memberships, orderStats, commissionStats] = await Promise.all([
+        prisma.affiliate.findMany({
+          where: { companyId },
+          include: { user: { select: userSelect } },
+        }),
+        prisma.userCompany.findMany({
+          where: { companyId },
+          include: { user: { select: userSelect } },
+        }),
+        prisma.order.groupBy({
+          by: ['affiliateId'],
+          where: { companyId, affiliateId: { not: null } },
+          _count: { _all: true },
+        }),
+        prisma.commission.groupBy({
+          by: ['affiliateId'],
+          where: { companyId, affiliateId: { not: null } },
+          _count: { orderId: true },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      const ownAffiliateIds = new Set(ownAffiliates.map((affiliate) => affiliate.id));
+      const orderLinkedIds = Array.from(
+        new Set(
+          orderStats
+            .map((stat) => stat.affiliateId)
+            .filter((id) => id && !ownAffiliateIds.has(id))
+        )
+      );
+      const memberUserIds = Array.from(new Set(memberships.map((membership) => membership.userId)));
+
+      // 2. المسوقون المرتبطون بطلبات الشركة + المسوقون الذين هم أعضاء فيها ومسجلون في شركة أخرى
+      const [orderLinkedAffiliates, memberAffiliates] = await Promise.all([
+        orderLinkedIds.length > 0
+          ? prisma.affiliate.findMany({
+              where: { id: { in: orderLinkedIds } },
+              include: { user: { select: userSelect } },
+            })
+          : Promise.resolve([]),
+        memberUserIds.length > 0
+          ? prisma.affiliate.findMany({
+              where: { userId: { in: memberUserIds } },
+              include: { user: { select: userSelect } },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      // 3. دمج كل المصادر بدون تكرار (المفتاح: userId ثم affiliateId)
+      const mergedRows = mergeAffiliateMarketers({
+        companyId,
+        ownAffiliates,
+        linkedAffiliates: [...orderLinkedAffiliates, ...memberAffiliates],
+        memberships,
+        orderStats,
+        commissionStats,
+      });
+
+      // 4. إعادة الحقول المالية الكاملة للسجلات الحقيقية + معرف مؤقت لصفوف الانتظار
+      const affiliateById = new Map(
+        [...ownAffiliates, ...orderLinkedAffiliates, ...memberAffiliates].map((affiliate) => [
+          affiliate.id,
+          affiliate,
+        ])
+      );
+
+      return mergedRows.map((row) => {
+        const fullAffiliate = row.affiliateId ? affiliateById.get(row.affiliateId) : null;
+        // صفوف الانتظار (بدون سجل Affiliate) تحصل على قيم مالية صفرية حتى لا تظهر فارغة في الجدول
+        const base = fullAffiliate
+          ? { ...fullAffiliate }
+          : {
+              totalEarnings: 0,
+              paidEarnings: 0,
+              pendingEarnings: 0,
+              totalSales: 0,
+              totalClicks: 0,
+            };
+
+        return {
+          ...base,
+          ...row,
+          id: row.affiliateId || `temp_${row.userId}`,
+          affiliateId: row.affiliateId || null,
+          isMissingRecord: !row.affiliateId,
+        };
+      });
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error listing affiliates with order stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * المتاجر/الشركات التي لديها نشاط تسويقي فعلي:
+   * مسوق نشط أو طلبات تحمل affiliateId أو طلبات مباشرة من مسوق (AFFILIATE_DIRECT).
+   */
+  async listAffiliateStores(options = {}) {
+    try {
+      const prisma = this.prisma;
+      const companyIds = Array.isArray(options.companyIds)
+        ? options.companyIds.filter(Boolean)
+        : [];
+
+      const orderScope = companyIds.length > 0 ? { companyId: { in: companyIds } } : {};
+      const affiliateScope = companyIds.length > 0
+        ? { companyId: { in: companyIds } }
+        : { companyId: { not: null } };
+
+      const [companyStats, activeMarketerStats] = await Promise.all([
+        prisma.order.groupBy({
+          by: ['companyId'],
+          where: {
+            ...orderScope,
+            OR: [{ affiliateId: { not: null } }, { orderSource: 'AFFILIATE_DIRECT' }],
+          },
+          _count: { _all: true },
+        }),
+        prisma.affiliate.groupBy({
+          by: ['companyId'],
+          where: { ...affiliateScope, status: 'ACTIVE' },
+          _count: { _all: true },
+        }),
+      ]);
+
+      const relatedCompanyIds = Array.from(
+        new Set(
+          [...companyStats, ...activeMarketerStats]
+            .map((stat) => stat.companyId)
+            .filter(Boolean)
+        )
+      );
+
+      const companies = relatedCompanyIds.length > 0
+        ? await prisma.company.findMany({
+            where: { id: { in: relatedCompanyIds } },
+            select: { id: true, name: true },
+          })
+        : [];
+
+      return summarizeAffiliateStores({ companyStats, activeMarketerStats, companies });
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error listing affiliate stores:', error);
       throw error;
     }
   }

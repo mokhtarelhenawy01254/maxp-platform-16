@@ -1,3 +1,10 @@
+import type {
+  AffiliateFilterOption,
+  AffiliateStoreOption,
+} from "../utils/orderTransformer";
+
+export type { AffiliateFilterOption, AffiliateStoreOption };
+
 export interface OrderStatusDefinition {
   code: string;
   name: string;
@@ -10,19 +17,6 @@ export interface MerchantFilterOption {
   name: string;
   email?: string;
   fulfillmentMode?: string;
-}
-
-export interface AffiliateFilterOption {
-  id: string;
-  name?: string;
-  code?: string;
-  email?: string;
-  phone?: string;
-  user?: {
-    name?: string;
-    email?: string;
-    phone?: string;
-  };
 }
 
 export interface ActiveCarrierOption {
@@ -53,6 +47,11 @@ export interface UseOrdersLookupDataReturn {
   paymentStatusMap: Map<string, OrderStatusDefinition>;
   merchantOptions: MerchantFilterOption[];
   affiliateOptions: AffiliateFilterOption[];
+  storeOptions: AffiliateStoreOption[];
+  /** فشل تحميل المسوقين: تعرض رسالة إعادة المحاولة بدل "لا توجد نتائج" */
+  affiliateOptionsError: string;
+  affiliateOptionsLoading: boolean;
+  retryAffiliateOptions: () => void;
   merchantSettlementSummary: any | null;
   merchantSettlementLoading: boolean;
   merchantSettlementError: string;

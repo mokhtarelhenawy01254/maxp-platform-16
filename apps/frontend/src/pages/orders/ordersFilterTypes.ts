@@ -4,6 +4,8 @@ export interface OrdersFilters {
   sourceType: string[];
   merchantId: string[];
   affiliateId: string[];
+  /** فلتر المتجر/الشركة: الشركات التي لديها نشاط تسويقي فعلي */
+  companyId?: string[];
   fulfillmentSource: string[];
   merchantOperationStatus: string[];
   merchantSettlementStatus: string[];
@@ -31,6 +33,7 @@ export const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
   sourceType: [],
   merchantId: [],
   affiliateId: [],
+  companyId: [],
   fulfillmentSource: [],
   merchantOperationStatus: [],
   merchantSettlementStatus: [],
@@ -52,6 +55,7 @@ export const ORDERS_LIST_QUERY_KEYS = [
   "sourceType",
   "merchantId",
   "affiliateId",
+  "companyId",
   "fulfillmentSource",
   "merchantOperationStatus",
   "merchantSettlementStatus",
@@ -85,6 +89,7 @@ export const getFiltersFromSearchParams = (searchParams: URLSearchParams): Order
     sourceType: parseMultiFilterParam(searchParams.get("sourceType")),
     merchantId: parseMultiFilterParam(searchParams.get("merchantId")),
     affiliateId: parseMultiFilterParam(searchParams.get("affiliateId")),
+    companyId: parseMultiFilterParam(searchParams.get("companyId")),
     fulfillmentSource: parseMultiFilterParam(searchParams.get("fulfillmentSource")),
     merchantOperationStatus: parseMultiFilterParam(
       searchParams.get("merchantOperationStatus"),
@@ -124,6 +129,9 @@ export const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       : [],
     affiliateId: Array.isArray(candidate.affiliateId)
       ? candidate.affiliateId.filter((s): s is string => typeof s === "string")
+      : [],
+    companyId: Array.isArray(candidate.companyId)
+      ? candidate.companyId.filter((s): s is string => typeof s === "string")
       : [],
     fulfillmentSource: Array.isArray(candidate.fulfillmentSource)
       ? candidate.fulfillmentSource.filter((s): s is string => typeof s === "string")

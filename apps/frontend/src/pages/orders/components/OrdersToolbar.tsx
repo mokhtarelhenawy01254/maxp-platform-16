@@ -12,6 +12,7 @@ import type {
   MerchantFilterOption,
   AffiliateFilterOption,
 } from "../Orders";
+import type { AffiliateStoreOption } from "../utils/orderTransformer";
 import {
   buildQuickViews,
   buildStatusOptions,
@@ -22,6 +23,7 @@ import {
   buildSettlementOptions,
   buildMerchantOptionsList,
   buildAffiliateOptionsList,
+  buildStoreOptionsList,
 } from "../utils/toolbarOptions";
 
 export interface OrdersToolbarProps {
@@ -34,6 +36,9 @@ export interface OrdersToolbarProps {
   filterablePaymentStatuses: Array<{ code: string; name: string }>;
   merchantOptions: MerchantFilterOption[];
   affiliateOptions: AffiliateFilterOption[];
+  storeOptions?: AffiliateStoreOption[];
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   showOrderSourceFilter: boolean;
   showUnifiedOperationFilters: boolean;
   showMerchantOperationFilters: boolean;
@@ -59,6 +64,9 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   filterablePaymentStatuses,
   merchantOptions,
   affiliateOptions,
+  storeOptions = [],
+  affiliateOptionsError,
+  onRetryAffiliates,
   showOrderSourceFilter,
   showUnifiedOperationFilters,
   showMerchantOperationFilters,
@@ -104,6 +112,14 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
     () => buildAffiliateOptionsList(affiliateOptions, getAffiliateDisplayName),
     [affiliateOptions, getAffiliateDisplayName],
   );
+
+  const storeOptionsList = useMemo(
+    () => buildStoreOptionsList(storeOptions),
+    [storeOptions],
+  );
+
+  // فلتر المتجر/الشركة يظهر فقط عند وجود أكثر من متجر نشاطه تسويقي
+  const showStoreFilter = storeOptionsList.length > 1;
 
   return (
     <div className="mb-2 space-y-2 sm:mb-3 sm:space-y-2.5">
@@ -177,6 +193,10 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
             sourceOptions={sourceOptions}
             merchantOptionsList={merchantOptionsList}
             affiliateOptionsList={affiliateOptionsList}
+            storeOptionsList={storeOptionsList}
+            showStoreFilter={showStoreFilter}
+            affiliateOptionsError={affiliateOptionsError}
+            onRetryAffiliates={onRetryAffiliates}
             fulfillmentOptions={fulfillmentOptions}
             operationOptions={operationOptions}
             settlementOptions={settlementOptions}

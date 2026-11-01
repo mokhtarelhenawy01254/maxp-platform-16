@@ -1,5 +1,6 @@
 import type {
   AffiliateFilterOption,
+  AffiliateStoreOption,
   MerchantOrderScope,
   OrderStatus,
   PaymentStatus,
@@ -11,6 +12,7 @@ import type {
 
 export type {
   AffiliateFilterOption,
+  AffiliateStoreOption,
   MerchantOrderScope,
   OrderStatus,
   PaymentStatus,

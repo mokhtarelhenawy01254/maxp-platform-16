@@ -1,7 +1,21 @@
 export interface AffiliateFilterOption {
   id: string;
+  affiliateId?: string | null;
   affiliateCode?: string;
   status?: string;
+  name?: string;
+  /** عدد الطلبات التي تحمل affiliateId لهذا المسوق داخل الشركة */
+  orderCount?: number;
+  /** عدد الطلبات التي لها سجل عمولة */
+  commissionOrderCount?: number;
+  /** إجمالي العمولة المحتسبة (إن وجدت) */
+  totalCommission?: number;
+  /** المسوق مسجل في شركة أخرى وتم ربطه بهذه الشركة */
+  isOtherCompany?: boolean;
+  /** عضو بدور AFFILIATE وليس لديه سجل Affiliate بعد */
+  isPendingAffiliateRecord?: boolean;
+  /** هل يمكن الفلترة على طلباته (يحتاج affiliateId حقيقي) */
+  canFilterOrders?: boolean;
   user?: {
     firstName?: string;
     lastName?: string;
@@ -11,6 +25,14 @@ export interface AffiliateFilterOption {
       name?: string;
     };
   };
+}
+
+/** متجر/شركة لديها نشاط تسويقي فعلي (لفلتر المتجر في صفحة الطلبات) */
+export interface AffiliateStoreOption {
+  companyId: string;
+  companyName: string;
+  orderCount: number;
+  activeMarketersCount: number;
 }
 
 export interface MerchantOrderScope {

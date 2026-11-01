@@ -7,6 +7,8 @@ export interface MultiSelectOption {
   code: string;
   name: string;
   color?: string;
+  description?: string;
+  disabled?: boolean;
 }
 
 interface MultiSelectFilterProps {
@@ -20,6 +22,10 @@ interface MultiSelectFilterProps {
   value: string[];
   onChange: (next: string[]) => void;
   fieldClassName?: string;
+  /** نص الخطأ: يظهر بدل "لا توجد نتائج" عند فشل تحميل الخيارات */
+  errorText?: string;
+  /** زر إعادة المحاولة بعد فشل التحميل */
+  onRetry?: () => void;
 }
 
 export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
@@ -33,12 +39,21 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   value,
   onChange,
   fieldClassName = "",
+  errorText,
+  onRetry,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const normalized = useMemo(
-    () => options.map((option) => ({ code: option.code, name: option.name, color: option.color })),
+    () =>
+      options.map((option) => ({
+        code: option.code,
+        name: option.name,
+        color: option.color,
+        description: option.description,
+        disabled: Boolean(option.disabled),
+      })),
     [options],
   );
 
@@ -47,7 +62,9 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     if (!q) return normalized;
     return normalized.filter(
       (option) =>
-        option.name.toLowerCase().includes(q) || option.code.toLowerCase().includes(q),
+        option.name.toLowerCase().includes(q) ||
+        option.code.toLowerCase().includes(q) ||
+        String(option.description || "").toLowerCase().includes(q),
     );
   }, [normalized, query]);
 
@@ -63,6 +80,11 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       onChange(value.filter((v) => v.toLowerCase() !== code.toLowerCase()));
     }
   };
+
+  const selectableOptions = useMemo(
+    () => normalized.filter((option) => !option.disabled),
+    [normalized],
+  );
 
   const selectedNames = value
     .map((v) => normalized.find((option) => option.code.toLowerCase() === v.toLowerCase())?.name)
@@ -124,7 +146,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           <div className="flex items-center justify-between border-b border-border/50 px-1 pb-1.5 pt-0.5">
             <button
               type="button"
-              onClick={() => onChange(normalized.map((option) => option.code))}
+              onClick={() => onChange(selectableOptions.map((option) => option.code))}
               className="rounded-lg px-2 py-1 text-[11px] font-semibold text-primary transition-all hover:bg-primary/10 active:scale-95"
             >
               {selectAllLabel}
@@ -141,20 +163,38 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto space-y-0.5 px-0.5">
             {visible.length === 0 ? (
-              <div className="px-3 py-6 text-center text-xs text-muted-foreground font-medium">
-                {noResultsLabel}
-              </div>
+              errorText ? (
+                <button
+                  type="button"
+                  onClick={() => onRetry?.()}
+                  className="w-full rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-3 text-center text-xs font-semibold text-destructive transition hover:bg-destructive/15"
+                >
+                  {errorText}
+                </button>
+              ) : (
+                <div className="px-3 py-6 text-center text-xs text-muted-foreground font-medium">
+                  {noResultsLabel}
+                </div>
+              )
             ) : (
               visible.map((option) => {
                 const isChecked = selectedMap.has(option.code.toLowerCase());
                 return (
                   <label
                     key={option.code}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all hover:bg-muted/60 active:scale-[0.99] select-none"
+                    className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all select-none ${
+                      option.disabled
+                        ? "cursor-not-allowed opacity-60"
+                        : "cursor-pointer hover:bg-muted/60 active:scale-[0.99]"
+                    }`}
                   >
                     <Checkbox
                       checked={isChecked}
-                      onCheckedChange={(checked) => toggle(option.code, Boolean(checked))}
+                      disabled={option.disabled}
+                      onCheckedChange={(checked) => {
+                        if (option.disabled) return;
+                        toggle(option.code, Boolean(checked));
+                      }}
                       className="rounded"
                     />
                     {option.color && (
@@ -163,8 +203,15 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                         style={{ backgroundColor: option.color }}
                       />
                     )}
-                    <span className="truncate text-xs sm:text-sm font-medium text-foreground">
-                      {option.name}
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-xs sm:text-sm font-medium text-foreground">
+                        {option.name}
+                      </span>
+                      {option.description && (
+                        <span className="truncate text-[10px] font-medium text-muted-foreground">
+                          {option.description}
+                        </span>
+                      )}
                     </span>
                   </label>
                 );

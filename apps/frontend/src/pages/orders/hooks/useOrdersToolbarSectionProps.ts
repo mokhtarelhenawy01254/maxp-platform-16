@@ -6,7 +6,7 @@ import type {
   MerchantSettlementSummary,
 } from "../ordersConstants";
 import type { OrdersFilters } from "../ordersFilterTypes";
-import type { AffiliateFilterOption } from "../utils/orderTransformer";
+import type { AffiliateFilterOption, AffiliateStoreOption } from "../utils/orderTransformer";
 
 export interface UseOrdersToolbarSectionPropsParams {
   filters: OrdersFilters;
@@ -19,6 +19,9 @@ export interface UseOrdersToolbarSectionPropsParams {
   filterablePaymentStatuses: Array<{ code: string; name: string }>;
   merchantOptions: MerchantFilterOption[];
   affiliateOptions: AffiliateFilterOption[];
+  storeOptions?: AffiliateStoreOption[];
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   showOrderSourceFilter: boolean;
   showUnifiedOperationFilters: boolean;
   showMerchantOperationFilters: boolean;
@@ -60,6 +63,9 @@ export function useOrdersToolbarSectionProps(
       filterablePaymentStatuses: params.filterablePaymentStatuses,
       merchantOptions: params.merchantOptions,
       affiliateOptions: params.affiliateOptions,
+      storeOptions: params.storeOptions,
+      affiliateOptionsError: params.affiliateOptionsError,
+      onRetryAffiliates: params.onRetryAffiliates,
       showOrderSourceFilter: params.showOrderSourceFilter,
       showUnifiedOperationFilters: params.showUnifiedOperationFilters,
       showMerchantOperationFilters: params.showMerchantOperationFilters,
@@ -101,6 +107,9 @@ export function useOrdersToolbarSectionProps(
       params.filterablePaymentStatuses,
       params.merchantOptions,
       params.affiliateOptions,
+      params.storeOptions,
+      params.affiliateOptionsError,
+      params.onRetryAffiliates,
       params.showOrderSourceFilter,
       params.showUnifiedOperationFilters,
       params.showMerchantOperationFilters,

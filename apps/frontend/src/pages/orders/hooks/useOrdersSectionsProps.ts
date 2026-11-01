@@ -3,7 +3,7 @@ import type { OrdersToolbarSectionProps } from "../components/OrdersToolbarSecti
 import type { OrdersTableSectionProps } from "../components/OrdersTableSection";
 import type { OrdersModalsContainerProps } from "../components/OrdersModalsContainer";
 import type { OrdersFilters } from "../ordersFilterTypes";
-import type { Order } from "../utils/orderTransformer";
+import type { Order, AffiliateStoreOption } from "../utils/orderTransformer";
 import type {
   OrderStatusDefinition,
   MerchantFilterOption,
@@ -27,6 +27,9 @@ export interface UseOrdersSectionsPropsOptions {
   fieldClassName: string;
   merchantOptions: MerchantFilterOption[];
   affiliateOptions: AffiliateFilterOption[];
+  storeOptions?: AffiliateStoreOption[];
+  affiliateOptionsError?: string;
+  onRetryAffiliates?: () => void;
   showOrderSourceFilter: boolean;
   showUnifiedOperationFilters: boolean;
   showMerchantOperationFilters: boolean;
@@ -86,6 +89,9 @@ export function useOrdersSectionsProps({
   fieldClassName,
   merchantOptions,
   affiliateOptions,
+  storeOptions,
+  affiliateOptionsError,
+  onRetryAffiliates,
   showOrderSourceFilter,
   showUnifiedOperationFilters,
   showMerchantOperationFilters,
@@ -135,6 +141,9 @@ export function useOrdersSectionsProps({
     filterablePaymentStatuses: decorators.filterablePaymentStatuses,
     merchantOptions,
     affiliateOptions,
+    storeOptions,
+    affiliateOptionsError,
+    onRetryAffiliates,
     showOrderSourceFilter,
     showUnifiedOperationFilters,
     showMerchantOperationFilters,
