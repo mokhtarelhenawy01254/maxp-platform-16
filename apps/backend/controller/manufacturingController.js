@@ -1235,6 +1235,64 @@ class ManufacturingController {
     }
   }
 
+  // ===== مكونات العينة (Task 83791d03) =====
+
+  static async listSampleComponents(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.listSampleComponents(companyId, req.params.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || error.status || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async addSampleComponent(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.addSampleComponent(
+        companyId,
+        req.user,
+        req.params.id,
+        req.body
+      );
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || error.status || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateSampleComponent(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.updateSampleComponent(
+        companyId,
+        req.user,
+        req.params.id,
+        req.params.componentId,
+        req.body
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || error.status || 400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteSampleComponent(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const data = await ManufacturingSampleService.deleteSampleComponent(
+        companyId,
+        req.user,
+        req.params.id,
+        req.params.componentId
+      );
+      res.json({ success: true, message: data.message || 'تم حذف المكوّن بنجاح' });
+    } catch (error) {
+      res.status(error.statusCode || error.status || 400).json({ success: false, message: error.message });
+    }
+  }
+
 
   // ==========================================================================
   // Wave 6: Standard Production Stage Templates & Sets Library

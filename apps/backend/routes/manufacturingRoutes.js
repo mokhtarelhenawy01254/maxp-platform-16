@@ -188,6 +188,12 @@ router.post('/sample-orders/:id/expenses', controller.addSampleExpense);
 router.patch('/sample-orders/:id/expenses/:expenseId', controller.updateSampleExpense);
 router.delete('/sample-orders/:id/expenses/:expenseId', controller.deleteSampleExpense);
 
+// مكونات العينة (Task 83791d03)
+router.get('/sample-orders/:id/components', controller.listSampleComponents);
+router.post('/sample-orders/:id/components', controller.addSampleComponent);
+router.patch('/sample-orders/:id/components/:componentId', controller.updateSampleComponent);
+router.delete('/sample-orders/:id/components/:componentId', controller.deleteSampleComponent);
+
 
 // ============================================================================
 // 10. Standard Production Stage Templates & Sets (مكتبة مراحل الإنتاج القياسية) (Wave 6)

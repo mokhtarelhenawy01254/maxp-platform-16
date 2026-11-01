@@ -63,6 +63,18 @@ export const DrawerTabsNav: React.FC<DrawerTabsNavProps> = ({
         المرفقات والصور (
         <span className="tabular-nums">{sample.attachments?.length || 0}</span>)
       </button>
+
+      <button
+        onClick={() => setActiveTab('components')}
+        className={`pb-2.5 font-medium border-b-2 transition-all ${
+          activeTab === 'components'
+            ? 'border-primary text-primary font-semibold'
+            : 'border-transparent text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        المكونات (
+        <span className="tabular-nums">{sample.components?.length || 0}</span>)
+      </button>
     </div>
   );
 };

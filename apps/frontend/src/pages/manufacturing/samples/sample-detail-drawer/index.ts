@@ -8,6 +8,7 @@ export * from './SampleStagesTab';
 export * from './SampleInfoTab';
 export * from './SampleAttachmentsTab';
 export * from './SampleFinanceTab';
+export * from './SampleComponentsTab';
 export * from './SamplePaymentModal';
 export * from './SampleFactoryModal';
 export * from './DrawerFooterActions';

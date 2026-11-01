@@ -1,6 +1,6 @@
 import { SampleOrder, SampleOrderStage, PartnerFactory } from '../../manufacturingApi';
 
-export type DrawerTab = 'info' | 'stages' | 'attachments' | 'finance';
+export type DrawerTab = 'info' | 'stages' | 'attachments' | 'finance' | 'components';
 
 export interface SampleDetailDrawerProps {
   sample: SampleOrder | null;
