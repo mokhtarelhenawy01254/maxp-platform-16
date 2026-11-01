@@ -129,6 +129,13 @@ class AiCronSchedulerService {
     ) {
       return 'MEDIA_BUYER';
     }
+    if (
+      desc.includes('استوك') || desc.includes('تارجت') ||
+      desc.includes('أهداف') || desc.includes('مساعد المتابعة') || desc.includes('المتابعة والأهداف') ||
+      desc.includes('أوردرات الشهر') || desc.includes('نقص الاستوك')
+    ) {
+      return 'STOCK_TARGET_MONITOR';
+    }
     if (desc.includes('مخزون') || desc.includes('قطع') || desc.includes('منتجات') || desc.includes('جرد') || desc.includes('نقص')) {
       return 'INVENTORY';
     }
@@ -248,13 +255,227 @@ class AiCronSchedulerService {
   }
 
   /**
+   * Ensure default daily Stock & Monthly Target Monitor report job exists for tenant.
+   */
+  async ensureDefaultStockTargetJob(companyId) {
+    if (!companyId) return null;
+    const desc = 'التقرير الصباحي اليومي لمستويات المخزون ومستهدفات أوردرات الشهر (مساعد المتابعة والأهداف)';
+    const cronExpr = '0 9 * * *';
+    const taskType = 'STOCK_TARGET_MONITOR';
+    const id = `cron_stock_target_daily_${companyId}`;
+    const payload = {
+      reportType: 'STOCK_TARGET_DAILY_REPORT',
+      delivery: 'WHATSAPP_AND_DASHBOARD',
+      targetTime: '09:00',
+      timezone: 'Africa/Cairo',
+    };
+
+    const prisma = this._getPrisma();
+    if (prisma && prisma.companySkill) {
+      try {
+        const existing = await prisma.companySkill.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id },
+              { name: `[CRON] ${desc.slice(0, 50)}` },
+              { description: { contains: 'المتابعة والأهداف' } },
+              { description: { contains: 'المخزون ومستهدفات' } },
+            ],
+          },
+        });
+
+        if (existing) {
+          return null; // Already exists in DB
+        }
+
+        const meta = {
+          cronExpression: cronExpr,
+          taskType,
+          payload,
+          runCount: 0,
+          lastRun: null,
+          lastStatus: null,
+          isCronJob: true,
+        };
+
+        await prisma.companySkill.create({
+          data: {
+            id,
+            companyId,
+            name: `[CRON] ${desc.slice(0, 50)}`,
+            description: desc,
+            triggerPhrases: cronExpr,
+            instructions: desc,
+            priority: 9,
+            enabled: true,
+            metadata: JSON.stringify(meta),
+          },
+        });
+
+        const jobData = {
+          id,
+          companyId,
+          description: desc,
+          cronExpression: cronExpr,
+          taskType,
+          status: 'ACTIVE',
+          enabled: true,
+          lastRun: null,
+          lastStatus: null,
+          nextRun: '09:00 (Africa/Cairo)',
+          runCount: 0,
+          payload,
+          createdAt: new Date().toISOString(),
+        };
+
+        this._registerCronTask(jobData);
+        return jobData;
+      } catch (err) {
+        console.warn('[AiCronScheduler] Failed to ensure DB default stock & target job:', err.message);
+      }
+    }
+
+    // Memory store fallback
+    const companyJobs = this._memoryJobs.get(companyId) || [];
+    const hasJob = companyJobs.some(j => j.taskType === 'STOCK_TARGET_MONITOR' || (j.description && j.description.includes('المتابعة والأهداف')));
+    if (!hasJob) {
+      const jobData = {
+        id,
+        companyId,
+        description: desc,
+        cronExpression: cronExpr,
+        taskType,
+        status: 'ACTIVE',
+        enabled: true,
+        lastRun: null,
+        lastStatus: null,
+        nextRun: '09:00 (Africa/Cairo)',
+        runCount: 0,
+        payload,
+        createdAt: new Date().toISOString(),
+      };
+      companyJobs.unshift(jobData);
+      this._memoryJobs.set(companyId, companyJobs);
+      this._registerCronTask(jobData);
+      return jobData;
+    }
+    return null;
+  }
+
+  /**
+   * Synchronize or update stock & target scheduled job when company settings change.
+   */
+  async syncStockTargetCronJob(companyId, targetConfig = {}) {
+    if (!companyId) return null;
+    const reportTime = targetConfig.report_time || '09:00';
+    const [hh, mm] = reportTime.split(':');
+    const cronExpr = `${parseInt(mm, 10) || 0} ${parseInt(hh, 10) || 9} * * *`;
+    const isEnabled = targetConfig.enabled !== false;
+    const id = `cron_stock_target_daily_${companyId}`;
+    const desc = 'التقرير الصباحي اليومي لمستويات المخزون ومستهدفات أوردرات الشهر (مساعد المتابعة والأهداف)';
+    const taskType = 'STOCK_TARGET_MONITOR';
+
+    const payload = {
+      reportType: 'STOCK_TARGET_DAILY_REPORT',
+      delivery: 'WHATSAPP_AND_DASHBOARD',
+      targetTime: reportTime,
+      timezone: 'Africa/Cairo',
+    };
+
+    const prisma = this._getPrisma();
+    if (prisma && prisma.companySkill) {
+      try {
+        const existing = await prisma.companySkill.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id },
+              { name: { contains: 'المتابعة والأهداف' } },
+              { description: { contains: 'المتابعة والأهداف' } },
+            ],
+          },
+        });
+
+        let existingMeta = {};
+        if (existing) {
+          try { existingMeta = JSON.parse(existing.metadata || '{}'); } catch (_) {}
+        }
+
+        const meta = {
+          cronExpression: cronExpr,
+          taskType,
+          payload,
+          runCount: Number(existingMeta.runCount || 0),
+          lastRun: existingMeta.lastRun || null,
+          lastStatus: existingMeta.lastStatus || null,
+          isCronJob: true,
+        };
+
+        if (existing) {
+          await prisma.companySkill.update({
+            where: { id: existing.id },
+            data: {
+              triggerPhrases: cronExpr,
+              enabled: isEnabled,
+              metadata: JSON.stringify(meta),
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          await prisma.companySkill.create({
+            data: {
+              id,
+              companyId,
+              name: `[CRON] ${desc.slice(0, 50)}`,
+              description: desc,
+              triggerPhrases: cronExpr,
+              instructions: desc,
+              priority: 9,
+              enabled: isEnabled,
+              metadata: JSON.stringify(meta),
+            },
+          });
+        }
+      } catch (err) {
+        console.warn('[AiCronScheduler] Failed to sync DB stock target cron job:', err.message);
+      }
+    }
+
+    const jobData = {
+      id,
+      companyId,
+      description: desc,
+      cronExpression: cronExpr,
+      taskType,
+      status: isEnabled ? 'ACTIVE' : 'PAUSED',
+      enabled: isEnabled,
+      nextRun: `${reportTime} (Africa/Cairo)`,
+      payload,
+    };
+
+    if (isEnabled) {
+      this._registerCronTask(jobData);
+    } else {
+      const task = this._activeTasks.get(id);
+      if (task) {
+        task.stop();
+        this._activeTasks.delete(id);
+      }
+    }
+
+    return jobData;
+  }
+
+  /**
    * List all scheduled jobs for a specific company (tenant-scoped).
    */
   async listJobs(companyId) {
     if (!companyId) throw new Error('companyId is required');
 
-    // Auto-ensure default AOV morning report job exists for tenant
+    // Auto-ensure default AOV & Stock Target morning report jobs exist for tenant
     await this.ensureDefaultAovJob(companyId);
+    await this.ensureDefaultStockTargetJob(companyId);
 
     const prisma = this._getPrisma();
     if (prisma && prisma.companySkill) {
@@ -421,6 +642,12 @@ class AiCronSchedulerService {
         (job.description && (job.description.includes('AOV') || job.description.includes('متوسط قيمة الطلب')))
       );
 
+      const isStockTargetReport = (
+        job.taskType === 'STOCK_TARGET_MONITOR' ||
+        job.payload?.reportType === 'STOCK_TARGET_DAILY_REPORT' ||
+        (job.description && (job.description.includes('المتابعة والأهداف') || job.description.includes('المخزون ومستهدفات') || job.description.includes('أوردرات الشهر')))
+      );
+
       if (isAovReport) {
         const periodicReportService = require('./whatsapp/periodicReportService');
         const reportResult = await periodicReportService.dispatchAovDailyReport(companyId, {
@@ -433,6 +660,21 @@ class AiCronSchedulerService {
         executionDetails = {
           deliveredWhatsApp: reportResult.deliveredWhatsApp,
           delivery: reportResult.delivery,
+          metrics: reportResult.metrics,
+        };
+      } else if (isStockTargetReport) {
+        const stockAndTargetAlertService = require('./stockAndTargetAlertService');
+        const reportResult = await stockAndTargetAlertService.dispatchDailyReport(companyId, {
+          jobId: job.id,
+          source: 'CRON_SCHEDULER',
+          force: true,
+        });
+
+        status = reportResult.success ? 'SUCCESS' : 'FAILED';
+        reply = reportResult.messageText;
+        executionDetails = {
+          deliveredWhatsApp: reportResult.deliveredWhatsApp,
+          deliveredNotification: reportResult.deliveredNotification,
           metrics: reportResult.metrics,
         };
       } else {

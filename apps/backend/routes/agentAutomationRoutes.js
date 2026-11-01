@@ -85,7 +85,7 @@ router.get('/:slug/alerts', async (req, res) => {
     const typeCondition =
       slug === 'shipping-agent'
         ? 'AGENT_SHIPPING_DELAY'
-        : { in: ['AGENT_STOCK_LOW', 'AGENT_TARGET_MILESTONE'] };
+        : { in: ['AGENT_STOCK_LOW', 'AGENT_TARGET_MILESTONE', 'AGENT_STOCK_TARGET_REPORT', 'STOCK_TARGET_DAILY_REPORT'] };
 
     const alerts = await prisma.aiNotification.findMany({
       where: {
@@ -127,12 +127,23 @@ router.post('/:slug/run', async (req, res) => {
 
     if (slug === 'stock-target-monitor-agent') {
       const dryRun = req.body?.dryRun;
-      const summary = await stockAndTargetAlertService.runDueChecks({
+      const dailyReportRes = await stockAndTargetAlertService.dispatchDailyReport(companyId, {
+        dryRun,
+        force: true,
+      });
+      const dueChecksSummary = await stockAndTargetAlertService.runDueChecks({
         companyId,
         dryRun,
         force: true,
       });
-      return res.json({ success: true, summary });
+      return res.json({
+        success: true,
+        summary: {
+          ...dueChecksSummary,
+          dailyReportSent: dailyReportRes.success,
+          dailyReport: dailyReportRes,
+        },
+      });
     }
   } catch (err) {
     console.error('❌ [agentAutomationRoutes] POST /:slug/run error:', err);
@@ -221,6 +232,27 @@ router.put('/:slug', async (req, res) => {
       if (payload.milestones !== undefined) {
         if (!Array.isArray(payload.milestones) || payload.milestones.length === 0) {
           return res.status(400).json({ success: false, error: 'مراحل التنبيه لا يمكن أن تكون فارغة' });
+        }
+      }
+
+      if (payload.monthly_orders !== undefined) {
+        const monthlyOrders = Number(payload.monthly_orders);
+        if (isNaN(monthlyOrders) || monthlyOrders < 0) {
+          return res.status(400).json({ success: false, error: 'تارجت الأوردرات الشهري غير صالح' });
+        }
+      }
+
+      if (payload.monthly_revenue !== undefined) {
+        const monthlyRev = Number(payload.monthly_revenue);
+        if (isNaN(monthlyRev) || monthlyRev < 0) {
+          return res.status(400).json({ success: false, error: 'تارجت الإيراد الشهري غير صالح' });
+        }
+      }
+
+      if (payload.report_time !== undefined) {
+        const reportTime = String(payload.report_time).trim();
+        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(reportTime)) {
+          return res.status(400).json({ success: false, error: 'وقت التقرير غير صالح (الصيغة المطلوبة HH:mm)' });
         }
       }
 

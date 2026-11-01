@@ -575,6 +575,9 @@ const WholesaleStatements = React.lazy(
 const WholesaleDebts = React.lazy(
   () => import("./pages/wholesale/WholesaleDebts"),
 );
+const WholesaleManageQueue = React.lazy(
+  () => import("./pages/wholesale/WholesaleManageQueue"),
+);
 
 // Advertising
 const FacebookPixelSettings = React.lazy(
@@ -5795,6 +5798,26 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
                         <WholesaleDebts />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/manage"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleManageQueue />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/queue"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleManageQueue />
                       </AppAccessRoute>
                     </Layout>
                   }

@@ -395,4 +395,212 @@ describe('StockAndTargetAlertService - Unit Test Suite', () => {
       expect(res.errors.length).toBe(0);
     });
   });
+
+  describe('7. Scheduled Daily Report & Per-Product Deduplication', () => {
+    test('validation: updateSettings validates monthly_orders and report_time format', async () => {
+      // 1. Invalid report_time format
+      await expect(
+        stockAndTargetAlertService.updateSettings('comp_1', { report_time: '25:99' })
+      ).rejects.toThrow('وقت التقرير غير صالح');
+
+      await expect(
+        stockAndTargetAlertService.updateSettings('comp_1', { report_time: 'not-a-time' })
+      ).rejects.toThrow('وقت التقرير غير صالح');
+
+      // 2. Negative monthly_orders
+      await expect(
+        stockAndTargetAlertService.updateSettings('comp_1', { monthly_orders: -10 })
+      ).rejects.toThrow('تارجت الأوردرات الشهري غير صالح');
+    });
+
+    test('rule: no alert sent if no limits configured (ممنوع تنبيه بدون حد متظبط)', async () => {
+      mockSafeQuery = jest.spyOn(sharedDb, 'safeQuery').mockImplementation(async (cb) => {
+        const dummyPrisma = {
+          company: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'comp_1',
+              name: 'Store With No Limits',
+              phone: '01011112222',
+              isActive: true,
+              settings: JSON.stringify({
+                order_targets: {
+                  enabled: true,
+                  min_stock_threshold: 0,
+                  monthly_orders: 0,
+                },
+              }),
+            }),
+          },
+        };
+        return cb(dummyPrisma);
+      });
+
+      const res = await stockAndTargetAlertService.dispatchDailyReport('comp_1', { force: true });
+      expect(res.success).toBe(false);
+      expect(res.skipped).toBe(true);
+      expect(res.reason).toBe('NO_LIMITS_CONFIGURED');
+      expect(mockSendNotification).not.toHaveBeenCalled();
+    });
+
+    test('report numbers match live database queries: month orders count and achievement %', async () => {
+      mockSafeQuery = jest.spyOn(sharedDb, 'safeQuery').mockImplementation(async (cb) => {
+        const dummyPrisma = {
+          company: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'comp_1',
+              name: 'Store Metrics Test',
+              phone: '01011112222',
+              isActive: true,
+              settings: JSON.stringify({
+                order_targets: {
+                  enabled: true,
+                  monthly_orders: 200,
+                  min_stock_threshold: 5,
+                  report_time: '09:00',
+                },
+              }),
+            }),
+          },
+          order: {
+            count: jest.fn().mockImplementation(({ where }) => {
+              // Verify query criteria matches sales report: not CANCELLED and month start
+              expect(where.status).toEqual({ not: 'CANCELLED' });
+              return Promise.resolve(150); // 150 of 200 => 75%
+            }),
+          },
+          product: { findMany: jest.fn().mockResolvedValue([]) },
+          productVariant: { findMany: jest.fn().mockResolvedValue([]) },
+          aiRuntimeLedger: {
+            create: jest.fn().mockResolvedValue({ id: 'l_1' }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+          notification: { create: jest.fn().mockResolvedValue({}) },
+          aiNotification: { create: jest.fn().mockResolvedValue({}) },
+          $executeRawUnsafe: jest.fn().mockResolvedValue(1),
+        };
+        return cb(dummyPrisma);
+      });
+
+      const res = await stockAndTargetAlertService.dispatchDailyReport('comp_1', { dryRun: true, force: true });
+      expect(res.success).toBe(true);
+      expect(res.metrics.monthlyTarget).toBe(200);
+      expect(res.metrics.monthOrdersCount).toBe(150);
+      expect(res.metrics.achievementPct).toBe(75);
+      expect(res.messageText).toContain('150');
+      expect(res.messageText).toContain('200');
+      expect(res.messageText).toContain('75%');
+    });
+
+    test('per-product deduplication: low stock product appears once per day', async () => {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let persistedNotifiedStock = null;
+
+      const productA = { id: 'prod_A', name: 'قماش صوف فاخر', sku: 'WOOL-01', stock: 2 };
+      const productB = { id: 'prod_B', name: 'خيط حرير', sku: 'SILK-01', stock: 1 };
+
+      mockSafeQuery = jest.spyOn(sharedDb, 'safeQuery').mockImplementation(async (cb) => {
+        const dummyPrisma = {
+          company: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'comp_1',
+              name: 'Fashion Hub',
+              phone: '01011112222',
+              isActive: true,
+              settings: JSON.stringify({
+                order_targets: {
+                  enabled: true,
+                  monthly_orders: 100,
+                  min_stock_threshold: 5,
+                  notified_stock_today: persistedNotifiedStock,
+                },
+              }),
+            }),
+          },
+          order: { count: jest.fn().mockResolvedValue(40) },
+          product: { findMany: jest.fn().mockResolvedValue([productA, productB]) },
+          productVariant: { findMany: jest.fn().mockResolvedValue([]) },
+          aiRuntimeLedger: {
+            create: jest.fn().mockResolvedValue({ id: 'l_stock' }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+          notification: { create: jest.fn().mockResolvedValue({}) },
+          aiNotification: { create: jest.fn().mockResolvedValue({}) },
+          $executeRawUnsafe: jest.fn().mockImplementation((_sql, jsonStr) => {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.notified_stock_today) {
+              persistedNotifiedStock = parsed.notified_stock_today;
+            }
+            return Promise.resolve(1);
+          }),
+        };
+        return cb(dummyPrisma);
+      });
+
+      // Run 1: First dispatch today -> both products are alerted
+      const run1 = await stockAndTargetAlertService.dispatchDailyReport('comp_1', { dryRun: true, force: true });
+      expect(run1.success).toBe(true);
+      expect(run1.metrics.newLowItemsCount).toBe(2);
+      expect(run1.messageText).toContain('قماش صوف فاخر');
+      expect(run1.messageText).toContain('خيط حرير');
+      expect(persistedNotifiedStock).not.toBeNull();
+      expect(persistedNotifiedStock.date).toBe(todayStr);
+      expect(persistedNotifiedStock.itemIds).toEqual(['prod_B', 'prod_A']);
+
+      // Run 2: Second dispatch today -> 0 new products alerted, message notes no new items
+      const run2 = await stockAndTargetAlertService.dispatchDailyReport('comp_1', { dryRun: true, force: true });
+      expect(run2.success).toBe(true);
+      expect(run2.metrics.newLowItemsCount).toBe(0);
+      expect(run2.metrics.allLowItemsCount).toBe(2);
+      expect(run2.messageText).toContain('تم تنبيهك سابقاً اليوم بالأصناف المنخفضة، ولا توجد أصناف جديدة انخفضت');
+      expect(run2.messageText).not.toContain('• قماش صوف فاخر:');
+    });
+
+    test('cross-day deduplication reset: products can be alerted again on a new day', async () => {
+      const yesterdayStr = '2026-10-31';
+      let persistedNotifiedStock = {
+        date: yesterdayStr,
+        itemIds: ['prod_A'],
+      };
+
+      const productA = { id: 'prod_A', name: 'قماش صوف فاخر', sku: 'WOOL-01', stock: 2 };
+
+      mockSafeQuery = jest.spyOn(sharedDb, 'safeQuery').mockImplementation(async (cb) => {
+        const dummyPrisma = {
+          company: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'comp_1',
+              name: 'Fashion Hub',
+              phone: '01011112222',
+              isActive: true,
+              settings: JSON.stringify({
+                order_targets: {
+                  enabled: true,
+                  monthly_orders: 100,
+                  min_stock_threshold: 5,
+                  notified_stock_today: persistedNotifiedStock,
+                },
+              }),
+            }),
+          },
+          order: { count: jest.fn().mockResolvedValue(40) },
+          product: { findMany: jest.fn().mockResolvedValue([productA]) },
+          productVariant: { findMany: jest.fn().mockResolvedValue([]) },
+          aiRuntimeLedger: {
+            create: jest.fn().mockResolvedValue({ id: 'l_stock' }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+          notification: { create: jest.fn().mockResolvedValue({}) },
+          aiNotification: { create: jest.fn().mockResolvedValue({}) },
+          $executeRawUnsafe: jest.fn().mockResolvedValue(1),
+        };
+        return cb(dummyPrisma);
+      });
+
+      // Since today is different from yesterday, prod_A should be alerted again
+      const runToday = await stockAndTargetAlertService.dispatchDailyReport('comp_1', { dryRun: true, force: true });
+      expect(runToday.success).toBe(true);
+      expect(runToday.metrics.newLowItemsCount).toBe(1);
+      expect(runToday.messageText).toContain('قماش صوف فاخر');
+    });
+  });
 });

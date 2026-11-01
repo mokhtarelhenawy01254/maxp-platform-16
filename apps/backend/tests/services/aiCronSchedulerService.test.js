@@ -4,6 +4,8 @@
  */
 
 const aiCronSchedulerService = require('../../services/aiCronSchedulerService');
+const periodicReportService = require('../../services/whatsapp/periodicReportService');
+const stockAndTargetAlertService = require('../../services/stockAndTargetAlertService');
 
 describe('AiCronSchedulerService - Production Test Suite', () => {
   let companyA;
@@ -122,6 +124,14 @@ describe('AiCronSchedulerService - Production Test Suite', () => {
     });
 
     test('executes AOV daily report job and generates real formatted report', async () => {
+      jest.spyOn(periodicReportService, 'dispatchAovDailyReport').mockResolvedValue({
+        success: true,
+        messageText: 'تقرير متوسط قيمة الطلب (AOV) ومؤشرات السلة والإيرادات',
+        deliveredWhatsApp: true,
+        delivery: 'WHATSAPP',
+        metrics: { aov: 450, totalRevenue: 15000 },
+      });
+
       const list = await aiCronSchedulerService.listJobs(companyA);
       const aovJob = list.find(j => j.taskType === 'AOV_SPECIALIST');
       expect(aovJob).toBeDefined();
@@ -132,6 +142,31 @@ describe('AiCronSchedulerService - Production Test Suite', () => {
       expect(result.execution.reply).toContain('متوسط قيمة الطلب (AOV)');
       expect(result.execution.reply).toContain('مؤشرات السلة والإيرادات');
       expect(result.execution.runCount).toBeGreaterThanOrEqual(1);
+
+      periodicReportService.dispatchAovDailyReport.mockRestore();
+    });
+
+    test('executes stock & target monitor daily report job and returns live report', async () => {
+      jest.spyOn(stockAndTargetAlertService, 'dispatchDailyReport').mockResolvedValue({
+        success: true,
+        messageText: '📊 تقرير المتابعة والأهداف اليومي — تارجت أوردرات الشهر: 150 من 200 (75%)',
+        deliveredWhatsApp: true,
+        deliveredNotification: true,
+        metrics: { monthlyTarget: 200, monthOrdersCount: 150, achievementPct: 75 },
+      });
+
+      const list = await aiCronSchedulerService.listJobs(companyA);
+      const stockJob = list.find(j => j.taskType === 'STOCK_TARGET_MONITOR');
+      expect(stockJob).toBeDefined();
+
+      const result = await aiCronSchedulerService.executeJob(companyA, stockJob.id);
+      expect(result.success).toBe(true);
+      expect(result.execution.status).toBe('SUCCESS');
+      expect(result.execution.reply).toContain('تقرير المتابعة والأهداف اليومي');
+      expect(result.execution.reply).toContain('75%');
+      expect(result.execution.runCount).toBeGreaterThanOrEqual(1);
+
+      stockAndTargetAlertService.dispatchDailyReport.mockRestore();
     });
   });
 });

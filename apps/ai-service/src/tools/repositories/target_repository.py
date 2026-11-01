@@ -100,6 +100,9 @@ class TargetRepository(BaseRepository):
         elif norm_period == "week":
             target_orders = custom_target_orders if custom_target_orders is not None else targets.get("weekly_orders", 0)
             target_revenue = custom_target_revenue if custom_target_revenue is not None else targets.get("weekly_revenue", 0.0)
+        elif norm_period in ("month", "this_month"):
+            target_orders = custom_target_orders if custom_target_orders is not None else targets.get("monthly_orders", 0)
+            target_revenue = custom_target_revenue if custom_target_revenue is not None else targets.get("monthly_revenue", 0.0)
         else:
             target_orders = custom_target_orders or 0
             target_revenue = custom_target_revenue or 0.0
@@ -219,9 +222,12 @@ class TargetRepository(BaseRepository):
         return {
             "daily_orders": 0,
             "weekly_orders": 0,
+            "monthly_orders": 0,
             "daily_revenue": 0.0,
             "weekly_revenue": 0.0,
+            "monthly_revenue": 0.0,
             "min_stock_threshold": 5,
+            "report_time": "09:00",
             "alert_phone": None,
             "notify_whatsapp": True,
             "enabled": False,

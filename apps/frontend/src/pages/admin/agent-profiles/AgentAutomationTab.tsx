@@ -48,11 +48,15 @@ export const AgentAutomationTab: React.FC<AgentAutomationTabProps> = ({ agent })
   const [loadingAlerts, setLoadingAlerts] = useState(false);
 
   // Determine slug from templateSlug or fallback
-  const slug =
-    agent?.templateSlug ||
-    (agent?.role?.toUpperCase() === "STOCK_TARGET_MONITOR" || (agent as any)?.slug === "stock-target-monitor-agent"
-      ? "stock-target-monitor-agent"
-      : "shipping-agent");
+  const isStockTarget =
+    agent?.templateSlug === "stock-target-monitor-agent" ||
+    (agent as any)?.slug === "stock-target-monitor-agent" ||
+    agent?.role?.toUpperCase() === "STOCK_TARGET_MONITOR" ||
+    Boolean(agent?.name && (agent.name.includes("متابعة") || agent.name.includes("أهداف") || agent.name.includes("المخزون والتارجت") || agent.name.includes("مستهدفات")));
+
+  const slug = isStockTarget
+    ? "stock-target-monitor-agent"
+    : (agent?.templateSlug || "shipping-agent");
 
   const loadAlerts = async () => {
     setLoadingAlerts(true);
