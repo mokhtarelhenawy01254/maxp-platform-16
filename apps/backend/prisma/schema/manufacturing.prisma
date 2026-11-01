@@ -786,6 +786,7 @@ model SampleOrder {
   partnerFactory   PartnerFactory?      @relation(fields: [partnerFactoryId], references: [id], onDelete: SetNull)
   payments         SamplePayment[]
   expenses         SampleOrderExpense[]
+  components       SampleComponent[]
   customer         Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
   bom              BillOfMaterials?     @relation(fields: [bomId], references: [id], onDelete: SetNull)
 
@@ -798,6 +799,27 @@ model SampleOrder {
   @@index([companyId, expectedDeliveryAt])
   @@index([companyId, sampleReceived])
   @@map("sample_orders")
+}
+
+/// مكونات العينة (خامات/مكونات مستخدمة في تنفيذ العينة) — Task 83791d03
+model SampleComponent {
+  id            String   @id @default(cuid())
+  companyId     String
+  sampleOrderId String
+  name          String
+  quantity      Decimal  @default(1) @db.Decimal(12, 3)
+  unit          String   @default("قطعة")
+  unitPrice     Decimal  @default(0) @db.Decimal(12, 2)
+  totalCost     Decimal  @default(0) @db.Decimal(12, 2)
+  priceSnapshotAt DateTime @default(now())
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sampleOrder   SampleOrder @relation(fields: [sampleOrderId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, sampleOrderId])
+  @@map("sample_order_components")
 }
 
 /// Standalone Sample Order Simplified Production Stage (مراحل تشغيل العينة المبسطة)

@@ -14,6 +14,7 @@ import {
   SampleInfoTab,
   SampleAttachmentsTab,
   SampleFinanceTab,
+  SampleComponentsTab,
   SamplePaymentModal,
   SampleFactoryModal,
   DrawerFooterActions,
@@ -181,6 +182,13 @@ export const SampleDetailDrawer: React.FC<SampleDetailDrawerProps> = ({
               onOpenFactoryModal={handleOpenFactoryModal}
               onOpenPaymentModal={handleOpenPaymentModal}
               onDeletePayment={handleDeletePayment}
+            />
+          )}
+
+          {activeTab === 'components' && (
+            <SampleComponentsTab
+              sampleId={sample.id}
+              readOnly={sample.status === 'CONVERTED'}
             />
           )}
         </div>

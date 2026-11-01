@@ -19,6 +19,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const ManufacturingService = require('./manufacturingService');
 const ManufacturingNotificationService = require('./manufacturingNotificationService');
+const sampleComponentMath = require('./sampleComponentMath');
 
 const round2 = (val) => Math.round((Number(val) || 0) * 100) / 100;
 
@@ -201,7 +202,22 @@ class ManufacturingSampleService {
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );`,
         `CREATE INDEX IF NOT EXISTS "sample_order_expenses_sampleOrderId_idx" ON "sample_order_expenses"("sampleOrderId");`,
-        `CREATE INDEX IF NOT EXISTS "sample_order_expenses_catalogId_idx" ON "sample_order_expenses"("catalogId");`
+        `CREATE INDEX IF NOT EXISTS "sample_order_expenses_catalogId_idx" ON "sample_order_expenses"("catalogId");`,
+        `CREATE TABLE IF NOT EXISTS "sample_order_components" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "sampleOrderId" TEXT NOT NULL REFERENCES "sample_orders"("id") ON DELETE CASCADE,
+          "name" TEXT NOT NULL,
+          "quantity" DECIMAL(12,3) NOT NULL DEFAULT 1,
+          "unit" TEXT NOT NULL DEFAULT 'قطعة',
+          "unitPrice" DECIMAL(12,2) NOT NULL DEFAULT 0,
+          "totalCost" DECIMAL(12,2) NOT NULL DEFAULT 0,
+          "priceSnapshotAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "sortOrder" INTEGER NOT NULL DEFAULT 0,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );`,
+        `CREATE INDEX IF NOT EXISTS "sample_order_components_company_sample_idx" ON "sample_order_components"("companyId","sampleOrderId");`
       ];
 
       for (const stmt of stmts) {
@@ -1801,6 +1817,210 @@ class ManufacturingSampleService {
     });
 
     return { success: true, message: 'تم حذف بند المصروف بنجاح' };
+  }
+
+  // ===== مكونات العينة (Task 83791d03) =====
+
+  /**
+   * حساب إجمالي بند المكوّن = الكمية × سعر الوحدة، مقرّب لخانتين عشريتين.
+   */
+  static computeComponentTotal(quantity, unitPrice) {
+    return sampleComponentMath.computeComponentTotal(quantity, unitPrice);
+  }
+
+  static normalizeComponentQuantity(value) {
+    return sampleComponentMath.normalizeQuantity(value);
+  }
+
+  static normalizeComponentPrice(value) {
+    return sampleComponentMath.normalizePrice(value);
+  }
+
+  static async assertSampleEditable(prisma, companyId, sampleId, actionLabel = 'تعديل') {
+    const sample = await prisma.sampleOrder.findFirst({
+      where: { id: sampleId, companyId },
+      select: { id: true, status: true },
+    });
+    if (!sample) {
+      const err = new Error('أمر العينة غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (sample.status === 'CONVERTED') {
+      const err = new Error(`لا يمكن ${actionLabel} مكونات عينة تم تحويلها بالفعل`);
+      err.statusCode = 400;
+      throw err;
+    }
+    return sample;
+  }
+
+  static async listSampleComponents(companyId, sampleId) {
+    await this.ensureSchema();
+    const prisma = getSharedPrismaClient();
+
+    const sample = await prisma.sampleOrder.findFirst({
+      where: { id: sampleId, companyId },
+      select: { id: true, status: true },
+    });
+    if (!sample) {
+      const err = new Error('أمر العينة غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const components = await prisma.sampleComponent.findMany({
+      where: { companyId, sampleOrderId: sampleId },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return {
+      components,
+      totalCost: this.sumComponentTotals(components),
+      count: components.length,
+    };
+  }
+
+  static sumComponentTotals(components) {
+    const total = (Array.isArray(components) ? components : []).reduce((acc, item) => {
+      const value = Number(item && item.totalCost);
+      return acc + (Number.isFinite(value) ? value : 0);
+    }, 0);
+    return Math.round(total * 100) / 100;
+  }
+
+  static async addSampleComponent(companyId, user, sampleId, data = {}) {
+    await this.ensureSchema();
+    const prisma = getSharedPrismaClient();
+    await this.assertSampleEditable(prisma, companyId, sampleId, 'إضافة');
+
+    const name = String(data.name || '').trim();
+    if (!name) {
+      const err = new Error('اسم المكوّن إلزامي');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const quantity = this.normalizeComponentQuantity(data.quantity);
+    if (quantity === null) {
+      const err = new Error('الكمية لازم تكون رقم أكبر من صفر');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const unitPrice = this.normalizeComponentPrice(data.unitPrice);
+    if (unitPrice === null) {
+      const err = new Error('سعر الوحدة لازم يكون رقم ≥ 0');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const unit = String(data.unit || '').trim() || 'قطعة';
+    const totalCost = this.computeComponentTotal(quantity, unitPrice);
+
+    return await prisma.sampleComponent.create({
+      data: {
+        companyId,
+        sampleOrderId: sampleId,
+        name,
+        quantity,
+        unit,
+        unitPrice,
+        totalCost,
+        sortOrder: Number.isFinite(Number(data.sortOrder)) ? Number(data.sortOrder) : 0,
+      },
+    });
+  }
+
+  static async updateSampleComponent(companyId, user, sampleId, componentId, data = {}) {
+    await this.ensureSchema();
+    const prisma = getSharedPrismaClient();
+    await this.assertSampleEditable(prisma, companyId, sampleId, 'تعديل');
+
+    const component = await prisma.sampleComponent.findFirst({
+      where: { id: componentId, sampleOrderId: sampleId, companyId },
+    });
+    if (!component) {
+      const err = new Error('المكوّن غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const patch = {};
+
+    if (data.name !== undefined) {
+      const name = String(data.name || '').trim();
+      if (!name) {
+        const err = new Error('اسم المكوّن إلزامي');
+        err.statusCode = 400;
+        throw err;
+      }
+      patch.name = name;
+    }
+
+    if (data.quantity !== undefined) {
+      const quantity = this.normalizeComponentQuantity(data.quantity);
+      if (quantity === null) {
+        const err = new Error('الكمية لازم تكون رقم أكبر من صفر');
+        err.statusCode = 400;
+        throw err;
+      }
+      patch.quantity = quantity;
+    }
+
+    if (data.unit !== undefined) {
+      patch.unit = String(data.unit || '').trim() || 'قطعة';
+    }
+
+    const priceChanged = data.unitPrice !== undefined;
+    if (priceChanged) {
+      const unitPrice = this.normalizeComponentPrice(data.unitPrice);
+      if (unitPrice === null) {
+        const err = new Error('سعر الوحدة لازم يكون رقم ≥ 0');
+        err.statusCode = 400;
+        throw err;
+      }
+      patch.unitPrice = unitPrice;
+    }
+
+    if (patch.quantity !== undefined || patch.unitPrice !== undefined) {
+      const nextQuantity = patch.quantity !== undefined ? patch.quantity : component.quantity;
+      const nextPrice = patch.unitPrice !== undefined ? patch.unitPrice : component.unitPrice;
+      patch.totalCost = this.computeComponentTotal(nextQuantity, nextPrice);
+    }
+
+    // تحديث لحظة تثبيت السعر فقط لو السعر اتغيّر فعلًا
+    if (priceChanged) {
+      patch.priceSnapshotAt = new Date();
+    }
+
+    if (data.sortOrder !== undefined && Number.isFinite(Number(data.sortOrder))) {
+      patch.sortOrder = Number(data.sortOrder);
+    }
+
+    return await prisma.sampleComponent.update({
+      where: { id: componentId },
+      data: patch,
+    });
+  }
+
+  static async deleteSampleComponent(companyId, user, sampleId, componentId) {
+    await this.ensureSchema();
+    const prisma = getSharedPrismaClient();
+    await this.assertSampleEditable(prisma, companyId, sampleId, 'حذف');
+
+    const component = await prisma.sampleComponent.findFirst({
+      where: { id: componentId, sampleOrderId: sampleId, companyId },
+      select: { id: true },
+    });
+    if (!component) {
+      const err = new Error('المكوّن غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await prisma.sampleComponent.delete({ where: { id: componentId } });
+
+    return { success: true, message: 'تم حذف المكوّن بنجاح' };
   }
 }
 
