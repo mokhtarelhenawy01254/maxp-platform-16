@@ -80,6 +80,21 @@ function getHardwareFingerprint(): string {
   return fp;
 }
 
+function compareSemver(v1: string, v2: string): number {
+  const clean1 = String(v1 || '').replace(/^v/i, '').trim();
+  const clean2 = String(v2 || '').replace(/^v/i, '').trim();
+  const parts1 = clean1.split('.').map((n) => parseInt(n, 10) || 0);
+  const parts2 = clean2.split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < len; i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
 async function syncDeviceRegistration(): Promise<void> {
   const fp = getHardwareFingerprint();
   apiClient.setDeviceFingerprint(fp);
@@ -496,7 +511,7 @@ function updateTrayMenu(): void {
           }
           showNotification('MaxP Workspace', 'جاري فحص وجود تحديثات جديدة…');
           const result = await autoUpdater.checkForUpdates();
-          if (!result || !result.updateInfo || result.updateInfo.version === app.getVersion()) {
+          if (!result || !result.updateInfo || compareSemver(result.updateInfo.version, app.getVersion()) <= 0) {
             showNotification('MaxP Workspace', `أنت تستخدم أحدث إصدار v${app.getVersion()}`);
           }
         } catch (err: any) {
@@ -1807,14 +1822,26 @@ function registerIpcHandlers(): void {
 
       autoUpdater.setFeedURL({ provider: 'generic', url: 'https://maxp.online/downloads/' });
       const result = await autoUpdater.checkForUpdates();
-      if (result && result.updateInfo && result.updateInfo.version !== currentVersion) {
-        return {
-          success: true,
-          status: 'update-available',
-          currentVersion,
-          latestVersion: result.updateInfo.version,
-          message: `يتوفر إصدار جديد v${result.updateInfo.version}. جاري التنزيل تلقائياً في الخلفية.`,
-        };
+      if (result && result.updateInfo) {
+        const publishedVersion = result.updateInfo.version;
+        const cmp = compareSemver(publishedVersion, currentVersion);
+        if (cmp > 0) {
+          return {
+            success: true,
+            status: 'update-available',
+            currentVersion,
+            latestVersion: publishedVersion,
+            message: `يتوفر إصدار جديد v${publishedVersion}. جاري التنزيل تلقائياً في الخلفية.`,
+          };
+        } else if (cmp < 0) {
+          return {
+            success: true,
+            status: 'up-to-date',
+            currentVersion,
+            latestVersion: publishedVersion,
+            message: `أنت تستخدم إصداراً أحدث (v${currentVersion}) من الإصدار المنشور (v${publishedVersion}). نظامك محدث بالكامل.`,
+          };
+        }
       }
 
       return {
@@ -2407,6 +2434,7 @@ function initAutoUpdater(): void {
   try {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.allowDowngrade = false;
 
     // Direct generic download from maxp.online server without GitHub authentication restrictions
     autoUpdater.setFeedURL({
@@ -2419,16 +2447,25 @@ function initAutoUpdater(): void {
       mainWindow?.webContents.send('update:status', { stage: 'checking' });
     });
 
-    autoUpdater.on('update-available', (info) => {
-      console.log('[Updater] Update available:', info.version);
+    autoUpdater.on('update-available', (info: any) => {
+      const cmp = compareSemver(info?.version, app.getVersion());
+      if (cmp <= 0) {
+        console.log(`[Updater] Ignoring update-available for older/current version v${info?.version} (installed v${app.getVersion()})`);
+        mainWindow?.webContents.send('update:status', {
+          stage: 'up-to-date',
+          version: app.getVersion(),
+        });
+        return;
+      }
+      console.log('[Updater] Update available:', info?.version);
       mainWindow?.webContents.send('update:status', {
         stage: 'available',
-        version: info.version,
+        version: info?.version,
       });
-      showNotification('MaxP Workspace', `يتوفر تحديث جديد v${info.version}، جاري التنزيل تلقائياً في الخلفية...`);
+      showNotification('MaxP Workspace', `يتوفر تحديث جديد v${info?.version}، جاري التنزيل تلقائياً في الخلفية...`);
     });
 
-    autoUpdater.on('download-progress', (progressObj) => {
+    autoUpdater.on('download-progress', (progressObj: any) => {
       mainWindow?.webContents.send('update:status', {
         stage: 'downloading',
         percent: Math.round(progressObj.percent),
@@ -2446,7 +2483,7 @@ function initAutoUpdater(): void {
       });
     });
 
-    autoUpdater.on('error', (err) => {
+    autoUpdater.on('error', (err: any) => {
       console.warn('[Updater] Auto-updater error:', err?.message || err);
       mainWindow?.webContents.send('update:status', {
         stage: 'error',
@@ -2454,21 +2491,26 @@ function initAutoUpdater(): void {
       });
     });
 
-    autoUpdater.on('update-downloaded', (info) => {
-      console.log('[Updater] Update downloaded successfully:', info.version);
+    autoUpdater.on('update-downloaded', (info: any) => {
+      const cmp = compareSemver(info?.version, app.getVersion());
+      if (cmp <= 0) {
+        console.log(`[Updater] Ignoring update-downloaded for older/current version v${info?.version} (installed v${app.getVersion()})`);
+        return;
+      }
+      console.log('[Updater] Update downloaded successfully:', info?.version);
       mainWindow?.webContents.send('update:status', {
         stage: 'downloaded',
-        version: info.version,
+        version: info?.version,
       });
       showNotification(
         'MaxP Workspace',
-        `تم تنزيل التحديث v${info.version} بنجاح. أعد تشغيل التطبيق لتثبيته.`
+        `تم تنزيل التحديث v${info?.version} بنجاح. أعد تشغيل التطبيق لتثبيته.`
       );
     });
 
     // Check on startup immediately after 2.5 seconds, and then every 2 hours
     setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify().catch((e) => {
+      autoUpdater.checkForUpdatesAndNotify().catch((e: any) => {
         console.warn('[Updater] Initial check failed:', e?.message);
       });
     }, 2500);

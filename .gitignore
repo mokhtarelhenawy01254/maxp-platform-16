@@ -523,3 +523,13 @@ apps/backend/check_task_cols.js
 scripts/check_remote.sh
 # Manager API (local token storage)
 .manager-api/
+
+# Prevent desktop/mobile download manifests and binaries from ever being committed under frontend public
+apps/frontend/public/download/
+apps/frontend/public/downloads/
+apps/frontend/public/**/latest*.yml
+apps/frontend/public/**/latest*.json
+apps/frontend/public/**/*.exe
+apps/frontend/public/**/*.apk
+apps/frontend/public/**/*.blockmap
+

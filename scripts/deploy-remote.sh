@@ -147,18 +147,12 @@ sync_frontend_dist() {
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
 
-  # Preserve persistent desktop & mobile installers and manifests
-  sudo mkdir -p /var/www/downloads_storage /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads
-  if [ -d "/var/www/downloads_storage" ] && [ "$(ls -A /var/www/downloads_storage 2>/dev/null)" ]; then
-    sudo cp -u /var/www/downloads_storage/* /var/www/frontend2/dist/download/ 2>/dev/null || true
-    sudo cp -u /var/www/downloads_storage/* /var/www/frontend2/dist/downloads/ 2>/dev/null || true
-  fi
-  if [ -d "/var/www/frontend2/dist/download" ] && [ "$(ls -A /var/www/frontend2/dist/download 2>/dev/null)" ]; then
-    sudo cp -u /var/www/frontend2/dist/download/* /var/www/downloads_storage/ 2>/dev/null || true
-  fi
-
-  sudo chown -R $USER:$USER /var/www/frontend2/dist /var/www/downloads_storage
-  sudo chmod -R a+rX /var/www/frontend2/dist /var/www/downloads_storage
+  # Ensure persistent dedicated downloads directory exists outside frontend dist
+  sudo mkdir -p /var/www/maxp-downloads
+  # Remove any legacy download/downloads dirs from inside frontend dist so dist never shadows /var/www/maxp-downloads
+  sudo rm -rf /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads
+  sudo chown -R $USER:$USER /var/www/frontend2/dist /var/www/maxp-downloads
+  sudo chmod -R a+rX /var/www/frontend2/dist /var/www/maxp-downloads
 
   # ── INTEGRITY GATE (BEFORE publishing index.html) ──────────────────────
   # Verify every hashed asset referenced by index.html actually arrived on
@@ -1170,6 +1164,26 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   else
     echo "✅ Admin app serves the deployed build (br: ${SERVED_ENTRY_BR:-n/a}, identity: ${SERVED_ENTRY_ID:-n/a})"
   fi
+
+  echo "🔎 Running downloads & auto-updater smoke tests..."
+  DOWNLOADS_YML_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -o /tmp/smoke_latest.yml -w '%{http_code}' "https://maxp.online/downloads/latest.yml" 2>/dev/null || echo "000")"
+  DOWNLOAD_APK_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -s -o /dev/null -w '%{http_code}' "https://maxp.online/download/maxp.apk" 2>/dev/null || echo "000")"
+  DOWNLOADS_APK_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -s -o /dev/null -w '%{http_code}' "https://maxp.online/downloads/maxp.apk" 2>/dev/null || echo "000")"
+
+  echo "   - /downloads/latest.yml status: $DOWNLOADS_YML_STATUS"
+  echo "   - /download/maxp.apk status: ${DOWNLOAD_APK_STATUS:-000}"
+  echo "   - /downloads/maxp.apk status: ${DOWNLOADS_APK_STATUS:-000}"
+
+  if [ "$DOWNLOADS_YML_STATUS" != "200" ]; then
+    echo "❌ Failed to fetch /downloads/latest.yml (HTTP $DOWNLOADS_YML_STATUS)"
+    exit 1
+  fi
+  if [ "${DOWNLOAD_APK_STATUS:-000}" != "200" ] || [ "${DOWNLOADS_APK_STATUS:-000}" != "200" ]; then
+    echo "❌ Failed to fetch Android APK (download: $DOWNLOAD_APK_STATUS, downloads: $DOWNLOADS_APK_STATUS)"
+    exit 1
+  fi
+  PUBLISHED_DESKTOP_VER="$(grep -E '^version:' /tmp/smoke_latest.yml | awk '{print $2}' | tr -d '\r"')"
+  echo "✅ Downloads verification OK (Published Desktop: v${PUBLISHED_DESKTOP_VER}, APK accessible)"
 else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"
 fi
