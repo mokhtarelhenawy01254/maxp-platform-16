@@ -526,8 +526,21 @@ const getAllProducts = async (req, res) => {
       orderBy.createdAt = 'desc'; // default
     }
 
-    // Build filter object (Search)
+    // Build filter object (Search & Active Status)
+    const ADMIN_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'];
+    const userRole = typeof req.user?.role === 'string' ? req.user.role.toUpperCase() : '';
+    const isPrivilegedAdmin = ADMIN_ROLES.includes(userRole) || req.user?.isOwner === true;
+    const includeInactiveRequested =
+      req.query.includeInactive === 'true' ||
+      req.query.includeInactive === true ||
+      req.query.status === 'all';
+    const canIncludeInactive = isPrivilegedAdmin && includeInactiveRequested;
+
     const where = withActiveProductFilter({ companyId });
+    if (!canIncludeInactive) {
+      where.isActive = true;
+    }
+
     if (req.query.search) {
       const searchTerm = req.query.search;
       where.OR = [

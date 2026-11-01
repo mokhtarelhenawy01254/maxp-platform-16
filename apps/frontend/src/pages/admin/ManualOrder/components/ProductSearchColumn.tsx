@@ -37,6 +37,7 @@ interface Product {
   stock: number;
   sku: string;
   trackInventory?: boolean;
+  isActive?: boolean;
   variants: ProductVariant[];
 }
 
@@ -58,6 +59,7 @@ interface ApiProduct {
   availableStock?: unknown;
   fulfillableStock?: unknown;
   trackInventory?: boolean;
+  isActive?: boolean;
   sku?: unknown;
   variants?: ApiProductVariant[];
   productVariants?: ApiProductVariant[];
@@ -169,6 +171,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             stock: productStock,
             trackInventory: p.trackInventory,
             sku: String(p.sku || ""),
+            isActive: p.isActive !== undefined ? Boolean(p.isActive) : true,
             image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
             variants: (p.variants || p.productVariants || []).map((v) => ({
               ...v,
@@ -219,6 +222,18 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
   }, [fetchProducts]);
 
   const handleProductClick = (product: Product) => {
+    if (product.isActive === false) {
+      const confirmed = window.confirm(
+        t(
+          'manualOrder.inactiveProductConfirm',
+          'تنبيه: هذا المنتج غير نشط (موقوف). هل أنت متأكد من رغبتك في اختياره وإضافته؟'
+        )
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     if (product.variants && product.variants.length > 0) {
       setSelectedProduct(product);
       setSelectedAttributes({});
@@ -230,6 +245,18 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
 
   const handleVariantSelect = (variant: ProductVariant) => {
     if (selectedProduct) {
+      if (selectedProduct.isActive === false) {
+        const confirmed = window.confirm(
+          t(
+            'manualOrder.inactiveProductConfirm',
+            'تنبيه: هذا المنتج غير نشط (موقوف). هل أنت متأكد من رغبتك في اختياره وإضافته؟'
+          )
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+
       onAddToCart(selectedProduct, variant);
       setIsModalOpen(false);
       setSelectedProduct(null);
@@ -403,6 +430,13 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                     </div>
                   )}
 
+                  {/* Inactive Badge */}
+                  {product.isActive === false && (
+                    <div className="absolute top-2 right-2 bg-amber-500/95 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-amber-600 backdrop-blur z-10">
+                      {t('manualOrder.inactiveBadge', 'غير نشط')}
+                    </div>
+                  )}
+
                   {/* Variant Badge */}
                   {product.variants.length > 0 && (
                     <div className="absolute bottom-2 right-2 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">
@@ -413,12 +447,19 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
 
                 {/* Info */}
                 <div className="p-3">
-                  <h3
-                    className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 h-10 leading-snug mb-1"
-                    title={product.name}
-                  >
-                    {product.name}
-                  </h3>
+                  <div className="flex items-start gap-1.5 mb-1">
+                    {product.isActive === false && (
+                      <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                        {t('manualOrder.inactiveBadge', 'غير نشط')}
+                      </span>
+                    )}
+                    <h3
+                      className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 h-10 leading-snug flex-1"
+                      title={product.name}
+                    >
+                      {product.name}
+                    </h3>
+                  </div>
 
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-base font-bold text-blue-600 dark:text-blue-400">
@@ -451,9 +492,16 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
         <div className="absolute inset-0 z-50 bg-black/50 dark:bg-gray-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 truncate pr-4">
-                {selectedProduct.name}
-              </h3>
+              <div className="flex items-center gap-2 truncate pr-4">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 truncate">
+                  {selectedProduct.name}
+                </h3>
+                {selectedProduct.isActive === false && (
+                  <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                    {t('manualOrder.inactiveBadge', 'غير نشط')}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
@@ -466,6 +514,12 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             </div>
 
             <div className="p-4 max-h-[60vh] overflow-y-auto">
+              {selectedProduct.isActive === false && (
+                <div className="mb-4 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <span className="font-bold">⚠️ تنبيه:</span>
+                  <span>{t('manualOrder.inactiveWarningNote', 'هذا المنتج غير نشط حالياً (موقوف).')}</span>
+                </div>
+              )}
               {/* Multi-level attribute selection */}
               {productAttributes.length > 0 ? (
                 <div className="space-y-4">

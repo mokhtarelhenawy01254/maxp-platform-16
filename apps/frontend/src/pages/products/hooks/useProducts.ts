@@ -325,7 +325,7 @@ export const useProducts = () => {
       setError(null);
 
       const response = await apiClient.get("products", {
-        params: { page, limit, sortBy: sortField, sortOrder: sortDirection },
+        params: { page, limit, sortBy: sortField, sortOrder: sortDirection, includeInactive: true },
         _skipTransientRetry: true,
       });
 
