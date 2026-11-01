@@ -253,6 +253,7 @@ function createStablePrismaClient() {
     const extendedClient = client.$extends({
       query: {
         $allOperations: async ({ model, operation, args, query }) => {
+          queryCount++;
           const companyId = tenantContext.getCompanyId();
           const isBypassed = tenantContext.isBypassed();
 
@@ -310,6 +311,22 @@ function createStablePrismaClient() {
           }
 
           // ⚡ Execute single native SQL query through connection pool (Zero Transaction Overhead)
+          return query(args);
+        },
+        $queryRaw: async ({ args, query }) => {
+          queryCount++;
+          return query(args);
+        },
+        $executeRaw: async ({ args, query }) => {
+          queryCount++;
+          return query(args);
+        },
+        $queryRawUnsafe: async ({ args, query }) => {
+          queryCount++;
+          return query(args);
+        },
+        $executeRawUnsafe: async ({ args, query }) => {
+          queryCount++;
           return query(args);
         },
       },
@@ -803,6 +820,7 @@ async function healthCheck() {
       status: 'ok',
       latency: Date.now() - start,
       queries: queryCount,
+      queryCount: queryCount,
       queue: queryQueue.length,
       active: activeQueries
     };
@@ -834,6 +852,7 @@ module.exports = {
   getConnectionStats: () => ({
     activeQueries,
     queueLength: queryQueue.length,
-    isInitialized
+    isInitialized,
+    queryCount
   })
 };

@@ -199,7 +199,7 @@ router.get('/dashboard/aggregated', authenticateToken, requireSuperAdmin, async 
         status: dbHealth.status === 'ok' ? 'healthy' : dbHealth.status === 'connection_limit' ? 'degraded' : 'error',
         uptime: process.uptime(),
         database: dbHealth.status === 'ok' ? 'connected' : 'limited',
-        dbStats: { queryCount: dbHealth.queryCount || 0, latency: dbHealth.latency || 0, queue: dbHealth.queue || 0, active: dbHealth.active || 0 },
+        dbStats: { queryCount: dbHealth.queries || 0, latency: dbHealth.latency || 0, queue: dbHealth.queue || 0, active: dbHealth.active || 0 },
         environment: process.env.NODE_ENV || 'development',
         timestamp: now.toISOString(),
       };
