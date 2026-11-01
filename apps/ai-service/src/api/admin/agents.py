@@ -766,7 +766,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
                 company_id=body.company_id,
                 agent_id=existing_ship_agent.id,
             )
-            return AgentRead.model_validate(existing_ship_agent)
+            return _agent_to_read(existing_ship_agent)
 
     existing = await session.execute(
         select(AgentModel).where(
