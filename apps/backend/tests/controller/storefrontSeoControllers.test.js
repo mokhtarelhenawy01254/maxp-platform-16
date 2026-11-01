@@ -13,6 +13,9 @@ const mockPrisma = {
   storePage: {
     findMany: jest.fn(),
   },
+  academyCourse: {
+    findMany: jest.fn(),
+  },
 };
 
 jest.mock("../../services/sharedDatabase", () => ({
@@ -29,6 +32,7 @@ describe("Storefront SEO Controllers", () => {
     mockPrisma.category.findMany.mockResolvedValue([]);
     mockPrisma.article.findMany.mockResolvedValue([]);
     mockPrisma.storePage.findMany.mockResolvedValue([]);
+    mockPrisma.academyCourse.findMany.mockResolvedValue([]);
   });
 
   describe("storefrontRobotsController", () => {
@@ -183,6 +187,64 @@ describe("Storefront SEO Controllers", () => {
       // Must advertise the reachable URL that returns 200, NEVER the dead hyphenated one
       expect(xml).toContain("<loc>https://ahmedgad.maxp.online/product/Hagar_Khfaf</loc>");
       expect(xml).not.toContain("<loc>https://ahmedgad.maxp.online/product/Hagar-Khfaf</loc>");
+    });
+
+    it("includes published academy courses on company subdomain without 302 apex redirects", async () => {
+      mockPrisma.academyCourse.findMany.mockResolvedValue([
+        {
+          id: "cmuzmwaxs07r2juml2v04xon5",
+          slug: "cmuzmwaxs07r2juml2v04xon5",
+          title: "كورس MaxP — من أول إعلان لأول نظام",
+          thumbnailUrl: "https://maxp.online/og/p1_course-path_1200x628.png",
+          updatedAt: new Date("2026-10-18T10:00:00Z"),
+        },
+      ]);
+
+      const req = {
+        get: jest.fn((header) => (header.toLowerCase() === "host" ? "max-p.maxp.online" : null)),
+        protocol: "https",
+        company: { id: "cmopgxu3a07i4jujj6f1oh32h", slug: "max-p", isActive: true },
+      };
+      const res = {
+        headers: {},
+        set: jest.fn((key, value) => {
+          res.headers[key] = value;
+        }),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+
+      await handleStorefrontSitemap(req, res, jest.fn());
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const xml = res.send.mock.calls[0][0];
+
+      expect(xml).toContain("<loc>https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5</loc>");
+      expect(xml).not.toContain("<loc>https://maxp.online/portal/course/");
+    });
+
+    it("serves apex public routes sitemap with canonical course subdomain when called without company on apex", async () => {
+      const req = {
+        get: jest.fn((header) => (header.toLowerCase() === "host" ? "maxp.online" : null)),
+        protocol: "https",
+        company: null,
+      };
+      const res = {
+        headers: {},
+        set: jest.fn((key, value) => {
+          res.headers[key] = value;
+        }),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+
+      await handleStorefrontSitemap(req, res, jest.fn());
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const xml = res.send.mock.calls[0][0];
+
+      expect(xml).toContain("<loc>https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5</loc>");
+      expect(xml).not.toContain("<loc>https://maxp.online/portal/course/");
     });
   });
 });

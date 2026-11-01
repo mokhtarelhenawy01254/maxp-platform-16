@@ -77,7 +77,7 @@ const ROUTE_SEO_MAP = [
     description:
       "25 درس لصاحب المحل المصري: تعرف سوقك، تبني عرضك، تجيب عملاء بإعلانات مقاسة، وترجّعهم بنظام — كله جوه ماكس بي.",
     image: `${PLATFORM_BASE_URL}/og/p1_course-path_1200x628.png`,
-    canonical: "https://maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5",
+    canonical: "https://max-p.maxp.online/portal/course/cmuzmwaxs07r2juml2v04xon5",
     type: "product",
     noIndex: false,
     robots: "index, follow",

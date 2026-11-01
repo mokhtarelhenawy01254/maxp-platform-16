@@ -23,6 +23,7 @@ interface RawRoute {
   title: string;
   description: string;
   canonicalPath?: string;
+  canonicalUrl?: string;
   image?: string;
   ogType?: string;
   twitterCard?: string;
@@ -35,6 +36,8 @@ export interface RouteSeo {
   description: string;
   /** Canonical path when it differs from the route itself (alias pages). */
   canonicalPath?: string;
+  /** Canonical URL when pointing to an external/subdomain destination (e.g. course canonical). */
+  canonicalUrl?: string;
   image?: string;
   ogType?: string;
   twitterCard?: string;
@@ -53,6 +56,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = ROUTES.reduce(
       title: route.title,
       description: route.description,
       ...(route.canonicalPath ? { canonicalPath: route.canonicalPath } : {}),
+      ...(route.canonicalUrl ? { canonicalUrl: route.canonicalUrl } : {}),
       ...(route.image ? { image: route.image } : {}),
       ...(route.ogType ? { ogType: route.ogType } : {}),
       ...(route.twitterCard ? { twitterCard: route.twitterCard } : {}),
@@ -210,6 +214,9 @@ const removeCanonical = (): void => {
 export function buildCanonicalUrl(pathname: string): string {
   const path = normalizePath(pathname);
   const entry = ROUTE_SEO[path];
+  if (entry?.canonicalUrl) {
+    return entry.canonicalUrl;
+  }
   const canonicalPath = entry?.canonicalPath ?? path;
   return `${SITE_ORIGIN}${canonicalPath === "/" ? "/" : canonicalPath}`;
 }

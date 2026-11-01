@@ -121,7 +121,9 @@ const main = () => {
     }
 
     const canonicalPath = route.canonicalPath || route.path;
-    const canonicalUrl = `${origin}${canonicalPath === "/" ? "/" : canonicalPath}`;
+    const canonicalUrl =
+      route.canonicalUrl ||
+      `${origin}${canonicalPath === "/" ? "/" : canonicalPath}`;
 
     let html = shell;
     html = upsertTitle(html, route.title);
@@ -171,7 +173,20 @@ const main = () => {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   for (const route of sitemapRoutes) {
-    const loc = `${origin}${route.path === "/" ? "/" : route.path}`;
+    let loc =
+      route.sitemap?.loc ||
+      route.canonicalUrl ||
+      `${origin}${route.path === "/" ? "/" : route.path}`;
+
+    // Zero-redirect guard: apex course URLs 302 to company subdomain (قرار مختار 18-10).
+    // Any course URL advertised in sitemap must use the canonical 200 destination.
+    if (
+      loc.startsWith(`${origin}/portal/course/`) ||
+      loc.startsWith(`${origin}/academy/course/`)
+    ) {
+      loc = loc.replace(origin, "https://max-p.maxp.online");
+    }
+
     xml += "  <url>\n";
     xml += `    <loc>${escapeHtml(loc)}</loc>\n`;
     if (route.sitemap.changefreq) {
