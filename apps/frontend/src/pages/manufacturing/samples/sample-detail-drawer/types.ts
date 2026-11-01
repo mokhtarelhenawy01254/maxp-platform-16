@@ -7,4 +7,6 @@ export interface SampleDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh: () => void;
+  onEdit?: (sample: SampleOrder) => void;
+  onDelete?: (sample: SampleOrder) => void;
 }

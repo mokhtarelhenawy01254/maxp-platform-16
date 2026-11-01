@@ -2706,10 +2706,9 @@ class ManufacturingService {
       where: { id: orderId },
       data: updateData,
       include: {
-        bom: { include: { product: true } },
+        bom: true,
         customer: true,
         stages: { orderBy: { sequence: 'asc' } },
-        factoryAgreement: true,
         customerOrder: true,
       },
     });

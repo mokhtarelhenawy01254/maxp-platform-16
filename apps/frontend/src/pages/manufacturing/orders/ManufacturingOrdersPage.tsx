@@ -315,7 +315,7 @@ export const ManufacturingOrdersPage: React.FC = () => {
                   <th className="p-3.5 font-semibold">التكلفة الفعلية</th>
                   <th className="p-3.5 font-semibold">تكلفة القطعة</th>
                   <th className="p-3.5 font-semibold">تاريخ الإنشاء</th>
-                  <th className="p-3.5 font-semibold text-center">معاينة</th>
+                  <th className="p-3.5 font-semibold text-center whitespace-nowrap">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -440,29 +440,33 @@ export const ManufacturingOrdersPage: React.FC = () => {
                         <td className="p-3 font-mono text-[11px] text-muted-foreground">
                           {new Date(ord.createdAt).toLocaleDateString('ar-EG', { dateStyle: 'short' })}
                         </td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                             <Link
                               to={`/manufacturing/orders/${ord.id}`}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
-                              title="فتح تفاصيل الأمر"
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all flex items-center gap-1 border border-border/70 active:scale-95 shadow-2xs"
+                              title="عرض تفاصيل أمر الإنتاج"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>فتح</span>
+                              <span>عرض</span>
                             </Link>
                             <button
+                              type="button"
                               onClick={() => setEditingOrder(ord)}
-                              className="p-1.5 rounded-lg hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                               title="تعديل أمر الإنتاج"
                             >
                               <Pencil className="w-3.5 h-3.5" />
+                              <span>تعديل</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setDeletingOrder(ord)}
-                              className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                               title="حذف أمر الإنتاج"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
+                              <span>حذف</span>
                             </button>
                           </div>
                         </td>

@@ -56,6 +56,9 @@ export const SampleOrdersPage: React.FC = () => {
     try {
       setDeleteLoading(true);
       await manufacturingApi.deleteSampleOrder(deletingSample.id);
+      if (selectedSample?.id === deletingSample.id) {
+        handleCloseDrawer();
+      }
       setDeletingSample(null);
       await fetchSamples();
     } catch (err: any) {
@@ -465,28 +468,33 @@ export const SampleOrdersPage: React.FC = () => {
 
                       {/* Action */}
                       <td className="py-3 px-4 text-left whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 justify-end">
                           <button
+                            type="button"
                             onClick={() => handleOpenDrawer(s)}
-                            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all flex items-center gap-1 border border-border/70 active:scale-95 shadow-2xs"
                             title="عرض تفاصيل العينة"
                           >
                             <span>عرض</span>
                             <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setEditingSample(s)}
-                            className="p-1.5 rounded-md hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                             title="تعديل أمر العينة"
                           >
                             <Pencil className="w-3.5 h-3.5" />
+                            <span>تعديل</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => setDeletingSample(s)}
-                            className="p-1.5 rounded-md hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                             title="حذف أمر العينة"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف</span>
                           </button>
                         </div>
                       </td>
@@ -564,6 +572,8 @@ export const SampleOrdersPage: React.FC = () => {
         isOpen={isDrawerOpen}
         onClose={handleCloseDrawer}
         onRefresh={fetchSamples}
+        onEdit={(sample) => setEditingSample(sample)}
+        onDelete={(sample) => setDeletingSample(sample)}
       />
     </div>
   );

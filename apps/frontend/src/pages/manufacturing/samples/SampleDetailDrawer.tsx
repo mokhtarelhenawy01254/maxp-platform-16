@@ -25,6 +25,8 @@ export const SampleDetailDrawer: React.FC<SampleDetailDrawerProps> = ({
   isOpen,
   onClose,
   onRefresh,
+  onEdit,
+  onDelete,
 }) => {
   const {
     navigate,
@@ -103,6 +105,8 @@ export const SampleDetailDrawer: React.FC<SampleDetailDrawerProps> = ({
           sample={sample}
           onShare={() => setIsShareModalOpen(true)}
           onClose={onClose}
+          onEdit={onEdit ? () => onEdit(sample) : undefined}
+          onDelete={onDelete ? () => onDelete(sample) : undefined}
         />
 
         <DrawerReceiptStatusBar
