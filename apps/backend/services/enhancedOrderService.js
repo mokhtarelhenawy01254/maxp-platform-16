@@ -14,6 +14,21 @@ const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
 const exchangeChainGuard = require('./exchangeChainGuard');
 
+const VALID_ORDER_SOURCES = new Set([
+  'REGULAR',
+  'AFFILIATE_REFERRAL',
+  'AFFILIATE_DIRECT',
+  'INTERNAL_IMPORT',
+  'WHOLESALE'
+]);
+
+function normalizeOrderSource(source) {
+  if (!source) return 'REGULAR';
+  const upper = String(source).trim().toUpperCase();
+  if (VALID_ORDER_SOURCES.has(upper)) return upper;
+  return 'REGULAR';
+}
+
 const buildSourceCondition = (source) => {
   switch (String(source).toLowerCase()) {
     case 'manual':
@@ -1456,20 +1471,20 @@ class EnhancedOrderService {
 
       // Wholesale support
       ...(data.wholesaleCustomerId && {
-        wholesaleCustomerId: data.wholesaleCustomerId,
-        orderSource: data.orderSource || 'WHOLESALE'
+        wholesaleCustomerId: data.wholesaleCustomerId
       }),
 
       // Affiliate support
       ...(data.affiliateId && {
-        affiliateId: data.affiliateId,
-        orderSource: data.orderSource || 'AFFILIATE_DIRECT'
+        affiliateId: data.affiliateId
       }),
 
-      // Explicit order source if provided
-      ...(data.orderSource && !data.affiliateId && !data.wholesaleCustomerId && {
-        orderSource: data.orderSource
-      }),
+      // Normalized order source (strictly matches OrderSource enum in Prisma schema)
+      orderSource: normalizeOrderSource(
+        data.affiliateId
+          ? (data.orderSource || 'AFFILIATE_DIRECT')
+          : (data.wholesaleCustomerId ? (data.orderSource || 'WHOLESALE') : data.orderSource)
+      ),
 
       // Creator info
       createdBy: data.createdBy,

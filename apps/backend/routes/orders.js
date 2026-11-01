@@ -8701,7 +8701,7 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     // 🔍 Check if user has an affiliate profile (regardless of role)
     let affiliateId = null;
-    let orderSource = 'manual';
+    let orderSource = 'REGULAR';
 
     console.log('🔍 [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
 

@@ -598,7 +598,7 @@ router.post('/', manualOrderAccess, async (req, res) => {
     // Owners/admins can have an affiliate profile for testing; that must not turn every
     // manual admin order into an affiliate commission.
     let affiliateId = null;
-    let orderSource = 'manual';
+    let orderSource = 'REGULAR';
 
     try {
       const { getSharedPrismaClient } = require('../services/sharedDatabase');

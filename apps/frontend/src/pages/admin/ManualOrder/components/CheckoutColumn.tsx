@@ -157,7 +157,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         conversationId: "manual",
         platform: isAffiliate ? "affiliate" : "manual",
         source: isAffiliate ? "affiliate_direct" : "manual_entry",
-        orderSource: isAffiliate ? "AFFILIATE_DIRECT" : (customer.wholesaleCustomer ? "WHOLESALE" : "manual"),
+        orderSource: isAffiliate ? "AFFILIATE_DIRECT" : (customer.wholesaleCustomer ? "WHOLESALE" : "REGULAR"),
         ...(customer.wholesaleCustomer ? {
           wholesaleCustomerId: customer.wholesaleCustomer.id,
           ...(customer.wholesaleCustomer.customerId ? { customerId: customer.wholesaleCustomer.customerId } : {}),
