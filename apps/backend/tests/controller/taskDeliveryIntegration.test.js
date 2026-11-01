@@ -104,10 +104,11 @@ describe('Task Delivery Gate Integration Tests (مسار التسليم على �
     expect(res.status).toHaveBeenCalledWith(422);
     expect(res.body.success).toBe(false);
     expect(res.body.error).toContain('أدلة التسليم غير مكتملة');
-    expect(res.body.missingFields).toContain('صورة قبل');
-    expect(res.body.missingFields).toContain('صورة بعد');
     expect(res.body.missingFields).toContain('الأرقام قبل / بعد');
     expect(res.body.missingFields).toContain('نطاق ما لم يتم اختباره');
+    // الصور بقت اختيارية للمهام HIGH — البوابة بتقفل على الحقول النصية بس.
+    expect(res.body.missingFields).not.toContain('صورة قبل');
+    expect(res.body.missingFields).not.toContain('صورة بعد');
   });
 
   test('مهمة HIGH كاملة الأدلة مع الصورتين واللينك → تقبل بنجاح 200 OK وتخزن الدليل', async () => {

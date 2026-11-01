@@ -114,9 +114,10 @@ function validateDeliveryEvidence(evidenceData = {}, existingAttachments = [], o
     if (!hasLinkOrCommit) missingFields.push('لينك الصفحة أو الكوميت/مسار التعديل');
     if (!hasNumbers) missingFields.push('الأرقام قبل / بعد');
     if (!hasNotTested) missingFields.push('نطاق ما لم يتم اختباره');
-    if (!hasBefore) missingFields.push('صورة قبل');
-    if (!hasAfter) missingFields.push('صورة بعد');
-    if (!hasProofAttachment) missingFields.push('مرفق إثبات التشغيل');
+    // الصور (قبل/بعد) ومرفق الإثبات بقت اختيارية للمهام HIGH — الاعتماد على
+    // كوميت/لينك + أرقام قبل-بعد. السبب: الشغل اللي من غير واجهة (fixات باك-إند،
+    // تستات، استعلامات) مكانش ليه صورة قبل/بعد، فكان بيتقفل آليًا ويفضل في
+    // المراجعة للأبد. لو فيه صور بتتحفظ زي ما هي في sanitizedEvidence.
   } else if (normalizedPriority === 'MEDIUM') {
     if (!hasChangeType) missingFields.push('نوع التغيير');
     if (!hasLinkOrCommit) missingFields.push('لينك الصفحة أو الكوميت/مسار التعديل');

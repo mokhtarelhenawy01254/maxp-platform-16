@@ -19,26 +19,26 @@ describe('Task Delivery Gate & Severity Enforcement Tests', () => {
         expect(result.missingFields).toContain('لينك الصفحة أو الكوميت/مسار التعديل');
         expect(result.missingFields).toContain('الأرقام قبل / بعد');
         expect(result.missingFields).toContain('نطاق ما لم يتم اختباره');
-        expect(result.missingFields).toContain('صورة قبل');
-        expect(result.missingFields).toContain('صورة بعد');
-        expect(result.missingFields).toContain('مرفق إثبات التشغيل');
+        // الصور ومرفق الإثبات بقوا اختياريين للمهام HIGH (قرار المالك 2026-11-01):
+        // الشغل اللي مالهوش واجهة (باك-إند/تستات) كان بيتقفل آليًا للأبد.
+        expect(result.missingFields).not.toContain('صورة قبل');
+        expect(result.missingFields).not.toContain('صورة بعد');
         expect(result.errorSummary).toContain('أدلة التسليم غير مكتملة');
         expect(result.errorSummary).toContain('عالية / عاجلة');
       });
 
-      it('HIGH بناقص إحدى الصورتين (صورة قبل فقط دون صورة بعد) → isValid: false', () => {
-        const evidenceMissingAfter = {
+      it('HIGH بالحقول النصية كاملة وبدون صور → isValid: true (الصور اختيارية)', () => {
+        const evidenceWithoutImages = {
           changeType: 'FEATURE',
           commitOrPath: 'feat(core): new checkout engine',
           numbersBeforeAfter: 'Conversion rate 2% -> 5%',
-          notTestedScope: 'Tested on desktop Chrome',
-          beforeAttachmentUrl: 'https://maxp.online/uploads/before.png'
+          notTestedScope: 'Tested on desktop Chrome'
         };
-        const result = validateDeliveryEvidence(evidenceMissingAfter, [], { priority: 'HIGH' });
+        const result = validateDeliveryEvidence(evidenceWithoutImages, [], { priority: 'HIGH' });
 
-        expect(result.isValid).toBe(false);
-        expect(result.missingFields).toContain('صورة بعد');
-        expect(result.missingFields).not.toContain('صورة قبل');
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.sanitizedEvidence.commitOrPath).toBe('feat(core): new checkout engine');
       });
 
       it('HIGH كامل (كل الحقول + صورتين قبل وبعد) → isValid: true', () => {
@@ -76,7 +76,7 @@ describe('Task Delivery Gate & Severity Enforcement Tests', () => {
         const result = validateDeliveryEvidence(partialUrgent, [], 'URGENT');
 
         expect(result.isValid).toBe(false);
-        expect(result.missingFields.length).toBeGreaterThan(3);
+        expect(result.missingFields.length).toBeGreaterThanOrEqual(3);
       });
     });
 
@@ -239,7 +239,7 @@ describe('Task Delivery Gate & Severity Enforcement Tests', () => {
       expect(result.sanitizedEvidence.proofAttachmentId).toBe('att-desktop-proof-3');
     });
 
-    it('تسليم مهمة HIGH من الديسكتوب بدون صورة بعد → isValid: false مع توضيح النقص', () => {
+    it('تسليم مهمة HIGH من الديسكتوب بدون صورة بعد → isValid: true (الصور اختيارية)', () => {
       const desktopPayloadMissingAfter = {
         evidence: {
           changeType: 'BUG_FIX',
@@ -251,8 +251,8 @@ describe('Task Delivery Gate & Severity Enforcement Tests', () => {
       };
 
       const result = validateDeliveryEvidence(desktopPayloadMissingAfter, [], { priority: 'HIGH' });
-      expect(result.isValid).toBe(false);
-      expect(result.missingFields).toContain('صورة بعد');
+      expect(result.isValid).toBe(true);
+      expect(result.missingFields).toHaveLength(0);
     });
 
     it('تسليم مهمة MEDIUM أو LOW من الديسكتوب يعمل بسلاسة دون إلزام بالصور', () => {
