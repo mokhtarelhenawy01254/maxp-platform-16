@@ -74,9 +74,9 @@ const wholesaleController = {
         const data = await wholesaleService.createWholesaleCustomer({ ...req.body, companyId: req.user.companyId });
         return res.status(201).json({ success: true, data });
       }
-      await wholesaleService.updateWholesaleCustomer(req.params.id, req.user.companyId, req.body);
+      await wholesaleService.updateWholesaleCustomer(req.params.id, req.user.companyId, req.body, req.user.id);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+    } catch (err) { res.status(err.statusCode || 500).json({ success: false, error: err.message }); }
   },
 
   // Price List Assignment
@@ -237,6 +237,100 @@ const wholesaleController = {
     } catch (err) {
       res.status(err.statusCode || 500).json({ success: false, error: err.message });
     }
+  },
+
+  // Change Requests & Approvals
+  async listChangeRequests(req, res) {
+    try {
+      const result = await wholesaleService.listChangeRequests({
+        companyId: req.user.companyId,
+        entityType: req.query.entityType,
+        entityId: req.query.entityId,
+        status: req.query.status,
+        page: req.query.page,
+        limit: req.query.limit,
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async createChangeRequest(req, res) {
+    try {
+      const data = await wholesaleService.createChangeRequest(
+        { ...req.body, companyId: req.user.companyId },
+        req.user.id
+      );
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async approveChangeRequest(req, res) {
+    try {
+      const data = await wholesaleService.approveChangeRequest(
+        req.params.id,
+        req.user.companyId,
+        req.user.id
+      );
+      res.json({ success: true, data, message: 'تمت الموافقة على طلب التغيير وتطبيق القيمة بنجاح' });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  async rejectChangeRequest(req, res) {
+    try {
+      const data = await wholesaleService.rejectChangeRequest(
+        req.params.id,
+        req.user.companyId,
+        req.user.id,
+        req.body?.reason || req.body?.rejectReason
+      );
+      res.json({ success: true, data, message: 'تم رفض طلب التغيير بنجاح' });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  // Audit Logs
+  async listAuditLogs(req, res) {
+    try {
+      const result = await wholesaleService.listAuditLogs({
+        companyId: req.user.companyId,
+        entityType: req.query.entityType,
+        entityId: req.query.entityId,
+        action: req.query.action,
+        page: req.query.page,
+        limit: req.query.limit,
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  },
+
+  // wholesale.approve permission guard
+  requireApprovePermission(req, res, next) {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    if (['SUPER_ADMIN', 'OWNER', 'COMPANY_ADMIN'].includes(user.role)) {
+      return next();
+    }
+    const permissions = user.userPermissions || [];
+    if (permissions.includes('wholesale.approve')) {
+      return next();
+    }
+    return res.status(403).json({
+      success: false,
+      error: 'ليس لديك صلاحية للموافقة على التغييرات الحساسة (wholesale.approve)',
+      code: 'INSUFFICIENT_PERMISSIONS',
+      requiredPermission: 'wholesale.approve',
+    });
   },
 };
 

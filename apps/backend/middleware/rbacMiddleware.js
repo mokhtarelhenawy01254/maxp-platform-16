@@ -221,6 +221,13 @@ const PERMISSIONS = {
   // Orders — WhatsApp Order Notifications
   'orders.whatsapp-notifications.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.whatsapp-notifications.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Wholesale Permissions
+  'wholesale.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'wholesale.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'wholesale.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'wholesale.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'wholesale.approve': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
 };
 
 const {

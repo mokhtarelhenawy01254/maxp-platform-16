@@ -54,4 +54,13 @@ router.post('/customers/:id/suspend', ctrl.suspendDistributor);
 router.post('/manage/distributors/:id/resume', ctrl.resumeDistributor);
 router.post('/customers/:id/resume', ctrl.resumeDistributor);
 
+// Change Requests & Approvals
+router.get('/change-requests', ctrl.listChangeRequests);
+router.post('/change-requests', ctrl.createChangeRequest);
+router.post('/change-requests/:id/approve', ctrl.requireApprovePermission, ctrl.approveChangeRequest);
+router.post('/change-requests/:id/reject', ctrl.requireApprovePermission, ctrl.rejectChangeRequest);
+
+// Audit Logs
+router.get('/audit-logs', ctrl.listAuditLogs);
+
 module.exports = router;

@@ -190,13 +190,22 @@ const wholesaleService = {
     return wc;
   },
 
-  async updateWholesaleCustomer(id, companyId, data) {
+  async updateWholesaleCustomer(id, companyId, data, userId = null) {
     const prisma = getSharedPrismaClient();
     const wc = await prisma.wholesaleCustomer.findFirst({
       where: { id, companyId },
       include: { customer: true },
     });
     if (!wc) throw new Error('Wholesale customer not found');
+
+    if (data.isActive !== undefined && Boolean(data.isActive) === false && wc.isActive === true) {
+      const reason = (data.reason || data.suspendReason || '').trim();
+      if (!reason) {
+        const err = new Error('سبب إيقاف التاجر إلزامي');
+        err.statusCode = 400;
+        throw err;
+      }
+    }
 
     const updateData = {};
     if (data.creditLimit !== undefined) updateData.creditLimit = Number(data.creditLimit);
@@ -230,6 +239,41 @@ const wholesaleService = {
         await prisma.wholesaleCustomerPriceList.deleteMany({ where: { customerId: wc.customerId } });
       }
     }
+
+    // Audit logs for updates
+    if (prisma.wholesaleAuditLog) {
+      if (data.isActive !== undefined && Boolean(data.isActive) !== wc.isActive) {
+        const isSuspending = Boolean(data.isActive) === false;
+        await prisma.wholesaleAuditLog.create({
+          data: {
+            companyId,
+            entityType: 'CUSTOMER',
+            entityId: id,
+            action: isSuspending ? 'SUSPEND' : 'ACTIVATE',
+            field: 'isActive',
+            oldValue: String(wc.isActive),
+            newValue: String(data.isActive),
+            reason: (data.reason || data.suspendReason || '').trim() || (isSuspending ? 'إيقاف حساب' : 'إعادة تفعيل'),
+            performedBy: userId || 'SYSTEM',
+          },
+        }).catch(() => {});
+      } else if (data.creditLimit !== undefined && Number(data.creditLimit) !== Number(wc.creditLimit)) {
+        await prisma.wholesaleAuditLog.create({
+          data: {
+            companyId,
+            entityType: 'CUSTOMER',
+            entityId: id,
+            action: 'UPDATE',
+            field: 'creditLimit',
+            oldValue: String(wc.creditLimit),
+            newValue: String(data.creditLimit),
+            reason: (data.reason || '').trim() || 'تحديث حد الائتمان',
+            performedBy: userId || 'SYSTEM',
+          },
+        }).catch(() => {});
+      }
+    }
+
     return result;
   },
 
@@ -403,6 +447,22 @@ const wholesaleService = {
         currentBalance: 0,
         available: Infinity,
         orderTotal: Number(orderTotal || 0),
+      };
+    }
+
+    if (wc.isActive === false) {
+      return {
+        isWholesale: true,
+        wholesaleCustomerId: wc.id,
+        allowed: false,
+        isSuspended: true,
+        error: 'حساب تاجر الجملة موقوف مؤقتاً ولا يمكن إنشاء طلبات جديدة',
+        reason: 'حساب تاجر الجملة موقوف مؤقتاً',
+        creditLimit: Number(wc.creditLimit || 0),
+        currentBalance: Number(wc.currentBalance || 0),
+        orderTotal: Number(orderTotal || 0),
+        newBalance: Number(wc.currentBalance || 0) + Number(orderTotal || 0),
+        available: 0,
       };
     }
 
@@ -1043,6 +1103,22 @@ const wholesaleService = {
       },
     });
 
+    if (prisma.wholesaleAuditLog) {
+      await prisma.wholesaleAuditLog.create({
+        data: {
+          companyId,
+          entityType: 'CUSTOMER',
+          entityId: wc.id,
+          action: 'SUSPEND',
+          field: 'isActive',
+          oldValue: String(wc.isActive),
+          newValue: 'false',
+          reason: String(reason).trim(),
+          performedBy: userId || 'SYSTEM',
+        },
+      }).catch(() => {});
+    }
+
     return updated;
   },
 
@@ -1074,9 +1150,300 @@ const wholesaleService = {
       },
     });
 
+    if (prisma.wholesaleAuditLog) {
+      await prisma.wholesaleAuditLog.create({
+        data: {
+          companyId,
+          entityType: 'CUSTOMER',
+          entityId: wc.id,
+          action: 'ACTIVATE',
+          field: 'isActive',
+          oldValue: String(wc.isActive),
+          newValue: 'true',
+          reason: reason ? String(reason).trim() : 'إعادة تفعيل الموزع',
+          performedBy: userId || 'SYSTEM',
+        },
+      }).catch(() => {});
+    }
+
     return updated;
+  },
+
+  async suspendCustomer(id, companyId, reason, userId = null) {
+    return this.suspendDistributor(id, companyId, reason, userId);
+  },
+
+  async activateCustomer(id, companyId, reason = null, userId = null) {
+    return this.resumeDistributor(id, companyId, reason, userId);
+  },
+
+  // ── Wholesale Change Requests & Approvals ──
+  async createChangeRequest({ companyId, entityType, entityId, field, newValue, reason }, userId = null) {
+    const prisma = getSharedPrismaClient();
+    const cleanReason = (reason || '').trim();
+    if (!cleanReason) {
+      const err = new Error('سبب طلب التعديل إلزامي');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!['CUSTOMER', 'PRICE_LIST_ITEM', 'PRICE_LIST'].includes(entityType)) {
+      const err = new Error('نوع الكيان غير صالح');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    let oldValue = null;
+    if (entityType === 'CUSTOMER') {
+      const wc = await prisma.wholesaleCustomer.findFirst({ where: { id: entityId, companyId } });
+      if (!wc) {
+        const err = new Error('Wholesale customer not found');
+        err.statusCode = 404;
+        throw err;
+      }
+      oldValue = String(wc[field] !== undefined ? wc[field] : '');
+    } else if (entityType === 'PRICE_LIST_ITEM') {
+      const item = await prisma.wholesalePriceListItem.findFirst({
+        where: { id: entityId },
+        include: { priceList: { select: { companyId: true } } },
+      });
+      if (!item || item.priceList?.companyId !== companyId) {
+        const err = new Error('Price list item not found');
+        err.statusCode = 404;
+        throw err;
+      }
+      oldValue = String(item[field] !== undefined ? item[field] : '');
+    }
+
+    const cr = await prisma.wholesaleChangeRequest.create({
+      data: {
+        companyId,
+        entityType,
+        entityId,
+        field,
+        oldValue,
+        newValue: String(newValue),
+        reason: cleanReason,
+        requestedBy: userId || 'SYSTEM',
+        status: 'PENDING',
+      },
+    });
+
+    if (prisma.wholesaleAuditLog) {
+      await prisma.wholesaleAuditLog.create({
+        data: {
+          companyId,
+          entityType,
+          entityId,
+          action: 'REQUEST_CHANGE',
+          field,
+          oldValue,
+          newValue: String(newValue),
+          reason: cleanReason,
+          performedBy: userId || 'SYSTEM',
+          metadata: JSON.stringify({ changeRequestId: cr.id }),
+        },
+      }).catch(() => {});
+    }
+
+    return cr;
+  },
+
+  async listChangeRequests({ companyId, entityType, entityId, status, page = 1, limit = 20 }) {
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+    if (entityType) where.entityType = entityType;
+    if (entityId) where.entityId = entityId;
+    if (status && status !== 'ALL') where.status = status;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      prisma.wholesaleChangeRequest.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.wholesaleChangeRequest.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
+    };
+  },
+
+  async approveChangeRequest(id, companyId, userId = null) {
+    const prisma = getSharedPrismaClient();
+    const cr = await prisma.wholesaleChangeRequest.findFirst({
+      where: { id, companyId },
+    });
+    if (!cr) {
+      const err = new Error('طلب التغيير غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (cr.status !== 'PENDING') {
+      const err = new Error(`طلب التغيير تم البت فيه مسبقاً (${cr.status})`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // 1. Apply value to target entity
+      if (cr.entityType === 'CUSTOMER') {
+        const updateData = {};
+        if (cr.field === 'creditLimit') {
+          updateData.creditLimit = Number(cr.newValue);
+        } else if (cr.field === 'isActive') {
+          updateData.isActive = cr.newValue === 'true' || cr.newValue === true;
+        } else {
+          updateData[cr.field] = cr.newValue;
+        }
+        await tx.wholesaleCustomer.update({
+          where: { id: cr.entityId },
+          data: updateData,
+        });
+      } else if (cr.entityType === 'PRICE_LIST_ITEM') {
+        const updateData = {};
+        if (cr.field === 'price') {
+          updateData.price = Number(cr.newValue);
+        } else {
+          updateData[cr.field] = cr.newValue;
+        }
+        await tx.wholesalePriceListItem.update({
+          where: { id: cr.entityId },
+          data: updateData,
+        });
+      }
+
+      // 2. Update change request record
+      const updatedCr = await tx.wholesaleChangeRequest.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          approvedBy: userId || 'SYSTEM',
+        },
+      });
+
+      // 3. Write to audit log inside transaction
+      if (tx.wholesaleAuditLog) {
+        await tx.wholesaleAuditLog.create({
+          data: {
+            companyId,
+            entityType: cr.entityType,
+            entityId: cr.entityId,
+            action: 'APPROVE',
+            field: cr.field,
+            oldValue: cr.oldValue,
+            newValue: cr.newValue,
+            reason: cr.reason,
+            performedBy: userId || 'SYSTEM',
+            metadata: JSON.stringify({ changeRequestId: cr.id }),
+          },
+        });
+      }
+
+      return updatedCr;
+    });
+  },
+
+  async rejectChangeRequest(id, companyId, userId = null, rejectReason = null) {
+    const prisma = getSharedPrismaClient();
+    const cr = await prisma.wholesaleChangeRequest.findFirst({
+      where: { id, companyId },
+    });
+    if (!cr) {
+      const err = new Error('طلب التغيير غير موجود');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (cr.status !== 'PENDING') {
+      const err = new Error(`طلب التغيير تم البت فيه مسبقاً (${cr.status})`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const updatedCr = await tx.wholesaleChangeRequest.update({
+        where: { id },
+        data: {
+          status: 'REJECTED',
+          approvedBy: userId || 'SYSTEM',
+        },
+      });
+
+      if (tx.wholesaleAuditLog) {
+        await tx.wholesaleAuditLog.create({
+          data: {
+            companyId,
+            entityType: cr.entityType,
+            entityId: cr.entityId,
+            action: 'REJECT',
+            field: cr.field,
+            oldValue: cr.oldValue,
+            newValue: cr.newValue,
+            reason: rejectReason ? String(rejectReason).trim() : cr.reason,
+            performedBy: userId || 'SYSTEM',
+            metadata: JSON.stringify({ changeRequestId: cr.id, rejectReason }),
+          },
+        });
+      }
+
+      return updatedCr;
+    });
+  },
+
+  // ── Wholesale Audit Logs ──
+  async listAuditLogs({ companyId, entityType, entityId, action, page = 1, limit = 50 }) {
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+    if (entityType) where.entityType = entityType;
+    if (entityId) where.entityId = entityId;
+    if (action && action !== 'ALL') where.action = action;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      prisma.wholesaleAuditLog.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.wholesaleAuditLog.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
+    };
   },
 };
 
-module.exports = { wholesaleService, WHOLESALE_PERMISSIONS: { VIEW: 'wholesale.view', CREATE: 'wholesale.create', EDIT: 'wholesale.edit', DELETE: 'wholesale.delete' } };
+module.exports = {
+  wholesaleService,
+  WHOLESALE_PERMISSIONS: {
+    VIEW: 'wholesale.view',
+    CREATE: 'wholesale.create',
+    EDIT: 'wholesale.edit',
+    DELETE: 'wholesale.delete',
+    APPROVE: 'wholesale.approve',
+  },
+};
 module.exports.wholesalePricing = require('./wholesalePricing');
