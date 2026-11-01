@@ -6,6 +6,7 @@
 
 const crypto = require('crypto');
 const aiSdkClient = require('../services/aiSdkClient');
+const { applyReplyGuard } = require('../utils/agentReplyGuard');
 const aiSessionService = require('../services/aiSessionService');
 const agentStudioSessionService = require('../services/agentStudioSessionService');
 const CorrectiveRAGEngine = require('../services/rag/CorrectiveRAGEngine');
@@ -383,6 +384,19 @@ async function sendMessage(req, res) {
           } catch (_) {}
         }
       }
+    }
+
+    // حارس الصدق (Task 0bb2afa9): ممنوع ادعاء تنفيذ من غير tool_call ناجح في نفس الدورة
+    const replyGuardResult = applyReplyGuard({ reply: result?.reply, toolCalls: result?.toolCalls });
+    if (replyGuardResult.blocked) {
+      console.warn('[AGENT-GUARD] blocked execution claim without tool result', {
+        sessionId: activeSessionId,
+        companyId,
+        reason: replyGuardResult.reason,
+      });
+      result.reply = replyGuardResult.reply;
+      result.toolCalls = Array.isArray(result.toolCalls) ? result.toolCalls : [];
+      result.replyGuard = { blocked: true, reason: replyGuardResult.reason };
     }
 
     // Persist assistant turn to PostgreSQL durable ledger
