@@ -182,6 +182,10 @@ export const useWorkspaceWhatsAppController = ({
 
   const handleSendTemplate = async () => {
     if (!activeTemplate || !order) return;
+    if (!standardPhone) {
+      toast.error(isArabic ? 'رقم هاتف العميل غير متوفر' : 'Customer phone is required');
+      return;
+    }
     const missing = templateVarIndexes.filter((n) => !(templateVars[n] || '').trim());
     if (missing.length > 0) {
       toast.error(isArabic ? `املأ المتغيرات: {{${missing.join('}}, {{')}}}` : `Fill variables: {{${missing.join('}}, {{')}}}`);
@@ -234,6 +238,10 @@ export const useWorkspaceWhatsAppController = ({
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || !activeSession?.id || !order) return;
+    if (!standardPhone) {
+      toast.error(isArabic ? 'رقم هاتف العميل غير متوفر' : 'Customer phone is required');
+      return;
+    }
 
     setIsSending(true);
     const textToSend = messageText.trim();

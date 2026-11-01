@@ -62,12 +62,23 @@ async function apiCall(fn) {
     error.retryable = mapped.retryable;
     error.details = mapped.details;
     error.httpStatus = mapped.httpStatus;
+    error.statusCode = mapped.httpStatus || (mapped.code === 100 ? 400 : 500);
     error.originalError = err;
     throw error;
   }
 }
 
 async function postMessage(session, payload) {
+  if (payload && 'to' in payload) {
+    const recipient = String(payload.to || '').trim();
+    if (!recipient || recipient.length < 6) {
+      const err = new Error('رقم هاتف المستلم غير صحيح أو مفقود');
+      err.statusCode = 400;
+      err.code = 'WA_INVALID_RECIPIENT';
+      throw err;
+    }
+  }
+
   const { apiVersion, accessToken, phoneNumberId } = resolveConfig(session);
   const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
 
@@ -226,10 +237,18 @@ async function sendText(sessionId, to, text, options = {}) {
     throw new Error('Session not found');
   }
 
+  const normalizedPhone = normalizePhone(to);
+  if (!normalizedPhone || normalizedPhone.length < 6) {
+    const error = new Error('رقم هاتف المستلم غير صحيح أو مفقود ولا يمكن إرسال الرسالة إليه');
+    error.statusCode = 400;
+    error.code = 'WA_INVALID_RECIPIENT';
+    throw error;
+  }
+
   const payload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
-    to: normalizePhone(to),
+    to: normalizedPhone,
     type: 'text',
     text: {
       body: text,

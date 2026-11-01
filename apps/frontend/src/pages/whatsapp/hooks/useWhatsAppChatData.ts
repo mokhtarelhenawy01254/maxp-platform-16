@@ -294,7 +294,10 @@ export function useWhatsAppChatData() {
     api
       .get('/whatsapp/labels', { params: { sessionId: activeSessionId } })
       .then((res) => setLabels(res.data.labels || []))
-      .catch((err) => console.error('Error loading labels:', err));
+      .catch((err) => {
+        // Fallback gracefully without noisy console error if session labels are unavailable
+        setLabels([]);
+      });
   }, [activeSessionId]);
 
   // Catalog Products

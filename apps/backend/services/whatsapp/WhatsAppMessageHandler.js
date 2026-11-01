@@ -278,6 +278,13 @@ async function sendText(sessionId, to, text, options = {}) {
         const targetPhone = jid.split('@')[0];
 
         if (provider === 'META_CLOUD') {
+            const recipientPhone = targetPhone.replace(/\D/g, '');
+            if (!recipientPhone || recipientPhone.length < 6) {
+                const error = new Error('لا يمكن إرسال رسالة عبر Meta Cloud بدون رقم هاتف صالح للمستلم');
+                error.statusCode = 400;
+                error.code = 'WA_INVALID_RECIPIENT';
+                throw error;
+            }
             const result = await MetaCloudProvider.sendText(sessionId, targetPhone, text, {
                 previewUrl: options.previewUrl
             });

@@ -134,7 +134,13 @@ export function useWhatsAppChatActions({
   const handleSendMessage = useCallback(
     async (textToSend?: string) => {
       const text = typeof textToSend === 'string' ? textToSend : newMessage;
-      if (!text.trim() || !selectedContact || !selectedSession || sendMessageMutation.isPending) return;
+      const recipient = selectedContact?.jid || selectedContact?.phoneNumber;
+      if (!text.trim() || !selectedContact || !recipient || !selectedSession || sendMessageMutation.isPending) {
+        if (selectedContact && !recipient) {
+          tToast.error("whatsappChat.msg_1f79");
+        }
+        return;
+      }
 
       if (!user?.id) {
         tToast.error("whatsappChat.msg_18a1");
@@ -150,7 +156,7 @@ export function useWhatsAppChatActions({
       sendMessageMutation.mutate(
         {
           sessionId: targetSid,
-          to: selectedContact.jid,
+          to: recipient,
           text,
           quotedMessageId: replyingTo?.messageId,
           userId: user?.id,

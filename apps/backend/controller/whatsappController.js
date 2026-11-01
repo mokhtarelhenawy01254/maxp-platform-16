@@ -1580,8 +1580,14 @@ async function sendMessage(req, res) {
         const { companyId } = req.user;
         const { sessionId, to, text, quotedMessageId, contactId } = req.body;
 
-        if (!sessionId || !to || !text) {
-            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        let recipient = to;
+        if (recipient && typeof recipient === 'object') {
+            recipient = recipient.jid || recipient.phoneNumber || recipient.phone || recipient.number || recipient.id || '';
+        }
+        recipient = typeof recipient === 'string' ? recipient.trim() : '';
+
+        if (!sessionId || !recipient || !text || recipient === 'undefined' || recipient === 'null') {
+            return res.status(400).json({ error: 'البيانات غير مكتملة أو رقم المستلم غير صحيح', code: 'WA_INVALID_RECIPIENT' });
         }
 
         // Resolve virtual session ID with optional auto-failover for contacts
@@ -1595,7 +1601,7 @@ async function sendMessage(req, res) {
                 select: { provider: true }
             });
             if (sessionRecord?.provider === 'META_CLOUD') {
-                const jid = WhatsAppMessageHandler.formatJid(to);
+                const jid = WhatsAppMessageHandler.formatJid(recipient);
                 const contact = await getSharedPrismaClient().whatsAppContact.findUnique({
                     where: { sessionId_jid: { sessionId: targetSessionId, jid } },
                     select: { lastCustomerMessageAt: true }
@@ -1613,19 +1619,21 @@ async function sendMessage(req, res) {
             console.error('❌ Error checking 24h window:', windowErr.message);
         }
 
-        const message = await WhatsAppMessageHandler.sendText(targetSessionId, to, text, {
+        const message = await WhatsAppMessageHandler.sendText(targetSessionId, recipient, text, {
             quotedMessageId,
             senderId: req.body.userId || req.user?.userId,
             typingSimulation: true
         });
 
         // 🛡️ Auto-pause AI on human staff WhatsApp reply
-        pauseWhatsAppAiOnHumanReply(companyId, targetSessionId, to, req.body.userId || req.user?.userId || req.user?.id, req.user?.firstName);
+        pauseWhatsAppAiOnHumanReply(companyId, targetSessionId, recipient, req.body.userId || req.user?.userId || req.user?.id, req.user?.firstName);
 
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending message:', error);
-        const statusCode = error.code === 'WA_SESSION_NOT_READY' ? 409 : (error.statusCode || 500);
+        const statusCode = error.code === 'WA_SESSION_NOT_READY'
+            ? 409
+            : (error.statusCode || error.httpStatus || (error.code === 'WA_INVALID_RECIPIENT' || error.code === 'WA_UNRESOLVED_LID' ? 400 : 500));
         res.status(statusCode).json({
             error: error.message || 'حدث خطأ أثناء إرسال الرسالة',
             code: error.code || 'WA_SEND_ERROR',
@@ -4057,22 +4065,30 @@ async function getLabels(req, res) {
         const { companyId } = req.user;
         const { sessionId } = req.query;
 
-        if (!sessionId) {
-            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        let targetSession = null;
+        if (sessionId && sessionId !== 'all') {
+            targetSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId },
+                select: { id: true }
+            });
         }
 
-        // نتحقق من وجود الجلسة مباشرة (من غير ما نطلب أن تكون متصلة)
-        // لأن الـ labels متخزنة في الداتابيز وتظهر حتى لو الجلسة فصلت
-        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: sessionId, companyId },
-            select: { id: true }
-        });
-        if (!targetSessionId) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        if (!targetSession) {
+            // Fallback: search for active connected session for this company
+            targetSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId, status: 'CONNECTED' },
+                select: { id: true },
+                orderBy: { updatedAt: 'desc' }
+            });
         }
 
-        const labels = await WhatsAppManager.getLabels(targetSessionId.id);
-        res.json({ success: true, labels });
+        if (!targetSession) {
+            // Graceful fallback: return empty labels list instead of hard 404
+            return res.json({ success: true, labels: [] });
+        }
+
+        const labels = await WhatsAppManager.getLabels(targetSession.id);
+        res.json({ success: true, labels: labels || [] });
     } catch (error) {
         console.error('❌ Error getting labels:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات', detail: error?.message });
@@ -4249,17 +4265,27 @@ async function getLabelContacts(req, res) {
         const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 500);
         const search = (req.query.search || '').trim();
 
-        if (!sessionId || !labelId) {
+        if (!labelId) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        // نتحقق من وجود الجلسة مباشرة (الـ labels موجودة حتى لو الجلسة مش متصلة)
-        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: sessionId, companyId },
-            select: { id: true }
-        });
+        // نتحقق من وجود الجلسة مباشرة مع fallback آمن للجلسة المتصلة
+        let targetSessionId = null;
+        if (sessionId && sessionId !== 'all') {
+            targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId },
+                select: { id: true }
+            });
+        }
         if (!targetSessionId) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId, status: 'CONNECTED' },
+                select: { id: true },
+                orderBy: { updatedAt: 'desc' }
+            });
+        }
+        if (!targetSessionId) {
+            return res.json({ success: true, contacts: [], total: 0, page, totalPages: 0 });
         }
 
         const result = await WhatsAppManager.getLabelContacts(targetSessionId.id, labelId, { page, limit, search });
