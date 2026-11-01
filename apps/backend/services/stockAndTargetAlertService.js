@@ -36,18 +36,26 @@ class StockAndTargetAlertService {
 
   async updateLedgerStatus(alertKey, status, extra = {}) {
     try {
-      await sharedDb.safeQuery((prisma) =>
-        prisma.aiRuntimeLedger.update({
-          where: { idempotencyKey: alertKey },
-          data: {
-            status,
-            completedAt: status === "COMPLETED" ? new Date() : null,
-            ...extra,
-          },
-        }),
-      );
+      await sharedDb.safeQuery(async (prisma) => {
+        try {
+          return await prisma.aiRuntimeLedger.update({
+            where: { idempotencyKey: alertKey },
+            data: {
+              status,
+              completedAt: status === "COMPLETED" ? new Date() : null,
+              ...extra,
+            },
+          });
+        } catch (err) {
+          // If record doesn't exist (e.g. force execution without prior claim), safely ignore
+          if (err.code === "P2025") return null;
+          throw err;
+        }
+      });
     } catch (e) {
-      console.warn(`⚠️ [StockAndTargetAlertService] Failed to update ledger status for ${alertKey}:`, e.message);
+      if (e.code !== "P2025") {
+        console.warn(`⚠️ [StockAndTargetAlertService] Failed to update ledger status for ${alertKey}:`, e.message);
+      }
     }
   }
 
@@ -944,7 +952,9 @@ class StockAndTargetAlertService {
         lowStockCount: newLowItems.length,
         dryRun: true,
       });
-      await this.updateLedgerStatus(alertKey, "COMPLETED");
+      if (!force) {
+        await this.updateLedgerStatus(alertKey, "COMPLETED");
+      }
       await this._persistTargetMeta(company.id, {
         last_daily_report_date: todayDateKey,
         notified_stock_today: updatedNotifiedStock,
@@ -979,7 +989,9 @@ class StockAndTargetAlertService {
       lowStockCount: newLowItems.length,
     });
 
-    await this.updateLedgerStatus(alertKey, deliveredWhatsApp || deliveredNotification ? "COMPLETED" : "FAILED");
+    if (!force) {
+      await this.updateLedgerStatus(alertKey, deliveredWhatsApp || deliveredNotification ? "COMPLETED" : "FAILED");
+    }
 
     // Atomically persist meta to guarantee per-product daily deduplication
     await this._persistTargetMeta(company.id, {
@@ -1039,8 +1051,7 @@ class StockAndTargetAlertService {
               type: "STOCK_TARGET_DAILY_REPORT",
               title: "تقرير المتابعة والأهداف اليومي",
               message,
-              severity: "info",
-              read: false,
+              isRead: false,
             },
           });
         }
