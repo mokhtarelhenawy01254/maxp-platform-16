@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../services/apiClient';
+import { pickInitialSessionId } from './pickInitialSessionId';
 import type { CopilotMessage, CopilotSession } from './types';
 
 export interface LoadHistoryResult {
@@ -44,16 +45,16 @@ export function useCopilotCloudSessions(
           id: String(s.id),
           title: s.title || 'محادثة سابقة',
           updatedAt: s.updatedAt || new Date().toISOString(),
+          messageCount: Array.isArray(s.messages) ? s.messages.length : (typeof s.messageCount === 'number' ? s.messageCount : 0),
         }));
 
         setSessions(mappedList);
         setSessionsError(null);
 
-        // Only default to first session if no active session is selected and no target was specified
-        if (!activeSessionIdRef.current && !targetInitialSessionIdRef.current && mappedList.length > 0) {
-          setActiveSessionId(String(mappedList[0].id));
-        } else if (mappedList.length === 0 && !targetInitialSessionIdRef.current) {
-          setActiveSessionId('');
+        // ?session= صريح → الجلسة دي · مفيش → أحدث جلسة فيها رسائل (مش جلسة فاضية)
+        if (!targetInitialSessionIdRef.current) {
+          const picked = pickInitialSessionId({ sessions: mappedList });
+          setActiveSessionId(picked);
         }
       } else {
         setSessions([]);

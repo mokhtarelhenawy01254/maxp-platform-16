@@ -50,6 +50,7 @@ export interface CopilotSession {
   createdAt?: string;
   updatedAt: string;
   messages?: CopilotMessage[];
+  messageCount?: number;
 }
 
 export interface QuickPrompt {
