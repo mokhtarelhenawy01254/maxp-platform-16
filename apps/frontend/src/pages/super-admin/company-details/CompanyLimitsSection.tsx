@@ -4,49 +4,9 @@ import { Badge } from "../../../components/ui/badge";
 import { MiniStat } from "./MiniStat";
 import { SectionShell } from "./SectionShell";
 import { UsageBar, getUsageTone } from "./UsageBar";
-import { formatNumber, formatLimit } from "./helpers";
+import { formatNumber, formatLimit, getMetricDetails } from "./helpers";
 
 type LimitEntry = NonNullable<NonNullable<CompanyReview["limits"]>["entries"]>[number];
-
-function getMetricDetails(entry: LimitEntry) {
-  const currentFormatted = formatNumber(entry.current);
-  const limitFormatted = formatLimit(entry.limit);
-  const remainingFormatted = entry.isUnlimited ? "غير محدود" : formatNumber(entry.remaining);
-  const pct = Math.round(entry.percentage);
-
-  switch (entry.key) {
-    case "users":
-      return {
-        detail: `الأعضاء النشطون: ${currentFormatted} عضو من أصل ${limitFormatted}`,
-        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة الفريق`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} مقعد`}`,
-      };
-    case "products":
-      return {
-        detail: `المنتجات المضافة: ${currentFormatted} منتج من أصل ${limitFormatted}`,
-        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من الحد المسموح`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} منتج`}`,
-      };
-    case "orders":
-      return {
-        detail: `طلبات هذا الشهر: ${currentFormatted} طلب من أصل ${limitFormatted}`,
-        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من حصة الشهر`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} طلب`}`,
-      };
-    case "customers":
-      return {
-        detail: `العملاء المسجلون: ${currentFormatted} عميل من أصل ${limitFormatted}`,
-        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة العملاء`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} عميل`}`,
-      };
-    default:
-      return {
-        detail: `الاستهلاك الحالي: ${currentFormatted} من أصل ${limitFormatted}`,
-        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% مستهلك`,
-        remainingText: `المتبقي: ${remainingFormatted}`,
-      };
-  }
-}
 
 export function CompanyLimitsSection({ review, limitEntries }: {
   review?: CompanyReview | null;

@@ -78,6 +78,55 @@ export function formatLimit(limit: unknown): string {
   return formatNumber(limit);
 }
 
+export interface MetricEntryLike {
+  key?: string;
+  current?: number;
+  limit?: number;
+  percentage?: number;
+  remaining?: number;
+  isUnlimited?: boolean;
+}
+
+export function getMetricDetails(entry: MetricEntryLike) {
+  const currentFormatted = formatNumber(entry.current);
+  const limitFormatted = formatLimit(entry.limit);
+  const remainingFormatted = entry.isUnlimited ? "غير محدود" : formatNumber(entry.remaining);
+  const pct = Math.round(Number(entry.percentage) || 0);
+
+  switch (entry.key) {
+    case "users":
+      return {
+        detail: `الأعضاء النشطون: ${currentFormatted} عضو من أصل ${limitFormatted}`,
+        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة الفريق`,
+        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} مقعد`}`,
+      };
+    case "products":
+      return {
+        detail: `المنتجات المضافة: ${currentFormatted} منتج من أصل ${limitFormatted}`,
+        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من الحد المسموح`,
+        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} منتج`}`,
+      };
+    case "orders":
+      return {
+        detail: `طلبات هذا الشهر: ${currentFormatted} طلب من أصل ${limitFormatted}`,
+        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من حصة الشهر`,
+        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} طلب`}`,
+      };
+    case "customers":
+      return {
+        detail: `العملاء المسجلون: ${currentFormatted} عميل من أصل ${limitFormatted}`,
+        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة العملاء`,
+        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} عميل`}`,
+      };
+    default:
+      return {
+        detail: `الاستهلاك الحالي: ${currentFormatted} من أصل ${limitFormatted}`,
+        percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% مستهلك`,
+        remainingText: `المتبقي: ${remainingFormatted}`,
+      };
+  }
+}
+
 export function normalizeWebsite(website: string | null | undefined): string | null {
   if (!website) return null;
   if (/^https?:\/\//i.test(website)) return website;
@@ -331,6 +380,20 @@ export function formatActivityTimeline(entry: any): { actionText: string; detail
     return {
       actionText: "شحن رصيد المحفظة",
       detailText: desc.replace(/(POST|GET)\s+\S+/gi, "").trim() || "إيداع رصيد مالي في محفظة الشركة",
+    };
+  }
+
+  // 3.5. Company Suspension / Activation
+  if (action.includes("SUSPEND") || desc.toLowerCase().includes("suspended") || desc.includes("إيقاف")) {
+    return {
+      actionText: "إيقاف نشاط الشركة",
+      detailText: desc.replace(/(POST|GET|PUT)\s+\S+/gi, "").trim() || "تم إيقاف حساب الشركة وتجميد صلاحيات الدخول",
+    };
+  }
+  if (action.includes("ACTIVATE") || desc.toLowerCase().includes("activated") || desc.includes("تفعيل الشركة")) {
+    return {
+      actionText: "تفعيل نشاط الشركة",
+      detailText: "تم إعادة تنشيط الشركة وفتح الصلاحيات",
     };
   }
 

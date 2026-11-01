@@ -61,7 +61,7 @@ const statusMap: Record<string, Record<string, { label: string; severity: string
     CRITICAL: { label: "حرج", severity: "danger" },
     HIGH: { label: "مرتفع", severity: "warning" },
     MEDIUM: { label: "متوسط", severity: "info" },
-    LOW: { label: "عادي", severity: "neutral" },
+    LOW: { label: "منخفض", severity: "neutral" },
   },
   company: {
     ACTIVE: { label: "نشطة", severity: "success" },
@@ -73,6 +73,10 @@ const statusMap: Record<string, Record<string, { label: string; severity: string
     CONNECTED: { label: "متصلة", severity: "success" },
     DISCONNECTED: { label: "غير متصلة", severity: "danger" },
     EXPIRED: { label: "منتهية", severity: "warning" },
+    WHATSAPP: { label: "واتساب", severity: "success" },
+    FACEBOOK: { label: "فيسبوك", severity: "info" },
+    INSTAGRAM: { label: "انستغرام", severity: "warning" },
+    TELEGRAM: { label: "تيليجرام", severity: "blue" },
   },
   pricingModel: {
     FREE: { label: "مجاني", severity: "neutral" },

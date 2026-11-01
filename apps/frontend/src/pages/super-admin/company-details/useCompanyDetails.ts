@@ -7,7 +7,7 @@ import i18n from "../../../i18n";
 import { tToast } from "../../../utils/i18n-toast";
 import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
 import type { ElementType } from "react";
-import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry } from "./companyDetailsTypes";
+import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry, UnifiedKpiStats } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";
 import { tokenManager } from "../../../utils/tokenManager";
 import {
@@ -83,7 +83,8 @@ interface UseCompanyDetailsReturn {
   reviewCurrency: string; limitEntries: NonNullable<CompanyReview['limits']>['entries']; nextBillingDate: string | null;
   scrollToActivationSection: () => void; reviewAlerts: ReviewAlert[]; detailMetrics: Metric[]; financialMetrics: Metric[]; ownerUser: CompanyUser | null;
   refreshCompanyWorkspace: (opts?: { background?: boolean }) => Promise<void>; refreshing: boolean;
-  openTopUpModal: () => void; openEditModal: () => void; handleLoginAsAdmin: () => Promise<void>;
+  openTopUpModal: () => void; openEditModal: () => void; handleLoginAsAdmin: (reason?: string) => Promise<void>;
+  impersonating: boolean; unifiedKpiStats: UnifiedKpiStats;
   bundleAction: string; appAction: string; installAllLoading: boolean; activationLoading: boolean; activationError: string;
   orderedCatalogApps: any[]; resolvedBundles: any[]; appNameBySlug: Map<string, string>;
   handleInstallApp: (app: any) => Promise<void>; handleSubscribeBundle: (bundleSlug: string) => Promise<void>;
@@ -127,6 +128,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [refreshing, setRefreshing] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [pagesLoading, setPagesLoading] = useState(false);
+  const [impersonating, setImpersonating] = useState(false);
   const [error, setError] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
@@ -348,10 +350,15 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     finally { setTransferLoading(false); }
   };
 
-  const handleLoginAsAdmin = async (): Promise<void> => {
+  const handleLoginAsAdmin = async (reason?: string): Promise<void> => {
     if (!companyId) return;
     try {
-      const response: any = await apiClient.post(`/admin/companies/${companyId}/login-as-admin`, {}, getCompanyScopedRequestConfig());
+      setImpersonating(true);
+      const response: any = await apiClient.post(
+        `/admin/companies/${companyId}/login-as-admin`,
+        { reason: reason || "" },
+        getCompanyScopedRequestConfig()
+      );
       if (response.data?.success) {
         const currentSuperToken = tokenManager.getAccessToken();
         if (currentSuperToken) localStorage.setItem("superAuth", currentSuperToken);
@@ -359,10 +366,15 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         if (currentUser) localStorage.setItem("superUser", currentUser);
         tokenManager.setAccessToken(response.data.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.data.user));
-        window.location.href = "/company-dashboard"; return;
+        window.location.href = "/company-dashboard";
+        return;
       }
       toast.error(response.data?.message || "فشل في تسجيل الدخول كمدير الشركة");
-    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تسجيل الدخول كمدير الشركة")); }
+    } catch (nextError) {
+      toast.error(extractErrorMessage(nextError, "فشل في تسجيل الدخول كمدير الشركة"));
+    } finally {
+      setImpersonating(false);
+    }
   };
 
   const scrollToActivationSection = (): void => {
