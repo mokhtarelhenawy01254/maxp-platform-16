@@ -257,9 +257,9 @@ const OrderSettings: React.FC = () => {
   ];
 
   return (
-    <div className="order-settings-root h-full min-h-0 overflow-y-auto bg-background text-foreground" dir="rtl">
+    <div className="order-settings-root flex flex-col h-full min-h-0 overflow-hidden bg-background text-foreground" dir="rtl">
       {/* Header Chassis */}
-      <div className="border-b border-border/70 bg-card">
+      <div className="shrink-0 border-b border-border/70 bg-card">
         <div className="w-full px-4 sm:px-6 py-3.5">
           <div className="flex items-center gap-3">
             <button
@@ -285,11 +285,11 @@ const OrderSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 py-5">
-        <div className="flex flex-col gap-5 lg:flex-row">
+      <div className="flex-1 min-h-0 overflow-hidden w-full px-4 sm:px-6 py-5">
+        <div className="flex flex-col gap-5 lg:flex-row h-full min-h-0">
           {/* Sidebar Tabs */}
-          <div className="lg:w-60 shrink-0">
-            <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-6rem)] lg:flex-col">
+          <div className="lg:w-60 shrink-0 flex flex-col max-h-full">
+            <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs flex flex-col max-h-full">
               <div className="hidden border-b border-border/60 p-3 shrink-0 lg:block">
                 <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground font-mono">
                   {t('orderSettings.k_140')}
@@ -297,7 +297,7 @@ const OrderSettings: React.FC = () => {
               </div>
               <nav
                 aria-label={t('orderSettings.k_140')}
-                className="flex gap-1 overflow-x-auto p-1.5 no-scrollbar lg:flex-col lg:overflow-y-auto"
+                className="flex gap-1 overflow-x-auto p-1.5 no-scrollbar lg:flex-col lg:overflow-y-auto lg:min-h-0"
               >
                 {tabs.map((tab) => (
                   <button
@@ -328,7 +328,7 @@ const OrderSettings: React.FC = () => {
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto px-1 pb-12">
             {activeTab === "status" && <OrderStatusManager />}
             {activeTab === "minimum" && <MinimumOrderSettings />}
             {activeTab === "scheduled" && <ScheduledOrderSettings />}
