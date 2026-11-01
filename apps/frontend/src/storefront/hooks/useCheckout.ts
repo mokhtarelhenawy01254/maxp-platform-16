@@ -172,20 +172,43 @@ export const buildCheckoutOrderPayload = (
     ...(data.walletProof && data.walletProof.imageUrl ? { walletProof: data.walletProof } : {}),
     notes: data.notes || undefined,
     items: items.map((item) => {
-      const resolvedColor =
+      const itemAttrs = (item.attributes && typeof item.attributes === 'object') ? item.attributes : {};
+      let resolvedColor =
         item.productColor ||
-        item.attributes?.Color ||
-        item.attributes?.["اللون"] ||
-        item.attributes?.["لون"] ||
-        item.attributes?.color ||
+        (item as any).color ||
+        itemAttrs.Color ||
+        itemAttrs['اللون'] ||
+        itemAttrs['لون'] ||
+        itemAttrs['ألوان'] ||
+        itemAttrs['الوان'] ||
+        itemAttrs['الألوان'] ||
+        itemAttrs.color ||
         undefined;
-      const resolvedSize =
+      let resolvedSize =
         item.productSize ||
-        item.attributes?.Size ||
-        item.attributes?.["المقاس"] ||
-        item.attributes?.["مقاس"] ||
-        item.attributes?.size ||
+        (item as any).size ||
+        itemAttrs.Size ||
+        itemAttrs['المقاس'] ||
+        itemAttrs['مقاس'] ||
+        itemAttrs['المقاسات'] ||
+        itemAttrs['مقاسات'] ||
+        itemAttrs['حجم'] ||
+        itemAttrs['الحجم'] ||
+        itemAttrs['الأحجام'] ||
+        itemAttrs.size ||
         undefined;
+
+      const variantName = (item as any).variantName || (item.name?.includes(' - ') ? item.name : '');
+      if ((!resolvedColor || !resolvedSize) && variantName) {
+        const parts = variantName.split(/\s*[-–|\/]\s*/).map((p: string) => p.trim()).filter(Boolean);
+        const looksLikeSizeVal = (v: string) => /^(?:xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl|4xl|5xl|free|onesize|\d{1,3}(?:\.\d+)?)$/i.test(v);
+        if (parts.length >= 2) {
+          if (!resolvedSize && looksLikeSizeVal(parts[parts.length - 1])) resolvedSize = parts[parts.length - 1];
+          if (!resolvedColor && !looksLikeSizeVal(parts[0])) resolvedColor = parts[0];
+          if (!resolvedSize && looksLikeSizeVal(parts[0])) resolvedSize = parts[0];
+          if (!resolvedColor && !looksLikeSizeVal(parts[parts.length - 1])) resolvedColor = parts[parts.length - 1];
+        }
+      }
 
       return {
         productId: item.productId,

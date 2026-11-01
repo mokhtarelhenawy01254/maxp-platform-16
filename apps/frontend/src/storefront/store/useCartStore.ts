@@ -134,17 +134,45 @@ export const useCartStore = create<CartState>()(
             return { items: newItems, isOpen: shouldOpenCart };
           } else {
             // Add new item
-            let normalizedImageUrl = newItemInput.imageUrl;
-            if (newItemInput.imageUrl) {
+            let normalizedImageUrl = newItemInput.imageUrl || (newItemInput as any).image;
+            if (normalizedImageUrl) {
               normalizedImageUrl = normalizeCartImageUrl(
-                newItemInput.imageUrl as string | ImageLike,
+                normalizedImageUrl as string | ImageLike,
               );
             }
+
+            const rawAttrs = newItemInput.attributes || {};
+            const resolvedColor =
+              newItemInput.productColor ||
+              (newItemInput as any).color ||
+              rawAttrs.Color ||
+              rawAttrs["اللون"] ||
+              rawAttrs["لون"] ||
+              rawAttrs["ألوان"] ||
+              rawAttrs["الوان"] ||
+              rawAttrs["الألوان"] ||
+              rawAttrs.color ||
+              undefined;
+            const resolvedSize =
+              newItemInput.productSize ||
+              (newItemInput as any).size ||
+              rawAttrs.Size ||
+              rawAttrs["المقاس"] ||
+              rawAttrs["مقاس"] ||
+              rawAttrs["المقاسات"] ||
+              rawAttrs["مقاسات"] ||
+              rawAttrs["حجم"] ||
+              rawAttrs["الحجم"] ||
+              rawAttrs["الأحجام"] ||
+              rawAttrs.size ||
+              undefined;
 
             const newItem: CartItem = {
               ...newItemInput,
               basePrice: newItemInput.basePrice ?? newItemInput.price,
               imageUrl: normalizedImageUrl,
+              ...(resolvedColor ? { productColor: resolvedColor } : {}),
+              ...(resolvedSize ? { productSize: resolvedSize } : {}),
               id: itemId,
             };
             return { items: [newItem, ...state.items], isOpen: shouldOpenCart };

@@ -194,6 +194,7 @@ async function resolveCheckoutPricing({
   company: inputCompany = null,
   appliedAdminDiscount,
   markVoucherUsed = false,
+  clientExplicitShipping = false,
 } = {}) {
   let prisma = customPrisma;
   if (!prisma) {
@@ -246,7 +247,7 @@ async function resolveCheckoutPricing({
       appliedShippingCost: 0,
     };
     shippingCost = 0;
-  } else if (prisma && companyId && shippingCost > 0) {
+  } else if (prisma && companyId && shippingCost > 0 && !clientExplicitShipping) {
     try {
       const { getConversionSuiteFreeShippingPromotion } = require('./storefrontFreeShipping');
       const conv = await getConversionSuiteFreeShippingPromotion(prisma, companyId, subtotal);

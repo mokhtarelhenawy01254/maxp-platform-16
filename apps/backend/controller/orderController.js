@@ -151,7 +151,11 @@ const getAllOrders = async (req, res) => {
       customerName: order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'عميل غير محدد',
       customerPhone: order.customerPhone || order.customer?.phone || '',
       customerEmail: order.customerEmail || '',
-      total: order.total,
+      subtotal: parseFloat(order.subtotal ?? 0),
+      shipping: parseFloat(order.shipping ?? 0),
+      shippingCost: parseFloat(order.shipping ?? 0),
+      shippingAmount: parseFloat(order.shipping ?? 0),
+      total: parseFloat(order.total ?? 0),
       status: (order.status || 'PENDING').toLowerCase(),
       paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
       createdAt: order.createdAt,
@@ -171,7 +175,13 @@ const getAllOrders = async (req, res) => {
         );
         return {
           id: item.id,
+          productId: item.productId,
+          variantId: item.variantId || null,
           name: item.productName || item.product?.name || 'منتج غير محدد',
+          productColor: item.productColor || null,
+          color: item.productColor || null,
+          productSize: item.productSize || null,
+          size: item.productSize || null,
           price: item.price,
           quantity: item.quantity,
           isPostPurchaseOffer: isOffer
@@ -199,6 +209,10 @@ const getAllOrders = async (req, res) => {
         customerName: order.guestName || 'عميل زائر',
         customerPhone: order.guestPhone || '',
         customerEmail: order.guestEmail || '',
+        subtotal: parseFloat(order.total || 0),
+        shipping: parseFloat(order.shippingCost || 0),
+        shippingCost: parseFloat(order.shippingCost || 0),
+        shippingAmount: parseFloat(order.shippingCost || 0),
         total: order.finalTotal ? parseFloat(order.finalTotal) : parseFloat(order.total || 0),
         status: (order.status || 'PENDING').toLowerCase(),
         paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
@@ -206,7 +220,13 @@ const getAllOrders = async (req, res) => {
         hasPostPurchaseOffer: hasOffer,
         items: (Array.isArray(items) ? items : []).map(item => ({
           id: item.id || item.productId || '',
+          productId: item.productId,
+          variantId: item.variantId || null,
           name: item.name || item.productName || 'منتج غير محدد',
+          productColor: item.productColor || item.color || null,
+          color: item.productColor || item.color || null,
+          productSize: item.productSize || item.size || null,
+          size: item.productSize || item.size || null,
           price: item.price || 0,
           quantity: item.quantity || 1,
           isPostPurchaseOffer: Boolean(item.isPostPurchaseOffer || item.addedPostPurchase)
@@ -566,13 +586,25 @@ const getOneOrder = async (req, res) => {
           items = [];
         }
 
+        const guestShipping = parseFloat(guestOrder.shippingCost ?? 0);
+        const guestSubtotal = parseFloat(guestOrder.total ?? 0);
+        const guestTotal = guestOrder.finalTotal ? parseFloat(guestOrder.finalTotal) : guestSubtotal + guestShipping;
+        const guestDiscount = parseFloat(guestOrder.discountAmount ?? 0);
+
         order = {
           id: guestOrder.id,
           orderNumber: guestOrder.orderNumber,
           customerName: guestOrder.guestName || 'عميل زائر',
           customerPhone: guestOrder.guestPhone || '',
           customerEmail: guestOrder.guestEmail || '',
-          total: guestOrder.finalTotal ? parseFloat(guestOrder.finalTotal) : parseFloat(guestOrder.total || 0),
+          subtotal: guestSubtotal,
+          shipping: guestShipping,
+          shippingCost: guestShipping,
+          shippingAmount: guestShipping,
+          discount: guestDiscount,
+          discountAmount: guestDiscount,
+          total: guestTotal,
+          finalTotal: guestTotal,
           status: guestOrder.status,
           paymentStatus: guestOrder.paymentStatus,
           paymentMethod: guestOrder.paymentMethod,
@@ -593,11 +625,17 @@ const getOneOrder = async (req, res) => {
           orderItems: (Array.isArray(items) ? items : []).map(item => {
             const isOffer = Boolean(item.isPostPurchaseOffer || item.addedPostPurchase || (item.metadata && (item.metadata.isPostPurchaseOffer || item.metadata.addedPostPurchase)));
             const origPrice = item.originalPrice || item.metadata?.originalPrice || null;
+            const c = item.productColor || item.color || null;
+            const s = item.productSize || item.size || null;
             return {
               id: item.id || item.productId || '',
+              productId: item.productId,
+              variantId: item.variantId || null,
               productName: item.name || item.productName || 'منتج غير محدد',
-              productColor: item.productColor || item.color || null,
-              productSize: item.productSize || item.size || null,
+              productColor: c,
+              color: c,
+              productSize: s,
+              size: s,
               price: item.price || 0,
               quantity: item.quantity || 1,
               isPostPurchaseOffer: isOffer,
@@ -608,8 +646,8 @@ const getOneOrder = async (req, res) => {
                 isPostPurchaseOffer: isOffer,
                 addedPostPurchase: Boolean(item.addedPostPurchase),
                 originalPrice: origPrice,
-                color: item.productColor || item.color || null,
-                size: item.productSize || item.size || null
+                color: c,
+                size: s
               },
               product: { name: item.name || item.productName || 'منتج غير محدد' }
             };
@@ -622,7 +660,35 @@ const getOneOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
     }
 
-    res.json({ success: true, data: order });
+    const normalizedShipping = parseFloat(order.shipping ?? order.shippingCost ?? 0);
+    const normalizedSubtotal = parseFloat(order.subtotal ?? order.total ?? 0);
+    const normalizedTotal = parseFloat(order.total ?? order.finalTotal ?? 0);
+    const normalizedDiscount = parseFloat(order.discount ?? order.discountAmount ?? 0);
+
+    const safeOrder = {
+      ...order,
+      subtotal: normalizedSubtotal,
+      shipping: normalizedShipping,
+      shippingCost: normalizedShipping,
+      shippingAmount: normalizedShipping,
+      discount: normalizedDiscount,
+      discountAmount: normalizedDiscount,
+      total: normalizedTotal,
+      finalTotal: normalizedTotal,
+      orderItems: (order.orderItems || []).map(item => {
+        const c = item.productColor || item.color || null;
+        const s = item.productSize || item.size || null;
+        return {
+          ...item,
+          productColor: c,
+          color: c,
+          productSize: s,
+          size: s,
+        };
+      })
+    };
+
+    res.json({ success: true, data: safeOrder });
   } catch (error) {
     console.error('❌ [ORDER-CONTROLLER] Error in getOneOrder:', error);
     res.status(500).json({ success: false, error: 'خطأ في جلب بيانات الطلب' });

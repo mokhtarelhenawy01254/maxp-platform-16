@@ -718,8 +718,10 @@ function buildTrackedOrderItem(item) {
     variantId: item?.variantId || null,
     quantity: item?.quantity,
     price: item?.price,
-    productColor: (item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان'])) ? String(item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان'])) : null,
-    productSize: (item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم'])) != null ? String(item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم'])) : null,
+    productColor: (item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان', 'الألوان'])) ? String(item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان', 'الألوان'])) : null,
+    color: (item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان', 'الألوان'])) ? String(item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان', 'الألوان'])) : null,
+    productSize: (item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام'])) != null ? String(item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام'])) : null,
+    size: (item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام'])) != null ? String(item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام'])) : null,
     image: productImage,
     imageUrl: productImage,
     attributes,
@@ -1012,12 +1014,14 @@ router.post('/', async (req, res) => {
         const normArabic = (s) => String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim().toLowerCase();
         const itemColor = (
           item.productColor ||
-          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون']) ||
+          item.color ||
+          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان', 'الألوان']) ||
           ''
         ).trim().toLowerCase();
         const itemSize = (
           item.productSize ||
-          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس']) ||
+          item.size ||
+          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام']) ||
           ''
         ).trim().toLowerCase();
 
@@ -1110,12 +1114,12 @@ router.post('/', async (req, res) => {
         let color =
           item.productColor ||
           item.color ||
-          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان']) ||
+          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان', 'الألوان']) ||
           variant.color;
         let size =
           item.productSize ||
           item.size ||
-          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام']) ||
           variant.size;
 
         // 1. Try metadata (checking both direct keys and attributeValues, case-insensitive)
@@ -1126,13 +1130,13 @@ router.post('/', async (req, res) => {
               const metaAttrs = meta.attributeValues || meta;
               if (!color) {
                 color =
-                  getAttributeValue(metaAttrs, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان']) ||
+                  getAttributeValue(metaAttrs, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان', 'الألوان']) ||
                   meta.color ||
                   meta.Color;
               }
               if (!size) {
                 size =
-                  getAttributeValue(metaAttrs, ['المقاس', 'size', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+                  getAttributeValue(metaAttrs, ['المقاس', 'size', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام']) ||
                   meta.size ||
                   meta.Size;
               }
@@ -1361,6 +1365,16 @@ router.post('/', async (req, res) => {
 
       matchingZone = shippingQuote.zone;
       shippingCost = Number(shippingQuote.price) || 0;
+    }
+
+    const hasExplicitClientShipping =
+      req.body?.shippingCost !== undefined &&
+      req.body?.shippingCost !== null &&
+      Number.isFinite(Number(req.body.shippingCost)) &&
+      Number(req.body.shippingCost) >= 0;
+    const clientShippingCost = hasExplicitClientShipping ? Number(req.body.shippingCost) : null;
+    if (clientShippingCost !== null && clientShippingCost > 0) {
+      shippingCost = clientShippingCost;
 
       if (matchingZone) {
         console.log(
@@ -1433,6 +1447,7 @@ router.post('/', async (req, res) => {
         ? Number(req.body.discountAmount) || 0
         : undefined,
       markVoucherUsed: true,
+      clientExplicitShipping: Boolean(hasExplicitClientShipping && clientShippingCost > 0),
     });
 
     let freeShippingAdjustment = pricing.freeShippingAdjustment;
@@ -1748,28 +1763,33 @@ router.post('/', async (req, res) => {
       let productColor =
         item.productColor ||
         item.color ||
-        getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان']) ||
+        getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان', 'الألوان']) ||
         null;
       let productSize =
         item.productSize ||
         item.size ||
-        getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+        getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس', 'المقاسات', 'مقاسات', 'حجم', 'الحجم', 'الأحجام']) ||
         null;
 
       if ((!productColor || !productSize) && item.variantId) {
         const matchedVariant = product?.productVariants?.find(v => v.id === item.variantId);
         if (matchedVariant) {
           const vAttrs = resolveVariantAttributes(matchedVariant);
-          if (!productColor) productColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
-          if (!productSize) productSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
-          if (!productColor && !productSize && matchedVariant.name) {
-            if (matchedVariant.type === 'color') productColor = matchedVariant.name;
-            else if (matchedVariant.type === 'size') productSize = matchedVariant.name;
+          if (!productColor) productColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || vAttrs.لون || matchedVariant.color || null;
+          if (!productSize) productSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || vAttrs.مقاس || vAttrs.المقاسات || vAttrs.مقاسات || vAttrs.حجم || vAttrs.الحجم || matchedVariant.size || null;
+          if ((!productColor || !productSize) && matchedVariant.name) {
+            if (!productColor && matchedVariant.type === 'color') productColor = matchedVariant.name;
+            else if (!productSize && matchedVariant.type === 'size') productSize = matchedVariant.name;
             else {
-              const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/);
+              const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/).map(p => p.trim()).filter(Boolean);
               if (parts.length >= 2) {
-                productColor = parts[0];
-                productSize = parts[1];
+                if (!productSize && looksLikeSizeValue(parts[parts.length - 1])) productSize = parts[parts.length - 1];
+                if (!productColor && !looksLikeSizeValue(parts[0])) productColor = parts[0];
+                if (!productSize && looksLikeSizeValue(parts[0])) productSize = parts[0];
+                if (!productColor && !looksLikeSizeValue(parts[parts.length - 1])) productColor = parts[parts.length - 1];
+              } else if (parts.length === 1) {
+                if (!productSize && looksLikeSizeValue(parts[0])) productSize = parts[0];
+                else if (!productColor) productColor = parts[0];
               }
             }
           }
@@ -3516,15 +3536,25 @@ router.get('/:id', async (req, res) => {
       });
 
       if (primaryOrder && phoneMatchesGuest(phone, primaryOrder.customerPhone || primaryOrder.customer?.phone)) {
+        const orderShippingNum = parseFloat(primaryOrder.shipping ?? 0);
+        const orderSubtotalNum = parseFloat(primaryOrder.subtotal ?? 0);
+        const orderTotalNum = parseFloat(primaryOrder.total ?? 0);
+        const orderDiscountNum = parseFloat(primaryOrder.discount ?? 0);
         order = {
           ...primaryOrder,
           guestName: primaryOrder.customer?.name || primaryOrder.customerName,
           guestPhone: primaryOrder.customerPhone || primaryOrder.customer?.phone,
           guestEmail: primaryOrder.customerEmail || primaryOrder.customer?.email,
           items: JSON.stringify(primaryOrder.orderItems?.map(buildTrackedOrderItem) || []),
-          finalTotal: primaryOrder.total,
-          shippingCost: primaryOrder.shipping,
-          discountAmount: primaryOrder.discount
+          orderItems: primaryOrder.orderItems?.map(buildTrackedOrderItem) || [],
+          subtotal: orderSubtotalNum,
+          shipping: orderShippingNum,
+          shippingCost: orderShippingNum,
+          shippingAmount: orderShippingNum,
+          total: orderTotalNum,
+          finalTotal: orderTotalNum,
+          discount: orderDiscountNum,
+          discountAmount: orderDiscountNum
         };
       }
     }
@@ -3538,7 +3568,23 @@ router.get('/:id', async (req, res) => {
     }
 
     console.log('✅ [GET-ORDER] Order found:', order.orderNumber);
-    res.json({ success: true, data: order });
+    const normalizedShipping = parseFloat(order.shippingCost ?? order.shipping ?? 0);
+    const normalizedSubtotal = parseFloat(order.subtotal ?? order.total ?? 0);
+    const normalizedTotal = parseFloat(order.finalTotal ?? order.total ?? 0);
+    const normalizedDiscount = parseFloat(order.discountAmount ?? order.discount ?? 0);
+
+    const safeOrder = {
+      ...order,
+      shipping: normalizedShipping,
+      shippingCost: normalizedShipping,
+      shippingAmount: normalizedShipping,
+      subtotal: normalizedSubtotal,
+      total: normalizedTotal,
+      finalTotal: normalizedTotal,
+      discount: normalizedDiscount,
+      discountAmount: normalizedDiscount,
+    };
+    res.json({ success: true, data: safeOrder });
   } catch (error) {
     console.error('❌ [GET-ORDER] Error fetching order:', error);
     res.status(500).json({ success: false, error: error.message });
