@@ -70,6 +70,20 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
   const [cancelReason, setCancelReason] = useState<string>("");
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
+  // Build company filter list from all active memberships (totalsByCompany or companies prop)
+  const activeCompanyOptions = useMemo(() => {
+    if (totalsByCompany && totalsByCompany.length > 0) {
+      return totalsByCompany.map((tc) => ({
+        id: tc.companyId,
+        name: tc.companyName,
+      }));
+    }
+    return (companies || []).map((c) => ({
+      id: c.company?.id || (c as any).id,
+      name: c.company?.name || (c as any).name,
+    }));
+  }, [totalsByCompany, companies]);
+
   // Fetch Orders from API
   const fetchOrders = useCallback(
     async (reset: boolean = false, cursor: string | null = null) => {
@@ -343,9 +357,9 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
               className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             >
               <option value="ALL">كل الشركات</option>
-              {companies.map((c) => (
-                <option key={c.company.id} value={c.company.id}>
-                  {c.company.name}
+              {activeCompanyOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
