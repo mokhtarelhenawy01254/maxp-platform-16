@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require("./sharedDatabase");
+const { findExistingSuccessor } = require("./recurrenceGuard");
 const taskNotificationService = require("./taskNotificationService");
 const { v4: uuidv4 } = require("uuid");
 
@@ -126,24 +127,28 @@ const recurringTaskService = {
 
       const prisma = getSharedPrismaClient();
 
-      // Guard: Prevent duplicate spawn if a pending or active successor recurrence already exists
-      const existingPendingSpawn = await prisma.task.findFirst({
+      // Guard: Prevent duplicate spawn — أي خلف موجود (بأي حالة) ببداية أحدث يمنع التوليد
+      const rootId = completedTask.parentTaskId || completedTask.id;
+      const candidateSuccessors = await prisma.task.findMany({
         where: {
           companyId: completedTask.companyId,
-          status: { in: ["PENDING", "IN_PROGRESS", "IN_REVIEW"] },
-          OR: [
-            { parentTaskId: completedTask.parentTaskId || completedTask.id },
-            { id: completedTask.parentTaskId || completedTask.id },
-          ],
-          title: completedTask.title,
           isRecurring: true,
+          title: completedTask.title,
           id: { not: completedTask.id },
+          OR: [{ parentTaskId: rootId }, { id: rootId }],
         },
+        select: { id: true, status: true, startDate: true, createdAt: true, dueDate: true },
+        orderBy: { startDate: 'asc' },
       });
 
-      if (existingPendingSpawn) {
-        console.log(`[recurringTaskService] Pending or active occurrence already exists (${existingPendingSpawn.id}), skipping spawn.`);
-        return existingPendingSpawn;
+      const { hasSuccessor, successor: existingSuccessor } = findExistingSuccessor(
+        completedTask,
+        candidateSuccessors
+      );
+
+      if (hasSuccessor) {
+        console.log(`[recurringTaskService] Successor already exists (${existingSuccessor.id}), skipping spawn.`);
+        return existingSuccessor;
       }
 
       const anchorDate = completedTask.completedDate || completedTask.dueDate || new Date();
