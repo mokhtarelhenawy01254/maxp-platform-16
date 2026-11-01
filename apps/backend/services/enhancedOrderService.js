@@ -12,6 +12,7 @@ const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('..
 const { splitCustomerName } = require('../utils/customerName');
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
+const exchangeChainGuard = require('./exchangeChainGuard');
 
 const buildSourceCondition = (source) => {
   switch (String(source).toLowerCase()) {
@@ -233,32 +234,60 @@ class EnhancedOrderService {
         // فحص منع استبدال مكرر
         if (data.originalOrderId || data.originalOrderNumber) {
           try {
-            const openExchangeRows = await this.getPrisma().$queryRawUnsafe(
-              `SELECT o."id", o."orderNumber", o."status"::text AS "status"
-               FROM "orders" o
-               WHERE o."companyId" = $1
-                 AND o."status"::text NOT IN ('DELIVERED', 'CANCELLED', 'LOST')
-                 AND (
-                   o."metadata"::jsonb->>'originalOrderId' = $2
-                   OR ($3::text IS NOT NULL AND o."metadata"::jsonb->>'originalOrderNumber' = $3)
-                 )
-               LIMIT 1`,
+            const openExchangeRows = await exchangeChainGuard.findOpenExchange(
+              this.getPrisma(),
               data.companyId,
               data.originalOrderId || '',
               data.originalOrderNumber || null
             );
 
-            if (Array.isArray(openExchangeRows) && openExchangeRows.length > 0) {
+            const openExchangeVerdict = exchangeChainGuard.buildOpenExchangeVerdict(openExchangeRows);
+
+            if (!openExchangeVerdict.allowed) {
               return {
                 success: false,
                 statusCode: 400,
-                code: 'OPEN_EXCHANGE_ALREADY_EXISTS',
-                message: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر',
-                error: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر'
+                code: openExchangeVerdict.code,
+                message: openExchangeVerdict.message,
+                error: openExchangeVerdict.message
               };
             }
           } catch (dupCheckErr) {
             console.warn('⚠️ [EXCHANGE] Open exchange check error:', dupCheckErr.message);
+          }
+        }
+
+        // فحص سلسلة الاستبدال (Task 4b5b8635): منع A→B→A ومنع استبدال أوردر استبدال
+        if (data.originalOrderId || data.originalOrderNumber) {
+          let chainRootId = data.originalOrderId || null;
+
+          if (!chainRootId && data.originalOrderNumber) {
+            const resolvedOriginal = await this.getPrisma().order.findFirst({
+              where: {
+                companyId: data.companyId,
+                orderNumber: data.originalOrderNumber,
+              },
+              select: { id: true },
+            });
+            chainRootId = resolvedOriginal ? resolvedOriginal.id : null;
+          }
+
+          if (chainRootId) {
+            const chainVerdict = await exchangeChainGuard.assertExchangeChain(
+              this.getPrisma(),
+              data.companyId,
+              chainRootId
+            );
+
+            if (!chainVerdict.allowed) {
+              return {
+                success: false,
+                statusCode: 400,
+                code: chainVerdict.code,
+                message: chainVerdict.message,
+                error: chainVerdict.message,
+              };
+            }
           }
         }
       }

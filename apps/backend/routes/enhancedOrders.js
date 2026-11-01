@@ -6,6 +6,7 @@ const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibility');
 const { isMerchantUser } = require('../utils/merchantAccountScope');
 const customerBlocklistService = require('../services/customerBlocklistService');
+const exchangeChainGuard = require('../services/exchangeChainGuard');
 
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
@@ -749,26 +750,35 @@ router.post('/', manualOrderAccess, async (req, res) => {
 
       if (effectiveOrigId) {
         // منع استبدال مكرر: فحص وجود أوردر استبدال مفتوح لنفس الطلب الأصلي
-        const openExchangeRows = await getSharedPrismaClient().$queryRawUnsafe(
-          `SELECT o."id", o."orderNumber", o."status"::text AS "status"
-           FROM "orders" o
-           WHERE o."companyId" = $1
-             AND o."status"::text NOT IN ('DELIVERED', 'CANCELLED', 'LOST')
-             AND (
-               o."metadata"::jsonb->>'originalOrderId' = $2
-               OR ($3::text IS NOT NULL AND o."metadata"::jsonb->>'originalOrderNumber' = $3)
-             )
-           LIMIT 1`,
+        const openExchangeRows = await exchangeChainGuard.findOpenExchange(
+          getSharedPrismaClient(),
           req.user.companyId,
           effectiveOrigId,
-          effectiveOrigNum || null
+          effectiveOrigNum
         );
 
-        if (Array.isArray(openExchangeRows) && openExchangeRows.length > 0) {
+        const openExchangeVerdict = exchangeChainGuard.buildOpenExchangeVerdict(openExchangeRows);
+
+        if (!openExchangeVerdict.allowed) {
           return res.status(400).json({
             success: false,
-            code: 'OPEN_EXCHANGE_ALREADY_EXISTS',
-            message: 'يوجد استبدال مفتوح بالفعل لهذا الأوردر'
+            code: openExchangeVerdict.code,
+            message: openExchangeVerdict.message
+          });
+        }
+
+        // فحص سلسلة الاستبدال (Task 4b5b8635): منع الدائرة A→B→A
+        const chainVerdict = await exchangeChainGuard.assertExchangeChain(
+          getSharedPrismaClient(),
+          req.user.companyId,
+          effectiveOrigId
+        );
+
+        if (!chainVerdict.allowed) {
+          return res.status(400).json({
+            success: false,
+            code: chainVerdict.code,
+            message: chainVerdict.message
           });
         }
       }
