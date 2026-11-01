@@ -22,11 +22,11 @@ const VALID_ORDER_SOURCES = new Set([
   'WHOLESALE'
 ]);
 
-function normalizeOrderSource(source) {
-  if (!source) return 'REGULAR';
+function normalizeOrderSource(source, fallback = 'REGULAR') {
+  if (!source) return fallback;
   const upper = String(source).trim().toUpperCase();
   if (VALID_ORDER_SOURCES.has(upper)) return upper;
-  return 'REGULAR';
+  return fallback;
 }
 
 const buildSourceCondition = (source) => {
@@ -1480,11 +1480,11 @@ class EnhancedOrderService {
       }),
 
       // Normalized order source (strictly matches OrderSource enum in Prisma schema)
-      orderSource: normalizeOrderSource(
-        data.affiliateId
-          ? (data.orderSource || 'AFFILIATE_DIRECT')
-          : (data.wholesaleCustomerId ? (data.orderSource || 'WHOLESALE') : data.orderSource)
-      ),
+      orderSource: data.affiliateId
+        ? normalizeOrderSource(data.orderSource, 'AFFILIATE_DIRECT')
+        : (data.wholesaleCustomerId
+            ? normalizeOrderSource(data.orderSource, 'WHOLESALE')
+            : normalizeOrderSource(data.orderSource, 'REGULAR')),
 
       // Creator info
       createdBy: data.createdBy,
