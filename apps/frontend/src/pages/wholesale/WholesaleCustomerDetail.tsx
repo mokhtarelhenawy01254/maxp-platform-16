@@ -435,7 +435,7 @@ export default function WholesaleCustomerDetail() {
             <>
               {/* Top Action: New Wholesale Order */}
               <Link
-                to={`/admin/manual-order?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
+                to={`/orders/manual?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
               >
                 <Button
                   size="sm"
@@ -709,7 +709,7 @@ export default function WholesaleCustomerDetail() {
               </Badge>
             </div>
             <Link
-              to={`/admin/manual-order?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
+              to={`/orders/manual?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
             >
               <Button size="sm" variant="outline" className="h-7 text-xs font-mono gap-1">
                 <PlusCircle className="size-3.5 text-emerald-600" />
@@ -728,7 +728,7 @@ export default function WholesaleCustomerDetail() {
               <ShoppingBag className="size-8 text-muted-foreground mx-auto opacity-50" />
               <p className="text-xs text-muted-foreground font-mono">لا توجد طلبيات مسجلة لهذا الموزع بعد.</p>
               <Link
-                to={`/admin/manual-order?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
+                to={`/orders/manual?wholesaleCustomerId=${id}${form.customerPhone ? `&phone=${encodeURIComponent(form.customerPhone)}` : ""}`}
               >
                 <Button size="sm" className="h-8 font-mono text-xs gap-1.5">
                   <PlusCircle className="size-3.5" />

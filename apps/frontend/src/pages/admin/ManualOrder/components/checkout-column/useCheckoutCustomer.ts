@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { apiClient } from "../../../../../services/apiClient";
@@ -27,6 +27,17 @@ interface UseCheckoutCustomerOptions {
   searchParamExchangeOrder?: string | null;
   searchParamReturnOrder?: string | null;
   searchParamPhone?: string | null;
+  initialWholesaleCustomer?: {
+    id: string;
+    customerId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    address?: string;
+    governorate?: string;
+    area?: string;
+    creditLimit?: number;
+    currentBalance?: number;
+  } | null;
 }
 
 export function useCheckoutCustomer({
@@ -38,6 +49,7 @@ export function useCheckoutCustomer({
   searchParamExchangeOrder,
   searchParamReturnOrder,
   searchParamPhone,
+  initialWholesaleCustomer,
 }: UseCheckoutCustomerOptions) {
   const { t } = useTranslation();
   const canOverrideBlockedCustomer = [
@@ -76,6 +88,40 @@ export function useCheckoutCustomer({
   const [availableAreas, setAvailableAreas] = useState<AreaOption[]>([]);
   const [loadingGovernments, setLoadingGovernments] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
+
+  // Initialize wholesale customer data once when prop arrives
+  const initializedWholesaleIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (initialWholesaleCustomer?.id && initializedWholesaleIdRef.current !== initialWholesaleCustomer.id) {
+      initializedWholesaleIdRef.current = initialWholesaleCustomer.id;
+
+      if (initialWholesaleCustomer.customerPhone && !phone) {
+        setPhone(initialWholesaleCustomer.customerPhone);
+      }
+      if (initialWholesaleCustomer.customerName && !firstName && !lastName) {
+        const parts = initialWholesaleCustomer.customerName.trim().split(/\s+/);
+        setFirstName(parts[0] || "");
+        setLastName(parts.slice(1).join(" ") || "");
+      }
+      if (initialWholesaleCustomer.address && !address) {
+        setAddress(initialWholesaleCustomer.address);
+      }
+      if (initialWholesaleCustomer.governorate && !governorate) {
+        setGovernorate(normalizeLocationLabel(initialWholesaleCustomer.governorate));
+      }
+      if (initialWholesaleCustomer.area && !area) {
+        setArea(normalizeLocationLabel(initialWholesaleCustomer.area));
+      }
+
+      setWholesaleCustomer({
+        id: initialWholesaleCustomer.id,
+        customerId: initialWholesaleCustomer.customerId,
+        creditLimit: Number(initialWholesaleCustomer.creditLimit || 0),
+        currentBalance: Number(initialWholesaleCustomer.currentBalance || 0),
+      });
+    }
+  }, [initialWholesaleCustomer?.id]);
 
   // Initialize phone from URL search param if present
   useEffect(() => {
@@ -158,11 +204,11 @@ export function useCheckoutCustomer({
               creditLimit: 0,
               currentBalance: 0,
             });
-          } else {
+          } else if (!initialWholesaleCustomer?.id) {
             setWholesaleCustomer(null);
           }
           toast.success(t("manualOrder.k_52"));
-        } else {
+        } else if (!initialWholesaleCustomer?.id) {
           setWholesaleCustomer(null);
         }
 

@@ -56,8 +56,12 @@ const ManualOrderPage = () => {
   const wholesaleCustomerIdParam = searchParams.get("wholesaleCustomerId");
   const [wholesaleCustomer, setWholesaleCustomer] = useState<{
     id: string;
+    customerId?: string;
     customerName: string;
     customerPhone?: string;
+    address?: string;
+    governorate?: string;
+    area?: string;
     creditLimit: number;
     currentBalance: number;
   } | null>(null);
@@ -73,10 +77,18 @@ const ManualOrderPage = () => {
       .then((res) => {
         const d = res?.data?.data;
         if (!cancelled && d) {
+          const cust = d.customer;
+          const fullName = cust
+            ? `${cust.firstName || ""} ${cust.lastName || ""}`.trim()
+            : (d.customerName || d.name || "تاجر جملة");
           setWholesaleCustomer({
             id: d.id,
-            customerName: d.customer ? `${d.customer.firstName} ${d.customer.lastName}`.trim() : (d.customerName || "تاجر جملة"),
-            customerPhone: d.customer?.phone || d.customerPhone,
+            customerId: d.customerId || cust?.id,
+            customerName: fullName,
+            customerPhone: cust?.phone || d.customerPhone || searchParams.get("phone") || "",
+            address: cust?.address || "",
+            governorate: cust?.governorate || "",
+            area: cust?.city || cust?.area || "",
             creditLimit: Number(d.creditLimit || 0),
             currentBalance: Number(d.currentBalance || 0),
           });
@@ -86,7 +98,7 @@ const ManualOrderPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [wholesaleCustomerIdParam]);
+  }, [wholesaleCustomerIdParam, searchParams]);
 
   // Recalculate cart prices when wholesale customer is attached
   useEffect(() => {
@@ -551,6 +563,7 @@ const ManualOrderPage = () => {
           <ProductSearchColumn
             mode={isAffiliate ? "affiliate" : "admin"}
             onAddToCart={handleAddToCart}
+            wholesaleCustomerId={wholesaleCustomerIdParam || wholesaleCustomer?.id}
           />
         </div>
 
@@ -574,6 +587,7 @@ const ManualOrderPage = () => {
           <CheckoutColumn
             cartItems={cartItems}
             onClearCart={() => setCartItems([])}
+            initialWholesaleCustomer={wholesaleCustomer}
           />
         </div>
       </div>

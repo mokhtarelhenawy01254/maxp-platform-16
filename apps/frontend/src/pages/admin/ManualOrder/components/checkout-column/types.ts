@@ -49,6 +49,17 @@ export const buildVariantSummary = (item: CartItem) => {
 export interface CheckoutColumnProps {
   cartItems: CartItem[];
   onClearCart?: () => void;
+  initialWholesaleCustomer?: {
+    id: string;
+    customerId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    address?: string;
+    governorate?: string;
+    area?: string;
+    creditLimit?: number;
+    currentBalance?: number;
+  } | null;
 }
 
 export interface GovernmentOption {

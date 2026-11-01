@@ -22,6 +22,7 @@ import {
 const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   cartItems,
   onClearCart,
+  initialWholesaleCustomer,
 }) => {
   const { t, i18n } = useTranslation();
   const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
@@ -56,6 +57,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     searchParamExchangeOrder: searchParamExchange,
     searchParamReturnOrder: searchParamReturn,
     searchParamPhone: searchParamPhone,
+    initialWholesaleCustomer,
   });
 
   const blockPreventsOrder =
@@ -158,6 +160,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         orderSource: isAffiliate ? "AFFILIATE_DIRECT" : (customer.wholesaleCustomer ? "WHOLESALE" : "manual"),
         ...(customer.wholesaleCustomer ? {
           wholesaleCustomerId: customer.wholesaleCustomer.id,
+          ...(customer.wholesaleCustomer.customerId ? { customerId: customer.wholesaleCustomer.customerId } : {}),
           allowWholesaleOverdraft: customer.allowWholesaleOverdraft,
         } : {}),
         createAsAffiliate: isAffiliate,

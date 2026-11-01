@@ -9,6 +9,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { authService } from "../../../../services/authService";
+import { apiClient } from "../../../../services/apiClient";
 import { config } from "../../../../config";
 import { toast } from "sonner";
 import { getPrimaryImageUrl, buildOptimizedUploadImageUrl } from "../../../../utils/imageUrl";
@@ -84,6 +85,7 @@ const resolveStock = (...values: unknown[]): number => {
 interface ProductSearchColumnProps {
   onAddToCart: (product: Product, variant?: ProductVariant) => void;
   mode?: "admin" | "affiliate";
+  wholesaleCustomerId?: string | null;
 }
 
 // Helper function to extract unique attributes from variants
@@ -109,14 +111,81 @@ const extractAttributes = (
     }));
 };
 
+interface WholesalePriceEntry {
+  wholesalePrice: number;
+  regularPrice: number;
+  priceListName?: string;
+}
+
 const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
   onAddToCart,
   mode = "admin",
+  wholesaleCustomerId,
 }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Wholesale Prices State
+  const [wholesalePrices, setWholesalePrices] = useState<Map<string, WholesalePriceEntry>>(new Map());
+
+  useEffect(() => {
+    if (!wholesaleCustomerId) {
+      setWholesalePrices(new Map());
+      return;
+    }
+    let cancelled = false;
+    apiClient
+      .get(`/wholesale/customers/${wholesaleCustomerId}/prices`)
+      .then((res) => {
+        const raw = res?.data?.data;
+        const list: any[] = Array.isArray(raw) ? raw : (raw?.items || []);
+        if (!cancelled && list) {
+          const map = new Map<string, WholesalePriceEntry>();
+          list.forEach((item) => {
+            const wholesalePrice = Number(item.wholesalePrice !== undefined ? item.wholesalePrice : item.price);
+            const regularPrice = Number(item.regularPrice || 0);
+            const priceListName = item.priceListName;
+            if (item.variantId) {
+              map.set(`v_${item.variantId}`, { wholesalePrice, regularPrice, priceListName });
+            }
+            if (item.productId && !item.variantId) {
+              map.set(`p_${item.productId}`, { wholesalePrice, regularPrice, priceListName });
+            }
+          });
+          setWholesalePrices(map);
+        }
+      })
+      .catch((err) => {
+        console.debug("Failed to load wholesale customer prices", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wholesaleCustomerId]);
+
+  const getProductDisplayWholesaleInfo = useCallback((product: Product): WholesalePriceEntry | undefined => {
+    const direct = wholesalePrices.get(`p_${product.id}`);
+    if (direct) return direct;
+    if (product.variants && product.variants.length > 0) {
+      for (const v of product.variants) {
+        const vInfo = wholesalePrices.get(`v_${v.id}`);
+        if (vInfo) return vInfo;
+      }
+    }
+    return undefined;
+  }, [wholesalePrices]);
+
+  const getVariantWholesaleInfo = useCallback((productId?: string, variantId?: string): WholesalePriceEntry | undefined => {
+    if (variantId && wholesalePrices.has(`v_${variantId}`)) {
+      return wholesalePrices.get(`v_${variantId}`);
+    }
+    if (productId && wholesalePrices.has(`p_${productId}`)) {
+      return wholesalePrices.get(`p_${productId}`);
+    }
+    return undefined;
+  }, [wholesalePrices]);
 
   // Variant Selection State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -239,7 +308,15 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
       setSelectedAttributes({});
       setIsModalOpen(true);
     } else {
-      onAddToCart(product);
+      const wsInfo = getProductDisplayWholesaleInfo(product);
+      if (wsInfo) {
+        onAddToCart({
+          ...product,
+          price: wsInfo.wholesalePrice,
+        });
+      } else {
+        onAddToCart(product);
+      }
     }
   };
 
@@ -257,7 +334,15 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
         }
       }
 
-      onAddToCart(selectedProduct, variant);
+      const wsInfo = getVariantWholesaleInfo(selectedProduct.id, variant.id);
+      if (wsInfo) {
+        onAddToCart(selectedProduct, {
+          ...variant,
+          price: wsInfo.wholesalePrice,
+        });
+      } else {
+        onAddToCart(selectedProduct, variant);
+      }
       setIsModalOpen(false);
       setSelectedProduct(null);
       setSelectedAttributes({});
@@ -462,9 +547,32 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-base font-bold text-blue-600 dark:text-blue-400">
-                      {product.price} {t('manualOrder.k_75')}
-                    </span>
+                    {(() => {
+                      const wsInfo = getProductDisplayWholesaleInfo(product);
+                      const regularPrice = wsInfo?.regularPrice && wsInfo.regularPrice > 0 ? wsInfo.regularPrice : product.price;
+                      return (
+                        <div className="flex flex-col">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className={`text-base font-bold ${wsInfo ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}`}>
+                              {wsInfo ? wsInfo.wholesalePrice : product.price} {t('manualOrder.k_75')}
+                            </span>
+                            {wsInfo && regularPrice > wsInfo.wholesalePrice && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                                {regularPrice}
+                              </span>
+                            )}
+                          </div>
+                          {wsInfo && (
+                            <span
+                              className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 px-1.5 py-0.5 text-[9px] font-bold text-purple-700 dark:text-purple-300 w-fit mt-0.5"
+                              title={wsInfo.priceListName || 'سعر جملة'}
+                            >
+                              سعر جملة
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <button
                       className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white transition-colors"
@@ -574,9 +682,32 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                     <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {matchedVariant.price} {t('manualOrder.k_75')}
-                          </div>
+                          {(() => {
+                            const wsInfo = getVariantWholesaleInfo(selectedProduct.id, matchedVariant.id);
+                            const regPrice = wsInfo?.regularPrice && wsInfo.regularPrice > 0 ? wsInfo.regularPrice : Number(matchedVariant.price || selectedProduct.price);
+                            return (
+                              <div className="flex flex-col">
+                                <div className="flex items-baseline gap-2">
+                                  <span className={`text-lg font-bold ${wsInfo ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}`}>
+                                    {wsInfo ? wsInfo.wholesalePrice : matchedVariant.price} {t('manualOrder.k_75')}
+                                  </span>
+                                  {wsInfo && regPrice > wsInfo.wholesalePrice && (
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
+                                      {regPrice}
+                                    </span>
+                                  )}
+                                  {wsInfo && (
+                                    <span
+                                      className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 px-1.5 py-0.5 text-[9px] font-bold text-purple-700 dark:text-purple-300"
+                                      title={wsInfo.priceListName || 'سعر جملة'}
+                                    >
+                                      سعر جملة
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div
                             className={`text-sm ${isInStock(matchedVariant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400 font-medium"}`}
                           >
@@ -645,9 +776,32 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                         </div>
                       </div>
                       <div className="text-left">
-                        <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">
-                          {variant.price} {t('manualOrder.k_75')}
-                        </div>
+                        {(() => {
+                          const wsInfo = getVariantWholesaleInfo(selectedProduct.id, variant.id);
+                          const regPrice = wsInfo?.regularPrice && wsInfo.regularPrice > 0 ? wsInfo.regularPrice : Number(variant.price || selectedProduct.price);
+                          return (
+                            <div className="flex flex-col items-end">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className={`font-bold text-sm ${wsInfo ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}`}>
+                                  {wsInfo ? wsInfo.wholesalePrice : variant.price} {t('manualOrder.k_75')}
+                                </span>
+                                {wsInfo && regPrice > wsInfo.wholesalePrice && (
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 line-through">
+                                    {regPrice}
+                                  </span>
+                                )}
+                              </div>
+                              {wsInfo && (
+                                <span
+                                  className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 px-1.5 py-0.5 text-[8px] font-bold text-purple-700 dark:text-purple-300 mt-0.5"
+                                  title={wsInfo.priceListName || 'سعر جملة'}
+                                >
+                                  سعر جملة
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div
                           className={`text-xs mt-0.5 ${isInStock(variant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400 font-medium"}`}
                         >
