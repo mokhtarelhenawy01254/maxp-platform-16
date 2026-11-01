@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
 import { tokenManager } from "../utils/tokenManager";
+import socketService from "./socketService";
 
 const getCapacitor = () =>
   typeof window !== "undefined" ? (window as any).Capacitor : undefined;
@@ -162,6 +163,15 @@ class PushNotificationService {
     // 3. وصول إشعار والتطبيق مفتوح في المقدمة (Foreground)
     pushPlugin.addListener("pushNotificationReceived", async (notification: any) => {
       console.log("🔔 [PUSH] Notification received in foreground:", notification.title);
+
+      // التطبيق مفتوح: أندرويد مش بيعرض إشعار نظام ولا بيشغّل صوت،
+      // فلازم نشغّل نغمة الإشعار من التطبيق نفسه.
+      try {
+        socketService.playNotificationSound();
+      } catch (soundErr) {
+        console.warn("Could not play foreground push sound:", soundErr);
+      }
+
       try {
         const { toast } = await import("sonner");
         const data = notification.data || {};

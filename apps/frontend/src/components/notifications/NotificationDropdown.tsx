@@ -343,7 +343,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         } catch (_) {
           socketService.playNotificationSound();
         }
-      } else {
+      } else if (shouldPlayOrderSound(notificationPreferencesRef.current)) {
         socketService.playNotificationSound();
       }
 

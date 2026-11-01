@@ -1,7 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { buildWsUrl } from "../utils/urlHelper";
 import { tokenManager } from "../utils/tokenManager";
-import { getDeviceFingerprint, isPersonalDevice } from "../utils/deviceFingerprint";
+import { getDeviceFingerprint, isExplicitlyPersonalDevice } from "../utils/deviceFingerprint";
 import {
   buildPatternEvents,
   getOrderSoundAudioUrl,
@@ -113,6 +113,8 @@ class SocketService {
   private baseURL = buildWsUrl();
   private audioContext: AudioContext | null = null;
   private isAudioInitialized: boolean = false;
+  private audioUnlocked: boolean = false;
+  private audioUnlockAttached: boolean = false;
   private isConnecting: boolean = false;
   private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
   private alarmSources: Array<{ stop: () => void }> = [];
@@ -124,6 +126,11 @@ class SocketService {
     // Audio Context is initialized lazily on connect() or alarm playback,
     // preventing main-thread lag for unauthenticated storefront visitors.
     this.setupAutoReconnect();
+    // على الموبايل: سجّل مستمعات فتح الصوت من أول لحظة، عشان أول لمسة
+    // في التطبيق تفتح الصوت قبل وصول أي إشعار.
+    if (typeof window !== "undefined") {
+      this.setupAudioUnlock();
+    }
   }
 
   /**
@@ -152,10 +159,12 @@ class SocketService {
   }
 
   public ensureAudioSetup() {
-    if (!this.isAudioInitialized && typeof window !== "undefined") {
-      this.initAudioContext();
-      this.setupAudioUnlock();
-    }
+    if (typeof window === "undefined") return;
+
+    // سجّل مستمعات فتح الصوت فوراً — على الموبايل لازم الفتح يحصل داخل نفس
+    // لمسة/ضغطة المستخدم، مش بعد ما الإشعار يوصل (ساعتها المتصفح يرفض التشغيل).
+    this.setupAudioUnlock();
+    this.tryUnlockAudio();
   }
 
   // تهيئة Audio Context
@@ -173,26 +182,76 @@ class SocketService {
     }
   }
 
+  /**
+   * محاولة فتح قفل الصوت (autoplay policy).
+   * تُستدعى من أي لمسة/ضغطة، ومن عودة التطبيق للمقدمة على الموبايل.
+   */
+  private tryUnlockAudio() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === "running") {
+      this.markAudioUnlocked();
+      return;
+    }
+
+    ctx
+      .resume()
+      .then(() => {
+        this.primeSilentBuffer(ctx);
+        this.markAudioUnlocked();
+        console.log("🔊 [SOUND] Audio context resumed");
+      })
+      .catch((error) => {
+        console.warn("⚠️ [SOUND] Could not resume audio context:", error);
+      });
+  }
+
+  private markAudioUnlocked() {
+    this.audioUnlocked = true;
+    this.isAudioInitialized = true;
+  }
+
+  /**
+   * تشغيل عيّنة صامتة — حيلة iOS/Safari المعروفة لفتح قناة الصوت فعلياً
+   * حتى يعمل تشغيل الصوت لاحقاً بدون لمسة جديدة.
+   */
+  private primeSilentBuffer(ctx: AudioContext) {
+    try {
+      const buffer = ctx.createBuffer(1, 1, ctx.sampleRate || 44100);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    } catch {
+      // تجاهل — بعض المتصفحات لا تحتاج هذه الخطوة
+    }
+  }
+
   // تشغيل صوت التنبيه باستخدام Web Audio API
   playNotificationSound() {
-    // 🖥️ [DEVICE-ISOLATION] Mute noisy notification chime on personal devices
-    if (isPersonalDevice()) {
+    // الصوت يُكتم فقط لو الجهاز مصنّف "شخصي" بشكل صريح من الإعدادات.
+    // (الجهاز غير المصنّف كان بيتعامل كشخصي → الصوت كان مكتوم للجميع)
+    if (isExplicitlyPersonalDevice()) {
       return;
     }
 
     this.ensureAudioSetup();
+
     try {
-      if (!this.audioContext) {
+      const ctx = this.getAudioContext();
+      if (!ctx) {
         console.warn("⚠️ [SOUND] Audio context not available");
         return;
       }
 
-
       // تفعيل Audio Context إذا كان suspended (بسبب autoplay policy)
-      if (this.audioContext.state === "suspended") {
-        this.audioContext
+      if (ctx.state === "suspended") {
+        ctx
           .resume()
           .then(() => {
+            this.primeSilentBuffer(ctx);
+            this.markAudioUnlocked();
             console.log("🔊 [SOUND] Audio context resumed");
             this.playSoundInternal();
           })
@@ -200,6 +259,7 @@ class SocketService {
             console.warn("⚠️ [SOUND] Could not resume audio context:", error);
           });
       } else {
+        this.markAudioUnlocked();
         this.playSoundInternal();
       }
 
@@ -245,37 +305,35 @@ class SocketService {
 
   // تفعيل الصوت (يُستدعى بعد أول user interaction)
   enableSound() {
-    if (this.audioContext && this.audioContext.state === "suspended") {
-      this.audioContext
-        .resume()
-        .then(() => {
-          console.log("🔊 [SOUND] Audio context enabled by user interaction");
-        })
-        .catch((error) => {
-          console.warn("⚠️ [SOUND] Failed to enable audio context:", error);
-        });
-    }
+    this.tryUnlockAudio();
   }
 
-  // فتح الصوت مرة واحدة عند أول تفاعل (متطلب المتصفح لسياسة autoplay)
+  // فتح الصوت عند أول تفاعل (متطلب المتصفح لسياسة autoplay)
   private setupAudioUnlock() {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || this.audioUnlockAttached) {
       return;
     }
+    this.audioUnlockAttached = true;
 
     const unlock = () => {
-      this.enableSound();
-      this.isAudioInitialized = true;
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-      window.removeEventListener("touchstart", unlock);
-      window.removeEventListener("click", unlock);
+      this.tryUnlockAudio();
     };
 
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("keydown", unlock);
-    window.addEventListener("touchstart", unlock);
-    window.addEventListener("click", unlock);
+    const opts: AddEventListenerOptions = { passive: true };
+    window.addEventListener("pointerdown", unlock, opts);
+    window.addEventListener("keydown", unlock, opts);
+    window.addEventListener("touchstart", unlock, opts);
+    window.addEventListener("click", unlock, opts);
+
+    // على الموبايل التطبيق بيرجع من الخلفية و الـ context بيبقى suspended
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          this.tryUnlockAudio();
+        }
+      });
+    }
+    window.addEventListener("focus", unlock, opts);
   }
 
   private getAudioContext(): AudioContext | null {
@@ -304,10 +362,13 @@ class SocketService {
     loop?: boolean;
     boost?: boolean;
   }) {
-    // 🖥️ [DEVICE-ISOLATION] Mute noisy order alarms on personal devices
-    if (isPersonalDevice()) {
+    // 🖥️ [DEVICE-ISOLATION] الإنذار العالي يُكتم فقط لو الجهاز مصنّف
+    // "شخصي" بشكل صريح. الجهاز غير المصنّف لازم يشتغل عليه الصوت.
+    if (isExplicitlyPersonalDevice()) {
       return;
     }
+
+    this.ensureAudioSetup();
 
     const audioContext = this.getAudioContext();
     if (!audioContext) {

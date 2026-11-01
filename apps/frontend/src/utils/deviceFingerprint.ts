@@ -43,3 +43,16 @@ export function isOfficeDevice(): boolean {
 export function isPersonalDevice(): boolean {
   return getCachedDeviceType() === 'PERSONAL';
 }
+
+/**
+ * هل الجهاز مصنّف "شخصي" بشكل صريح من الإعدادات؟
+ * (مهم: عدم وجود تصنيف ≠ جهاز شخصي. الافتراضي غير المعروف لا يجب أن يكتم الصوت)
+ */
+export function isExplicitlyPersonalDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(DEVICE_TYPE_KEY) === 'PERSONAL';
+  } catch {
+    return false;
+  }
+}

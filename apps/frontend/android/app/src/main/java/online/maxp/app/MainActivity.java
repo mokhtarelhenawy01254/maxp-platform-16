@@ -23,6 +23,9 @@ public class MainActivity extends BridgeActivity {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 WebSettings settings = getBridge().getWebView().getSettings();
+                // صوت الإشعارات داخل التطبيق: WebView بيمنع تشغيل الصوت
+                // من غير لمسة مستخدم (autoplay). لازم نفك القيد ده.
+                settings.setMediaPlaybackRequiresUserGesture(false);
                 String currentUa = settings.getUserAgentString();
                 if (currentUa != null && !currentUa.contains("MaxP-Native-Android")) {
                     String versionName = "1.2.0";

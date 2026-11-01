@@ -7,6 +7,7 @@ import {
   showBrowserNotification as showNativeBrowserNotification,
 } from '@/utils/browserNotifications';
 import { apiClient as api } from '@/services/apiClient';
+import socketService from '@/services/socketService';
 import type { Contact, Message } from '@/hooks/useWhatsAppQueries';
 import { getContactDisplayPhone } from '../whatsappContactDisplay';
 import type {
@@ -92,10 +93,19 @@ export function useWhatsAppChatSocket({
   const playNotificationSound = useCallback(() => {
     try {
       const audio = new Audio('/notification.mp3');
+      audio.preload = 'auto';
       audio.volume = 0.5;
-      audio.play().catch((e) => console.log('Audio play failed', e));
+      const playback = audio.play();
+      if (playback && typeof playback.catch === 'function') {
+        playback.catch((e) => {
+          // المتصفح رفض تشغيل الملف (سياسة autoplay على الموبايل) — نرجع لنغمة Web Audio
+          console.log('Audio play failed, falling back to Web Audio:', e?.name || e);
+          socketService.playNotificationSound();
+        });
+      }
     } catch (e) {
       console.error('Error playing notification sound:', e);
+      socketService.playNotificationSound();
     }
   }, []);
 
