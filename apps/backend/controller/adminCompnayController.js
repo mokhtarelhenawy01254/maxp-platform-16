@@ -668,6 +668,8 @@ const getCompanyDetails = async (req, res) => {
 
         const [
             employeeCount,
+            totalCompanyUsers,
+            activeCompanyUsers,
             ordersThisMonth,
             installedApps,
             allInstalledApps,
@@ -685,6 +687,16 @@ const getCompanyDetails = async (req, res) => {
             return await Promise.all([
                 prisma.employee.count({
                     where: { companyId },
+                }),
+                prisma.userCompany.count({
+                    where: { companyId },
+                }),
+                prisma.userCompany.count({
+                    where: {
+                        companyId,
+                        isActive: true,
+                        user: { isActive: true },
+                    },
                 }),
                 prisma.order.count({
                     where: {
@@ -919,7 +931,10 @@ const getCompanyDetails = async (req, res) => {
         const resolvedSubscription =
             company.platformSubscription ||
             buildSyntheticPlatformSubscription(company, 0);
-        const currentSeats = Math.max(toNumber(company._count?.users), toNumber(employeeCount));
+        const actualTotalUsers = toNumber(totalCompanyUsers) > 0 ? toNumber(totalCompanyUsers) : (toNumber(company._count?.users) || toNumber(employeeCount));
+        const actualActiveUsers = toNumber(totalCompanyUsers) > 0 ? toNumber(activeCompanyUsers) : actualTotalUsers;
+        const actualInactiveUsers = Math.max(0, actualTotalUsers - actualActiveUsers);
+        const currentSeats = actualTotalUsers;
 
         const invoiceStatsMap = invoiceStats.reduce((acc, entry) => {
             acc[entry.status] = entry._count?._all || 0;
@@ -1081,6 +1096,11 @@ const getCompanyDetails = async (req, res) => {
                 recentReceipts: recentReceipts.map(serializeReceiptSummary),
                 recentHistory: recentBillingHistory.map(serializeBillingHistoryEntry),
             },
+            userStats: {
+                total: actualTotalUsers,
+                active: actualActiveUsers,
+                inactive: actualInactiveUsers,
+            },
         };
 
         res.json({
@@ -1089,6 +1109,10 @@ const getCompanyDetails = async (req, res) => {
             data: {
                 company: {
                     ...company,
+                    _count: {
+                        ...(company._count || {}),
+                        users: actualTotalUsers,
+                    },
                     followUp: await getCompanyFollowUpFromDb(prisma, company),
                 },
                 review,
@@ -1835,8 +1859,16 @@ const getCompanyFacebookPages = async (req, res) => {
 const loginAsCompanyAdmin = async (req, res) => {
     try {
         const { companyId } = req.params;
+        const { reason } = req.body || {};
 
-        console.log('🚀 [LOGIN_AS_ADMIN] Start for companyId:', companyId);
+        if (!reason || !String(reason).trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'سبب الدخول كمدير الشركة إلزامي لتسجيل العملية في سجل النشاط والتدقيق الأمني'
+            });
+        }
+
+        console.log('🚀 [LOGIN_AS_ADMIN] Start for companyId:', companyId, 'Reason:', reason.trim());
         console.log('👤 [LOGIN_AS_ADMIN] Requesting User:', req.user);
 
         // Check if company exists
@@ -1887,8 +1919,8 @@ const loginAsCompanyAdmin = async (req, res) => {
         );
         console.log('✅ [LOGIN_AS_ADMIN] Token generated');
 
-        // ✅ Log the impersonation event
-        console.log('📝 [LOGIN_AS_ADMIN] Creating ActivityLog...');
+        // ✅ Log the impersonation event with mandatory reason
+        console.log('📝 [LOGIN_AS_ADMIN] Creating ActivityLog with reason...');
         try {
             await getSharedPrismaClient().activityLog.create({
                 data: {
@@ -1896,19 +1928,21 @@ const loginAsCompanyAdmin = async (req, res) => {
                     companyId: existingCompany.id,
                     action: 'IMPERSONATE',
                     category: 'AUTH',
-                    description: `Super Admin (${req.user.email}) logged in as Company Admin (${adminUser.email}) for company: ${existingCompany.name}`,
+                    description: `دخول إداري كمسؤول الشركة (${adminUser.email}) - السبب: ${String(reason).trim()}`,
                     isSuccess: true,
                     severity: 'HIGH',
                     metadata: JSON.stringify({
                         targetAdminId: adminUser.id,
+                        targetAdminEmail: adminUser.email,
                         targetCompanyId: existingCompany.id,
                         superAdminEmail: req.user.email,
-                        ipAddress: req.ip || req.connection.remoteAddress,
+                        reason: String(reason).trim(),
+                        ipAddress: req.ip || req.connection?.remoteAddress,
                         userAgent: req.headers['user-agent']
                     })
                 }
             });
-            console.log('✅ [LOGIN_AS_ADMIN] ActivityLog created');
+            console.log('✅ [LOGIN_AS_ADMIN] ActivityLog created with reason');
         } catch (logError) {
             console.error('⚠️ [LOGIN_AS_ADMIN] Failed to create ActivityLog:', logError);
             // Don't fail the request if logging fails, just continue
