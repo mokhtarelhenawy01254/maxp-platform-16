@@ -63,10 +63,11 @@ const PromotionSettings: React.FC = () => {
               className={cn(
                 "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors",
                 saveState === "saving" &&
-                  "border-amber-200 bg-amber-50 text-amber-800",
+                  "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-300",
                 saveState === "saved" &&
-                  "border-emerald-200 bg-emerald-50 text-emerald-800",
-                saveState === "idle" && "border-slate-200 bg-white/85 text-slate-500",
+                  "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+                saveState === "idle" &&
+                  "border-slate-200 bg-white/85 text-slate-500 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300",
               )}
             >
               {saveState === "saving" ? (

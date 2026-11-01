@@ -15,6 +15,7 @@ import { apiClient } from "../../../services/apiClient";
 import {
   defaultPromotion,
   generateTierId,
+  getTierTypeLabel,
   parseTiersJson,
   PromotionTier,
   StorePromotion,
@@ -30,8 +31,8 @@ export function useStorePromotionController() {
 
   const typeOptions = useMemo(
     () => [
-      { value: "cheapest_percentage" as const, label: t("storePromotionSettings.cheapestDiscounted") },
-      { value: "all_percentage" as const, label: t("storePromotionSettings.allDiscounted") },
+      { value: "cheapest_percentage" as const, label: getTierTypeLabel("cheapest_percentage", t) },
+      { value: "all_percentage" as const, label: getTierTypeLabel("all_percentage", t) },
     ],
     [t]
   );

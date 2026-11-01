@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { SettingsSection } from "../components/SettingsPagePrimitives";
-import { PromotionTier, TierType } from "./types";
+import { getTierTypeLabel, PromotionTier, TierType } from "./types";
 
 interface StorePromotionTiersSectionProps {
   tiers: PromotionTier[];
@@ -77,7 +77,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <Label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                   {t("storePromotionSettings.minQuantity")}
                 </Label>
                 <Input
@@ -94,7 +94,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <Label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                   {t("storePromotionSettings.discountType")}
                 </Label>
                 <Select
@@ -103,13 +103,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
                 >
                   <SelectTrigger className="w-full bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium">
                     <SelectValue>
-                      {(val: unknown) => {
-                        const actualVal = (val as string) || tier.type;
-                        if (actualVal === "all_percentage") {
-                          return t("storePromotionSettings.allDiscounted", "خصم على كل القطع");
-                        }
-                        return t("storePromotionSettings.cheapestDiscounted", "خصم على أرخص قطعة");
-                      }}
+                      {getTierTypeLabel(tier.type, t)}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
@@ -127,7 +121,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <Label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                   {t("storePromotionSettings.discountValue")}
                 </Label>
                 <div className="flex items-center gap-2">
@@ -147,7 +141,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
 
               {tier.type === "cheapest_percentage" && (
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  <Label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                     {t("storePromotionSettings.discountedItems")}
                   </Label>
                   <Input
@@ -166,14 +160,14 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <Label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                 {t("storePromotionSettings.customerLabel")}
               </Label>
               <Input
                 value={tier.label}
                 onChange={(e) => onUpdateTier(tier.id, { label: e.target.value })}
                 placeholder={t("storePromotionSettings.customerLabelPlaceholder", { min: tier.minQuantity })}
-                className="max-w-md bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium"
+                className="max-w-md bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:placeholder:text-slate-500 font-medium"
               />
             </div>
           </div>
@@ -182,7 +176,7 @@ export const StorePromotionTiersSection: React.FC<StorePromotionTiersSectionProp
         <Button
           variant="outline"
           onClick={onAddTier}
-          className="w-full border-dashed border-2 border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-950/60 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white font-semibold py-2.5 transition-colors shadow-xs"
+          className="w-full border-dashed border-2 border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/80 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white font-semibold py-2.5 transition-colors shadow-xs"
         >
           <Plus className="h-4 w-4 ml-2" /> {t("storePromotionSettings.addTier")}
         </Button>

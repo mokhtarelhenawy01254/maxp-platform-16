@@ -1,5 +1,25 @@
 export type TierType = "cheapest_percentage" | "all_percentage";
 
+export const TIER_TYPE_LABELS: Record<string, string> = {
+  cheapest_percentage: "خصم على أرخص قطعة",
+  all_percentage: "خصم على كل القطع",
+};
+
+export const getTierTypeLabel = (
+  type: string,
+  t?: (key: string, fallback?: string) => string
+): string => {
+  if (t) {
+    if (type === "cheapest_percentage") {
+      return t("storePromotionSettings.cheapestDiscounted", "خصم على أرخص قطعة");
+    }
+    if (type === "all_percentage") {
+      return t("storePromotionSettings.allDiscounted", "خصم على كل القطع");
+    }
+  }
+  return TIER_TYPE_LABELS[type] || type;
+};
+
 export interface PromotionTier {
   id: string;
   minQuantity: number;

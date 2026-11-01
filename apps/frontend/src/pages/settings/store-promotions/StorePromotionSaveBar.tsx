@@ -26,7 +26,7 @@ export const StorePromotionSaveBar: React.FC<StorePromotionSaveBarProps> = ({
         variant="outline"
         onClick={onReset}
         disabled={saving}
-        className="gap-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white font-semibold"
+        className="gap-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white font-semibold"
       >
         <RefreshCcw className="h-4 w-4" /> {t("storePromotionSettings.cancelPromo")}
       </Button>
