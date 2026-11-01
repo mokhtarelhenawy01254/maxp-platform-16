@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../services/apiClient';
-import { pickInitialSessionId } from './pickInitialSessionId';
+import { pickInitialSessionId } from './pickInitialSessionId.mjs';
 import type { CopilotMessage, CopilotSession } from './types';
 
 export interface LoadHistoryResult {
