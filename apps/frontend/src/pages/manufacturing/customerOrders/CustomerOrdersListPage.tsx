@@ -350,28 +350,43 @@ export const CustomerOrdersListPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                             <button
-                              onClick={() => navigate(`/manufacturing/customer-orders/${ord.id}`)}
-                              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/manufacturing/customer-orders/${ord.id}`);
+                              }}
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all flex items-center gap-1 border border-border/70 active:scale-95 shadow-2xs"
                               title="عرض تفاصيل العقد"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>عرض</span>
                             </button>
                             <button
-                              onClick={() => setEditingOrder(ord)}
-                              className="p-1.5 rounded-md hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingOrder(ord);
+                              }}
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                               title="تعديل العقد"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Pencil className="w-3.5 h-3.5" />
+                              <span>تعديل</span>
                             </button>
                             <button
-                              onClick={() => setDeletingOrder(ord)}
-                              className="p-1.5 rounded-md hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingOrder(ord);
+                              }}
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                               title="حذف العقد"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>حذف</span>
                             </button>
                           </div>
                         </td>

@@ -507,6 +507,16 @@ export const SampleOrdersPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Detail Slide-over Drawer */}
+      <SampleDetailDrawer
+        sample={selectedSample}
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        onRefresh={fetchSamples}
+        onEdit={(sample) => setEditingSample(sample)}
+        onDelete={(sample) => setDeletingSample(sample)}
+      />
+
       {/* Edit Sample Modal */}
       <EditSampleModal
         isOpen={!!editingSample}
@@ -517,7 +527,7 @@ export const SampleOrdersPage: React.FC = () => {
 
       {/* Delete Sample Confirmation Dialog */}
       {deletingSample && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
@@ -564,16 +574,6 @@ export const SampleOrdersPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={fetchSamples}
-      />
-
-      {/* Detail Slide-over Drawer */}
-      <SampleDetailDrawer
-        sample={selectedSample}
-        isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        onRefresh={fetchSamples}
-        onEdit={(sample) => setEditingSample(sample)}
-        onDelete={(sample) => setDeletingSample(sample)}
       />
     </div>
   );

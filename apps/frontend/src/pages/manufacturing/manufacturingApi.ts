@@ -1399,6 +1399,11 @@ export const manufacturingApi = {
     return res.data?.data;
   },
 
+  deleteCustomerOrder: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.delete(`/manufacturing/customer-orders/${id}`);
+    return res.data;
+  },
+
   linkOrCreateChildOrder: async (customerOrderId: string, data: any): Promise<any> => {
     const res = await apiClient.post(`/manufacturing/customer-orders/${customerOrderId}/children`, data);
     return res.data?.data;
