@@ -288,6 +288,8 @@ router.get('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 
 // جلب جلسة محددة (للقراءة فقط)
 router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getSession);
+router.get('/sessions/:id/meta-inspect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.inspectMetaSession);
+router.post('/sessions/:id/meta-register', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.registerMetaSession);
 
 // تحديث جلسة
 router.put('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.updateSession);

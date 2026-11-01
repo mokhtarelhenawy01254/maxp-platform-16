@@ -832,6 +832,178 @@ async function getSession(req, res) {
  * تحديث جلسة
  * PUT /api/whatsapp/sessions/:id
  */
+/**
+ * فحص حالة حساب وجلسة Meta Cloud API من خوادم ميتا مباشرة
+ * GET /api/v1/whatsapp/sessions/:id/meta-inspect
+ */
+async function inspectMetaSession(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ success: false, error: 'الجلسة غير موجودة' });
+        }
+
+        if (session.provider !== 'META_CLOUD') {
+            return res.status(400).json({ success: false, error: 'هذه الجلسة ليست من مزود Meta Cloud API' });
+        }
+
+        const accessToken = decryptField(session.metaAccessToken);
+        if (!accessToken || !session.metaPhoneNumberId) {
+            return res.status(400).json({
+                success: false,
+                error: 'بيانات Meta غير مكتملة في هذه الجلسة (Phone Number ID أو Token مفقود)'
+            });
+        }
+
+        const axios = require('axios');
+        const apiVersion = session.metaApiVersion || process.env.META_GRAPH_API_VERSION || 'v26.0';
+        const graphBase = 'https://graph.facebook.com/' + apiVersion;
+
+        const report = {
+            sessionId: session.id,
+            sessionName: session.name,
+            phoneNumberId: session.metaPhoneNumberId,
+            wabaId: session.metaWabaId,
+            apiVersion,
+            dbStatus: session.status,
+            phoneDetails: null,
+            wabaDetails: null,
+            phoneError: null,
+            wabaError: null
+        };
+
+        // 1. Fetch Phone Number details from Meta
+        try {
+            const phoneRes = await axios.get(graphBase + '/' + session.metaPhoneNumberId, {
+                params: {
+                    access_token: accessToken,
+                    fields: 'id,display_phone_number,verified_name,code_verification_status,quality_rating,name_status,messaging_limit_tier,status,account_mode,is_pin_enabled,health_status'
+                },
+                timeout: 10000
+            });
+            report.phoneDetails = phoneRes.data;
+
+            if (phoneRes.data) {
+                const updatePayload = {};
+                if (phoneRes.data.quality_rating) updatePayload.metaQualityRating = phoneRes.data.quality_rating;
+                if (phoneRes.data.messaging_limit_tier) updatePayload.metaMessagingLimit = phoneRes.data.messaging_limit_tier;
+                if (Object.keys(updatePayload).length > 0) {
+                    await getSharedPrismaClient().whatsAppSession.update({
+                        where: { id: session.id },
+                        data: updatePayload
+                    }).catch(() => {});
+                }
+            }
+        } catch (err) {
+            report.phoneError = err.response?.data?.error || { message: err.message };
+        }
+
+        // 2. Fetch WABA details from Meta if available
+        if (session.metaWabaId) {
+            try {
+                const wabaRes = await axios.get(graphBase + '/' + session.metaWabaId, {
+                    params: {
+                        access_token: accessToken,
+                        fields: 'id,name,currency,timezone_id,account_review_status,business_verification_status,message_template_namespace'
+                    },
+                    timeout: 10000
+                });
+                report.wabaDetails = wabaRes.data;
+            } catch (err) {
+                report.wabaError = err.response?.data?.error || { message: err.message };
+            }
+        }
+
+        return res.json({ success: true, report });
+    } catch (error) {
+        console.error('❌ Error inspecting Meta session:', error);
+        return res.status(500).json({ success: false, error: 'حدث خطأ أثناء فحص حساب Meta: ' + error.message });
+    }
+}
+
+/**
+ * تسجيل رقم الهاتف وتفعيله على Meta Cloud API باستخدام رمز PIN
+ * POST /api/v1/whatsapp/sessions/:id/meta-register
+ */
+async function registerMetaSession(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const { pin } = req.body;
+
+        const cleanPin = pin ? String(pin).trim() : '';
+        if (!/^\d{6}$/.test(cleanPin)) {
+            return res.status(400).json({
+                success: false,
+                error: 'رمز التحقق (PIN) يجب أن يتكون من 6 أرقام بالضبط (مثال: 123456)'
+            });
+        }
+
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ success: false, error: 'الجلسة غير موجودة' });
+        }
+
+        if (session.provider !== 'META_CLOUD') {
+            return res.status(400).json({ success: false, error: 'هذه الجلسة ليست من مزود Meta Cloud API' });
+        }
+
+        const accessToken = decryptField(session.metaAccessToken);
+        if (!accessToken || !session.metaPhoneNumberId) {
+            return res.status(400).json({
+                success: false,
+                error: 'بيانات Meta غير مكتملة في هذه الجلسة (Phone Number ID أو Token مفقود)'
+            });
+        }
+
+        const axios = require('axios');
+        const apiVersion = session.metaApiVersion || process.env.META_GRAPH_API_VERSION || 'v26.0';
+        const graphBase = 'https://graph.facebook.com/' + apiVersion;
+
+        console.log('📱 [registerMetaSession] Registering phone ' + session.metaPhoneNumberId + ' with Meta Cloud API...');
+
+        const registerRes = await axios.post(
+            graphBase + '/' + session.metaPhoneNumberId + '/register',
+            {
+                messaging_product: 'whatsapp',
+                pin: cleanPin
+            },
+            {
+                headers: {
+                    Authorization: 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 15000
+            }
+        );
+
+        console.log('✅ [registerMetaSession] Meta registration successful:', registerRes.data);
+
+        return res.json({
+            success: true,
+            message: 'تم تسجيل الرقم وتنشيطه على Meta Cloud API بنجاح',
+            metaResponse: registerRes.data
+        });
+    } catch (error) {
+        console.error('❌ Error registering Meta session:', error.response?.data || error.message);
+        const metaError = error.response?.data?.error;
+        return res.status(error.response?.status || 400).json({
+            success: false,
+            error: metaError?.message || error.message,
+            metaError
+        });
+    }
+}
+
 async function updateSession(req, res) {
     try {
         const { companyId } = req.user;
@@ -5186,6 +5358,8 @@ module.exports = {
     createSessionWithPairingCode,
     getSessions,
     getSession,
+    inspectMetaSession,
+    registerMetaSession,
     updateSession,
     deleteSession,
     connectSession,
