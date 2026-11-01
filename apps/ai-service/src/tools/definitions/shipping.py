@@ -760,6 +760,7 @@ async def shipment_track(input_data: ShipmentTrackInput) -> dict[str, Any]:
         "captainName": captain_name,
         "captainPhone": captain_phone,
         "branchName": branch_name,
+        "delayReason": (carrier_tracking and (carrier_tracking.get("delayReason") or carrier_tracking.get("turboDelayReason"))) or (order_info and (order_info.get("delayReason") or order_info.get("turboDelayReason"))) or "",
         "shipments": (order_info and order_info.get("shipments")) or [],
         "liveCarrierData": carrier_tracking,
     }
@@ -963,7 +964,7 @@ async def courier_status(input_data: CourierStatusInput) -> dict[str, Any]:
     captain_name = track_res.get("captainName") or live_data.get("captainName") or ""
     captain_phone = track_res.get("captainPhone") or live_data.get("captainPhone") or ""
     branch_name = track_res.get("branchName") or live_data.get("branchName") or ""
-    delay_reason = live_data.get("delayReason") or live_data.get("turboDelayReason") or ""
+    delay_reason = track_res.get("delayReason") or live_data.get("delayReason") or live_data.get("turboDelayReason") or ""
 
     return {
         "found": True,
@@ -985,7 +986,7 @@ async def courier_status(input_data: CourierStatusInput) -> dict[str, Any]:
 def _format_courier_status(result: dict[str, Any]) -> str:
     res = result.get("result", result)
     if not res.get("found"):
-        return res.get("message") or f"لم يتم العثور على بيانات المندوب للطلب/الشحنة {res.get('trackingCode')}."
+        return res.get("message") or res.get("error") or f"لم يتم العثور على بيانات المندوب للطلب/الشحنة {res.get('trackingCode') or ''}."
     order_num = res.get("orderNumber") or ""
     carrier = res.get("carrier") or "شركة الشحن"
     captain_name = res.get("captainName")
