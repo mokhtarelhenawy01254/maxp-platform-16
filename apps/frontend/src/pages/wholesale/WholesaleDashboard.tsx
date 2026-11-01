@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   Users,
+  Layers,
   Tag,
   Wallet,
   AlertTriangle,
@@ -134,6 +135,7 @@ export default function WholesaleDashboard() {
       suffix: "طلب توريد",
       icon: ShoppingBag,
       color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
+      link: "/wholesale/manage",
       hint: "أوامر توريد معالجة وشحن",
     },
   ];
@@ -161,6 +163,13 @@ export default function WholesaleDashboard() {
 
         {/* Quick Nav Links */}
         <div className="flex items-center gap-1.5 flex-wrap font-mono text-xs self-end sm:self-auto">
+          <Link
+            to="/wholesale/manage"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors active:scale-[0.98] font-medium"
+          >
+            <Layers className="size-3.5 text-primary" />
+            <span>طابور الموزعين اليومي</span>
+          </Link>
           <Link
             to="/wholesale/customers"
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border/70 bg-card hover:bg-muted/40 text-foreground transition-colors active:scale-[0.98]"
