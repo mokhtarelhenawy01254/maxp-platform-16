@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
+  AlertCircle,
 } from 'lucide-react';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import { manufacturingApi, SampleOrder, PartnerFactory } from '../manufacturingApi';
@@ -48,13 +49,20 @@ export const SampleOrdersPage: React.FC = () => {
   const [editingSample, setEditingSample] = useState<SampleOrder | null>(null);
   const [deletingSample, setDeletingSample] = useState<SampleOrder | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedSample, setSelectedSample] = useState<SampleOrder | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenDeleteDialog = (sample: SampleOrder) => {
+    setDeleteError(null);
+    setDeletingSample(sample);
+  };
 
   const handleConfirmDelete = async () => {
     if (!deletingSample) return;
     try {
       setDeleteLoading(true);
+      setDeleteError(null);
       await manufacturingApi.deleteSampleOrder(deletingSample.id);
       if (selectedSample?.id === deletingSample.id) {
         handleCloseDrawer();
@@ -63,7 +71,7 @@ export const SampleOrdersPage: React.FC = () => {
       await fetchSamples();
     } catch (err: any) {
       console.error('Failed to delete sample order', err);
-      alert(err?.response?.data?.message || err?.message || 'تعذر حذف أمر العينة');
+      setDeleteError(err?.response?.data?.message || err?.message || 'تعذر حذف أمر العينة');
     } finally {
       setDeleteLoading(false);
     }
@@ -489,7 +497,7 @@ export const SampleOrdersPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setDeletingSample(s)}
+                            onClick={() => handleOpenDeleteDialog(s)}
                             className="px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
                             title="حذف أمر العينة"
                           >
@@ -514,7 +522,7 @@ export const SampleOrdersPage: React.FC = () => {
         onClose={handleCloseDrawer}
         onRefresh={fetchSamples}
         onEdit={(sample) => setEditingSample(sample)}
-        onDelete={(sample) => setDeletingSample(sample)}
+        onDelete={(sample) => handleOpenDeleteDialog(sample)}
       />
 
       {/* Edit Sample Modal */}
@@ -542,6 +550,13 @@ export const SampleOrdersPage: React.FC = () => {
               </div>
             </div>
 
+            {deleteError && (
+              <div className="flex items-center gap-2 p-3 text-xs rounded-lg bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/60">
               سيتم حذف كافة المصاريف والدفعات والمراحل وملاحظات التصميم المرتبطة بأمر العينة بشكل نهائي.
             </p>
@@ -549,7 +564,10 @@ export const SampleOrdersPage: React.FC = () => {
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
               <button
                 type="button"
-                onClick={() => setDeletingSample(null)}
+                onClick={() => {
+                  setDeletingSample(null);
+                  setDeleteError(null);
+                }}
                 disabled={deleteLoading}
                 className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-muted text-foreground transition"
               >

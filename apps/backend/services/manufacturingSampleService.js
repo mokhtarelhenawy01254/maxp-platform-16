@@ -941,9 +941,18 @@ class ManufacturingSampleService {
     }
 
     if (existing.status === 'CONVERTED' || existing.convertedOrderId) {
-      const err = new Error('لا يمكن حذف عينة تم تحويلها بالفعل إلى أمر إنتاج');
-      err.statusCode = 400;
-      throw err;
+      let activeOrder = null;
+      if (existing.convertedOrderId && prisma.productionOrder) {
+        activeOrder = await prisma.productionOrder.findFirst({
+          where: { id: existing.convertedOrderId, companyId },
+          select: { id: true, orderNumber: true },
+        });
+      }
+      if (activeOrder) {
+        const err = new Error(`لا يمكن حذف عينة تم تحويلها بالفعل إلى أمر إنتاج قائم (${activeOrder.orderNumber})`);
+        err.statusCode = 400;
+        throw err;
+      }
     }
 
     await prisma.$transaction(async (tx) => {
@@ -968,6 +977,12 @@ class ManufacturingSampleService {
       if (tx.manufacturingNotificationLog) {
         await tx.manufacturingNotificationLog.deleteMany({
           where: { entityType: 'SAMPLE_ORDER', entityId: id },
+        });
+      }
+      if (tx.productionOrder) {
+        await tx.productionOrder.updateMany({
+          where: { sourceSampleOrderId: id, companyId },
+          data: { sourceSampleOrderId: null },
         });
       }
       await tx.sampleOrder.delete({ where: { id } });

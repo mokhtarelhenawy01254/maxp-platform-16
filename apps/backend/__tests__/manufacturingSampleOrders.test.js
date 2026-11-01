@@ -119,6 +119,16 @@ function createInMemoryStore() {
         store.sampleOrders.delete(where.id);
         return existing;
       },
+      updateMany: async ({ where, data } = {}) => {
+        let count = 0;
+        for (const [id, s] of store.sampleOrders.entries()) {
+          if (where?.id && s.id !== where.id) continue;
+          if (where?.companyId && s.companyId !== where.companyId) continue;
+          store.sampleOrders.set(id, { ...s, ...data, updatedAt: new Date() });
+          count++;
+        }
+        return { count };
+      },
     },
     sampleOrderStage: {
       findFirst: async ({ where } = {}) => {
@@ -267,6 +277,16 @@ function createInMemoryStore() {
         };
         store.productionOrders.set(id, record);
         return record;
+      },
+      updateMany: async ({ where, data } = {}) => {
+        let count = 0;
+        for (const [id, ord] of store.productionOrders.entries()) {
+          if (where?.sourceSampleOrderId && ord.sourceSampleOrderId === where.sourceSampleOrderId) {
+            store.productionOrders.set(id, { ...ord, ...data, updatedAt: new Date() });
+            count++;
+          }
+        }
+        return { count };
       },
     },
     billOfMaterials: {
@@ -760,6 +780,38 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
           factoryMode: 'SAME',
         })
       ).rejects.toThrow('تم تحويل هذه العينة بالفعل إلى أمر تصنيع مسبقاً');
+    });
+
+    test('7. Deleting sample order with active vs deleted production order', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة لاختبار الحذف بعد التحويل',
+        bomId: 'bom-hoodie-1',
+        partnerFactoryId: 'fac-1',
+      });
+      await ManufacturingSampleService.approveSampleOrder(companyId, testUser, sample.id, { resultNotes: 'معتمد' });
+
+      const convResult = await ManufacturingSampleService.convertSampleToOrder(companyId, testUser, sample.id, {
+        bomId: 'bom-hoodie-1',
+        plannedQuantity: 10,
+        factoryMode: 'SAME',
+      });
+
+      const prodOrderId = convResult.order.id;
+
+      // 1. Should fail while active production order exists
+      await expect(
+        ManufacturingSampleService.deleteSampleOrder(companyId, testUser, sample.id)
+      ).rejects.toThrow('لا يمكن حذف عينة تم تحويلها بالفعل إلى أمر إنتاج قائم');
+
+      // 2. Delete the production order
+      currentPrisma._store.productionOrders.delete(prodOrderId);
+
+      // 3. Now deleting sample order should succeed cleanly
+      const delResult = await ManufacturingSampleService.deleteSampleOrder(companyId, testUser, sample.id);
+      expect(delResult.success).toBe(true);
+
+      const check = await currentPrisma.sampleOrder.findFirst({ where: { id: sample.id } });
+      expect(check).toBeNull();
     });
   });
 });

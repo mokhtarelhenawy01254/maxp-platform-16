@@ -2798,7 +2798,18 @@ class ManufacturingService {
         await tx.productionOrderStage.deleteMany({ where: { orderId } });
       }
 
-      // 8. Delete the production order
+      // 8. Revert or unlink source sample order if applicable
+      if (existing.sourceSampleOrderId && tx.sampleOrder) {
+        await tx.sampleOrder.updateMany({
+          where: { id: existing.sourceSampleOrderId, companyId },
+          data: {
+            status: 'APPROVED',
+            convertedOrderId: null,
+          },
+        });
+      }
+
+      // 9. Delete the production order
       await tx.productionOrder.delete({ where: { id: orderId } });
     });
 
