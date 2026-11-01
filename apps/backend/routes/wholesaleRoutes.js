@@ -38,6 +38,7 @@ router.get('/customers/:customerId/transactions', ctrl.getTransactions);
 
 // Statement
 router.get('/customers/:customerId/statement', ctrl.generateStatement);
+router.get('/customers/:customerId/statement/pdf', ctrl.downloadStatementPdf);
 
 // Dashboard
 router.get('/dashboard', ctrl.dashboard);

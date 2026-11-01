@@ -587,6 +587,10 @@ function getModuleSettingKey(eventType) {
     return 'taskNotificationsEnabled';
   }
 
+  if (eventType.startsWith('WHOLESALE_')) {
+    return 'wholesaleNotificationsEnabled';
+  }
+
   return null;
 }
 
@@ -2786,6 +2790,14 @@ async function sendOrderCreatedNotification(order) {
 async function sendOrderStatusNotification(order, newStatus, oldStatus) {
   const prisma = getSharedPrismaClient();
 
+  const isWholesaleStatusNotification =
+    order?.orderSource === 'WHOLESALE' ||
+    Boolean(order?.wholesaleCustomerId) ||
+    Boolean(order?.metadata?.wholesaleCustomerId);
+  if (isWholesaleStatusNotification && (newStatus === 'CONFIRMED' || newStatus === 'SHIPPED')) {
+    return sendWholesaleOrderStatusNotification(order, newStatus, oldStatus);
+  }
+
   console.log(`[WHATSAPP-STATUS] ==== sendOrderStatusNotification called ====`);
   console.log(`[WHATSAPP-STATUS] Order: ${order?.orderNumber}, New Status: ${newStatus}, Old Status: ${oldStatus}`);
   console.log(`[WHATSAPP-STATUS] Company ID: ${order?.companyId}`);
@@ -2969,6 +2981,14 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
  *   من صفحة /orders/status-templates — بدل إرسال "طلب جديد" دائماً.
  */
 async function sendOrderCreationNotification(order) {
+  const isWholesaleOrderNotification =
+    order?.orderSource === 'WHOLESALE' ||
+    Boolean(order?.wholesaleCustomerId) ||
+    Boolean(order?.metadata?.wholesaleCustomerId);
+  if (isWholesaleOrderNotification) {
+    return sendWholesaleOrderCreatedNotification(order);
+  }
+
   const status = String(order?.status || '').trim().toUpperCase();
 
   const useNewOrderTemplate =
@@ -4493,6 +4513,286 @@ async function sendBenefitGrantedNotification({
   });
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🏢 إشعارات الجملة والموزعين
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 🏢 إرسال إشعار تسجيل طلب جملة جديد
+ */
+async function sendWholesaleOrderCreatedNotification(order) {
+  const prisma = getSharedPrismaClient();
+  const phone = order.customerPhone || order.customer?.phone;
+  if (!phone) return { success: false, reason: 'no_phone' };
+
+  let wc = null;
+  if (order.wholesaleCustomerId) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id: order.wholesaleCustomerId, companyId: order.companyId },
+      include: { customer: true }
+    });
+  } else if (order.customerId) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { customerId: order.customerId, companyId: order.companyId },
+      include: { customer: true }
+    });
+  }
+
+  const items = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+  const orderItemsText = formatOrderItemsText(order, items);
+
+  const currentBalance = wc ? Number(wc.currentBalance || 0).toLocaleString() : '0';
+  const creditLimit = wc ? Number(wc.creditLimit || 0).toLocaleString() : '0';
+  const currency = order.currency || 'ج.م';
+
+  const orderDate = order.createdAt
+    ? new Date(order.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    : new Date().toLocaleDateString('ar-EG');
+
+  const { trackedOrderId } = getOrderNotificationTracking(order);
+  const isDup = await isDuplicateNotification({
+    companyId: order.companyId,
+    orderId: trackedOrderId || order.id,
+    eventType: 'WHOLESALE_ORDER_CREATED',
+    rawEventType: 'WHOLESALE_ORDER_CREATED',
+  });
+  if (isDup) {
+    console.log(`⚠️ [WHATSAPP] Duplicate WHOLESALE_ORDER_CREATED blocked for order ${order.orderNumber}`);
+    return { success: false, reason: 'duplicate_blocked' };
+  }
+
+  return sendNotification({
+    companyId: order.companyId,
+    recipientPhone: phone,
+    recipientName: order.customerName || (wc?.customer ? `${wc.customer.firstName || ''} ${wc.customer.lastName || ''}`.trim() : 'تاجر جملة'),
+    recipientType: 'CUSTOMER',
+    category: 'ORDER',
+    eventType: 'WHOLESALE_ORDER_CREATED',
+    rawEventType: 'WHOLESALE_ORDER_CREATED',
+    orderId: order.id,
+    customerId: wc?.customerId || order.customerId || null,
+    variables: {
+      customerName: order.customerName || 'تاجر جملة',
+      orderNumber: order.orderNumber || order.id,
+      orderDate,
+      itemsCount: String(items.length),
+      total: String(parseFloat(order.total || 0).toLocaleString()),
+      currency,
+      currentBalance,
+      creditLimit,
+      orderItems: orderItemsText
+    },
+    priority: 3
+  });
+}
+
+/**
+ * 🏢 إرسال إشعار حالة طلب جملة (تأكيد / شحن)
+ */
+async function sendWholesaleOrderStatusNotification(order, newStatus, oldStatus) {
+  const prisma = getSharedPrismaClient();
+  const phone = order.customerPhone || order.customer?.phone;
+  if (!phone) return { success: false, reason: 'no_phone' };
+
+  let wc = null;
+  if (order.wholesaleCustomerId) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id: order.wholesaleCustomerId, companyId: order.companyId },
+      include: { customer: true }
+    });
+  } else if (order.customerId) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { customerId: order.customerId, companyId: order.companyId },
+      include: { customer: true }
+    });
+  }
+
+  const items = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+  const orderItemsText = formatOrderItemsText(order, items);
+  const currentBalance = wc ? Number(wc.currentBalance || 0).toLocaleString() : '0';
+  const currency = order.currency || 'ج.م';
+  const eventType = newStatus === 'CONFIRMED' ? 'WHOLESALE_ORDER_CONFIRMED' : 'WHOLESALE_ORDER_SHIPPED';
+
+  const isDup = await isDuplicateNotification({
+    companyId: order.companyId,
+    orderId: order.id,
+    eventType,
+    rawEventType: eventType,
+  });
+  if (isDup) {
+    console.log(`⚠️ [WHATSAPP] Duplicate ${eventType} blocked for order ${order.orderNumber}`);
+    return { success: false, reason: 'duplicate_blocked' };
+  }
+
+  const variables = {
+    customerName: order.customerName || (wc?.customer ? `${wc.customer.firstName || ''} ${wc.customer.lastName || ''}`.trim() : 'تاجر جملة'),
+    orderNumber: order.orderNumber || order.id,
+    total: String(parseFloat(order.total || 0).toLocaleString()),
+    currency,
+    currentBalance,
+    orderItems: orderItemsText,
+    shippingCarrier: order.shippingCarrier || order.shippingCompany || 'شركة الشحن',
+    trackingNumber: order.trackingNumber || order.trackingCode || '—',
+  };
+
+  return sendNotification({
+    companyId: order.companyId,
+    recipientPhone: phone,
+    recipientName: variables.customerName,
+    recipientType: 'CUSTOMER',
+    category: 'ORDER',
+    eventType,
+    rawEventType: eventType,
+    orderId: order.id,
+    customerId: wc?.customerId || order.customerId || null,
+    variables,
+    priority: 3
+  });
+}
+
+/**
+ * 🧾 إرسال إيصال استلام دفعة جملة
+ */
+async function sendWholesalePaymentNotification({
+  companyId,
+  wholesaleCustomerId,
+  transaction,
+  wholesaleCustomer = null,
+  amount,
+  balanceBefore,
+  balanceAfter,
+  referenceId = null,
+  notes = null
+}) {
+  const prisma = getSharedPrismaClient();
+
+  let wc = wholesaleCustomer;
+  if (!wc || !wc.customer) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id: wholesaleCustomerId, companyId },
+      include: { customer: true }
+    });
+  }
+  if (!wc) return { success: false, reason: 'wholesale_customer_not_found' };
+
+  const phone = wc.customer?.phone;
+  if (!phone) return { success: false, reason: 'no_phone' };
+
+  const txId = transaction?.id || referenceId || `tx_${Date.now()}`;
+  const isDup = await isDuplicateNotification({
+    companyId,
+    orderId: txId,
+    recipientPhone: phone,
+    eventType: 'WHOLESALE_PAYMENT_RECEIVED',
+    rawEventType: 'WHOLESALE_PAYMENT_RECEIVED',
+  });
+  if (isDup) {
+    console.log(`⚠️ [WHATSAPP] Duplicate WHOLESALE_PAYMENT_RECEIVED blocked for transaction ${txId}`);
+    return { success: false, reason: 'duplicate_blocked' };
+  }
+
+  const customerName = wc.customer
+    ? `${wc.customer.firstName || ''} ${wc.customer.lastName || ''}`.trim()
+    : 'شريكنا العزيز';
+  const currency = 'ج.م';
+  const txDate = transaction?.createdAt
+    ? new Date(transaction.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    : new Date().toLocaleDateString('ar-EG');
+
+  return sendNotification({
+    companyId,
+    recipientPhone: phone,
+    recipientName: customerName,
+    recipientType: 'CUSTOMER',
+    category: 'PAYMENT',
+    eventType: 'WHOLESALE_PAYMENT_RECEIVED',
+    buttons: null,
+    rawEventType: 'WHOLESALE_PAYMENT_RECEIVED',
+    orderId: txId,
+    customerId: wc.customerId || null,
+    variables: {
+      customerName,
+      amount: Number(amount || 0).toLocaleString(),
+      currency,
+      paymentNumber: referenceId || txId,
+      date: txDate,
+      balanceBefore: Number(balanceBefore || 0).toLocaleString(),
+      balanceAfter: Number(balanceAfter || 0).toLocaleString(),
+      notes: notes ? `📝 ملاحظات: ${notes}` : ''
+    },
+    priority: 3
+  });
+}
+
+/**
+ * 🔔 إرسال تذكير مستحقات جملة (مع مراعاة cooldown 3 أيام)
+ */
+async function sendWholesaleDueReminderNotification({
+  companyId,
+  wholesaleCustomer,
+  dueDate = null
+}) {
+  const prisma = getSharedPrismaClient();
+  let wc = wholesaleCustomer;
+  if (!wc || !wc.customer) {
+    wc = await prisma.wholesaleCustomer.findFirst({
+      where: { id: wholesaleCustomer.id || wholesaleCustomer, companyId },
+      include: { customer: true }
+    });
+  }
+  if (!wc) return { success: false, reason: 'wholesale_customer_not_found' };
+
+  const phone = wc.customer?.phone;
+  if (!phone) return { success: false, reason: 'no_phone' };
+
+  // Cooldown check (3 days = 259,200,000 ms)
+  const isDup = await isDuplicateNotification({
+    companyId,
+    recipientPhone: phone,
+    eventType: 'WHOLESALE_DUE_REMINDER',
+    rawEventType: 'WHOLESALE_DUE_REMINDER',
+    windowMs: 3 * 24 * 60 * 60 * 1000
+  });
+  if (isDup) {
+    console.log(`⚠️ [WHATSAPP] Cooldown active for WHOLESALE_DUE_REMINDER (distributor: ${wc.id})`);
+    return { success: false, reason: 'cooldown_active' };
+  }
+
+  const customerName = wc.customer
+    ? `${wc.customer.firstName || ''} ${wc.customer.lastName || ''}`.trim()
+    : 'شريكنا العزيز';
+  const currency = 'ج.م';
+  const formattedDueDate = dueDate
+    ? new Date(dueDate).toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    : 'في أقرب وقت ممكن';
+
+  return sendNotification({
+    companyId,
+    recipientPhone: phone,
+    recipientName: customerName,
+    recipientType: 'CUSTOMER',
+    category: 'PAYMENT',
+    eventType: 'WHOLESALE_DUE_REMINDER',
+    buttons: null,
+    rawEventType: 'WHOLESALE_DUE_REMINDER',
+    customerId: wc.customerId || null,
+    variables: {
+      customerName,
+      currentBalance: Number(wc.currentBalance || 0).toLocaleString(),
+      currency,
+      creditLimit: Number(wc.creditLimit || 0).toLocaleString(),
+      dueDate: formattedDueDate
+    },
+    priority: 4
+  });
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4519,6 +4819,12 @@ module.exports = {
   sendSubscriptionCancelledNotification,
   sendNewsletterSubscribedNotification,
   sendBenefitGrantedNotification,
+
+  // إشعارات الجملة والموزعين
+  sendWholesaleOrderCreatedNotification,
+  sendWholesaleOrderStatusNotification,
+  sendWholesalePaymentNotification,
+  sendWholesaleDueReminderNotification,
 
   // إشعارات الطلبات
   sendOrderCreatedNotification,

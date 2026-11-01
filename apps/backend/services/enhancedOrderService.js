@@ -524,7 +524,9 @@ class EnhancedOrderService {
             shipping: parseFloat(order.shipping),
             currency: order.currency || 'EGP',
             createdAt: order.createdAt,
-            items: order.orderItems || order.items || []
+            items: order.orderItems || order.items || [],
+            orderSource: order.orderSource || data.orderSource || null,
+            wholesaleCustomerId: order.wholesaleCustomerId || data.wholesaleCustomerId || null
           };
 
           await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
@@ -576,6 +578,38 @@ class EnhancedOrderService {
           });
         } catch (notifyErr) {
           console.error('❌ [ORDER-NOTIFY] Failed to broadcast order creation:', notifyErr.message);
+        }
+
+        // 🏢 إشعار داخلي للموظف عند إنشاء طلب جملة (ORDER_CREATED مع orderSource=WHOLESALE)
+        const isWholesaleOrder =
+          order.orderSource === 'WHOLESALE' ||
+          data.orderSource === 'WHOLESALE' ||
+          Boolean(order.wholesaleCustomerId || data.wholesaleCustomerId);
+
+        if (isWholesaleOrder) {
+          try {
+            await this.getPrisma().notification.create({
+              data: {
+                companyId: data.companyId,
+                userId: data.createdBy || null,
+                title: 'طلب جملة جديد',
+                message: `تم إنشاء طلب جملة جديد #${order.orderNumber} للتاجر ${order.customerName || data.customerName || 'تاجر جملة'} بقيمة ${parseFloat(order.total || 0).toLocaleString()} ${order.currency || 'ج.م'}`,
+                type: 'WHOLESALE_ORDER_CREATED',
+                data: {
+                  orderId: order.id,
+                  orderNumber: order.orderNumber,
+                  wholesaleCustomerId: order.wholesaleCustomerId || data.wholesaleCustomerId || null,
+                  customerName: order.customerName || data.customerName,
+                  total: parseFloat(order.total || 0),
+                  currency: order.currency || 'EGP',
+                  source: 'WHOLESALE'
+                }
+              }
+            });
+            console.log(`🏢 [WHOLESALE-NOTIFY] Internal staff notification created for wholesale order #${order.orderNumber}`);
+          } catch (internalNotifyErr) {
+            console.error('⚠️ [WHOLESALE-NOTIFY] Failed to create internal notification:', internalNotifyErr.message);
+          }
         }
       }
 

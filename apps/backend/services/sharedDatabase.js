@@ -222,6 +222,7 @@ function createStablePrismaClient() {
     const GLOBAL_MODELS = new Set([
       'Company',
       'User',
+      'UserCompany',
       'Role',
       'SubscriptionPlan',
       'PlatformSetting',

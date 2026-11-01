@@ -1810,6 +1810,15 @@ try {
 } catch (error) {
   console.error("❌ [CUSTOMER-RATING-CRON] Failed to start customer rating scheduler:", error);
 }
+
+// ⏰ Wholesale Due Reminder Daily Cron (Distributor payment reminders with 3-day cooldown)
+try {
+  const { startWholesaleDueReminderCron } = require("./cron/wholesaleDueReminderCron");
+  startWholesaleDueReminderCron();
+  console.log("✅ [WHOLESALE-CRON] Wholesale due reminder scheduler registered");
+} catch (error) {
+  console.error("❌ [WHOLESALE-CRON] Failed to start wholesale due reminder scheduler:", error);
+}
 } else {
   console.log(
     `ℹ️ [SERVER] Background cron schedulers skipped for worker instance ${getProcessInstanceId()} (dedicated to HTTP requests)`,

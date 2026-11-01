@@ -1114,7 +1114,96 @@ const DEFAULT_TEMPLATES = {
 
 يمكنك مراجعة الطلب والمرفقات عبر لوحة التحكم 🚀`,
     variables: ['customerName', 'customerPhone', 'serviceName', 'priceInfo', 'filesCount', 'description']
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // 🏢 قوالب إشعارات الجملة والموزعين
+  // ═════════════════════════════════════════════════════════════════════════════
+
+  WHOLESALE_ORDER_CREATED: {
+    name: 'تسجيل طلب جملة جديد',
+    content: `مرحباً {customerName} 🏢
+تم تسجيل طلب الجملة رقم #{orderNumber} بنجاح!
+
+📋 تفاصيل الطلب:
+------------------------------
+📅 التاريخ: {orderDate}
+📦 عدد الأصناف: {itemsCount}
+💰 إجمالي الطلب: {total} {currency}
+💳 رصيدك الحالي: {currentBalance} {currency}
+🛡️ الحد الائتماني: {creditLimit} {currency}
+------------------------------
+{orderItems}
+
+سيتم مراجعة وتأكيد طلبكم في أقرب وقت.
+يسعدنا دائماً خدمتكم 🙏✨`,
+    variables: ['customerName', 'orderNumber', 'orderDate', 'itemsCount', 'total', 'currency', 'currentBalance', 'creditLimit', 'orderItems']
+  },
+
+  WHOLESALE_ORDER_CONFIRMED: {
+    name: 'تأكيد طلب جملة',
+    content: `مرحباً {customerName} ✅
+تم تأكيد طلب الجملة رقم #{orderNumber} وجاري التجهيز بالمستودع!
+
+📋 تفاصيل الطلب المؤكد:
+------------------------------
+💰 إجمالي الطلب: {total} {currency}
+💳 الرصيد المستحق: {currentBalance} {currency}
+------------------------------
+{orderItems}
+
+سيتم إشعاركم فور خروج الشحنة 🚚✨`,
+    variables: ['customerName', 'orderNumber', 'total', 'currency', 'currentBalance', 'orderItems']
+  },
+
+  WHOLESALE_ORDER_SHIPPED: {
+    name: 'شحن طلب جملة',
+    content: `مرحباً {customerName} 🚚
+تم شحن طلب الجملة رقم #{orderNumber} وهو في الطريق إليكم!
+
+📋 تفاصيل الشحن:
+------------------------------
+📍 شركة الشحن: {shippingCarrier}
+📦 رقم التتبع / البوليصة: {trackingNumber}
+💰 الإجمالي: {total} {currency}
+------------------------------
+
+شكراً لثقتكم المستمرة بنا 🌟`,
+    variables: ['customerName', 'orderNumber', 'shippingCarrier', 'trackingNumber', 'total', 'currency']
+  },
+
+  WHOLESALE_PAYMENT_RECEIVED: {
+    name: 'إيصال استلام دفعة جملة',
+    content: `إيصال استلام دفعة 🧾
+مرحباً {customerName}، لقد تم استلام دفعتكم بنجاح:
+
+💵 المبلغ المدفوع: {amount} {currency}
+🔖 رقم الإيصال / المرجع: {paymentNumber}
+📅 التاريخ: {date}
+------------------------------
+📊 موقف الحساب:
+• الرصيد قبل الدفعة: {balanceBefore} {currency}
+• الرصيد المتبقي: {balanceAfter} {currency}
+------------------------------
+{notes}
+شكراً لالتزامكم بالسداد 🙏✨`,
+    variables: ['customerName', 'amount', 'currency', 'paymentNumber', 'date', 'balanceBefore', 'balanceAfter', 'notes']
+  },
+
+  WHOLESALE_DUE_REMINDER: {
+    name: 'تذكير مستحقات جملة',
+    content: `مرحباً شريكنا العزيز {customerName} 🔔
+نود تذكيركم بموقف الحساب الجاري طرفكم:
+
+💰 الرصيد الحالي المستحق: {currentBalance} {currency}
+🛡️ الحد الائتماني: {creditLimit} {currency}
+📅 موعد الاستحقاق: {dueDate}
+
+يرجى التكرم بسداد المبلغ المستحق للحفاظ على انتظام التوريدات واستمرار خط الائتمان.
+لطلب كشف حساب تفصيلي PDF، لا تتردد في مراسلتنا في أي وقت 🙏✨`,
+    variables: ['customerName', 'currentBalance', 'currency', 'creditLimit', 'dueDate']
   }
-}
+};
+
 
 module.exports = DEFAULT_TEMPLATES;

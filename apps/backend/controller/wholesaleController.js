@@ -115,9 +115,29 @@ const wholesaleController = {
   // Statement
   async generateStatement(req, res) {
     try {
+      if (req.query.format === 'pdf') {
+        return wholesaleController.downloadStatementPdf(req, res);
+      }
       const data = await wholesaleService.generateStatement(req.params.customerId, req.user.companyId, req.query.periodStart, req.query.periodEnd);
       res.json({ success: true, data });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  },
+
+  async downloadStatementPdf(req, res) {
+    try {
+      const customerId = req.params.customerId || req.params.id;
+      const pdfBuffer = await wholesaleService.generateStatementPdf(
+        customerId,
+        req.user.companyId,
+        req.query.periodStart,
+        req.query.periodEnd
+      );
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="statement-${customerId}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   },
 
   // Dashboard

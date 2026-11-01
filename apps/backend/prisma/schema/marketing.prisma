@@ -1272,6 +1272,14 @@ model WhatsAppNotificationSettings {
   damagedInTransitEnabled        Boolean  @default(true)
   returnedToSenderEnabled        Boolean  @default(true)
 
+  // --- Wholesale Notifications ---
+  wholesaleNotificationsEnabled       Boolean  @default(true)
+  wholesaleOrderCreatedEnabled        Boolean  @default(true)
+  wholesaleOrderConfirmedEnabled      Boolean  @default(true)
+  wholesaleOrderShippedEnabled        Boolean  @default(true)
+  wholesalePaymentReceivedEnabled     Boolean  @default(true)
+  wholesaleDueReminderEnabled         Boolean  @default(true)
+
   rateLimitPerMinute            Int      @default(30)
   quietHoursEnabled             Boolean  @default(true)
   quietHoursStart               String   @default("22:00")

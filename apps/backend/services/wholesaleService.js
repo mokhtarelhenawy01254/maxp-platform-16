@@ -299,10 +299,39 @@ const wholesaleService = {
     const balanceAfter = type === 'PAYMENT' || type === 'CREDIT_NOTE'
       ? balanceBefore - Number(amount)
       : balanceBefore + Number(amount);
-    const tx = await prisma.wholesaleTransaction.create({
-      data: { wholesaleCustomerId, companyId, type, amount: Number(amount), balanceBefore, balanceAfter, referenceType, referenceId, notes },
+
+    // 🔒 Atomic Transaction Isolation: wrap ledger creation + balance update in $transaction
+    const tx = await prisma.$transaction(async (txPrisma) => {
+      const createdTx = await txPrisma.wholesaleTransaction.create({
+        data: { wholesaleCustomerId, companyId, type, amount: Number(amount), balanceBefore, balanceAfter, referenceType, referenceId, notes },
+      });
+      await txPrisma.wholesaleCustomer.update({
+        where: { id: wholesaleCustomerId },
+        data: { currentBalance: balanceAfter },
+      });
+      return createdTx;
     });
-    await prisma.wholesaleCustomer.update({ where: { id: wholesaleCustomerId }, data: { currentBalance: balanceAfter } });
+
+    // 🧾 Dispatch WhatsApp payment receipt when type === 'PAYMENT'
+    if (type === 'PAYMENT') {
+      try {
+        const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+        WhatsAppNotificationService.sendWholesalePaymentNotification({
+          companyId,
+          wholesaleCustomerId,
+          amount: Number(amount),
+          balanceBefore,
+          balanceAfter,
+          referenceId,
+          notes,
+        }).catch((notifyErr) => {
+          console.warn('⚠️ [WHOLESALE] Payment notification dispatch failed (non-fatal):', notifyErr?.message || notifyErr);
+        });
+      } catch (requireErr) {
+        console.warn('⚠️ [WHOLESALE] WhatsAppNotificationService unavailable:', requireErr?.message);
+      }
+    }
+
     return tx;
   },
 
@@ -317,13 +346,13 @@ const wholesaleService = {
     const startDate = periodStart ? new Date(periodStart) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const endDate = periodEnd ? new Date(periodEnd) : new Date();
     const transactions = await prisma.wholesaleTransaction.findMany({
-      where: { wholesaleCustomerId, createdAt: { gte: startDate, lte: endDate } },
+      where: { wholesaleCustomerId, companyId, createdAt: { gte: startDate, lte: endDate } },
       orderBy: { createdAt: 'asc' },
     });
     const totalInvoiced = transactions.filter(t => t.type === 'INVOICE').reduce((s, t) => s + Number(t.amount), 0);
     const totalPaid = transactions.filter(t => t.type === 'PAYMENT' || t.type === 'CREDIT_NOTE').reduce((s, t) => s + Number(t.amount), 0);
     const prev = await prisma.wholesaleTransaction.findFirst({
-      where: { wholesaleCustomerId, createdAt: { lt: startDate } },
+      where: { wholesaleCustomerId, companyId, createdAt: { lt: startDate } },
       orderBy: { createdAt: 'desc' },
     });
     const openingBalance = prev ? Number(prev.balanceAfter) : 0;
@@ -359,6 +388,20 @@ const wholesaleService = {
       totalInvoiced,
       totalPaid,
     };
+  },
+
+  /**
+   * 📄 إنشاء كشف حساب PDF لتاجر جملة
+   */
+  async generateStatementPdf(wholesaleCustomerId, companyId, periodStart, periodEnd) {
+    const statementData = await this.generateStatement(wholesaleCustomerId, companyId, periodStart, periodEnd);
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, name: true, phone: true, email: true, logo: true, address: true },
+    });
+    const { generateStatementPdf: renderPdf } = require('./wholesalePdfService');
+    return renderPdf(statementData, company || {});
   },
 
   // ── Dashboard ──
