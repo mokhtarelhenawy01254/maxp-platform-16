@@ -403,16 +403,9 @@ const compressImageFile = (file: File): Promise<string> => {
   const startNewSession = async () => {
     setShowSessionsList(false);
     setSessionError(null);
-    try {
-      await createNewCloudSession();
-      setMessages([]);
-    } catch (err: any) {
-      console.error('[Copilot] Failed starting new session:', err);
-      setSessionError({
-        code: 'LOAD_ERROR',
-        message: 'تعذر إنشاء جلسة سحابية جديدة. يرجى إعادة المحاولة.',
-      });
-    }
+    // Lazy session: منعملش صف فاضي على السيرفر — الجلسة بتتخلق أول رسالة فعليًا
+    setActiveSessionId('');
+    setMessages([]);
   };
 
   const handleRewind = useCallback(async () => {
