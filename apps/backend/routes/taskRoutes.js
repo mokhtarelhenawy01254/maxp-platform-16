@@ -183,11 +183,7 @@ router.get("/my-tasks", taskController.getMyTasks);
 router.get("/assigned-by-me", taskController.getTasksAssignedByMe);
 router.get("/company-users", taskController.getCompanyUsers);
 router.get("/time-entries", taskController.getCompanyTimeEntries);
-router.get(
-  "/dashboard-stats",
-  cacheMiddleware(30000),
-  taskController.getDashboardStats,
-);
+router.get("/dashboard-stats", taskController.getDashboardStats);
 router.get("/kanban", taskController.getKanbanTasks);
 router.get("/running-timer", taskController.getRunningTimer);
 router.get("/company-active-timers", taskController.getCompanyActiveTimers);

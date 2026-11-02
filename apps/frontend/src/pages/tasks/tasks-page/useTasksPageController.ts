@@ -49,6 +49,8 @@ import {
   isOverdue,
   getStatusText,
   getPriorityText,
+  computeTaskStats,
+  type ServerTaskStatsPayload,
 } from "./helpers";
 
 const getAccessToken = (): string | null => tokenManager.getAccessToken();
@@ -115,6 +117,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [serverTotalPages, setServerTotalPages] = useState(1);
   const [serverTotalTasks, setServerTotalTasks] = useState(0);
+  const [serverStats, setServerStats] = useState<ServerTaskStatsPayload | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
   // Users state
@@ -671,6 +674,71 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     }
   };
 
+  const fetchTaskStats = async () => {
+    try {
+      const token = getAccessToken();
+      if (!token) return;
+
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+      if (unifiedFilters.search) {
+        queryParams.append("search", unifiedFilters.search);
+      } else if (debouncedSearch) {
+        queryParams.append("search", debouncedSearch);
+      }
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all") {
+        queryParams.append("assignedTo", unifiedFilters.assignedTo);
+      }
+      if (unifiedFilters.status && unifiedFilters.status !== "all") {
+        queryParams.append("status", unifiedFilters.status);
+      }
+      if (unifiedFilters.priority && unifiedFilters.priority !== "all") {
+        queryParams.append("priority", unifiedFilters.priority);
+      }
+      if (unifiedFilters.dueDateFrom) {
+        queryParams.append("dueDateFrom", unifiedFilters.dueDateFrom);
+      }
+      if (unifiedFilters.dueDateTo) {
+        queryParams.append("dueDateTo", unifiedFilters.dueDateTo);
+      }
+      if (unifiedFilters.tag && unifiedFilters.tag !== "all") {
+        queryParams.append("tag", unifiedFilters.tag);
+      }
+      if (taskFilter && taskFilter !== "all") {
+        queryParams.append("scope", taskFilter);
+        if (taskFilter === "my-tasks" && activeUserId) {
+          queryParams.append("assignedTo", activeUserId);
+        }
+      }
+
+      const queryString = queryParams.toString();
+      const url = queryString
+        ? `tasks/dashboard-stats?${queryString}`
+        : "tasks/dashboard-stats";
+
+      const response = await fetch(buildApiUrl(url), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success && data.data?.tasks) {
+        setServerStats(data.data.tasks);
+      }
+    } catch (error) {
+      // Keep existing stats on failure
+    }
+  };
+
+  const reloadAll = async () => {
+    await Promise.all([fetchTasks(), fetchTaskStats()]);
+  };
+
   const fetchProjects = async () => {
     try {
       const token = getAccessToken();
@@ -758,7 +826,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       }
 
       if (data.success) {
-        fetchTasks();
+        await reloadAll();
         setShowCreateTaskModal(false);
         setNewTask(
           createInitialTaskDraft(
@@ -803,7 +871,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
 
       const data = await response.json();
       if (data.success) {
-        fetchTasks();
+        await reloadAll();
         if (selectedTask && selectedTask.id === taskId) {
           setSelectedTask(data.data);
         }
@@ -886,7 +954,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
 
       const data = await response.json();
       if (data.success) {
-        fetchTasks();
+        await reloadAll();
         closeEditModal();
         tToast.success("tasks.success_update_b5ad");
       } else {
@@ -933,7 +1001,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
 
       const data = await response.json();
       if (data.success) {
-        fetchTasks();
+        await reloadAll();
         tToast.success("tasks.msg_178a");
       } else {
         toast.error(data.error || i18n.t("tasks.msg_bbd2"));
@@ -954,7 +1022,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
 
         const data = await response.json();
         if (data.success) {
-          fetchTasks();
+          await reloadAll();
           setShowTaskModal(false);
           setSelectedTask(null);
           tToast.success("tasks.success_delete_04cd");
@@ -1085,18 +1153,12 @@ export function useTasksPageController(embeddedInModal?: boolean) {
   const paginatedTasks = quickFilteredTasks;
   const totalPages = serverTotalPages;
 
-  const taskStats = {
-    total: serverTotalTasks > 0 ? serverTotalTasks : safeTasks.length,
-    pending: safeTasks.filter((t) => t.status?.toLowerCase() === "pending")
-      .length,
-    inProgress: safeTasks.filter(
-      (t) => t.status?.toLowerCase() === "in_progress"
-    ).length,
-    completed: safeTasks.filter(
-      (t) => t.status?.toLowerCase() === "completed"
-    ).length,
-    overdue: safeTasks.filter((t) => isOverdue(t.dueDate, t.status)).length,
-  };
+  const taskStats = computeTaskStats({
+    serverStats,
+    safeTasks,
+    serverTotalTasks,
+    taskFilter,
+  });
 
   const handleSelectAll = () => {
     if (selectedTasks.length === paginatedTasks.length) {
@@ -1129,7 +1191,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       });
     }
     const count = selectedTasks.length;
-    fetchTasks();
+    await reloadAll();
     setSelectedTasks([]);
     toast.success(
       i18n.t("tasks.success_update_selectedTaskslength_task_4e85", {
@@ -1150,7 +1212,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       });
     }
     const count = selectedTasks.length;
-    fetchTasks();
+    await reloadAll();
     setSelectedTasks([]);
     toast.success(
       i18n.t("tasks.success_delete_selectedTaskslength_task_9484", {
@@ -1293,6 +1355,16 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       );
   }, [location.search, tasks]);
 
+  // Reset currentPage to 1 when filters, scope, quickFilter, or search change
+  const isFirstFiltersMountRef = useRef(true);
+  useEffect(() => {
+    if (isFirstFiltersMountRef.current) {
+      isFirstFiltersMountRef.current = false;
+      return;
+    }
+    setCurrentPage(1);
+  }, [taskFilter, filters, unifiedFilters, quickFilter, debouncedSearch]);
+
   // Data refresh on workspace controls
   useEffect(() => {
     if (!activeCompanyId && !getAccessToken()) {
@@ -1300,7 +1372,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       return;
     }
 
-    fetchTasks();
+    reloadAll();
   }, [ // eslint-disable-line react-hooks/exhaustive-deps
     activeCompanyId,
     filters,
@@ -1369,6 +1441,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     // Data
     tasks,
     safeTasks,
+    serverStats,
     projects,
     goals,
     users,
@@ -1477,6 +1550,8 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     updateCategory,
     deleteCategory,
     fetchTasks,
+    fetchTaskStats,
+    reloadAll,
     fetchProjects,
     fetchGoals,
     createTask,

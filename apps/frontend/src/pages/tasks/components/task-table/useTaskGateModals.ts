@@ -94,7 +94,7 @@ export function useTaskGateModals({ onReloadTasks, updateTaskStatus }: UseTaskGa
       if (res.ok && data.success) {
         toast.success("تم تسليم المهمة للمراجعة بنجاح");
         setDeliveryGateTask(null);
-        if (onReloadTasks) onReloadTasks();
+        if (onReloadTasks) await onReloadTasks();
         else updateTaskStatus(deliveryGateTask.id, "in_review");
       } else {
         const errMsg = data.error || data.message || "فشل تسليم المهمة للمراجعة";
@@ -134,7 +134,7 @@ export function useTaskGateModals({ onReloadTasks, updateTaskStatus }: UseTaskGa
       if (data.success) {
         toast.success("تم اعتماد المهمة بنجاح");
         setApprovalGateTask(null);
-        if (onReloadTasks) onReloadTasks();
+        if (onReloadTasks) await onReloadTasks();
         else updateTaskStatus(approvalGateTask.id, "completed");
       } else {
         toast.error(data.error || "فشل اعتماد المهمة");
@@ -161,7 +161,7 @@ export function useTaskGateModals({ onReloadTasks, updateTaskStatus }: UseTaskGa
       const data = await res.json();
       if (data.success) {
         toast.success("تم اعتماد المهمة بنجاح");
-        if (onReloadTasks) onReloadTasks();
+        if (onReloadTasks) await onReloadTasks();
         else updateTaskStatus(taskToApprove.id, "completed");
       } else {
         toast.error(data.error || "فشل اعتماد المهمة");
@@ -198,7 +198,7 @@ export function useTaskGateModals({ onReloadTasks, updateTaskStatus }: UseTaskGa
       if (data.success) {
         toast.warning("تم إرجاع المهمة للتعديل بنجاح");
         setApprovalGateTask(null);
-        if (onReloadTasks) onReloadTasks();
+        if (onReloadTasks) await onReloadTasks();
         else updateTaskStatus(approvalGateTask.id, "in_progress");
       } else {
         toast.error(data.error || "فشل طلب التعديلات");

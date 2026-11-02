@@ -64,7 +64,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           project={controller.activeProjectWorkspace}
           tasks={controller.safeTasks}
           onBack={controller.handleCloseProjectWorkspace}
-          onRefreshTasks={controller.fetchTasks}
+          onRefreshTasks={controller.reloadAll || controller.fetchTasks}
           onTaskStatusChange={controller.updateTaskStatus}
           onOpenTaskDetails={(t) => {
             controller.setSelectedTask(t);
@@ -138,7 +138,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       return (
         <ComplianceReportsTab
           userRole={controller.user?.role}
-          onRefreshTasks={controller.fetchTasks}
+          onRefreshTasks={controller.reloadAll || controller.fetchTasks}
         />
       );
     }

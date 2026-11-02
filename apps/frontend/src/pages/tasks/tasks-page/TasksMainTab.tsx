@@ -35,6 +35,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
     setQuickFilter,
     loadError,
     fetchTasks,
+    reloadAll,
     taskFilter,
     hasCommandState,
     selectedTasksCount,
@@ -321,7 +322,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
           <TaskTable
             canApprove={isApprover}
             userRole={user?.role}
-            onReloadTasks={fetchTasks}
+            onReloadTasks={reloadAll || fetchTasks}
             paginatedTasks={quickFilteredTasks}
             filteredAndSortedTasks={quickFilteredTasks}
             searchQuery={searchQuery}

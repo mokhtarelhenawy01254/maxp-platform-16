@@ -2999,8 +2999,27 @@ const taskController = {
     try {
       const companyId = await resolveCompanyContext(req);
       const userId = req.user?.userId || req.user?.id;
-      const { assignedTo, projectId, priority, status } = req.query;
-      const effectiveAssignedTo = (assignedTo && assignedTo !== "all") ? assignedTo : null;
+      const {
+        assignedTo,
+        projectId,
+        categoryId,
+        priority,
+        status,
+        search,
+        dueDateFrom,
+        dueDateTo,
+        tag,
+        scope,
+      } = req.query;
+      let effectiveAssignedTo = (assignedTo && assignedTo !== "all") ? assignedTo : null;
+      let effectiveCreatedBy = null;
+
+      if (scope === "my-tasks" && !effectiveAssignedTo) {
+        effectiveAssignedTo = userId;
+      } else if (scope === "assigned-by-me") {
+        effectiveCreatedBy = userId;
+      }
+
       const prisma = getSharedPrismaClient();
 
       if (!companyId) {
@@ -3014,10 +3033,37 @@ const taskController = {
       const baseTaskWhere = {
         companyId,
         ...(effectiveAssignedTo && { assignedTo: effectiveAssignedTo }),
+        ...(effectiveCreatedBy && { createdBy: effectiveCreatedBy }),
         ...(projectId && { projectId }),
+        ...(categoryId && { categoryId }),
         ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
         ...(status && status !== "all" && { status: normalizeStatusFilter(status) }),
       };
+
+      if (dueDateFrom || dueDateTo) {
+        baseTaskWhere.dueDate = {};
+        if (dueDateFrom) baseTaskWhere.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
+        if (dueDateTo) baseTaskWhere.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+      }
+
+      if (tag && tag !== "all") {
+        baseTaskWhere.tags = { contains: tag, mode: "insensitive" };
+      }
+
+      if (search && String(search).trim()) {
+        const tokens = String(search).trim().split(/\s+/).filter(Boolean);
+        const searchClauses = tokens.map((token) => ({
+          OR: [
+            { id: { contains: token, mode: "insensitive" } },
+            { title: { contains: token, mode: "insensitive" } },
+            { description: { contains: token, mode: "insensitive" } },
+            { tags: { contains: token, mode: "insensitive" } },
+          ],
+        }));
+        if (searchClauses.length > 0) {
+          baseTaskWhere.AND = searchClauses;
+        }
+      }
 
       const [
         taskStatusCounts,
@@ -3100,6 +3146,7 @@ const taskController = {
         pending: statusCountMap.PENDING || 0,
         inProgress: statusCountMap.IN_PROGRESS || 0,
         inReview: statusCountMap.IN_REVIEW || 0,
+        onHold: statusCountMap.ON_HOLD || 0,
         completed: statusCountMap.COMPLETED || 0,
         cancelled: statusCountMap.CANCELLED || 0,
       };
@@ -3108,6 +3155,7 @@ const taskController = {
         pending: myStatusCountMap.PENDING || 0,
         inProgress: myStatusCountMap.IN_PROGRESS || 0,
         inReview: myStatusCountMap.IN_REVIEW || 0,
+        onHold: myStatusCountMap.ON_HOLD || 0,
         completed: myStatusCountMap.COMPLETED || 0,
         cancelled: myStatusCountMap.CANCELLED || 0,
       };
@@ -3130,12 +3178,16 @@ const taskController = {
 
       const stats = {
         totalTasks,
+        total: totalTasks,
         myTasks: totalMyTasks,
+        totalMyTasks,
         tasksByStatus,
         myTasksByStatus,
         tasksByPriority,
         overdueTasks,
         myOverdueTasks,
+        overdue: overdueTasks,
+        myOverdue: myOverdueTasks,
         completionRate:
           totalTasks > 0
             ? Math.round((tasksByStatus.completed / totalTasks) * 100)
