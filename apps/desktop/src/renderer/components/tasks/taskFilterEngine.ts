@@ -1,5 +1,5 @@
 /**
- * Unified Task Filter Engine for MaxP Platform (Desktop)
+ * Unified Task Filter Engine for MaxP Platform
  * Shared deterministic filtering logic between Web and Desktop.
  */
 
@@ -279,13 +279,21 @@ export function filterTasksWithUnifiedEngine<T = any>(
  * Parses unified filters from URL search params or hash query string
  */
 export function parseUnifiedFiltersFromUrl(
-  searchOrHash: string = typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '',
+  searchOrHash: string = typeof window !== 'undefined'
+    ? (window.location.hash?.includes('?') ? window.location.hash : (window.location.search || window.location.hash || ''))
+    : '',
   fallback: UnifiedTaskFilters = defaultUnifiedTaskFilters
 ): UnifiedTaskFilters {
   try {
     let queryStr = searchOrHash;
     if (queryStr.includes('?')) {
       queryStr = queryStr.slice(queryStr.indexOf('?') + 1);
+    } else if (typeof window !== 'undefined') {
+      if (window.location.search?.includes('?')) {
+        queryStr = window.location.search.slice(window.location.search.indexOf('?') + 1);
+      } else if (window.location.hash?.includes('?')) {
+        queryStr = window.location.hash.slice(window.location.hash.indexOf('?') + 1);
+      }
     }
     const params = new URLSearchParams(queryStr);
     return {

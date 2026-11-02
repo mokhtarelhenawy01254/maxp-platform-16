@@ -3,12 +3,8 @@ import {
   Copy,
   Check,
   Download,
-  Search,
   RefreshCw,
-  Sparkles,
-  Filter,
   Calendar,
-  CalendarDays,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react';
@@ -16,11 +12,20 @@ import { audioAlerts } from '../../../utils/audioAlerts';
 import {
   TaskReportItem,
   TaskReportKpiData,
-  TaskReportFilterState,
   TaskDateRange,
   TaskExceptionFilter,
   TeamMemberTaskSummary,
 } from './TaskReportTypes';
+import {
+  UnifiedTaskFilters,
+  defaultUnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  serializeUnifiedFiltersToQuery,
+  persistUnifiedFilters,
+  loadPersistedUnifiedFilters,
+  filterTasksWithUnifiedEngine,
+} from '../taskFilterEngine';
+import { TaskUnifiedFilterBar } from '../TaskUnifiedFilterBar';
 import { TaskReportKpis } from './TaskReportKpis';
 import { TaskReportExceptions } from './TaskReportExceptions';
 import { TaskReportLedger } from './TaskReportLedger';
@@ -81,87 +86,165 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  const [filters, setFilters] = useState<TaskReportFilterState>({
-    dateRange: 'today',
-    specificDate: getTodayStr(),
-    startDate: getDaysAgoStr(7),
-    endDate: getTodayStr(),
-    selectedUserId: 'all',
-    selectedProject: 'all',
-    exceptionFilter: 'all',
-    searchQuery: '',
+  // Unified Filter State with URL and localStorage sync
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() => {
+    const urlStr = typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '';
+    const hasQuery = urlStr.includes('?');
+    if (hasQuery) {
+      return parseUnifiedFiltersFromUrl(urlStr);
+    }
+    return typeof loadPersistedUnifiedFilters === 'function'
+      ? loadPersistedUnifiedFilters()
+      : defaultUnifiedTaskFilters;
   });
 
+  // Report-specific exception toggle (all / time_leaks / review_blocked / overdue)
+  const [exceptionFilter, setExceptionFilter] = useState<TaskExceptionFilter>('all');
+
+  const handleFiltersChange = useCallback((next: UnifiedTaskFilters) => {
+    setUnifiedFilters(next);
+    persistUnifiedFilters(next);
+    try {
+      const queryStr = serializeUnifiedFiltersToQuery(next);
+      const hash = window.location.hash || '#/reports';
+      const baseHash = hash.split('?')[0];
+      window.location.hash = `${baseHash}${queryStr}`;
+    } catch {}
+  }, []);
+
+  // Derive report period from dueDateFrom / dueDateTo
   const activePeriod = useMemo(() => {
     const today = getTodayStr();
-    let start = today;
-    let end = today;
-    let label = 'اليوم';
-    let isSingle = true;
+    const from = unifiedFilters.dueDateFrom;
+    const to = unifiedFilters.dueDateTo;
 
-    switch (filters.dateRange) {
+    if (!from && !to) {
+      return {
+        start: '1970-01-01',
+        end: '2099-12-31',
+        label: 'كافة الفترات',
+        isSingle: false,
+      };
+    }
+
+    if (from === to) {
+      const d = from || today;
+      if (d === today) {
+        return {
+          start: today,
+          end: today,
+          label: `اليوم (${formatArabicDate(today)})`,
+          isSingle: true,
+        };
+      }
+      if (d === getYesterdayStr()) {
+        return {
+          start: d,
+          end: d,
+          label: `أمس (${formatArabicDate(d)})`,
+          isSingle: true,
+        };
+      }
+      return {
+        start: d,
+        end: d,
+        label: `يوم ${formatArabicDate(d)}`,
+        isSingle: true,
+      };
+    }
+
+    const start = from || '1970-01-01';
+    const end = to || '2099-12-31';
+    let label = `فترة مخصصة (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+    if (start === getThisWeekStartStr() && end === today) {
+      label = `هذا الأسبوع (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+    } else if (start === getDaysAgoStr(7) && end === today) {
+      label = `آخر 7 أيام (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+    } else if (start === getThisMonthStartStr() && end === today) {
+      label = `هذا الشهر (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+    } else if (start === getDaysAgoStr(30) && end === today) {
+      label = `آخر 30 يوم (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+    }
+
+    return {
+      start,
+      end,
+      label,
+      isSingle: false,
+    };
+  }, [unifiedFilters.dueDateFrom, unifiedFilters.dueDateTo]);
+
+  // Derive date preset ID for visual button highlighting
+  const activeDatePreset: TaskDateRange = useMemo(() => {
+    const from = unifiedFilters.dueDateFrom;
+    const to = unifiedFilters.dueDateTo;
+    const today = getTodayStr();
+    if (!from && !to) return 'all';
+    if (from === to) {
+      if (from === today) return 'today';
+      if (from === getYesterdayStr()) return 'yesterday';
+      return 'custom_day';
+    }
+    if (to === today) {
+      if (from === getThisWeekStartStr()) return 'this_week';
+      if (from === getDaysAgoStr(7)) return '7days';
+      if (from === getThisMonthStartStr()) return 'this_month';
+      if (from === getDaysAgoStr(30)) return '30days';
+    }
+    return 'custom_range';
+  }, [unifiedFilters.dueDateFrom, unifiedFilters.dueDateTo]);
+
+  // Handle date preset selection
+  const setDatePreset = (preset: TaskDateRange) => {
+    const today = getTodayStr();
+    let from = '';
+    let to = '';
+    switch (preset) {
       case 'today':
-        start = today;
-        end = today;
-        label = `اليوم (${formatArabicDate(today)})`;
-        isSingle = true;
+        from = today;
+        to = today;
         break;
       case 'yesterday': {
         const y = getYesterdayStr();
-        start = y;
-        end = y;
-        label = `أمس (${formatArabicDate(y)})`;
-        isSingle = true;
-        break;
-      }
-      case 'custom_day': {
-        const d = filters.specificDate || today;
-        start = d;
-        end = d;
-        label = `يوم ${formatArabicDate(d)}`;
-        isSingle = true;
+        from = y;
+        to = y;
         break;
       }
       case 'this_week':
-        start = getThisWeekStartStr();
-        end = today;
-        label = `هذا الأسبوع (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
-        isSingle = false;
+        from = getThisWeekStartStr();
+        to = today;
         break;
       case '7days':
-        start = getDaysAgoStr(7);
-        end = today;
-        label = `آخر 7 أيام (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
-        isSingle = false;
+        from = getDaysAgoStr(7);
+        to = today;
         break;
       case 'this_month':
-        start = getThisMonthStartStr();
-        end = today;
-        label = `هذا الشهر (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
-        isSingle = false;
+        from = getThisMonthStartStr();
+        to = today;
         break;
       case '30days':
-        start = getDaysAgoStr(30);
-        end = today;
-        label = `آخر 30 يوم (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
-        isSingle = false;
+        from = getDaysAgoStr(30);
+        to = today;
+        break;
+      case 'custom_day':
+        from = unifiedFilters.dueDateFrom || today;
+        to = unifiedFilters.dueDateFrom || today;
         break;
       case 'custom_range':
-        start = filters.startDate || getDaysAgoStr(7);
-        end = filters.endDate || today;
-        label = `فترة مخصصة (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
-        isSingle = start === end;
+        from = unifiedFilters.dueDateFrom || getDaysAgoStr(7);
+        to = unifiedFilters.dueDateTo || today;
         break;
       case 'all':
-        start = '1970-01-01';
-        end = '2099-12-31';
-        label = 'كافة الفترات';
-        isSingle = false;
+        from = '';
+        to = '';
         break;
     }
-
-    return { start, end, label, isSingle };
-  }, [filters.dateRange, filters.specificDate, filters.startDate, filters.endDate]);
+    handleFiltersChange({
+      ...unifiedFilters,
+      dueDateFrom: from,
+      dueDateTo: to,
+    });
+  };
 
   const roleStr = String(currentUser?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
@@ -178,7 +261,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
     const actualSeconds = rows.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0);
     const totalHours = Math.round((actualSeconds / 3600) * 10) / 10;
     const withRatio = rows.filter((r: any) => Number(r.activityRatio || 0) > 0);
-    // activityRatio arrives 0..1 (fraction) or 0..100 (percent) depending on backend — normalize
     const avgProd = withRatio.length
       ? Math.round(withRatio.reduce((s: number, r: any) => {
           const v = Number(r.activityRatio || 0);
@@ -320,9 +402,9 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
       // 3. Resolve actual minutes based on active date range
       let actualMin = lifetimeMin;
-      if (filters.dateRange === 'today') {
+      if (activeDatePreset === 'today') {
         actualMin = todayMin;
-      } else if (filters.dateRange !== 'all') {
+      } else if (activeDatePreset !== 'all') {
         actualMin = periodTrackedMin > 0 ? periodTrackedMin : (activePeriod.isSingle && activePeriod.start === todayStr ? todayMin : lifetimeMin);
       }
 
@@ -366,11 +448,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       }
 
       return {
+        ...t,
         id: t.id,
         title: t.title || 'مهمة بدون عنوان',
+        description: t.description || '',
         projectName: projName,
         assignedToName: assigneeName,
         assignedToId: assignedId || 'unassigned',
+        assignedTo: assignedId || 'unassigned',
         status: (String(t.status || 'PENDING').toUpperCase() as any),
         priority: (String(t.priority || 'MEDIUM').toUpperCase() as any),
         dueDate: t.dueDate || t.due_date,
@@ -386,65 +471,25 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         isTimeLeak,
         isReviewBlocked: isReview,
         reworkMinutes: reworkMin,
+        tags: t.tags,
+        returnCount: t.returnCount,
+        returnReasonType: t.returnReasonType || t.return_reason_type,
       };
     });
-  }, [tasks, users, filters.dateRange, activePeriod]);
+  }, [tasks, users, activeDatePreset, activePeriod]);
 
-  // Filter tasks based on active controls
+  // Filter tasks using unified filter engine and secondary exception toggle
   const filteredItems = useMemo(() => {
-    const todayStr = getTodayStr();
-    return reportItems.filter((t) => {
-      if (filters.selectedUserId !== 'all' && t.assignedToId !== filters.selectedUserId) {
-        return false;
-      }
-      if (filters.selectedProject !== 'all' && t.projectName !== filters.selectedProject) {
-        return false;
-      }
-      if (filters.exceptionFilter === 'time_leaks' && !t.isTimeLeak) return false;
-      if (filters.exceptionFilter === 'review_blocked' && !t.isReviewBlocked) return false;
-      if (filters.exceptionFilter === 'overdue' && !t.isOverdue) return false;
-
-      // Quick search fallback if provided in TaskReportFilterState
-      if (filters.searchQuery.trim()) {
-        const q = filters.searchQuery.toLowerCase();
-        const titleMatch = t.title.toLowerCase().includes(q);
-        const projMatch = t.projectName.toLowerCase().includes(q);
-        const userMatch = t.assignedToName.toLowerCase().includes(q);
-        const idMatch = String(t.id || '').toLowerCase().includes(q);
-        if (!titleMatch && !projMatch && !userMatch && !idMatch) {
-          return false;
-        }
-      }
-
-      const compDate = (t.completedAt || '').slice(0, 10);
-
-      if (filters.dateRange === 'all') {
-        return true;
-      }
-
-      const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-
-      if (activePeriod.isSingle) {
-        const targetDay = activePeriod.start;
-        const isCompletedOnDay = t.status === 'COMPLETED' && compDate === targetDay;
-        const isWorkedOnDay = (t.timeEntries || []).some(
-          (e: any) => (e.startTime || e.createdAt || '').slice(0, 10) === targetDay
-        );
-        const isCreatedOnDay = (t.createdAt || '').slice(0, 10) === targetDay;
-        const isCurrentActive = targetDay === todayStr && isActive;
-        return isCompletedOnDay || isWorkedOnDay || isCreatedOnDay || isCurrentActive;
-      }
-
-      // Date range
-      const isCompletedInRange = t.status === 'COMPLETED' && compDate >= activePeriod.start && compDate <= activePeriod.end;
-      const isWorkedInRange = (t.timeEntries || []).some((e: any) => {
-        const d = (e.startTime || e.createdAt || '').slice(0, 10);
-        return d >= activePeriod.start && d <= activePeriod.end;
-      });
-      const isCreatedInRange = (t.createdAt || '').slice(0, 10) >= activePeriod.start && (t.createdAt || '').slice(0, 10) <= activePeriod.end;
-      return isCompletedInRange || isWorkedInRange || isCreatedInRange || isActive;
-    });
-  }, [reportItems, filters, activePeriod]);
+    let list = filterTasksWithUnifiedEngine(reportItems, unifiedFilters);
+    if (exceptionFilter === 'time_leaks') {
+      list = list.filter((t) => t.isTimeLeak);
+    } else if (exceptionFilter === 'review_blocked') {
+      list = list.filter((t) => t.isReviewBlocked);
+    } else if (exceptionFilter === 'overdue') {
+      list = list.filter((t) => t.isOverdue);
+    }
+    return list;
+  }, [reportItems, unifiedFilters, exceptionFilter]);
 
   // Aggregate KPIs
   const kpis: TaskReportKpiData = useMemo(() => {
@@ -458,8 +503,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     const totalSeconds = filteredItems.reduce((acc, t) => acc + t.actualTrackedMinutes * 60, 0);
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    // Real estimation accuracy: tasks WITH estimate AND tracked time whose
-    // actual stayed within ±30% of the estimate (was hardcoded 85 — fake)
     const withEvidence = filteredItems.filter(
       (t) => t.estimatedMinutes > 0 && t.actualTrackedMinutes > 0
     );
@@ -467,7 +510,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       (t) => Math.abs(t.actualTrackedMinutes - t.estimatedMinutes) <= t.estimatedMinutes * 0.3
     ).length;
     const realAccuracy = withEvidence.length > 0 ? Math.round((accurate / withEvidence.length) * 100) : 0;
-    // Real attendance work time: team aggregate for managers, own attendance day for employees
     const attendanceActiveSeconds = teamOverview.length > 0
       ? teamOverview.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0)
       : myDayActiveSeconds;
@@ -490,11 +532,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       totalReworkMinutes: totalRework,
     };
   }, [filteredItems, teamOverview, myDayActiveSeconds]);
-
-  // Unique project names for dropdown
-  const uniqueProjects = useMemo(() => {
-    return Array.from(new Set(reportItems.map((t) => t.projectName))).filter(Boolean);
-  }, [reportItems]);
 
   // Per-member workload breakdown (in-progress, in-review, completed today)
   const teamMembersSummary: TeamMemberTaskSummary[] = useMemo(() => {
@@ -568,7 +605,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         m.totalActiveCount += 1;
       } else if (t.status === 'COMPLETED') {
         const compDate = (t.completedAt || t.createdAt || '').slice(0, 10);
-        if (compDate === todayStr || filters.dateRange === 'today') {
+        if (compDate === todayStr || activeDatePreset === 'today') {
           m.completedTodayCount += 1;
         }
       } else if (t.status === 'PENDING') {
@@ -585,7 +622,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         if (bActive !== aActive) return bActive - aActive;
         return a.userName.localeCompare(b.userName, 'ar');
       });
-  }, [users, filteredItems, filters.dateRange]);
+  }, [users, filteredItems, activeDatePreset]);
 
   // 1-Click Daily Standup Generator
   const handleCopyDailyStandup = () => {
@@ -666,7 +703,18 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   return (
     <div style={styles.chassis}>
-      {/* Top Controls Toolbar */}
+      {/* Unified Omnisearch & Filter Bar (Web & Desktop Shared Engine) */}
+      <TaskUnifiedFilterBar
+        filters={unifiedFilters}
+        onFiltersChange={handleFiltersChange}
+        users={users}
+        totalCount={reportItems.length}
+        filteredCount={filteredItems.length}
+        onRefresh={() => loadData(true)}
+        isLoading={loading}
+      />
+
+      {/* Top Controls Toolbar: Date Presets & Quick Actions */}
       <div style={styles.topToolbar}>
         <div style={styles.toolbarLeft}>
           {/* Date Segmented Controls */}
@@ -686,12 +734,12 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
             ).map((item) => (
               <button
                 key={item.id}
-                onClick={() => setFilters((p) => ({ ...p, dateRange: item.id }))}
+                onClick={() => setDatePreset(item.id)}
                 style={{
                   ...styles.segmentBtn,
-                  background: filters.dateRange === item.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
-                  color: filters.dateRange === item.id ? '#ffffff' : 'var(--text-muted)',
-                  fontWeight: filters.dateRange === item.id ? 700 : 500,
+                  background: activeDatePreset === item.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                  color: activeDatePreset === item.id ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: activeDatePreset === item.id ? 700 : 500,
                 }}
               >
                 {item.label}
@@ -700,14 +748,15 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           </div>
 
           {/* Specific Day Picker Control */}
-          {filters.dateRange === 'custom_day' && (
+          {activeDatePreset === 'custom_day' && (
             <div style={styles.datePickerBox}>
               <button
                 onClick={() => {
-                  const cur = filters.specificDate || getTodayStr();
+                  const cur = unifiedFilters.dueDateFrom || getTodayStr();
                   const d = new Date(`${cur}T12:00:00`);
                   d.setDate(d.getDate() - 1);
-                  setFilters((p) => ({ ...p, specificDate: d.toISOString().slice(0, 10) }));
+                  const prev = d.toISOString().slice(0, 10);
+                  handleFiltersChange({ ...unifiedFilters, dueDateFrom: prev, dueDateTo: prev });
                 }}
                 style={styles.dateMiniBtn}
                 title="اليوم السابق"
@@ -717,26 +766,39 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
               </button>
               <input
                 type="date"
-                value={filters.specificDate || getTodayStr()}
+                value={unifiedFilters.dueDateFrom || getTodayStr()}
                 max={getTodayStr()}
-                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, specificDate: e.target.value }))}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleFiltersChange({
+                      ...unifiedFilters,
+                      dueDateFrom: e.target.value,
+                      dueDateTo: e.target.value,
+                    });
+                  }
+                }}
                 style={styles.dateInput}
                 aria-label="اختيار تاريخ محدد"
               />
               <button
                 onClick={() => {
-                  const cur = filters.specificDate || getTodayStr();
+                  const cur = unifiedFilters.dueDateFrom || getTodayStr();
                   if (cur >= getTodayStr()) return;
                   const d = new Date(`${cur}T12:00:00`);
                   d.setDate(d.getDate() + 1);
                   const next = d.toISOString().slice(0, 10);
-                  setFilters((p) => ({ ...p, specificDate: next > getTodayStr() ? getTodayStr() : next }));
+                  const finalNext = next > getTodayStr() ? getTodayStr() : next;
+                  handleFiltersChange({
+                    ...unifiedFilters,
+                    dueDateFrom: finalNext,
+                    dueDateTo: finalNext,
+                  });
                 }}
-                disabled={(filters.specificDate || getTodayStr()) >= getTodayStr()}
+                disabled={(unifiedFilters.dueDateFrom || getTodayStr()) >= getTodayStr()}
                 style={{
                   ...styles.dateMiniBtn,
-                  opacity: (filters.specificDate || getTodayStr()) >= getTodayStr() ? 0.35 : 1,
-                  cursor: (filters.specificDate || getTodayStr()) >= getTodayStr() ? 'default' : 'pointer',
+                  opacity: (unifiedFilters.dueDateFrom || getTodayStr()) >= getTodayStr() ? 0.35 : 1,
+                  cursor: (unifiedFilters.dueDateFrom || getTodayStr()) >= getTodayStr() ? 'default' : 'pointer',
                 }}
                 title="اليوم التالي"
                 aria-label="اليوم التالي"
@@ -747,23 +809,37 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           )}
 
           {/* Custom Date Range Pickers */}
-          {filters.dateRange === 'custom_range' && (
+          {activeDatePreset === 'custom_range' && (
             <div style={styles.datePickerBox}>
               <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>من:</span>
               <input
                 type="date"
-                value={filters.startDate || getDaysAgoStr(7)}
+                value={unifiedFilters.dueDateFrom || getDaysAgoStr(7)}
                 max={getTodayStr()}
-                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, startDate: e.target.value }))}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleFiltersChange({
+                      ...unifiedFilters,
+                      dueDateFrom: e.target.value,
+                    });
+                  }
+                }}
                 style={styles.dateInput}
                 aria-label="تاريخ البداية"
               />
               <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>إلى:</span>
               <input
                 type="date"
-                value={filters.endDate || getTodayStr()}
+                value={unifiedFilters.dueDateTo || getTodayStr()}
                 max={getTodayStr()}
-                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleFiltersChange({
+                      ...unifiedFilters,
+                      dueDateTo: e.target.value,
+                    });
+                  }
+                }}
                 style={styles.dateInput}
                 aria-label="تاريخ النهاية"
               />
@@ -774,46 +850,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           <div style={styles.activePeriodBadge} title="الفترة الزمنية النشطة للتقرير">
             <Calendar size={12} color="var(--accent-blue)" />
             <span>{activePeriod.label}</span>
-          </div>
-
-          {/* Project Filter */}
-          <select
-            value={filters.selectedProject}
-            onChange={(e) => setFilters((p) => ({ ...p, selectedProject: e.target.value }))}
-            style={styles.selectInput}
-          >
-            <option value="all">كافة المشاريع</option>
-            {uniqueProjects.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
-          {/* User Filter (for Managers) */}
-          {isManager && users.length > 0 && (
-            <select
-              value={filters.selectedUserId}
-              onChange={(e) => setFilters((p) => ({ ...p, selectedUserId: e.target.value }))}
-              style={styles.selectInput}
-            >
-              <option value="all">كافة الموظفين</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.firstName} {u.lastName || ''}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {/* Search Input */}
-          <div style={styles.searchWrap}>
-            <Search size={12} color="var(--text-muted)" style={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="بحث في المهام والمشاريع…"
-              value={filters.searchQuery}
-              onChange={(e) => setFilters((p) => ({ ...p, searchQuery: e.target.value }))}
-              style={styles.searchInput}
-            />
           </div>
         </div>
 
@@ -857,9 +893,9 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       {/* KPI Ribbons */}
       <TaskReportKpis
         kpis={kpis}
-        activeFilter={filters.exceptionFilter}
-        onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
-        dateRange={filters.dateRange}
+        activeFilter={exceptionFilter}
+        onFilterChange={setExceptionFilter}
+        dateRange={activeDatePreset}
         periodLabel={activePeriod.label}
       />
 
@@ -910,26 +946,28 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       {/* Team Members Workload Matrix (Per person in-progress, in-review, completed today) */}
       <TaskReportTeamMatrix
         members={teamMembersSummary}
-        selectedUserId={filters.selectedUserId}
+        selectedUserId={unifiedFilters.assignedTo}
         onSelectMember={(userId) => {
-          setFilters((p) => ({
-            ...p,
-            selectedUserId: userId,
-          }));
+          handleFiltersChange({
+            ...unifiedFilters,
+            assignedTo: userId,
+          });
         }}
       />
 
       {/* Active User Filter Chip Indicator */}
-      {filters.selectedUserId !== 'all' && (
+      {unifiedFilters.assignedTo && unifiedFilters.assignedTo !== 'all' && (
         <div style={styles.activeFilterChipBar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>تصفية المهام للموظف:</span>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--accent-blue)' }}>
-              {teamMembersSummary.find((m) => m.userId === filters.selectedUserId)?.userName || 'موظف محدد'}
+              {teamMembersSummary.find((m) => m.userId === unifiedFilters.assignedTo)?.userName ||
+                users.find((u) => u.id === unifiedFilters.assignedTo)?.firstName ||
+                'موظف محدد'}
             </span>
           </div>
           <button
-            onClick={() => setFilters((p) => ({ ...p, selectedUserId: 'all' }))}
+            onClick={() => handleFiltersChange({ ...unifiedFilters, assignedTo: 'all' })}
             style={styles.clearFilterBtn}
             title="إلغاء التصفية وعرض مهام الجميع"
           >
@@ -948,7 +986,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       {/* Analytical Task Ledger Table */}
       <TaskReportLedger
         tasks={filteredItems}
-        searchQuery={filters.searchQuery}
+        searchQuery={unifiedFilters.search}
       />
     </div>
   );
@@ -997,38 +1035,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 120ms ease',
-  },
-  selectInput: {
-    background: 'var(--bg-surface)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 6,
-    color: '#e2e8f0',
-    fontSize: 11,
-    padding: '4px 8px',
-    fontFamily: 'inherit',
-    outline: 'none',
-    cursor: 'pointer',
-  },
-  searchWrap: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    position: 'absolute',
-    right: 8,
-    pointerEvents: 'none',
-  },
-  searchInput: {
-    background: 'var(--bg-surface)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 6,
-    color: 'var(--text-primary)',
-    fontSize: 11,
-    padding: '4px 26px 4px 8px',
-    fontFamily: 'inherit',
-    outline: 'none',
-    width: 170,
   },
   primaryActionBtn: {
     display: 'inline-flex',
