@@ -3600,6 +3600,24 @@ class AttendanceService {
       console.error("❌ Error getting attendance stats:", error);
       throw error;
     }
+  }  /**
+   * Helper to resolve both userId and employeeRelId for employee/user attendance queries
+   */
+  async resolveEmployeeIdentifiers(companyId, identifier) {
+    if (!identifier || !companyId) return { targetUserId: null, targetEmployeeRelId: null };
+
+    const emp = await this.prisma.employee.findFirst({
+      where: {
+        companyId,
+        OR: [{ id: identifier }, { userId: identifier }],
+      },
+      select: { id: true, userId: true },
+    });
+
+    return {
+      targetUserId: emp?.userId || identifier,
+      targetEmployeeRelId: emp?.id || null,
+    };
   }
 
   /**
@@ -3607,17 +3625,25 @@ class AttendanceService {
    */
   async getTodayAttendanceForEmployee(companyId, employeeId, date) {
     try {
+      if (!companyId || !employeeId) return null;
+
       const timezone = await this.getCompanyTimezone(companyId);
       const attendanceDate = date
         ? parseDbDateInput(date, timezone)
         : normalizeDateForDb(new Date(), timezone);
 
-      const attendance = await this.prisma.attendance.findUnique({
+      const { targetUserId, targetEmployeeRelId } = await this.resolveEmployeeIdentifiers(companyId, employeeId);
+      if (!targetUserId && !targetEmployeeRelId) return null;
+
+      const conditions = [];
+      if (targetUserId) conditions.push({ userId: targetUserId });
+      if (targetEmployeeRelId) conditions.push({ employeeRelId: targetEmployeeRelId });
+
+      const attendance = await this.prisma.attendance.findFirst({
         where: {
-          userId_date: {
-            userId: employeeId,
-            date: attendanceDate,
-          },
+          companyId,
+          date: attendanceDate,
+          OR: conditions,
         },
       });
 
@@ -3638,6 +3664,18 @@ class AttendanceService {
     endDate,
   ) {
     try {
+      if (!companyId || !employeeId) {
+        return {
+          totalDays: 0,
+          presentDays: 0,
+          lateDays: 0,
+          absentDays: 0,
+          totalWorkHours: 0,
+          totalOvertimeHours: 0,
+          attendanceRate: 0,
+        };
+      }
+
       const timezone = await this.getCompanyTimezone(companyId);
       const normalizedEndDate =
         parseDbDateInput(endDate, timezone) ||
@@ -3650,9 +3688,26 @@ class AttendanceService {
           return rangeStart;
         })();
 
+      const { targetUserId, targetEmployeeRelId } = await this.resolveEmployeeIdentifiers(companyId, employeeId);
+      if (!targetUserId && !targetEmployeeRelId) {
+        return {
+          totalDays: 0,
+          presentDays: 0,
+          lateDays: 0,
+          absentDays: 0,
+          totalWorkHours: 0,
+          totalOvertimeHours: 0,
+          attendanceRate: 0,
+        };
+      }
+
+      const conditions = [];
+      if (targetUserId) conditions.push({ userId: targetUserId });
+      if (targetEmployeeRelId) conditions.push({ employeeRelId: targetEmployeeRelId });
+
       const where = {
         companyId,
-        userId: employeeId,
+        OR: conditions,
         date: {
           gte: normalizedStartDate,
           lte: normalizedEndDate,
@@ -3719,9 +3774,33 @@ class AttendanceService {
         1,
         Number.parseInt(normalizedOptions.page, 10) || 1,
       );
+
+      if (!companyId || !employeeId) {
+        return {
+          records: [],
+          page,
+          limit,
+          hasMore: false,
+        };
+      }
+
+      const { targetUserId, targetEmployeeRelId } = await this.resolveEmployeeIdentifiers(companyId, employeeId);
+      if (!targetUserId && !targetEmployeeRelId) {
+        return {
+          records: [],
+          page,
+          limit,
+          hasMore: false,
+        };
+      }
+
+      const conditions = [];
+      if (targetUserId) conditions.push({ userId: targetUserId });
+      if (targetEmployeeRelId) conditions.push({ employeeRelId: targetEmployeeRelId });
+
       const where = {
         companyId,
-        userId: employeeId,
+        OR: conditions,
       };
 
       if (normalizedOptions.startDate || normalizedOptions.endDate) {

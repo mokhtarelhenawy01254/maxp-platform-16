@@ -267,7 +267,7 @@ async function getMyTodayAttendance(req, res) {
     // خدمة الحضور تتولى الآن تحديد "اليوم" وفق المنطقة الزمنية الخاصة بالشركة
     const attendance = await attendanceService.getTodayAttendanceForEmployee(
       companyId,
-      employee.id,
+      employee.userId || employee.id,
     );
 
     res.json({ success: true, attendance });
@@ -303,7 +303,7 @@ async function getMyAttendanceStats(req, res) {
     // خدمة الحضور تتولى الآن حساب آخر 30 يوم وفق المنطقة الزمنية الخاصة بالشركة
     const stats = await attendanceService.getAttendanceStatsForEmployee(
       companyId,
-      employee.id,
+      employee.userId || employee.id,
     );
 
     res.json({ success: true, stats });
@@ -340,7 +340,7 @@ async function getMyRecentAttendance(req, res) {
     // جلب آخر سجلات الحضور
     const result = await attendanceService.getRecentAttendanceForEmployee(
       companyId,
-      employee.id,
+      employee.userId || employee.id,
       {
         limit: parseInt(limit, 10),
         page: parseInt(page, 10),
