@@ -111,7 +111,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
           setMessages(result.messages);
           setSessionError(null);
         } else {
-          setMessages([]);
+          // لا نمسح المحادثة الظاهرة عند فشل تحميل الهيستوري — الخطأ يظهر كبانر فوق الرسائل
           setSessionError({
             code: result.errorCode || 'LOAD_ERROR',
             message: result.error || 'الجلسة غير متاحة',
@@ -119,7 +119,6 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
         }
       } catch (err: any) {
         if (!isMounted) return;
-        setMessages([]);
         setSessionError({
           code: 'LOAD_ERROR',
           message: 'تعذر الاتصال بالمساعد التنفيذي.',
