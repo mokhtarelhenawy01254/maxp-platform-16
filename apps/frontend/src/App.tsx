@@ -460,6 +460,21 @@ const CourierDuesPage = React.lazy(
 const CourierPerformancePage = React.lazy(
   () => import("./pages/shipping/couriers/CourierPerformancePage"),
 );
+const ShippingOpsDashboard = React.lazy(
+  () => import("./pages/shipping-ops/ShippingOpsDashboard"),
+);
+const ShippingParcelsList = React.lazy(
+  () => import("./pages/shipping-ops/ShippingParcelsList"),
+);
+const NewParcelPage = React.lazy(
+  () => import("./pages/shipping-ops/NewParcelPage"),
+);
+const ShippingParcelDetails = React.lazy(
+  () => import("./pages/shipping-ops/ShippingParcelDetails"),
+);
+const RateCardsPage = React.lazy(
+  () => import("./pages/shipping-ops/RateCardsPage"),
+);
 const BulkStatusUpdate = React.lazy(
   () => import("./pages/orders/BulkStatusUpdatePage"),
 );
@@ -7324,6 +7339,56 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <CourierPerformancePage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingOpsDashboard />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingParcelsList />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels/new"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <NewParcelPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels/:id"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingParcelDetails />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/rate-cards"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <RateCardsPage />
                       </AppAccessRoute>
                     </Layout>
                   }

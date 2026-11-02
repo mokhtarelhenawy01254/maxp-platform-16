@@ -52,4 +52,18 @@ router.post('/shipments', ...portalAuth, shippingPortalController.createStandalo
 router.get('/shipments', ...portalAuth, shippingPortalController.getShipments);
 router.get('/shipments/:id', ...portalAuth, shippingPortalController.getShipmentById);
 
+// Cancel shipment (only allowed when PENDING)
+router.delete('/shipments/:id/cancel', ...portalAuth, shippingPortalController.cancelShipment);
+router.post('/shipments/:id/cancel', ...portalAuth, shippingPortalController.cancelShipment);
+
+// Client rate cards CRUD
+router.get('/rate-cards', ...portalAuth, shippingPortalController.getRateCards);
+router.post('/rate-cards', ...portalAuth, shippingPortalController.createRateCard);
+router.put('/rate-cards/:id', ...portalAuth, shippingPortalController.updateRateCard);
+router.delete('/rate-cards/:id', ...portalAuth, shippingPortalController.deleteRateCard);
+
+// Dashboard telemetry & merchant helper
+router.get('/stats', ...portalAuth, shippingPortalController.getDashboardStats);
+router.get('/merchants', ...portalAuth, shippingPortalController.getMerchants);
+
 module.exports = router;

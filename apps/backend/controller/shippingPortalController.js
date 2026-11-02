@@ -344,9 +344,443 @@ async function getShipmentById(req, res) {
   }
 }
 
+/**
+ * DELETE /api/v1/shipping-portal/shipments/:id/cancel
+ * Cancel a shipment if it is PENDING
+ */
+async function cancelShipment(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!shipment) {
+      return res.status(404).json({
+        success: false,
+        error: 'الشحنة غير موجودة',
+      });
+    }
+
+    if (shipment.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: 'لا يمكن إلغاء الشحنة إلا إذا كانت في حالة قيد الانتظار (PENDING)',
+      });
+    }
+
+    const updated = await prisma.shipment.update({
+      where: { id: shipment.id },
+      data: {
+        status: 'CANCELLED',
+      },
+    });
+
+    await recordShipmentEvent(prisma, {
+      companyId,
+      shipmentId: shipment.id,
+      fromStatus: 'PENDING',
+      toStatus: 'CANCELLED',
+      reasonCode: 'CANCELLED_BY_ADMIN',
+      notes: req.body?.reason ? String(req.body.reason).trim() : 'إلغاء الشحنة بواسطة المستخدم',
+      actorType: req.user?.role === 'SHIPPING_CLIENT' ? 'CLIENT' : 'ADMIN',
+      actorId: req.user?.id || null,
+      actorName: req.user?.name || null,
+      metadata: {
+        cancelledAt: new Date().toISOString(),
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: 'تم إلغاء الشحنة بنجاح',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error cancelling shipment:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء إلغاء الشحنة',
+    });
+  }
+}
+
+/**
+ * GET /api/v1/shipping-portal/rate-cards
+ * List client rate cards
+ */
+async function getRateCards(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { merchantId, governorateCode, isActive } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const where = { companyId };
+    if (merchantId) where.merchantId = String(merchantId);
+    if (governorateCode !== undefined && governorateCode !== '') {
+      where.governorateCode = governorateCode === 'null' ? null : String(governorateCode);
+    }
+    if (isActive !== undefined && isActive !== '') {
+      where.isActive = isActive === 'true';
+    }
+
+    const rateCards = await prisma.clientRateCard.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    const merchantIds = [...new Set(rateCards.map((c) => c.merchantId).filter(Boolean))];
+    const merchants = await prisma.merchant.findMany({
+      where: { id: { in: merchantIds }, companyId },
+      select: { id: true, name: true, phone: true, email: true },
+    });
+    const merchantMap = Object.fromEntries(merchants.map((m) => [m.id, m]));
+
+    const data = rateCards.map((c) => ({
+      ...c,
+      merchant: merchantMap[c.merchantId] || null,
+    }));
+
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error listing rate cards:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء جلب بطاقات الأسعار',
+    });
+  }
+}
+
+/**
+ * POST /api/v1/shipping-portal/rate-cards
+ * Create client rate card
+ */
+async function createRateCard(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+    const {
+      merchantId,
+      name,
+      governorateCode,
+      basePrice,
+      baseWeightKg = 1,
+      extraKgPrice = 0,
+      codFeeFixed = 0,
+      codFeePercent = 0,
+      returnFee = 0,
+      minWeight,
+      maxWeight,
+      isActive = true,
+    } = req.body;
+
+    if (!merchantId) {
+      return res.status(400).json({ success: false, error: 'العميل/التاجر مطلوب' });
+    }
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'اسم بطاقة السعر مطلوب' });
+    }
+    if (basePrice === undefined || basePrice === null || isNaN(Number(basePrice))) {
+      return res.status(400).json({ success: false, error: 'السعر الأساسي مطلوب كرقم صالح' });
+    }
+
+    const merchant = await prisma.merchant.findFirst({
+      where: { id: merchantId, companyId },
+    });
+    if (!merchant) {
+      return res.status(400).json({ success: false, error: 'التاجر المحدد غير موجود أو لا يتبع هذه الشركة' });
+    }
+
+    const existing = await prisma.clientRateCard.findFirst({
+      where: { companyId, merchantId, name: name.trim() },
+    });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        error: `توجد بالفعل بطاقة سعر بنفس الاسم (${name.trim()}) لهذا العميل`,
+      });
+    }
+
+    let normGov = null;
+    if (governorateCode && String(governorateCode).trim() && String(governorateCode).trim() !== 'null') {
+      const { normalizeGovernorateName } = require('../utils/orderLocationNormalizer');
+      normGov = normalizeGovernorateName(String(governorateCode).trim()) || String(governorateCode).trim();
+    }
+
+    const card = await prisma.clientRateCard.create({
+      data: {
+        companyId,
+        merchantId,
+        name: name.trim(),
+        governorateCode: normGov,
+        basePrice: Number(basePrice),
+        baseWeightKg: Number(baseWeightKg || 1),
+        extraKgPrice: Number(extraKgPrice || 0),
+        codFeeFixed: Number(codFeeFixed || 0),
+        codFeePercent: Number(codFeePercent || 0),
+        returnFee: Number(returnFee || 0),
+        minWeight: minWeight ? Number(minWeight) : null,
+        maxWeight: maxWeight ? Number(maxWeight) : null,
+        isActive: Boolean(isActive),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'تم إنشاء بطاقة السعر بنجاح',
+      data: {
+        ...card,
+        merchant: { id: merchant.id, name: merchant.name, phone: merchant.phone },
+      },
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error creating rate card:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء إنشاء بطاقة السعر',
+    });
+  }
+}
+
+/**
+ * PUT /api/v1/shipping-portal/rate-cards/:id
+ * Update client rate card
+ */
+async function updateRateCard(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.clientRateCard.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'بطاقة السعر غير موجودة' });
+    }
+
+    const {
+      name,
+      governorateCode,
+      basePrice,
+      baseWeightKg,
+      extraKgPrice,
+      codFeeFixed,
+      codFeePercent,
+      returnFee,
+      minWeight,
+      maxWeight,
+      isActive,
+    } = req.body;
+
+    const dataToUpdate = {};
+    if (name !== undefined) dataToUpdate.name = String(name).trim();
+    if (governorateCode !== undefined) {
+      if (!governorateCode || String(governorateCode).trim() === 'null') {
+        dataToUpdate.governorateCode = null;
+      } else {
+        const { normalizeGovernorateName } = require('../utils/orderLocationNormalizer');
+        dataToUpdate.governorateCode = normalizeGovernorateName(String(governorateCode).trim()) || String(governorateCode).trim();
+      }
+    }
+    if (basePrice !== undefined) dataToUpdate.basePrice = Number(basePrice);
+    if (baseWeightKg !== undefined) dataToUpdate.baseWeightKg = Number(baseWeightKg);
+    if (extraKgPrice !== undefined) dataToUpdate.extraKgPrice = Number(extraKgPrice);
+    if (codFeeFixed !== undefined) dataToUpdate.codFeeFixed = Number(codFeeFixed);
+    if (codFeePercent !== undefined) dataToUpdate.codFeePercent = Number(codFeePercent);
+    if (returnFee !== undefined) dataToUpdate.returnFee = Number(returnFee);
+    if (minWeight !== undefined) dataToUpdate.minWeight = minWeight ? Number(minWeight) : null;
+    if (maxWeight !== undefined) dataToUpdate.maxWeight = maxWeight ? Number(maxWeight) : null;
+    if (isActive !== undefined) dataToUpdate.isActive = Boolean(isActive);
+
+    const updated = await prisma.clientRateCard.update({
+      where: { id: existing.id },
+      data: dataToUpdate,
+    });
+
+    return res.json({
+      success: true,
+      message: 'تم تحديث بطاقة السعر بنجاح',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error updating rate card:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء تحديث بطاقة السعر',
+    });
+  }
+}
+
+/**
+ * DELETE /api/v1/shipping-portal/rate-cards/:id
+ * Delete client rate card
+ */
+async function deleteRateCard(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.clientRateCard.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'بطاقة السعر غير موجودة' });
+    }
+
+    await prisma.clientRateCard.delete({
+      where: { id: existing.id },
+    });
+
+    return res.json({
+      success: true,
+      message: 'تم حذف بطاقة السعر بنجاح',
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error deleting rate card:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء حذف بطاقة السعر',
+    });
+  }
+}
+
+/**
+ * GET /api/v1/shipping-portal/stats
+ * Dashboard telemetry for internal shipping operations
+ */
+async function getDashboardStats(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [
+      todayCount,
+      outForDeliveryCount,
+      deliveredCount,
+      returnedCount,
+      pendingCount,
+      recentShipments,
+      allActiveCod,
+      deliveredCod,
+    ] = await Promise.all([
+      prisma.shipment.count({
+        where: { companyId, createdAt: { gte: startOfToday } },
+      }),
+      prisma.shipment.count({
+        where: { companyId, status: { in: ['OUT_FOR_DELIVERY', 'IN_TRANSIT'] } },
+      }),
+      prisma.shipment.count({
+        where: { companyId, status: 'DELIVERED' },
+      }),
+      prisma.shipment.count({
+        where: { companyId, status: { in: ['RETURNED', 'FAILED_ATTEMPT', 'RETURN_REQUESTED'] } },
+      }),
+      prisma.shipment.count({
+        where: { companyId, status: 'PENDING' },
+      }),
+      prisma.shipment.findMany({
+        where: { companyId },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          merchant: { select: { id: true, name: true, phone: true } },
+          shippingCompany: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.shipment.aggregate({
+        where: {
+          companyId,
+          status: { notIn: ['CANCELLED', 'RETURNED'] },
+          codAmount: { not: null },
+        },
+        _sum: { codAmount: true },
+      }),
+      prisma.shipment.aggregate({
+        where: {
+          companyId,
+          status: 'DELIVERED',
+        },
+        _sum: {
+          collectedAmount: true,
+          codAmount: true,
+        },
+      }),
+    ]);
+
+    const codExpected = Number(allActiveCod?._sum?.codAmount || 0);
+    const codCollected = Number(deliveredCod?._sum?.collectedAmount || deliveredCod?._sum?.codAmount || 0);
+
+    return res.json({
+      success: true,
+      data: {
+        todayCount,
+        outForDeliveryCount,
+        deliveredCount,
+        returnedCount,
+        pendingCount,
+        codExpected,
+        codCollected,
+        recentShipments,
+      },
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error fetching dashboard stats:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء جلب إحصائيات لوحة الشحن',
+    });
+  }
+}
+
+/**
+ * GET /api/v1/shipping-portal/merchants
+ * Active merchants list for dropdowns
+ */
+async function getMerchants(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const merchants = await prisma.merchant.findMany({
+      where: { companyId, isActive: true },
+      select: { id: true, name: true, phone: true, email: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return res.json({
+      success: true,
+      data: merchants,
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error listing merchants:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء جلب قائمة العملاء والتجار',
+    });
+  }
+}
+
 module.exports = {
   getShippingQuote,
   createStandaloneShipment,
   getShipments,
   getShipmentById,
+  cancelShipment,
+  getRateCards,
+  createRateCard,
+  updateRateCard,
+  deleteRateCard,
+  getDashboardStats,
+  getMerchants,
 };

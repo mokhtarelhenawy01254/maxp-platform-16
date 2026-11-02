@@ -936,6 +936,20 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('internal-courier-fleet')
         },
 
+        // 3️⃣.3 عمليات وتشغيل الشحن (SHIP-W1B)
+        {
+            id: 'shipping-ops',
+            title: isEn ? 'Shipping' : 'الشحن',
+            icon: Package,
+            items: [
+                { to: '/shipping-ops', icon: LayoutDashboard, label: isEn ? 'Shipping Dashboard' : 'لوحة تشغيل الشحن', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/parcels', icon: Package, label: isEn ? 'Parcels & Shipments' : 'الشحنات والطرود', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/parcels/new', icon: Plus, label: isEn ? 'New Standalone Parcel' : 'إنشاء طرد جديد', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/rate-cards', icon: CreditCard, label: isEn ? 'Client Rate Cards' : 'بطاقات أسعار العملاء', requiredPermissions: ['orders.shipping.view'] },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
+        },
+
         // 3️⃣.5 إحصائيات الطلبات
         {
             id: 'orders-analytics',
