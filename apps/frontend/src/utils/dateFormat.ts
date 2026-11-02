@@ -2,7 +2,11 @@
 // Date formatting utilities with Gregorian calendar support and i18n localization
 import i18n from "i18next";
 
-export type DateFormatType = "gregorian";
+export type DateFormatType =
+  | "DD/MM/YYYY"
+  | "MM/DD/YYYY"
+  | "YYYY-MM-DD"
+  | "gregorian";
 
 export interface DateFormatOptions {
   format: DateFormatType;
@@ -10,8 +14,14 @@ export interface DateFormatOptions {
   options?: Intl.DateTimeFormatOptions;
 }
 
+export interface FormatDateValueResult {
+  ok: boolean;
+  value: string;
+  error: string | null;
+}
+
 // Default date format options
-export const DEFAULT_DATE_FORMAT: DateFormatType = "gregorian";
+export const DEFAULT_DATE_FORMAT: DateFormatType = "DD/MM/YYYY";
 
 // Helper to determine if locale or language is English
 export const isEnglishLocale = (locale?: string): boolean => {
@@ -50,37 +60,124 @@ export const DATE_FORMAT_CONFIGS = {
 
 // Format date based on the specified format type
 export const formatDate = (
-  date: Date | string | number,
+  date: Date | string | number | null | undefined,
   formatType: DateFormatType = DEFAULT_DATE_FORMAT,
   customOptions?: Intl.DateTimeFormatOptions,
   customLocale?: string,
 ): string => {
-  try {
-    const dateObj = new Date(date);
-    const isEn = isEnglishLocale(customLocale);
-
-    if (isNaN(dateObj.getTime())) {
+  if (date === null || date === undefined || date === "") {
+    if (formatType === "gregorian") {
+      const isEn = isEnglishLocale(customLocale);
       return isEn ? "Invalid date" : "تاريخ غير صحيح";
     }
+    return "—";
+  }
 
-    const config = DATE_FORMAT_CONFIGS[formatType];
-    const targetLocale = customLocale || (isEn ? config.enLocale : config.locale);
-    const defaultOptions = isEn ? config.enOptions : config.options;
-    const options =
-      customOptions || (defaultOptions as Intl.DateTimeFormatOptions);
+  try {
+    const dateObj =
+      typeof date === "string" || typeof date === "number"
+        ? new Date(date)
+        : date;
 
-    // Apply timezone if provided
-    const finalOptions: Intl.DateTimeFormatOptions = { ...options };
-    if (customOptions?.timeZone) {
-      finalOptions.timeZone = customOptions.timeZone;
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+      if (formatType === "gregorian") {
+        const isEn = isEnglishLocale(customLocale);
+        return isEn ? "Invalid date" : "تاريخ غير صحيح";
+      }
+      return "—";
     }
 
-    return dateObj.toLocaleDateString(targetLocale, finalOptions);
+    if (formatType === "gregorian") {
+      const isEn = isEnglishLocale(customLocale);
+      const config = DATE_FORMAT_CONFIGS.gregorian;
+      const targetLocale =
+        customLocale || (isEn ? config.enLocale : config.locale);
+      const defaultOptions = isEn ? config.enOptions : config.options;
+      const options =
+        customOptions || (defaultOptions as Intl.DateTimeFormatOptions);
+
+      // Apply timezone if provided
+      const finalOptions: Intl.DateTimeFormatOptions = { ...options };
+      if (customOptions?.timeZone) {
+        finalOptions.timeZone = customOptions.timeZone;
+      }
+
+      return dateObj.toLocaleDateString(targetLocale, finalOptions);
+    }
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    let year: string;
+    let month: string;
+    let day: string;
+
+    if (customOptions?.timeZone) {
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone: customOptions.timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      const parts = dtf.formatToParts(dateObj);
+      year =
+        parts.find((p) => p.type === "year")?.value ||
+        String(dateObj.getFullYear());
+      month =
+        parts.find((p) => p.type === "month")?.value ||
+        pad(dateObj.getMonth() + 1);
+      day =
+        parts.find((p) => p.type === "day")?.value ||
+        pad(dateObj.getDate());
+    } else {
+      if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+        const [y, m, d] = date.trim().split("-");
+        year = y;
+        month = m;
+        day = d;
+      } else {
+        year = String(dateObj.getFullYear());
+        month = pad(dateObj.getMonth() + 1);
+        day = pad(dateObj.getDate());
+      }
+    }
+
+    if (formatType === "MM/DD/YYYY") {
+      return `${month}/${day}/${year}`;
+    }
+    if (formatType === "YYYY-MM-DD") {
+      return `${year}-${month}-${day}`;
+    }
+    // Default is DD/MM/YYYY
+    return `${day}/${month}/${year}`;
   } catch (error) {
-    console.error("Error formatting date:", error);
-    const isEn = isEnglishLocale(customLocale);
-    return isEn ? "Invalid date" : "تاريخ غير صحيح";
+    if (formatType === "gregorian") {
+      const isEn = isEnglishLocale(customLocale);
+      return isEn ? "Invalid date" : "تاريخ غير صحيح";
+    }
+    return "—";
   }
+};
+
+export const formatDateValue = (
+  date: Date | string | number | null | undefined,
+  formatType: DateFormatType = DEFAULT_DATE_FORMAT,
+): FormatDateValueResult => {
+  if (date === null || date === undefined || date === "") {
+    return { ok: false, value: "", error: "التاريخ غير محدد" };
+  }
+  const dateObj =
+    typeof date === "string" || typeof date === "number"
+      ? new Date(date)
+      : date;
+
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+    return { ok: false, value: "", error: "تاريخ غير صالح" };
+  }
+
+  return {
+    ok: true,
+    value: formatDate(dateObj, formatType),
+    error: null,
+  };
 };
 
 // Format short date based on interface language (ar-EG for Arabic, en-GB for English)
@@ -228,13 +325,21 @@ export const getTimeAgo = (date: Date | string | number, locale?: string): strin
 };
 
 // Date format display names for UI
-export const DATE_FORMAT_LABELS = {
+export const DATE_FORMAT_LABELS: Record<DateFormatType, string> = {
+  "DD/MM/YYYY": "يوم/شهر/سنة (DD/MM/YYYY)",
+  "MM/DD/YYYY": "شهر/يوم/سنة (MM/DD/YYYY)",
+  "YYYY-MM-DD": "سنة-شهر-يوم (YYYY-MM-DD)",
   gregorian: "ميلادي (Gregorian)",
 };
 
 // Validate date format type
 export const isValidDateFormat = (format: string): format is DateFormatType => {
-  return format === "gregorian";
+  return (
+    format === "DD/MM/YYYY" ||
+    format === "MM/DD/YYYY" ||
+    format === "YYYY-MM-DD" ||
+    format === "gregorian"
+  );
 };
 
 // Get current date in specified format
@@ -247,8 +352,25 @@ export const getCurrentDate = (
 
 // Parse date format from company settings
 export const parseDateFormatFromSettings = (settings: any): DateFormatType => {
-  if (settings?.dateFormat && isValidDateFormat(settings.dateFormat)) {
-    return settings.dateFormat;
+  if (!settings) return DEFAULT_DATE_FORMAT;
+
+  let parsed = settings;
+  if (typeof settings === "string") {
+    try {
+      parsed = JSON.parse(settings);
+    } catch {
+      if (isValidDateFormat(settings)) {
+        return settings;
+      }
+      return DEFAULT_DATE_FORMAT;
+    }
+  }
+
+  if (parsed?.dateFormat && isValidDateFormat(parsed.dateFormat)) {
+    return parsed.dateFormat;
+  }
+  if (typeof parsed === "string" && isValidDateFormat(parsed)) {
+    return parsed;
   }
   return DEFAULT_DATE_FORMAT;
 };

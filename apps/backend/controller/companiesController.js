@@ -4211,8 +4211,75 @@ const transferOwnership = async (req, res) => {
   }
 };
 
+const updateCompanyDateFormat = async (req, res) => {
+  try {
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: "Company context not found",
+      });
+    }
+
+    const { dateFormat } = req.body;
+    const allowedFormats = ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"];
+
+    if (!dateFormat || !allowedFormats.includes(dateFormat)) {
+      return res.status(400).json({
+        success: false,
+        error: "صيغة التاريخ غير مدعومة",
+      });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { id: true, settings: true },
+    });
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        error: "Company not found",
+      });
+    }
+
+    let settings = {};
+    try {
+      settings = company.settings ? JSON.parse(company.settings) : {};
+    } catch (parseError) {
+      settings = {};
+    }
+
+    settings.dateFormat = dateFormat;
+
+    await getSharedPrismaClient().company.update({
+      where: { id: companyId },
+      data: {
+        settings: JSON.stringify(settings),
+      },
+    });
+
+    invalidateCompanySettingsCache(companyId);
+
+    return res.json({
+      success: true,
+      data: {
+        dateFormat,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error updating company date format:", error);
+    return res.status(500).json({
+      success: false,
+      error: "فشل في تحديث تنسيق التاريخ",
+    });
+  }
+};
+
 module.exports = {
   getCurrentCompany,
+  updateCompanyDateFormat,
   REMOVEDDangerousFallbackEndpoint,
   companyUsageEndpoint,
   mockEndpoint,

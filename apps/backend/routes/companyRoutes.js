@@ -22,6 +22,7 @@ const validateCompanyId = (req, res, next) => {
 
 // Apply caching to frequently accessed company routes
 router.get('/current', verifyToken.authenticateToken, cacheMiddleware(120000), companiesController.getCurrentCompany); // 2 minutes cache
+router.put('/current/date-format', verifyToken.authenticateToken, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companiesController.updateCompanyDateFormat);
 router.get('/1', companiesController.REMOVEDDangerousFallbackEndpoint);
 router.get('/:id/usage', validateCompanyId, cacheMiddleware(60000), companiesController.companyUsageEndpoint); // 1 minute cache
 router.get('/1/usage-mock', companiesController.mockEndpoint);
