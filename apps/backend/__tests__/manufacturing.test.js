@@ -689,6 +689,8 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     const bom = await ManufacturingService.createBom(companyA, {
       code: 'BOM-POLO-SHIRT',
       name: 'قميص بولو رجالي',
+      // HZ-D: الاستلام بقى لازم يكون مربوط بمنتج تام عشان الكمية تتضاف للمخزن
+      productId: 'prod_polo_shirt',
       laborCostPerUnit: 20.0,
       overheadCostPerUnit: 10.0,
       components: [
@@ -1422,5 +1424,92 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     });
     expect(Array.isArray(updatedBom.componentWarnings)).toBe(true);
     expect(updatedBom.componentWarnings).toHaveLength(0);
+  });
+  test('12. Finished Goods Receipt (HZ-D): throws 400 when production order has no productId and never updates inventory', async () => {
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-NO-PROD-HZ-D',
+      name: 'أمر إنتاج بدون منتج تام HZ-D',
+      components: [],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      targetWarehouseId: 'wh_showroom_main',
+      variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 50 }],
+    });
+    await ManufacturingService.startOrder(companyA, order.id);
+
+    const invUpdateSpy = jest.spyOn(currentPrisma.inventory, 'update');
+
+    let threw = false;
+    let caughtErr = null;
+    try {
+      await ManufacturingService.receiveFinishedGoods(companyA, order.id, {
+        targetWarehouseId: 'wh_showroom_main',
+        items: [{ size: 'M', color: 'BLACK', goodQuantity: 50, scrapQuantity: 0 }],
+      });
+    } catch (err) {
+      threw = true;
+      caughtErr = err;
+    }
+
+    expect(threw).toBe(true);
+    expect(caughtErr.statusCode).toBe(400);
+    expect(caughtErr.message).toContain('اربط أمر الإنتاج بمنتج تام أولاً — عشان الكمية تتضاف للمخزن');
+    expect(invUpdateSpy).not.toHaveBeenCalled();
+    invUpdateSpy.mockRestore();
+  });
+
+  test('13. Finished Goods Receipt (HZ-D): order with productId updates inventory with exact quantity and creates stockMovement', async () => {
+    await currentPrisma.inventory.create({
+      data: {
+        productId: 'prod_hz_d_finished',
+        warehouseId: 'wh_hz_d_depot',
+        quantity: 15,
+        available: 15,
+        cost: 200.0,
+      },
+    });
+
+    const bom = await ManufacturingService.createBom(companyA, {
+      code: 'BOM-HZ-D-PROD',
+      name: 'منتج تام HZ-D',
+      productId: 'prod_hz_d_finished',
+      components: [],
+    });
+
+    const order = await ManufacturingService.createOrder(companyA, {
+      bomId: bom.id,
+      productId: 'prod_hz_d_finished',
+      targetWarehouseId: 'wh_hz_d_depot',
+      variantMatrix: [{ size: 'L', color: 'WHITE', plannedQuantity: 35 }],
+    });
+    await ManufacturingService.startOrder(companyA, order.id);
+
+    const invUpdateSpy = jest.spyOn(currentPrisma.inventory, 'update');
+
+    const receipt = await ManufacturingService.receiveFinishedGoods(companyA, order.id, {
+      targetWarehouseId: 'wh_hz_d_depot',
+      items: [{ size: 'L', color: 'WHITE', goodQuantity: 35, scrapQuantity: 0, unitCost: 260.0 }],
+    });
+
+    expect(receipt).toBeDefined();
+    expect(receipt.totalQuantity).toBe(35);
+    expect(invUpdateSpy).toHaveBeenCalled();
+    invUpdateSpy.mockRestore();
+
+    const updatedInv = await currentPrisma.inventory.findFirst({
+      where: { productId: 'prod_hz_d_finished', warehouseId: 'wh_hz_d_depot' },
+    });
+    expect(updatedInv.quantity).toBe(50); // 15 + 35
+    expect(updatedInv.available).toBe(50);
+
+    const sm = await currentPrisma.stockMovement.findFirst({
+      where: { productId: 'prod_hz_d_finished', warehouseId: 'wh_hz_d_depot' },
+    });
+    expect(sm).toBeDefined();
+    expect(sm.type).toBe('IN');
+    expect(sm.reason).toBe('ADJUSTMENT');
+    expect(sm.quantity).toBe(35);
   });
 });
