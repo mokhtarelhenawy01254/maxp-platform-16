@@ -23,7 +23,9 @@ export const useTaskDetailsController = () => {
 
   const [task, setTask] = useState<TaskDetails | null>(null);
   // منشئ المهمة يقدر يعتمد مهمته هو كمان (زي تطبيق الديسكتوب)
-  const isTaskCreator = Boolean(task?.createdByUser?.id && user?.id && task.createdByUser.id === user.id);
+  const isTaskCreator = Boolean(
+    user?.id && (task?.createdBy === user.id || task?.createdByUser?.id === user.id)
+  );
   const canApprove = isApprover || isTaskCreator;
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TaskTabKey>("subtasks");
