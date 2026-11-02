@@ -115,8 +115,8 @@ async function claimDueJobs(limit = 10, workerId = 'voice-worker') {
     const lockExpiresAt = new Date(Date.now() + 300 * 1000);
 
     for (const job of jobs) {
-      const updated = await prisma.aiRuntimeQueueJob.update({
-        where: { id: job.id },
+      const updated = await prisma.aiRuntimeQueueJob.updateMany({
+        where: { id: job.id, status: { in: ['PENDING', 'RETRY'] } },
         data: {
           status: 'RUNNING',
           lockToken: workerId,
@@ -125,7 +125,11 @@ async function claimDueJobs(limit = 10, workerId = 'voice-worker') {
           startedAt: job.startedAt || now,
         },
       });
-      claimedJobs.push(updated);
+      if (!updated.count) continue; // خدها worker تاني
+      const claimed = await prisma.aiRuntimeQueueJob.findUnique({ where: { id: job.id } });
+      if (claimed) {
+        claimedJobs.push(claimed);
+      }
     }
 
     return claimedJobs;
@@ -255,10 +259,64 @@ async function cleanupStaleJobs() {
   }
 }
 
+/**
+ * Schedule a retry/postpone for a call job based on customer request
+ */
+async function scheduleRetry(companyId, orderNumber, untilDate, reason) {
+  const queueKey = `call:${companyId}:${orderNumber}`;
+  const prisma = getSharedPrismaClient();
+  const job = await prisma.aiRuntimeQueueJob.findUnique({ where: { queueKey } });
+  if (!job) return { success: false, reason: 'NO_JOB' };
+
+  let meta = {};
+  if (typeof job.metadata === 'string') {
+    try {
+      meta = JSON.parse(job.metadata || '{}');
+    } catch (_) {
+      meta = {};
+    }
+  } else if (job.metadata && typeof job.metadata === 'object') {
+    meta = { ...job.metadata };
+  }
+
+  const postponeCount = Number(meta.postponeCount || 0);
+  if (postponeCount >= 2) {
+    return await prisma.aiRuntimeQueueJob.update({
+      where: { queueKey },
+      data: {
+        status: 'DEAD',
+        completedAt: new Date(),
+        lockToken: null,
+        lockExpiresAt: null,
+        lastError: 'POSTPONE_LIMIT',
+      },
+    });
+  }
+
+  const updatedMeta = { ...meta, postponeCount: postponeCount + 1 };
+  const metadataVal = JSON.stringify(updatedMeta);
+  const parsedDate = new Date(untilDate);
+  const availableAt = isNaN(parsedDate.getTime()) ? new Date(Date.now() + 24 * 60 * 60 * 1000) : parsedDate;
+
+  return await prisma.aiRuntimeQueueJob.update({
+    where: { queueKey },
+    data: {
+      status: 'RETRY',
+      availableAt,
+      lockToken: null,
+      lockExpiresAt: null,
+      lastError: `POSTPONED: ${reason}`,
+      metadata: metadataVal,
+      // ممنوع attempts increment — التأجيل مش محاولة فاشلة
+    },
+  });
+}
+
 module.exports = {
   enqueueCall,
   claimDueJobs,
   completeJob,
+  scheduleRetry,
   suppressForOrder,
   cleanupStaleJobs,
 };

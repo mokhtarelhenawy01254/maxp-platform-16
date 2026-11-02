@@ -116,6 +116,19 @@ class OrderConfirmInput(BaseModel):
         return _accept_order_id_aliases(cls, data)
 
 
+class OrderPostponeInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    order_id: str | None = Field(default=None, description="Order ID")
+    order_number: str | None = Field(default=None, description="Order number to postpone")
+    until_date: str = Field(description="YYYY-MM-DD — date when customer asked to be contacted")
+    reason: str = Field(description="Reason for postpone (free text, required)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
+
 class OrderUpdateDetailsInput(BaseModel):
     order_number: str = Field(description="Order number or ID to update")
     shipping_address: dict[str, Any] | None = Field(
@@ -447,6 +460,49 @@ async def order_confirm(input_data: OrderConfirmInput) -> dict[str, Any]:
         }
 
 
+async def order_postpone(input_data: OrderPostponeInput) -> dict[str, Any]:
+    """Postpone an order confirmation call through the backend without changing order status."""
+    company_id = input_data.company_id or ""
+    order_ref = input_data.order_number or input_data.order_id or ""
+    if not company_id or not order_ref:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+    if not input_data.until_date or not input_data.reason:
+        return {
+            "success": False,
+            "error": "until_date and reason are required",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.postpone_order_call(
+            company_id=company_id,
+            order_number=input_data.order_number,
+            order_id=input_data.order_id,
+            until_date=input_data.until_date,
+            reason=input_data.reason,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number or input_data.order_id,
+            "until_date": input_data.until_date,
+            "reason": input_data.reason,
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number or input_data.order_id,
+        }
+
+
 async def order_update_details(input_data: OrderUpdateDetailsInput) -> dict[str, Any]:
     """Update order address/contact details through the backend.
 
@@ -665,6 +721,13 @@ order_cancel_tool = FunctionTool(
     input_model=OrderCancelInput,
 )
 
+order_postpone_tool = FunctionTool(
+    name="order_postpone",
+    description="Postpone a customer order confirmation call to a future date requested by the customer. Does NOT change the order status. Requires until_date (YYYY-MM-DD) and reason.",
+    func=order_postpone,
+    input_model=OrderPostponeInput,
+)
+
 order_confirm_tool = FunctionTool(
     name="order_confirm",
     description="Confirm an existing order after the customer explicitly agrees on the order and the delivery address. This moves the order to CONFIRMED, notifies the customer, and hands it over to the shipping company. NEVER call this before the address is verified against the shipping company's map and the customer confirmed.",
@@ -696,5 +759,6 @@ __all_tools__ = [
     order_confirm_tool,
     order_update_details_tool,
     order_cancel_tool,
+    order_postpone_tool,
     order_refund_tool,
 ]

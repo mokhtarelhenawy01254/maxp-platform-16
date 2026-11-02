@@ -247,7 +247,7 @@ async function dispatchOrderConfirmationCall({
           model: {
             provider: 'deepseek',
             model: 'deepseek-chat',
-            systemPrompt: `أنتِ منى، منسقة تأكيد الطلبات. تحدثي باللهجة المصرية الودودة الموجزة. هدف المكالمة تأكيد الطلب رقم ${targetInfo.orderNumber} المحتوي على: ${productsList} بإجمالي ${finalTotal} جنيه والعنوان: ${destinationAddress} - ${destinationGov}. إذا وافق العميل استدعي order_confirm. إذا طلب تعديل استدعي order_update_details. إذا طلب إلغاء استدعي order_cancel. مدة المكالمة أقل من دقيقة.`,
+            systemPrompt: `أنتِ منى، منسقة تأكيد الطلبات. تحدثي باللهجة المصرية الودودة الموجزة. هدف المكالمة تأكيد الطلب رقم ${targetInfo.orderNumber} المحتوي على: ${productsList} بإجمالي ${finalTotal} جنيه والعنوان: ${destinationAddress} - ${destinationGov}. إذا وافق العميل استدعي order_confirm. إذا طلب تعديل استدعي order_update_details. إذا طلب إلغاء استدعي order_cancel. لو طلب تأجيل، استدعي order_postpone مع السبب وتاريخ التأجيل. مدة المكالمة أقل من دقيقة.`,
             tools: [
               {
                 type: 'function',
@@ -289,6 +289,21 @@ async function dispatchOrderConfirmationCall({
                       reason: { type: 'string', description: 'سبب الإلغاء' },
                     },
                     required: ['reason'],
+                  },
+                },
+              },
+              {
+                type: 'function',
+                function: {
+                  name: 'order_postpone',
+                  description: 'تأجيل الاتصال بالعميل لتأكيد الطلب حتى تاريخ محدد بناء على طلبه مع ذكر السبب',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      until_date: { type: 'string', description: 'تاريخ اليوم المطلوب إعادة الاتصال فيه بصيغة YYYY-MM-DD' },
+                      reason: { type: 'string', description: 'سبب التأجيل' },
+                    },
+                    required: ['until_date', 'reason'],
                   },
                 },
               },
@@ -540,6 +555,41 @@ async function handleVoiceToolCall({ companyId, orderId, guestOrderId, orderNumb
         orderStatus: 'CANCELLED',
         message: 'تم إلغاء الطلب بناء على رغبة العميل',
         details: result,
+      };
+    }
+
+    case 'order_postpone': {
+      await voiceCallQueue.scheduleRetry(companyId, targetInfo.orderNumber, parameters.until_date, parameters.reason);
+      let validUserId = null;
+      try {
+        const { ensureBridgeUser } = require('../aiBridgeIdentity');
+        const bridgeUser = await ensureBridgeUser(companyId);
+        if (bridgeUser) validUserId = bridgeUser.id;
+      } catch (_) {}
+
+      if (!validUserId) {
+        const adminUser = await prisma.user.findFirst({
+          where: { companyId },
+          select: { id: true },
+        });
+        validUserId = adminUser?.id || null;
+      }
+
+      await prisma.callAttemptLog.create({
+        data: {
+          companyId,
+          orderId: targetInfo.orderId || null,
+          guestOrderId: targetInfo.guestOrderId || null,
+          userId: validUserId,
+          result: 'postponed',
+          notes: `تأجيل بناءً على طلب العميل حتى ${parameters.until_date} — السبب: ${parameters.reason}`,
+        },
+      });
+
+      return {
+        success: true,
+        orderStatus: null,
+        message: 'تم تسجيل طلب التأجيل وسيتم الاتصال في التاريخ المحدد',
       };
     }
 

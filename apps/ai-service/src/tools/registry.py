@@ -120,6 +120,8 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "shipping_thread_list",
     "shipping_thread_get",
     "shipping_customer_answer",
+    # Voice order confirmation postpone
+    "order_postpone",
 }
 
 GATED_CORE_TOOL_NAMES: set[str] = {

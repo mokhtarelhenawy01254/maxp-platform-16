@@ -199,6 +199,7 @@ roles:
     - order_confirm
     - order_update_details
     - order_cancel
+    - order_postpone
     - shipping_rates
     - shipping_company_governorates
     - shipping_company_areas

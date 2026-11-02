@@ -398,6 +398,25 @@ class BackendClient:
             json_body={"reason": reason, "companyId": company_id},
         )
 
+    async def postpone_order_call(
+        self,
+        company_id: str,
+        order_number: str | None = None,
+        order_id: str | None = None,
+        until_date: str = "",
+        reason: str = "",
+    ) -> dict[str, Any]:
+        """Postpone an order confirmation call until a specific date."""
+        body: dict[str, Any] = {
+            "companyId": company_id,
+            "orderNumber": order_number,
+            "orderId": order_id,
+            "untilDate": until_date,
+            "until_date": until_date,
+            "reason": reason,
+        }
+        return await self._request("POST", "/api/v1/voice/postpone", json_body=body)
+
     async def get_shipping_rate(
         self, company_id: str, governorate: str, city: str | None = None, weight: float | None = None
     ) -> dict[str, Any] | None:

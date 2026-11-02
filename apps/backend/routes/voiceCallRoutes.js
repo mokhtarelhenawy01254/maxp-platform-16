@@ -17,6 +17,7 @@ router.post('/webhook/vapi', voiceCallController.handleVapiWebhook);
 router.use(verifyToken.authenticateToken);
 
 router.post('/trigger', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.triggerOrderCall);
+router.post('/postpone', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.postponeOrderCall);
 router.get('/logs/:orderId', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.getOrderCallLogs);
 router.get('/settings', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.getVoiceSettings);
 router.put('/settings', verifyToken.requireRole(ADMIN_ROLES), voiceCallController.updateVoiceSettings);

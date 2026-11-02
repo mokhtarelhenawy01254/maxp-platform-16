@@ -388,8 +388,42 @@ async function updateVoiceSettings(req, res) {
   }
 }
 
+/**
+ * Postpone an order confirmation call to a future date
+ */
+async function postponeOrderCall(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    const { orderNumber, orderId, guestOrderId, untilDate, until_date, reason } = req.body || {};
+    const effectiveUntilDate = untilDate || until_date;
+
+    if (!companyId || (!orderNumber && !orderId && !guestOrderId)) {
+      return res.status(400).json({ success: false, message: 'companyId and order identifier are required' });
+    }
+    if (!effectiveUntilDate || !reason) {
+      return res.status(400).json({ success: false, message: 'until_date and reason are required' });
+    }
+
+    const result = await voiceCallService.handleVoiceToolCall({
+      companyId,
+      orderId: orderId || null,
+      guestOrderId: guestOrderId || null,
+      orderNumber: orderNumber || null,
+      toolName: 'order_postpone',
+      parameters: { until_date: effectiveUntilDate, reason },
+    });
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('[VOICE-CONTROLLER] postponeOrderCall error:', error.message);
+    const status = error.message?.includes('غير موجود') ? 404 : 500;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+}
+
 module.exports = {
   triggerOrderCall,
+  postponeOrderCall,
   getOrderCallLogs,
   handleVapiWebhook,
   simulateCallResult,
