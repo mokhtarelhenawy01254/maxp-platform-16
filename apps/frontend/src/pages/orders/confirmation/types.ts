@@ -36,11 +36,7 @@ export interface ConfirmationOrder {
   assignedAt?: string | null;
   confirmedAt?: string | null;
   isGuestOrder?: boolean;
-  createdBy?: string | null;
-  createdByName?: string | null;
-  createdByUser?: { id: string; firstName?: string; lastName?: string; email?: string } | null;
   assignedToName?: string | null;
-  assignedToUser?: { id: string; firstName?: string; lastName?: string; email?: string } | null;
   assignmentStrategy?: string | null;
   callAttempts?: number;
   lastCallAttemptAt?: string | null;
@@ -70,14 +66,6 @@ export interface ConfirmationStats {
 export interface FilterOption {
   value: string;
   label: string;
-}
-
-export interface QueueCounts {
-  pending: number;
-  confirmed: number;
-  postponed: number;
-  cancelled: number;
-  total: number;
 }
 
 export type { OrderConfirmationUser };

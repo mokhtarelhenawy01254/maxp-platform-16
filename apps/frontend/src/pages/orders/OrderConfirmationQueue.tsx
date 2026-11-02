@@ -39,15 +39,6 @@ export const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ 
     setSourceFilter,
     onlyUnassigned,
     setOnlyUnassigned,
-    startDate,
-    setStartDate,
-    endDate,
-    setEndDate,
-    includeAll,
-    setIncludeAll,
-    handleSetLast30Days,
-    handleSetIncludeAll,
-    counts,
     stats,
     statsLoading,
     statsStartDate,
@@ -111,63 +102,15 @@ export const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ 
   return (
     <div className="space-y-4 sm:space-y-6" dir="rtl">
       {!embedded && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex flex-col gap-1 sm:gap-1.5">
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                {t("orders.ordersNeedingConfirmation", { defaultValue: "مركز التأكيد والمتابعة" })}
-              </h1>
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold text-primary border border-primary/20">
-                {t("orders.total", { defaultValue: "المجموع:" })} {counts?.total ?? totalOrders}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {t("orders.ordersNeedingConfirmationDescEnabled", { defaultValue: "إدارة وتوزيع وتأكيد الطلبات الجديدة الواردة من القنوات المختلفة" })}
-            </p>
-          </div>
+        <div className="flex flex-col gap-1 sm:gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+            {t("orders.ordersNeedingConfirmation", { defaultValue: "طلبات تحتاج إلى تأكيد" })}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {t("orders.ordersNeedingConfirmationDescEnabled", { defaultValue: "إدارة وتوزيع وتأكيد الطلبات الجديدة الواردة من القنوات المختلفة" })}
+          </p>
         </div>
       )}
-
-      {/* Queue Status Tabs with Counts */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {[
-          { key: "", label: t("orders.all", { defaultValue: "الكل" }), count: counts?.total ?? totalOrders },
-          { key: "pending", label: t("orders.pendingNew", { defaultValue: "قيد الانتظار" }), count: counts?.pending ?? 0 },
-          { key: "confirmed", label: t("orders.confirmed", { defaultValue: "مؤكد" }), count: counts?.confirmed ?? 0 },
-          { key: "postponed", label: t("orders.postponed", { defaultValue: "مؤجل" }), count: counts?.postponed ?? 0 },
-          { key: "cancelled", label: t("orders.cancelled", { defaultValue: "ملغي" }), count: counts?.cancelled ?? 0 },
-        ].map((tab) => {
-          const isActive =
-            statusFilter.toLowerCase() === tab.key.toLowerCase() ||
-            (!statusFilter && tab.key === "pending");
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setStatusFilter(tab.key);
-                setPage(1);
-              }}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap active:scale-95 cursor-pointer ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/40"
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-mono tabular-nums ${
-                  isActive
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-background text-foreground border border-border/50"
-                }`}
-              >
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* Filter Bar */}
       <ConfirmationQueueFilterBar
@@ -187,13 +130,6 @@ export const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ 
         sourceFilterLabel={sourceFilterLabel}
         onOpenMobileFilters={() => setMobileFiltersOpen(true)}
         setPage={setPage}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
-        includeAll={includeAll}
-        onSetLast30Days={handleSetLast30Days}
-        onSetIncludeAll={handleSetIncludeAll}
       />
 
       {/* Mobile Slide-up Drawer Modal */}

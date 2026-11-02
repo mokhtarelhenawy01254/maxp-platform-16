@@ -4,8 +4,6 @@ import { WorkspaceReportsTab } from "./WorkspaceReportsTab";
 import { WorkspaceOrderQueue } from "./WorkspaceOrderQueue";
 import { WorkspaceInspector } from "./WorkspaceInspector";
 import { WorkspaceIntelligenceRail } from "./WorkspaceIntelligenceRail";
-import { OrderConfirmationQueue } from "../OrderConfirmationQueue";
-import { ConfirmationQueueDisabledState } from "../confirmation/ConfirmationQueueDisabledState";
 import type { WorkspaceView } from "./WorkspaceMobileViewSwitcher";
 import type {
   WorkspaceOrder,
@@ -118,14 +116,6 @@ export const WorkspaceCockpitBody: React.FC<WorkspaceCockpitBodyProps> = ({
     <main className="flex min-h-0 flex-1 overflow-hidden">
       {activeTab === "reports" ? (
         <WorkspaceReportsTab isManager={isManager} />
-      ) : activeTab === "confirmation" ? (
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 h-full w-full">
-          {confirmationDisabled ? (
-            <ConfirmationQueueDisabledState embedded={true} />
-          ) : (
-            <OrderConfirmationQueue embedded={true} />
-          )}
-        </div>
       ) : (
         <>
           {/* Stream Pane (Queue) */}

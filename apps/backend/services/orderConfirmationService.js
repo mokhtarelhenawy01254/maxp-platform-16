@@ -223,165 +223,6 @@ class OrderConfirmationService {
     };
   }
 
-  buildPendingWhere(companyId, filters = {}) {
-    const where = {
-      companyId,
-      status: 'PENDING',
-      confirmedAt: null
-    };
-
-    if (filters.sourceType) {
-      if (String(filters.sourceType).toLowerCase() === 'wholesale') {
-        where.OR = [
-          { orderSource: 'WHOLESALE' },
-          { wholesaleCustomerId: { not: null } }
-        ];
-      } else {
-        where.sourceType = String(filters.sourceType).toLowerCase();
-      }
-    }
-
-    if (filters.assignedTo) {
-      if (filters.assignedTo === 'unassigned') {
-        where.assignedTo = null;
-      } else if (filters.assignedTo !== 'all') {
-        where.assignedTo = filters.assignedTo;
-      }
-    } else if (filters.onlyUnassigned) {
-      where.assignedTo = null;
-    }
-
-    let start = filters.startDate ? new Date(filters.startDate) : null;
-    let end = filters.endDate ? new Date(filters.endDate) : null;
-    const isIncludeAll = filters.includeAll === true || filters.includeAll === 'true' || filters.all === true || filters.all === 'true';
-
-    if (!start && !end && !isIncludeAll) {
-      end = new Date();
-      end.setHours(23, 59, 59, 999);
-      start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-      start.setHours(0, 0, 0, 0);
-    } else if (end) {
-      end.setHours(23, 59, 59, 999);
-    }
-
-    if (start || end) {
-      where.createdAt = {};
-      if (start) where.createdAt.gte = start;
-      if (end) where.createdAt.lte = end;
-    }
-
-    if (filters.search) {
-      const s = String(filters.search).trim();
-      const searchConditions = [
-        { orderNumber: { contains: s, mode: 'insensitive' } },
-        { customerName: { contains: s, mode: 'insensitive' } },
-        { customerPhone: { contains: s, mode: 'insensitive' } },
-        { customerEmail: { contains: s, mode: 'insensitive' } }
-      ];
-      if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
-        delete where.OR;
-      } else {
-        where.OR = searchConditions;
-      }
-    }
-
-    return where;
-  }
-
-  async countQueueBuckets(companyId, filters = {}) {
-    const isIncludeAll = filters.includeAll === true || filters.includeAll === 'true' || filters.all === true || filters.all === 'true';
-    let start = filters.startDate ? new Date(filters.startDate) : null;
-    let end = filters.endDate ? new Date(filters.endDate) : null;
-
-    if (!start && !end && !isIncludeAll) {
-      end = new Date();
-      end.setHours(23, 59, 59, 999);
-      start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-      start.setHours(0, 0, 0, 0);
-    } else if (end) {
-      end.setHours(23, 59, 59, 999);
-    }
-
-    const conditions = ['o."companyId" = $1'];
-    const values = [companyId];
-
-    if (start) {
-      values.push(start);
-      conditions.push(`o."createdAt" >= $${values.length}`);
-    }
-    if (end) {
-      values.push(end);
-      conditions.push(`o."createdAt" <= $${values.length}`);
-    }
-    if (filters.sourceType) {
-      if (String(filters.sourceType).toLowerCase() === 'wholesale') {
-        conditions.push('(o."orderSource" = \'WHOLESALE\' OR o."wholesaleCustomerId" IS NOT NULL)');
-      } else {
-        values.push(String(filters.sourceType).toLowerCase());
-        conditions.push(`o."sourceType" = $${values.length}`);
-      }
-    }
-    if (filters.isWholesale === 'true' || filters.orderSource === 'WHOLESALE') {
-      conditions.push('(o."orderSource" = \'WHOLESALE\' OR o."wholesaleCustomerId" IS NOT NULL)');
-    }
-    if (filters.assignedTo) {
-      if (filters.assignedTo === 'unassigned') {
-        conditions.push('o."assignedTo" IS NULL');
-      } else if (filters.assignedTo !== 'all') {
-        values.push(filters.assignedTo);
-        conditions.push(`o."assignedTo" = $${values.length}`);
-      }
-    } else if (filters.onlyUnassigned) {
-      conditions.push('o."assignedTo" IS NULL');
-    }
-
-    if (filters.search) {
-      const pattern = buildLikePattern(filters.search);
-      values.push(pattern);
-      const searchPlaceholder = `$${values.length}`;
-      conditions.push(`(
-        o."orderNumber" LIKE ${searchPlaceholder} OR
-        o."customerName" LIKE ${searchPlaceholder} OR
-        o."customerPhone" LIKE ${searchPlaceholder} OR
-        o."customerEmail" LIKE ${searchPlaceholder}
-      )`);
-    }
-
-    const sql = `
-      SELECT 
-        CASE 
-          WHEN o."status"::text = 'PENDING' AND o."confirmedAt" IS NULL THEN 'pending'
-          WHEN o."status"::text = 'CONFIRMED' OR o."confirmedAt" IS NOT NULL THEN 'confirmed'
-          WHEN o."status"::text IN ('POSTPONED', 'SCHEDULED', 'ON_HOLD') THEN 'postponed'
-          WHEN o."status"::text IN ('CANCELLED', 'CANCELED') THEN 'cancelled'
-          ELSE 'other'
-        END AS "bucket",
-        COUNT(*)::text AS "count"
-      FROM "orders" o
-      WHERE ${conditions.join(' AND ')}
-      GROUP BY 1
-    `;
-
-    const rows = await this.prisma.$queryRawUnsafe(sql, ...values);
-
-    let pending = 0;
-    let confirmed = 0;
-    let postponed = 0;
-    let cancelled = 0;
-
-    for (const row of rows) {
-      const count = parseInt(row.count, 10) || 0;
-      if (row.bucket === 'pending') pending += count;
-      else if (row.bucket === 'confirmed') confirmed += count;
-      else if (row.bucket === 'postponed') postponed += count;
-      else if (row.bucket === 'cancelled') cancelled += count;
-    }
-
-    const total = pending + confirmed + postponed + cancelled;
-    return { pending, confirmed, postponed, cancelled, total };
-  }
-
   buildConfirmationFilters(settings, filters) {
     const sources = settings.requireSourceTypes;
     const statuses = settings.requireStatuses.map((s) => String(s).toUpperCase());
@@ -585,7 +426,6 @@ class OrderConfirmationService {
       return {
         data: [],
         pagination: { total: 0, page: 1, limit: 20, pages: 0 },
-        counts: { pending: 0, confirmed: 0, postponed: 0, cancelled: 0, total: 0 },
         disabled: true,
         appliedFilters: {
           statuses: (settings.requireStatuses || []).map((s) => String(s).toUpperCase()),
@@ -605,43 +445,13 @@ class OrderConfirmationService {
     const page = parseInt(filters.page, 10) || 1;
     const limit = parseInt(filters.limit, 10) || 20;
 
-    const isIncludeAll = filters.includeAll === true || filters.includeAll === 'true' || filters.all === true || filters.all === 'true';
-    let resolvedStartDate = filters.startDate ? new Date(filters.startDate) : null;
-    let resolvedEndDate = filters.endDate ? new Date(filters.endDate) : null;
-
-    if (!resolvedStartDate && !resolvedEndDate && !isIncludeAll) {
-      resolvedEndDate = new Date();
-      resolvedEndDate.setHours(23, 59, 59, 999);
-      resolvedStartDate = new Date(resolvedEndDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-      resolvedStartDate.setHours(0, 0, 0, 0);
-    } else if (resolvedEndDate) {
-      resolvedEndDate.setHours(23, 59, 59, 999);
-    }
-
-    const regularFilters = this.buildConfirmationFilters(settings, {
-      ...filters,
-      companyId,
-      startDate: resolvedStartDate ? resolvedStartDate.toISOString() : undefined,
-      endDate: resolvedEndDate ? resolvedEndDate.toISOString() : undefined
-    });
-    const guestFilters = this.buildGuestFilters(settings, {
-      ...filters,
-      companyId,
-      startDate: resolvedStartDate ? resolvedStartDate.toISOString() : undefined,
-      endDate: resolvedEndDate ? resolvedEndDate.toISOString() : undefined
-    });
+    const regularFilters = this.buildConfirmationFilters(settings, { ...filters, companyId });
+    const guestFilters = this.buildGuestFilters(settings, { ...filters, companyId });
 
     if (regularFilters.disabled && guestFilters.disabled) {
-      const counts = await this.countQueueBuckets(companyId, {
-        ...filters,
-        startDate: resolvedStartDate ? resolvedStartDate.toISOString() : null,
-        endDate: resolvedEndDate ? resolvedEndDate.toISOString() : null,
-        includeAll: isIncludeAll
-      });
       return {
         data: [],
         pagination: { total: 0, page, limit, pages: 0 },
-        counts,
         appliedFilters: {
           statuses: filters.status
             ? [String(filters.status).toUpperCase()]
@@ -652,9 +462,9 @@ class OrderConfirmationService {
           matchMode: normalizeMatchMode(settings.requireMatchMode),
           excludeConfirmStatus: settings.confirmStatus ? String(settings.confirmStatus).toUpperCase() : null,
           requireConfirmedAtNull: true,
-          hasDateFilter: Boolean(resolvedStartDate || resolvedEndDate),
-          startDate: resolvedStartDate ? resolvedStartDate.toISOString().slice(0, 10) : null,
-          endDate: resolvedEndDate ? resolvedEndDate.toISOString().slice(0, 10) : null,
+          hasDateFilter: Boolean(filters.startDate || filters.endDate),
+          startDate: filters.startDate || null,
+          endDate: filters.endDate || null,
           includeGuestOrders: false,
           guestTwinReconciliation: 'EXCLUDE_SHADOW_TWINS'
         }
@@ -709,36 +519,26 @@ class OrderConfirmationService {
       const builder = createSqlBuilder();
       builder.add(builder.equals('o."companyId"', companyId));
 
+      const sources = settings.requireSourceTypes;
+      const statuses = settings.requireStatuses.map((s) => String(s).toUpperCase());
+      const matchMode = normalizeMatchMode(settings.requireMatchMode);
       const statusColumn = 'o."status"::text';
-      const statusParam = filters.status ? String(filters.status).toLowerCase() : '';
+      const requireAll = matchMode === 'all' && sources.length && statuses.length;
+      const baseParts = [
+        sources.length ? builder.inList('o."sourceType"', sources) : null,
+        statuses.length ? builder.inList(statusColumn, statuses) : null
+      ];
+      const baseGroup = requireAll ? builder.andGroup(baseParts) : builder.orGroup(baseParts);
+      if (!baseGroup) return null;
+      builder.add(baseGroup);
 
-      if (statusParam === 'confirmed') {
-        builder.add('(o."status"::text = \'CONFIRMED\' OR o."confirmedAt" IS NOT NULL)');
-      } else if (statusParam === 'postponed') {
-        builder.add('o."status"::text IN (\'POSTPONED\', \'SCHEDULED\', \'ON_HOLD\')');
-      } else if (statusParam === 'cancelled' || statusParam === 'canceled') {
-        builder.add('o."status"::text IN (\'CANCELLED\', \'CANCELED\')');
-      } else if (statusParam === 'all') {
-        // all statuses included
-      } else {
-        // Pending status (default or explicit pending)
-        const sources = settings.requireSourceTypes;
-        const statuses = settings.requireStatuses.map((s) => String(s).toUpperCase());
-        const matchMode = normalizeMatchMode(settings.requireMatchMode);
-        const requireAll = matchMode === 'all' && sources.length && statuses.length;
-        const baseParts = [
-          sources.length ? builder.inList('o."sourceType"', sources) : null,
-          statuses.length ? builder.inList(statusColumn, statuses) : null
-        ];
-        const baseGroup = requireAll ? builder.andGroup(baseParts) : builder.orGroup(baseParts);
-        if (!baseGroup) return null;
-        builder.add(baseGroup);
+      if (settings.confirmStatus) {
+        builder.add(builder.notEquals(statusColumn, settings.confirmStatus.toUpperCase()));
+      }
+      builder.add('o."confirmedAt" IS NULL');
 
-        if (settings.confirmStatus) {
-          builder.add(builder.notEquals(statusColumn, settings.confirmStatus.toUpperCase()));
-        }
-        builder.add('o."confirmedAt" IS NULL');
-        builder.add(builder.equals(statusColumn, 'PENDING'));
+      if (filters.status) {
+        builder.add(builder.equals(statusColumn, String(filters.status).toUpperCase()));
       }
 
       if (filters.sourceType) {
@@ -753,8 +553,14 @@ class OrderConfirmationService {
         builder.add('(o."orderSource" = \'WHOLESALE\' OR o."wholesaleCustomerId" IS NOT NULL)');
       }
 
-      if (resolvedStartDate) builder.add(builder.gte('o."createdAt"', resolvedStartDate));
-      if (resolvedEndDate) builder.add(builder.lte('o."createdAt"', resolvedEndDate));
+      if (filters.startDate || filters.endDate) {
+        if (filters.startDate) builder.add(builder.gte('o."createdAt"', new Date(filters.startDate)));
+        if (filters.endDate) {
+          const end = new Date(filters.endDate);
+          end.setHours(23, 59, 59, 999);
+          builder.add(builder.lte('o."createdAt"', end));
+        }
+      }
 
       if (filters.search) {
         const pattern = buildLikePattern(filters.search);
@@ -772,11 +578,7 @@ class OrderConfirmationService {
       }
 
       if (filters.assignedTo) {
-        if (filters.assignedTo === 'unassigned') {
-          builder.add('o."assignedTo" IS NULL');
-        } else if (filters.assignedTo !== 'all') {
-          builder.add(builder.equals('o."assignedTo"', filters.assignedTo));
-        }
+        builder.add(builder.equals('o."assignedTo"', filters.assignedTo));
       }
 
       return {
@@ -796,63 +598,6 @@ class OrderConfirmationService {
       }
       const builder = createSqlBuilder();
       builder.add(builder.equals('g."companyId"', companyId));
-
-      // استبعاد صفوف الظل التي لها توأم أصلي في جدول orders بنفس الشركة ورقم الطلب
-      builder.add(
-        'NOT EXISTS (SELECT 1 FROM "orders" o_sub WHERE o_sub."companyId" = g."companyId" AND LOWER(BTRIM(o_sub."orderNumber")) = LOWER(BTRIM(g."orderNumber")) AND BTRIM(g."orderNumber") <> \'\')'
-      );
-
-      const statusParam = filters.status ? String(filters.status).toLowerCase() : '';
-      if (statusParam === 'confirmed') {
-        builder.add('g."status"::text IN (\'CONFIRMED\', \'confirmed\')');
-      } else if (statusParam === 'postponed') {
-        builder.add('g."status"::text IN (\'POSTPONED\', \'postponed\', \'SCHEDULED\', \'scheduled\')');
-      } else if (statusParam === 'cancelled' || statusParam === 'canceled') {
-        builder.add('g."status"::text IN (\'CANCELLED\', \'cancelled\', \'CANCELED\', \'canceled\')');
-      } else if (statusParam === 'all') {
-        // all guest statuses
-      } else {
-        const sources = settings.requireSourceTypes.map((s) => String(s).toLowerCase());
-        const statuses = normalizeStatusVariants(settings.requireStatuses);
-        const includeBySource = sources.includes('storefront');
-        const hasSourceSelection = sources.length > 0;
-        const matchMode = normalizeMatchMode(settings.requireMatchMode);
-        const requireAll = matchMode === 'all' && hasSourceSelection && statuses.length;
-
-        if (hasSourceSelection && !includeBySource) return null;
-        if (!hasSourceSelection && statuses.length === 0) return null;
-        if (filters.sourceType && String(filters.sourceType).toLowerCase() !== 'storefront') return null;
-
-        if (requireAll || (!includeBySource && statuses.length)) {
-          builder.add(builder.inList('g."status"', statuses));
-        }
-
-        if (settings.confirmStatus) {
-          builder.add(builder.notInList('g."status"', normalizeStatusVariants([settings.confirmStatus])));
-        }
-
-        builder.add('g."status"::text IN (\'PENDING\', \'pending\')');
-      }
-
-      if (resolvedStartDate) builder.add(builder.gte('g."createdAt"', resolvedStartDate));
-      if (resolvedEndDate) builder.add(builder.lte('g."createdAt"', resolvedEndDate));
-
-      if (filters.search) {
-        const pattern = buildLikePattern(filters.search);
-        const searchGroup = builder.orGroup([
-          builder.like('g."orderNumber"', pattern),
-          builder.like('g."guestName"', pattern),
-          builder.like('g."guestPhone"', pattern),
-          builder.like('g."guestEmail"', pattern)
-        ]);
-        builder.add(searchGroup);
-      }
-
-      return {
-        sql: `SELECT 'guest'::text AS \"type\", g.\"id\" AS \"id\", g.\"createdAt\" AS \"createdAt\" FROM \"guest_orders\" g WHERE ${builder.where()}`,
-        values: builder.values
-      };
-    };
 
       // استبعاد صفوف الظل التي لها توأم أصلي في جدول orders بنفس الشركة ورقم الطلب
       builder.add(
@@ -968,7 +713,6 @@ class OrderConfirmationService {
           updatedAt: true,
           governorate: true,
           city: true,
-          createdBy: true,
           assignedTo: true,
           assignedAt: true,
           confirmedAt: true,
@@ -1046,16 +790,15 @@ class OrderConfirmationService {
       : [];
     const guestAssignmentMap = new Map(guestAssignments.map((a) => [a.guestOrderId, a]));
 
-    const userIdsToFetch = new Set(
+    const assignedUserIds = new Set(
       [
         ...paginatedRegular.map((order) => order.assignedTo).filter(Boolean),
-        ...paginatedRegular.map((order) => order.createdBy).filter(Boolean),
         ...guestAssignments.map((assignment) => assignment.assignedTo).filter(Boolean)
       ]
     );
-    const assignedUsers = userIdsToFetch.size
+    const assignedUsers = assignedUserIds.size
       ? await this.prisma.user.findMany({
-        where: { id: { in: Array.from(userIdsToFetch) } },
+        where: { id: { in: Array.from(assignedUserIds) } },
         select: { id: true, firstName: true, lastName: true, email: true }
       })
       : [];
@@ -1084,12 +827,8 @@ class OrderConfirmationService {
         updatedAt: order.updatedAt,
         governorate: order.governorate || order.city || '',
         city: order.city || '',
-        createdBy: order.createdBy || null,
-        createdByName: formatUserName(order.createdBy),
-        createdByUser: order.createdBy ? assignedUserMap.get(order.createdBy) || null : null,
         assignedTo: order.assignedTo,
         assignedToName: formatUserName(order.assignedTo),
-        assignedToUser: order.assignedTo ? assignedUserMap.get(order.assignedTo) || null : null,
         assignedAt: order.assignedAt,
         confirmedAt: order.confirmedAt,
         assignmentStrategy: order.assignmentStrategy || null,
@@ -1144,12 +883,8 @@ class OrderConfirmationService {
         updatedAt: order.updatedAt,
         governorate: '',
         city: '',
-        createdBy: null,
-        createdByName: 'متجر إلكتروني',
-        createdByUser: null,
         assignedTo: assignment?.assignedTo || null,
         assignedToName: formatUserName(assignment?.assignedTo || null),
-        assignedToUser: assignment?.assignedTo ? assignedUserMap.get(assignment.assignedTo) || null : null,
         assignedAt: assignment?.assignedAt || null,
         confirmedAt: null,
         assignmentStrategy: assignment?.strategy || null,
@@ -1181,10 +916,7 @@ class OrderConfirmationService {
 
     const formattedRegularWithUsers = formattedRegular.map((order) => ({
       ...order,
-      createdByName: formatUserName(order.createdBy),
-      createdByUser: order.createdBy ? assignedUserMap.get(order.createdBy) || null : null,
-      assignedToName: formatUserName(order.assignedTo),
-      assignedToUser: order.assignedTo ? assignedUserMap.get(order.assignedTo) || null : null
+      assignedToName: formatUserName(order.assignedTo)
     }));
 
     const regularMap = new Map(formattedRegularWithUsers.map((order) => [order.id, order]));
@@ -1192,13 +924,6 @@ class OrderConfirmationService {
     const paginated = paginatedRaw
       .map((item) => (item.type === 'regular' ? regularMap.get(item.id) : guestMap.get(item.id)))
       .filter(Boolean);
-
-    const counts = await this.countQueueBuckets(companyId, {
-      ...filters,
-      startDate: resolvedStartDate ? resolvedStartDate.toISOString() : null,
-      endDate: resolvedEndDate ? resolvedEndDate.toISOString() : null,
-      includeAll: isIncludeAll
-    });
 
     const appliedFilters = {
       statuses: filters.status
@@ -1208,11 +933,11 @@ class OrderConfirmationService {
         ? [String(filters.sourceType).toLowerCase()]
         : (settings.requireSourceTypes || []).map((s) => String(s).toLowerCase()),
       matchMode: normalizeMatchMode(settings.requireMatchMode),
-      excludeConfirmStatus: (!filters.status || String(filters.status).toLowerCase() === 'pending') && settings.confirmStatus ? String(settings.confirmStatus).toUpperCase() : null,
-      requireConfirmedAtNull: (!filters.status || String(filters.status).toLowerCase() === 'pending'),
-      hasDateFilter: Boolean(resolvedStartDate || resolvedEndDate),
-      startDate: resolvedStartDate ? resolvedStartDate.toISOString().slice(0, 10) : null,
-      endDate: resolvedEndDate ? resolvedEndDate.toISOString().slice(0, 10) : null,
+      excludeConfirmStatus: settings.confirmStatus ? String(settings.confirmStatus).toUpperCase() : null,
+      requireConfirmedAtNull: true,
+      hasDateFilter: Boolean(filters.startDate || filters.endDate),
+      startDate: filters.startDate || null,
+      endDate: filters.endDate || null,
       includeGuestOrders: !guestFilters.disabled && Boolean(guestQuery),
       guestTwinReconciliation: 'EXCLUDE_SHADOW_TWINS'
     };
@@ -1220,7 +945,6 @@ class OrderConfirmationService {
     return {
       data: paginated,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
-      counts,
       appliedFilters
     };
   }
@@ -1240,9 +964,7 @@ class OrderConfirmationService {
       assignmentWhere.strategy = strategy;
     }
 
-    const pendingWhere = this.buildPendingWhere(companyId, { startDate, endDate, ...filters });
-
-    const [confirmedRegular, confirmedGuest, assignedTotal, pendingTotal] = await Promise.all([
+    const [confirmedRegular, confirmedGuest, assignedTotal] = await Promise.all([
       this.prisma.order.count({
         where: {
           companyId,
@@ -1256,8 +978,7 @@ class OrderConfirmationService {
           updatedAt: { gte: startDate, lte: endDate }
         }
       }),
-      this.prisma.orderAssignment.count({ where: assignmentWhere }),
-      this.prisma.order.count({ where: pendingWhere })
+      this.prisma.orderAssignment.count({ where: assignmentWhere })
     ]);
 
     const assignmentGroups = await this.prisma.orderAssignment.groupBy({
@@ -1291,8 +1012,7 @@ class OrderConfirmationService {
         confirmedRegular,
         confirmedGuest,
         totalConfirmed: confirmedRegular + confirmedGuest,
-        totalAssigned: assignedTotal,
-        pendingTotal
+        totalAssigned: assignedTotal
       },
       assignmentsByUser
     };

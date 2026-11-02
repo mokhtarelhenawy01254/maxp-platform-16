@@ -176,22 +176,6 @@ export const WorkspaceOrderQueueItem: React.FC<WorkspaceOrderQueueItemProps> = (
           </span>
         </span>
       </div>
-
-      {/* Creator & Assigned Staff */}
-      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground dark:text-slate-400 border-t border-border/20 pt-1">
-        <span className="truncate">
-          <span className="text-muted-foreground/70">{isArabic ? 'المنشئ:' : 'Creator:'} </span>
-          <span className="font-medium text-foreground dark:text-slate-200">
-            {order.createdByName || (order.type === 'GUEST' ? (isArabic ? 'المتجر' : 'Store') : (isArabic ? 'غير محدد' : '—'))}
-          </span>
-        </span>
-        <span className="truncate text-end">
-          <span className="text-muted-foreground/70">{isArabic ? 'المسؤول:' : 'Assigned:'} </span>
-          <span className="font-medium text-foreground dark:text-slate-200">
-            {order.assignedToName || (isArabic ? 'غير مخصص' : 'Unassigned')}
-          </span>
-        </span>
-      </div>
     </article>
   );
 };

@@ -61,8 +61,6 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
     switch (tabKey) {
       case 'pending':
         return stats?.pending;
-      case 'confirmation':
-        return stats?.pending;
       case 'incomplete':
         return stats?.incomplete;
       default:
@@ -73,7 +71,6 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   // تابات الفلتر السريع والتقارير في الكابينة التشغيلية:
   const tabs: { key: FilterTab; label: string; count?: number; icon?: React.ElementType }[] = [
     { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending', count: getTabCount('pending') },
-    { key: 'confirmation', label: isArabic ? 'مركز التأكيد' : 'Confirmation', count: getTabCount('confirmation') },
     { key: 'incomplete', label: isArabic ? 'السلات المتروكة' : 'Abandoned Carts', count: getTabCount('incomplete') },
     { key: 'reports', label: isArabic ? 'التقارير' : 'Reports', icon: ChartBarIcon },
   ];

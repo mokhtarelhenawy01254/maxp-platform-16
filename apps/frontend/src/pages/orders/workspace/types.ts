@@ -2,7 +2,6 @@ export type OrderType = 'GUEST' | 'REGULAR';
 
 export const WORKSPACE_TAB_KEYS = [
   'pending',
-  'confirmation',
   'incomplete',
   'all',
   'today',
