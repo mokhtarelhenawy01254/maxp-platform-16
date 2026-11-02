@@ -258,6 +258,170 @@ class ManufacturingSampleService {
   }
 
   /**
+   * معالجة استلام العينة وزيادة المخزون (HZ-D)
+   * يضيف plannedQuantity لمخزون المنتج في المستودع المحدد ويسجل حركة مخزنية (IN / ADJUSTMENT)
+   */
+  static async processSampleStockReceipt(tx, companyId, sample, userId = null) {
+    const productId = sample.productId;
+    if (!productId) return;
+
+    const qty = Math.round(Number(sample.plannedQuantity) || 1);
+    if (qty <= 0) return;
+
+    const notes = `استلام عينة ${sample.sampleNumber}`;
+
+    // 1. الحماية من التكرار: افحص stockMovement موجود بنفس notes + productId
+    if (tx.stockMovement?.findFirst) {
+      try {
+        const existingMovement = await tx.stockMovement.findFirst({
+          where: {
+            productId,
+            notes,
+          },
+        });
+        if (existingMovement) {
+          return;
+        }
+      } catch (_) {
+        // ignore in mock/test environments
+      }
+    }
+
+    // 2. تحديد المستودع: defaultTargetWarehouseId أو أول مستودع للشركة أو wh_default
+    let warehouseId = null;
+    try {
+      const settings = await ManufacturingService.getSettings(companyId);
+      warehouseId = settings?.defaultTargetWarehouseId || null;
+    } catch (_) {}
+
+    if (!warehouseId && tx.warehouse?.findFirst) {
+      try {
+        const firstWh = await tx.warehouse.findFirst({
+          where: { companyId, isActive: true },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
+        if (firstWh) {
+          warehouseId = firstWh.id;
+        } else {
+          const anyWh = await tx.warehouse.findFirst({
+            where: { companyId },
+            select: { id: true },
+          });
+          warehouseId = anyWh?.id || null;
+        }
+      } catch (_) {}
+    }
+
+    if (!warehouseId) {
+      warehouseId = 'wh_default';
+    }
+
+    // 3. احتساب تكلفة الوحدة (متوسط مرجح)
+    const totalCost = Number(sample.totalCost !== undefined ? sample.totalCost : (sample.fee || 0));
+    let uCost = qty > 0 ? round2(totalCost / qty) : round2(totalCost);
+
+    if (uCost === 0 && tx.product?.findFirst) {
+      try {
+        const prod = await tx.product.findFirst({
+          where: { id: productId, companyId },
+          select: { cost: true },
+        });
+        if (prod?.cost) {
+          uCost = round2(Number(prod.cost));
+        }
+      } catch (_) {}
+    }
+
+    // 4. تحديث أو إنشاء سجل المخزون (inventory)
+    let inv = null;
+    try {
+      if (tx.inventory?.findFirst) {
+        inv = await tx.inventory.findFirst({
+          where: {
+            productId,
+            warehouseId,
+          },
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    if (inv && tx.inventory?.update) {
+      const currentTotalVal = Number(inv.quantity) * Number(inv.cost || 0);
+      const newTotalVal = currentTotalVal + qty * uCost;
+      const newTotalQty = Number(inv.quantity) + qty;
+      const newAvgCost = newTotalQty > 0 ? round2(newTotalVal / newTotalQty) : uCost;
+
+      await tx.inventory.update({
+        where: { id: inv.id },
+        data: {
+          quantity: { increment: qty },
+          available: { increment: qty },
+          cost: newAvgCost,
+        },
+      });
+    } else if (!inv && tx.inventory?.create) {
+      try {
+        await tx.inventory.create({
+          data: {
+            productId,
+            warehouseId,
+            quantity: qty,
+            available: qty,
+            reserved: 0,
+            cost: uCost,
+          },
+        });
+      } catch (createErr) {
+        if (tx.inventory?.findFirst && tx.inventory?.update) {
+          const retryInv = await tx.inventory.findFirst({
+            where: { productId, warehouseId },
+          });
+          if (retryInv) {
+            const currentTotalVal = Number(retryInv.quantity) * Number(retryInv.cost || 0);
+            const newTotalVal = currentTotalVal + qty * uCost;
+            const newTotalQty = Number(retryInv.quantity) + qty;
+            const newAvgCost = newTotalQty > 0 ? round2(newTotalVal / newTotalQty) : uCost;
+
+            await tx.inventory.update({
+              where: { id: retryInv.id },
+              data: {
+                quantity: { increment: qty },
+                available: { increment: qty },
+                cost: newAvgCost,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // 5. تسجيل حركة مخزنية (stockMovement)
+    if (tx.stockMovement?.create) {
+      try {
+        await tx.stockMovement.create({
+          data: {
+            productId,
+            warehouseId,
+            type: 'IN',
+            reason: 'ADJUSTMENT',
+            quantity: qty,
+            cost: uCost,
+            reference: sample.sampleNumber,
+            notes,
+            userId: userId ? String(userId) : null,
+            isApproved: true,
+          },
+        });
+      } catch (smErr) {
+        console.warn('[Sample] Stock movement creation skipped/failed:', smErr.message);
+      }
+    }
+  }
+
+  /**
    * مزامنة بنود مصاريف العينة (snapshot + حفظ تلقائي في الكتالوج)
    */
   static async syncSampleExpenses(tx, companyId, sampleId, incomingExpenses) {
@@ -727,6 +891,26 @@ class ManufacturingSampleService {
               });
             } catch (_) {}
           }
+          let stockWarning = null;
+          if (sampleReceived) {
+            if (productId) {
+              const expenses = Array.isArray(createdRecord?.expenses) ? createdRecord.expenses : [];
+              const expensesTotal = round2(expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0));
+              const baseFee = round2(createdRecord?.fee || 0);
+              const sampleTotalCost = round2(baseFee + expensesTotal);
+
+              await this.processSampleStockReceipt(tx, companyId, {
+                ...createdRecord,
+                totalCost: sampleTotalCost,
+                productId,
+                sampleNumber,
+                plannedQuantity,
+              }, user?.id);
+            } else {
+              stockWarning = 'العينة مش مربوطة بمنتج — الكمية ماتضافتش للمخزن';
+            }
+          }
+
           const received = createdRecord.sampleReceived === true;
           const overdueDays = overdueDaysOf(createdRecord, received);
           return this.decorateTotals({
@@ -734,6 +918,7 @@ class ManufacturingSampleService {
             remaining: remainingOf(createdRecord),
             isOverdue: overdueDays > 0,
             overdueDays,
+            ...(stockWarning ? { stockWarning } : {}),
           });
         });
         ManufacturingNotificationService.emit('SAMPLE_CREATED', { companyId, sampleOrder: created, actorId: user?.id }).catch(() => {});
@@ -934,6 +1119,31 @@ class ManufacturingSampleService {
         } catch (_) {}
       }
 
+      let stockWarning = null;
+      const wasReceived = existing.sampleReceived === true;
+      const isNowReceived = updatedRecord.sampleReceived === true;
+
+      // لما sampleReceived تتغيّر false -> true وبس (idempotent)
+      if (!wasReceived && isNowReceived) {
+        const targetProductId = updatedRecord.productId;
+        if (targetProductId) {
+          const expenses = Array.isArray(updatedRecord?.expenses) ? updatedRecord.expenses : [];
+          const expensesTotal = round2(expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0));
+          const baseFee = round2(updatedRecord?.fee || 0);
+          const sampleTotalCost = round2(baseFee + expensesTotal);
+
+          await this.processSampleStockReceipt(tx, companyId, {
+            ...updatedRecord,
+            totalCost: sampleTotalCost,
+            productId: targetProductId,
+            sampleNumber: updatedRecord.sampleNumber,
+            plannedQuantity: updatedRecord.plannedQuantity,
+          }, user?.id);
+        } else {
+          stockWarning = 'العينة مش مربوطة بمنتج — الكمية ماتضافتش للمخزن';
+        }
+      }
+
       const received = updatedRecord.sampleReceived === true;
       const overdueDays = overdueDaysOf(updatedRecord, received);
       return this.decorateTotals({
@@ -941,6 +1151,7 @@ class ManufacturingSampleService {
         remaining: remainingOf(updatedRecord),
         isOverdue: overdueDays > 0,
         overdueDays,
+        ...(stockWarning ? { stockWarning } : {}),
       });
     });
   }

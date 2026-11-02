@@ -37,6 +37,10 @@ function createInMemoryStore() {
     boms: new Map(),
     partnerFactories: new Map(),
     products: new Map(),
+    inventory: new Map(),
+    stockMovements: new Map(),
+    warehouses: new Map(),
+    manufacturingSettings: new Map(),
     counter: 0,
   };
 
@@ -324,6 +328,83 @@ function createInMemoryStore() {
         const record = { id, ...data };
         store.products.set(id, record);
         return record;
+      },
+    },
+    inventory: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.inventory.values());
+        if (where?.productId) items = items.filter((i) => i.productId === where.productId);
+        if (where?.warehouseId) items = items.filter((i) => i.warehouseId === where.warehouseId);
+        return items[0] || null;
+      },
+      findMany: async ({ where } = {}) => {
+        let items = Array.from(store.inventory.values());
+        if (where?.productId) items = items.filter((i) => i.productId === where.productId);
+        if (where?.warehouseId) items = items.filter((i) => i.warehouseId === where.warehouseId);
+        return items;
+      },
+      create: async ({ data }) => {
+        const id = `inv-${++store.counter}`;
+        const record = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+        store.inventory.set(id, record);
+        return record;
+      },
+      update: async ({ where, data }) => {
+        const item = store.inventory.get(where.id);
+        if (!item) throw new Error('Inventory not found');
+        for (const [k, v] of Object.entries(data)) {
+          if (v && typeof v === 'object' && v.increment !== undefined) {
+            item[k] = Number(item[k] || 0) + Number(v.increment);
+          } else if (v !== undefined) {
+            item[k] = v;
+          }
+        }
+        item.updatedAt = new Date();
+        store.inventory.set(where.id, item);
+        return item;
+      },
+    },
+    stockMovement: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.stockMovements.values());
+        if (where?.productId) items = items.filter((m) => m.productId === where.productId);
+        if (where?.notes) items = items.filter((m) => m.notes === where.notes);
+        if (where?.warehouseId) items = items.filter((m) => m.warehouseId === where.warehouseId);
+        return items[0] || null;
+      },
+      findMany: async ({ where } = {}) => {
+        let items = Array.from(store.stockMovements.values());
+        if (where?.productId) items = items.filter((m) => m.productId === where.productId);
+        if (where?.notes) items = items.filter((m) => m.notes === where.notes);
+        if (where?.warehouseId) items = items.filter((m) => m.warehouseId === where.warehouseId);
+        return items;
+      },
+      create: async ({ data }) => {
+        const id = `sm-${++store.counter}`;
+        const record = { id, ...data, createdAt: new Date() };
+        store.stockMovements.set(id, record);
+        return record;
+      },
+    },
+    warehouse: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.warehouses.values());
+        if (where?.companyId) items = items.filter((w) => w.companyId === where.companyId);
+        if (where?.isActive !== undefined) items = items.filter((w) => w.isActive === where.isActive);
+        return items[0] || null;
+      },
+      create: async ({ data }) => {
+        const id = data.id || `wh-${++store.counter}`;
+        const record = { id, isActive: true, ...data };
+        store.warehouses.set(id, record);
+        return record;
+      },
+    },
+    manufacturingSettings: {
+      findUnique: async ({ where } = {}) => {
+        let items = Array.from(store.manufacturingSettings.values());
+        if (where?.companyId) items = items.filter((s) => s.companyId === where.companyId);
+        return items[0] || null;
       },
     },
     $transaction: async (fn) => fn(currentPrisma),
@@ -866,6 +947,124 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
       const stored = await currentPrisma.sampleOrder.findFirst({ where: { id: sample.id } });
       expect(stored.productName).toBe('هودي أوفر سايز أصلي');
       expect(stored.productId).toBe('prod-hoodie-1');
+    });
+
+    test('11. عينة sampleReceived=true بـproductId → inventory اتحدث + stockMovement IN (HZ-D)', async () => {
+      // Seed warehouse
+      currentPrisma._store.warehouses.set('wh-main-1', {
+        id: 'wh-main-1',
+        companyId,
+        name: 'المستودع الرئيسي',
+        isActive: true,
+      });
+
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'هودي أوفر سايز',
+        productId: 'prod-hoodie-1',
+        plannedQuantity: 4,
+        fee: 400,
+        sampleReceived: true,
+      });
+
+      expect(sample.sampleReceived).toBe(true);
+      expect(sample.stockWarning).toBeUndefined();
+
+      // Verify inventory was created/incremented
+      const inv = await currentPrisma.inventory.findFirst({
+        where: { productId: 'prod-hoodie-1', warehouseId: 'wh-main-1' },
+      });
+      expect(inv).toBeDefined();
+      expect(inv.quantity).toBe(4);
+      expect(inv.available).toBe(4);
+      expect(inv.cost).toBe(100); // 400 / 4
+
+      // Verify stockMovement was created with type IN and reason ADJUSTMENT
+      const sm = await currentPrisma.stockMovement.findFirst({
+        where: { productId: 'prod-hoodie-1', warehouseId: 'wh-main-1' },
+      });
+      expect(sm).toBeDefined();
+      expect(sm.type).toBe('IN');
+      expect(sm.reason).toBe('ADJUSTMENT');
+      expect(sm.quantity).toBe(4);
+      expect(sm.reference).toBe(sample.sampleNumber);
+      expect(sm.notes).toContain(`استلام عينة ${sample.sampleNumber}`);
+    });
+
+    test('12. عينة sampleReceived=true من غير productId → مفيش inventory، والرد فيه stockWarning (HZ-D)', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة يدوية غير مربوطة بمنتج',
+        plannedQuantity: 2,
+        sampleReceived: true,
+      });
+
+      expect(sample).toBeDefined();
+      expect(sample.sampleReceived).toBe(true);
+      expect(sample.productId).toBeNull();
+      expect(sample.stockWarning).toBe('العينة مش مربوطة بمنتج — الكمية ماتضافتش للمخزن');
+
+      // Verify no inventory or stockMovement created
+      const invs = await currentPrisma.inventory.findMany({});
+      expect(invs).toHaveLength(0);
+      const movements = await currentPrisma.stockMovement.findMany({});
+      expect(movements).toHaveLength(0);
+    });
+
+    test('13. تحديث عينة sampleReceived من false لـ true يحرّك المخزن، وتحديثها من true لـ true لا يكرر الحركة (HZ-D)', async () => {
+      currentPrisma._store.warehouses.set('wh-main-1', {
+        id: 'wh-main-1',
+        companyId,
+        name: 'المستودع الرئيسي',
+        isActive: true,
+      });
+
+      // 1. إنشاء عينة غير مستلمة
+      const created = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'هودي أوفر سايز',
+        productId: 'prod-hoodie-1',
+        plannedQuantity: 3,
+        fee: 300,
+        sampleReceived: false,
+      });
+
+      expect(created.sampleReceived).toBe(false);
+      let inv = await currentPrisma.inventory.findFirst({
+        where: { productId: 'prod-hoodie-1', warehouseId: 'wh-main-1' },
+      });
+      expect(inv).toBeNull();
+
+      // 2. تحديثها إلى مستلمة (false -> true)
+      const updatedFirst = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, created.id, {
+        sampleReceived: true,
+      });
+      expect(updatedFirst.sampleReceived).toBe(true);
+
+      inv = await currentPrisma.inventory.findFirst({
+        where: { productId: 'prod-hoodie-1', warehouseId: 'wh-main-1' },
+      });
+      expect(inv).toBeDefined();
+      expect(inv.quantity).toBe(3);
+
+      const movementsFirst = await currentPrisma.stockMovement.findMany({
+        where: { productId: 'prod-hoodie-1' },
+      });
+      expect(movementsFirst).toHaveLength(1);
+
+      // 3. تحديثها مرة ثانية وهي true بالفعل (true -> true) — يجب ألا تتكرر الحركة
+      const updatedSecond = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, created.id, {
+        sampleReceived: true,
+        designNotes: 'ملاحظة إضافية بدون تكرار المخزن',
+      });
+      expect(updatedSecond.sampleReceived).toBe(true);
+
+      inv = await currentPrisma.inventory.findFirst({
+        where: { productId: 'prod-hoodie-1', warehouseId: 'wh-main-1' },
+      });
+      expect(inv.quantity).toBe(3); // لا يزال 3 ولم يتضاعف إلى 6
+
+      const movementsSecond = await currentPrisma.stockMovement.findMany({
+        where: { productId: 'prod-hoodie-1' },
+      });
+      expect(movementsSecond).toHaveLength(1); // لا تزال حركة واحدة فقط ولم تتكرر
     });
   });
 });
