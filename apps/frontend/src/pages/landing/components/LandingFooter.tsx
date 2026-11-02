@@ -48,8 +48,8 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
-                to="/register"
-                onClick={handleLeadClick("footer_cta_register", "/register")}
+                to="/auth/register"
+                onClick={handleLeadClick("footer_cta_register", "/auth/register")}
                 onMouseEnter={onPreloadRegister}
                 onFocus={onPreloadRegister}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-white text-black font-bold px-8 py-4 text-sm hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-xl shadow-white/10"
@@ -121,8 +121,8 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-white text-xs">روابط سريعة</h4>
             <ul className="space-y-2 text-zinc-400">
-              <li><Link to="/login" className="hover:text-white transition-colors">تسجيل الدخول</Link></li>
-              <li><Link to="/register" className="hover:text-white transition-colors">إنشاء حساب جديد</Link></li>
+              <li><Link to="/auth/login" className="hover:text-white transition-colors">تسجيل الدخول</Link></li>
+              <li><Link to="/auth/register" className="hover:text-white transition-colors">إنشاء حساب جديد</Link></li>
               <li><a href="#calculator" className="hover:text-white transition-colors">حاسبة الوفر</a></li>
               <li><a href="#faq" className="hover:text-white transition-colors">الأسئلة الشائعة</a></li>
             </ul>

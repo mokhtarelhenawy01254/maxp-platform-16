@@ -121,7 +121,7 @@ export const LandingArchitectureMatrix: React.FC = () => {
             <Layers className="w-4 h-4 text-emerald-400" />
             <span>الهيكل المعماري للمنصة • The Unified Stack</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight text-balance">
             4 طبقات تشغيلية مترابطة...
             <br />
             <span className="text-zinc-400 font-normal">تعمل في تناغم رقمي مطلق.</span>

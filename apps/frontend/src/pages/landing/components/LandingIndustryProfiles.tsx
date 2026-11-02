@@ -105,7 +105,7 @@ export const LandingIndustryProfiles: React.FC = () => {
             <Briefcase className="w-4 h-4 text-emerald-400" />
             <span>حلول مفصلة حسب نشاطك • Industry Workflows</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight text-balance">
             نظام يتكيف مع تجارتك...
             <br />
             <span className="text-zinc-400 font-normal">مهما كانت خصوصية مجالك.</span>

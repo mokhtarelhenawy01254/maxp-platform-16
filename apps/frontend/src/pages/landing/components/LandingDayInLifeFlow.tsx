@@ -64,7 +64,7 @@ export const LandingDayInLifeFlow: React.FC = () => {
           <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest block mb-2">
             دورة حياة الأوردر • من الشات للخزنة
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight text-balance">
             كيف يتحرك الأوردر في نشاطك التجاري؟
           </h2>
           <p className="mt-3 text-base text-zinc-400">
