@@ -36,6 +36,7 @@ function createInMemoryStore() {
     productionOrders: new Map(),
     boms: new Map(),
     partnerFactories: new Map(),
+    products: new Map(),
     counter: 0,
   };
 
@@ -311,6 +312,20 @@ function createInMemoryStore() {
         return record;
       },
     },
+    product: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.products.values());
+        if (where?.id) items = items.filter((p) => p.id === where.id);
+        if (where?.companyId) items = items.filter((p) => p.companyId === where.companyId);
+        return items[0] || null;
+      },
+      create: async ({ data }) => {
+        const id = data.id || `prod-${++store.counter}`;
+        const record = { id, ...data };
+        store.products.set(id, record);
+        return record;
+      },
+    },
     $transaction: async (fn) => fn(currentPrisma),
     $executeRawUnsafe: async () => true,
     _store: store,
@@ -341,6 +356,14 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
       companyId,
       name: 'مصنع الأمل للطباعة',
       isActive: true,
+    });
+
+    // Seed sample Product (HZ-A)
+    currentPrisma._store.products.set('prod-hoodie-1', {
+      id: 'prod-hoodie-1',
+      companyId,
+      name: 'هودي أوفر سايز أصلي',
+      sku: 'SKU-HOD-01',
     });
 
     // Mock ManufacturingService.createOrder to simulate production order creation
@@ -812,6 +835,37 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
 
       const check = await currentPrisma.sampleOrder.findFirst({ where: { id: sample.id } });
       expect(check).toBeNull();
+    });
+
+    test('8. ينشئ عينة بـproductId صحيح ويخزنه', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'هودي أوفر سايز',
+        productId: 'prod-hoodie-1',
+      });
+      expect(sample.productId).toBe('prod-hoodie-1');
+      const stored = await currentPrisma.sampleOrder.findFirst({ where: { id: sample.id } });
+      expect(stored.productId).toBe('prod-hoodie-1');
+    });
+
+    test('9. يرفض productId مش تابع للشركة', async () => {
+      await expect(
+        ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+          productName: 'هودي أوفر سايز',
+          productId: 'prod-other-company',
+        })
+      ).rejects.toThrow('المنتج المختار غير موجود في هذه الشركة');
+    });
+
+    test('10. يشتق productName من المنتج لو جاي فاضي', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: '',
+        productId: 'prod-hoodie-1',
+      });
+      expect(sample.productName).toBe('هودي أوفر سايز أصلي');
+      expect(sample.productId).toBe('prod-hoodie-1');
+      const stored = await currentPrisma.sampleOrder.findFirst({ where: { id: sample.id } });
+      expect(stored.productName).toBe('هودي أوفر سايز أصلي');
+      expect(stored.productId).toBe('prod-hoodie-1');
     });
   });
 });

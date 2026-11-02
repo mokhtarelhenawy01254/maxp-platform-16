@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, ArrowRight, ArrowLeft, CheckCircle2, Factory } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, ArrowRight, ArrowLeft, CheckCircle2, Factory, Shirt, Check } from 'lucide-react';
 import {
   manufacturingApi,
   BillOfMaterials,
@@ -7,6 +7,7 @@ import {
   WarehouseOption,
   ProductionOrder,
   ProductionOrderType,
+  ProductOption,
 } from '../manufacturingApi';
 import { WizardVariantMatrixStep } from './wizard/WizardVariantMatrixStep';
 import { WizardRequirementsPreviewStep } from './wizard/WizardRequirementsPreviewStep';
@@ -35,6 +36,13 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
 
   // Form State
   const [selectedBomId, setSelectedBomId] = useState<string>('');
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [productsLoading, setProductsLoading] = useState<boolean>(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState<boolean>(false);
+  const productDropdownRef = useRef<HTMLDivElement | null>(null);
+
   const [sourceWarehouseId, setSourceWarehouseId] = useState<string>('');
   const [targetWarehouseId, setTargetWarehouseId] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
@@ -50,35 +58,70 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [deliveryMethod, setDeliveryMethod] = useState<string>('');
 
-  // Matrix quantities: size_color -> qty
-  const [matrix, setMatrix] = useState<Record<string, number>>({
-    'M_أسود': 20,
-    'L_أسود': 30,
-    'XL_أسود': 25,
-    'M_رمادي ميلانج': 15,
-    'L_رمادي ميلانج': 20,
-  });
+  // Matrix quantities: size_color -> qty (تبدأ فاضية {} بدون أي كميات جاهزة)
+  const [matrix, setMatrix] = useState<Record<string, number>>({});
 
   // Resolved materials preview
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState<VariantRequirementResolution | null>(null);
 
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(e.target as Node)) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
+      setStep(1);
+      setSelectedBomId('');
+      setSelectedProductId('');
+      setProductSearch('');
+      setIsProductDropdownOpen(false);
+      setMatrix({});
+      setCustomerId('');
+      setBrandName('');
+      setCustomerCountry('');
+      setSalePricePerUnit('');
+      setCustomerOrderId('');
+      setDeliveryAddress('');
+      setDeliveryMethod('');
+      setDueDate('');
+      setNotes('');
+      setError(null);
+      setResolved(null);
+
       setLoading(true);
+      setProductsLoading(true);
       Promise.all([
         manufacturingApi.listBoms({ isActive: true }).catch(() => []),
         manufacturingApi.getWarehouses().catch(() => []),
         manufacturingApi.getCustomersList().catch(() => []),
         manufacturingApi.listCustomerOrders().catch(() => ({ items: [] })),
-      ]).then(([bomsList, whList, custList, coList]) => {
+        manufacturingApi.getProducts().catch(() => []),
+      ]).then(([bomsList, whList, custList, coList, prodList]) => {
         setBoms(bomsList);
         setWarehouses(whList);
         setCustomers(custList);
         setCustomerOrders(coList.items || []);
-        setWarehouses(whList);
-        if (bomsList.length > 0 && !selectedBomId) {
-          setSelectedBomId(bomsList[0].id);
+        const prods = Array.isArray(prodList) ? prodList : [];
+        setProducts(prods);
+        setProductsLoading(false);
+
+        if (bomsList.length > 0) {
+          const firstBom = bomsList[0];
+          setSelectedBomId(firstBom.id);
+          if (firstBom.productId) {
+            setSelectedProductId(firstBom.productId);
+            const matched = prods.find((p) => p.id === firstBom.productId);
+            if (matched) {
+              setProductSearch(matched.name);
+            }
+          }
         }
         if (whList.length > 0) {
           setSourceWarehouseId(whList[0].id);
@@ -92,6 +135,18 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
       });
     }
   }, [isOpen]);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products.slice(0, 8);
+    return products
+      .filter((p) => p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)))
+      .slice(0, 8);
+  }, [products, productSearch]);
+
+  const selectedProduct = useMemo(() => {
+    return products.find((p) => p.id === selectedProductId) || null;
+  }, [products, selectedProductId]);
 
   const selectedBom = useMemo(() => {
     return boms.find((b) => b.id === selectedBomId) || null;
@@ -141,13 +196,17 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
   };
 
   const handleCreateOrder = async () => {
+    if (!selectedProductId) {
+      setError('اختر المنتج التام قبل إنشاء الأمر');
+      return;
+    }
     if (!selectedBomId || variantList.length === 0) return;
     setLoading(true);
     setError(null);
     try {
       const newOrder = await manufacturingApi.createOrder({
         bomId: selectedBomId,
-        productId: selectedBom?.productId || null,
+        productId: selectedProductId,
         plannedQuantity: totalPlannedQty,
         sourceWarehouseId: sourceWarehouseId || null,
         targetWarehouseId: targetWarehouseId || null,
@@ -227,7 +286,16 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
                 <label className="block text-xs font-bold text-foreground mb-1.5">قائمة المكونات المعتمدة (BOM) *</label>
                 <select
                   value={selectedBomId}
-                  onChange={(e) => setSelectedBomId(e.target.value)}
+                  onChange={(e) => {
+                    const newId = e.target.value;
+                    setSelectedBomId(newId);
+                    const b = boms.find((x) => x.id === newId);
+                    if (b?.productId) {
+                      setSelectedProductId(b.productId);
+                      const matched = products.find((p) => p.id === b.productId);
+                      if (matched) setProductSearch(matched.name);
+                    }
+                  }}
                   className="w-full p-2.5 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                 >
                   <option value="">-- اختر قائمة مكونات معتمدة --</option>
@@ -237,6 +305,87 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Product Combobox */}
+              <div ref={productDropdownRef} className="relative">
+                <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                  <Shirt className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>المنتج التام <span className="text-rose-500">*</span></span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProductSearch(val);
+                      setIsProductDropdownOpen(true);
+                      if (selectedProductId && val !== selectedProduct?.name) {
+                        setSelectedProductId('');
+                      }
+                    }}
+                    onFocus={() => setIsProductDropdownOpen(true)}
+                    placeholder="ابحث واختر المنتج التام..."
+                    className="w-full p-2.5 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+
+                {/* Sub-label */}
+                <div className="mt-1">
+                  {products.length === 0 && !productsLoading ? (
+                    <p className="text-[11px] text-destructive font-medium">
+                      لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا
+                    </p>
+                  ) : selectedProduct ? (
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      المنتج المختار: {selectedProduct.name} — كود {selectedProduct.sku ? selectedProduct.sku : 'بدون كود'}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      اختر منتج من القائمة
+                    </p>
+                  )}
+                </div>
+
+                {/* Dropdown list */}
+                {isProductDropdownOpen && (
+                  <div className="absolute z-30 top-full mt-1 right-0 left-0 bg-popover border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {productsLoading ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">جاري تحميل المنتجات...</div>
+                    ) : filteredProducts.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        {products.length === 0
+                          ? 'لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا'
+                          : 'لا توجد نتائج مطابقة للبحث'}
+                      </div>
+                    ) : (
+                      filteredProducts.map((p) => {
+                        const isSelected = p.id === selectedProductId;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedProductId(p.id);
+                              setProductSearch(p.name);
+                              setIsProductDropdownOpen(false);
+                            }}
+                            className={`w-full text-right px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/70 transition-colors ${
+                              isSelected ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
+                            }`}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{p.name}</span>
+                              {p.sku && <span className="text-[10px] text-muted-foreground font-mono">كود: {p.sku}</span>}
+                            </div>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 mr-2" />}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
 
               {selectedBom && (
@@ -477,8 +626,15 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
             {step === 1 && (
               <button
                 type="button"
-                disabled={!selectedBomId}
-                onClick={() => setStep(2)}
+                disabled={!selectedBomId || !selectedProductId}
+                onClick={() => {
+                  if (!selectedProductId) {
+                    setError('اختر المنتج التام قبل إنشاء الأمر');
+                    return;
+                  }
+                  setError(null);
+                  setStep(2);
+                }}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
               >
                 <span>متابعة لمصفوفة المقاسات</span>

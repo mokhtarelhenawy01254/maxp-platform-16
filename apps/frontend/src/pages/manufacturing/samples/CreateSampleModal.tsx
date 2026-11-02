@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Shirt, Calendar, DollarSign, Tag, User, Upload } from 'lucide-react';
-import { manufacturingApi, BillOfMaterials, SampleMaterialSource, PartnerFactory, SampleExpenseCatalogItem } from '../manufacturingApi';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Plus, Trash2, Shirt, Calendar, DollarSign, Tag, User, Upload, Check } from 'lucide-react';
+import {
+  manufacturingApi,
+  BillOfMaterials,
+  SampleMaterialSource,
+  PartnerFactory,
+  SampleExpenseCatalogItem,
+  ProductOption,
+} from '../manufacturingApi';
 import { CustomerPicker } from './CustomerPicker';
 
 interface CreateSampleModalProps {
@@ -15,21 +22,28 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
 
   // Form fields
   const [productName, setProductName] = useState('');
+  const [productId, setProductId] = useState<string>('');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [productsLoading, setProductsLoading] = useState<boolean>(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState<boolean>(false);
+  const productDropdownRef = useRef<HTMLDivElement | null>(null);
+
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerDisplayName, setCustomerDisplayName] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [brandName, setBrandName] = useState('');
   const [plannedQuantity, setPlannedQuantity] = useState<number>(1);
-  const [size, setSize] = useState('L');
-  const [color, setColor] = useState('أسود');
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
   const [materialSource, setMaterialSource] = useState<SampleMaterialSource>('CUSTOMER');
-  const [fee, setFee] = useState<string>('2500');
-  const [totalAmount, setTotalAmount] = useState<string>('2500');
+  const [fee, setFee] = useState<string>('');
+  const [totalAmount, setTotalAmount] = useState<string>('');
   const [depositAmount, setDepositAmount] = useState<string>('0');
   const [partnerFactoryId, setPartnerFactoryId] = useState<string>('');
   const [expectedDeliveryAt, setExpectedDeliveryAt] = useState<string>('');
   const [sampleReceived, setSampleReceived] = useState<boolean>(false);
-  const [receivedAt, setReceivedAt] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [receivedAt, setReceivedAt] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dueDate, setDueDate] = useState<string>('');
   const [designNotes, setDesignNotes] = useState('');
@@ -54,8 +68,67 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
     { name: 'تشطيب وكي وفحص الجودة', sequence: 3 },
   ]);
 
+  const resetForm = () => {
+    setProductName('');
+    setProductId('');
+    setProductSearch('');
+    setIsProductDropdownOpen(false);
+    setCustomerId(null);
+    setCustomerDisplayName('');
+    setCustomerName('');
+    setBrandName('');
+    setPlannedQuantity(1);
+    setSize('');
+    setColor('');
+    setMaterialSource('CUSTOMER');
+    setFee('');
+    setTotalAmount('');
+    setDepositAmount('0');
+    setPartnerFactoryId('');
+    setExpectedDeliveryAt('');
+    setDueDate('');
+    setDesignNotes('');
+    setBomId('');
+    setExpenses([]);
+    setNewExpenseName('');
+    setNewExpenseAmount('');
+    setSelectedFiles([]);
+    setError(null);
+    setSampleReceived(false);
+    setReceivedAt('');
+    setStages([
+      { name: 'قص وتجهيز القماش', sequence: 1 },
+      { name: 'خياطة وتجميع العينة', sequence: 2 },
+      { name: 'تشطيب وكي وفحص الجودة', sequence: 3 },
+    ]);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(e.target as Node)) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
+      resetForm();
+      setProductsLoading(true);
+      manufacturingApi
+        .getProducts()
+        .then((res: any) => {
+          setProducts(Array.isArray(res) ? res : []);
+        })
+        .catch(() => {
+          setProducts([]);
+        })
+        .finally(() => {
+          setProductsLoading(false);
+        });
+
       manufacturingApi
         .listBoms()
         .then((res: any) => {
@@ -79,6 +152,18 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
     }
   }, [isOpen]);
 
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products.slice(0, 8);
+    return products
+      .filter((p) => p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)))
+      .slice(0, 8);
+  }, [products, productSearch]);
+
+  const selectedProduct = useMemo(() => {
+    return products.find((p) => p.id === productId) || null;
+  }, [products, productId]);
+
   if (!isOpen) return null;
 
   const handleAddStage = () => {
@@ -97,6 +182,14 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (products.length === 0) {
+      setError('لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا');
+      return;
+    }
+    if (!productId) {
+      setError('اختر المنتج التام من القائمة');
+      return;
+    }
     if (!productName.trim()) {
       setError('اسم المنتج إلزامي لإنشاء أمر العينة');
       return;
@@ -114,6 +207,7 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
         }));
 
       const createdSample = await manufacturingApi.createSampleOrder({
+        productId,
         productName: productName.trim(),
         customerId: customerId || undefined,
         customerName: customerName.trim() || undefined,
@@ -193,21 +287,87 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
 
           {/* Row 1: Product & Brand */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            {/* Product Combobox */}
+            <div ref={productDropdownRef} className="relative">
               <label className="block text-xs font-semibold text-foreground mb-1">
-                اسم المنتج <span className="text-rose-500">*</span>
+                المنتج التام <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  required
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="مثال: هودي قطن أوفر سايز (Hoodie Oversized)"
+                  value={productSearch}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setProductSearch(val);
+                    setIsProductDropdownOpen(true);
+                    if (productId && val !== productName) {
+                      setProductId('');
+                      setProductName('');
+                    }
+                  }}
+                  onFocus={() => setIsProductDropdownOpen(true)}
+                  placeholder="ابحث واختر منتج تام..."
                   className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
                 <Shirt className="w-4 h-4 text-muted-foreground absolute left-3 top-2.5" />
               </div>
+
+              {/* Sub-label */}
+              <div className="mt-1">
+                {products.length === 0 && !productsLoading ? (
+                  <p className="text-[11px] text-destructive font-medium">
+                    لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا
+                  </p>
+                ) : selectedProduct ? (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    المنتج المختار: {selectedProduct.name} — كود {selectedProduct.sku ? selectedProduct.sku : 'بدون كود'}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    اختر منتج من القائمة
+                  </p>
+                )}
+              </div>
+
+              {/* Dropdown list */}
+              {isProductDropdownOpen && (
+                <div className="absolute z-30 top-full mt-1 right-0 left-0 bg-popover border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                  {productsLoading ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">جاري تحميل المنتجات...</div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {products.length === 0
+                        ? 'لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا'
+                        : 'لا توجد نتائج مطابقة للبحث'}
+                    </div>
+                  ) : (
+                    filteredProducts.map((p) => {
+                      const isSelected = p.id === productId;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setProductId(p.id);
+                            setProductName(p.name);
+                            setProductSearch(p.name);
+                            setIsProductDropdownOpen(false);
+                          }}
+                          className={`w-full text-right px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/70 transition-colors ${
+                            isSelected ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{p.name}</span>
+                            {p.sku && <span className="text-[10px] text-muted-foreground font-mono">كود: {p.sku}</span>}
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 mr-2" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
