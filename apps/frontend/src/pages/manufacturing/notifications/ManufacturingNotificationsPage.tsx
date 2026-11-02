@@ -29,6 +29,7 @@ const EVENT_LABELS: Record<string, string> = {
   PRODUCTION_STAGE_COMPLETED: 'إتمام مرحلة إنتاج',
   PRODUCTION_ORDER_DELAYED: 'تأخر أمر الإنتاج',
   PRODUCTION_ORDER_COMPLETED: 'اكتمال أمر الإنتاج',
+  MATERIAL_SHORTAGE: 'نقص في الخامات',
 };
 
 const RECIPIENT_LABELS: Record<string, { label: string; badgeClass: string }> = {

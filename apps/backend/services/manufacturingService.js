@@ -1438,7 +1438,7 @@ class ManufacturingService {
 
     const { autoIssue = false, sourceWarehouseId = null, userId = null } = options;
 
-    return await prisma.$transaction(async (tx) => {
+    const startOrderResult = await prisma.$transaction(async (tx) => {
       const updated = await tx.productionOrder.update({
         where: { id: orderId },
         data: {
@@ -1487,11 +1487,24 @@ class ManufacturingService {
           if (autoIssueResult?.costWarnings?.length) {
             updated.costWarnings = autoIssueResult.costWarnings;
           }
+          if (autoIssueResult?._shortages?.length) {
+            updated._shortages = autoIssueResult._shortages;
+          }
         }
       }
 
       return updated;
     });
+
+    if (startOrderResult?._shortages?.length) {
+      ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', {
+        companyId,
+        productionOrder: order,
+        shortages: startOrderResult._shortages,
+      }).catch(() => {});
+    }
+
+    return startOrderResult;
   }
 
   // ==========================================================================
@@ -1535,6 +1548,7 @@ class ManufacturingService {
       let totalCost = 0;
       const preparedItems = [];
       const costWarnings = [];
+      const detectedShortages = [];
 
       for (const item of data.items) {
         const rawQty = round4(item.quantity);
@@ -1549,8 +1563,10 @@ class ManufacturingService {
         // Lookup inventory for cost valuation & deduction
         let unitCost = round2(item.unitCost || 0);
         let inv = null;
+        let invLookedUp = false;
         try {
           if (tx.inventory?.findFirst) {
+            invLookedUp = true;
             inv = await tx.inventory.findFirst({
               where: {
                 productId: item.rawMaterialId,
@@ -1560,6 +1576,26 @@ class ManufacturingService {
           }
         } catch {
           // ignore if table not present in tests
+        }
+
+        // Shortage detection: check required vs available stock
+        let availableQty = null;
+        if (item.available !== undefined && item.available !== null) {
+          availableQty = Number(item.available);
+        } else if (inv) {
+          availableQty = Number(inv.available !== undefined && inv.available !== null ? inv.available : inv.quantity || 0);
+        } else if (invLookedUp) {
+          availableQty = 0;
+        }
+
+        const requiredQty = Number(item.required !== undefined && item.required !== null ? item.required : issuedQty);
+        if (availableQty !== null && requiredQty > availableQty) {
+          detectedShortages.push({
+            name: item.rawMaterialName || item.name || item.rawMaterialId || 'خامة',
+            required: requiredQty,
+            available: Math.max(0, availableQty),
+            unit: item.unit || 'PIECE',
+          });
         }
 
         if (inv && (!item.unitCost || item.unitCost === 0)) {
@@ -1667,6 +1703,17 @@ class ManufacturingService {
         data: { actualMaterialCost: newActualMaterialCost },
       });
 
+      if (Array.isArray(data.shortages)) {
+        for (const s of data.shortages) {
+          detectedShortages.push({
+            name: s.name || s.rawMaterialName || 'خامة',
+            required: Number(s.required || 0),
+            available: Number(s.available || 0),
+            unit: s.unit || 'PIECE',
+          });
+        }
+      }
+
       const issueRecord = await tx.materialIssue.findFirst({
         where: { id: issue.id },
         include: { items: true },
@@ -1674,6 +1721,7 @@ class ManufacturingService {
       if (issueRecord) {
         issueRecord.costWarnings = costWarnings;
         issueRecord.hasZeroCostWarning = costWarnings.length > 0;
+        issueRecord._shortages = detectedShortages;
       }
       return issueRecord;
     };
@@ -1701,6 +1749,16 @@ class ManufacturingService {
       } catch (err) {
         console.warn('[MES] WIP material issue auto-posting deferred:', err.message);
       }
+    }
+
+    // Notification for material shortage if required > available for >= 1 item
+    // Emitted after the transaction commits (never inside it — same pattern as line 2151)
+    if (result?._shortages?.length && !existingTx) {
+      ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', {
+        companyId,
+        productionOrder: order,
+        shortages: result._shortages,
+      }).catch(() => {});
     }
 
     return result;

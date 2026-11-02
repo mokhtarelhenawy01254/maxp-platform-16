@@ -24,6 +24,7 @@ const MFG_EVENTS = {
   PRODUCTION_STAGE_COMPLETED: { entity: 'STAGE',            recipients: ['FACTORY', 'TEAM'] },
   PRODUCTION_ORDER_DELAYED:   { entity: 'PRODUCTION_ORDER', recipients: ['CUSTOMER', 'FACTORY', 'TEAM'] },
   PRODUCTION_ORDER_COMPLETED: { entity: 'PRODUCTION_ORDER', recipients: ['CUSTOMER', 'FACTORY', 'TEAM'] },
+  MATERIAL_SHORTAGE:          { entity: 'PRODUCTION_ORDER', recipients: ['FACTORY', 'TEAM'] },
 };
 
 const DEFAULT_BODIES = {
@@ -61,6 +62,11 @@ const DEFAULT_BODIES = {
 
   PRODUCTION_ORDER_COMPLETED: `تم اكتمال أمر التصنيع {orderNumber} ({productName}) بالكامل وجاهز للاستلام ✅
 الكمية: {plannedQuantity} قطعة`,
+
+  MATERIAL_SHORTAGE: `تنبيه: نقص خامات لأمر التصنيع {orderNumber} ({productName}) ⚠️
+الخامات الناقصة:
+{shortages}
+يرجى توفير النواقص لبدء أو استكمال التشغيل.`,
 };
 
 const DEFAULT_SETTINGS = {
@@ -75,7 +81,7 @@ const DEFAULT_SETTINGS = {
         TEAM: MFG_EVENTS[k].recipients.includes('TEAM'),
       },
       templateId: null,
-      body: DEFAULT_BODIES[k] || '',
+      body: k === 'MATERIAL_SHORTAGE' ? null : (DEFAULT_BODIES[k] || ''),
     };
     return acc;
   }, {}),
@@ -258,6 +264,13 @@ class ManufacturingNotificationService {
       const d = dateStr || new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
       return `MFG:PRODUCTION_ORDER_DELAYED:${entities.productionOrderId || entities.entityId}:${d}:${recipientType}`;
     }
+    if (eventKey === 'MATERIAL_SHORTAGE') {
+      const d = dateStr || new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+      const orderId = entities.productionOrderId || entities.entityId;
+      return recipientType
+        ? `MFG:MATERIAL_SHORTAGE:${orderId}:${d}:${recipientType}`
+        : `MATERIAL_SHORTAGE:${orderId}:${d}`;
+    }
     return `MFG:${eventKey}:${entities.entityId}:${recipientType}`;
   }
 
@@ -326,6 +339,17 @@ class ManufacturingNotificationService {
     const plannedQuantity = String(order.plannedQuantity || sample.plannedQuantity || 1);
     const reason = sample.resultNotes || '';
 
+    const shortagesList = Array.isArray(ctx.shortages) ? ctx.shortages : [];
+    const shortageLines = shortagesList
+      .map((s) => {
+        const name = s.name || s.rawMaterialName || 'خامة';
+        const req = s.required !== undefined ? s.required : (s.requiredQuantity !== undefined ? s.requiredQuantity : '');
+        const avail = s.available !== undefined ? s.available : (s.availableQuantity !== undefined ? s.availableQuantity : 0);
+        const unit = s.unit ? ` ${s.unit}` : '';
+        return `- ${name}: المطلوب ${req}${unit}، المتاح ${avail}${unit}`;
+      })
+      .join('\n');
+
     return {
       sampleNumber,
       productName,
@@ -337,6 +361,8 @@ class ManufacturingNotificationService {
       brandName,
       plannedQuantity,
       reason,
+      shortageLines: shortageLines || (shortagesList.length ? JSON.stringify(shortagesList) : ''),
+      shortages: shortageLines || (shortagesList.length ? JSON.stringify(shortagesList) : ''),
     };
   }
 
@@ -384,9 +410,10 @@ class ManufacturingNotificationService {
 
     // 2. FACTORY
     if (def.recipients.includes('FACTORY') && cfg?.recipients?.FACTORY !== false) {
-      let factory = null;
+      let factory = ctx.partnerFactory || ctx.productionOrder?.partnerFactory || null;
+
       // (a) ctx.stage.partnerFactoryId -> partnerFactory
-      if (ctx.stage?.partnerFactoryId) {
+      if (!factory && ctx.stage?.partnerFactoryId) {
         if (ctx.stage.partnerFactory) {
           factory = ctx.stage.partnerFactory;
         } else {
@@ -409,7 +436,17 @@ class ManufacturingNotificationService {
         } catch (_) {}
       }
 
-      // (c) first stage in production order that has partnerFactoryId
+      // (c) productionOrder.partnerFactoryId if present
+      if (!factory && ctx.productionOrder?.partnerFactoryId) {
+        try {
+          factory = await prisma.partnerFactory.findFirst({
+            where: { id: ctx.productionOrder.partnerFactoryId, companyId },
+            select: { id: true, name: true, phone: true, isActive: true },
+          });
+        } catch (_) {}
+      }
+
+      // (d) first stage in production order that has partnerFactoryId
       const orderId = ctx.productionOrder?.id || ctx.stage?.orderId;
       if (!factory && orderId) {
         try {

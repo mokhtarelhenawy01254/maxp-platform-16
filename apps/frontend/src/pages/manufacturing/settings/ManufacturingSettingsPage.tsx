@@ -72,6 +72,11 @@ const EVENT_META: Record<MfgNotificationEventKey, { label: string; desc: string;
     desc: 'إشعار عند إقفال أمر الإنتاج واكتمال تصنيع كامل الكمية',
     allowedRecipients: ['CUSTOMER', 'FACTORY', 'TEAM'],
   },
+  MATERIAL_SHORTAGE: {
+    label: 'نقص في الخامات',
+    desc: 'إشعار فوري عند وجود عجز أو نقص في كميات الخامات المطلوبة للتشغيل',
+    allowedRecipients: ['FACTORY', 'TEAM'],
+  },
 };
 
 export const ManufacturingSettingsPage: React.FC = () => {
@@ -108,6 +113,7 @@ export const ManufacturingSettingsPage: React.FC = () => {
         PRODUCTION_STAGE_COMPLETED: { enabled: true, recipients: { CUSTOMER: false, FACTORY: true, TEAM: true }, body: '', templateId: '' },
         PRODUCTION_ORDER_DELAYED: { enabled: true, recipients: { CUSTOMER: true, FACTORY: true, TEAM: true }, body: '', templateId: '' },
         PRODUCTION_ORDER_COMPLETED: { enabled: true, recipients: { CUSTOMER: true, FACTORY: true, TEAM: true }, body: '', templateId: '' },
+        MATERIAL_SHORTAGE: { enabled: true, recipients: { CUSTOMER: false, FACTORY: true, TEAM: true }, body: '', templateId: '' },
       },
     };
   };

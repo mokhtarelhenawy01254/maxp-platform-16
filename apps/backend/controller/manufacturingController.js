@@ -1771,6 +1771,7 @@ class ManufacturingController {
         sampleOrder,
         productionOrder,
         stage,
+        shortages: req.body.shortages || [],
         actorId: req.user?.id,
       });
 

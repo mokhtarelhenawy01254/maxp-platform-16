@@ -429,4 +429,201 @@ describe('Manufacturing WhatsApp Notifications (T01)', () => {
     expect(callArgs.variables).toHaveProperty('orderNumber', 'PO-3001');
     expect(callArgs.variables).toHaveProperty('productName', 'قميص كتان');
   });
+
+  test('7. MFG_EVENTS key count is 10 and includes MATERIAL_SHORTAGE', () => {
+    const settings = ManufacturingNotificationService.normalizeSettings(null);
+    const keys = Object.keys(settings.events);
+    expect(keys.length).toBe(10);
+    expect(keys).toContain('MATERIAL_SHORTAGE');
+    expect(settings.events.MATERIAL_SHORTAGE.recipients.FACTORY).toBe(true);
+    expect(settings.events.MATERIAL_SHORTAGE.recipients.TEAM).toBe(true);
+    expect(settings.events.MATERIAL_SHORTAGE.recipients.CUSTOMER).toBe(false);
+  });
+
+  test('8. MATERIAL_SHORTAGE fan-out to FACTORY and TEAM when enabled -> exactly one row per recipient, eventKey=MATERIAL_SHORTAGE', async () => {
+    inMemoryPrisma._store.factories.set('fac-1', {
+      id: 'fac-1',
+      companyId,
+      name: 'مصنع النصر للملابس',
+      phone: '01011112222',
+      isActive: true,
+    });
+    inMemoryPrisma._store.companies.set(companyId, {
+      id: companyId,
+      name: 'شركة التجربة',
+      phone: '01033334444',
+    });
+
+    await ManufacturingNotificationService.updateNotificationSettings(companyId, {
+      isEnabled: true,
+      events: {
+        MATERIAL_SHORTAGE: {
+          enabled: true,
+          recipients: { FACTORY: true, TEAM: true, CUSTOMER: false },
+        },
+      },
+    });
+
+    const ctx = {
+      companyId,
+      productionOrder: {
+        id: 'po-shortage-1',
+        orderNumber: 'PO-SHORT-001',
+        productName: 'قميص صيفي',
+        partnerFactoryId: 'fac-1',
+      },
+      shortages: [
+        { name: 'قماش كتان', required: 100, available: 40, unit: 'متر' },
+        { name: 'أزرار صدف', required: 500, available: 200, unit: 'قطعة' },
+      ],
+    };
+
+    const res = await ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', ctx);
+    expect(res.success).toBe(true);
+    expect(res.fanout.length).toBe(2);
+    expect(res.fanout[0].status).toBe('SENT');
+    expect(res.fanout[1].status).toBe('SENT');
+
+    const logs = await inMemoryPrisma.manufacturingNotificationLog.findMany({
+      where: { companyId, eventKey: 'MATERIAL_SHORTAGE' },
+    });
+    expect(logs.length).toBe(2);
+
+    const factoryLog = logs.find((l) => l.recipientType === 'FACTORY');
+    const teamLog = logs.find((l) => l.recipientType === 'TEAM');
+
+    expect(factoryLog).toBeTruthy();
+    expect(factoryLog.status).toBe('SENT');
+    expect(factoryLog.eventKey).toBe('MATERIAL_SHORTAGE');
+    expect(factoryLog.recipientPhone).toBe('01011112222');
+    expect(factoryLog.payload.vars.shortages).toContain('قماش كتان');
+    expect(factoryLog.payload.vars.shortageLines).toContain('أزرار صدف');
+
+    expect(teamLog).toBeTruthy();
+    expect(teamLog.status).toBe('SENT');
+    expect(teamLog.eventKey).toBe('MATERIAL_SHORTAGE');
+    expect(teamLog.recipientPhone).toBe('01033334444');
+  });
+
+  test('9. MATERIAL_SHORTAGE deduplication: second emit same order+day emits DUPLICATE and keeps row count unchanged', async () => {
+    inMemoryPrisma._store.factories.set('fac-1', {
+      id: 'fac-1',
+      companyId,
+      name: 'مصنع النصر',
+      phone: '01011112222',
+      isActive: true,
+    });
+
+    await ManufacturingNotificationService.updateNotificationSettings(companyId, {
+      isEnabled: true,
+      events: {
+        MATERIAL_SHORTAGE: {
+          enabled: true,
+          recipients: { FACTORY: true, TEAM: false, CUSTOMER: false },
+        },
+      },
+    });
+
+    const ctx = {
+      companyId,
+      productionOrder: {
+        id: 'po-shortage-2',
+        orderNumber: 'PO-SHORT-002',
+        partnerFactoryId: 'fac-1',
+      },
+      shortages: [{ name: 'خيط أبيض', required: 50, available: 10, unit: 'بكرة' }],
+    };
+
+    // First emission
+    const firstRes = await ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', ctx);
+    expect(firstRes.success).toBe(true);
+    expect(firstRes.fanout[0].status).toBe('SENT');
+
+    const countAfterFirst = await inMemoryPrisma.manufacturingNotificationLog.count({ where: { companyId } });
+    expect(countAfterFirst).toBe(1);
+
+    // Second emission same order and day
+    const secondRes = await ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', ctx);
+    expect(secondRes.success).toBe(true);
+    expect(secondRes.fanout[0].status).toBe('DUPLICATE');
+
+    const countAfterSecond = await inMemoryPrisma.manufacturingNotificationLog.count({ where: { companyId } });
+    expect(countAfterSecond).toBe(1); // row count unchanged
+  });
+
+  test('10. MATERIAL_SHORTAGE disabled in settings -> 0 rows, emit returns skipped:"event_disabled"', async () => {
+    await ManufacturingNotificationService.updateNotificationSettings(companyId, {
+      isEnabled: true,
+      events: {
+        MATERIAL_SHORTAGE: { enabled: false },
+      },
+    });
+
+    const ctx = {
+      companyId,
+      productionOrder: {
+        id: 'po-shortage-3',
+        orderNumber: 'PO-SHORT-003',
+      },
+      shortages: [{ name: 'سوستة معدن', required: 100, available: 0, unit: 'قطعة' }],
+    };
+
+    const res = await ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', ctx);
+    expect(res.success).toBe(true);
+    expect(res.skipped).toBe('event_disabled');
+    expect(mockSendNotification).toHaveBeenCalledTimes(0);
+
+    const count = await inMemoryPrisma.manufacturingNotificationLog.count({ where: { companyId } });
+    expect(count).toBe(0);
+  });
+
+  test('11. MATERIAL_SHORTAGE send failure (e.g. outside 24h window) -> FAILED status and non-null reason recorded, never silent', async () => {
+    inMemoryPrisma._store.factories.set('fac-1', {
+      id: 'fac-1',
+      companyId,
+      name: 'مصنع النصر',
+      phone: '01011112222',
+      isActive: true,
+    });
+
+    await ManufacturingNotificationService.updateNotificationSettings(companyId, {
+      isEnabled: true,
+      events: {
+        MATERIAL_SHORTAGE: {
+          enabled: true,
+          recipients: { FACTORY: true, TEAM: false, CUSTOMER: false },
+        },
+      },
+    });
+
+    mockSendNotification.mockResolvedValueOnce({
+      success: false,
+      reason: 'outside_24h_window',
+      errorCode: 'META_WINDOW_EXPIRED',
+    });
+
+    const ctx = {
+      companyId,
+      productionOrder: {
+        id: 'po-shortage-4',
+        orderNumber: 'PO-SHORT-004',
+        partnerFactoryId: 'fac-1',
+      },
+      shortages: [{ name: 'قماش صوف', required: 80, available: 20, unit: 'متر' }],
+    };
+
+    const res = await ManufacturingNotificationService.emit('MATERIAL_SHORTAGE', ctx);
+    expect(res.success).toBe(true);
+    expect(res.fanout[0].status).toBe('FAILED');
+    expect(res.fanout[0].reason).toBe('outside_24h_window');
+
+    const log = await inMemoryPrisma.manufacturingNotificationLog.findFirst({
+      where: { companyId, eventKey: 'MATERIAL_SHORTAGE' },
+    });
+    expect(log).toBeTruthy();
+    expect(log.status).toBe('FAILED');
+    expect(log.reason).toBe('outside_24h_window');
+    expect(log.reason).not.toBeNull();
+    expect(log.errorCode).toBe('META_WINDOW_EXPIRED');
+  });
 });
