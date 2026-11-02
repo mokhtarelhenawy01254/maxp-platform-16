@@ -185,20 +185,66 @@ function classifyShippingError(errorMsg, rawReason = null) {
   };
 }
 
-function attachShippingErrorToMetadata(currentMetadataRaw, errorInfo) {
+function isTransientShippingError(error) {
+  if (!error) return false;
+  const msg = typeof error === 'string' ? error : (error.message || error.error || '');
+  const code = String(error.code || '');
+  const status = Number(error.status || error.statusCode || 0);
+
+  // 1. Explicit data errors must NEVER be retried:
+  const isDataError = /هاتف|تليفون|phone|عنوان|شارع|address|محافظة|محافظه|منطقة|منطقه|governorate|government|area|receiver|سعر|price|أصناف|اصناف|صنف|منتج|items/i.test(msg);
+  if (isDataError) {
+    return false;
+  }
+
+  // 2. HTTP 5xx errors
+  if (status >= 500 && status < 600) {
+    return true;
+  }
+  if (/\b(500|502|503|504)\b/.test(msg)) {
+    return true;
+  }
+
+  // 3. Transient network / timeout keywords
+  const transientPatterns = [
+    /timeout/i,
+    /etimedout/i,
+    /econnreset/i,
+    /econnrefused/i,
+    /socket\s*hang\s*up/i,
+    /fetch\s*failed/i,
+    /لم\s*يتم\s*تلقي\s*استجابة/i,
+    /تعذر\s*الاتصال/i,
+    /network\s*error/i,
+    /eai_again/i,
+    /enotfound/i,
+    /und_err_connect_timeout/i
+  ];
+
+  const fullStr = `${msg} ${code}`;
+  return transientPatterns.some(p => p.test(fullStr));
+}
+
+function attachShippingErrorToMetadata(currentMetadataRaw, errorInfo, attempts = 1) {
   let meta = {};
   try {
     meta = typeof currentMetadataRaw === 'string' ? JSON.parse(currentMetadataRaw) : (currentMetadataRaw || {});
   } catch (_) {
     meta = {};
   }
-  meta.shippingAutoError = {
+  const errorObj = {
     category: errorInfo.category,
     code: errorInfo.code,
     message: errorInfo.message,
     actionHint: errorInfo.actionHint,
     provider: 'TURBO',
-    failedAt: new Date().toISOString()
+    failedAt: new Date().toISOString(),
+    attempts: attempts || 1
+  };
+  meta.shippingAutoError = errorObj;
+  meta.shippingError = {
+    ...errorObj,
+    attempts: attempts || 1
   };
   return JSON.stringify(meta);
 }
@@ -210,8 +256,9 @@ function clearShippingErrorFromMetadata(currentMetadataRaw) {
   } catch (_) {
     meta = {};
   }
-  if (meta && meta.shippingAutoError) {
-    delete meta.shippingAutoError;
+  if (meta) {
+    if (meta.shippingAutoError) delete meta.shippingAutoError;
+    if (meta.shippingError) delete meta.shippingError;
   }
   return JSON.stringify(meta);
 }
@@ -3276,6 +3323,7 @@ class OrderService {
     let order = orderOrId;
     const targetOrderId = typeof orderOrId === 'string' ? orderOrId : (orderOrId?.id || orderOrId?.orderNumber);
     const lockKey = `${companyId}:${targetOrderId}`;
+    let attempts = 0;
 
     if (targetOrderId && _inFlightTurboShipmentLocks.has(lockKey)) {
       console.log(`ℹ️ [TURBO-AUTO] Shipment creation already in-flight for ${lockKey}`);
@@ -3454,7 +3502,79 @@ class OrderService {
         orderData.governorate = validation.resolvedGovernorate;
       }
 
-      const shipmentResult = await turboService.createShipment(orderData);
+      const MAX_SHIPMENT_ATTEMPTS = 3;
+      const retryDelays = options.retryDelays || (process.env.NODE_ENV === 'test' ? [50, 100] : [1500, 4000]);
+      let shipmentResult = null;
+      let lastCallError = null;
+
+      for (let attempt = 1; attempt <= MAX_SHIPMENT_ATTEMPTS; attempt++) {
+        attempts = attempt;
+
+        // Idempotency check before each call: stop immediately if shipment was attached concurrently
+        if (order.id) {
+          let freshOrder = null;
+          try {
+            if (typeof prisma.order?.findUnique === 'function') {
+              freshOrder = await prisma.order.findUnique({
+                where: { id: order.id },
+                select: { turboShipmentId: true, turboTrackingNumber: true }
+              });
+            } else if (typeof prisma.order?.findFirst === 'function') {
+              freshOrder = await prisma.order.findFirst({
+                where: { id: order.id },
+                select: { turboShipmentId: true, turboTrackingNumber: true }
+              });
+            }
+          } catch (_) {
+            freshOrder = null;
+          }
+
+          if (freshOrder?.turboShipmentId || freshOrder?.turboTrackingNumber) {
+            console.log(`ℹ️ [TURBO-AUTO] Order ${order.orderNumber} already has shipment (${freshOrder.turboShipmentId || freshOrder.turboTrackingNumber}), aborting retry attempts`);
+            return {
+              skipped: true,
+              reason: 'ALREADY_HAS_SHIPMENT',
+              shipmentId: freshOrder.turboShipmentId,
+              trackingNumber: freshOrder.turboTrackingNumber,
+              attempts
+            };
+          }
+        }
+
+        try {
+          shipmentResult = await turboService.createShipment(orderData);
+          if (shipmentResult && shipmentResult.success && (shipmentResult.shipmentId || shipmentResult.trackingNumber)) {
+            lastCallError = null;
+            break;
+          }
+
+          const errorMsg = shipmentResult?.error || shipmentResult?.message || 'استجابة غير صحيحة من سيرفر تربو';
+          const errObj = new Error(errorMsg);
+          if (shipmentResult?.status) errObj.status = shipmentResult.status;
+          if (shipmentResult?.statusCode) errObj.statusCode = shipmentResult.statusCode;
+          if (shipmentResult?.code) errObj.code = shipmentResult.code;
+          lastCallError = errObj;
+
+          if (attempt < MAX_SHIPMENT_ATTEMPTS && isTransientShippingError(errObj)) {
+            const delayMs = retryDelays[attempt - 1] || 1500;
+            console.warn(`⚠️ [TURBO-AUTO] Transient error on attempt ${attempt}/${MAX_SHIPMENT_ATTEMPTS} for order ${order.orderNumber}: ${errorMsg}. Retrying in ${delayMs}ms...`);
+            await new Promise(r => setTimeout(r, delayMs));
+            continue;
+          } else {
+            break;
+          }
+        } catch (callErr) {
+          lastCallError = callErr;
+          if (attempt < MAX_SHIPMENT_ATTEMPTS && isTransientShippingError(callErr)) {
+            const delayMs = retryDelays[attempt - 1] || 1500;
+            console.warn(`⚠️ [TURBO-AUTO] Transient exception on attempt ${attempt}/${MAX_SHIPMENT_ATTEMPTS} for order ${order.orderNumber}: ${callErr.message}. Retrying in ${delayMs}ms...`);
+            await new Promise(r => setTimeout(r, delayMs));
+            continue;
+          } else {
+            break;
+          }
+        }
+      }
 
       if (shipmentResult && shipmentResult.success && (shipmentResult.shipmentId || shipmentResult.trackingNumber)) {
         const shipmentId = String(shipmentResult.shipmentId || '');
@@ -3495,13 +3615,13 @@ class OrderService {
           }).catch(e => console.warn('⚠️ [TURBO-AUTO] Guest twin sync warning:', e.message));
         }
 
-        console.log(`✅ [TURBO-AUTO] Successfully created shipment for order ${order.orderNumber}: shipmentId=${shipmentId}, trackingNumber=${trackingNumber}`);
-        return { success: true, shipmentId, trackingNumber, status: shipmentStatus, labelUrl };
+        console.log(`✅ [TURBO-AUTO] Successfully created shipment for order ${order.orderNumber} (attempts: ${attempts}): shipmentId=${shipmentId}, trackingNumber=${trackingNumber}`);
+        return { success: true, shipmentId, trackingNumber, status: shipmentStatus, labelUrl, attempts };
       } else {
-        const errorMsg = shipmentResult?.error || shipmentResult?.message || 'استجابة غير صحيحة من سيرفر تربو';
-        console.error(`❌ [TURBO-AUTO] Failed to create shipment for order ${order.orderNumber}:`, errorMsg);
+        const errorMsg = lastCallError ? lastCallError.message : (shipmentResult?.error || shipmentResult?.message || 'استجابة غير صحيحة من سيرفر تربو');
+        console.error(`❌ [TURBO-AUTO] Failed to create shipment for order ${order.orderNumber} after ${attempts} attempts:`, errorMsg);
         const classified = classifyShippingError(errorMsg);
-        const updatedMeta = attachShippingErrorToMetadata(order.metadata, classified);
+        const updatedMeta = attachShippingErrorToMetadata(order.metadata, classified, attempts);
         const categoryTag = classified.category === 'DATA_ERROR' ? 'تنبيه بيانات العميل' : 'تنبيه نظام الشحن';
         const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${errorMsg} (${categoryTag})]`;
         if (!order.notes?.includes(errNote) && !order.notes?.includes(errorMsg)) {
@@ -3516,13 +3636,13 @@ class OrderService {
             data: { metadata: updatedMeta }
           }).catch(() => {});
         }
-        return { success: false, error: errorMsg, errorInfo: classified };
+        return { success: false, error: errorMsg, errorInfo: classified, attempts };
       }
     } catch (err) {
       console.error(`❌ [TURBO-AUTO] Exception creating shipment for order ${order?.orderNumber || orderOrId}:`, err.message);
       const classified = classifyShippingError(err.message);
       if (order?.id) {
-        const updatedMeta = attachShippingErrorToMetadata(order.metadata, classified);
+        const updatedMeta = attachShippingErrorToMetadata(order.metadata, classified, attempts || 1);
         const categoryTag = classified.category === 'DATA_ERROR' ? 'تنبيه بيانات العميل' : 'تنبيه نظام الشحن';
         const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${err.message} (${categoryTag})]`;
         if (!order.notes?.includes(errNote) && !order.notes?.includes(err.message)) {
@@ -3538,7 +3658,7 @@ class OrderService {
           }).catch(() => {});
         }
       }
-      return { success: false, error: err.message, errorInfo: classified };
+      return { success: false, error: err.message, errorInfo: classified, attempts: attempts || 1 };
     } finally {
       if (targetOrderId) _inFlightTurboShipmentLocks.delete(lockKey);
     }
@@ -3791,6 +3911,7 @@ const orderService = new OrderService();
 orderService.OrderService = OrderService;
 orderService.orderService = orderService;
 orderService.classifyShippingError = classifyShippingError;
+orderService.isTransientShippingError = isTransientShippingError;
 orderService.attachShippingErrorToMetadata = attachShippingErrorToMetadata;
 orderService.clearShippingErrorFromMetadata = clearShippingErrorFromMetadata;
 

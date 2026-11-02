@@ -246,8 +246,16 @@ const updatePreparationOrderStatus = async ({
       notifyPreparationStageChange({ companyId, orderPayload: updatedOrder, status: normalizedStatus });
     });
 
-    // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED
-    if (mappedStatus === 'CONFIRMED' || normalizedStatus === 'CONFIRMED') {
+    // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED or released from hold stages
+    const isConfirmedTransition = (mappedStatus === 'CONFIRMED' || normalizedStatus === 'CONFIRMED');
+    const wasHoldStage = PREPARATION_HOLD_STAGES.has(previousPreparationStatus) ||
+      previousPreparationStatus === 'ON_HOLD_PREP' ||
+      previousPreparationStatus === 'STOCK_SHORTAGE';
+    const isNewStageNotHold = !PREPARATION_HOLD_STAGES.has(normalizedStatus);
+    const hasNoShipment = !order.turboTrackingNumber && !order.turboShipmentId;
+    const isHoldReleaseTransition = wasHoldStage && isNewStageNotHold && hasNoShipment;
+
+    if (isConfirmedTransition || isHoldReleaseTransition) {
       setImmediate(() => {
         try {
           const orderService = require('./orderService');
@@ -270,7 +278,7 @@ const updatePreparationOrderStatus = async ({
         { orderNumber: orderIdentifier, companyId }
       ]
     },
-    select: { id: true, status: true, metadata: true }
+    select: { id: true, status: true, metadata: true, turboShipmentId: true, turboTrackingNumber: true }
   });
 
   if (guestOrder) {
@@ -336,8 +344,16 @@ const updatePreparationOrderStatus = async ({
       }
     });
 
-    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED
-    if (normalizedStatus === 'CONFIRMED') {
+    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED or released from hold stages
+    const isGuestConfirmedTransition = (normalizedStatus === 'CONFIRMED');
+    const wasGuestHoldStage = PREPARATION_HOLD_STAGES.has(previousPreparationStatus) ||
+      previousPreparationStatus === 'ON_HOLD_PREP' ||
+      previousPreparationStatus === 'STOCK_SHORTAGE';
+    const isGuestNewStageNotHold = !PREPARATION_HOLD_STAGES.has(normalizedStatus);
+    const hasGuestNoShipment = !guestOrder.turboTrackingNumber && !guestOrder.turboShipmentId;
+    const isGuestHoldReleaseTransition = wasGuestHoldStage && isGuestNewStageNotHold && hasGuestNoShipment;
+
+    if (isGuestConfirmedTransition || isGuestHoldReleaseTransition) {
       setImmediate(() => {
         try {
           const orderService = require('./orderService');
