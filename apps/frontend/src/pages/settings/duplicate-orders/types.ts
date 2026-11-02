@@ -1,14 +1,21 @@
 export interface DuplicateOrderSettingsData {
   enabled: boolean;
-  criteria: 'phone' | 'phone_amount' | 'phone_items';
-  activeStatuses: string[];
-  windowEnabled: boolean;
-  windowMinutes: number;
+  criterion: 'phone' | 'phone_amount' | 'phone_products';
+  windowMinutes: number | null;
   action: 'record_visible' | 'record_hidden' | 'block';
-  alertTeam: boolean;
-  includeStoreOrders: boolean;
-  reportTreatment: 'separate' | 'cancelled';
-  exemptPhones: string[];
+  notifyTeam: boolean;
+  compareStorefrontOrders: boolean;
+  reportAs: 'duplicate' | 'cancelled';
+  activeStatuses: string[];
+  excludedPhones: string[];
+
+  // Legacy fields for backwards compatibility
+  criteria?: 'phone' | 'phone_amount' | 'phone_items' | 'phone_products';
+  windowEnabled?: boolean;
+  alertTeam?: boolean;
+  includeStoreOrders?: boolean;
+  reportTreatment?: 'separate' | 'cancelled';
+  exemptPhones?: string[];
 }
 
 export interface StatusOption {
@@ -18,15 +25,17 @@ export interface StatusOption {
 }
 
 export interface TimeWindowPreset {
-  minutes: number;
+  minutes: number | null;
   label: string;
 }
 
-export interface DuplicateCriteriaOption {
-  id: 'phone' | 'phone_amount' | 'phone_items';
+export interface DuplicateCriterionOption {
+  id: 'phone' | 'phone_amount' | 'phone_products';
   title: string;
   desc: string;
 }
+
+export type DuplicateCriteriaOption = DuplicateCriterionOption;
 
 export interface DuplicateActionOption {
   id: 'record_visible' | 'record_hidden' | 'block';

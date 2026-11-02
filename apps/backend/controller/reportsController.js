@@ -954,7 +954,7 @@ const getDetailedOrderReport = async (req, res) => {
         const duplicateCustomerMap = {};
 
         const dupSettings = await require('../services/orderService').getDuplicateSettings(companyId);
-        const treatDuplicateAsCancelled = dupSettings?.reportTreatment === 'cancelled';
+        const treatDuplicateAsCancelled = dupSettings?.reportAs === 'cancelled' || dupSettings?.reportTreatment === 'cancelled';
 
         const branchMap = {};
 

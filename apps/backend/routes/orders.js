@@ -1094,14 +1094,14 @@ const HIDDEN_GUEST_ORDER_STATUSES_WITH_DUPLICATES = [
 
 const getVisibleRegularOrderStatusesFilter = (duplicateSettings) => ({
   notIn:
-    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden' || duplicateSettings?.action === 'ignore'
+    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden'
       ? HIDDEN_REGULAR_ORDER_STATUSES_WITH_DUPLICATES
       : HIDDEN_REGULAR_ORDER_STATUSES
 });
 
 const getVisibleGuestOrderStatusesFilter = (duplicateSettings) => ({
   notIn:
-    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden' || duplicateSettings?.action === 'ignore'
+    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden'
       ? HIDDEN_GUEST_ORDER_STATUSES_WITH_DUPLICATES
       : HIDDEN_GUEST_ORDER_STATUSES
 });
@@ -2604,7 +2604,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
 
     // 🎯 مصير الطلبات المحولة بواسطة الفريق وجودتها (كم قيد الانتظار/الشحن، كم ملغي، كم تسلم)
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
-    const treatDuplicateAsCancelled = duplicateSettings?.reportTreatment === 'cancelled';
+    const treatDuplicateAsCancelled = duplicateSettings?.reportAs === 'cancelled' || duplicateSettings?.reportTreatment === 'cancelled';
     const DELIVERED_SET = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED']);
     const RETURNED_SET = new Set(['RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'REFUNDED_PARTIALLY']);
     const CANCELLED_SET = treatDuplicateAsCancelled

@@ -364,7 +364,7 @@ class EnhancedOrderService {
           total: costs?.total,
           items: data.orderItems || data.items || [],
           settings: duplicateSettings,
-          includeGuest: duplicateSettings.includeStoreOrders
+          includeGuest: duplicateSettings.compareStorefrontOrders ?? duplicateSettings.includeStoreOrders
         });
       }
 
@@ -379,7 +379,7 @@ class EnhancedOrderService {
           order: existingOrder ? this.transformOrderForResponse(existingOrder) : duplicateMatch.order,
           duplicate: true,
           duplicateOf: duplicateMatch.order.id,
-          message: 'تم تجاهل الطلب المكرر'
+          message: 'تم رفض إنشاء الطلب لوجود طلب مكرر'
         };
       }
 
@@ -390,11 +390,12 @@ class EnhancedOrderService {
           duplicateOfId: duplicateMatch.order.id,
           duplicateOfOrderNumber: duplicateMatch.order.orderNumber,
           detectedAt: new Date().toISOString(),
-          windowMinutes: duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null,
-          criteria: duplicateSettings?.criteria,
+          windowMinutes: duplicateSettings?.windowMinutes ?? (duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null),
+          criteria: duplicateSettings?.criterion || duplicateSettings?.criteria,
+          criterion: duplicateSettings?.criterion || duplicateSettings?.criteria,
           originalStatus
         };
-        if (duplicateSettings?.alertTeam) {
+        if (duplicateSettings?.notifyTeam ?? duplicateSettings?.alertTeam) {
           orderService.alertTeamAboutDuplicate(data.companyId, customerPhoneToCheck, duplicateMatch.order, null)
             .catch(err => console.warn('⚠️ [DUPLICATE-ALERT]', err.message));
         }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CRITERIA_OPTIONS } from './constants';
+import { CRITERION_OPTIONS } from './constants';
 import type { DuplicateOrderSettingsData } from './types';
 
 interface DuplicateOrderCriteriaCardProps {
@@ -11,15 +11,17 @@ export const DuplicateOrderCriteriaCard: React.FC<DuplicateOrderCriteriaCardProp
   settings,
   setSettings,
 }) => {
+  const currentCriterion = settings.criterion || (settings.criteria === 'phone_items' ? 'phone_products' : settings.criteria) || 'phone';
+
   return (
     <div className="bg-card border border-border/60 rounded-xl p-4 shadow-xs space-y-3">
       <label className="block text-xs font-semibold text-foreground">معيار كشف التكرار</label>
       <div className="space-y-2">
-        {CRITERIA_OPTIONS.map((opt) => (
+        {CRITERION_OPTIONS.map((opt) => (
           <label
             key={opt.id}
             className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-              settings.criteria === opt.id
+              currentCriterion === opt.id
                 ? 'border-primary/50 bg-primary/5'
                 : 'border-border/50 hover:bg-muted/40'
             }`}
@@ -28,11 +30,12 @@ export const DuplicateOrderCriteriaCard: React.FC<DuplicateOrderCriteriaCardProp
               type="radio"
               name="duplicateCriteria"
               value={opt.id}
-              checked={settings.criteria === opt.id}
+              checked={currentCriterion === opt.id}
               onChange={() =>
                 setSettings((s) => ({
                   ...s,
-                  criteria: opt.id as DuplicateOrderSettingsData['criteria'],
+                  criterion: opt.id,
+                  criteria: opt.id,
                 }))
               }
               className="mt-0.5 text-primary focus:ring-primary"

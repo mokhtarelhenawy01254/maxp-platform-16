@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DuplicateOrderSettings from "../DuplicateOrderSettings";
+import { tToast } from "../../../utils/i18n-toast";
 
 const mockApiGet = vi.fn();
 const mockApiPut = vi.fn();
@@ -58,7 +59,7 @@ describe("DuplicateOrderSettings Component", () => {
     });
 
     expect(screen.getByText("الفحص مفعّل")).toBeTruthy();
-    expect(screen.getByDisplayValue("01011112222")).toBeTruthy();
+    expect(screen.getByText("01011112222")).toBeTruthy();
   });
 
   it("toggles enabled switch and allows changing criteria and saving", async () => {
@@ -105,10 +106,11 @@ describe("DuplicateOrderSettings Component", () => {
       expect(mockApiPut).toHaveBeenCalledWith(
         "/order-settings/duplicates",
         expect.objectContaining({
+          criterion: "phone_amount",
           criteria: "phone_amount",
           enabled: true,
           reportTreatment: "separate",
-          exemptPhones: expect.any(Array),
+          excludedPhones: expect.any(Array),
         })
       );
     });
@@ -146,9 +148,8 @@ describe("DuplicateOrderSettings Component", () => {
       expect(screen.getByText("إعدادات فحص الطلبات المكررة")).toBeTruthy();
     });
 
-    // Find the time window switch
+    // Find the time window switch (switch 0 is master switch, switch 1 is time window)
     const switches = screen.getAllByRole("switch");
-    // Switch 0 is master, switch 1 is time window
     fireEvent.click(switches[1]);
 
     // Choose 24 hours preset (1440m)
@@ -165,10 +166,10 @@ describe("DuplicateOrderSettings Component", () => {
       expect(mockApiPut).toHaveBeenCalledWith(
         "/order-settings/duplicates",
         expect.objectContaining({
-          windowEnabled: true,
           windowMinutes: 1440,
+          windowEnabled: true,
           reportTreatment: "separate",
-          exemptPhones: expect.any(Array),
+          excludedPhones: expect.any(Array),
         })
       );
     });
@@ -213,9 +214,151 @@ describe("DuplicateOrderSettings Component", () => {
       expect(mockApiPut).toHaveBeenCalledWith(
         "/order-settings/duplicates",
         expect.objectContaining({
+          reportAs: "cancelled",
           reportTreatment: "cancelled",
-          exemptPhones: expect.arrayContaining(["01011112222", "01099998888"]),
+          excludedPhones: expect.arrayContaining(["01011112222", "01099998888"]),
         })
+      );
+    });
+  });
+
+  it("loads target settings shape with criterion, windowMinutes: null, and excludedPhones chips", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {
+          duplicateSettings: {
+            enabled: true,
+            criterion: "phone_products",
+            windowMinutes: null,
+            action: "block",
+            notifyTeam: true,
+            compareStorefrontOrders: true,
+            reportAs: "duplicate",
+            activeStatuses: ["PENDING", "CONFIRMED", "PROCESSING", "READY", "SHIPPED", "ON_HOLD"],
+            excludedPhones: ["01122334455"],
+          },
+        },
+      },
+    });
+
+    render(<DuplicateOrderSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("إعدادات فحص الطلبات المكررة")).toBeTruthy();
+    });
+
+    // Check excludedPhones chip is rendered
+    expect(screen.getByText("01122334455")).toBeTruthy();
+    // Check criterion radio is selected
+    const phoneProductsInput = screen.getByDisplayValue("phone_products") as HTMLInputElement;
+    expect(phoneProductsInput.checked).toBe(true);
+    // Check action block radio is selected
+    const blockInput = screen.getByDisplayValue("block") as HTMLInputElement;
+    expect(blockInput.checked).toBe(true);
+  });
+
+  it("supports adding and removing excluded phones chips", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {
+          enabled: true,
+          criterion: "phone",
+          windowMinutes: null,
+          action: "record_visible",
+          notifyTeam: true,
+          compareStorefrontOrders: true,
+          reportAs: "duplicate",
+          activeStatuses: ["PENDING"],
+          excludedPhones: ["01011112222"],
+        },
+      },
+    });
+
+    mockApiPut.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {},
+      },
+    });
+
+    render(<DuplicateOrderSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("01011112222")).toBeTruthy();
+    });
+
+    // Add a new phone number
+    const phoneInput = screen.getByPlaceholderText(/اكتب رقم الهاتف/i);
+    fireEvent.change(phoneInput, { target: { value: "01099998888" } });
+    const addButton = screen.getByRole("button", { name: /إضافة/i });
+    fireEvent.click(addButton);
+
+    // Verify newly added chip
+    expect(screen.getByText("01099998888")).toBeTruthy();
+
+    // Delete the first phone chip
+    const deleteBtn = screen.getByLabelText("حذف الرقم 01011112222");
+    fireEvent.click(deleteBtn);
+
+    expect(screen.queryByText("01011112222")).toBeNull();
+
+    // Save and verify payload
+    const saveButton = screen.getByRole("button", { name: /حفظ الإعدادات/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockApiPut).toHaveBeenCalledWith(
+        "/order-settings/duplicates",
+        expect.objectContaining({
+          excludedPhones: ["01099998888"],
+        })
+      );
+    });
+  });
+
+  it("handles 400 validation error from backend and displays toast error", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {
+          enabled: true,
+          criterion: "phone",
+          windowMinutes: 60,
+          action: "record_visible",
+          notifyTeam: true,
+          compareStorefrontOrders: true,
+          reportAs: "duplicate",
+          activeStatuses: ["PENDING"],
+          excludedPhones: [],
+        },
+      },
+    });
+
+    const errorResponse = {
+      response: {
+        status: 400,
+        data: {
+          success: false,
+          message: "نافذة الفحص الزمني يجب أن تكون رقمًا موجبًا أكبر من صفر بالدقائق أو null",
+        },
+      },
+    };
+    mockApiPut.mockRejectedValueOnce(errorResponse);
+
+    render(<DuplicateOrderSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("إعدادات فحص الطلبات المكررة")).toBeTruthy();
+    });
+
+    const saveButton = screen.getByRole("button", { name: /حفظ الإعدادات/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(tToast.error).toHaveBeenCalledWith(
+        "نافذة الفحص الزمني يجب أن تكون رقمًا موجبًا أكبر من صفر بالدقائق أو null"
       );
     });
   });

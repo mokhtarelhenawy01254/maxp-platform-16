@@ -65,6 +65,8 @@ const DuplicateOrderSettings: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DuplicateOrderExtrasCard settings={settings} setSettings={setSettings} />
           <DuplicateOrderWhitelistCard
+            settings={settings}
+            setSettings={setSettings}
             exemptPhonesText={exemptPhonesText}
             setExemptPhonesText={setExemptPhonesText}
           />

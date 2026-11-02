@@ -1,6 +1,6 @@
 import type {
   DuplicateActionOption,
-  DuplicateCriteriaOption,
+  DuplicateCriterionOption,
   DuplicateOrderSettingsData,
   StatusOption,
   TimeWindowPreset,
@@ -8,11 +8,18 @@ import type {
 
 export const DEFAULT_SETTINGS: DuplicateOrderSettingsData = {
   enabled: true,
-  criteria: 'phone',
-  activeStatuses: ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'SHIPPED', 'ON_HOLD'],
-  windowEnabled: false,
-  windowMinutes: 60,
+  criterion: 'phone',
+  activeStatuses: ['PENDING', 'CONFIRMED', 'PROCESSING', 'READY', 'SHIPPED', 'ON_HOLD'],
+  windowMinutes: null,
   action: 'record_visible',
+  notifyTeam: true,
+  compareStorefrontOrders: true,
+  reportAs: 'duplicate',
+  excludedPhones: [],
+
+  // Legacy backwards compatibility defaults
+  criteria: 'phone',
+  windowEnabled: false,
   alertTeam: true,
   includeStoreOrders: true,
   reportTreatment: 'separate',
@@ -23,12 +30,13 @@ export const AVAILABLE_STATUS_OPTIONS: StatusOption[] = [
   { code: 'PENDING', label: 'قيد الانتظار', dot: 'bg-amber-500' },
   { code: 'CONFIRMED', label: 'مؤكد', dot: 'bg-blue-500' },
   { code: 'PROCESSING', label: 'قيد التنفيذ', dot: 'bg-purple-500' },
-  { code: 'PREPARING', label: 'قيد التجهيز', dot: 'bg-indigo-500' },
+  { code: 'READY', label: 'جاهز للشحن', dot: 'bg-emerald-500' },
   { code: 'SHIPPED', label: 'تم الشحن', dot: 'bg-cyan-500' },
   { code: 'ON_HOLD', label: 'معلق', dot: 'bg-orange-500' },
 ];
 
 export const TIME_WINDOW_PRESETS: TimeWindowPreset[] = [
+  { minutes: null, label: 'مقفولة' },
   { minutes: 60, label: 'ساعة' },
   { minutes: 360, label: '6 ساعات' },
   { minutes: 1440, label: '24 ساعة' },
@@ -36,11 +44,11 @@ export const TIME_WINDOW_PRESETS: TimeWindowPreset[] = [
   { minutes: 10080, label: '7 أيام' },
 ];
 
-export const CRITERIA_OPTIONS: DuplicateCriteriaOption[] = [
+export const CRITERION_OPTIONS: DuplicateCriterionOption[] = [
   {
     id: 'phone',
     title: 'رقم الموبايل (افتراضي)',
-    desc: 'أي طلب من نفس الرقم يُعتبر مكرر إذا كان له طلب سابق لا يزال جاريًا',
+    desc: 'أي طلب نشط من نفس رقم الهاتف يُعتبر مكررًا',
   },
   {
     id: 'phone_amount',
@@ -48,11 +56,13 @@ export const CRITERIA_OPTIONS: DuplicateCriteriaOption[] = [
     desc: 'نفس رقم الهاتف وتطابق إجمالي الطلب بالجنيه',
   },
   {
-    id: 'phone_items',
+    id: 'phone_products',
     title: 'موبايل + نفس المنتجات',
-    desc: 'نفس رقم الهاتف وتطابق نفس الأصناف والكميات',
+    desc: 'نفس رقم الهاتف وتطابق تام لمجموعة معرفات المنتجات',
   },
 ];
+
+export const CRITERIA_OPTIONS = CRITERION_OPTIONS;
 
 export const ACTION_OPTIONS: DuplicateActionOption[] = [
   {
@@ -68,6 +78,6 @@ export const ACTION_OPTIONS: DuplicateActionOption[] = [
   {
     id: 'block',
     title: 'مايتسجلش خالص',
-    desc: 'يتم حظر تسجيل الطلب تمامًا ولا يُحفظ في قاعدة البيانات',
+    desc: 'يتم رفض إنشاء الطلب فوراً وتنبيه العميل أو المستخدم برسالة واضحة دون حفظه في قاعدة البيانات',
   },
 ];

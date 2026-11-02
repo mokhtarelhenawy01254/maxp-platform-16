@@ -1565,7 +1565,7 @@ router.post('/', async (req, res) => {
         total: finalTotal,
         items: cartItems || [],
         settings: duplicateSettings,
-        includeGuest: duplicateSettings.includeStoreOrders
+        includeGuest: duplicateSettings.compareStorefrontOrders ?? duplicateSettings.includeStoreOrders
       });
     }
 
@@ -1624,8 +1624,9 @@ router.post('/', async (req, res) => {
         duplicateOfOrderNumber: duplicateMatch.order.orderNumber,
         duplicateOfType: duplicateMatch.type,
         detectedAt: new Date().toISOString(),
-        windowMinutes: duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null,
-        criteria: duplicateSettings?.criteria,
+        windowMinutes: duplicateSettings?.windowMinutes ?? (duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null),
+        criteria: duplicateSettings?.criterion || duplicateSettings?.criteria,
+        criterion: duplicateSettings?.criterion || duplicateSettings?.criteria,
         originalStatus: 'PENDING'
       };
     }
@@ -2269,7 +2270,7 @@ router.post('/', async (req, res) => {
     }
 
     // تنبيه الفريق في حال كان الطلب مكرراً وتم إنشاؤه بنجاح
-    if (isDuplicateOrder && duplicateSettings?.alertTeam && duplicateMatch?.order) {
+    if (isDuplicateOrder && (duplicateSettings?.notifyTeam ?? duplicateSettings?.alertTeam) && duplicateMatch?.order) {
       orderService.alertTeamAboutDuplicate(company.id, guestPhone, duplicateMatch.order, order.orderNumber).catch(err => {
         console.error('⚠️ [DUPLICATE-ALERT] Failed to alert team:', err?.message || err);
       });

@@ -146,8 +146,19 @@ router.put('/', async (req, res) => {
 
         let normalizedDuplicateSettings = null;
         if (duplicateSettings !== undefined) {
+            const validation = orderService.validateDuplicateSettings(duplicateSettings);
+            if (!validation.isValid) {
+                return res.status(400).json({ success: false, message: validation.message });
+            }
             normalizedDuplicateSettings = orderService.normalizeDuplicateSettings(duplicateSettings);
         } else if (duplicateOrderAction !== undefined || duplicateOrderWindowMinutes !== undefined) {
+            const validation = orderService.validateDuplicateSettings({
+                action: duplicateOrderAction,
+                windowMinutes: duplicateOrderWindowMinutes
+            });
+            if (!validation.isValid) {
+                return res.status(400).json({ success: false, message: validation.message });
+            }
             normalizedDuplicateSettings = orderService.normalizeDuplicateSettings({
                 action: duplicateOrderAction === 'ignore' ? 'block' : (duplicateOrderAction === 'hidden' ? 'record_hidden' : 'record_visible'),
                 windowMinutes: duplicateOrderWindowMinutes
@@ -353,6 +364,20 @@ router.put('/', async (req, res) => {
                 }
                 if (normalizedDuplicateSettings !== null) {
                     companySettings.duplicateOrderSettings = normalizedDuplicateSettings;
+                    const userIdentifier = req.user?.id || req.user?.email || req.user?.name || 'system';
+                    const nowIso = new Date().toISOString();
+                    companySettings.duplicateSettingsUpdatedBy = userIdentifier;
+                    companySettings.duplicateSettingsUpdatedAt = nowIso;
+                    companySettings.duplicateOrderSettings.duplicateSettingsUpdatedBy = userIdentifier;
+                    companySettings.duplicateOrderSettings.duplicateSettingsUpdatedAt = nowIso;
+                    if (Array.isArray(companySettings.auditTrail)) {
+                        companySettings.auditTrail.push({
+                            action: 'UPDATE_DUPLICATE_SETTINGS',
+                            updatedBy: userIdentifier,
+                            updatedAt: nowIso,
+                            settings: normalizedDuplicateSettings
+                        });
+                    }
                 }
 
                 await prisma.company.update({
@@ -492,6 +517,12 @@ router.put('/duplicates', async (req, res) => {
         }
         const orderService = require('../services/orderService');
         const prisma = getSharedPrismaClient();
+
+        const validation = orderService.validateDuplicateSettings(req.body);
+        if (!validation.isValid) {
+            return res.status(400).json({ success: false, message: validation.message });
+        }
+
         const normalized = orderService.normalizeDuplicateSettings(req.body);
 
         const company = await prisma.company.findUnique({
@@ -502,7 +533,23 @@ router.put('/duplicates', async (req, res) => {
             ? JSON.parse(company.settings || '{}')
             : (company?.settings || {});
 
+        const userIdentifier = req.user?.id || req.user?.email || req.user?.name || 'system';
+        const nowIso = new Date().toISOString();
+
         companySettings.duplicateOrderSettings = normalized;
+        companySettings.duplicateSettingsUpdatedBy = userIdentifier;
+        companySettings.duplicateSettingsUpdatedAt = nowIso;
+        companySettings.duplicateOrderSettings.duplicateSettingsUpdatedBy = userIdentifier;
+        companySettings.duplicateOrderSettings.duplicateSettingsUpdatedAt = nowIso;
+
+        if (Array.isArray(companySettings.auditTrail)) {
+            companySettings.auditTrail.push({
+                action: 'UPDATE_DUPLICATE_SETTINGS',
+                updatedBy: userIdentifier,
+                updatedAt: nowIso,
+                settings: normalized
+            });
+        }
 
         await prisma.company.update({
             where: { id: companyId },
