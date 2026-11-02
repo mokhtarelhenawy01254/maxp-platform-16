@@ -328,6 +328,42 @@ const withTree = (bom) => {
   };
 };
 
+/**
+ * Checks BOM component rawMaterialId values against registered products in catalog.
+ * Returns array of warnings for any unlinked raw material items.
+ */
+async function buildComponentWarnings(companyId, components = [], client = null) {
+  if (!Array.isArray(components) || components.length === 0) {
+    return [];
+  }
+  const prisma = client || getSharedPrismaClient();
+  const ids = [...new Set(components.map((c) => c.rawMaterialId).filter(Boolean))];
+  const found = ids.length && prisma.product?.findMany
+    ? await prisma.product.findMany({
+        where: { companyId, id: { in: ids } },
+        select: { id: true },
+      })
+    : [];
+
+  const foundSet = new Set((found || []).map((f) => f.id));
+  const missing = ids.filter((id) => !foundSet.has(id));
+  const missingSet = new Set(missing);
+
+  const warnings = [];
+  for (const c of components) {
+    const rawId = c.rawMaterialId;
+    if (!rawId || missingSet.has(rawId)) {
+      warnings.push({
+        rawMaterialId: rawId || null,
+        rawMaterialName: c.rawMaterialName || null,
+        message: 'الخامة غير مرتبطة بمنتج — مش هتتخصم من المخزن',
+      });
+    }
+  }
+
+  return warnings;
+}
+
 const resolveExecutionFactory = (stages = []) => {
   const withFactory = stages
     .filter((s) => s.partnerFactoryId && s.partnerFactory)
@@ -808,7 +844,9 @@ class ManufacturingService {
           standardStages: { orderBy: { sequence: 'asc' } },
         },
       });
-      return withTree(createdBom);
+      const bomWithTree = withTree(createdBom);
+      bomWithTree.componentWarnings = await buildComponentWarnings(companyId, bomWithTree.components || [], tx);
+      return bomWithTree;
     });
   }
 
@@ -822,7 +860,9 @@ class ManufacturingService {
       },
     });
     if (!bom) throw new Error('قائمة المكونات غير موجودة');
-    return withTree(bom);
+    const bomWithTree = withTree(bom);
+    bomWithTree.componentWarnings = await buildComponentWarnings(companyId, bomWithTree.components || [], prisma);
+    return bomWithTree;
   }
 
   static async listBoms(companyId, filters = {}) {
@@ -955,7 +995,9 @@ class ManufacturingService {
           standardStages: { orderBy: { sequence: 'asc' } },
         },
       });
-      return withTree(updatedBom);
+      const bomWithTree = withTree(updatedBom);
+      bomWithTree.componentWarnings = await buildComponentWarnings(companyId, bomWithTree.components || [], tx);
+      return bomWithTree;
     });
   }
 
@@ -2875,8 +2917,11 @@ class ManufacturingService {
   }
 }
 
+ManufacturingService.buildComponentWarnings = buildComponentWarnings;
+
 module.exports = ManufacturingService;
 module.exports.computeComponentPricing = computeComponentPricing;
 module.exports.detectComponentCycle = detectComponentCycle;
 module.exports.buildComponentTree = buildComponentTree;
 module.exports.normalizeComponentPayload = normalizeComponentPayload;
+module.exports.buildComponentWarnings = buildComponentWarnings;

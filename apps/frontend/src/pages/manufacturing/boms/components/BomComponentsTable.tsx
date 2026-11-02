@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { Plus, Trash2, Calculator } from 'lucide-react';
-import { BomComponentItem } from '../../manufacturingApi';
+import { BomComponentItem, ProductOption } from '../../manufacturingApi';
 
 interface BomComponentsTableProps {
   components: BomComponentItem[];
+  products?: ProductOption[];
   onAddComponent: () => void;
   onRemoveComponent: (idx: number) => void;
   onChangeComponent: (idx: number, field: keyof BomComponentItem, val: any) => void;
@@ -11,6 +12,7 @@ interface BomComponentsTableProps {
 
 export const BomComponentsTable: React.FC<BomComponentsTableProps> = ({
   components,
+  products = [],
   onAddComponent,
   onRemoveComponent,
   onChangeComponent,
@@ -140,17 +142,85 @@ export const BomComponentsTable: React.FC<BomComponentsTableProps> = ({
                 return (
                   <React.Fragment key={idx}>
                     <tr className="hover:bg-muted/20 transition">
-                      <td className="p-1.5 min-w-[160px]">
-                        <div style={{ paddingInlineStart: `${level * 16}px` }} className="flex items-center gap-1">
-                          {level > 0 && <span className="text-muted-foreground font-mono text-xs select-none">↳</span>}
-                          <input
-                            type="text"
-                            required
-                            value={item.rawMaterialName || ''}
-                            onChange={(e) => onChangeComponent(idx, 'rawMaterialName', e.target.value)}
-                            placeholder="مثال: قماش ميلتون، خيط"
-                            className="w-full px-2 py-1 text-xs rounded border border-border/60 bg-background focus:outline-none"
-                          />
+                      <td className="p-1.5 min-w-[220px]">
+                        <div style={{ paddingInlineStart: `${level * 16}px` }} className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            {level > 0 && <span className="text-muted-foreground font-mono text-xs select-none">↳</span>}
+                            <div className="relative flex-1">
+                              <input
+                                type="text"
+                                required
+                                list={`products-datalist-${idx}`}
+                                value={item.rawMaterialName || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const matched = products.find(
+                                    (p) => p.name === val || (p.sku && `${p.name} (${p.sku})` === val) || p.id === val
+                                  );
+                                  if (matched) {
+                                    onChangeComponent(idx, 'rawMaterialId', matched.id);
+                                    onChangeComponent(idx, 'rawMaterialName', matched.name);
+                                  } else {
+                                    onChangeComponent(idx, 'rawMaterialName', val);
+                                    if (item.rawMaterialId && !products.some((p) => p.id === item.rawMaterialId && p.name === val)) {
+                                      onChangeComponent(idx, 'rawMaterialId', '');
+                                    }
+                                  }
+                                }}
+                                placeholder="اختر من المنتجات أو اكتب اسم الخامة"
+                                className="w-full px-2 py-1 text-xs rounded border border-border/60 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                              <datalist id={`products-datalist-${idx}`}>
+                                {products.map((p) => (
+                                  <option key={p.id} value={p.name}>
+                                    {p.sku ? `(${p.sku})` : ''} {p.cost ? `— ${p.cost} ج.م` : ''}
+                                  </option>
+                                ))}
+                              </datalist>
+                            </div>
+
+                            {products.length > 0 && (
+                              <select
+                                value={products.some((p) => p.id === item.rawMaterialId) ? item.rawMaterialId : ''}
+                                onChange={(e) => {
+                                  const selectedId = e.target.value;
+                                  if (!selectedId) return;
+                                  const p = products.find((prod) => prod.id === selectedId);
+                                  if (p) {
+                                    onChangeComponent(idx, 'rawMaterialId', p.id);
+                                    onChangeComponent(idx, 'rawMaterialName', p.name);
+                                  }
+                                }}
+                                title="اختيار من قائمة المنتجات المسجلة"
+                                className="w-6 px-0 py-1 text-xs rounded border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground cursor-pointer focus:outline-none shrink-0 text-center"
+                              >
+                                <option value="">▼</option>
+                                {products.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} {p.sku ? `(${p.sku})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+
+                          {/* شارة الربط بكتالوج المنتجات */}
+                          <div className="flex items-center gap-1">
+                            {Boolean(item.rawMaterialId && products.some((p) => p.id === item.rawMaterialId)) ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                مرتبط بمنتج
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                                title="هذه الخامة غير مرتبطة بمنتج في الكتالوج ولن يتم خصمها من المخزن عند التشغيل"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                غير مرتبط — مش هيتخصم من المخزن
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
 

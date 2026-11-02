@@ -51,6 +51,7 @@ export const BomModal: React.FC<BomModalProps> = ({
   const [isActive, setIsActive] = useState(true);
 
   // Components & Stages
+  // HZ-A: النموذج يفتح فاضي — ممنوع بنود تجريبية
   const [components, setComponents] = useState<BomComponentItem[]>([]);
 
   const [standardStages, setStandardStages] = useState<BomStandardStage[]>(DEFAULT_STAGES);
@@ -111,7 +112,7 @@ export const BomModal: React.FC<BomModalProps> = ({
       ...components,
       {
         clientRef: 'new-' + Date.now() + '-' + idx,
-        rawMaterialId: `raw_${Date.now()}`,
+        rawMaterialId: '',
         rawMaterialName: '',
         consumptionPerUnit: 1.0,
         unit: 'PIECE',
@@ -319,6 +320,7 @@ export const BomModal: React.FC<BomModalProps> = ({
           {/* Section 2: Component Raw Materials */}
           <BomComponentsTable
             components={components}
+            products={products}
             onAddComponent={handleAddComponent}
             onRemoveComponent={handleRemoveComponent}
             onChangeComponent={handleComponentChange}
