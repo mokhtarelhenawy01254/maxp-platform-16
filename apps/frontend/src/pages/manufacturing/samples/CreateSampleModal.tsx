@@ -7,6 +7,7 @@ import {
   PartnerFactory,
   SampleExpenseCatalogItem,
   ProductOption,
+  SampleOrderItem,
 } from '../manufacturingApi';
 import { CustomerPicker } from './CustomerPicker';
 
@@ -14,6 +15,15 @@ interface CreateSampleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface SampleItemRow {
+  productId: string;
+  productName: string;
+  productSearch: string;
+  quantity: number;
+  size: string;
+  color: string;
 }
 
 export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -28,6 +38,20 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
   const [productsLoading, setProductsLoading] = useState<boolean>(false);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState<boolean>(false);
   const productDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // بنود منتجات العينة (Task HZ-E)
+  const [sampleItems, setSampleItems] = useState<SampleItemRow[]>([
+    {
+      productId: '',
+      productName: '',
+      productSearch: '',
+      quantity: 1,
+      size: '',
+      color: '',
+    },
+  ]);
+  const [activeItemDropdownIdx, setActiveItemDropdownIdx] = useState<number | null>(null);
+  const itemDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerDisplayName, setCustomerDisplayName] = useState<string>('');
@@ -101,6 +125,17 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
       { name: 'خياطة وتجميع العينة', sequence: 2 },
       { name: 'تشطيب وكي وفحص الجودة', sequence: 3 },
     ]);
+    setSampleItems([
+      {
+        productId: '',
+        productName: '',
+        productSearch: '',
+        quantity: 1,
+        size: '',
+        color: '',
+      },
+    ]);
+    setActiveItemDropdownIdx(null);
   };
 
   useEffect(() => {
@@ -108,10 +143,107 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
       if (productDropdownRef.current && !productDropdownRef.current.contains(e.target as Node)) {
         setIsProductDropdownOpen(false);
       }
+      if (activeItemDropdownIdx !== null) {
+        const rowRef = itemDropdownRefs.current[activeItemDropdownIdx];
+        if (rowRef && !rowRef.contains(e.target as Node)) {
+          setActiveItemDropdownIdx(null);
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [activeItemDropdownIdx]);
+
+  const handleAddItem = () => {
+    setSampleItems((prev) => [
+      ...prev,
+      {
+        productId: '',
+        productName: '',
+        productSearch: '',
+        quantity: 1,
+        size: '',
+        color: '',
+      },
+    ]);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (sampleItems.length <= 1) return;
+    const updated = sampleItems.filter((_, i) => i !== index);
+    setSampleItems(updated);
+    const totalQty = updated.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0);
+    setPlannedQuantity(totalQty);
+    if (index === 0 && updated.length > 0) {
+      setProductId(updated[0].productId);
+      setProductName(updated[0].productName);
+      setProductSearch(updated[0].productSearch);
+      setSize(updated[0].size);
+      setColor(updated[0].color);
+    }
+  };
+
+  const handleItemProductSelect = (index: number, p: ProductOption) => {
+    const updated = [...sampleItems];
+    updated[index] = {
+      ...updated[index],
+      productId: p.id,
+      productName: p.name,
+      productSearch: p.name,
+    };
+    setSampleItems(updated);
+    setActiveItemDropdownIdx(null);
+
+    if (index === 0) {
+      setProductId(p.id);
+      setProductName(p.name);
+      setProductSearch(p.name);
+    }
+  };
+
+  const handleItemSearchChange = (index: number, text: string) => {
+    const updated = [...sampleItems];
+    updated[index] = {
+      ...updated[index],
+      productSearch: text,
+      productName: text,
+    };
+    if (updated[index].productId) {
+      const match = products.find((p) => p.id === updated[index].productId);
+      if (!match || match.name !== text) {
+        updated[index].productId = '';
+      }
+    }
+    setSampleItems(updated);
+    setActiveItemDropdownIdx(index);
+
+    if (index === 0) {
+      setProductSearch(text);
+      setProductName(text);
+      if (productId && (!selectedProduct || selectedProduct.name !== text)) {
+        setProductId('');
+      }
+    }
+  };
+
+  const handleItemFieldChange = (index: number, field: 'quantity' | 'size' | 'color', value: any) => {
+    const updated = [...sampleItems];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+    setSampleItems(updated);
+
+    if (field === 'quantity') {
+      const totalQty = updated.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0);
+      setPlannedQuantity(totalQty);
+    }
+    if (index === 0) {
+      if (field === 'size') setSize(value);
+      if (field === 'color') setColor(value);
+      if (field === 'quantity' && updated.length === 1) setPlannedQuantity(value);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -186,13 +318,16 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
       setError('لا توجد منتجات — أضف منتج من شاشة المنتجات أولًا');
       return;
     }
-    if (!productId) {
-      setError('اختر المنتج التام من القائمة');
+    if (sampleItems.length === 0) {
+      setError('أضف منتج واحد على الأقل');
       return;
     }
-    if (!productName.trim()) {
-      setError('اسم المنتج إلزامي لإنشاء أمر العينة');
-      return;
+    for (let i = 0; i < sampleItems.length; i++) {
+      const it = sampleItems[i];
+      if (!it.productId && !it.productName.trim()) {
+        setError(`اختر المنتج التام للبند رقم ${i + 1}`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -206,9 +341,19 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
           sequence: idx + 1,
         }));
 
+      const itemsPayload: SampleOrderItem[] = sampleItems.map((it, idx) => ({
+        productId: it.productId || null,
+        productName: it.productName.trim() || (products.find((p) => p.id === it.productId)?.name || 'منتج'),
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        size: it.size ? it.size.trim().toUpperCase() : undefined,
+        color: it.color ? it.color.trim().toUpperCase() : undefined,
+        sortOrder: idx + 1,
+      }));
+
       const createdSample = await manufacturingApi.createSampleOrder({
-        productId,
-        productName: productName.trim(),
+        productId: itemsPayload[0]?.productId || productId || undefined,
+        productName: itemsPayload[0]?.productName || productName.trim(),
+        items: itemsPayload,
         customerId: customerId || undefined,
         customerName: customerName.trim() || undefined,
         brandName: brandName.trim() || undefined,
@@ -260,7 +405,7 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-card border border-border/80 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-card border border-border/80 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-border/70 flex items-center justify-between bg-muted/20">
           <div>
@@ -290,7 +435,7 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
             {/* Product Combobox */}
             <div ref={productDropdownRef} className="relative">
               <label className="block text-xs font-semibold text-foreground mb-1">
-                المنتج التام <span className="text-rose-500">*</span>
+                المنتج التام (الأساسي) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -304,6 +449,17 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                       setProductId('');
                       setProductName('');
                     }
+                    setSampleItems((prev) => {
+                      if (prev.length === 0) return prev;
+                      const updated = [...prev];
+                      updated[0] = {
+                        ...updated[0],
+                        productSearch: val,
+                        productName: val,
+                        productId: (productId && val === productName) ? productId : '',
+                      };
+                      return updated;
+                    });
                   }}
                   onFocus={() => setIsProductDropdownOpen(true)}
                   placeholder="ابحث واختر منتج تام..."
@@ -324,7 +480,7 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                   </p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    اختر منتج من القائمة
+                    اختر منتج من القائمة (يتزامن مع أول بند)
                   </p>
                 )}
               </div>
@@ -352,6 +508,19 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                             setProductName(p.name);
                             setProductSearch(p.name);
                             setIsProductDropdownOpen(false);
+                            setSampleItems((prev) => {
+                              if (prev.length === 0) {
+                                return [{ productId: p.id, productName: p.name, productSearch: p.name, quantity: 1, size, color }];
+                              }
+                              const updated = [...prev];
+                              updated[0] = {
+                                ...updated[0],
+                                productId: p.id,
+                                productName: p.name,
+                                productSearch: p.name,
+                              };
+                              return updated;
+                            });
                           }}
                           className={`w-full text-right px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/70 transition-colors ${
                             isSelected ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
@@ -382,6 +551,156 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                 />
                 <Tag className="w-4 h-4 text-muted-foreground absolute left-3 top-2.5" />
               </div>
+            </div>
+          </div>
+
+          {/* قسم منتجات العينة (Task HZ-E) */}
+          <div className="p-3.5 rounded-xl border border-border/70 bg-muted/15 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shirt className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">منتجات العينة (بنود المنتجات)</span>
+                <span className="text-[11px] text-muted-foreground font-mono">({sampleItems.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ إضافة منتج تاني</span>
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {sampleItems.map((item, idx) => {
+                const rowFilteredProducts = (() => {
+                  const q = (item.productSearch || '').trim().toLowerCase();
+                  if (!q) return products.slice(0, 8);
+                  return products
+                    .filter((p) => p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)))
+                    .slice(0, 8);
+                })();
+
+                const isRowDropdownOpen = activeItemDropdownIdx === idx;
+                const rowSelectedProduct = products.find((p) => p.id === item.productId);
+
+                return (
+                  <div
+                    key={idx}
+                    ref={(el) => (itemDropdownRefs.current[idx] = el)}
+                    className="p-3 rounded-lg border border-border/60 bg-card space-y-2"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start">
+                      {/* Product Combobox */}
+                      <div className="sm:col-span-5 relative">
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          المنتج #{idx + 1} <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={item.productSearch}
+                            onChange={(e) => handleItemSearchChange(idx, e.target.value)}
+                            onFocus={() => setActiveItemDropdownIdx(idx)}
+                            placeholder="ابحث واختر منتج تام..."
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                          />
+                          <Shirt className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-2" />
+                        </div>
+
+                        {/* Dropdown */}
+                        {isRowDropdownOpen && (
+                          <div className="absolute z-40 top-full mt-1 right-0 left-0 bg-popover border border-border rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                            {productsLoading ? (
+                              <div className="p-2.5 text-center text-xs text-muted-foreground">جاري التحميل...</div>
+                            ) : rowFilteredProducts.length === 0 ? (
+                              <div className="p-2.5 text-center text-xs text-muted-foreground">لا توجد نتائج</div>
+                            ) : (
+                              rowFilteredProducts.map((p) => {
+                                const isSelected = p.id === item.productId;
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => handleItemProductSelect(idx, p)}
+                                    className={`w-full text-right px-3 py-1.5 text-xs flex items-center justify-between hover:bg-muted/70 transition-colors ${
+                                      isSelected ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{p.name}</span>
+                                      {p.sku && <span className="text-[10px] text-muted-foreground font-mono">كود: {p.sku}</span>}
+                                    </div>
+                                    {isSelected && <Check className="w-3 h-3 text-primary shrink-0 mr-2" />}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+
+                        {rowSelectedProduct ? (
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                            {rowSelectedProduct.name} {rowSelectedProduct.sku ? `(${rowSelectedProduct.sku})` : ''}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">الكمية</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleItemFieldChange(idx, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none tabular-nums"
+                        />
+                      </div>
+
+                      {/* Size */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">المقاس</label>
+                        <input
+                          type="text"
+                          value={item.size}
+                          onChange={(e) => handleItemFieldChange(idx, 'size', e.target.value)}
+                          placeholder="L / XL"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                        />
+                      </div>
+
+                      {/* Color */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">اللون</label>
+                        <input
+                          type="text"
+                          value={item.color}
+                          onChange={(e) => handleItemFieldChange(idx, 'color', e.target.value)}
+                          placeholder="أسود"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                        />
+                      </div>
+
+                      {/* Remove Button */}
+                      <div className="sm:col-span-1 flex items-end justify-center pt-5 sm:pt-6">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(idx)}
+                          disabled={sampleItems.length <= 1}
+                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                          title="حذف البند"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

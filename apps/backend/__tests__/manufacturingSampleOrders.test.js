@@ -33,6 +33,7 @@ function createInMemoryStore() {
     sampleAttachments: new Map(),
     sampleExpenseCatalogs: new Map(),
     sampleOrderExpenses: new Map(),
+    sampleOrderItems: new Map(),
     productionOrders: new Map(),
     boms: new Map(),
     partnerFactories: new Map(),
@@ -66,7 +67,10 @@ function createInMemoryStore() {
           .filter((att) => att.sampleOrderId === item.id);
         const expenses = Array.from(store.sampleOrderExpenses.values())
           .filter((exp) => exp.sampleOrderId === item.id);
-        return { ...item, stages, attachments, expenses };
+        const sampleItems = Array.from(store.sampleOrderItems.values())
+          .filter((it) => it.sampleOrderId === item.id)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        return { ...item, stages, attachments, expenses, items: sampleItems };
       },
       findMany: async ({ where, skip = 0, take = 50 } = {}) => {
         let items = Array.from(store.sampleOrders.values());
@@ -91,6 +95,7 @@ function createInMemoryStore() {
           stages: Array.from(store.sampleStages.values()).filter((st) => st.sampleOrderId === s.id),
           attachments: Array.from(store.sampleAttachments.values()).filter((att) => att.sampleOrderId === s.id),
           expenses: Array.from(store.sampleOrderExpenses.values()).filter((exp) => exp.sampleOrderId === s.id),
+          items: Array.from(store.sampleOrderItems.values()).filter((it) => it.sampleOrderId === s.id).sort((a, b) => a.sortOrder - b.sortOrder),
         }));
       },
       count: async ({ where } = {}) => {
@@ -117,7 +122,19 @@ function createInMemoryStore() {
         if (!existing) throw new Error('Not found');
         const updated = { ...existing, ...data, updatedAt: new Date() };
         store.sampleOrders.set(where.id, updated);
-        return updated;
+        // Prisma include parity: the service reads items/stages/attachments/expenses
+        // off the update() result, so the fake must return them too.
+        const stages = Array.from(store.sampleStages.values())
+          .filter((st) => st.sampleOrderId === updated.id)
+          .sort((a, b) => a.sequence - b.sequence);
+        const attachments = Array.from(store.sampleAttachments.values())
+          .filter((att) => att.sampleOrderId === updated.id);
+        const expenses = Array.from(store.sampleOrderExpenses.values())
+          .filter((exp) => exp.sampleOrderId === updated.id);
+        const items = Array.from(store.sampleOrderItems.values())
+          .filter((it) => it.sampleOrderId === updated.id)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        return { ...updated, stages, attachments, expenses, items };
       },
       delete: async ({ where }) => {
         const existing = store.sampleOrders.get(where.id);
@@ -259,6 +276,35 @@ function createInMemoryStore() {
           for (const [id, e] of store.sampleOrderExpenses.entries()) {
             if (e.sampleOrderId === where.sampleOrderId) {
               store.sampleOrderExpenses.delete(id);
+            }
+          }
+        }
+      },
+    },
+    sampleOrderItem: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.sampleOrderItems.values());
+        if (where?.id) items = items.filter((it) => it.id === where.id);
+        if (where?.sampleOrderId) items = items.filter((it) => it.sampleOrderId === where.sampleOrderId);
+        return items[0] || null;
+      },
+      findMany: async ({ where } = {}) => {
+        let items = Array.from(store.sampleOrderItems.values());
+        if (where?.sampleOrderId) items = items.filter((it) => it.sampleOrderId === where.sampleOrderId);
+        if (where?.companyId) items = items.filter((it) => it.companyId === where.companyId);
+        return items.sort((a, b) => a.sortOrder - b.sortOrder);
+      },
+      create: async ({ data }) => {
+        const id = `item-${++store.counter}`;
+        const record = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+        store.sampleOrderItems.set(id, record);
+        return record;
+      },
+      deleteMany: async ({ where } = {}) => {
+        if (where?.sampleOrderId) {
+          for (const [id, it] of store.sampleOrderItems.entries()) {
+            if (it.sampleOrderId === where.sampleOrderId) {
+              store.sampleOrderItems.delete(id);
             }
           }
         }
@@ -1065,6 +1111,155 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
         where: { productId: 'prod-hoodie-1' },
       });
       expect(movementsSecond).toHaveLength(1); // لا تزال حركة واحدة فقط ولم تتكرر
+    });
+
+    test('14. إنشاء عينة بـ٣ بنود (Task HZ-E) → اتخزنوا، الهيدر بياخد أول بند، plannedQuantity = المجموع', async () => {
+      // Seed 3 products for the company
+      currentPrisma._store.products.set('prod-suit-1', {
+        id: 'prod-suit-1',
+        companyId,
+        name: 'بدلة رجالي كاملة',
+      });
+      currentPrisma._store.products.set('prod-shirt-1', {
+        id: 'prod-shirt-1',
+        companyId,
+        name: 'قميص قطن كلاسيك',
+      });
+      currentPrisma._store.products.set('prod-belt-1', {
+        id: 'prod-belt-1',
+        companyId,
+        name: 'حزام جلد طبيعي',
+      });
+
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        items: [
+          { productId: 'prod-suit-1', productName: 'بدلة رجالي كاملة', quantity: 2, size: '52', color: 'NAVY' },
+          { productId: 'prod-shirt-1', productName: 'قميص قطن كلاسيك', quantity: 3, size: 'L', color: 'WHITE' },
+          { productId: 'prod-belt-1', productName: 'حزام جلد طبيعي', quantity: 1, size: 'FREE', color: 'BLACK' },
+        ],
+      });
+
+      expect(sample).toBeDefined();
+      expect(sample.productId).toBe('prod-suit-1');
+      expect(sample.productName).toBe('بدلة رجالي كاملة');
+      expect(sample.size).toBe('52');
+      expect(sample.color).toBe('NAVY');
+      expect(sample.plannedQuantity).toBe(6); // 2 + 3 + 1 = 6
+
+      // Verify items are stored and returned
+      expect(sample.items).toBeDefined();
+      expect(sample.items).toHaveLength(3);
+      expect(sample.items[0].productId).toBe('prod-suit-1');
+      expect(sample.items[0].quantity).toBe(2);
+      expect(sample.items[1].productId).toBe('prod-shirt-1');
+      expect(sample.items[1].quantity).toBe(3);
+      expect(sample.items[2].productId).toBe('prod-belt-1');
+      expect(sample.items[2].quantity).toBe(1);
+
+      // Verify findById includes items
+      const fetched = await ManufacturingSampleService.getSampleOrderById(companyId, sample.id);
+      expect(fetched.items).toHaveLength(3);
+      expect(fetched.plannedQuantity).toBe(6);
+    });
+
+    test('15. إنشاء بند بـproductId مش تابع للشركة (Task HZ-E) → 400', async () => {
+      currentPrisma._store.products.set('prod-foreign-1', {
+        id: 'prod-foreign-1',
+        companyId: 'another-company-id',
+        name: 'منتج شركة أخرى',
+      });
+
+      await expect(
+        ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+          items: [
+            { productId: 'prod-foreign-1', productName: 'منتج أجنبي', quantity: 1 },
+          ],
+        })
+      ).rejects.toThrow('المنتج المختار غير موجود في هذه الشركة');
+    });
+
+    test('16. تحديث البنود (٢ بدل ٣) (Task HZ-E) → القديم اتمسح والجديد اتخزن', async () => {
+      currentPrisma._store.products.set('prod-suit-1', {
+        id: 'prod-suit-1',
+        companyId,
+        name: 'بدلة رجالي كاملة',
+      });
+      currentPrisma._store.products.set('prod-shirt-1', {
+        id: 'prod-shirt-1',
+        companyId,
+        name: 'قميص قطن كلاسيك',
+      });
+      currentPrisma._store.products.set('prod-belt-1', {
+        id: 'prod-belt-1',
+        companyId,
+        name: 'حزام جلد طبيعي',
+      });
+
+      // 1. Create with 3 items
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        items: [
+          { productId: 'prod-suit-1', productName: 'بدلة رجالي كاملة', quantity: 2 },
+          { productId: 'prod-shirt-1', productName: 'قميص قطن كلاسيك', quantity: 3 },
+          { productId: 'prod-belt-1', productName: 'حزام جلد طبيعي', quantity: 1 },
+        ],
+      });
+      expect(sample.items).toHaveLength(3);
+      expect(sample.plannedQuantity).toBe(6);
+
+      // 2. Update to 2 items
+      const updated = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, sample.id, {
+        items: [
+          { productId: 'prod-suit-1', productName: 'بدلة سوبريم', quantity: 4, size: '54', color: 'BLACK' },
+          { productId: 'prod-shirt-1', productName: 'قميص سليم', quantity: 1, size: 'M', color: 'BLUE' },
+        ],
+      });
+
+      expect(updated.items).toHaveLength(2);
+      expect(updated.productId).toBe('prod-suit-1');
+      expect(updated.productName).toBe('بدلة سوبريم');
+      expect(updated.size).toBe('54');
+      expect(updated.color).toBe('BLACK');
+      expect(updated.plannedQuantity).toBe(5); // 4 + 1 = 5
+
+      // Verify direct fetch
+      const fetched = await ManufacturingSampleService.getSampleOrderById(companyId, sample.id);
+      expect(fetched.items).toHaveLength(2);
+      expect(fetched.items[0].productName).toBe('بدلة سوبريم');
+      expect(fetched.items[1].productName).toBe('قميص سليم');
+    });
+
+    test('17. عينة قديمة من غير items (Task HZ-E regression) → لسه شغالة', async () => {
+      currentPrisma._store.products.set('prod-classic-1', {
+        id: 'prod-classic-1',
+        companyId,
+        name: 'تيشيرت كلاسيك فردي',
+      });
+
+      // Single product order without items array (legacy format)
+      const legacySample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productId: 'prod-classic-1',
+        productName: 'تيشيرت كلاسيك فردي',
+        plannedQuantity: 10,
+        size: 'L',
+        color: 'WHITE',
+      });
+
+      expect(legacySample).toBeDefined();
+      expect(legacySample.productId).toBe('prod-classic-1');
+      expect(legacySample.productName).toBe('تيشيرت كلاسيك فردي');
+      expect(legacySample.plannedQuantity).toBe(10);
+      expect(legacySample.size).toBe('L');
+      expect(legacySample.color).toBe('WHITE');
+      expect(legacySample.items).toEqual([]);
+
+      // Update without items array
+      const updatedLegacy = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, legacySample.id, {
+        plannedQuantity: 15,
+        designNotes: 'تحديث للعينة القديمة بدون بنود',
+      });
+      expect(updatedLegacy.plannedQuantity).toBe(15);
+      expect(updatedLegacy.designNotes).toBe('تحديث للعينة القديمة بدون بنود');
+      expect(updatedLegacy.items).toEqual([]);
     });
   });
 });
