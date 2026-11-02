@@ -31,6 +31,11 @@ export interface ConfirmationQueueFilterBarProps {
   sourceFilterLabel: string;
   onOpenMobileFilters: () => void;
   setPage: (val: number) => void;
+  startDate?: string;
+  setStartDate?: (val: string) => void;
+  endDate?: string;
+  setEndDate?: (val: string) => void;
+  onClearDates?: () => void;
 }
 
 export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProps> = ({
@@ -50,8 +55,71 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
   sourceFilterLabel,
   onOpenMobileFilters,
   setPage,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  onClearDates,
 }) => {
   const { t } = useTranslation();
+
+  const [localStartDate, setLocalStartDate] = React.useState<string>(appliedFilters?.startDate || "");
+  const [localEndDate, setLocalEndDate] = React.useState<string>(appliedFilters?.endDate || "");
+
+  React.useEffect(() => {
+    if (appliedFilters?.startDate !== undefined) {
+      setLocalStartDate(appliedFilters.startDate || "");
+    }
+    if (appliedFilters?.endDate !== undefined) {
+      setLocalEndDate(appliedFilters.endDate || "");
+    }
+  }, [appliedFilters?.startDate, appliedFilters?.endDate]);
+
+  const effectiveStartDate = startDate !== undefined ? startDate : localStartDate;
+  const effectiveEndDate = endDate !== undefined ? endDate : localEndDate;
+
+  const handleStartDateChange = (val: string) => {
+    if (setStartDate) {
+      setStartDate(val);
+    } else {
+      setLocalStartDate(val);
+      if (appliedFilters) {
+        appliedFilters.startDate = val || null;
+        appliedFilters.hasDateFilter = Boolean(val || effectiveEndDate);
+      }
+    }
+    setPage(1);
+  };
+
+  const handleEndDateChange = (val: string) => {
+    if (setEndDate) {
+      setEndDate(val);
+    } else {
+      setLocalEndDate(val);
+      if (appliedFilters) {
+        appliedFilters.endDate = val || null;
+        appliedFilters.hasDateFilter = Boolean(effectiveStartDate || val);
+      }
+    }
+    setPage(1);
+  };
+
+  const handleClearDates = () => {
+    if (onClearDates) {
+      onClearDates();
+    } else {
+      if (setStartDate) setStartDate("");
+      if (setEndDate) setEndDate("");
+      setLocalStartDate("");
+      setLocalEndDate("");
+      if (appliedFilters) {
+        appliedFilters.startDate = null;
+        appliedFilters.endDate = null;
+        appliedFilters.hasDateFilter = false;
+      }
+    }
+    setPage(1);
+  };
 
   // Helper to format status names in Arabic
   const formatStatus = (s: string) => {
@@ -121,7 +189,11 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
     }
 
     // 7. Date filter
-    if (appliedFilters?.hasDateFilter) {
+    if (appliedFilters?.startDate || appliedFilters?.endDate || effectiveStartDate || effectiveEndDate) {
+      const from = appliedFilters?.startDate || effectiveStartDate || "—";
+      const to = appliedFilters?.endDate || effectiveEndDate || "—";
+      chips.push(`التاريخ: من ${from} إلى ${to}`);
+    } else if (appliedFilters?.hasDateFilter) {
       chips.push(t("orders.dateFilterApplied", { defaultValue: "نطاق تاريخ محدد" }));
     }
 
@@ -131,7 +203,7 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
     }
 
     return chips;
-  }, [appliedFilters, statusFilter, statusFilterLabel, sourceFilter, sourceFilterLabel, onlyUnassigned, t]);
+  }, [appliedFilters, statusFilter, statusFilterLabel, sourceFilter, sourceFilterLabel, onlyUnassigned, effectiveStartDate, effectiveEndDate, t]);
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-3 sm:p-4 shadow-xs space-y-3">
@@ -241,6 +313,37 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
             <UserX className="w-4 h-4" />
             <span>{t("orders.unassigned", { defaultValue: "غير مخصص" })}</span>
           </button>
+
+          {/* Date Filter Inputs */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-muted-foreground font-medium">{t("common.from", { defaultValue: "من" })}:</span>
+              <input
+                type="date"
+                aria-label={String(t("common.from", { defaultValue: "من تاريخ" }))}
+                value={effectiveStartDate}
+                onChange={(e) => handleStartDateChange(e.target.value)}
+                className="h-10 rounded-xl border border-border/70 bg-background px-2.5 text-xs sm:text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors cursor-pointer"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-muted-foreground font-medium">{t("common.to", { defaultValue: "إلى" })}:</span>
+              <input
+                type="date"
+                aria-label={String(t("common.to", { defaultValue: "إلى تاريخ" }))}
+                value={effectiveEndDate}
+                onChange={(e) => handleEndDateChange(e.target.value)}
+                className="h-10 rounded-xl border border-border/70 bg-background px-2.5 text-xs sm:text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors cursor-pointer"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleClearDates}
+              className="h-10 px-3 rounded-xl text-xs sm:text-sm font-semibold border border-border/70 bg-background text-foreground hover:bg-muted active:scale-95 transition-all"
+            >
+              {t("orders.clearDate", { defaultValue: "مسح التاريخ" })}
+            </button>
+          </div>
         </div>
       </div>
 
