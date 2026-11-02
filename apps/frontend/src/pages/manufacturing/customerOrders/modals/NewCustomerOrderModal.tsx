@@ -30,9 +30,15 @@ export const NewCustomerOrderModal: React.FC<NewCustomerOrderModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setBrandName('');
+      setCustomerCountry('مصر');
+      setExpectedDelivery('');
+      setNotes('');
+      setSelectedCustomerId('');
+      setCustomerSearch('');
+      setCurrency('EGP');
+      setError(null);
       loadCustomers('');
-      const defaultDelivery = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0];
-      setExpectedDelivery(defaultDelivery);
     }
   }, [isOpen]);
 

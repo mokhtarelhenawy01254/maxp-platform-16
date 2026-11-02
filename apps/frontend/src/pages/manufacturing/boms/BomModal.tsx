@@ -51,12 +51,7 @@ export const BomModal: React.FC<BomModalProps> = ({
   const [isActive, setIsActive] = useState(true);
 
   // Components & Stages
-  const [components, setComponents] = useState<BomComponentItem[]>([
-    { clientRef: 'def-1', rawMaterialId: 'raw_fabric_01', rawMaterialName: 'قماش ميلتون قطن شتوي', consumptionPerUnit: 1.6, unit: 'METER', scrapRate: 2.0, appliesToSizes: ['ALL'], appliesToColors: ['ALL'], pricingMode: 'ADDITIVE', totalPrice: 0, parentRef: null },
-    { clientRef: 'def-2', rawMaterialId: 'raw_rib_02', rawMaterialName: 'ريب قطني للأسورة والياقة', consumptionPerUnit: 0.25, unit: 'METER', scrapRate: 1.0, appliesToSizes: ['ALL'], appliesToColors: ['ALL'], pricingMode: 'ADDITIVE', totalPrice: 0, parentRef: null },
-    { clientRef: 'def-3', rawMaterialId: 'raw_zipper_03', rawMaterialName: 'سوستة معدنية عريضة 65 سم', consumptionPerUnit: 1.0, unit: 'PIECE', scrapRate: 0.0, appliesToSizes: ['ALL'], appliesToColors: ['ALL'], pricingMode: 'ADDITIVE', totalPrice: 0, parentRef: null },
-    { clientRef: 'def-4', rawMaterialId: 'raw_thread_04', rawMaterialName: 'خيوط حياكة بوليستر متينة', consumptionPerUnit: 0.1, unit: 'SPOOL', scrapRate: 5.0, appliesToSizes: ['ALL'], appliesToColors: ['ALL'], pricingMode: 'ADDITIVE', totalPrice: 0, parentRef: null },
-  ]);
+  const [components, setComponents] = useState<BomComponentItem[]>([]);
 
   const [standardStages, setStandardStages] = useState<BomStandardStage[]>(DEFAULT_STAGES);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -93,16 +88,17 @@ export const BomModal: React.FC<BomModalProps> = ({
         setStandardStages(initialBom.standardStages.map((s) => ({ ...s })));
       }
     } else if (isOpen) {
-      setCode(`BOM-GARMENT-${Date.now().toString().slice(-4)}`);
-      setName('هودي كاجوال أوفر سايز');
+      setCode('');
+      setName('');
       setVersion('1.0');
       setProductId('');
       setBaseQuantity(1);
       setWasteMarginPercent(3.5);
-      setLaborCostPerUnit(32.0);
+      setLaborCostPerUnit(0);
       setOverheadCostPerUnit(10.0);
       setNotes('');
       setIsActive(true);
+      setComponents([]);
       setStandardStages(DEFAULT_STAGES);
     }
   }, [initialBom, isOpen, mode]);

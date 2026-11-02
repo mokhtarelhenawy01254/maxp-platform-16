@@ -550,7 +550,14 @@ class ManufacturingSampleService {
     await this.ensureSchema();
     const prisma = getSharedPrismaClient();
 
-    const productName = String(data.productName || '').trim();
+    let productId = data.productId ? String(data.productId) : null;
+    let productName = String(data.productName || '').trim();
+    if (productId) {
+      const product = await prisma.product.findFirst({ where: { id: productId, companyId }, select: { id: true, name: true } });
+      if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
+      if (!productName) productName = product.name;
+    }
+    if (!productName && !productId) throw httpErr(400, 'اسم المنتج إلزامي لإنشاء أمر العينة');
     if (!productName) {
       const err = new Error('اسم المنتج إلزامي لإنشاء أمر العينة');
       err.statusCode = 400;
@@ -620,7 +627,7 @@ class ManufacturingSampleService {
               customerName,
               brandName: data.brandName ? String(data.brandName).trim() : null,
               productName,
-              productId: data.productId || null,
+              productId,
               bomId: data.bomId || null,
               techPackId: data.techPackId || null,
               plannedQuantity,
@@ -821,10 +828,25 @@ class ManufacturingSampleService {
         updateData.customerId = null;
       }
     }
+    if (data.productId !== undefined) {
+      if (data.productId) {
+        const pId = String(data.productId);
+        const product = await prisma.product.findFirst({
+          where: { id: pId, companyId },
+          select: { id: true, name: true },
+        });
+        if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
+        updateData.productId = pId;
+        if (data.productName === undefined && !existing.productName) {
+          updateData.productName = product.name;
+        }
+      } else {
+        updateData.productId = null;
+      }
+    }
     if (data.productName !== undefined) updateData.productName = String(data.productName).trim();
     if (data.customerName !== undefined) updateData.customerName = data.customerName ? String(data.customerName).trim() : null;
     if (data.brandName !== undefined) updateData.brandName = data.brandName ? String(data.brandName).trim() : null;
-    if (data.productId !== undefined) updateData.productId = data.productId || null;
     if (data.bomId !== undefined) updateData.bomId = data.bomId || null;
     if (data.techPackId !== undefined) updateData.techPackId = data.techPackId || null;
     if (data.plannedQuantity !== undefined) updateData.plannedQuantity = Math.max(1, parseInt(data.plannedQuantity, 10) || 1);
