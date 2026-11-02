@@ -100,147 +100,169 @@ export const TasksModals: React.FC<TasksModalsProps> = ({ controller }) => {
 
   return (
     <>
-      <CategoryModal
-        show={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        newCategory={newCategory}
-        setNewCategory={setNewCategory}
-        createCategory={createCategory}
-      />
+      {showCategoryModal && (
+        <CategoryModal
+          show={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          newCategory={newCategory}
+          setNewCategory={setNewCategory}
+          createCategory={createCategory}
+        />
+      )}
 
-      <EditCategoryModal
-        category={editingCategory}
-        setEditingCategory={setEditingCategory}
-        updateCategory={updateCategory}
-      />
+      {Boolean(editingCategory) && (
+        <EditCategoryModal
+          category={editingCategory}
+          setEditingCategory={setEditingCategory}
+          updateCategory={updateCategory}
+        />
+      )}
 
-      <CreateGoalModal
-        isOpen={showCreateGoalModal}
-        onClose={() => setShowCreateGoalModal(false)}
-        onGoalCreated={fetchGoals}
-        users={users}
-        projects={projects}
-      />
+      {showCreateGoalModal && (
+        <CreateGoalModal
+          isOpen={showCreateGoalModal}
+          onClose={() => setShowCreateGoalModal(false)}
+          onGoalCreated={fetchGoals}
+          users={users}
+          projects={projects}
+        />
+      )}
 
-      <CreateTaskModal
-        showCreateTaskModal={showCreateTaskModal}
-        setShowCreateTaskModal={setShowCreateTaskModal}
-        newTask={newTask}
-        setNewTask={setNewTask}
-        createTask={createTask}
-        showTemplateSelector={showTemplateSelector}
-        setShowTemplateSelector={setShowTemplateSelector}
-        templates={templates}
-        applyTemplate={applyTemplate}
-        projects={projects}
-        goals={goals}
-        categories={categories}
-        users={users}
-        recurringConfig={recurringConfig}
-        setRecurringConfig={setRecurringConfig}
-      />
+      {showCreateTaskModal && (
+        <CreateTaskModal
+          showCreateTaskModal={showCreateTaskModal}
+          setShowCreateTaskModal={setShowCreateTaskModal}
+          newTask={newTask}
+          setNewTask={setNewTask}
+          createTask={createTask}
+          showTemplateSelector={showTemplateSelector}
+          setShowTemplateSelector={setShowTemplateSelector}
+          templates={templates}
+          applyTemplate={applyTemplate}
+          projects={projects}
+          goals={goals}
+          categories={categories}
+          users={users}
+          recurringConfig={recurringConfig}
+          setRecurringConfig={setRecurringConfig}
+        />
+      )}
 
-      <TaskDetailsModal
-        show={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        task={selectedTask}
-        users={users}
-        getStatusColor={getStatusColor}
-        getStatusText={getStatusText}
-        getPriorityColor={getPriorityColor}
-        getPriorityText={getPriorityText}
-        isOverdue={isOverdue}
-        formatDate={formatDate}
-        updateTaskStatus={updateTaskStatus}
-        deleteTask={deleteTask}
-        setSelectedTask={setSelectedTask}
-        setEditingTask={setEditingTask}
-        setShowEditTaskModal={setShowEditTaskModal}
-        fetchTasks={fetchTasks}
-        buildApiUrl={buildApiUrl}
-      />
+      {showTaskModal && Boolean(selectedTask) && (
+        <TaskDetailsModal
+          show={showTaskModal}
+          onClose={() => setShowTaskModal(false)}
+          task={selectedTask}
+          users={users}
+          getStatusColor={getStatusColor}
+          getStatusText={getStatusText}
+          getPriorityColor={getPriorityColor}
+          getPriorityText={getPriorityText}
+          isOverdue={isOverdue}
+          formatDate={formatDate}
+          updateTaskStatus={updateTaskStatus}
+          deleteTask={deleteTask}
+          setSelectedTask={setSelectedTask}
+          setEditingTask={setEditingTask}
+          setShowEditTaskModal={setShowEditTaskModal}
+          fetchTasks={fetchTasks}
+          buildApiUrl={buildApiUrl}
+        />
+      )}
 
-      <EditTaskModal
-        show={showEditTaskModal}
-        onClose={closeEditModal}
-        task={editingTask}
-        setEditingTask={setEditingTask}
-        updateTask={updateTask}
-        projects={projects}
-        goals={goals}
-        categories={categories}
-        users={users}
-      />
+      {showEditTaskModal && Boolean(editingTask) && (
+        <EditTaskModal
+          show={showEditTaskModal}
+          onClose={closeEditModal}
+          task={editingTask}
+          setEditingTask={setEditingTask}
+          updateTask={updateTask}
+          projects={projects}
+          goals={goals}
+          categories={categories}
+          users={users}
+        />
+      )}
 
-      <CreateProjectModal
-        show={showCreateProjectModal}
-        onClose={() => setShowCreateProjectModal(false)}
-        newProject={newProject}
-        setNewProject={setNewProject}
-        createProject={createProject}
-        users={users}
-      />
+      {showCreateProjectModal && (
+        <CreateProjectModal
+          show={showCreateProjectModal}
+          onClose={() => setShowCreateProjectModal(false)}
+          newProject={newProject}
+          setNewProject={setNewProject}
+          createProject={createProject}
+          users={users}
+        />
+      )}
 
-      <ProjectDetailsModal
-        show={showProjectModal}
-        onClose={() => setShowProjectModal(false)}
-        project={selectedProject}
-        getPriorityColor={getPriorityColor}
-        getPriorityText={getPriorityText}
-        formatPrice={formatPrice}
-        formatDate={formatDate}
-        deleteProject={deleteProject}
-        setEditingProject={setEditingProject}
-        setShowEditProjectModal={setShowEditProjectModal}
-      />
+      {showProjectModal && Boolean(selectedProject) && (
+        <ProjectDetailsModal
+          show={showProjectModal}
+          onClose={() => setShowProjectModal(false)}
+          project={selectedProject}
+          getPriorityColor={getPriorityColor}
+          getPriorityText={getPriorityText}
+          formatPrice={formatPrice}
+          formatDate={formatDate}
+          deleteProject={deleteProject}
+          setEditingProject={setEditingProject}
+          setShowEditProjectModal={setShowEditProjectModal}
+        />
+      )}
 
-      <EditProjectModal
-        show={showEditProjectModal}
-        onClose={() => setShowEditProjectModal(false)}
-        project={editingProject}
-        setEditingProject={setEditingProject}
-        updateProject={updateProject}
-      />
+      {showEditProjectModal && Boolean(editingProject) && (
+        <EditProjectModal
+          show={showEditProjectModal}
+          onClose={() => setShowEditProjectModal(false)}
+          project={editingProject}
+          setEditingProject={setEditingProject}
+          updateProject={updateProject}
+        />
+      )}
 
-      <FilterSidebar
-        show={showFilterSidebar}
-        onClose={() => setShowFilterSidebar(false)}
-        filters={filters}
-        setFilters={setFilters}
-        projects={projects}
-        categories={categories}
-        users={users}
-      />
+      {showFilterSidebar && (
+        <FilterSidebar
+          show={showFilterSidebar}
+          onClose={() => setShowFilterSidebar(false)}
+          filters={filters}
+          setFilters={setFilters}
+          projects={projects}
+          categories={categories}
+          users={users}
+        />
+      )}
 
-      <AlertDialog
-        open={confirmState.show}
-        onOpenChange={(open) => {
-          if (!open) {
-            setConfirmState({ show: false, message: "", onConfirm: () => {} });
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmState.message}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-rose-600 text-white hover:bg-rose-700"
-              onClick={() => {
-                confirmState.onConfirm();
-                setConfirmState({ show: false, message: "", onConfirm: () => {} });
-              }}
-            >
-              تأكيد الحذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {confirmState.show && (
+        <AlertDialog
+          open={confirmState.show}
+          onOpenChange={(open) => {
+            if (!open) {
+              setConfirmState({ show: false, message: "", onConfirm: () => {} });
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmState.message}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-rose-600 text-white hover:bg-rose-700"
+                onClick={() => {
+                  confirmState.onConfirm();
+                  setConfirmState({ show: false, message: "", onConfirm: () => {} });
+                }}
+              >
+                تأكيد الحذف
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   );
 };

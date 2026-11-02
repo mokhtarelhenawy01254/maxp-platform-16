@@ -1,5 +1,5 @@
 import React from "react";
-import { PlusIcon, TargetIcon, ZapIcon } from "lucide-react";
+import { PlusIcon, TargetIcon, ZapIcon, ChevronUp } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import type { GoalOption } from "../types";
@@ -7,6 +7,9 @@ import type { GoalOption } from "../types";
 export interface GoalProgressStripProps {
   goals: GoalOption[];
   onOpenCreateGoal: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  collapsible?: boolean;
 }
 
 const goalTypeBadgeMap: Record<string, { label: string; className: string }> = {
@@ -23,33 +26,54 @@ const goalTypeBadgeMap: Record<string, { label: string; className: string }> = {
 export const GoalProgressStrip: React.FC<GoalProgressStripProps> = ({
   goals,
   onOpenCreateGoal,
+  isExpanded = true,
+  onToggleExpand,
+  collapsible = false,
 }) => {
+  if (isExpanded === false) {
+    return null;
+  }
+
   if (!goals || goals.length === 0) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border/70 bg-card/60 px-4 py-2.5 backdrop-blur-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <TargetIcon className="size-4" />
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border/70 bg-card/60 px-3.5 py-2 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <TargetIcon className="size-3.5" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-foreground">
               أهداف العمل ومؤشرات الأداء
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              اربط مهامك اليومية بأهداف محددة وتتبع التقدم التلقائي من النظام.
+            <p className="text-[10px] text-muted-foreground">
+              اربط مهامك اليومية بأهداف محددة وتتبع التقدم التلقائي.
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onOpenCreateGoal}
-          className="h-7 shrink-0 rounded-lg border-primary/30 bg-primary/5 px-2.5 text-xs font-medium text-primary hover:bg-primary/10"
-        >
-          <PlusIcon className="mr-1 size-3.5" />
-          أنشئ هدف
-        </Button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onOpenCreateGoal}
+            className="h-6.5 shrink-0 rounded-lg border-primary/30 bg-primary/5 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
+          >
+            <PlusIcon className="mr-1 size-3" />
+            أنشئ هدف
+          </Button>
+          {(collapsible || onToggleExpand) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onToggleExpand}
+              className="h-6.5 px-1.5 text-muted-foreground hover:text-foreground"
+              title="طي أهداف العمل"
+            >
+              <ChevronUp className="size-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -63,19 +87,33 @@ export const GoalProgressStrip: React.FC<GoalProgressStripProps> = ({
             أهداف العمل النشطة ({goals.length})
           </span>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onOpenCreateGoal}
-          className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 hover:text-primary"
-        >
-          <PlusIcon className="size-3" />
-          أنشئ هدف
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onOpenCreateGoal}
+            className="h-6 gap-1 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <PlusIcon className="size-3" />
+            أنشئ هدف
+          </Button>
+          {(collapsible || onToggleExpand) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onToggleExpand}
+              className="h-6 px-1.5 text-muted-foreground hover:text-foreground"
+              title="طي أهداف العمل"
+            >
+              <ChevronUp className="size-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
         {goals.map((goal) => {
           const rawProgress = typeof goal.progress === "number" ? goal.progress : 0;
           const progress = Math.min(100, Math.max(0, Math.round(rawProgress)));
@@ -91,7 +129,7 @@ export const GoalProgressStrip: React.FC<GoalProgressStripProps> = ({
           return (
             <div
               key={goal.id}
-              className="flex min-w-[240px] max-w-[300px] shrink-0 flex-col justify-between rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-sm transition-all hover:border-border"
+              className="flex min-w-[200px] max-w-[260px] shrink-0 flex-col justify-between rounded-xl border border-border/60 bg-card/80 p-2 shadow-xs transition-all hover:border-border"
             >
               <div className="space-y-1">
                 <div className="flex items-start justify-between gap-1.5">
@@ -103,13 +141,13 @@ export const GoalProgressStrip: React.FC<GoalProgressStripProps> = ({
                   </span>
                   <Badge
                     variant="outline"
-                    className={`shrink-0 rounded-full px-1.5 py-0 text-[10px] font-medium leading-4 ${typeMeta.className}`}
+                    className={`shrink-0 rounded-full px-1.5 py-0 text-[9px] font-medium leading-4 ${typeMeta.className}`}
                   >
                     {typeMeta.label}
                   </Badge>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span className="tabular-nums font-mono font-medium text-foreground">
                     {currentNum} / {targetNum}
                     <span className="text-muted-foreground">{unitStr}</span>
@@ -121,7 +159,7 @@ export const GoalProgressStrip: React.FC<GoalProgressStripProps> = ({
               </div>
 
               {/* Progress bar */}
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted/60">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}

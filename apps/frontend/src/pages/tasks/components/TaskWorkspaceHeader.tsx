@@ -172,43 +172,38 @@ export const TaskWorkspaceHeader: React.FC<TaskWorkspaceHeaderProps> = ({
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="relative mt-3.5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
-        {/* Visible */}
-        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-xs backdrop-blur-sm">
-          <span className="size-2 rounded-full bg-muted-foreground/40" />
+      {/* Inline Telemetry Bar (Compact 2026 single-surface style) */}
+      <div className="relative mt-2.5 flex flex-wrap items-center gap-2 border-t border-border/40 pt-2 text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background/60 px-2 py-0.5 text-[11px]">
+          <span className="size-1.5 rounded-full bg-muted-foreground/40" />
           <span className="text-muted-foreground">ظاهر</span>
-          <strong className="font-bold text-foreground">{visibleTasksCount}</strong>
-        </div>
+          <strong className="font-semibold text-foreground tabular-nums">{visibleTasksCount}</strong>
+        </span>
 
-        {/* Open */}
-        <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/6 px-3 py-2 text-xs">
-          <ClockIcon className="size-3.5 text-blue-500" />
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/20 bg-blue-500/6 px-2 py-0.5 text-[11px]">
+          <ClockIcon className="size-3 text-blue-500" />
           <span className="text-blue-700 dark:text-blue-400">مفتوحة</span>
-          <strong className="font-bold text-blue-700 dark:text-blue-300">{openTasksCount}</strong>
-        </div>
+          <strong className="font-semibold text-blue-700 dark:text-blue-300 tabular-nums">{openTasksCount}</strong>
+        </span>
 
-        {/* Pending */}
-        <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/6 px-3 py-2 text-xs">
-          <span className="size-2 rounded-full bg-amber-500" />
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/6 px-2 py-0.5 text-[11px]">
+          <span className="size-1.5 rounded-full bg-amber-500" />
           <span className="text-amber-700 dark:text-amber-400">انتظار</span>
-          <strong className="font-bold text-amber-700 dark:text-amber-300">{taskStats.pending}</strong>
-        </div>
+          <strong className="font-semibold text-amber-700 dark:text-amber-300 tabular-nums">{taskStats.pending}</strong>
+        </span>
 
-        {/* Completed */}
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/6 px-3 py-2 text-xs">
-          <CheckCircleIcon className="size-3.5 text-emerald-500" />
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/6 px-2 py-0.5 text-[11px]">
+          <CheckCircleIcon className="size-3 text-emerald-500" />
           <span className="text-emerald-700 dark:text-emerald-400">مكتملة</span>
-          <strong className="font-bold text-emerald-700 dark:text-emerald-300">{taskStats.completed}</strong>
-        </div>
+          <strong className="font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">{taskStats.completed}</strong>
+        </span>
 
-        {/* Overdue */}
         {showOverdueIndicators && taskStats.overdue > 0 ? (
-          <div className="flex items-center gap-2 rounded-xl border border-rose-500/25 bg-rose-500/8 px-3 py-2 text-xs">
-            <ExclamationCircleIcon className="size-3.5 text-rose-500" />
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/25 bg-rose-500/8 px-2 py-0.5 text-[11px]">
+            <ExclamationCircleIcon className="size-3 text-rose-500" />
             <span className="text-rose-700 dark:text-rose-400">متأخرة</span>
-            <strong className="font-bold text-rose-700 dark:text-rose-300">{taskStats.overdue}</strong>
-          </div>
+            <strong className="font-semibold text-rose-700 dark:text-rose-300 tabular-nums">{taskStats.overdue}</strong>
+          </span>
         ) : null}
       </div>
     </section>

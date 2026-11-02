@@ -6,16 +6,21 @@ import {
   Sparkles,
   ArrowRight,
   Flame,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import type { Task, TaskStatus } from "../types";
 
-interface TodayTasksFocusStripProps {
+export interface TodayTasksFocusStripProps {
   tasks: Task[];
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onOpenTaskDetails: (task: Task) => void;
   onSelectTodayFilter?: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  collapsible?: boolean;
 }
 
 export const TodayTasksFocusStrip: React.FC<TodayTasksFocusStripProps> = ({
@@ -23,7 +28,13 @@ export const TodayTasksFocusStrip: React.FC<TodayTasksFocusStripProps> = ({
   onTaskStatusChange,
   onOpenTaskDetails,
   onSelectTodayFilter,
+  isExpanded = true,
+  onToggleExpand,
+  collapsible = false,
 }) => {
+  const [internalExpanded, setInternalExpanded] = React.useState(true);
+  const activeExpanded = isExpanded !== undefined ? isExpanded : internalExpanded;
+
   const todayStr = new Date().toISOString().slice(0, 10);
 
   // Filter tasks that are due today or overdue & still open
@@ -39,35 +50,43 @@ export const TodayTasksFocusStrip: React.FC<TodayTasksFocusStripProps> = ({
   const completedTodayCount = todayTasks.filter((t) => t.status === "completed").length;
   const pendingTodayCount = todayTasks.filter((t) => t.status !== "completed" && t.status !== "cancelled").length;
 
-  if (todayTasks.length === 0) {
+  if (todayTasks.length === 0 || !activeExpanded) {
     return null;
   }
 
   const allDone = pendingTodayCount === 0 && todayTasks.length > 0;
 
+  const handleToggle = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded((prev) => !prev);
+    }
+  };
+
   return (
     <section
       aria-label="مهام اليوم"
-      className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/[0.04] via-card to-card p-3 sm:p-3.5 shadow-sm transition-all"
+      className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.04] via-card to-card p-2.5 sm:p-3 shadow-xs transition-all"
     >
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {/* Header / counter */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="inline-flex size-6.5 items-center justify-center rounded-lg bg-primary/10 text-primary">
             {allDone ? (
-              <Sparkles className="size-4 text-emerald-500 animate-spin-slow" />
+              <Sparkles className="size-3.5 text-emerald-500 animate-spin-slow" />
             ) : (
-              <Flame className="size-4 text-amber-500" />
+              <Flame className="size-3.5 text-amber-500" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-foreground">
+              <h2 className="text-xs sm:text-sm font-bold text-foreground">
                 مهام اليوم المستحقة
               </h2>
               <Badge
                 variant="outline"
-                className={`rounded-full px-2 py-0 text-[11px] font-semibold ${
+                className={`rounded-full px-2 py-0 text-[10px] font-semibold tabular-nums font-mono ${
                   allDone
                     ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                     : "border-primary/25 bg-primary/10 text-primary"
@@ -79,19 +98,34 @@ export const TodayTasksFocusStrip: React.FC<TodayTasksFocusStripProps> = ({
           </div>
         </div>
 
-        {/* View all today action */}
-        {onSelectTodayFilter ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onSelectTodayFilter}
-            className="h-7 gap-1 text-xs text-primary hover:text-primary/80 self-start sm:self-auto"
-          >
-            <span>عرض كل مهام اليوم ({todayTasks.length})</span>
-            <ArrowRight className="size-3 rtl:rotate-180" />
-          </Button>
-        ) : null}
+        {/* View all today action + collapse */}
+        <div className="flex items-center gap-1.5 self-start sm:self-auto">
+          {onSelectTodayFilter ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSelectTodayFilter}
+              className="h-6.5 gap-1 text-[11px] text-primary hover:text-primary/80"
+            >
+              <span>عرض الكل ({todayTasks.length})</span>
+              <ArrowRight className="size-3 rtl:rotate-180" />
+            </Button>
+          ) : null}
+
+          {(collapsible || onToggleExpand) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleToggle}
+              className="h-6.5 px-1.5 text-muted-foreground hover:text-foreground"
+              title="طي مهام اليوم"
+            >
+              <ChevronUp className="size-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Task pills list */}

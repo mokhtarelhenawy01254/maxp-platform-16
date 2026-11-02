@@ -1,8 +1,7 @@
 import React from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Button } from "../../../components/ui/button";
-import { TaskFilters } from "../components/TaskFilters";
-import { TaskUnifiedFilterBar } from "../../../components/tasks/TaskUnifiedFilterBar";
+import { TaskWorkspaceControlBar } from "../components/TaskWorkspaceControlBar";
 import { GoalProgressStrip } from "../components/GoalProgressStrip";
 import { TaskTable } from "../components/TaskTable";
 import { TaskWorkspaceHeader } from "../components/TaskWorkspaceHeader";
@@ -50,8 +49,6 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
     exportToCSV,
     scrollToBulkActions,
     workspaceSettings,
-    unifiedFilters,
-    setUnifiedFilters,
     users,
     loading,
     searchQuery,
@@ -97,23 +94,27 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
     currentPage,
     totalPages,
     serverTotalTasks,
+    isTodayStripOpen,
+    setIsTodayStripOpen,
+    isGoalsStripOpen,
+    setIsGoalsStripOpen,
   } = controller;
 
-  return (
-    <section className="space-y-3">
-      <TodayTasksFocusStrip
-        tasks={safeTasks}
-        onTaskStatusChange={updateTaskStatus}
-        onOpenTaskDetails={(t) => {
-          setSelectedTask(t);
-          setShowTaskModal(true);
-        }}
-        onSelectTodayFilter={() => setQuickFilter("today")}
-      />
+  const todayDueCount = React.useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return safeTasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const due = t.dueDate.slice(0, 10);
+      const isOpen = t.status !== "completed" && t.status !== "cancelled";
+      return (due === todayStr || due < todayStr) && isOpen;
+    }).length;
+  }, [safeTasks]);
 
+  return (
+    <section className="space-y-2.5">
       {loadError && (
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-center">
-          <p className="text-sm font-medium text-rose-700 dark:text-rose-300 mb-2">
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-center">
+          <p className="text-sm font-medium text-rose-700 dark:text-rose-300 mb-1.5">
             {loadError}
           </p>
           <Button
@@ -146,60 +147,78 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
         showProjectShortcut={workspaceSettings.showProjectShortcut}
       />
 
-      <TaskUnifiedFilterBar
-        filters={unifiedFilters}
-        onFiltersChange={setUnifiedFilters}
-        users={users}
-        totalCount={safeTasks.length}
-        filteredCount={filteredAndSortedTasks.length}
-        onRefresh={fetchTasks}
-        isLoading={loading}
-      />
-
-      <TaskFilters
+      <TaskWorkspaceControlBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setCurrentPage={setCurrentPage}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        sortOrder={sortOrder}
-        setSortOrder={setSortOrder}
+        taskFilter={taskFilter}
+        setTaskFilter={setTaskFilter}
+        quickFilter={quickFilter}
+        setQuickFilter={setQuickFilter}
         filters={filters}
         setFilters={setFilters}
         projects={projects}
         categories={categories}
         users={users}
-        setShowFilterSidebar={setShowFilterSidebar}
-        taskFilter={taskFilter}
-        setTaskFilter={setTaskFilter}
         hideCompleted={hideCompleted}
         setHideCompleted={setHideCompleted}
-        taskStats={taskStats}
-        itemsPerPage={itemsPerPage}
-        setItemsPerPage={setItemsPerPage}
+        viewMode={viewMode}
+        onToggleViewMode={handleToggleViewMode}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        todayTasksCount={todayDueCount}
+        showTodayStrip={isTodayStripOpen}
+        onToggleTodayStrip={() => setIsTodayStripOpen?.(!isTodayStripOpen)}
+        goalsCount={goals?.length || 0}
+        showGoalsStrip={isGoalsStripOpen}
+        onToggleGoalsStrip={() => setIsGoalsStripOpen?.(!isGoalsStripOpen)}
+        onCreateTask={() => setShowCreateTaskModal(true)}
+        setShowCreateTaskModal={setShowCreateTaskModal}
       />
+
+      {isTodayStripOpen && (
+        <TodayTasksFocusStrip
+          tasks={safeTasks}
+          onTaskStatusChange={updateTaskStatus}
+          onOpenTaskDetails={(t) => {
+            setSelectedTask(t);
+            setShowTaskModal(true);
+          }}
+          onSelectTodayFilter={() => setQuickFilter("today")}
+          isExpanded={isTodayStripOpen}
+          onToggleExpand={() => setIsTodayStripOpen?.(false)}
+          collapsible
+        />
+      )}
+
+      {isGoalsStripOpen && (
+        <GoalProgressStrip
+          goals={goals}
+          onOpenCreateGoal={() => setShowCreateGoalModal(true)}
+          isExpanded={isGoalsStripOpen}
+          onToggleExpand={() => setIsGoalsStripOpen?.(false)}
+          collapsible
+        />
+      )}
 
       {selectedTasks.length > 0 ? (
         <div
           ref={bulkActionsRef}
-          className="rounded-[16px] border border-primary/15 bg-primary/5 px-3 py-2.5"
+          className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 animate-in fade-in-50 duration-150"
         >
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-0.5">
-              <p className="text-sm font-semibold text-foreground">
-                تم تحديد {selectedTasks.length} مهمة
-              </p>
-              <p className="text-xs text-muted-foreground">
-                نفّذ إجراءً جماعيًا سريعًا ثم ألغ التحديد عند الانتهاء.
-              </p>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold text-foreground tabular-nums">
+              تم تحديد {selectedTasks.length} مهمة
+            </span>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 rounded-full px-2.5 text-xs"
+                className="h-7.5 rounded-lg px-2.5 text-xs"
                 onClick={() => handleBulkStatusChange("in_progress")}
               >
                 بدء التنفيذ
@@ -208,7 +227,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
+                className="h-7.5 rounded-lg border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
                 onClick={() => handleBulkStatusChange("completed")}
               >
                 إكمال
@@ -217,7 +236,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
                 <Button
                   type="button"
                   size="sm"
-                  className="h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 text-xs font-medium"
+                  className="h-7.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 text-xs font-medium"
                   onClick={() => handleBulkStatusChange("completed")}
                   title="اعتماد المهام المحددة"
                 >
@@ -228,7 +247,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 rounded-full border-rose-500/30 bg-rose-500/10 px-2.5 text-xs text-rose-700 hover:bg-rose-500/15 dark:text-rose-300"
+                className="h-7.5 rounded-lg border-rose-500/30 bg-rose-500/10 px-2.5 text-xs text-rose-700 hover:bg-rose-500/15 dark:text-rose-300"
                 onClick={handleBulkDelete}
               >
                 حذف
@@ -237,7 +256,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-8 rounded-full px-2.5 text-xs"
+                className="h-7.5 rounded-lg px-2.5 text-xs text-muted-foreground"
                 onClick={() => setSelectedTasks([])}
               >
                 إلغاء التحديد
@@ -246,11 +265,6 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
           </div>
         </div>
       ) : null}
-
-      <GoalProgressStrip
-        goals={goals}
-        onOpenCreateGoal={() => setShowCreateGoalModal(true)}
-      />
 
       {safeTasks.length === 0 && !loading ? (
         <TaskWorkspaceEmptyState
@@ -306,19 +320,6 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
         />
       ) : (
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              عرض القائمة المباشرة ({quickFilteredTasks.length} مهمة)
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleToggleViewMode}
-              className="h-7 text-xs rounded-lg"
-            >
-              التبديل إلى العرض المجمع بالمشروع
-            </Button>
-          </div>
           <TaskTable
             canApprove={isApprover}
             approverUserId={user?.id}
