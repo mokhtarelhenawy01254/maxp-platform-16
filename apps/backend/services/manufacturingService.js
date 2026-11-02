@@ -12,6 +12,7 @@
  * 8. Strict multi-tenant isolation per companyId with zero blast-radius.
  */
 
+const crypto = require('crypto');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const AccountingService = require('./accountingService');
 const AccountingAutoPostingService = require('./accountingAutoPostingService');
@@ -509,6 +510,7 @@ class ManufacturingService {
           "unitCost" DECIMAL(12,2) NOT NULL DEFAULT 0.0,
           "notes" TEXT,
           "createdById" TEXT,
+          "publicToken" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -516,6 +518,8 @@ class ManufacturingService {
         CREATE INDEX IF NOT EXISTS "production_orders_companyId_status_idx" ON "production_orders"("companyId", "status");
         CREATE INDEX IF NOT EXISTS "production_orders_companyId_bomId_idx" ON "production_orders"("companyId", "bomId");
         CREATE INDEX IF NOT EXISTS "production_orders_companyId_productId_idx" ON "production_orders"("companyId", "productId");
+        ALTER TABLE "production_orders" ADD COLUMN IF NOT EXISTS "publicToken" TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS "production_orders_publicToken_key" ON "production_orders"("publicToken");
 
         CREATE TABLE IF NOT EXISTS "production_order_variant_matrices" (
           "id" TEXT PRIMARY KEY,
@@ -1244,6 +1248,7 @@ class ManufacturingService {
           deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod).trim() : null,
           responsibleUserId: data.responsibleUserId ? String(data.responsibleUserId) : null,
           sourceSampleOrderId: data.sourceSampleOrderId ? String(data.sourceSampleOrderId) : null,
+          publicToken: crypto.randomUUID(),
         },
       });
 
@@ -1367,8 +1372,20 @@ class ManufacturingService {
       };
     }
 
+    let publicToken = order.publicToken;
+    if (!publicToken) {
+      publicToken = crypto.randomUUID();
+      try {
+        await client.productionOrder.update({
+          where: { id: order.id },
+          data: { publicToken },
+        });
+      } catch (_) {}
+    }
+
     return {
       ...order,
+      publicToken,
       executionFactory: resolveExecutionFactory(order.stages),
       executionFactoryCount: new Set(order.stages.map((s) => s.partnerFactoryId).filter(Boolean)).size,
       contractValue,

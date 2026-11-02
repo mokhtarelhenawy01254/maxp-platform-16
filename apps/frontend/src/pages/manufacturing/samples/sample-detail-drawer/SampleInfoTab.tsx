@@ -1,6 +1,6 @@
-import React from 'react';
-import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
-import { SampleOrder } from '../../manufacturingApi';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, CheckCircle2, Globe, Copy, Check } from 'lucide-react';
+import { SampleOrder, manufacturingApi } from '../../manufacturingApi';
 
 export interface SampleInfoTabProps {
   sample: SampleOrder;
@@ -27,8 +27,78 @@ export const SampleInfoTab: React.FC<SampleInfoTabProps> = ({
   onAddExpense,
   onDeleteExpense,
 }) => {
+  const [portalUrl, setPortalUrl] = useState<string | null>(() => {
+    if (sample.customerPortalUrl) {
+      return sample.customerPortalUrl.startsWith('http')
+        ? sample.customerPortalUrl
+        : `${window.location.origin}${sample.customerPortalUrl}`;
+    }
+    return null;
+  });
+  const [copiedPortal, setCopiedPortal] = useState(false);
+
+  useEffect(() => {
+    if (sample.customerPortalUrl) {
+      setPortalUrl(
+        sample.customerPortalUrl.startsWith('http')
+          ? sample.customerPortalUrl
+          : `${window.location.origin}${sample.customerPortalUrl}`
+      );
+    } else if (sample.id) {
+      manufacturingApi
+        .listSampleShareLinks(sample.id)
+        .then((links) => {
+          const cust = links.find((l) => l.kind === 'CUSTOMER' && !l.revokedAt);
+          if (cust?.token) {
+            setPortalUrl(`${window.location.origin}/share/sample/${cust.token}`);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [sample.id, sample.customerPortalUrl]);
+
+  const handleCopyPortalLink = async () => {
+    if (!portalUrl) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(portalUrl);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = portalUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedPortal(true);
+      setTimeout(() => setCopiedPortal(false), 2000);
+    } catch (_) {}
+  };
+
   return (
     <div className="space-y-3 text-xs">
+      {portalUrl && (
+        <div className="p-3 rounded-xl border border-primary/30 bg-primary/5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Globe className="w-4 h-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <span className="font-semibold text-xs text-foreground block">بوابة العميل</span>
+              <span className="text-[11px] text-muted-foreground truncate block font-mono" dir="ltr">
+                {portalUrl}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyPortalLink}
+            className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1 shrink-0 transition-colors"
+            title="نسخ رابط بوابة العميل"
+          >
+            {copiedPortal ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            <span>{copiedPortal ? 'تم النسخ' : 'نسخ'}</span>
+          </button>
+        </div>
+      )}
       <div className="p-3.5 rounded-xl border border-border/70 bg-card space-y-2">
         <div className="flex justify-between border-b pb-2">
           <span className="text-muted-foreground">اسم المنتج:</span>

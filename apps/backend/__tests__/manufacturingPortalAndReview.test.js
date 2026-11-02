@@ -32,6 +32,9 @@ if (typeof jest !== 'undefined') {
 
 const FactoryPortalService = require('../services/factoryPortalService');
 const ManufacturingSubcontractService = require('../services/manufacturingSubcontractService');
+const ManufacturingSampleService = require('../services/manufacturingSampleService');
+const ManufacturingService = require('../services/manufacturingService');
+const PublicProductionController = require('../controller/publicProductionController');
 
 // In-Memory Database Store for Wave 3 Tests
 const createInMemoryStore = () => {
@@ -44,6 +47,15 @@ const createInMemoryStore = () => {
     productionStages: [],
     manufacturingAttachments: [],
     materialIssues: [],
+    sampleOrders: [],
+    sampleShareLinks: [],
+    sampleOrderStages: [],
+    samplePayments: [],
+    sampleOrderExpenses: [],
+    billOfMaterials: [],
+    productionOrderVariantMatrices: [],
+    customers: [],
+    companySequences: [],
   };
 
   const createTableHandlers = (tableName, stateArray, idPrefix) => ({

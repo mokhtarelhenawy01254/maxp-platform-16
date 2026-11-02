@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { RotateCw, ArrowRight, User, Building2, Phone, Tag } from 'lucide-react';
+import { RotateCw, ArrowRight, User, Building2, Phone, Tag, Copy, ExternalLink, Globe } from 'lucide-react';
+import { toast } from 'sonner';
 import { ManufacturingHeader } from '../ManufacturingHeader';
 import { manufacturingApi, ProductionOrder } from '../manufacturingApi';
 
@@ -119,6 +120,29 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
     }
   };
 
+  const handleCopyClientPortalLink = async () => {
+    if (!order?.publicToken) {
+      toast.error('لا يوجد رابط متابعة متاح لهذا الأمر');
+      return;
+    }
+    const portalUrl = `${window.location.origin}/portal/production/${order.publicToken}`;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(portalUrl);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = portalUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast.success('تم نسخ رابط متابعة العميل بنجاح');
+    } catch (_) {
+      toast.error('تعذر نسخ رابط متابعة العميل');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6" dir="rtl">
@@ -153,6 +177,16 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
         subtitle={`موديل: ${order.bom?.name || '—'} (${order.bom?.code || ''})`}
         actions={
           <div className="flex items-center gap-2">
+            {order.publicToken && (
+              <button
+                onClick={handleCopyClientPortalLink}
+                title="نسخ رابط متابعة العميل"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800/60 transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>لينك متابعة العميل</span>
+              </button>
+            )}
             <button
               onClick={loadOrder}
               disabled={actionLoading}
@@ -226,6 +260,24 @@ export const ManufacturingOrderDetailPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {order.publicToken && (
+                  <div className="pt-3 mt-2 border-t border-border/60 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>بوابة متابعة العميل</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyClientPortalLink}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition"
+                      title="نسخ رابط بوابة العميل"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>لينك متابعة العميل</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
