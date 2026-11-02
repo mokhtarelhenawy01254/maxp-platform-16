@@ -1823,6 +1823,16 @@ class ManufacturingService {
       throw new Error(`لا يمكن استلام إنتاج تام لأمر في حالة "${order.status}"`);
     }
 
+    // الأوامر القديمة اللي اتعملت من BOM مربوط بمنتج: نستنتج المنتج من الـBOM
+    // بدل ما نمنع الاستلام — الشرط الحقيقي هو وجود منتج تام نضيف عليه الرصيد.
+    const effectiveProductId = order.productId || order.bom?.productId || null;
+
+    if (!effectiveProductId) {
+      const err = new Error('اربط أمر الإنتاج بمنتج تام أولاً — عشان الكمية تتضاف للمخزن');
+      err.statusCode = 400;
+      throw err;
+    }
+
     const settings = await this.getSettings(companyId);
     const warehouseId = data.targetWarehouseId || order.targetWarehouseId || settings.defaultTargetWarehouseId || 'wh_default';
 
@@ -1881,13 +1891,13 @@ class ManufacturingService {
         }
 
         // Add to target warehouse Inventory
-        if (gQty > 0 && order.productId) {
+        if (gQty > 0 && effectiveProductId) {
           let inv = null;
           try {
             if (tx.inventory?.findFirst) {
               inv = await tx.inventory.findFirst({
                 where: {
-                  productId: order.productId,
+                  productId: effectiveProductId,
                   warehouseId,
                 },
               });
@@ -1915,7 +1925,7 @@ class ManufacturingService {
             try {
               await tx.inventory.create({
                 data: {
-                  productId: order.productId,
+                  productId: effectiveProductId,
                   warehouseId,
                   quantity: addUnits,
                   available: addUnits,
@@ -1926,7 +1936,7 @@ class ManufacturingService {
             } catch (createErr) {
               if (tx.inventory?.findFirst && tx.inventory?.update) {
                 const retryInv = await tx.inventory.findFirst({
-                  where: { productId: order.productId, warehouseId },
+                  where: { productId: effectiveProductId, warehouseId },
                 });
                 if (retryInv) {
                   const currentTotalVal = Number(retryInv.quantity) * Number(retryInv.cost || 0);
@@ -1952,7 +1962,7 @@ class ManufacturingService {
             if (tx.stockMovement?.create) {
               await tx.stockMovement.create({
                 data: {
-                  productId: order.productId,
+                  productId: effectiveProductId,
                   warehouseId,
                   type: 'IN',
                   reason: 'ADJUSTMENT',
