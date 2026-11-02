@@ -93,6 +93,7 @@ export function usePreparationQueueController() {
     itemCountFilter: uiState.itemCountFilter,
     notPrintedFilter: uiState.notPrintedFilter,
     noShippingCodeFilter: uiState.noShippingCodeFilter,
+    workTypeFilter: uiState.workTypeFilter,
     search: deferredSearch,
     sortBy: uiState.sortBy,
     sortOrder: uiState.sortOrder,

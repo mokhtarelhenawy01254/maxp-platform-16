@@ -192,16 +192,8 @@ export const getEffectivePreparationStatus = (
     String(metadataObject[PREPARATION_STATUS_METADATA_KEY] || ""),
   );
 
-  // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
-  if (
-    normalizedStatus === "EXCHANGED" &&
-    (toUpper(String(metadataObject["requestType"] || "")) === "EXCHANGE" ||
-      Boolean(metadataObject["originalOrderId"])) &&
-    !metadataStatus
-  ) {
-    return "PENDING_PREPARATION";
-  }
-
+  // EXCHANGED is terminal — the ORIGINAL order only. A replacement is created as
+  // PENDING_PREPARATION and walks the normal preparation cycle (task 69cc5d36).
   if (TERMINAL_NON_PREPARATION_STATUSES.has(normalizedStatus)) {
     return normalizedStatus;
   }

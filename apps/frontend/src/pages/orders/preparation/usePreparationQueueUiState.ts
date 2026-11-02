@@ -10,6 +10,7 @@ import type {
   StageFilter,
   StockFilter,
   ItemCountFilter,
+  WorkTypeFilter,
 } from "./types";
 
 export interface PreparationQueueUiState {
@@ -27,6 +28,7 @@ export interface PreparationQueueUiState {
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
+  workTypeFilter: WorkTypeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -53,6 +55,7 @@ type PreparationQueueUiAction =
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_not_printed_filter"; value: NotPrintedFilter }
   | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
+  | { type: "set_work_type_filter"; value: WorkTypeFilter }
   | { type: "set_search"; value: string }
   | { type: "set_sort"; value: { sortBy: SortBy; sortOrder: SortOrder } }
   | { type: "set_page_size"; value: PageSize }
@@ -83,6 +86,7 @@ const initialState: PreparationQueueUiState = {
   itemCountFilter: "all",
   notPrintedFilter: "all",
   noShippingCodeFilter: "all",
+  workTypeFilter: "all",
   search: "",
   sortBy: "createdAt",
   sortOrder: "desc",
@@ -146,6 +150,8 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { notPrintedFilter: action.value });
     case "set_no_shipping_code_filter":
       return withPageReset(state, { noShippingCodeFilter: action.value });
+    case "set_work_type_filter":
+      return withPageReset(state, { workTypeFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
     case "set_sort":
@@ -272,6 +278,8 @@ export const usePreparationQueueUiState = (
         dispatch({ type: "set_not_printed_filter", value }),
       setNoShippingCodeFilter: (value: NoShippingCodeFilter) =>
         dispatch({ type: "set_no_shipping_code_filter", value }),
+      setWorkTypeFilter: (value: WorkTypeFilter) =>
+        dispatch({ type: "set_work_type_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
       setSort: (value: { sortBy: SortBy; sortOrder: SortOrder }) =>
         dispatch({ type: "set_sort", value }),

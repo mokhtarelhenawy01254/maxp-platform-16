@@ -41,6 +41,7 @@ export const getInitialPreparationState = (searchParams: URLSearchParams): Parti
     "sortOrder",
     "notPrinted",
     "noShippingCode",
+    "workType",
   ].some((k) => searchParams.has(k));
 
   if (hasQueryKeys) {
@@ -73,6 +74,7 @@ export const getInitialPreparationState = (searchParams: URLSearchParams): Parti
       sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
       notPrintedFilter: (searchParams.get("notPrinted") as "all" | "not_printed") || "all",
       noShippingCodeFilter: (searchParams.get("noShippingCode") as "all" | "no_shipping_code") || "all",
+      workTypeFilter: (searchParams.get("workType") as "all" | "exchange") || "all",
     };
   }
 
@@ -117,6 +119,9 @@ export function usePreparationUrlSync({
     if (parsed.stockFilter && parsed.stockFilter !== uiState.stockFilter) {
       uiActions.setStockFilter(parsed.stockFilter);
     }
+    if (parsed.workTypeFilter && parsed.workTypeFilter !== uiState.workTypeFilter) {
+      uiActions.setWorkTypeFilter(parsed.workTypeFilter);
+    }
     if (parsed.pageSize && parsed.pageSize !== uiState.pageSize) {
       uiActions.setPageSize(parsed.pageSize);
     }
@@ -127,7 +132,7 @@ export function usePreparationUrlSync({
       isSyncingFromUrlRef.current = false;
     }, 150);
     return () => clearTimeout(timer);
-  }, [searchParams, uiState.activeStage, uiState.selectedWarehouseId, uiState.stockFilter, uiState.pageSize, uiState.page, uiActions]);
+  }, [searchParams, uiState.activeStage, uiState.selectedWarehouseId, uiState.stockFilter, uiState.workTypeFilter, uiState.pageSize, uiState.page, uiActions]);
 
   // Outgoing sync: state changes to URL and localStorage
   useEffect(() => {
@@ -149,6 +154,7 @@ export function usePreparationUrlSync({
       sortOrder: uiState.sortOrder,
       notPrintedFilter: uiState.notPrintedFilter,
       noShippingCodeFilter: uiState.noShippingCodeFilter,
+      workTypeFilter: uiState.workTypeFilter,
     };
 
     const params: Record<string, string> = {};
@@ -166,6 +172,7 @@ export function usePreparationUrlSync({
     if (nextState.itemCountFilter !== "all") params.itemCountFilter = String(nextState.itemCountFilter);
     if (nextState.notPrintedFilter !== "all") params.notPrinted = String(nextState.notPrintedFilter);
     if (nextState.noShippingCodeFilter !== "all") params.noShippingCode = String(nextState.noShippingCodeFilter);
+    if (nextState.workTypeFilter !== "all") params.workType = String(nextState.workTypeFilter);
     if (nextState.search) params.search = String(nextState.search);
     if (nextState.sortBy !== "createdAt") params.sortBy = String(nextState.sortBy);
 
@@ -199,6 +206,7 @@ export function usePreparationUrlSync({
     uiState.sortOrder,
     uiState.notPrintedFilter,
     uiState.noShippingCodeFilter,
+    uiState.workTypeFilter,
     setSearchParams,
   ]);
 }

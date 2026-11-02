@@ -67,6 +67,8 @@ export interface SimpleOrder {
   printedAt?: string | null;
   originalOrderId?: string | null;
   originalOrderNumber?: string | null;
+  workType?: PreparationWorkType;
+  requestType?: string | null;
 }
 
 export interface InventoryRecord {
@@ -154,6 +156,9 @@ export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
 export type NotPrintedFilter = "all" | "not_printed";
 export type NoShippingCodeFilter = "all" | "no_shipping_code";
+// نوع العمل: «استبدال» (metadata.requestType=exchange) — task 69cc5d36
+export type WorkTypeFilter = "all" | "exchange";
+export type PreparationWorkType = "normal" | "exchange";
 export type SortBy = "createdAt" | "totalUnits" | "totalValue";
 export type SortOrder = "asc" | "desc";
 
@@ -283,6 +288,8 @@ export interface ApiOrderResponse {
   printedAt?: string | null;
   originalOrderId?: string | null;
   originalOrderNumber?: string | null;
+  workType?: PreparationWorkType;
+  requestType?: string | null;
 }
 
 export interface ApiInventoryResponse {
