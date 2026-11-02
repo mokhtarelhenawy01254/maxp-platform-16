@@ -56,6 +56,23 @@ export const ShareSampleModal: React.FC<ShareSampleModalProps> = ({
       setLoading(true);
       setActionError(null);
       const res = await manufacturingApi.listSampleShareLinks(sample.id);
+      if (res.length === 0 && sample.customerPortalUrl) {
+        const parts = sample.customerPortalUrl.split('/');
+        const token = parts[parts.length - 1];
+        if (token) {
+          setLinks([{
+            id: 'auto_cust',
+            companyId: sample.companyId,
+            sampleOrderId: sample.id,
+            kind: 'CUSTOMER',
+            token,
+            url: sample.customerPortalUrl,
+            views: 0,
+            createdAt: sample.createdAt || new Date().toISOString(),
+          }]);
+          return;
+        }
+      }
       setLinks(res);
     } catch (err: any) {
       setActionError(err.message || 'حدث خطأ أثناء تحميل روابط المشاركة');

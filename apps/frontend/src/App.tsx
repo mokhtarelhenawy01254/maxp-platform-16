@@ -630,6 +630,9 @@ const CustomerPortalPage = React.lazy(
 const SampleSharePage = React.lazy(
   () => import("./pages/share/SampleSharePage"),
 );
+const ProductionSharePage = React.lazy(
+  () => import("./pages/share/ProductionSharePage"),
+);
 
 const ProductLandingPages = React.lazy(
   () => import("./pages/advertising/ProductLandingPages"),
@@ -2330,6 +2333,14 @@ const AppContent = () => {
               element={
                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
                   <SampleSharePage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/portal/production/:token"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <ProductionSharePage />
                 </React.Suspense>
               }
             />

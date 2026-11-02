@@ -21,6 +21,16 @@ const ManufacturingService = require('./manufacturingService');
 const ManufacturingNotificationService = require('./manufacturingNotificationService');
 const sampleComponentMath = require('./sampleComponentMath');
 
+let ManufacturingSampleShareService;
+function getSampleShareService() {
+  if (!ManufacturingSampleShareService) {
+    try {
+      ManufacturingSampleShareService = require('./manufacturingSampleShareService');
+    } catch (_) {}
+  }
+  return ManufacturingSampleShareService;
+}
+
 const round2 = (val) => Math.round((Number(val) || 0) * 100) / 100;
 
 const normalizeExpenseName = (v) => String(v || '').trim().replace(/\s+/g, ' ').slice(0, 100);
@@ -532,11 +542,28 @@ class ManufacturingSampleService {
       });
     }
 
+    let customerPortalUrl = null;
+    try {
+      const activeLink = await prisma.sampleShareLink.findFirst({
+        where: {
+          sampleOrderId: id,
+          companyId,
+          kind: 'CUSTOMER',
+          revokedAt: null,
+        },
+        select: { token: true },
+      });
+      if (activeLink?.token) {
+        customerPortalUrl = `/share/sample/${activeLink.token}`;
+      }
+    } catch (_) {}
+
     const received = sample.sampleReceived === true;
     const overdueDays = overdueDaysOf(sample, received);
     return this.decorateTotals({
       ...sample,
       convertedOrder,
+      customerPortalUrl,
       remaining: remainingOf(sample),
       isOverdue: overdueDays > 0,
       overdueDays,
@@ -729,8 +756,27 @@ class ManufacturingSampleService {
             overdueDays,
           });
         });
-        ManufacturingNotificationService.emit('SAMPLE_CREATED', { companyId, sampleOrder: created, actorId: user?.id }).catch(() => {});
-        return created;
+
+        let customerPortalUrl = null;
+        let portalWarning = null;
+        try {
+          const shareService = getSampleShareService();
+          if (shareService?.generateLink) {
+            const linkData = await shareService.generateLink(companyId, user, created.id, { kind: 'CUSTOMER' });
+            customerPortalUrl = linkData?.url || null;
+          }
+        } catch (linkErr) {
+          portalWarning = linkErr?.message || 'فشل توليد رابط بوابة العميل';
+        }
+
+        const sampleWithPortal = {
+          ...created,
+          customerPortalUrl,
+          ...(portalWarning ? { portalWarning } : {}),
+        };
+
+        ManufacturingNotificationService.emit('SAMPLE_CREATED', { companyId, sampleOrder: sampleWithPortal, actorId: user?.id }).catch(() => {});
+        return sampleWithPortal;
       } catch (err) {
         if (err.code === 'P2002' && attempts < 5) {
           // Unique constraint collision on sampleNumber -> retry next sequence

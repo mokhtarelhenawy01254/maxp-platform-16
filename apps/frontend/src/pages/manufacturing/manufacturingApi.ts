@@ -719,6 +719,7 @@ export interface ProductionOrder {
   totalCost: number;
   unitCost: number;
   notes?: string | null;
+  publicToken?: string | null;
   // Contract Manufacturing (Wave 1) Fields
   customerOrderId?: string | null;
   customerOrder?: {
@@ -1038,6 +1039,7 @@ export interface SampleOrder {
   updatedAt: string;
   stages?: SampleOrderStage[];
   attachments?: SampleOrderAttachment[];
+  customerPortalUrl?: string | null;
 }
 
 
@@ -2614,4 +2616,28 @@ export interface MfgNotificationLog {
   updatedAt?: string;
 }
 
+// ===== Public production order tracking (HZ-F) =====
+export interface PublicProductionOrderData {
+  orderNumber: string;
+  status: string;
+  statusLabelAr: string;
+  orderType?: string | null;
+  brandName?: string | null;
+  plannedQuantity: number;
+  producedQuantity: number;
+  startDate?: string | null;
+  dueDate?: string | null;
+  stages: Array<{ name: string; status: string; completedAt?: string | null }>;
+  updatedAt?: string | null;
+}
 
+export const publicProductionApi = {
+  get: async (token: string): Promise<PublicProductionOrderData> => {
+    const res = await apiClient.get(`/public/production-orders/${token}`, {
+      _skipAuthHeader: true,
+      _skipAuthRefresh: true,
+      _skipErrorToast: true,
+    } as any);
+    return res.data?.data;
+  },
+};

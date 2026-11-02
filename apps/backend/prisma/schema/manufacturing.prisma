@@ -221,6 +221,7 @@ model ProductionOrder {
   createdById        String?
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
+  publicToken        String?                       @unique
 
   // Contract Manufacturing Layer (الدفعة 1: طبقة التعاقد)
   customerOrderId    String?
