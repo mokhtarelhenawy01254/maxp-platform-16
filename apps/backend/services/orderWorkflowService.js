@@ -963,6 +963,22 @@ class OrderWorkflowService {
             return `تحديث حالة الطلب إلى ${toName || 'الحالة المحددة'}`;
         };
 
+        const formatReturnActionName = (action) => {
+            const map = {
+                CREATED: 'إنشاء طلب إرجاع',
+                REQUESTED: 'طلب استرجاع',
+                SUBMITTED: 'تقديم طلب إرجاع',
+                APPROVED: 'الموافقة على المرتجع',
+                REJECTED: 'رفض المرتجع',
+                RECEIVED: 'استلام المرتجع بالمخزن',
+                INSPECTED: 'فحص المرتجع',
+                REFUNDED: 'استرداد المبلغ للعميل',
+                CANCELLED: 'إلغاء المرتجع',
+                UPDATED: 'تحديث حالة المرتجع'
+            };
+            return map[action] || action || 'حركة مرتجع';
+        };
+
         // =========================================================================
         // SOURCE 1: 🛡️ Requirement 3 — «تجاوز بصلاحية» (OrderWorkflowAuditLog)
         // =========================================================================
@@ -1069,22 +1085,6 @@ class OrderWorkflowService {
                     returnWhere.createdAt.lte = end;
                 }
             }
-
-            const formatReturnActionName = (action) => {
-                const map = {
-                    CREATED: 'إنشاء طلب إرجاع',
-                    REQUESTED: 'طلب استرجاع',
-                    SUBMITTED: 'تقديم طلب إرجاع',
-                    APPROVED: 'الموافقة على المرتجع',
-                    REJECTED: 'رفض المرتجع',
-                    RECEIVED: 'استلام المرتجع بالمخزن',
-                    INSPECTED: 'فحص المرتجع',
-                    REFUNDED: 'استرداد المبلغ للعميل',
-                    CANCELLED: 'إلغاء المرتجع',
-                    UPDATED: 'تحديث حالة المرتجع'
-                };
-                return map[action] || action || 'حركة مرتجع';
-            };
 
             const [total, rawReturnLogs, todayCount] = await Promise.all([
                 this.prisma.returnActivityLog.count({ where: returnWhere }),
@@ -1459,27 +1459,185 @@ class OrderWorkflowService {
             };
         });
 
-        // 🛡️ Requirement 7: When on ALL and page 0, merge recent returns if any to ensure visibility
+        // 🛡️ Requirement 7: When on ALL and page 0, merge recent returns and workflow audit logs to ensure visibility
         let finalLogs = logs;
         let finalTotal = total;
         let finalTodayCount = todayCount;
 
-        if ((!changeType || changeType === 'ALL') && offset === 0 && !cursor) {
+        if ((!changeType || changeType === 'ALL' || (typeof changeType === 'string' && changeType.toUpperCase() === 'ALL')) && offset === 0 && !cursor) {
+            const returnWhere = {
+                returnRequest: { companyId }
+            };
+            const auditWhere = {
+                companyId
+            };
+
+            if (orderNumber && orderNumber.trim()) {
+                const num = orderNumber.trim();
+                returnWhere.returnRequest.order = {
+                    orderNumber: { contains: num, mode: 'insensitive' }
+                };
+                auditWhere.order = {
+                    orderNumber: { contains: num, mode: 'insensitive' }
+                };
+            }
+
+            if (userId && userId !== 'ALL' && userId !== '') {
+                returnWhere.userId = userId;
+                auditWhere.changedBy = userId;
+            }
+
+            if (startDate || endDate) {
+                const dateCond = {};
+                if (startDate) dateCond.gte = new Date(startDate);
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    dateCond.lte = end;
+                }
+                returnWhere.createdAt = dateCond;
+                auditWhere.createdAt = dateCond;
+            }
+
+            const extraLogs = [];
+
+            // 1. Fetch ReturnActivityLog rows & count safely
             try {
-                const [returnsCount, auditCount] = await Promise.all([
-                    this.prisma.returnActivityLog.count({ where: { returnRequest: { companyId } } }).catch(() => 0),
-                    this.prisma.orderWorkflowAuditLog.count({ where: { companyId } }).catch(() => 0)
+                const [returnsCount, rawReturnLogs] = await Promise.all([
+                    this.prisma.returnActivityLog.count({ where: returnWhere }),
+                    this.prisma.returnActivityLog.findMany({
+                        where: returnWhere,
+                        include: {
+                            returnRequest: {
+                                include: {
+                                    order: {
+                                        select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true }
+                                    }
+                                }
+                            },
+                            user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+                        },
+                        orderBy: [ { createdAt: 'desc' }, { id: 'desc' } ],
+                        take: limit
+                    })
                 ]);
-                finalTotal = total + returnsCount + auditCount;
-            } catch (mergeErr) {
-                // Keep base total
+
+                const mappedReturnLogs = rawReturnLogs.map(l => {
+                    const actionName = formatReturnActionName(l.action);
+                    const user = resolveActor(l.userId, null, l.user);
+                    return {
+                        id: l.id,
+                        orderId: l.returnRequest?.orderId,
+                        createdAt: l.createdAt,
+                        changeType: 'return',
+                        reason: resolveReason(l.details, 'return', 'طلب إرجاع', actionName),
+                        fromStatus: {
+                            code: 'RETURN_REQ',
+                            name: 'طلب إرجاع',
+                            color: '#E11D48'
+                        },
+                        toStatus: {
+                            code: l.action,
+                            name: actionName,
+                            color: '#E11D48'
+                        },
+                        order: l.returnRequest?.order || null,
+                        user,
+                        approver: null
+                    };
+                });
+
+                extraLogs.push(...mappedReturnLogs);
+                finalTotal += returnsCount;
+            } catch (err) {
+                console.warn('[OrderWorkflowService] Failed to fetch return logs for ALL:', err.message);
+            }
+
+            // 2. Fetch OrderWorkflowAuditLog rows & count safely
+            try {
+                const [auditCount, rawAuditLogs] = await Promise.all([
+                    this.prisma.orderWorkflowAuditLog.count({ where: auditWhere }),
+                    this.prisma.orderWorkflowAuditLog.findMany({
+                        where: auditWhere,
+                        include: {
+                            order: {
+                                select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true }
+                            },
+                            fromStatus: true,
+                            toStatus: true,
+                            user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+                            approver: { select: { id: true, firstName: true, lastName: true } }
+                        },
+                        orderBy: [ { createdAt: 'desc' }, { id: 'desc' } ],
+                        take: limit
+                    })
+                ]);
+
+                const mappedAuditLogs = rawAuditLogs.map(l => {
+                    const fromStatus = resolveStatus(l.fromStatus?.code || '');
+                    const toStatus = resolveStatus(l.toStatus?.code || '');
+                    const user = resolveActor(l.changedBy, null, l.user);
+                    const isSameStatus = Boolean(
+                        l.fromStatus?.code &&
+                        l.toStatus?.code &&
+                        l.fromStatus.code.toUpperCase() === l.toStatus.code.toUpperCase()
+                    );
+                    const detectedType = l.changeType === 'data_update' || isSameStatus
+                        ? 'data_update'
+                        : (l.changeType || 'override');
+
+                    return {
+                        id: l.id,
+                        orderId: l.orderId,
+                        createdAt: l.createdAt,
+                        changeType: detectedType,
+                        reason: resolveReason(l.reason, detectedType, fromStatus.name, toStatus.name),
+                        fromStatus,
+                        toStatus,
+                        order: l.order || null,
+                        user,
+                        approver: l.approver ? {
+                            id: l.approvedBy,
+                            name: `${l.approver.firstName || ''} ${l.approver.lastName || ''}`.trim()
+                        } : null
+                    };
+                });
+
+                extraLogs.push(...mappedAuditLogs);
+                finalTotal += auditCount;
+            } catch (err) {
+                console.warn('[OrderWorkflowService] Failed to fetch audit logs for ALL:', err.message);
+            }
+
+            // 3. Merge, sort desc by createdAt with id tiebreaker, deduplicate, and limit
+            if (extraLogs.length > 0) {
+                const combined = [...logs, ...extraLogs];
+                combined.sort((a, b) => {
+                    const timeA = new Date(a.createdAt).getTime();
+                    const timeB = new Date(b.createdAt).getTime();
+                    if (timeB !== timeA) {
+                        return timeB - timeA;
+                    }
+                    return String(b.id || '').localeCompare(String(a.id || ''));
+                });
+
+                const seenIds = new Set();
+                const merged = [];
+                for (const item of combined) {
+                    if (!item?.id || !seenIds.has(item.id)) {
+                        if (item?.id) seenIds.add(item.id);
+                        merged.push(item);
+                        if (merged.length === limit) break;
+                    }
+                }
+                finalLogs = merged;
             }
         }
 
         return {
             logs: finalLogs,
             total: finalTotal,
-            nextCursor: logs.length === limit ? logs[logs.length - 1].id : null,
+            nextCursor: finalLogs.length === limit ? finalLogs[finalLogs.length - 1].id : null,
             stats: {
                 total: finalTotal,
                 todayCount: finalTodayCount
