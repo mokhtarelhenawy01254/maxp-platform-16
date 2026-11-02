@@ -156,11 +156,11 @@ export const LandingSystemsShowcase: React.FC = () => {
             <span className="text-zinc-400 font-normal">تغطي كل مرحلة في تجارتك.</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-zinc-400 leading-relaxed">
-            استعرض الأنظمة الستة الأساسية التي تحل المشاكل الأكثر تكلفة في التجارة المصرية — اختر أي نظام لمعاينة تفاصيله ولوحة تشغيله.
+            استعرض الأنظمة الستة الأساسية التي تحل المشاكل الأكثر تكلفة في التجارة المصرية. اختر أي نظام لمعاينة تفاصيله ولوحة تشغيله.
           </p>
         </div>
 
-        {/* 6 Systems Navigation Strip — Horizontal Smooth Scroll on Mobile */}
+        {/* 6 Systems Navigation Strip - Horizontal Smooth Scroll on Mobile */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-none border-b border-white/[0.06]">
           {SYSTEMS.map((system) => {
             const isActive = system.id === activeSystemId;
@@ -196,7 +196,7 @@ export const LandingSystemsShowcase: React.FC = () => {
               {activeSystem.headline}
             </h3>
 
-            {/* Problem & Solution Flow — Open Hairline Dividers (NO BOX IN BOX) */}
+            {/* Problem & Solution Flow - Open Hairline Dividers (NO BOX IN BOX) */}
             <div className="space-y-4 pt-2">
               <div className="border-r-2 border-red-500/50 pr-4 py-1">
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-red-400 mb-1">

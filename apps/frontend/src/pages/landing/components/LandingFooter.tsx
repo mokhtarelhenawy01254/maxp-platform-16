@@ -19,7 +19,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
     };
 
   return (
-    <footer className="relative border-t border-white/[0.08] bg-[#050505] pt-20 pb-12 overflow-hidden">
+    <footer className="relative border-t border-white/[0.08] bg-[#050505] pt-20 pb-28 sm:pb-16 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Pre-footer Open Action Section (Zero Box-in-Box) */}
@@ -76,7 +76,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
           </div>
         </div>
 
-        {/* Footer Navigation Columns — Open Clean Grid */}
+        {/* Footer Navigation Columns - Open Clean Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 text-xs">
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">

@@ -275,7 +275,7 @@ export const LandingLivePlayground: React.FC = () => {
 
                     <div className="p-3 rounded-lg bg-zinc-900 border border-white/[0.05]">
                       <span className="text-zinc-500 block text-[10px] mb-1">العميل والعنوان</span>
-                      <span className="text-white block font-sans font-bold">أحمد سامي — 01029384756</span>
+                      <span className="text-white block font-sans font-bold">أحمد سامي (01029384756)</span>
                       <span className="text-zinc-400 text-[11px] font-sans">القاهرة • مدينة نصر • شارع مكرم عبيد</span>
                     </div>
 

@@ -48,7 +48,7 @@ export const KhemetLuxeHeader: React.FC<KhemetLuxeHeaderProps> = ({ controller }
         <div className="container px-4 md:px-6">
           <div
             className="flex items-center justify-between gap-4 py-5"
-            dir="ltr"
+            dir={theme.direction || "rtl"}
           >
             <StorefrontHomeLink
               {...brandHomeLinkProps}
