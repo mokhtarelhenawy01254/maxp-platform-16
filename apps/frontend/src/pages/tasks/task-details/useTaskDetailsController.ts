@@ -22,6 +22,9 @@ export const useTaskDetailsController = () => {
   const isApprover = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(user?.role || "");
 
   const [task, setTask] = useState<TaskDetails | null>(null);
+  // منشئ المهمة يقدر يعتمد مهمته هو كمان (زي تطبيق الديسكتوب)
+  const isTaskCreator = Boolean(task?.createdByUser?.id && user?.id && task.createdByUser.id === user.id);
+  const canApprove = isApprover || isTaskCreator;
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TaskTabKey>("subtasks");
   const [newComment, setNewComment] = useState("");
@@ -478,6 +481,7 @@ export const useTaskDetailsController = () => {
     id,
     navigate,
     isApprover,
+    canApprove,
     task,
     loading,
     activeTab,

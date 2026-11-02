@@ -321,6 +321,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
           </div>
           <TaskTable
             canApprove={isApprover}
+            approverUserId={user?.id}
             userRole={user?.role}
             onReloadTasks={reloadAll || fetchTasks}
             paginatedTasks={quickFilteredTasks}

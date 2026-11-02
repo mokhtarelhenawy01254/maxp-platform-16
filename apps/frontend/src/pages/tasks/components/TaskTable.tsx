@@ -19,6 +19,7 @@ export type { TaskTableProps };
 
 export const TaskTable: React.FC<TaskTableProps> = ({
   canApprove = true,
+  approverUserId,
   userRole = "",
   onReloadTasks,
   paginatedTasks = [],
@@ -124,7 +125,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               getPriorityText={getPriorityText}
               formatDate={formatDate}
               updateTaskStatus={updateTaskStatus}
-              canApprove={canApprove}
+              canApprove={canApprove || Boolean(approverUserId && task.createdBy === approverUserId)}
               onOpenTask={openTask}
               onEditTask={editTask}
               onDuplicateTask={duplicateTask}
@@ -225,7 +226,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     getPriorityText={getPriorityText}
                     formatDate={formatDate}
                     updateTaskStatus={updateTaskStatus}
-                    canApprove={canApprove}
+                    canApprove={canApprove || Boolean(approverUserId && task.createdBy === approverUserId)}
                     onOpenTask={openTask}
                     onEditTask={editTask}
                     onDuplicateTask={duplicateTask}
