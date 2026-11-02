@@ -783,7 +783,7 @@ export function getAgentSamplePrompts(slug: string): SandboxSample[] {
         {
           label: "استعلام رصيد الإجازات",
           prompt: "عايز أعرف رصيد إجازاتي المتبقي كام يوم سنوي وعارض؟",
-          toolUsed: "hr_leave_balance(user_id='emp_441')",
+          toolUsed: "hr_leave_balance(employee='current_user')",
           response: "أهلاً بحضرتك يا فندم. رصيدك الحالي وفقاً لسجلات شؤون الموظفين:\n- إجازة سنوية: متبقي 14 يوم (من أصل 21 يوم)\n- إجازة عارضة: متبقي 3 أيام (من أصل 6 أيام)\nهل تود تسجيل طلب إجازة لأيام محددة؟",
         },
         {
@@ -795,7 +795,7 @@ export function getAgentSamplePrompts(slug: string): SandboxSample[] {
         {
           label: "استعلام سلفة الراتب",
           prompt: "عايز استعلم عن سجل السلف وهل متاح أطلب سلفة 2000 ج.م؟",
-          toolUsed: "hr_my_advances(user_id='emp_441')",
+          toolUsed: "hr_my_advances(employee='current_user')",
           response: "فحصت سجل السلف لحضرتك: لا توجد أقساط سلف جارية حالياً. الحد الأقصى للسلفة وفقاً للائحة هو 50% من الراتب الأساسي (بحد أقصى 3,000 ج.م). طلب سلفة بمبلغ 2,000 ج.م متاح، وسيتم جدولتها للخصم على قسطين بعد تأكيدك وموافقة الإدارة المالية.",
         },
       ];

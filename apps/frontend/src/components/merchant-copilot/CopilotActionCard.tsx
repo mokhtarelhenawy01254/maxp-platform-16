@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, XCircle, Loader2, ShieldCheck, Check, X } from 'lucide-react';
 import type { ActionCardData } from './types';
 import { cn } from '@/lib/utils';
+import { redactActionParams } from './redactActionParams';
 
 interface CopilotActionCardProps {
   card: ActionCardData;
@@ -10,6 +11,8 @@ interface CopilotActionCardProps {
 
 export const CopilotActionCard: React.FC<CopilotActionCardProps> = ({ card, onDecision }) => {
   const [loading, setLoading] = useState(false);
+  const visibleParams = redactActionParams(card.parameters);
+  const paramEntries = Object.entries(visibleParams);
 
   const handleAction = async (approved: boolean) => {
     if (loading || card.status !== 'pending') return;
@@ -79,9 +82,9 @@ export const CopilotActionCard: React.FC<CopilotActionCardProps> = ({ card, onDe
         {card.summary}
       </p>
 
-      {card.parameters && Object.keys(card.parameters).length > 0 && (
+      {paramEntries.length > 0 && (
         <div className="mt-2.5 rounded-lg border border-border/60 bg-muted/30 p-2.5 font-mono text-[11px] tabular-nums space-y-1.5">
-          {Object.entries(card.parameters).map(([key, val]) => (
+          {paramEntries.map(([key, val]) => (
             <div key={key} className="flex justify-between items-center text-muted-foreground">
               <span className="font-sans text-muted-foreground">{key}:</span>
               <span className="font-semibold text-foreground">
