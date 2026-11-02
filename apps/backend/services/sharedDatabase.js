@@ -311,8 +311,59 @@ function createStablePrismaClient() {
             }
           }
 
+          // 1. Capture target ids before updateMany on Order / GuestOrder when status is modified
+          let capturedLinkedOrderIds = null;
+          const isStatusString = typeof args?.data?.status === 'string' && args.data.status.trim().length > 0;
+          if (operation === 'updateMany' && (model === 'Order' || model === 'GuestOrder') && isStatusString) {
+            try {
+              if (model === 'Order' && client.order) {
+                capturedLinkedOrderIds = await client.order.findMany({
+                  where: args.where,
+                  select: { id: true, companyId: true }
+                });
+              } else if (model === 'GuestOrder' && client.guestOrder) {
+                capturedLinkedOrderIds = await client.guestOrder.findMany({
+                  where: args.where,
+                  select: { id: true, companyId: true }
+                });
+              }
+            } catch (_) {
+              // Swallow errors
+            }
+          }
+
           // ⚡ Execute single native SQL query through connection pool (Zero Transaction Overhead)
-          return query(args);
+          const result = await query(args);
+
+          // 2. Schedule linked order status sync after successful update / updateMany with status
+          if (result && (model === 'Order' || model === 'GuestOrder') && isStatusString && (operation === 'update' || operation === 'updateMany')) {
+            try {
+              const { scheduleMirror } = require('./linkedOrderSyncService');
+              if (operation === 'update' && result.id) {
+                scheduleMirror({
+                  model,
+                  orderId: result.id,
+                  companyId: result.companyId || companyId,
+                  newStatus: args.data.status
+                });
+              } else if (operation === 'updateMany' && Array.isArray(capturedLinkedOrderIds)) {
+                for (const item of capturedLinkedOrderIds) {
+                  if (item && item.id) {
+                    scheduleMirror({
+                      model,
+                      orderId: item.id,
+                      companyId: item.companyId || companyId,
+                      newStatus: args.data.status
+                    });
+                  }
+                }
+              }
+            } catch (_) {
+              // Swallow errors
+            }
+          }
+
+          return result;
         },
         $queryRaw: async ({ args, query }) => {
           queryCount++;

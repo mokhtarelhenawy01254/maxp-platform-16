@@ -130,6 +130,23 @@ class InternalSyncService {
     }
 
     /**
+     * Normalizes paymentMethod strings to valid Prisma PaymentMethod enum values.
+     * CASH|COD -> CASH, CARD|CREDIT_CARD|VISA|MASTERCARD -> CREDIT_CARD,
+     * WALLET|VODAFONE_CASH|ORANGE_CASH -> WALLET, INSTAPAY -> INSTAPAY,
+     * BANK_TRANSFER|TRANSFERS -> BANK_TRANSFER; anything else -> CASH.
+     */
+    _normalizePaymentMethod(value) {
+        if (!value || typeof value !== 'string') return 'CASH';
+        const v = value.trim().toUpperCase();
+        if (v === 'CASH' || v === 'COD') return 'CASH';
+        if (v === 'CARD' || v === 'CREDIT_CARD' || v === 'VISA' || v === 'MASTERCARD') return 'CREDIT_CARD';
+        if (v === 'WALLET' || v === 'VODAFONE_CASH' || v === 'ORANGE_CASH') return 'WALLET';
+        if (v === 'INSTAPAY') return 'INSTAPAY';
+        if (v === 'BANK_TRANSFER' || v === 'TRANSFERS') return 'BANK_TRANSFER';
+        return 'CASH';
+    }
+
+    /**
      * Matches a provider product variant for a synced order item using its
      * extracted color/size (metadata attributeValues first, then variant name).
      * Returns the provider-side variant so order items get the correct FK.
@@ -148,11 +165,16 @@ class InternalSyncService {
             const attributeValues = metadata.attributeValues || {};
 
             const vColor = String(
-                attributeValues['اللون'] || attributeValues.color || attributeValues.colour || variant.color || ''
+                attributeValues['اللون'] || attributeValues.color || attributeValues.colour ||
+                attributeValues['النوع'] || attributeValues.type || attributeValues.Type ||
+                variant.color || ''
             ).trim();
             const vSize = String(
                 attributeValues['المقاس'] != null ? attributeValues['المقاس']
                 : attributeValues.size != null ? attributeValues.size
+                : attributeValues['عدد_القطع'] != null ? attributeValues['عدد_القطع']
+                : attributeValues.pieces != null ? attributeValues.pieces
+                : attributeValues.Pieces != null ? attributeValues.Pieces
                 : variant.size != null ? variant.size
                 : ''
             ).trim();
@@ -435,7 +457,9 @@ class InternalSyncService {
                                 quantity: item.quantity,
                                 price: item.price,
                                 total: (item.price * item.quantity),
-                                ...this._extractItemVariant(item)
+                                ...this._extractItemVariant(item),
+                                originalItemId: item.id || null,
+                                metadata: item.metadata
                             });
                         }
 
@@ -451,7 +475,15 @@ class InternalSyncService {
                             },
                             orderItems: normalizedItems,
                             paymentMethod: guestOrder.paymentMethod,
-                            shippingAddress: guestOrder.shippingAddress
+                            shippingAddress: guestOrder.shippingAddress,
+                            notes: guestOrder.notes,
+                            metadata: guestOrder.metadata,
+                            shipping: Number(guestOrder.shippingCost || 0),
+                            discount: Number(guestOrder.discountAmount || 0),
+                            tax: 0,
+                            currency: 'EGP',
+                            total: Number(guestOrder.finalTotal || 0),
+                            paymentStatus: null
                         };
                     }
                 }
@@ -488,7 +520,8 @@ class InternalSyncService {
                     for (const conn of connections) {
                         const originalProduct = await tenantContext.run(conn.providerId, async () => {
                             return await this.prisma.product.findUnique({
-                                where: { id: item.product.externalId }
+                                where: { id: item.product.externalId },
+                                include: { productVariants: true }
                             });
                         });
 
@@ -499,6 +532,8 @@ class InternalSyncService {
                             }
                             providerItemsMap.get(conn.providerId).push({
                                 originalProduct,
+                                originalItem: item,
+                                originalItemId: item.originalItemId || item.id || null,
                                 quantity: item.quantity,
                                 price: item.price,
                                 total: item.total,
@@ -554,8 +589,33 @@ class InternalSyncService {
                                 .filter(Boolean).join(' ') || null;
                         }
 
+                        const shippingAmount = Number(order.shipping || 0);
+                        const discountAmount = Number(order.discount || 0);
+                        const taxAmount = Number(order.tax || 0);
+                        const currency = order.currency || 'EGP';
+
                         const subtotal = items.reduce((acc, curr) => acc + Number(curr.total), 0);
-                        const shipping = 0;
+                        let shipping = 0;
+                        let discount = 0;
+                        let tax = 0;
+                        let total = 0;
+
+                        if (providerItemsMap.size === 1) {
+                            shipping = shippingAmount;
+                            discount = discountAmount;
+                            tax = taxAmount;
+                            total = Number(order.total !== undefined && order.total !== null ? order.total : (subtotal + shipping - discount + tax));
+                        } else {
+                            const orderSubtotal = Number(order.subtotal || subtotal);
+                            const ratio = orderSubtotal > 0 ? (subtotal / orderSubtotal) : (1 / providerItemsMap.size);
+                            const shippingShare = Math.max(0, Number((shippingAmount * ratio).toFixed(2)));
+                            const discountShare = Math.max(0, Number((discountAmount * ratio).toFixed(2)));
+                            const taxShare = Math.max(0, Number((taxAmount * ratio).toFixed(2)));
+                            shipping = shippingShare;
+                            discount = discountShare;
+                            tax = taxShare;
+                            total = Math.max(0, Number((subtotal + shippingShare - discountShare + taxShare).toFixed(2)));
+                        }
 
                         // Parse shipping address from original order
                         let parsedAddress = {};
@@ -572,6 +632,25 @@ class InternalSyncService {
                         const orderService = require('./orderService');
                         const orderNumber = await orderService.generateOrderNumber(providerId);
 
+                        const autoNote = `طلب آلي من متجر أفليت (شركة: ${consumerId}). كود المسوق: ${affiliate.affiliateCode}. رقم الطلب الأصلي: ${order.orderNumber}`;
+                        const originalNotes = typeof order.notes === 'string' ? order.notes.trim() : '';
+                        const notes = originalNotes ? `${autoNote}\n---\n${originalNotes}` : autoNote;
+
+                        const srcMeta = this._safeParseJson(order.metadata) || {};
+                        const metaPick = {};
+                        for (const k of ['customFields', 'customAttributes', 'customerNotes', 'originalNotes', 'car_model', 'carModel', 'attributeValues', 'notes']) {
+                            if (srcMeta[k] !== undefined) metaPick[k] = srcMeta[k];
+                        }
+                        const orderMetadata = JSON.stringify({
+                            ...metaPick,
+                            internalSync: {
+                                sourceCompanyId: consumerId,
+                                sourceOrderId: orderId,
+                                sourceOrderNumber: order.orderNumber,
+                                pushedAt: new Date().toISOString()
+                            }
+                        });
+
                         const providerOrder = await this.prisma.order.create({
                             data: {
                                 orderNumber: `${orderNumber}-AFF-${consumerId.slice(-4)}`,
@@ -583,15 +662,19 @@ class InternalSyncService {
                                 orderSource: 'AFFILIATE_DIRECT',
                                 subtotal,
                                 shipping,
-                                total: subtotal + shipping,
+                                discount,
+                                tax,
+                                total,
+                                currency,
                                 status: 'PENDING',
                                 paymentStatus: 'PENDING',
-                                paymentMethod: order.paymentMethod,
+                                paymentMethod: this._normalizePaymentMethod(order.paymentMethod),
                                 shippingAddress: order.shippingAddress,
                                 governorate: parsedAddress.governorate || order.governorate || null,
                                 city: parsedAddress.city || parsedAddress.area || order.city || null,
                                 customerAddress: parsedAddress.address || order.customerAddress || null,
-                                notes: `طلب آلي من متجر أفليت (شركة: ${consumerId}). كود المسوق: ${affiliate.affiliateCode}. رقم الطلب الأصلي: ${order.orderNumber}`,
+                                notes,
+                                metadata: orderMetadata,
                                 sourceType: 'internal_push',
                                 externalId: orderId,
                                 orderItems: {
@@ -600,6 +683,16 @@ class InternalSyncService {
                                             { productColor: it.productColor, productSize: it.productSize },
                                             it.originalProduct
                                         );
+                                        const itemMeta = this._safeParseJson(it.originalItem?.metadata) || {};
+                                        const attributeValues = itemMeta.attributeValues || null;
+                                        const itemMetadataStr = JSON.stringify({
+                                            ...itemMeta,
+                                            attributeValues,
+                                            car_model: itemMeta.car_model || attributeValues?.['car_model'] || attributeValues?.['carModel'] || null,
+                                            pushedFrom: consumerId,
+                                            originalItemId: it.originalItemId || null
+                                        });
+
                                         return {
                                             productId: it.originalProduct.id,
                                             productName: it.originalProduct.name || null,
@@ -612,7 +705,8 @@ class InternalSyncService {
                                             productColor: it.productColor || null,
                                             productSize: it.productSize || null,
                                             variantId: matchedVariant ? matchedVariant.id : null,
-                                            productImage: it.productImage || this._extractPrimaryImage(it.originalProduct) || null
+                                            productImage: it.productImage || this._extractPrimaryImage(it.originalProduct) || null,
+                                            metadata: itemMetadataStr
                                         };
                                     })
                                 }
