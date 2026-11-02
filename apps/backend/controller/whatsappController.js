@@ -2576,7 +2576,21 @@ async function getSettings(req, res) {
             });
         }
 
-        res.json({ settings });
+        const fbConfig = facebookAppConfig.getFacebookOAuthConfig();
+        const defaultWebhookVerifyToken = fbConfig.whatsappWebhookVerifyToken
+            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
+            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
+        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
+
+        res.json({
+            settings,
+            metaWebhook: {
+                webhookUrl,
+                verifyToken: defaultWebhookVerifyToken,
+                alternativeVerifyToken: 'maxp_verify_token',
+                fields: ['messages']
+            }
+        });
     } catch (error) {
         console.error('❌ Error getting settings:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب الإعدادات' });
@@ -5508,6 +5522,8 @@ module.exports = {
     getFacebookConfig,
     facebookConnect,
     facebookEmbeddedConnect,
+    getMetaWebhookInfo,
+    registerPendingMetaVerifyToken,
 
     // Advanced Baileys Features (Call Shield, Polls, Pin, Interactive)
     updateCallShield,
@@ -5673,7 +5689,9 @@ async function getFacebookConfig(req, res) {
         const configId = config.whatsappConfigId || config.configId;
 
         const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
-        const defaultWebhookVerifyToken = config.whatsappWebhookVerifyToken || null;
+        const defaultWebhookVerifyToken = config.whatsappWebhookVerifyToken
+            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
+            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
 
         if (!appId || facebookAppConfig.isPlaceholderFacebookCredential(appId)) {
             return res.status(200).json({
@@ -5697,6 +5715,42 @@ async function getFacebookConfig(req, res) {
     } catch (error) {
         console.error('❌ Error getting Facebook config:', error.message);
         res.status(500).json({ error: 'فشل تحميل إعدادات Facebook' });
+    }
+}
+
+async function getMetaWebhookInfo(req, res) {
+    try {
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const verifyToken = config.whatsappWebhookVerifyToken
+            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
+            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
+        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
+
+        res.json({
+            success: true,
+            webhookUrl,
+            verifyToken,
+            alternativeVerifyToken: 'maxp_verify_token',
+            fields: ['messages']
+        });
+    } catch (error) {
+        console.error('❌ Error getting Meta webhook info:', error.message);
+        res.status(500).json({ error: 'فشل تحميل بيانات الويب هوك' });
+    }
+}
+
+async function registerPendingMetaVerifyToken(req, res) {
+    try {
+        const { token } = req.body || {};
+        if (token && typeof token === 'string' && token.trim().length >= 4) {
+            const whatsappMetaWebhookController = require('./whatsappMetaWebhookController');
+            if (typeof whatsappMetaWebhookController.registerPendingVerifyToken === 'function') {
+                whatsappMetaWebhookController.registerPendingVerifyToken(token.trim());
+            }
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'فشل تسجيل رمز التحقق' });
     }
 }
 

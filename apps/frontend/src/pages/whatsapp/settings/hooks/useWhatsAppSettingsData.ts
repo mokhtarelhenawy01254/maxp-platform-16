@@ -86,7 +86,11 @@ export function useWhatsAppSettingsData({
   const [newMetaBusinessId, setNewMetaBusinessId] = useState("");
   const [newMetaAccessToken, setNewMetaAccessToken] = useState("");
   const [newMetaApiVersion, setNewMetaApiVersion] = useState("v25.0");
-  const [newMetaWebhookVerifyToken, setNewMetaWebhookVerifyToken] = useState("");
+  const [platformVerifyToken, setPlatformVerifyToken] = useState<string>("61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314");
+  const [platformWebhookUrl, setPlatformWebhookUrl] = useState<string>(
+    () => `${window.location.origin}/api/v1/whatsapp-meta`
+  );
+  const [newMetaWebhookVerifyToken, setNewMetaWebhookVerifyToken] = useState("61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314");
   const [newMetaWebhookSecret, setNewMetaWebhookSecret] = useState("");
   const [newMetaDisplayPhoneNumber, setNewMetaDisplayPhoneNumber] = useState("");
   const [webhookDetailsSession, setWebhookDetailsSession] = useState<Session | null>(null);
@@ -153,20 +157,23 @@ export function useWhatsAppSettingsData({
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setNewMetaWebhookVerifyToken(token);
+    void apiClient
+      .post("/whatsapp/meta-webhook-register-token", { token }, withCompanyConfig())
+      .catch(() => {});
     return token;
-  }, []);
+  }, [withCompanyConfig]);
 
   const getMetaWebhookUrl = useCallback(
-    () => `${window.location.origin}/api/v1/whatsapp-meta`,
-    [],
+    () => platformWebhookUrl || `${window.location.origin}/api/v1/whatsapp-meta`,
+    [platformWebhookUrl],
   );
 
   const handleOpenCreateSessionDialog = useCallback(() => {
     if (!newMetaWebhookVerifyToken) {
-      generateRandomVerifyToken();
+      setNewMetaWebhookVerifyToken(platformVerifyToken || "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314");
     }
     setCreateSessionDialogOpen(true);
-  }, [newMetaWebhookVerifyToken, generateRandomVerifyToken]);
+  }, [newMetaWebhookVerifyToken, platformVerifyToken]);
 
   const resetNewSessionForm = useCallback(() => {
     setNewSessionName("");
@@ -179,18 +186,13 @@ export function useWhatsAppSettingsData({
     setNewMetaBusinessId("");
     setNewMetaAccessToken("");
     setNewMetaApiVersion("v25.0");
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let token = "";
-    for (let i = 0; i < 16; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setNewMetaWebhookVerifyToken(token);
+    setNewMetaWebhookVerifyToken(platformVerifyToken || "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314");
     setNewMetaWebhookSecret("");
     setNewMetaDisplayPhoneNumber("");
     setWizardStep(1);
     setShowAdvancedMeta(false);
     setShowManualMeta(false);
-  }, []);
+  }, [platformVerifyToken]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -213,7 +215,15 @@ export function useWhatsAppSettingsData({
       }
 
       if (settingsResponse.status === "fulfilled") {
-        setSettings((settingsResponse.value as any).data.settings || null);
+        const resData = (settingsResponse.value as any).data;
+        setSettings(resData.settings || null);
+        if (resData.metaWebhook?.verifyToken) {
+          setPlatformVerifyToken(resData.metaWebhook.verifyToken);
+          setNewMetaWebhookVerifyToken((prev) => (!prev || prev === "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314" ? resData.metaWebhook.verifyToken : prev));
+        }
+        if (resData.metaWebhook?.webhookUrl) {
+          setPlatformWebhookUrl(resData.metaWebhook.webhookUrl);
+        }
       } else {
         setSettings(null);
         showError(
@@ -1012,5 +1022,7 @@ export function useWhatsAppSettingsData({
     openCreateQuickReplyDialog,
     generateRandomVerifyToken,
     getMetaWebhookUrl,
+    platformVerifyToken,
+    platformWebhookUrl,
   };
 }

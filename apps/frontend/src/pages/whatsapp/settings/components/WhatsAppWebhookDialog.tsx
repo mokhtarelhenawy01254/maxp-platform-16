@@ -20,7 +20,8 @@ interface WhatsAppWebhookDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   webhookDetailsSession: Session | null;
-  newMetaWebhookVerifyToken: string;
+  newMetaWebhookVerifyToken?: string;
+  platformVerifyToken?: string;
   getMetaWebhookUrl: () => string;
   onClose: () => void;
 }
@@ -30,9 +31,14 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
   onOpenChange,
   webhookDetailsSession,
   newMetaWebhookVerifyToken,
+  platformVerifyToken,
   getMetaWebhookUrl,
   onClose,
 }) => {
+  const activeVerifyToken =
+    webhookDetailsSession?.metaWebhookVerifyToken?.trim() ||
+    platformVerifyToken?.trim() ||
+    "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314";
   const { t } = useTranslation();
 
   return (
@@ -104,11 +110,7 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
             <div className="flex items-center gap-2">
               <Input
                 readOnly
-                value={
-                  webhookDetailsSession?.metaWebhookVerifyToken ||
-                  newMetaWebhookVerifyToken ||
-                  "maxp_verify_token"
-                }
+                value={activeVerifyToken}
                 className="h-10 bg-[color:var(--color-card)] font-mono text-xs select-all text-[color:var(--color-foreground)]"
                 dir="ltr"
               />
@@ -118,17 +120,28 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
                 size="sm"
                 className="h-10 px-3.5 shrink-0 gap-1.5 rounded-xl border-[color:var(--shell-control-border)]"
                 onClick={() => {
-                  const token =
-                    webhookDetailsSession?.metaWebhookVerifyToken ||
-                    newMetaWebhookVerifyToken ||
-                    "maxp_verify_token";
-                  navigator.clipboard.writeText(token);
+                  navigator.clipboard.writeText(activeVerifyToken);
                   toast.success("تم نسخ رمز التحقق بنجاح");
                 }}
               >
                 <Copy className="size-3.5" />
                 <span className="text-xs">نسخ</span>
               </Button>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-[color:var(--color-muted-foreground)] px-1 pt-0.5">
+              <span>رمز بديل مختصر معتمد:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText("maxp_verify_token");
+                  toast.success("تم نسخ الرمز البديل: maxp_verify_token");
+                }}
+                className="font-mono text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                title="اضغط لنسخ الرمز المختصر"
+              >
+                <code>maxp_verify_token</code>
+                <Copy className="size-2.5" />
+              </button>
             </div>
           </div>
 

@@ -121,6 +121,7 @@ export const WhatsAppSettingsDialogs: React.FC<
         onOpenChange={data.setWebhookDetailsOpen}
         webhookDetailsSession={data.webhookDetailsSession}
         newMetaWebhookVerifyToken={data.newMetaWebhookVerifyToken}
+        platformVerifyToken={data.platformVerifyToken}
         getMetaWebhookUrl={data.getMetaWebhookUrl}
         onClose={() => data.setWebhookDetailsOpen(false)}
       />

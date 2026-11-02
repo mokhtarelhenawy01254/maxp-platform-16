@@ -788,6 +788,10 @@ router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('
 // استلام بيانات Embedded Sign-Up من Facebook SDK وإنشاء جلسة واتساب (WABA + رقم)
 router.post('/facebook/connect-embedded', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.facebookEmbeddedConnect);
 
+// 📡 Meta Webhook Info & Pending Token Registration
+router.get('/meta-webhook-info', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getMetaWebhookInfo);
+router.post('/meta-webhook-register-token', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.registerPendingMetaVerifyToken);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 قوالب الرسائل
 // ═══════════════════════════════════════════════════════════════════════════════

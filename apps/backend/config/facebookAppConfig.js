@@ -112,7 +112,14 @@ const getFacebookOAuthConfig = () => {
     whatsappAppId: chooseCredential(stored.whatsappAppId),
     whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(stored.whatsappConfigId),
-    whatsappWebhookVerifyToken: normalizeCredential(stored.whatsappWebhookVerifyToken),
+    whatsappWebhookVerifyToken:
+      chooseCredential(
+        stored.whatsappWebhookVerifyToken,
+        process.env.META_WA_WEBHOOK_VERIFY_TOKEN,
+        process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+        stored.facebookWebhookVerifyToken,
+        process.env.FACEBOOK_VERIFY_TOKEN
+      ) || "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314",
   };
 };
 
