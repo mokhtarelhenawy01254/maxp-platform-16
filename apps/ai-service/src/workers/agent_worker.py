@@ -1289,7 +1289,11 @@ TASK_HANDLERS = {
 # ── Worker lifecycle ────────────────────────────────────────────────────
 
 
-async def start_worker(queue_name: str = "agent-tasks", poll_interval: float = 0.5) -> None:
+async def start_worker(
+    queue_name: str = "agent-tasks",
+    poll_interval: float = 0.5,
+    pool_size: int | None = None,
+) -> None:
     """Start the background worker loop."""
     logger.info("worker started", queue=queue_name)
 
@@ -1301,7 +1305,7 @@ async def start_worker(queue_name: str = "agent-tasks", poll_interval: float = 0
         else:
             logger.warning("no handler for task type", type=task_type)
 
-    await queue_service.register_worker(queue_name, dispatcher, poll_interval=poll_interval)
+    await queue_service.register_worker(queue_name, dispatcher, poll_interval=poll_interval, pool_size=pool_size)
 
 
 async def enqueue_agent_task(

@@ -7,6 +7,7 @@ const express = require('express');
 const verifyToken = require('../utils/verifyToken');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const agentRuntimeSettingsController = require('../controller/agentRuntimeSettingsController');
 
 const EMPTY_CONTEXT = () => ({ manager: null, agents: [], profiles: [], tools: [], skills: [], inbox: { active: 0, pending: 0 } });
 
@@ -296,6 +297,9 @@ router.get('/inbox', async (req, res) => {
   }
 });
 
+router.get('/runtime-settings', agentRuntimeSettingsController.getRuntimeSettings);
+router.put('/runtime-settings', agentRuntimeSettingsController.updateRuntimeSettings);
+
 router.get('/runtime', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
@@ -319,6 +323,48 @@ router.get('/runtime', async (req, res) => {
       select: { id: true, agentId: true, lockExpiresAt: true },
       take: 50,
     });
+
+    let agents = [];
+    try {
+      const perAgent = await db.aiRuntimeQueueJob.groupBy({
+        by: ['agentId', 'status'],
+        where: { companyId, agentId: { not: null } },
+        _count: { id: true },
+        _max: { startedAt: true },
+      });
+
+      const agentMap = {};
+      for (const row of (perAgent || [])) {
+        if (!row.agentId) continue;
+        if (!agentMap[row.agentId]) {
+          agentMap[row.agentId] = {
+            agentId: row.agentId,
+            running: 0,
+            queued: 0,
+            retrying: 0,
+            dead: 0,
+            lastRunAt: null,
+          };
+        }
+        const entry = agentMap[row.agentId];
+        const count = row._count?.id || 0;
+        if (row.status === 'RUNNING') entry.running += count;
+        else if (row.status === 'PENDING') entry.queued += count;
+        else if (row.status === 'RETRY') entry.retrying += count;
+        else if (row.status === 'DEAD') entry.dead += count;
+
+        const started = row._max?.startedAt;
+        if (started) {
+          if (!entry.lastRunAt || new Date(started) > new Date(entry.lastRunAt)) {
+            entry.lastRunAt = started;
+          }
+        }
+      }
+      agents = Object.values(agentMap);
+    } catch (_) {
+      agents = [];
+    }
+
     return res.json({
       success: true,
       queued: map.PENDING || 0,
@@ -326,6 +372,7 @@ router.get('/runtime', async (req, res) => {
       retrying: map.RETRY || 0,
       dead: map.DEAD || 0,
       stuck: stuck || [],
+      agents,
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

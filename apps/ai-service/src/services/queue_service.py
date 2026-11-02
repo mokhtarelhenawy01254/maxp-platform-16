@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import time
 import uuid
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -47,6 +49,91 @@ class QueueService:
 
     def __init__(self) -> None:
         self._in_memory: dict[str, list[dict[str, Any]]] = {}
+        self._company_max_parallel_cache: dict[str, tuple[int, float]] = {}
+
+    async def get_company_max_parallel(self, company_id: str) -> int:
+        """Read company maxParallel setting with 60-second in-memory cache."""
+        now = time.time()
+        cached = self._company_max_parallel_cache.get(company_id)
+        if cached and cached[1] > now:
+            return cached[0]
+
+        max_p = 3  # default
+        try:
+            session = await self._ensure_session()
+            async with session:
+                stmt = text("""
+                    SELECT settings->'agentRuntime'->>'maxParallel'
+                    FROM companies
+                    WHERE id = :cid
+                """)
+                res = await session.execute(stmt, {"cid": company_id})
+                if hasattr(res, "scalar"):
+                    val = res.scalar()
+                else:
+                    first_row = res.first()
+                    val = first_row[0] if first_row else None
+
+                if val is not None:
+                    try:
+                        parsed = int(val)
+                        if 1 <= parsed <= 10:
+                            max_p = parsed
+                    except (ValueError, TypeError):
+                        pass
+        except Exception as exc:
+            logger.debug("get_company_max_parallel_failed", company_id=company_id, error=str(exc))
+
+        self._company_max_parallel_cache[company_id] = (max_p, now + 60.0)
+        return max_p
+
+    async def get_allowed_companies(self, queue_name: str | None = None) -> list[str] | None:
+        """Find companyIds allowed to reserve jobs based on maxParallel limit."""
+        try:
+            session = await self._ensure_session()
+            async with session:
+                stmt_running = text("""
+                    SELECT "companyId", count(*)
+                    FROM ai_runtime_queue_jobs
+                    WHERE status = 'RUNNING' AND "companyId" IS NOT NULL
+                    GROUP BY 1
+                """)
+                res_running = await session.execute(stmt_running)
+                running_rows = res_running.fetchall() if hasattr(res_running, "fetchall") else (res_running.all() if hasattr(res_running, "all") else [])
+                running_counts: dict[str, int] = {}
+                for r in (running_rows or []):
+                    cid = str(r[0]) if r and r[0] is not None else None
+                    if cid:
+                        running_counts[cid] = int(r[1]) if len(r) > 1 else 0
+
+                if not running_counts:
+                    return None
+
+                capped_companies: set[str] = set()
+                for cid, count in running_counts.items():
+                    max_p = await self.get_company_max_parallel(cid)
+                    if count >= max_p:
+                        capped_companies.add(cid)
+
+                if not capped_companies:
+                    return None
+
+                stmt_pending = text("""
+                    SELECT DISTINCT "companyId"
+                    FROM ai_runtime_queue_jobs
+                    WHERE status IN ('PENDING', 'RETRY')
+                      AND "companyId" IS NOT NULL
+                      AND (:queue_name IS NULL OR channel = :queue_name)
+                """)
+                res_pending = await session.execute(stmt_pending, {"queue_name": queue_name})
+                pending_rows = res_pending.fetchall() if hasattr(res_pending, "fetchall") else (res_pending.all() if hasattr(res_pending, "all") else [])
+                pending_companies = [str(r[0]) for r in (pending_rows or []) if r and r[0] is not None]
+
+                allowed = [cid for cid in pending_companies if cid not in capped_companies]
+                return allowed
+        except Exception as exc:
+            logger.debug("get_allowed_companies_failed", error=str(exc))
+            return None
 
     async def _ensure_session(self):
         try:
@@ -146,8 +233,12 @@ class QueueService:
         self,
         queue_name: str | None = None,
         lease_seconds: int = 300,
+        allowed_companies: list[str] | None = None,
     ) -> dict[str, Any] | None:
         """Atomically reserve a due job with lease lock and per-agent concurrency isolation."""
+        if allowed_companies is not None and len(allowed_companies) == 0:
+            return None
+
         token = str(uuid.uuid4())
         lease_interval = f"{int(lease_seconds)} seconds"
 
@@ -166,12 +257,17 @@ class QueueService:
               WHERE j.status IN ('PENDING', 'RETRY')
                 AND j."availableAt" <= now()
                 AND (:queue_name IS NULL OR j.channel = :queue_name)
+                AND (:allowed IS NULL OR j."companyId" = ANY(:allowed))
                 AND NOT EXISTS (
                   SELECT 1 FROM ai_runtime_queue_jobs r
                   WHERE r.status = 'RUNNING'
                     AND r."agentId" = j."agentId"
                     AND r."agentId" IS NOT NULL
                 )
+                AND (
+                  SELECT count(*) FROM ai_runtime_queue_jobs c
+                  WHERE c.status = 'RUNNING' AND c."companyId" = j."companyId"
+                ) < 25
               ORDER BY j.priority DESC, j."availableAt" ASC
               LIMIT 1
               FOR UPDATE SKIP LOCKED
@@ -186,6 +282,7 @@ class QueueService:
                     "lock_token": token,
                     "lease_interval": lease_interval,
                     "queue_name": queue_name,
+                    "allowed": allowed_companies if allowed_companies is not None else None,
                 })
                 row = res.mappings().first()
                 if not row:
@@ -353,44 +450,62 @@ class QueueService:
         queue_name: str,
         handler: Callable[[dict[str, Any]], None],
         poll_interval: float = 0.5,
+        pool_size: int | None = None,
     ) -> None:
-        """Background worker loop with atomic lease, concurrent heartbeat, and ack/fail."""
-        logger.info("worker registered", queue=queue_name)
+        """Background worker pool loop with atomic lease, concurrent heartbeat, and ack/fail."""
+        if pool_size is None:
+            pool_size = int(os.getenv("AGENT_WORKER_POOL_SIZE", "4"))
 
-        while True:
-            job = await self.reserve(queue_name)
-            if not job:
-                await asyncio.sleep(poll_interval)
-                continue
+        logger.info("worker registered", queue=queue_name, pool_size=pool_size)
 
-            job_id = job["id"]
-            token = job.get("lock_token")
-            logger.info("processing job", queue=queue_name, job_id=job_id)
-
-            stop_heartbeat = asyncio.Event()
-
-            async def _heartbeat_loop():
-                while not stop_heartbeat.is_set():
-                    try:
-                        await asyncio.wait_for(stop_heartbeat.wait(), timeout=60.0)
-                    except asyncio.TimeoutError:
-                        await self.heartbeat(job_id, token)
-
-            hb_task = asyncio.create_task(_heartbeat_loop())
-            try:
-                res = await handler(job)
-                await self.ack(job_id, token, result=res)
-                logger.info("job completed", queue=queue_name, job_id=job_id)
-            except Exception as exc:
-                logger.error("job handler failed", queue=queue_name, job_id=job_id, error=str(exc))
-                await self.fail(job_id, token, error=str(exc))
-            finally:
-                stop_heartbeat.set()
-                hb_task.cancel()
+        async def _worker_loop(worker_idx: int) -> None:
+            while True:
                 try:
-                    await hb_task
+                    allowed = await self.get_allowed_companies(queue_name)
+                    if allowed is not None and len(allowed) == 0:
+                        await asyncio.sleep(poll_interval)
+                        continue
+
+                    job = await self.reserve(queue_name, allowed_companies=allowed)
+                    if not job:
+                        await asyncio.sleep(poll_interval)
+                        continue
+
+                    job_id = job["id"]
+                    token = job.get("lock_token")
+                    logger.info("processing job", queue=queue_name, worker_idx=worker_idx, job_id=job_id)
+
+                    stop_heartbeat = asyncio.Event()
+
+                    async def _heartbeat_loop():
+                        while not stop_heartbeat.is_set():
+                            try:
+                                await asyncio.wait_for(stop_heartbeat.wait(), timeout=60.0)
+                            except asyncio.TimeoutError:
+                                await self.heartbeat(job_id, token)
+
+                    hb_task = asyncio.create_task(_heartbeat_loop())
+                    try:
+                        res = await handler(job)
+                        await self.ack(job_id, token, result=res)
+                        logger.info("job completed", queue=queue_name, worker_idx=worker_idx, job_id=job_id)
+                    except Exception as exc:
+                        logger.error("job handler failed", queue=queue_name, worker_idx=worker_idx, job_id=job_id, error=str(exc))
+                        await self.fail(job_id, token, error=str(exc))
+                    finally:
+                        stop_heartbeat.set()
+                        hb_task.cancel()
+                        try:
+                            await hb_task
+                        except asyncio.CancelledError:
+                            pass
                 except asyncio.CancelledError:
-                    pass
+                    break
+                except Exception as loop_err:
+                    logger.error("worker_loop_error", worker_idx=worker_idx, error=str(loop_err))
+                    await asyncio.sleep(poll_interval)
+
+        await asyncio.gather(*[_worker_loop(i) for i in range(pool_size)])
 
     async def get_queue_length(self, queue_name: str) -> int:
         stmt = text("""

@@ -8,6 +8,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Layers,
+  Activity,
 } from "lucide-react";
 import { AgentItem, tryApiFetch } from "./types";
 import { ShippingFollowUpSection } from "./sections/ShippingFollowUpSection";
@@ -38,6 +39,24 @@ interface RunSummary {
   errors?: any[];
 }
 
+interface AgentRuntimeStatus {
+  agentId: string;
+  running: number;
+  queued: number;
+  retrying: number;
+  dead: number;
+  lastRunAt: string | null;
+}
+
+interface RuntimeResponse {
+  success: boolean;
+  queued: number;
+  running: number;
+  retrying: number;
+  dead: number;
+  agents?: AgentRuntimeStatus[];
+}
+
 export const AgentAutomationTab: React.FC<AgentAutomationTabProps> = ({ agent }) => {
   const { t } = useTranslation();
   const [running, setRunning] = useState(false);
@@ -46,6 +65,29 @@ export const AgentAutomationTab: React.FC<AgentAutomationTabProps> = ({ agent })
 
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  const [runtimeAgents, setRuntimeAgents] = useState<AgentRuntimeStatus[]>([]);
+  const [runtimeTotals, setRuntimeTotals] = useState<{ running: number; queued: number } | null>(null);
+
+  const loadRuntime = async () => {
+    try {
+      const res = await tryApiFetch<RuntimeResponse>('/api/v1/agent-manager/runtime');
+      if (res?.success) {
+        setRuntimeTotals({ running: res.running || 0, queued: res.queued || 0 });
+        if (Array.isArray(res.agents)) {
+          setRuntimeAgents(res.agents);
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    loadRuntime();
+    const interval = setInterval(loadRuntime, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Determine slug from templateSlug or fallback
   const isStockTarget =
@@ -107,6 +149,75 @@ export const AgentAutomationTab: React.FC<AgentAutomationTabProps> = ({ agent })
 
   return (
     <div className="space-y-6">
+      {/* Real-time Agent Runtime Status Card (T32) */}
+      <div className="p-4 rounded-xl border border-border/70 bg-card shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="size-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">
+              {t("agentProfiles.automation.parallelRuntime", "حالة التشغيل المتوازي للوكلاء")}
+            </span>
+          </div>
+          {runtimeTotals && (
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span>شغال حالياً: <strong className="text-emerald-600 dark:text-emerald-400">{runtimeTotals.running}</strong></span>
+              <span>في الطابور: <strong className="text-amber-600 dark:text-amber-400">{runtimeTotals.queued}</strong></span>
+            </div>
+          )}
+        </div>
+
+        {runtimeAgents.length === 0 ? (
+          <div className="text-xs text-muted-foreground py-1">
+            لا توجد مهام تشغيل حالية في الطابور.
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {runtimeAgents.map((ag) => {
+              const isRunning = ag.running > 0;
+              const isQueued = !isRunning && ag.queued > 0;
+              const isDone = !isRunning && !isQueued;
+              const isCurrent = agent && agent.id === ag.agentId;
+
+              return (
+                <div
+                  key={ag.agentId}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                    isCurrent
+                      ? "border-primary/50 bg-primary/5 font-medium"
+                      : "border-border/60 bg-muted/30"
+                  }`}
+                >
+                  <span className="text-foreground">{ag.agentId}</span>
+                  {isRunning && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      شغال
+                    </span>
+                  )}
+                  {isQueued && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="size-1.5 rounded-full bg-amber-500" />
+                      في الطابور
+                    </span>
+                  )}
+                  {isDone && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-normal bg-muted text-muted-foreground">
+                      <CheckCircle2 className="size-3 text-muted-foreground" />
+                      خلص
+                      {ag.lastRunAt && (
+                        <span className="text-[10px] opacity-75">
+                          ({new Date(ag.lastRunAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })})
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Run Now Control Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/70 bg-card shadow-sm">
         <div className="flex items-center gap-3">
