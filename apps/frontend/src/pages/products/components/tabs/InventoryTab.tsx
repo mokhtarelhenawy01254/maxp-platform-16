@@ -1,5 +1,6 @@
 import React from "react";
 import { ProductFormData, FieldErrors } from "../../types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface InventoryTabProps {
   formData: ProductFormData;
@@ -229,8 +230,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 تاريخ توفر المنتج المتوقع
               </label>
-              <input
-                type="date"
+              <DateInput
                 name="preOrderDate"
                 value={formData.preOrderDate || ""}
                 onChange={handleInputChange}

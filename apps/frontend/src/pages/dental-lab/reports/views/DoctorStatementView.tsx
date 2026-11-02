@@ -20,6 +20,7 @@ import {
   tdCls,
   EmptyState,
 } from "../types/reportsTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function DoctorStatementView() {
   const { t } = useTranslation();
@@ -102,9 +103,7 @@ export function DoctorStatementView() {
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             {t("dentalLab.reports.from")}
           </label>
-          <input
-            className={dateCls}
-            type="date"
+          <DateInput
             value={from}
             onChange={(e) => setFrom(e.target.value)}
           />
@@ -113,9 +112,7 @@ export function DoctorStatementView() {
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             {t("dentalLab.reports.to")}
           </label>
-          <input
-            className={dateCls}
-            type="date"
+          <DateInput
             value={to}
             onChange={(e) => setTo(e.target.value)}
           />

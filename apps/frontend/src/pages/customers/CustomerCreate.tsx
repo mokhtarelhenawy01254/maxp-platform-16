@@ -18,6 +18,7 @@ import {
   FileText
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface CustomerFormData {
   firstName: string;
@@ -195,8 +196,7 @@ const CustomerCreate: React.FC = () => {
               <label className="mb-1.5 block text-xs text-muted-foreground">
                 تاريخ الميلاد (لحملات ورسائل الولاء التلقائية)
               </label>
-              <input
-                type="date"
+              <DateInput
                 name="birthday"
                 value={formData.birthday}
                 onChange={handleChange}

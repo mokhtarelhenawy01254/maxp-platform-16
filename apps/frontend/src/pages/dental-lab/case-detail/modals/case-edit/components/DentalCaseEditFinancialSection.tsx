@@ -6,6 +6,7 @@ import {
   PRIORITY_CONFIG,
   MODAL_INPUT_CLS,
 } from "../../../../shared";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 export interface DentalCaseEditFinancialSectionProps {
   priceSnapshot: number;
@@ -77,10 +78,7 @@ export const DentalCaseEditFinancialSection: React.FC<DentalCaseEditFinancialSec
           <label htmlFor="edit-case-received-date" className={labelCls}>
             تاريخ الدخول / الاستلام
           </label>
-          <input
-            id="edit-case-received-date"
-            className={MODAL_INPUT_CLS}
-            type="date"
+          <DateInput
             value={receivedDate}
             onChange={(e) => setReceivedDate(e.target.value)}
           />
@@ -89,10 +87,7 @@ export const DentalCaseEditFinancialSection: React.FC<DentalCaseEditFinancialSec
           <label htmlFor="edit-case-due-date" className={labelCls}>
             تاريخ التسليم المتوقع
           </label>
-          <input
-            id="edit-case-due-date"
-            className={MODAL_INPUT_CLS}
-            type="date"
+          <DateInput
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />

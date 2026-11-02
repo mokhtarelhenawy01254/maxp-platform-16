@@ -5,6 +5,7 @@ import {
   ExamLabel, MODAL_INPUT_CLS,
   api, fetchJson, getAuthHeaders,
 } from "./shared";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface UnprintedLabel {
   appointmentId: string;
@@ -175,8 +176,7 @@ export default function OperationsLabelsTab() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} text-sm py-1.5 font-mono`}
               value={date}
               onChange={(e) => setDate(e.target.value)}

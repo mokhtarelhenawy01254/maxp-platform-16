@@ -1,6 +1,7 @@
 import { FileSpreadsheet, Loader2, Printer, RefreshCw } from "lucide-react";
 import { fmtDate, fmtMoney, MODAL_INPUT_CLS } from "../../shared";
 import type { DoctorStatementTabProps } from "../types/doctorDetailTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function DoctorStatementTab({
   doctor,
@@ -20,8 +21,7 @@ export function DoctorStatementTab({
         <div className="flex flex-wrap items-center gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">من تاريخ:</label>
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} text-sm py-1.5 font-mono tabular-nums`}
               value={from}
               onChange={(e) => onFromChange(e.target.value)}
@@ -29,8 +29,7 @@ export function DoctorStatementTab({
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">إلى تاريخ:</label>
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} text-sm py-1.5 font-mono tabular-nums`}
               value={to}
               onChange={(e) => onToChange(e.target.value)}

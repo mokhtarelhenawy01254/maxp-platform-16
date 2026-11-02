@@ -1,5 +1,6 @@
 import React from "react";
 import { CalendarIcon } from "@heroicons/react/24/outline";
+import { DateInput } from '../../../../../components/ui/DateInput';
 
 interface CheckoutScheduledSectionProps {
   isScheduledOrder: boolean;
@@ -47,8 +48,7 @@ export const CheckoutScheduledSection: React.FC<CheckoutScheduledSectionProps> =
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t("manualOrder.k_114")} <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={scheduledDeliveryDate}
                   onChange={(e) => setScheduledDeliveryDate(e.target.value)}
                   min={

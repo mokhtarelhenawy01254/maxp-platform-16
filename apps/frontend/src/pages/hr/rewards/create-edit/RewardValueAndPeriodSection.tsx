@@ -1,6 +1,7 @@
 import React from "react";
 import { Calendar, RefreshCw, Save } from "lucide-react";
 import { RewardFormData } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface RewardValueAndPeriodSectionProps {
   isEdit: boolean;
@@ -35,8 +36,7 @@ export const RewardValueAndPeriodSection: React.FC<
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               تاريخ بداية الفترة <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <DateInput
               value={formData.periodStart}
               onChange={(e) => onChange("periodStart", e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 font-mono tabular-nums ${
@@ -56,8 +56,7 @@ export const RewardValueAndPeriodSection: React.FC<
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               تاريخ نهاية الفترة <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <DateInput
               value={formData.periodEnd}
               onChange={(e) => onChange("periodEnd", e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 font-mono tabular-nums ${

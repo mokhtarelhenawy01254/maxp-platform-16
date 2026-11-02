@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Clock, Calendar, Sun, Check, ArrowRight } from "lucide-react";
+import { DateInput } from '../../ui/DateInput';
 
 interface SnoozeModalProps {
   isOpen: boolean;
@@ -137,8 +138,7 @@ const SnoozeModal: React.FC<SnoozeModalProps> = ({
               تحديد موعد وتاريخ مخصص
             </span>
             <form onSubmit={handleCustomSubmit} className="flex flex-wrap sm:flex-nowrap gap-2">
-              <input
-                type="date"
+              <DateInput
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
                 className="flex-1 px-3 py-1.5 text-xs bg-background border border-border/70 rounded-lg text-foreground font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"

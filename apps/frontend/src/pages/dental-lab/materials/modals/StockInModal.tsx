@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "../../shared";
 import type { StockInModalProps } from "../types/materialsTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function StockInModal({
   isOpen,
@@ -184,8 +185,7 @@ export function StockInModal({
               <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
                 تاريخ انتهاء الصلاحية
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
                 className={`${MODAL_INPUT_CLS} font-mono`}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, X, Calendar } from "lucide-react";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface ShipmentFilterBarProps {
   localSearch: string;
@@ -50,8 +51,7 @@ export const ShipmentFilterBar: React.FC<ShipmentFilterBarProps> = ({
       {/* Date From */}
       <div className="relative sm:col-span-2">
         <div className="relative">
-          <input
-            type="date"
+          <DateInput
             aria-label="من تاريخ"
             value={localDateFrom}
             onChange={(e) => setLocalDateFrom(e.target.value)}
@@ -64,8 +64,7 @@ export const ShipmentFilterBar: React.FC<ShipmentFilterBarProps> = ({
       {/* Date To */}
       <div className="relative sm:col-span-2">
         <div className="relative">
-          <input
-            type="date"
+          <DateInput
             aria-label="إلى تاريخ"
             value={localDateTo}
             onChange={(e) => setLocalDateTo(e.target.value)}

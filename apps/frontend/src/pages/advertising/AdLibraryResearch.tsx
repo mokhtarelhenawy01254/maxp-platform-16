@@ -13,6 +13,7 @@ import {
   facebookAdsService,
 } from "../../services/facebookAdsService";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
+import { DateInput } from '../../components/ui/DateInput';
 
 type SearchMode = "terms" | "pages";
 
@@ -314,8 +315,7 @@ const AdLibraryResearch: React.FC = () => {
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400">
                     من
                   </span>
-                  <input
-                    type="date"
+                  <DateInput
                     value={deliveryDateMin}
                     onChange={(event) => setDeliveryDateMin(event.target.value)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none dark:border-slate-700 dark:bg-slate-900"
@@ -326,8 +326,7 @@ const AdLibraryResearch: React.FC = () => {
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400">
                     إلى
                   </span>
-                  <input
-                    type="date"
+                  <DateInput
                     value={deliveryDateMax}
                     onChange={(event) => setDeliveryDateMax(event.target.value)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none dark:border-slate-700 dark:bg-slate-900"

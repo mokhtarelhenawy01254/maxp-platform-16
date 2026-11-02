@@ -6,6 +6,7 @@ import {
   RefreshCw as ArrowPathIcon,
 } from "lucide-react";
 import { PresetRange } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ReportsHeaderProps {
   dateRange: {
@@ -51,8 +52,7 @@ export const ReportsHeader: React.FC<ReportsHeaderProps> = ({
             <CalendarIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             <span>{t("reports.dateRange", "نطاق التاريخ")}</span>
           </div>
-          <input
-            type="date"
+          <DateInput
             aria-label={t("reports.startDate", "تاريخ البدء")}
             value={dateRange.start}
             max={dateRange.end}
@@ -60,8 +60,7 @@ export const ReportsHeader: React.FC<ReportsHeaderProps> = ({
             className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white tabular-nums text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
           />
           <span className="text-gray-500">{t("reports.to", "إلى")}</span>
-          <input
-            type="date"
+          <DateInput
             aria-label={t("reports.endDate", "تاريخ الانتهاء")}
             value={dateRange.end}
             min={dateRange.start}

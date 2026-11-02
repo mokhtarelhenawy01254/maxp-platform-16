@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import { dateCls } from "../../types/reportsTypes";
+import { DateInput } from '../../../../../components/ui/DateInput';
 
 export interface TechnicianProductivityFiltersProps {
   from: string;
@@ -27,9 +28,7 @@ export const TechnicianProductivityFilters: React.FC<TechnicianProductivityFilte
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             {t("dentalLab.reports.from")}
           </label>
-          <input
-            className={dateCls}
-            type="date"
+          <DateInput
             value={from}
             onChange={(e) => onFromChange(e.target.value)}
           />
@@ -38,9 +37,7 @@ export const TechnicianProductivityFilters: React.FC<TechnicianProductivityFilte
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             {t("dentalLab.reports.to")}
           </label>
-          <input
-            className={dateCls}
-            type="date"
+          <DateInput
             value={to}
             onChange={(e) => onToChange(e.target.value)}
           />

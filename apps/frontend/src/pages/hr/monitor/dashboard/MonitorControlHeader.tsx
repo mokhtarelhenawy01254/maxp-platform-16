@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface MonitorControlHeaderProps {
   activeNow: number;
@@ -106,8 +107,7 @@ export const MonitorControlHeader: React.FC<MonitorControlHeaderProps> = ({
 
           <div className="flex items-center gap-1.5 px-2">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               value={selectedDate}
               onChange={(e) => onSelectedDateChange(e.target.value)}
               className="bg-transparent text-xs text-foreground focus:outline-none font-mono tabular-nums"

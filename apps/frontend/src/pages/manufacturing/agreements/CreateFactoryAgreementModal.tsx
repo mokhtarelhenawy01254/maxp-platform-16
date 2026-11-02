@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Building2, FileSignature, DollarSign, Calendar, AlertCircle } from 'lucide-react';
 import { manufacturingApi, FactoryAgreement, FactoryAgreementPricingMode } from '../manufacturingApi';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateFactoryAgreementModalProps {
   isOpen: boolean;
@@ -245,8 +246,7 @@ export const CreateFactoryAgreementModal: React.FC<CreateFactoryAgreementModalPr
                   <label className="block text-xs font-medium text-foreground mb-1">
                     تاريخ البدء
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full text-xs py-2 px-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-primary/20 focus:outline-none"
@@ -256,8 +256,7 @@ export const CreateFactoryAgreementModal: React.FC<CreateFactoryAgreementModalPr
                   <label className="block text-xs font-medium text-foreground mb-1">
                     تاريخ الانتهاء
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full text-xs py-2 px-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-primary/20 focus:outline-none"

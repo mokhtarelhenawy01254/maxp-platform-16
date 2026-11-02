@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { companyAwareApi } from "../../../services/companyAwareApi";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AssetAssignmentModalProps {
   asset: any;
@@ -179,8 +180,7 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
                 <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">
                   {type === "assign" ? "تاريخ التسليم" : "تاريخ الاسترجاع"}
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   required
                   className="block w-full border-2 border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm py-3 px-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all font-medium"
                   value={type === "assign" ? formData.assignedAt : formData.returnedAt}

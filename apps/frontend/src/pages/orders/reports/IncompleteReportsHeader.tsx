@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, ArrowRight, RotateCw, Calendar } from "lucide-react";
 import { getDirection } from "../../../i18n";
 import { PERIODS, toDateInput } from "./useIncompleteReportsData";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface IncompleteReportsHeaderProps {
   period: string;
@@ -93,9 +94,7 @@ export const IncompleteReportsHeader: React.FC<IncompleteReportsHeaderProps> = (
             <label htmlFor="incomplete-report-from" className="sr-only">
               {t("orders.incompleteFrom", "من")}
             </label>
-            <input
-              id="incomplete-report-from"
-              type="date"
+            <DateInput
               value={customFrom}
               max={customTo || undefined}
               onChange={(e) => onCustomFromChange(e.target.value)}
@@ -105,9 +104,7 @@ export const IncompleteReportsHeader: React.FC<IncompleteReportsHeaderProps> = (
             <label htmlFor="incomplete-report-to" className="sr-only">
               {t("orders.incompleteTo", "إلى")}
             </label>
-            <input
-              id="incomplete-report-to"
-              type="date"
+            <DateInput
               value={customTo}
               min={customFrom || undefined}
               onChange={(e) => onCustomToChange(e.target.value)}

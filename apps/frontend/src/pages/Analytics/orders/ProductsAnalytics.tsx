@@ -33,6 +33,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const PIE_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16"];
 
@@ -197,8 +198,8 @@ const ProductsAnalytics: React.FC = () => {
           </select>
           {isCustom && (
             <div className="flex items-center gap-1.5">
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 text-xs bg-background border border-border/70 rounded-md font-mono" />
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 text-xs bg-background border border-border/70 rounded-md font-mono" />
+              <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 text-xs bg-background border border-border/70 rounded-md font-mono" />
+              <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 text-xs bg-background border border-border/70 rounded-md font-mono" />
             </div>
           )}
           <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredProducts.length === 0} className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground">

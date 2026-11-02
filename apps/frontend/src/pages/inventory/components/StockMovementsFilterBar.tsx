@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '../../../components/ui/input';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface StockMovementsFilterBarProps {
   search: string;
@@ -50,15 +51,13 @@ export const StockMovementsFilterBar: React.FC<StockMovementsFilterBarProps> = (
         </select>
 
         <div className="flex items-center gap-1.5">
-          <input
-            type="date"
+          <DateInput
             value={dateFrom}
             onChange={(e) => onDateFromChange(e.target.value)}
             className="h-8 px-2 text-xs rounded-md border border-border/70 bg-background text-foreground outline-hidden font-mono"
           />
           <span className="text-muted-foreground text-xs">إلى</span>
-          <input
-            type="date"
+          <DateInput
             value={dateTo}
             onChange={(e) => onDateToChange(e.target.value)}
             className="h-8 px-2 text-xs rounded-md border border-border/70 bg-background text-foreground outline-hidden font-mono"

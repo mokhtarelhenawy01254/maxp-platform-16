@@ -20,6 +20,7 @@ import StoreAnalyticsTelemetry from "./StoreAnalyticsTelemetry";
 import StoreAnalyticsFunnel from "./StoreAnalyticsFunnel";
 import StoreAnalyticsCharts from "./StoreAnalyticsCharts";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
+import { DateInput } from '../../components/ui/DateInput';
 
 type FilterState = {
   period: string;
@@ -296,15 +297,13 @@ export const StoreAnalyticsDashboard: React.FC = () => {
 
           {isCustomPeriod && (
             <div className="flex items-center gap-1.5">
-              <input
-                type="date"
+              <DateInput
                 value={filterDraft.startDate}
                 onChange={(e) => setFilterDraft((prev) => ({ ...prev, startDate: e.target.value }))}
                 className="px-2.5 py-1 text-xs border border-border/70 rounded-xl bg-card text-foreground"
               />
               <span className="text-xs text-muted-foreground">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={filterDraft.endDate}
                 onChange={(e) => setFilterDraft((prev) => ({ ...prev, endDate: e.target.value }))}
                 className="px-2.5 py-1 text-xs border border-border/70 rounded-xl bg-card text-foreground"

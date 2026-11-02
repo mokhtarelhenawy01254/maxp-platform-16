@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, UserPlus, ScanLine } from 'lucide-react';
 import { MODAL_INPUT_CLS } from '../../shared';
 import type { NewPatientFormState } from './types';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface InlineNewPatientFormProps {
   newPatient: NewPatientFormState;
@@ -108,8 +109,7 @@ export const InlineNewPatientForm: React.FC<InlineNewPatientFormProps> = ({
         </div>
         <div>
           <label className={labelCls}>{t('radiology.schedule.birthDate')}</label>
-          <input
-            type="date"
+          <DateInput
             className={MODAL_INPUT_CLS}
             value={newPatient.birthDate}
             onChange={e =>

@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar, RotateCcw, ChevronDown } from "lucide-react";
 import type { OrdersFilters } from "../../Orders";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface DateRangeFilterSectionProps {
   filters: OrdersFilters;
@@ -97,8 +98,7 @@ export const DateRangeFilterSection: React.FC<DateRangeFilterSectionProps> = ({
             <span className="block text-[11px] font-semibold text-muted-foreground">
               {t("orders.fromDate", { defaultValue: "من تاريخ" })}
             </span>
-            <input
-              type="date"
+            <DateInput
               aria-label={String(t("orders.startDate", { defaultValue: "تاريخ البداية" }))}
               value={filters.startDate}
               onChange={(e) => {
@@ -112,8 +112,7 @@ export const DateRangeFilterSection: React.FC<DateRangeFilterSectionProps> = ({
             <span className="block text-[11px] font-semibold text-muted-foreground">
               {t("orders.toDate", { defaultValue: "إلى تاريخ" })}
             </span>
-            <input
-              type="date"
+            <DateInput
               aria-label={String(t("orders.endDate", { defaultValue: "تاريخ النهاية" }))}
               value={filters.endDate}
               onChange={(e) => {

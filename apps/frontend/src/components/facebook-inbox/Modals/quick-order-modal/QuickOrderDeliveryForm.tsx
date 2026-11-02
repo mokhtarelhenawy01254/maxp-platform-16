@@ -15,6 +15,7 @@ import {
   successStyle,
   warningStyle,
 } from "./styles";
+import { DateInput } from '../../../ui/DateInput';
 
 interface QuickOrderDeliveryFormProps {
   city: string;
@@ -200,8 +201,7 @@ export const QuickOrderDeliveryForm: React.FC<QuickOrderDeliveryFormProps> = ({
                 <label className="mb-1 block text-xs font-medium text-foreground">
                   تاريخ التوصيل <span style={dangerStyle}>*</span>
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={scheduledDeliveryDate}
                   onChange={(e) => setScheduledDeliveryDate(e.target.value)}
                   min={

@@ -4,6 +4,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { ReportRange } from './useWorkspaceReports';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface ReportsToolbarProps {
   range: ReportRange;
@@ -77,15 +78,13 @@ export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
       {/* Custom Range Inputs */}
       {range === 'custom' && (
         <div className="flex items-center gap-2 text-xs">
-          <input
-            type="date"
+          <DateInput
             value={startDate}
             onChange={(e) => onCustomDatesChange(e.target.value, endDate)}
             className="h-8 rounded-md border border-border/60 bg-background px-2 font-medium text-foreground outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           />
           <span className="text-muted-foreground dark:text-slate-400">-</span>
-          <input
-            type="date"
+          <DateInput
             value={endDate}
             onChange={(e) => onCustomDatesChange(startDate, e.target.value)}
             className="h-8 rounded-md border border-border/60 bg-background px-2 font-medium text-foreground outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"

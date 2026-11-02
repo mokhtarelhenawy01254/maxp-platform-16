@@ -12,6 +12,7 @@ import analyticsService from "../../../services/analyticsService";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { OrdersAnalyticsCharts, TrendEntry } from "./OrdersAnalyticsCharts";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface PrevPeriod {
   totalOrders: number;
@@ -221,15 +222,13 @@ const OrdersAnalytics: React.FC = () => {
           </select>
           {period === "custom" && (
             <div className="flex items-center gap-1">
-              <input
-                type="date"
+              <DateInput
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
                 className="h-8 px-2 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"
               />
               <span className="text-muted-foreground text-xs">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
                 className="h-8 px-2 border border-border/70 rounded-md bg-card text-foreground text-xs font-mono"

@@ -11,6 +11,7 @@ import {
 } from '../manufacturingApi';
 import { WizardVariantMatrixStep } from './wizard/WizardVariantMatrixStep';
 import { WizardRequirementsPreviewStep } from './wizard/WizardRequirementsPreviewStep';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface NewOrderWizardModalProps {
   isOpen: boolean;
@@ -555,8 +556,7 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-muted-foreground mb-1">تاريخ التسليم المستهدف</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full p-2 text-xs rounded-lg border border-border bg-background focus:outline-none font-mono"

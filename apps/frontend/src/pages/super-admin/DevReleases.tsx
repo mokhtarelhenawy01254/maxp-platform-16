@@ -20,6 +20,7 @@ import {
   X,
   Package
 } from "lucide-react";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface Release {
   id: string;
@@ -615,8 +616,7 @@ const ReleaseFormModal: React.FC<{
 
             <div>
               <label className="block font-medium text-foreground mb-1">تاريخ الإصدار المتوقع</label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.releaseDate}
                 onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"

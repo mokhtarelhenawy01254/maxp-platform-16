@@ -1,6 +1,7 @@
 import { FilterX, X as XMarkIcon } from "lucide-react";
 import type { DentalLabDoctor, DentalTechnician, DentalWorkType } from "../../shared";
 import { CASE_STATUSES } from "../../shared";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface DentalCasesDropdownsProps {
   viewMode: "ACTIVE" | "OVERDUE" | "TRASH";
@@ -165,8 +166,7 @@ export function DentalCasesDropdowns({
           <option value="receivedDate">تاريخ الدخول</option>
           <option value="dueDate">تاريخ التسليم</option>
         </select>
-        <input
-          type="date"
+        <DateInput
           className="bg-transparent text-xs text-slate-800 dark:text-slate-200 focus:outline-none w-[110px] font-mono"
           value={agendaDate}
           onChange={(e) => {

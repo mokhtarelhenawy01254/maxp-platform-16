@@ -10,6 +10,7 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
+import { DateInput } from '../../components/ui/DateInput';
 
 interface EducationEntry {
   id: string;
@@ -230,8 +231,7 @@ const MemberRegistration: React.FC<MemberRegistrationProps> = ({ settings }) => 
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">تاريخ الميلاد</label>
-                  <input 
-                    type="date" 
+                  <DateInput 
                     value={formData.birthDate}
                     onChange={e => setFormData({...formData, birthDate: e.target.value})}
                     className="w-full h-14 px-5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none text-[0.95rem] font-medium"

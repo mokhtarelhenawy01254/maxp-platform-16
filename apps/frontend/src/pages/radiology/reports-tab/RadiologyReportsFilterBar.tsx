@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Search } from "lucide-react";
 import { RadiologyReportStatusMap } from "../shared";
 import { ReportFilters } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface RadiologyReportsFilterBarProps {
   filters: ReportFilters;
@@ -60,15 +61,13 @@ export const RadiologyReportsFilterBar: React.FC<RadiologyReportsFilterBarProps>
         onChange={(e) => updateFilter("studySearch", e.target.value)}
       />
 
-      <input
-        type="date"
+      <DateInput
         className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100"
         value={filters.dateFrom}
         onChange={(e) => updateFilter("dateFrom", e.target.value)}
       />
 
-      <input
-        type="date"
+      <DateInput
         className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100"
         value={filters.dateTo}
         onChange={(e) => updateFilter("dateTo", e.target.value)}

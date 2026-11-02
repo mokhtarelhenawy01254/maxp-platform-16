@@ -9,6 +9,7 @@ import {
   AdjustmentsHorizontalIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { DateInput } from '../ui/DateInput';
 
 interface SearchFilters {
   query: string;
@@ -266,8 +267,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                   نطاق التاريخ
                 </label>
                 <div className="space-y-2">
-                  <input
-                    type="date"
+                  <DateInput
                     value={
                       filters.dateRange.start?.toISOString().split("T")[0] || ""
                     }
@@ -284,8 +284,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <input
-                    type="date"
+                  <DateInput
                     value={
                       filters.dateRange.end?.toISOString().split("T")[0] || ""
                     }

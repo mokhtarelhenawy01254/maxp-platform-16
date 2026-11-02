@@ -5,6 +5,7 @@ import {
   api, fetchJson, getAuthHeaders, LabOrder, LabOrderTest, LabTest, LabTestParameter,
   LAB_STATUS_MAP, LAB_REPORT_STATUS_MAP, FLAG_OPTIONS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
+import { DateInput } from '../../components/ui/DateInput';
 
 type ActionKind = "review" | "sign" | "deliver";
 
@@ -396,8 +397,8 @@ export default function OrdersTab() {
           <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
           <input className={`${filterCls} pr-9 w-48`} placeholder="بحث بالاسم أو رقم الطلب..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <input type="date" className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        <input type="date" className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        <DateInput className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <DateInput className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
       </div>
 
       {loading && !orders ? (

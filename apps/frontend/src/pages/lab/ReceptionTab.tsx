@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { api, fetchJson, LabOrder, LabTest, PATIENT_FLAGS, MODAL_INPUT_CLS } from "./shared";
+import { DateInput } from '../../components/ui/DateInput';
 
 const GENDER_OPTIONS = [
   { value: "male", label: "ذكر" },
@@ -199,11 +200,11 @@ export default function ReceptionTab() {
               </div>
               <div>
                 <label className={labelCls}>تاريخ أخذ العينة</label>
-                <input className={inputCls} type="date" value={collectionDate} onChange={e => setCollectionDate(e.target.value)} />
+                <DateInput value={collectionDate} onChange={e => setCollectionDate(e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>تاريخ الاستلام</label>
-                <input className={inputCls} type="date" value={receiveDate} onChange={e => setReceiveDate(e.target.value)} />
+                <DateInput value={receiveDate} onChange={e => setReceiveDate(e.target.value)} />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2">

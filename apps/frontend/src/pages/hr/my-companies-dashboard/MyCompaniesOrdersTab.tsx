@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { MyCompaniesOrder, TotalsByCompany } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface MyCompaniesOrdersTabProps {
   companies: Array<{
@@ -387,8 +388,7 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
         <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-gray-100 dark:border-gray-700 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-gray-500 dark:text-gray-400">من تاريخ:</span>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -397,8 +397,7 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
 
           <div className="flex items-center gap-2">
             <span className="text-gray-500 dark:text-gray-400">إلى تاريخ:</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"

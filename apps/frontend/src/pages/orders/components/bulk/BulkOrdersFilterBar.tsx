@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ChevronDown, Calendar } from "lucide-react";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface BulkOrdersFilterBarProps {
   search: string;
@@ -65,8 +66,7 @@ export const BulkOrdersFilterBar: React.FC<BulkOrdersFilterBarProps> = ({
 
         {/* Date From */}
         <div className="relative">
-          <input
-            type="date"
+          <DateInput
             aria-label={t("orders.fromDate", { defaultValue: "من تاريخ" })}
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
@@ -77,8 +77,7 @@ export const BulkOrdersFilterBar: React.FC<BulkOrdersFilterBarProps> = ({
 
         {/* Date To */}
         <div className="relative">
-          <input
-            type="date"
+          <DateInput
             aria-label={t("orders.toDate", { defaultValue: "إلى تاريخ" })}
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}

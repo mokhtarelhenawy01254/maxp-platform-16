@@ -10,6 +10,7 @@ import {
   toDateInputValue,
   formatSafeDate,
 } from "./availabilityTypes";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AvailabilityTableRowProps {
   row: AvailabilityRow;
@@ -159,8 +160,7 @@ export const AvailabilityTableRow: React.FC<AvailabilityTableRowProps> = ({
       <td className="px-3 py-3 text-center whitespace-nowrap">
         {row.isPreOrder ? (
           <div className="flex flex-col items-center gap-1">
-            <input
-              type="date"
+            <DateInput
               value={toDateInputValue(row.preOrderDate)}
               disabled={preOrderDateSaving}
               onChange={(e) => savePreOrderDate(row, e.target.value)}

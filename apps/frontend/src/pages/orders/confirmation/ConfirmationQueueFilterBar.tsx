@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Search, SlidersHorizontal, UserX, ChevronDown } from "lucide-react";
 import type { FilterOption } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface ConfirmationQueueFilterBarProps {
   appliedFilters?: {
@@ -318,8 +319,7 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center gap-1">
               <span className="text-[11px] text-muted-foreground font-medium">{t("common.from", { defaultValue: "من" })}:</span>
-              <input
-                type="date"
+              <DateInput
                 aria-label={String(t("common.from", { defaultValue: "من تاريخ" }))}
                 value={effectiveStartDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
@@ -328,8 +328,7 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
             </div>
             <div className="flex items-center gap-1">
               <span className="text-[11px] text-muted-foreground font-medium">{t("common.to", { defaultValue: "إلى" })}:</span>
-              <input
-                type="date"
+              <DateInput
                 aria-label={String(t("common.to", { defaultValue: "إلى تاريخ" }))}
                 value={effectiveEndDate}
                 onChange={(e) => handleEndDateChange(e.target.value)}

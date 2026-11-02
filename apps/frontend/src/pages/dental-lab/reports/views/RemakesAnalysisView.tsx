@@ -17,6 +17,7 @@ import {
   Skeleton,
   EmptyState,
 } from "../types/reportsTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 const categoryLabels: Record<string, string> = {
   DOCTOR_IMPRESSION: "طبعة / مقاس الطبيب",
@@ -65,9 +66,7 @@ export function RemakesAnalysisView() {
             <label className="block text-xs font-semibold text-gray-500 mb-1">
               {t("dentalLab.reports.from")}
             </label>
-            <input
-              className={dateCls}
-              type="date"
+            <DateInput
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
@@ -76,9 +75,7 @@ export function RemakesAnalysisView() {
             <label className="block text-xs font-semibold text-gray-500 mb-1">
               {t("dentalLab.reports.to")}
             </label>
-            <input
-              className={dateCls}
-              type="date"
+            <DateInput
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />

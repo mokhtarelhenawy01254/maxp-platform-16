@@ -16,6 +16,7 @@ import {
 import { apiClient } from '../../services/apiClient';
 import { toast } from 'sonner';
 import i18n from '../../i18n';
+import { DateInput } from '../../components/ui/DateInput';
 
 interface EmployeeStats {
   id: string;
@@ -103,15 +104,13 @@ const ReturnEmployeePerformance: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-card border border-border/70 rounded-lg px-2 py-1 gap-2 text-xs">
               <Calendar size={14} className="text-muted-foreground" />
-              <input
-                type="date"
+              <DateInput
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="bg-transparent text-foreground focus:outline-none font-mono text-xs"
               />
               <span className="text-muted-foreground text-[11px]">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="bg-transparent text-foreground focus:outline-none font-mono text-xs"

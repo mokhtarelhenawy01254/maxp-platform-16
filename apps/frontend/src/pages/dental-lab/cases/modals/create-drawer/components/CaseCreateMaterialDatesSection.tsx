@@ -3,6 +3,7 @@ import {
   PRIORITY_CONFIG,
   type DentalCasePriority,
 } from "../../../../shared";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 interface CaseCreateMaterialDatesSectionProps {
   material: string;
@@ -99,8 +100,7 @@ export const CaseCreateMaterialDatesSection: React.FC<
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className={labelCls}>تاريخ الاستلام</label>
-          <input
-            type="date"
+          <DateInput
             className={`${inputCls} tabular-nums font-mono`}
             value={receivedDate}
             onChange={(e) => setReceivedDate(e.target.value)}
@@ -108,8 +108,7 @@ export const CaseCreateMaterialDatesSection: React.FC<
         </div>
         <div>
           <label className={labelCls}>تاريخ التسليم المتوقع</label>
-          <input
-            type="date"
+          <DateInput
             className={`${inputCls} tabular-nums font-mono`}
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}

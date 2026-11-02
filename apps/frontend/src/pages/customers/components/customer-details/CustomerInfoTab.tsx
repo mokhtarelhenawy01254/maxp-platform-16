@@ -14,6 +14,7 @@ import {
   PencilIcon,
 } from "@heroicons/react/24/outline";
 import { CustomerDetailsData } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface CustomerInfoTabProps {
   customer: CustomerDetailsData["customer"];
@@ -83,8 +84,7 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
             <CalendarIcon className="h-4 w-4 text-zinc-400" />
             {editingBirthday ? (
               <div className="flex gap-2 w-full max-w-xs items-center">
-                <input
-                  type="date"
+                <DateInput
                   value={tempBirthday}
                   onChange={(e) => onTempBirthdayChange(e.target.value)}
                   className="flex-1 px-3 py-1 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"

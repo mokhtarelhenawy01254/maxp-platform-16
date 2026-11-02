@@ -7,6 +7,7 @@ import {
   AdjustmentsHorizontalIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface FiltersState {
   searchQuery: string;
@@ -432,9 +433,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               <label htmlFor="filter-date-from" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {isEn ? "From Date" : "من تاريخ"}
               </label>
-              <input
-                id="filter-date-from"
-                type="date"
+              <DateInput
                 value={filters.dateFrom}
                 onChange={(e) => onFilterChange("dateFrom", e.target.value)}
                 className="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
@@ -444,9 +443,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               <label htmlFor="filter-date-to" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {isEn ? "To Date" : "إلى تاريخ"}
               </label>
-              <input
-                id="filter-date-to"
-                type="date"
+              <DateInput
                 value={filters.dateTo}
                 onChange={(e) => onFilterChange("dateTo", e.target.value)}
                 className="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"

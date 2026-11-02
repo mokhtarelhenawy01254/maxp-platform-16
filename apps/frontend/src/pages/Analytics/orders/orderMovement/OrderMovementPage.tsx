@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Calendar, Grid3X3, GitBranch, Route, Clock, Flag, Users, Hourglass, ClipboardCheck, Zap } from "lucide-react";
 import { LoadingState, ModeToggle, type MovementFilterProps, type MovementMode } from "./orderMovementShared";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 const StatusMatrixTab = React.lazy(() => import("./tabs/StatusMatrixTab"));
 const VelocityTab = React.lazy(() => import("../fulfillmentVelocity/FulfillmentVelocityPage"));
@@ -155,15 +156,13 @@ export default function OrderMovementPage() {
           </div>
           <div className="flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs font-mono">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => { setPeriod("custom"); setStartDate(e.target.value); }}
               className="bg-transparent text-xs text-foreground outline-none font-mono"
             />
             <span className="text-muted-foreground text-xs">إلى</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => { setPeriod("custom"); setEndDate(e.target.value); }}
               className="bg-transparent text-xs text-foreground outline-none font-mono"

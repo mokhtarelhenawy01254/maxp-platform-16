@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Loader2, X as XMarkIcon, Banknote } from "lucide-react";
 import { api, bookingApi, fetchJson, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface InsuranceCompany {
   id: string;
@@ -281,11 +282,11 @@ export default function InsuranceInvoicesTab() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.insuranceInvoices.dateFrom")}</label>
-                  <input type="date" className={MODAL_INPUT_CLS} value={createForm.periodFrom} onChange={e => setCreateForm({ ...createForm, periodFrom: e.target.value })} />
+                  <DateInput className={MODAL_INPUT_CLS} value={createForm.periodFrom} onChange={e => setCreateForm({ ...createForm, periodFrom: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t("radiology.insuranceInvoices.dateTo")}</label>
-                  <input type="date" className={MODAL_INPUT_CLS} value={createForm.periodTo} onChange={e => setCreateForm({ ...createForm, periodTo: e.target.value })} />
+                  <DateInput className={MODAL_INPUT_CLS} value={createForm.periodTo} onChange={e => setCreateForm({ ...createForm, periodTo: e.target.value })} />
                 </div>
               </div>
               <div>

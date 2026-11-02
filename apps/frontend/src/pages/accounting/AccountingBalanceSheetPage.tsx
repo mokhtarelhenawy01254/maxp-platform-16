@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, BalanceSheetReport } from './accountingApi';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const AccountingBalanceSheetPage: React.FC = () => {
   const [report, setReport] = useState<BalanceSheetReport | null>(null);
@@ -83,8 +84,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               <Calendar className="w-3.5 h-3.5" />
               <span>حتى تاريخ (As of date):</span>
             </span>
-            <input
-              type="date"
+            <DateInput
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
               className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"

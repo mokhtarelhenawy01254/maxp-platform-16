@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface PLStats {
   revenue: number;
@@ -122,8 +123,7 @@ const ProfitLossReport: React.FC = () => {
 
           <div className="flex items-center gap-1.5 bg-card border border-border/70 rounded-lg px-2.5 py-1 text-xs">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               value={dateRange.start}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, start: e.target.value }))
@@ -131,8 +131,7 @@ const ProfitLossReport: React.FC = () => {
               className="bg-transparent text-xs text-foreground focus:outline-hidden"
             />
             <span className="text-muted-foreground">إلى</span>
-            <input
-              type="date"
+            <DateInput
               value={dateRange.end}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, end: e.target.value }))

@@ -6,6 +6,7 @@ import type {
   StockMovementType,
   StockMovementReason,
 } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface StockUpdateModalProps {
   isOpen: boolean;
@@ -182,8 +183,7 @@ export const StockUpdateModal: React.FC<StockUpdateModalProps> = ({
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 تاريخ الصلاحية
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={stockUpdate.expiryDate}
                 onChange={(e) =>
                   onStockUpdateChange({

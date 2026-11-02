@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ExternalLink, Loader2, X as XMarkIcon } from "lucide-react";
 import { advanceCase, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "../../shared";
 import type { OutsourceModalProps } from "../types/dentalCaseDetailTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function DentalCaseOutsourceModal({
   caseId,
@@ -133,9 +134,7 @@ export function DentalCaseOutsourceModal({
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 موعد الاستلام المتوقع
               </label>
-              <input
-                className={`${MODAL_INPUT_CLS} font-mono tabular-nums`}
-                type="date"
+              <DateInput
                 value={returnDate}
                 onChange={(e) => setReturnDate(e.target.value)}
               />

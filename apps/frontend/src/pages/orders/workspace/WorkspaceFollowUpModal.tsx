@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Calendar, X, Clock } from 'lucide-react';
 import { useModalA11y } from '../../../hooks/useModalA11y';
 import { WorkspaceOrder } from './types';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface WorkspaceFollowUpModalProps {
   order: WorkspaceOrder | null;
@@ -107,9 +108,7 @@ export const WorkspaceFollowUpModal: React.FC<WorkspaceFollowUpModalProps> = ({
         >
           {t('orders.followUpDateLabel')}
         </label>
-        <input
-          id="follow-up-date-input"
-          type="date"
+        <DateInput
           value={dateValue}
           onChange={(e) => onDateChange(e.target.value)}
           className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-xs font-mono tabular-nums text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"

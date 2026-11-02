@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Search, ArrowRight, Calendar, User, Phone, Building2, Stethoscope, Edit3 } from "lucide-react";
 import { BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient, STATUS_MAP, fetchJson, api } from "./shared";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   appointment?: Partial<BookingAppointment> | null;
@@ -286,7 +287,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-foreground mb-1">تاريخ الموعد *</label>
-              <input type="date" className={`${inputCls} font-mono`} value={form.appointmentDate} onChange={e => setForm({ ...form, appointmentDate: e.target.value })} />
+              <DateInput className={`${inputCls} font-mono`} value={form.appointmentDate} onChange={e => setForm({ ...form, appointmentDate: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-medium text-foreground mb-1">مدة الكشف المتوقعة</label>
@@ -357,7 +358,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
               </div>
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">موعد المتابعة القادم</label>
-                <input type="date" className={`${inputCls} font-mono`} value={form.followUpDate ? String(form.followUpDate).split("T")[0] : ""} onChange={e => setForm({ ...form, followUpDate: e.target.value })} />
+                <DateInput className={`${inputCls} font-mono`} value={form.followUpDate ? String(form.followUpDate).split("T")[0] : ""} onChange={e => setForm({ ...form, followUpDate: e.target.value })} />
               </div>
             </div>
           )}

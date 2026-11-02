@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Receipt, DollarSign, Wallet, ShieldCheck, Calendar, AlertCircle } from "lucide-react";
 import { BookingInvoice, BookingPatient, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
 import { toast } from "sonner";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   invoice?: Partial<BookingInvoice> | null;
@@ -167,7 +168,7 @@ export default function InvoiceModal({ invoice, patients, onClose, onSave }: Pro
             </div>
             <div>
               <label className="block text-xs font-medium text-foreground mb-1">تاريخ الاستحقاق</label>
-              <input type="date" className={`${inputCls} font-mono`} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+              <DateInput className={`${inputCls} font-mono`} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
             </div>
           </div>
 

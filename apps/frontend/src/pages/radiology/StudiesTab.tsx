@@ -13,6 +13,7 @@ import {
 import StageBadge from "./StageBadge";
 import RadiologyViewerModal from "./RadiologyViewerModal";
 import { RadiologyReportModal } from "./RadiologyReportsTab";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface RologyDraft {
   submissionStatus: string;
@@ -525,8 +526,8 @@ export default function StudiesTab() {
         </div>
         <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.nationalId") as string} value={nationalSearch} onChange={e => setNationalSearch(e.target.value)} />
         <input className={filterCls} dir="ltr" placeholder={t("radiology.studies.insuranceNumber") as string} value={insuranceSearch} onChange={e => setInsuranceSearch(e.target.value)} />
-        <input type="date" className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        <input type="date" className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        <DateInput className={filterCls} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <DateInput className={filterCls} value={dateTo} onChange={e => setDateTo(e.target.value)} />
       </div>
 
       {loading && !studies ? (

@@ -18,6 +18,7 @@ import {
   SampleOrder,
   SampleShareLink,
 } from '../manufacturingApi';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ShareSampleModalProps {
   sample: SampleOrder;
@@ -286,8 +287,7 @@ export const ShareSampleModal: React.FC<ShareSampleModalProps> = ({
                 <label className="text-xs text-muted-foreground whitespace-nowrap">
                   تاريخ الانتهاء (اختياري):
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={expDate || ''}
                   onChange={(e) => setExpDate && setExpDate(e.target.value)}
                   className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none"

@@ -10,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { PeriodKey } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface OrdersAnalyticsCommandBarProps {
   period: PeriodKey;
@@ -96,8 +97,7 @@ export const OrdersAnalyticsCommandBar: React.FC<OrdersAnalyticsCommandBarProps>
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              <input
-                type="date"
+              <DateInput
                 value={dateRange.start}
                 onChange={(e) => onCustomDateChange("start", e.target.value)}
                 className={`px-1.5 sm:px-2 py-0.5 text-[11px] sm:text-xs font-mono border rounded-md bg-card text-foreground focus:outline-hidden ${
@@ -107,8 +107,7 @@ export const OrdersAnalyticsCommandBar: React.FC<OrdersAnalyticsCommandBarProps>
                 }`}
               />
               <span className="text-[10px] text-muted-foreground">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={dateRange.end}
                 onChange={(e) => onCustomDateChange("end", e.target.value)}
                 className={`px-1.5 sm:px-2 py-0.5 text-[11px] sm:text-xs font-mono border rounded-md bg-card text-foreground focus:outline-hidden ${

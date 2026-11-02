@@ -1,5 +1,6 @@
 import React from "react";
 import { Repeat, Calendar } from "lucide-react";
+import { DateInput } from '../ui/DateInput';
 
 export interface RecurringConfig {
   enabled: boolean;
@@ -237,8 +238,7 @@ const RecurringTaskForm: React.FC<RecurringTaskFormProps> = ({
                 />
                 <span className="text-foreground">حتى تاريخ محدد:</span>
                 {value.endType === "date" && (
-                  <input
-                    type="date"
+                  <DateInput
                     value={value.endDate}
                     onChange={(e) => handleChange("endDate", e.target.value)}
                     className="px-2 py-0.5 text-xs bg-card border border-border/70 rounded-lg font-mono tabular-nums text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary shadow-2xs"

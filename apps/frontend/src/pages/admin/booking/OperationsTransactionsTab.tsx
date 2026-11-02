@@ -5,6 +5,7 @@ import {
   TransactionLog, MODAL_INPUT_CLS,
   api, fetchJson,
 } from "./shared";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface TransactionsResponse {
   items: TransactionLog[];
@@ -84,8 +85,7 @@ export default function OperationsTransactionsTab() {
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} text-sm py-1.5 font-mono`}
               value={from}
               onChange={(e) => { setFrom(e.target.value); setPage(1); }}
@@ -93,8 +93,7 @@ export default function OperationsTransactionsTab() {
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} text-sm py-1.5 font-mono`}
               value={to}
               onChange={(e) => { setTo(e.target.value); setPage(1); }}

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, ProfitLossReport } from './accountingApi';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const AccountingProfitLossPage: React.FC = () => {
   const [report, setReport] = useState<ProfitLossReport | null>(null);
@@ -91,8 +92,7 @@ export const AccountingProfitLossPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground font-medium">من:</span>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -100,8 +100,7 @@ export const AccountingProfitLossPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground font-medium">إلى:</span>
-              <input
-                type="date"
+              <DateInput
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"

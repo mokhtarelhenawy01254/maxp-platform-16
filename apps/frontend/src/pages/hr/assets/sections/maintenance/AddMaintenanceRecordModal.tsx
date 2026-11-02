@@ -1,5 +1,6 @@
 import React from "react";
 import { NewMaintenanceRecordFormState } from "./types";
+import { DateInput } from '../../../../../components/ui/DateInput';
 
 interface AddMaintenanceRecordModalProps {
   open: boolean;
@@ -107,8 +108,7 @@ export const AddMaintenanceRecordModal: React.FC<
             <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">
               التاريخ
             </label>
-            <input
-              type="date"
+            <DateInput
               value={newRecord.startDate}
               onChange={(e) =>
                 onChangeRecord({ ...newRecord, startDate: e.target.value })

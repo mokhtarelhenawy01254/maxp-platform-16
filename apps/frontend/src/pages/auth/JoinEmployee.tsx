@@ -16,6 +16,7 @@ import { apiClient } from "../../services/apiClient";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { tokenManager } from "../../utils/tokenManager";
 import { toast } from "sonner";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface InvitationInfo {
   id: string;
@@ -564,8 +565,7 @@ export const JoinEmployee: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="business-auth-field">
               <label className="business-auth-label">تاريخ الميلاد</label>
-              <input
-                type="date"
+              <DateInput
                 name="dateOfBirth"
                 value={formData.dateOfBirth}
                 onChange={handleChange}

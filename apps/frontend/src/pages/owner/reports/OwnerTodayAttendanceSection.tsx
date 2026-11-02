@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { TodayAttendanceData } from "./types";
 import { formatReportTime, getOwnerReportsImageUrl } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface OwnerTodayAttendanceSectionProps {
   todayAttendanceData: TodayAttendanceData;
@@ -136,8 +137,7 @@ export const OwnerTodayAttendanceSection: React.FC<
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   من:
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={attendanceStartDate}
                   onChange={(e) => onStartDateChange(e.target.value)}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono tabular-nums dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -148,8 +148,7 @@ export const OwnerTodayAttendanceSection: React.FC<
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   إلى:
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={attendanceEndDate}
                   onChange={(e) => onEndDateChange(e.target.value)}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono tabular-nums dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"

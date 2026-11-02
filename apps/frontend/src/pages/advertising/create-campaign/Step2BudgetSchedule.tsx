@@ -1,6 +1,7 @@
 import React from "react";
 import { CampaignFormData } from "./types";
 import { timezones } from "./constants";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Step2BudgetScheduleProps {
   formData: CampaignFormData;
@@ -165,10 +166,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         >
           تاريخ البدء (اختياري)
         </label>
-        <input
-          id="create-campaign-start-date"
-          name="startDate"
-          type="date"
+        <DateInput
           autoComplete="off"
           value={formData.startDate}
           onChange={(e) => handleInputChange("startDate", e.target.value)}
@@ -185,10 +183,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         >
           تاريخ الانتهاء (اختياري)
         </label>
-        <input
-          id="create-campaign-end-date"
-          name="endDate"
-          type="date"
+        <DateInput
           autoComplete="off"
           value={formData.endDate}
           onChange={(e) => handleInputChange("endDate", e.target.value)}

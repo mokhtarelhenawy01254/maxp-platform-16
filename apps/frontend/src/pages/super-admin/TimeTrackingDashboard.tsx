@@ -24,6 +24,7 @@ import {
   TimeTrackingTeamPerformance,
   type MemberPerformance,
 } from "./TimeTrackingTeamPerformance";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface DashboardStats {
   totalHours: number;
@@ -252,8 +253,7 @@ export default function TimeTrackingDashboard() {
                   <label className="block text-[11px] font-mono text-muted-foreground mb-1">
                     من تاريخ
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
                     className="w-full h-8 px-2 border border-border/70 rounded-md bg-background text-foreground text-xs font-mono"
@@ -263,8 +263,7 @@ export default function TimeTrackingDashboard() {
                   <label className="block text-[11px] font-mono text-muted-foreground mb-1">
                     إلى تاريخ
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
                     className="w-full h-8 px-2 border border-border/70 rounded-md bg-background text-foreground text-xs font-mono"

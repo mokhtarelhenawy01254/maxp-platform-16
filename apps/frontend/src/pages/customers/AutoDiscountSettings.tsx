@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Loader2, Zap, CheckCircle, Settings2 } from "lucide-react";
 import AutoDiscountAnalytics from "./AutoDiscountAnalytics";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface AutoDiscountSettingsProps {
   onSaved?: (data?: any) => void;
@@ -179,8 +180,7 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-gray-500">تاريخ تفعيل نظام الخصم</label>
-                <input
-                  type="date"
+                <DateInput
                   value={cfg.loyaltyActivatedAt ? cfg.loyaltyActivatedAt.slice(0, 10) : ""}
                   onChange={(e) => set("loyaltyActivatedAt", e.target.value ? new Date(e.target.value + "T00:00:00").toISOString() : null)}
                   className={inputCls + " mt-1"}

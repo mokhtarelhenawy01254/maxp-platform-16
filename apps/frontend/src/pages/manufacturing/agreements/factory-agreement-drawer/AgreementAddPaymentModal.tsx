@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface AgreementAddPaymentModalProps {
   isOpen: boolean;
@@ -82,8 +83,7 @@ export const AgreementAddPaymentModal: React.FC<
             <label className="block font-medium text-foreground mb-1">
               تاريخ الاستحقاق
             </label>
-            <input
-              type="date"
+            <DateInput
               value={paymentDueDate}
               onChange={(e) => onPaymentDueDateChange(e.target.value)}
               className="w-full p-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-primary/20 focus:outline-none"

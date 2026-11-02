@@ -25,6 +25,7 @@ import {
 import CategoryModal from "./CategoryModal";
 import uploadService from "../../services/uploadService";
 import { toast } from "sonner";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -438,8 +439,7 @@ export default function ExpenseModal({
                   <Calendar className="w-3 h-3 text-zinc-400" />
                   تاريخ الصرف
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:outline-none"

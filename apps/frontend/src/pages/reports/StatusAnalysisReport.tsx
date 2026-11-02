@@ -19,6 +19,7 @@ import {
 import analyticsService from "../../services/analyticsService";
 import { StatusAnalysisCharts } from "./statusAnalysis/StatusAnalysisCharts";
 import { StatusAnalysisTable } from "./statusAnalysis/StatusAnalysisTable";
+import { DateInput } from '../../components/ui/DateInput';
 
 const PERIOD_OPTIONS = [
   { value: "7", label: "آخر 7 أيام" },
@@ -258,8 +259,7 @@ const StatusAnalysisReport: React.FC = () => {
               <>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">من تاريخ</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full h-8 text-xs rounded-lg border border-border/70 bg-background px-2.5 text-foreground"
@@ -267,8 +267,7 @@ const StatusAnalysisReport: React.FC = () => {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">إلى تاريخ</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full h-8 text-xs rounded-lg border border-border/70 bg-background px-2.5 text-foreground"

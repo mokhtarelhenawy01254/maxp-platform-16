@@ -13,6 +13,7 @@ import {
   InterviewType,
   NewInterviewForm,
 } from "./types";
+import { DateInput } from '../../../../../components/ui/DateInput';
 
 interface InterviewScheduleModalProps {
   open: boolean;
@@ -152,8 +153,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                       تاريخ ووقت المقابلة
                     </label>
                     <div className="flex gap-2">
-                      <input
-                        type="date"
+                      <DateInput
                         value={newInterview.date}
                         onChange={(e) =>
                           onChangeInterview({

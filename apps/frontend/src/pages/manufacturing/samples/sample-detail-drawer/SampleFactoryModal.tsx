@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { PartnerFactory } from '../../manufacturingApi';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface SampleFactoryModalProps {
   isOpen: boolean;
@@ -63,8 +64,7 @@ export const SampleFactoryModal: React.FC<SampleFactoryModalProps> = ({
             <label className="block font-semibold mb-1">
               موعد استلام العينة من المصنع
             </label>
-            <input
-              type="date"
+            <DateInput
               value={selectedExpectedDeliveryAt}
               onChange={(e) => setSelectedExpectedDeliveryAt(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background outline-none focus:ring-1 focus:ring-primary tabular-nums"

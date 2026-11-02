@@ -19,6 +19,7 @@ import {
   getTodayIsoDate,
   valueFromRawInput,
 } from "./utils";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const SectionBadge: React.FC<{
   label: string;
@@ -317,8 +318,7 @@ const WorkReportSubmissionPage: React.FC = () => {
             <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
               <CalendarDays className="h-4 w-4 text-slate-500" />
               <span className="text-slate-500 dark:text-slate-400">تاريخ التقرير</span>
-              <input
-                type="date"
+              <DateInput
                 value={reportDate}
                 onChange={(event) => setReportDate(event.target.value)}
                 className="bg-transparent outline-none"

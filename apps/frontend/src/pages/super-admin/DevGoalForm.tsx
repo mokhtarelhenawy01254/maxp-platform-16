@@ -14,6 +14,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { DateInput } from '../../components/ui/DateInput';
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -358,8 +359,7 @@ const DevGoalForm: React.FC = () => {
               <label className="block text-xs font-medium text-foreground mb-1.5">
                 تاريخ البدء <span className="text-destructive">*</span>
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
@@ -370,8 +370,7 @@ const DevGoalForm: React.FC = () => {
               <label className="block text-xs font-medium text-foreground mb-1.5">
                 تاريخ الانتهاء <span className="text-destructive">*</span>
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"

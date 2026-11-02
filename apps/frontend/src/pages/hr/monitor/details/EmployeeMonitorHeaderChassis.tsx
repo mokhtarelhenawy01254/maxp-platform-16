@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { TeamMemberSwitchOption } from "./types";
 import { getOperationalSignalClassName } from "./helpers";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface EmployeeMonitorHeaderChassisProps {
   employeeName: string;
@@ -204,8 +205,7 @@ export const EmployeeMonitorHeaderChassis: React.FC<
 
           <div className="flex items-center gap-1.5 px-2">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               value={selectedDate}
               onChange={(e) => onSelectDate(e.target.value)}
               className="bg-transparent text-xs text-foreground focus:outline-none font-mono tabular-nums"

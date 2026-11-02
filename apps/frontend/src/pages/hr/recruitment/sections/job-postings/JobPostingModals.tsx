@@ -7,6 +7,7 @@ import {
   NewJobForm,
 } from "./types";
 import { getJobStatusBadge, normalizeTextList } from "./helpers";
+import { DateInput } from '../../../../../components/ui/DateInput';
 
 interface CreateJobPostingModalProps {
   open: boolean;
@@ -214,8 +215,7 @@ export const CreateJobPostingModal: React.FC<CreateJobPostingModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   تاريخ الإغلاق
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={newJob.closingDate}
                   onChange={(e) =>
                     onChangeJob({ ...newJob, closingDate: e.target.value })

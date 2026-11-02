@@ -1,5 +1,6 @@
 import React from "react";
 import { CreateDeductionForm, DEDUCTION_TYPES } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface DeductionCreateModalProps {
   open: boolean;
@@ -113,8 +114,7 @@ export const DeductionCreateModal: React.FC<DeductionCreateModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   التاريخ
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={createForm.date}
                   onChange={(e) =>
                     setCreateForm({ ...createForm, date: e.target.value })

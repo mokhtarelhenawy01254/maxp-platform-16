@@ -12,6 +12,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "@heroicons/react/24/outline";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface StatusRow {
   status: string;
@@ -385,15 +386,13 @@ const StatusSummaryReport: React.FC = () => {
               </div>
               {datePreset === 'custom' && (
                 <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="date"
+                  <DateInput
                     value={dateRange.start}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
                     className="block w-40 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
                   />
                   <span className="text-gray-400">{'—'}</span>
-                  <input
-                    type="date"
+                  <DateInput
                     value={dateRange.end}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
                     className="block w-40 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"

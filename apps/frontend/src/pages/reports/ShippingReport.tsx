@@ -12,6 +12,7 @@ import {
   ChartBarIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface ShippingReportData {
   orderId: string;
@@ -282,10 +283,7 @@ const ShippingReport: React.FC = () => {
               >
                 من تاريخ
               </label>
-              <input
-                id="shipping-report-start-date"
-                name="startDate"
-                type="date"
+              <DateInput
                 autoComplete="off"
                 value={filters.startDate}
                 onChange={(e) =>
@@ -301,10 +299,7 @@ const ShippingReport: React.FC = () => {
               >
                 إلى تاريخ
               </label>
-              <input
-                id="shipping-report-end-date"
-                name="endDate"
-                type="date"
+              <DateInput
                 autoComplete="off"
                 value={filters.endDate}
                 onChange={(e) =>
@@ -502,8 +497,7 @@ const ShippingReport: React.FC = () => {
                   {govCostsRetroactive && (
                     <div className="mt-3 flex items-center gap-2">
                       <span className="text-sm text-amber-700 dark:text-amber-400">من تاريخ:</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={govCostsRetroactiveFrom}
                         onChange={(e) => setGovCostsRetroactiveFrom(e.target.value)}
                         className="rounded border border-amber-300 px-2 py-1 text-sm dark:border-amber-700 dark:bg-gray-800 dark:text-gray-100"

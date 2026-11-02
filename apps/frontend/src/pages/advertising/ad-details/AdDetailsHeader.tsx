@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { FacebookAdDetailResponse } from "../../../services/facebookAdsService";
 import { getStatusBadge, getStatusLabel, getVerdictClass } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AdDetailsHeaderProps {
   details: FacebookAdDetailResponse;
@@ -92,8 +93,7 @@ export const AdDetailsHeader: React.FC<AdDetailsHeaderProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="date"
+          <DateInput
             aria-label={isEn ? "Start Date" : "تاريخ البدء"}
             value={dateRange.startDate}
             onChange={(event) =>
@@ -104,8 +104,7 @@ export const AdDetailsHeader: React.FC<AdDetailsHeaderProps> = ({
             }
             className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold tabular-nums"
           />
-          <input
-            type="date"
+          <DateInput
             aria-label={isEn ? "End Date" : "تاريخ الانتهاء"}
             value={dateRange.endDate}
             onChange={(event) =>

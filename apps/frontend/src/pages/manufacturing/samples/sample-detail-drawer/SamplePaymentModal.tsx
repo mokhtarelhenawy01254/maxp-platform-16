@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { SampleOrder } from '../../manufacturingApi';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface SamplePaymentModalProps {
   sample: SampleOrder;
@@ -99,8 +100,7 @@ export const SamplePaymentModal: React.FC<SamplePaymentModalProps> = ({
 
           <div>
             <label className="block font-semibold mb-1">تاريخ الدفعة *</label>
-            <input
-              type="date"
+            <DateInput
               required
               value={paymentPaidAt}
               onChange={(e) => setPaymentPaidAt(e.target.value)}

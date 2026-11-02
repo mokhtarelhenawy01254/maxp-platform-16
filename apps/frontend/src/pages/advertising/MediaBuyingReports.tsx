@@ -33,6 +33,7 @@ import {
   extractReportRunId,
   normalizeAsyncReportStatus,
 } from "./MediaBuyingReports.helpers";
+import { DateInput } from '../../components/ui/DateInput';
 
 type ReportMode = "async" | "sync";
 type AsyncRunState = {
@@ -511,8 +512,7 @@ const MediaBuyingReports: React.FC = () => {
                   <div className="grid gap-2 sm:grid-cols-2">
                     <label className="flex flex-col gap-1">
                       <span className="text-xs font-bold text-slate-500">من</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={since}
                         onChange={(event) => setSince(event.target.value)}
                         className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950"
@@ -520,8 +520,7 @@ const MediaBuyingReports: React.FC = () => {
                     </label>
                     <label className="flex flex-col gap-1">
                       <span className="text-xs font-bold text-slate-500">إلى</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={until}
                         onChange={(event) => setUntil(event.target.value)}
                         className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950"

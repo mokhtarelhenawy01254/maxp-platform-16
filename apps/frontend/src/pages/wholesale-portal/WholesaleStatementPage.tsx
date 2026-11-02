@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { wholesalePortalApi, WholesaleStatement } from './wholesalePortalApi';
 import { WholesaleAccessCheck } from './WholesaleAccessCheck';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const WholesaleStatementPage: React.FC = () => {
   const [statement, setStatement] = useState<WholesaleStatement | null>(null);
@@ -153,15 +154,13 @@ export const WholesaleStatementPage: React.FC = () => {
               فترة الكشف:
             </span>
             <div className="flex items-center gap-2">
-              <input
-                type="date"
+              <DateInput
                 value={periodStart}
                 onChange={(e) => setPeriodStart(e.target.value)}
                 className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-800"
               />
               <span className="text-xs text-gray-400">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={periodEnd}
                 onChange={(e) => setPeriodEnd(e.target.value)}
                 className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-800"

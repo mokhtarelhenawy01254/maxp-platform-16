@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, ArrowLeft } from 'lucide-react';
+import { DateInput } from '../ui/DateInput';
 
 interface DateRangePickerProps {
   onDateChange: (startDate: Date | null, endDate: Date | null, period: string) => void;
@@ -84,8 +85,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             <Calendar className="size-3.5" />
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
+            <DateInput
               value={startDate ? startDate.toISOString().split('T')[0] : ''}
               onChange={handleStartDateChange}
               max={new Date().toISOString().split('T')[0]}
@@ -94,8 +94,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               aria-label="من تاريخ"
             />
             <ArrowLeft className="size-3.5 text-muted-foreground/60" />
-            <input
-              type="date"
+            <DateInput
               value={endDate ? endDate.toISOString().split('T')[0] : ''}
               onChange={handleEndDateChange}
               min={startDate ? startDate.toISOString().split('T')[0] : undefined}

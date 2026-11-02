@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Palmtree, Plus, Trash2 } from "lucide-react";
 import { MODAL_INPUT_CLS } from "../../../../shared";
 import type { TechnicianForm } from "../../types/technicianTypes";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 interface TechnicianVacationsSectionProps {
   modal: TechnicianForm;
@@ -56,8 +57,7 @@ export function TechnicianVacationsSection({ modal, setModal }: TechnicianVacati
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">من تاريخ *</span>
-                  <input
-                    type="date"
+                  <DateInput
                     className={`${inputCls} py-1 text-xs font-mono`}
                     value={vac.startDate}
                     onChange={(e) => {
@@ -70,8 +70,7 @@ export function TechnicianVacationsSection({ modal, setModal }: TechnicianVacati
                 </div>
                 <div>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">إلى تاريخ *</span>
-                  <input
-                    type="date"
+                  <DateInput
                     className={`${inputCls} py-1 text-xs font-mono`}
                     value={vac.endDate}
                     onChange={(e) => {

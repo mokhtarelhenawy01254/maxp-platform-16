@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import api from "../../services/api";
+import { DateInput } from '../../components/ui/DateInput';
 
 type ResignationFormData = {
   employeeId: string;
@@ -170,8 +171,7 @@ const CreateResignation: React.FC = () => {
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               تاريخ تقديم الاستقالة <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <DateInput
               {...register("resignationDate", { required: "التاريخ مطلوب" })}
               onChange={(e) => {
                 register("resignationDate").onChange(e);
@@ -196,8 +196,7 @@ const CreateResignation: React.FC = () => {
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               آخر يوم عمل معتمد <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <DateInput
               {...register("lastWorkingDay", { required: "تاريخ آخر يوم عمل مطلوب" })}
               className="w-full px-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
             />

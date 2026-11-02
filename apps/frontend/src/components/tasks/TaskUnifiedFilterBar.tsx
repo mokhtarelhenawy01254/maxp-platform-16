@@ -17,6 +17,7 @@ import {
 import { AdvancedSearch, SearchFilters } from './AdvancedSearch';
 import { buildApiUrl } from '../../utils/urlHelper';
 import tokenManager from '../../utils/tokenManager';
+import { DateInput } from '../ui/DateInput';
 
 export interface TeamMember {
   id: string;
@@ -300,16 +301,14 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
           {/* Quick Date Inputs if custom */}
           {(filters.dueDateFrom || filters.dueDateTo) && (
             <div className="flex items-center gap-1 text-xs">
-              <input
-                type="date"
+              <DateInput
                 value={filters.dueDateFrom}
                 onChange={(e) => updateFilter('dueDateFrom', e.target.value)}
                 className="h-8 rounded-lg border border-border/60 bg-background/90 px-1 text-[11px] text-foreground focus:outline-none"
                 title="من تاريخ"
               />
               <span className="text-muted-foreground">-</span>
-              <input
-                type="date"
+              <DateInput
                 value={filters.dueDateTo}
                 onChange={(e) => updateFilter('dueDateTo', e.target.value)}
                 className="h-8 rounded-lg border border-border/60 bg-background/90 px-1 text-[11px] text-foreground focus:outline-none"

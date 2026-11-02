@@ -1,6 +1,7 @@
 import React from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { NewAppointmentPayload, TimeSlot } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateAppointmentModalProps {
   isOpen: boolean;
@@ -151,8 +152,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     التاريخ *
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={newAppointment.appointmentDate}
                     onChange={(e) =>
                       onAppointmentChange({

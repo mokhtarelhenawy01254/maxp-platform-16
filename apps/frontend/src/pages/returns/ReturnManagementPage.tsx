@@ -3,6 +3,7 @@ import { Package, RefreshCw, Clock, CalendarDays } from "lucide-react";
 import { useReturnManagementData } from "./hooks/useReturnManagementData";
 import { ReturnRequestsTable } from "./components/ReturnRequestsTable";
 import ReturnDetailsModal from "./ReturnDetailsModal";
+import { DateInput } from '../../components/ui/DateInput';
 
 const ReturnManagementPage: React.FC = () => {
   const {
@@ -183,16 +184,14 @@ const ReturnManagementPage: React.FC = () => {
               )}
 
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <input
-                  type="date"
+                <DateInput
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                   className="h-8 w-28 px-2 text-xs border border-border/80 rounded-lg bg-background/80 text-foreground font-mono"
                   title={t("returns.k_150")}
                 />
                 <span>-</span>
-                <input
-                  type="date"
+                <DateInput
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                   className="h-8 w-28 px-2 text-xs border border-border/80 rounded-lg bg-background/80 text-foreground font-mono"

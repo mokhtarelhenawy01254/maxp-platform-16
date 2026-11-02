@@ -9,6 +9,7 @@ import {
   RefundsView,
   CashierDailyView,
 } from "./BookingReportViews";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   branches?: BookingBranch[];
@@ -105,8 +106,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Calendar className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className="border border-border/70 rounded-xl pr-8 pl-3 py-1.5 text-xs font-mono tabular-nums bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               value={from}
               onChange={e => setFrom(e.target.value)}
@@ -114,8 +114,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
           </div>
           <div className="relative">
             <Calendar className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className="border border-border/70 rounded-xl pr-8 pl-3 py-1.5 text-xs font-mono tabular-nums bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               value={to}
               onChange={e => setTo(e.target.value)}

@@ -36,6 +36,7 @@ import {
   EditAccountModal,
 } from "./TreasuryModals";
 import ExpenseModal from "./ExpenseModal";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface TreasuryCapitalTabProps {
   accounts: TreasuryAccount[];
@@ -488,8 +489,7 @@ export default function TreasuryCapitalTab({
             {/* Custom Dates if selected */}
             {datePreset === "custom" && (
               <div className="flex items-center gap-1">
-                <input
-                  type="date"
+                <DateInput
                   value={startDate}
                   onChange={(e) => {
                     setStartDate(e.target.value);
@@ -498,8 +498,7 @@ export default function TreasuryCapitalTab({
                   className="px-2 py-1 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl"
                 />
                 <span className="text-zinc-400 text-xs">-</span>
-                <input
-                  type="date"
+                <DateInput
                   value={endDate}
                   onChange={(e) => {
                     setEndDate(e.target.value);

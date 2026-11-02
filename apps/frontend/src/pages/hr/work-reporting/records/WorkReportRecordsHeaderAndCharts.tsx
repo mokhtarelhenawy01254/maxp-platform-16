@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { WorkReportRecordsResponse } from "../types";
 import { formatMetricValue } from "../utils";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 const StatCard: React.FC<{
   label: string;
@@ -122,8 +123,7 @@ export const WorkReportRecordsHeaderAndCharts: React.FC<
             <CalendarDays className="h-4 w-4" />
             من تاريخ
           </span>
-          <input
-            type="date"
+          <DateInput
             value={startDate}
             onChange={(event) => onStartDateChange(event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-slate-400 focus:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500 font-mono tabular-nums"
@@ -134,8 +134,7 @@ export const WorkReportRecordsHeaderAndCharts: React.FC<
             <CalendarDays className="h-4 w-4" />
             إلى تاريخ
           </span>
-          <input
-            type="date"
+          <DateInput
             value={endDate}
             onChange={(event) => onEndDateChange(event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-slate-400 focus:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500 font-mono tabular-nums"

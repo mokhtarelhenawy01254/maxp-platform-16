@@ -17,6 +17,7 @@ import {
 import OrderStatusOverviewTab from "./OrderStatusOverviewTab";
 import OrderStatusShortageTab from "./OrderStatusShortageTab";
 import OrderStatusTrendsTab from "./OrderStatusTrendsTab";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export default function OrderStatusAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -177,8 +178,7 @@ export default function OrderStatusAnalytics() {
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">من:</span>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="px-2 py-1 text-xs border border-border/70 rounded bg-background text-foreground"
@@ -186,8 +186,7 @@ export default function OrderStatusAnalytics() {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">إلى:</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-2 py-1 text-xs border border-border/70 rounded bg-background text-foreground"

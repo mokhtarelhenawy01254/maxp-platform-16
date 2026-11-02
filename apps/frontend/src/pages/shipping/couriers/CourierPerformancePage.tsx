@@ -17,6 +17,7 @@ import {
 import courierService, { CourierPerformanceRow } from '../../../services/courierService';
 import { useCurrency } from '../../../hooks/useCurrency';
 import i18n from '../../../i18n';
+import { DateInput } from '../../../components/ui/DateInput';
 
 /**
  * تقرير أداء المناديب الزمني — تسليمات/مرتجعات/كاش محصّل لكل مندوب داخل نطاق تاريخ.
@@ -91,15 +92,13 @@ const CourierPerformancePage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-card border border-border/70 rounded-lg px-2 py-1 gap-2 text-xs">
               <Calendar size={14} className="text-muted-foreground" />
-              <input
-                type="date"
+              <DateInput
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
                 className="bg-transparent text-foreground focus:outline-none font-mono text-xs"
               />
               <span className="text-muted-foreground text-[11px]">إلى</span>
-              <input
-                type="date"
+              <DateInput
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
                 className="bg-transparent text-foreground focus:outline-none font-mono text-xs"

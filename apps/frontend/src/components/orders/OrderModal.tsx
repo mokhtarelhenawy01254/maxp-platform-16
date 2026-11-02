@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { config } from "../../config";
 import tokenManager from "../../utils/tokenManager";
+import { DateInput } from '../ui/DateInput';
 
 interface ProductVariant {
   id: string;
@@ -915,8 +916,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                         تاريخ الاستلام <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DateInput
                         value={scheduledDeliveryDate}
                         onChange={(e) =>
                           setScheduledDeliveryDate(e.target.value)

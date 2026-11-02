@@ -10,6 +10,7 @@ import type {
   ShortageFollowUpVisual,
   ShortageHoldDetails,
 } from "../types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface PreparationOrderShortagePanelProps {
   order: PreparationOrder;
@@ -106,8 +107,7 @@ const PreparationOrderShortagePanel = ({
           <span className="mb-2 block text-xs font-medium text-rose-900 dark:text-rose-200">
             {t("preparation.shortagePanel.followUpDate")}
           </span>
-          <input
-            type="date"
+          <DateInput
             value={shortageHoldDetails.followUpDate}
             onChange={(event) =>
               onShortageFieldChange(

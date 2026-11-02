@@ -1,6 +1,7 @@
 import React from "react";
 import { Filter, X, RotateCcw, Star } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
+import { DateInput } from '../../ui/DateInput';
 
 export interface FilterState {
   unreadOnly: boolean;
@@ -117,8 +118,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <label className="block text-[11px] font-medium text-muted-foreground">
             من تاريخ
           </label>
-          <input
-            type="date"
+          <DateInput
             value={
               filters.startDate
                 ? filters.startDate.toISOString().split("T")[0]
@@ -140,8 +140,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <label className="block text-[11px] font-medium text-muted-foreground">
             إلى تاريخ
           </label>
-          <input
-            type="date"
+          <DateInput
             value={
               filters.endDate
                 ? filters.endDate.toISOString().split("T")[0]

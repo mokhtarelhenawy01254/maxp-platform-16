@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Ban, CalendarDays, CheckCircle2, ClipboardList, FileCheck2, Loader2, RefreshCw, Send, Stethoscope, UserRound, XCircle, Clock } from "lucide-react";
 import { BookingAppointment, BookingBranch, BookingDoctor, BOOKING_STATUS_MAP, REPORT_STATUS_MAP, api, fetchJson } from "./shared";
 import WorkflowStatusBadge, { NEXT_BOOKING_STATUS, NEXT_REPORT_STATUS, LEGACY_TO_BOOKING } from "./WorkflowStatusBadge";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const SUB_TABS: { id: SubTab; label: string; icon: typeof CalendarDays }[] = [
   { id: "reception", label: "الاستقبال", icon: UserRound },
@@ -155,8 +156,7 @@ export default function WorkflowPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <CalendarDays className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               className="border border-border/70 rounded-xl pr-8 pl-3 py-1.5 text-xs font-mono tabular-nums bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               value={date}
               onChange={(e) => setDate(e.target.value)}

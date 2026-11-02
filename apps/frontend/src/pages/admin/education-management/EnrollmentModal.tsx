@@ -8,6 +8,7 @@ import type {
   EducationSubject,
 } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface EnrollmentModalProps {
   enrollment?: Partial<EducationEnrollment> | null;
@@ -187,8 +188,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
             <label className="text-xs font-medium text-foreground">
               تاريخ انتهاء الباقة
             </label>
-            <input
-              type="date"
+            <DateInput
               className={INPUT_CLS}
               value={form.expiresAt?.split("T")[0] || ""}
               onChange={(e) =>

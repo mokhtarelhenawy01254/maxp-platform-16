@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Zap } from 'lucide-react';
 import { RadiologyDevice, MODAL_INPUT_CLS } from '../../shared';
 import { Appointment, PAY_METHODS, ScheduleForm } from '../types';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface DeviceAndTimingSectionProps {
   modal: ScheduleForm;
@@ -211,8 +212,7 @@ export const DeviceAndTimingSection: React.FC<DeviceAndTimingSectionProps> = ({
 
       <div>
         <label className={labelCls}>{t('radiology.schedule.date')}</label>
-        <input
-          type="date"
+        <DateInput
           className={MODAL_INPUT_CLS}
           value={modal.appointmentDate}
           onChange={e => onModalChange({ ...modal, appointmentDate: e.target.value })}

@@ -6,6 +6,7 @@ import {
   BOOKING_STATUS_MAP, STATUS_MAP, MODAL_INPUT_CLS, fetchJson, api, getAuthHeaders
 } from "./shared";
 import AppointmentModal from "./AppointmentModal";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   appointments?: BookingAppointment[];
@@ -248,8 +249,7 @@ export default function CalendarTab(_props: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <input
-              type="date"
+            <DateInput
               className={`${MODAL_INPUT_CLS} w-auto text-xs sm:text-sm font-mono tabular-nums`}
               value={timelineDate}
               onChange={(e) => e.target.value && setTimelineDate(e.target.value)}

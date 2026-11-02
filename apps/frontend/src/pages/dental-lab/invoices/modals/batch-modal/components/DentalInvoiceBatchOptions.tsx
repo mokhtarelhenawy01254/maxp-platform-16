@@ -1,6 +1,7 @@
 import React from "react";
 import { MODAL_INPUT_CLS } from "../../../../shared";
 import type { DentalInvoiceBatchMode } from "../types";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 export interface DentalInvoiceBatchOptionsProps {
   includeAllStatuses: boolean;
@@ -80,9 +81,7 @@ export const DentalInvoiceBatchOptions: React.FC<DentalInvoiceBatchOptionsProps>
           <label htmlFor="batch-due-date" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
             تاريخ استحقاق الفواتير
           </label>
-          <input
-            id="batch-due-date"
-            type="date"
+          <DateInput
             className={`${MODAL_INPUT_CLS} text-sm`}
             value={dueDate}
             onChange={(e) => onDueDateChange(e.target.value)}

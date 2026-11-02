@@ -1,4 +1,5 @@
 import React from "react";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 interface StatementDateFilterProps {
   from: string;
@@ -22,8 +23,7 @@ export const StatementDateFilter: React.FC<StatementDateFilterProps> = ({
       </span>
       <div className="flex items-center gap-1.5">
         <span>من:</span>
-        <input
-          type="date"
+        <DateInput
           aria-label="تاريخ البداية"
           value={from}
           onChange={(e) => onFromChange(e.target.value)}
@@ -32,8 +32,7 @@ export const StatementDateFilter: React.FC<StatementDateFilterProps> = ({
       </div>
       <div className="flex items-center gap-1.5">
         <span>إلى:</span>
-        <input
-          type="date"
+        <DateInput
           aria-label="تاريخ النهاية"
           value={to}
           onChange={(e) => onToChange(e.target.value)}

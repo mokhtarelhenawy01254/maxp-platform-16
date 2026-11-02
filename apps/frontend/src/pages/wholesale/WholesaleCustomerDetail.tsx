@@ -34,6 +34,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface WholesaleCustomerData {
   id?: string;
@@ -1336,8 +1337,7 @@ export default function WholesaleCustomerDetail() {
             <div className="flex items-center gap-2 font-mono text-xs flex-wrap">
               <div className="flex items-center gap-1">
                 <span className="text-[11px] text-muted-foreground">من:</span>
-                <input
-                  type="date"
+                <DateInput
                   value={statementStart}
                   onChange={(e) => setStatementStart(e.target.value)}
                   className="h-7 px-2 border border-border/70 rounded text-[11px] bg-background text-foreground"
@@ -1345,8 +1345,7 @@ export default function WholesaleCustomerDetail() {
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[11px] text-muted-foreground">إلى:</span>
-                <input
-                  type="date"
+                <DateInput
                   value={statementEnd}
                   onChange={(e) => setStatementEnd(e.target.value)}
                   className="h-7 px-2 border border-border/70 rounded text-[11px] bg-background text-foreground"

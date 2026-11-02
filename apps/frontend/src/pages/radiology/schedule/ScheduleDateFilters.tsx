@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { MODAL_INPUT_CLS } from "../shared";
 import { dayKey, addDays } from "../ScheduleCalendar";
 import { todayKey } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ScheduleDateFiltersProps {
   dateFrom: string;
@@ -30,8 +31,7 @@ export const ScheduleDateFilters: React.FC<ScheduleDateFiltersProps> = ({
         <label className="text-sm text-gray-600 dark:text-gray-300">
           {t("radiology.schedule.from")}
         </label>
-        <input
-          type="date"
+        <DateInput
           className={MODAL_INPUT_CLS}
           style={{ width: 160 }}
           value={dateFrom}
@@ -40,8 +40,7 @@ export const ScheduleDateFilters: React.FC<ScheduleDateFiltersProps> = ({
         <label className="text-sm text-gray-600 dark:text-gray-300">
           {t("radiology.schedule.to")}
         </label>
-        <input
-          type="date"
+        <DateInput
           className={MODAL_INPUT_CLS}
           style={{ width: 160 }}
           value={dateTo}

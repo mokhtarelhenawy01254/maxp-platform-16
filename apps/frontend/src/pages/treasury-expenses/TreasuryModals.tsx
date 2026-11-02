@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, ArrowRightLeft, DollarSign, Building2, AlertTriangle, CheckCircle2, Plus, Edit3 } from "lucide-react";
 import { TreasuryAccount, depositCapital, transferBetweenAccounts, createAccount, updateAccount, formatMoney } from "./shared";
 import { toast } from "sonner";
+import { DateInput } from '../../components/ui/DateInput';
 
 // -----------------------------------------------------------------
 // 1. DEPOSIT CAPITAL MODAL (إيداع رأس مال / تمويل)
@@ -147,8 +148,7 @@ export function DepositCapitalModal({ isOpen, onClose, onSuccess, accounts }: De
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">تاريخ الإيداع *</label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

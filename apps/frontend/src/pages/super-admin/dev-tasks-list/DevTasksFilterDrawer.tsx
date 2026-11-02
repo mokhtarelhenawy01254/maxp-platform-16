@@ -12,6 +12,7 @@ import {
   TeamMemberOption,
   ReleaseOption,
 } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface DevTasksFilterDrawerProps {
   show: boolean;
@@ -249,8 +250,7 @@ export const DevTasksFilterDrawer: React.FC<DevTasksFilterDrawerProps> = ({
                 <label className="block text-xs text-muted-foreground mb-1">
                   من
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={pendingFilters.dueDateFrom}
                   onChange={(e) => onFilterChange("dueDateFrom", e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground text-xs"
@@ -260,8 +260,7 @@ export const DevTasksFilterDrawer: React.FC<DevTasksFilterDrawerProps> = ({
                 <label className="block text-xs text-muted-foreground mb-1">
                   إلى
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={pendingFilters.dueDateTo}
                   onChange={(e) => onFilterChange("dueDateTo", e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground text-xs"

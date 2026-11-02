@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Account, JournalEntry } from './accountingApi';
+import { DateInput } from '../../components/ui/DateInput';
 
 interface NewEntryModalProps {
   accounts: Account[];
@@ -79,8 +80,7 @@ export const AccountingNewEntryModal: React.FC<NewEntryModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-semibold mb-1">تاريخ القيد</label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}

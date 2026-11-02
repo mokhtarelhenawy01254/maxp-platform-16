@@ -199,7 +199,7 @@ export const NewCustomerOrderModal: React.FC<NewCustomerOrderModalProps> = ({
               </label>
               <DateInput
                 value={expectedDelivery}
-                onChange={setExpectedDelivery}
+                onChange={(e) => setExpectedDelivery(e.target.value)}
               />
             </div>
 

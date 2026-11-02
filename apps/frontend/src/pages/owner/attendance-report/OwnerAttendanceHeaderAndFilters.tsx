@@ -17,6 +17,7 @@ import {
   OwnerReportSortBy,
   OwnerReportViewMode,
 } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface OwnerAttendanceHeaderAndFiltersProps {
   selectedPreset: string;
@@ -94,15 +95,13 @@ export const OwnerAttendanceHeaderAndFilters: React.FC<
             </select>
             <div className="w-[1px] h-4 bg-gray-300 dark:bg-gray-600"></div>
             <CalendarDaysIcon className="w-5 h-5 text-gray-400 mx-1" />
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
               className="bg-transparent border-none focus:ring-0 text-sm py-1 font-mono tabular-nums dark:text-white"
             />
             <span className="text-gray-400">إلى</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
               className="bg-transparent border-none focus:ring-0 text-sm py-1 font-mono tabular-nums dark:text-white"

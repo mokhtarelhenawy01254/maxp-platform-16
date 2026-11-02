@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { CELL_CLS, SESSION_STATUS } from "./types";
 import { SessionModal } from "./SessionModal";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface EducationSessionsTabProps {
   sessions: EducationSession[];
@@ -108,16 +109,14 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 </option>
               ))}
           </select>
-          <input
-            type="date"
+          <DateInput
             className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             value={sessionFilters.from}
             onChange={(e) =>
               setSessionFilters({ ...sessionFilters, from: e.target.value })
             }
           />
-          <input
-            type="date"
+          <DateInput
             className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             value={sessionFilters.to}
             onChange={(e) =>

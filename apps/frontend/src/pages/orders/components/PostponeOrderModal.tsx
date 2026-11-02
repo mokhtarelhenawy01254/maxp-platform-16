@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, Clock } from "lucide-react";
 import OrderModal from "../../../components/common/OrderModal";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface PostponeOrderModalProps {
   isOpen: boolean;
@@ -116,8 +117,7 @@ const PostponeOrderModal: React.FC<PostponeOrderModalProps> = ({
           </span>
           <div className="relative">
             <CalendarDays className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="date"
+            <DateInput
               value={scheduledDeliveryDate}
               onChange={(e) => setScheduledDeliveryDate(e.target.value)}
               min={getMinDate()}

@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   FolderOpen
 } from "lucide-react";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface Project {
   id: string;
@@ -615,8 +616,7 @@ const ProjectFormModal: React.FC<{
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-foreground mb-1">تاريخ البدء</label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
@@ -624,8 +624,7 @@ const ProjectFormModal: React.FC<{
             </div>
             <div>
               <label className="block font-medium text-foreground mb-1">تاريخ الانتهاء</label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"

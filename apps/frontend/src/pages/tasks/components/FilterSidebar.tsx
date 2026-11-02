@@ -16,6 +16,7 @@ import type {
   TaskFiltersState,
   TaskUser,
 } from "../types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface FilterSidebarProps {
   show: boolean;
@@ -167,9 +168,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="tasks-filter-date-from">من تاريخ</Label>
-              <input
-                id="tasks-filter-date-from"
-                type="date"
+              <DateInput
                 value={filters.dueDateFrom}
                 onChange={(event) =>
                   setFilters({ ...filters, dueDateFrom: event.target.value })
@@ -180,9 +179,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="tasks-filter-date-to">إلى تاريخ</Label>
-              <input
-                id="tasks-filter-date-to"
-                type="date"
+              <DateInput
                 value={filters.dueDateTo}
                 onChange={(event) =>
                   setFilters({ ...filters, dueDateTo: event.target.value })

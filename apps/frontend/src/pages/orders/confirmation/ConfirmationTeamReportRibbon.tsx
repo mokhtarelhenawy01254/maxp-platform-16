@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Users, RotateCcw } from "lucide-react";
 import type { ConfirmationStats, FilterOption } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface ConfirmationTeamReportRibbonProps {
   stats: ConfirmationStats | null;
@@ -73,8 +74,7 @@ export const ConfirmationTeamReportRibbon: React.FC<ConfirmationTeamReportRibbon
         <div className="mt-3 space-y-2.5 text-xs text-foreground">
           <label className="block">
             <span className="mb-1 block text-[11px] text-muted-foreground">{t("orders.from", { defaultValue: "من" })}</span>
-            <input
-              type="date"
+            <DateInput
               value={statsStartDate}
               onChange={(e) => setStatsStartDate(e.target.value)}
               className="h-10 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none"
@@ -82,8 +82,7 @@ export const ConfirmationTeamReportRibbon: React.FC<ConfirmationTeamReportRibbon
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] text-muted-foreground">{t("orders.to", { defaultValue: "إلى" })}</span>
-            <input
-              type="date"
+            <DateInput
               value={statsEndDate}
               onChange={(e) => setStatsEndDate(e.target.value)}
               className="h-10 w-full rounded-xl border border-border/70 bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none"
@@ -126,8 +125,7 @@ export const ConfirmationTeamReportRibbon: React.FC<ConfirmationTeamReportRibbon
       <div className="mt-3 hidden flex-col gap-2.5 text-xs text-foreground sm:flex lg:flex-row lg:items-center">
         <div className="flex items-center gap-1.5">
           <label className="text-muted-foreground shrink-0">{t("orders.from", { defaultValue: "من" })}</label>
-          <input
-            type="date"
+          <DateInput
             value={statsStartDate}
             onChange={(e) => setStatsStartDate(e.target.value)}
             className="h-9 px-2.5 border border-border/70 rounded-xl bg-background text-foreground text-xs focus:border-primary focus:outline-none"
@@ -135,8 +133,7 @@ export const ConfirmationTeamReportRibbon: React.FC<ConfirmationTeamReportRibbon
         </div>
         <div className="flex items-center gap-1.5">
           <label className="text-muted-foreground shrink-0">{t("orders.to", { defaultValue: "إلى" })}</label>
-          <input
-            type="date"
+          <DateInput
             value={statsEndDate}
             onChange={(e) => setStatsEndDate(e.target.value)}
             className="h-9 px-2.5 border border-border/70 rounded-xl bg-background text-foreground text-xs focus:border-primary focus:outline-none"

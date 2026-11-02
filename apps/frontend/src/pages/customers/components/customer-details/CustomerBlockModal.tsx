@@ -5,6 +5,7 @@ import {
   CustomerBlockReasonCode,
 } from "@/services/customerBlocklistService";
 import { CustomerBlockFormState } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface CustomerBlockModalProps {
   isOpen: boolean;
@@ -87,8 +88,7 @@ export const CustomerBlockModal: React.FC<CustomerBlockModalProps> = ({
             <span className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
               مدة الحظر
             </span>
-            <input
-              type="date"
+            <DateInput
               value={form.expiresAt}
               onChange={(e) =>
                 onFormChange((prev) => ({

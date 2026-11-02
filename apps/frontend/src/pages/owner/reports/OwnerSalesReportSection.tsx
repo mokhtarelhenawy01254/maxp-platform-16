@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { CompanySalesData, SalesReportData } from "./types";
 import { getOwnerReportsImageUrl } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface OwnerSalesReportSectionProps {
   startDate: string;
@@ -77,15 +78,13 @@ export const OwnerSalesReportSection: React.FC<
           </div>
           <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
             <CalendarDaysIcon className="w-4 h-4 text-gray-400 mr-1" />
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
               className="bg-transparent border-none text-sm font-mono tabular-nums text-gray-700 dark:text-gray-200 focus:ring-0 p-0 w-32"
             />
             <span className="text-gray-400 text-sm">إلى</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
               className="bg-transparent border-none text-sm font-mono tabular-nums text-gray-700 dark:text-gray-200 focus:ring-0 p-0 w-32"

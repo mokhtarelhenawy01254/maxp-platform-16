@@ -15,6 +15,7 @@ import type {
   StatusReportItem,
   ReportRange,
 } from "../types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface StatusReportTabProps {
   statuses: EventRow[];
@@ -289,16 +290,14 @@ export default function StatusReportTab({ statuses, config }: StatusReportTabPro
 
         {range === "custom" && (
           <div className="flex items-center gap-2">
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => setStartDate(e.target.value || localDateStr(new Date()))}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               aria-label="من تاريخ"
             />
             <span className="text-xs text-slate-400">→</span>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => setEndDate(e.target.value || localDateStr(new Date()))}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono dark:border-slate-700 dark:bg-slate-800 dark:text-white"

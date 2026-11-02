@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, VatReport } from './accountingApi';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const AccountingVatReportPage: React.FC = () => {
   const [report, setReport] = useState<VatReport | null>(null);
@@ -84,8 +85,7 @@ export const AccountingVatReportPage: React.FC = () => {
                 <Calendar className="w-3.5 h-3.5" />
                 <span>الفترة من:</span>
               </span>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -93,8 +93,7 @@ export const AccountingVatReportPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground font-medium">إلى:</span>
-              <input
-                type="date"
+              <DateInput
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="px-2.5 py-1.5 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"

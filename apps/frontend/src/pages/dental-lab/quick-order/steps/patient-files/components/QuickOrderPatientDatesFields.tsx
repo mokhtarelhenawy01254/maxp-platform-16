@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { MODAL_INPUT_CLS, PRIORITY_CONFIG } from "../../../../shared";
+import { DateInput } from '../../../../../../components/ui/DateInput';
 
 interface QuickOrderPatientDatesFieldsProps {
   patientName: string;
@@ -55,18 +56,14 @@ export function QuickOrderPatientDatesFields({
       </div>
       <div>
         <label className={labelCls}>تاريخ الدخول / الاستلام</label>
-        <input
-          className={`${inputCls} font-mono`}
-          type="date"
+        <DateInput
           value={receivedDate}
           onChange={(e) => onReceivedDateChange(e.target.value)}
         />
       </div>
       <div>
         <label className={labelCls}>تاريخ التسليم المطلوب</label>
-        <input
-          className={`${inputCls} font-mono`}
-          type="date"
+        <DateInput
           min={new Date().toISOString().split("T")[0]}
           value={dueDate}
           onChange={(e) => {

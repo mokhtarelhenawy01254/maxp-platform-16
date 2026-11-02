@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { AccountingHeader } from './AccountingHeader';
 import { accountingApi, GeneralLedgerReport, Account } from './accountingApi';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const AccountingLedgerPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -116,8 +117,7 @@ export const AccountingLedgerPage: React.FC = () => {
 
           <div>
             <label className="block font-medium mb-1 text-muted-foreground">من تاريخ:</label>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -127,8 +127,7 @@ export const AccountingLedgerPage: React.FC = () => {
           <div>
             <label className="block font-medium mb-1 text-muted-foreground">إلى تاريخ:</label>
             <div className="flex gap-2">
-              <input
-                type="date"
+              <DateInput
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-border/70 bg-background font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"

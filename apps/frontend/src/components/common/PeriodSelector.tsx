@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Calendar,
 } from "lucide-react";
+import { DateInput } from '../ui/DateInput';
 
 export type PeriodKey =
   | "today"
@@ -288,8 +289,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               <span className="text-xs text-muted-foreground font-medium">
                 {t("periodSelector.from", "من")}:
               </span>
-              <input
-                type="date"
+              <DateInput
                 value={customStart}
                 onChange={(e) => handleCustomChange("start", e.target.value)}
                 className={`${baseInput} ${
@@ -307,8 +307,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               <span className="text-xs text-muted-foreground font-medium">
                 {t("periodSelector.to", "إلى")}:
               </span>
-              <input
-                type="date"
+              <DateInput
                 value={customEnd}
                 onChange={(e) => handleCustomChange("end", e.target.value)}
                 className={`${baseInput} ${

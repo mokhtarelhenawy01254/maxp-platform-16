@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, X, Filter, Plus, ArrowRight } from "lucide-react";
 import { BookingBranch, BookingPatient, STATUS_MAP, MODAL_INPUT_CLS } from "./shared";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Filters {
   status: string;
@@ -171,15 +172,13 @@ export const AppointmentsFilterBar: React.FC<AppointmentsFilterBarProps> = ({
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-muted-foreground mb-1">الفترة الزمنية</label>
             <div className="flex items-center gap-2">
-              <input
-                type="date"
+              <DateInput
                 className={`${MODAL_INPUT_CLS} text-xs sm:text-sm py-1.5 w-full font-mono tabular-nums`}
                 value={filters.dateFrom}
                 onChange={(e) => onFiltersChange({ ...filters, dateFrom: e.target.value })}
               />
               <span className="text-muted-foreground">—</span>
-              <input
-                type="date"
+              <DateInput
                 className={`${MODAL_INPUT_CLS} text-xs sm:text-sm py-1.5 w-full font-mono tabular-nums`}
                 value={filters.dateTo}
                 onChange={(e) => onFiltersChange({ ...filters, dateTo: e.target.value })}

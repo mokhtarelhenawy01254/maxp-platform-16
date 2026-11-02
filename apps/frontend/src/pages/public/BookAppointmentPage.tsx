@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { Calendar, CheckCircle2, RotateCw, ArrowRight, AlertCircle } from "lucide-react";
 import { BookAppointmentDone } from "./BookAppointmentDone";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface Branch {
   id: string;
@@ -330,8 +331,7 @@ const BookAppointmentPage: React.FC = () => {
 
             <div>
               <label className="mb-1 block font-medium text-muted-foreground">اختر تاريخ الحجز</label>
-              <input
-                type="date"
+              <DateInput
                 value={selectedDate}
                 onChange={(e) => { setSelectedDate(e.target.value); setSelectedSlot(""); }}
                 min={new Date().toISOString().split("T")[0]}

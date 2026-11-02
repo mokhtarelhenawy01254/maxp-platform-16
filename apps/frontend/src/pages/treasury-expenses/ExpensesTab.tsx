@@ -34,6 +34,7 @@ import {
 import ExpenseModal from "./ExpenseModal";
 import CategoryModal from "./CategoryModal";
 import { toast } from "sonner";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface ExpensesTabProps {
   accounts: TreasuryAccount[];
@@ -435,8 +436,7 @@ export default function ExpensesTab({
           {datePreset === "CUSTOM" && (
             <div className="flex items-center gap-1.5 text-xs bg-zinc-50 dark:bg-zinc-800/40 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
               <span className="text-zinc-400 px-1">من:</span>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => {
                   setStartDate(e.target.value);
@@ -445,8 +445,7 @@ export default function ExpensesTab({
                 className="px-2 py-0.5 bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-lg text-xs"
               />
               <span className="text-zinc-400 px-1">إلى:</span>
-              <input
-                type="date"
+              <DateInput
                 value={endDate}
                 onChange={(e) => {
                   setEndDate(e.target.value);

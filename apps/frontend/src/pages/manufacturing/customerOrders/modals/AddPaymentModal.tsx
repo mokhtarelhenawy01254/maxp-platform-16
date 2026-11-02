@@ -6,6 +6,7 @@ import {
   CustomerOrderPaymentKind,
   CustomerOrderPaymentDueTrigger,
 } from '../../manufacturingApi';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface AddPaymentModalProps {
   isOpen: boolean;
@@ -213,8 +214,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
             </label>
             <div className="relative">
               <Calendar className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="date"
+              <DateInput
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"

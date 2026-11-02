@@ -11,6 +11,7 @@ import {
   blockActionOptions,
   blockReasonOptions,
 } from "./customerCardTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface CustomerBlockModalProps {
   show: boolean;
@@ -109,8 +110,7 @@ export const CustomerBlockModal: React.FC<CustomerBlockModalProps> = ({
             <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               ينتهي في
             </span>
-            <input
-              type="date"
+            <DateInput
               value={blockForm.expiresAt}
               onChange={(event) =>
                 setBlockForm((current) => ({

@@ -23,6 +23,7 @@ import {
   fmtTime,
   fmtHour,
 } from "./todayOpsTypes";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   snapshot: DaySnapshot;
@@ -40,8 +41,7 @@ export const TodayOpsSnapshotTab: React.FC<Props> = ({
       {/* Date Picker Bar */}
       <div className="flex items-center gap-3 bg-card border border-border/70 rounded-xl px-4 py-3">
         <span className="text-xs font-medium text-muted-foreground">تاريخ التقرير:</span>
-        <input
-          type="date"
+        <DateInput
           value={snapDate}
           max={new Date().toISOString().slice(0, 10)}
           onChange={(e) => onDateChange(e.target.value)}

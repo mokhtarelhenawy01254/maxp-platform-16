@@ -5,6 +5,7 @@ import {
   PRIORITY_OPTIONS,
 } from '../../../constants/taskConstants';
 import type { DevTaskFormData, Project, TeamMember, Release } from './types';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface DevTaskSidebarProps {
   formData: DevTaskFormData;
@@ -190,8 +191,7 @@ export const DevTaskSidebar: React.FC<DevTaskSidebarProps> = ({
 
         <div>
           <label className="block text-xs text-muted-foreground mb-1">تاريخ البدء</label>
-          <input
-            type="date"
+          <DateInput
             value={formData.startDate}
             onChange={e => handleChange('startDate', e.target.value)}
             className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
@@ -202,8 +202,7 @@ export const DevTaskSidebar: React.FC<DevTaskSidebarProps> = ({
           <label className="block text-xs text-muted-foreground mb-1">
             تاريخ الاستحقاق <span className="text-destructive">*</span>
           </label>
-          <input
-            type="date"
+          <DateInput
             value={formData.dueDate}
             onChange={e => handleChange('dueDate', e.target.value)}
             className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"

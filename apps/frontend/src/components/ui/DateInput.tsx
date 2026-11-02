@@ -3,7 +3,8 @@ import { Calendar } from "lucide-react";
 
 export interface DateInputProps {
   value?: string | null; // ISO 'YYYY-MM-DD' أو ''
-  onChange: (iso: string) => void; // '' لما القيمة تبقى غير مكتملة
+  // بيبعت شكل event زي الـ<input type="date"> الأصلي عشان كل الـhandlers القديمة تشتغل زي ما هي
+  onChange: (e: { target: { value: string } }) => void;
   className?: string;
   disabled?: boolean;
   required?: boolean;
@@ -116,14 +117,14 @@ export const DateInput: React.FC<DateInputProps> = ({
       const { valid, iso } = displayToIso(formatted, min, max);
       if (valid) {
         setInternalError(false);
-        onChange(iso);
+        onChange({ target: { value: iso } });
       } else {
         setInternalError(true);
-        onChange("");
+        onChange({ target: { value: "" } });
       }
     } else if (formatted.length === 0) {
       setInternalError(false);
-      onChange("");
+      onChange({ target: { value: "" } });
     }
   };
 
@@ -132,10 +133,10 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (!trimmed) {
       if (required) {
         setInternalError(true);
-        onChange("");
+        onChange({ target: { value: "" } });
       } else {
         setInternalError(false);
-        onChange("");
+        onChange({ target: { value: "" } });
       }
       return;
     }
@@ -143,10 +144,10 @@ export const DateInput: React.FC<DateInputProps> = ({
     const { valid, iso } = displayToIso(trimmed, min, max);
     if (valid) {
       setInternalError(false);
-      onChange(iso);
+      onChange({ target: { value: iso } });
     } else {
       setInternalError(true);
-      onChange("");
+      onChange({ target: { value: "" } });
     }
   };
 
@@ -173,7 +174,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (iso) {
       setDisplayText(isoToDisplay(iso));
       setInternalError(false);
-      onChange(iso);
+      onChange({ target: { value: iso } });
     }
   };
 

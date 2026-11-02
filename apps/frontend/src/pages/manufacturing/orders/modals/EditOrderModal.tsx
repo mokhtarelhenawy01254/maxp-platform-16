@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { manufacturingApi, ProductionOrder, ProductionOrderStatus, ProductionOrderType } from '../../manufacturingApi';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface EditOrderModalProps {
   isOpen: boolean;
@@ -195,8 +196,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-foreground mb-1.5">تاريخ بدء التشغيل</label>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -205,8 +205,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-foreground mb-1.5">تاريخ الاستحقاق / التسليم</label>
-              <input
-                type="date"
+              <DateInput
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"

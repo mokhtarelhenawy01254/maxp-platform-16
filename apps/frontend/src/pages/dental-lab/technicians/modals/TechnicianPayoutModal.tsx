@@ -9,6 +9,7 @@ import {
   type TechnicianPayoutType,
 } from "../../shared";
 import type { PayoutModalProps } from "../types/technicianTypes";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function TechnicianPayoutModal({ tech, onClose, onSaved }: PayoutModalProps) {
   const [amount, setAmount] = useState("");
@@ -172,8 +173,7 @@ export function TechnicianPayoutModal({ tech, onClose, onSaved }: PayoutModalPro
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 تاريخ الصرف
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={paidAt}
                 onChange={(e) => setPaidAt(e.target.value)}
                 className={`${MODAL_INPUT_CLS} text-sm font-mono`}

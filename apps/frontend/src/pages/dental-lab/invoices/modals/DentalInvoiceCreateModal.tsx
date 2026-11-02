@@ -9,6 +9,7 @@ import {
   MODAL_CONTENT_CLS,
   MODAL_INPUT_CLS,
 } from "../../shared";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export function DentalInvoiceCreateModal({
   cases,
@@ -173,9 +174,7 @@ export function DentalInvoiceCreateModal({
             </div>
             <div>
               <label className={labelCls}>تاريخ الاستحقاق</label>
-              <input
-                className={inputCls}
-                type="date"
+              <DateInput
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />

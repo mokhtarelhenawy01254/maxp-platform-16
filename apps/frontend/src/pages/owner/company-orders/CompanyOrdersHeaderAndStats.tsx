@@ -15,6 +15,7 @@ import {
   OrdersStats,
   getCompanyOrderImageUrl,
 } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CompanyOrdersHeaderAndStatsProps {
   company: CompanyDetails | null;
@@ -150,8 +151,7 @@ export const CompanyOrdersHeaderAndStats: React.FC<
             <label className="text-sm text-gray-600 dark:text-gray-400">
               من:
             </label>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono tabular-nums dark:bg-gray-700 dark:text-white"
@@ -162,8 +162,7 @@ export const CompanyOrdersHeaderAndStats: React.FC<
             <label className="text-sm text-gray-600 dark:text-gray-400">
               إلى:
             </label>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono tabular-nums dark:bg-gray-700 dark:text-white"

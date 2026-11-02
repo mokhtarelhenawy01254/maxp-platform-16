@@ -1,5 +1,6 @@
 import React from "react";
 import { AppointmentFilters } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AppointmentsFiltersProps {
   filters: AppointmentFilters;
@@ -148,8 +149,7 @@ export const AppointmentsFilters: React.FC<AppointmentsFiltersProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             من تاريخ
           </label>
-          <input
-            type="date"
+          <DateInput
             value={filters.dateFrom}
             onChange={(e) =>
               onFilterChange({ ...filters, dateFrom: e.target.value })
@@ -162,8 +162,7 @@ export const AppointmentsFilters: React.FC<AppointmentsFiltersProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             إلى تاريخ
           </label>
-          <input
-            type="date"
+          <DateInput
             value={filters.dateTo}
             onChange={(e) =>
               onFilterChange({ ...filters, dateTo: e.target.value })

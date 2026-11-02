@@ -5,6 +5,7 @@ import { useDateFormat } from "../../../hooks/useDateFormat";
 import { Employee, ProfileFormData } from "./types";
 import { calculateAge, getMaritalLabels } from "./helpers";
 import { SectionCard, InfoField } from "./ProfileWidgets";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ProfilePersonalTabProps {
   employee: Employee | null;
@@ -36,8 +37,7 @@ export const ProfilePersonalTab: React.FC<ProfilePersonalTabProps> = ({
               {t("employee.profile.dateOfBirth")}
             </p>
             {isEditing ? (
-              <input
-                type="date"
+              <DateInput
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData((p) => ({ ...p, dateOfBirth: e.target.value }))}
                 className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none"

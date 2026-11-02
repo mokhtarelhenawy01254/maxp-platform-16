@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Modal, { INPUT_CLS, BTN_PRIMARY, BTN_GHOST } from "./Modal";
 import { hotelApi, HotelProperty, HotelRoomType, HotelRoom } from "./shared";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const fmtDate = (d: Date) => d.toISOString().split("T")[0];
 
@@ -92,8 +93,8 @@ export default function ReservationModal({
           <input className={INPUT_CLS} placeholder="الإيميل" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-sm text-gray-500">تاريخ الوصول</label><input type="date" className={INPUT_CLS} value={form.checkIn} onChange={e => setForm({ ...form, checkIn: e.target.value })} /></div>
-          <div><label className="text-sm text-gray-500">تاريخ المغادرة</label><input type="date" className={INPUT_CLS} value={form.checkOut} onChange={e => setForm({ ...form, checkOut: e.target.value })} /></div>
+          <div><label className="text-sm text-gray-500">تاريخ الوصول</label><DateInput className={INPUT_CLS} value={form.checkIn} onChange={e => setForm({ ...form, checkIn: e.target.value })} /></div>
+          <div><label className="text-sm text-gray-500">تاريخ المغادرة</label><DateInput className={INPUT_CLS} value={form.checkOut} onChange={e => setForm({ ...form, checkOut: e.target.value })} /></div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div><label className="text-sm text-gray-500">البالغين</label><input type="number" className={INPUT_CLS} value={form.adults} onChange={e => setForm({ ...form, adults: +e.target.value })} /></div>

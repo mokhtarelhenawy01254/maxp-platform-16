@@ -1,6 +1,7 @@
 import React from "react";
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import type { CampaignFormData } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CampaignScheduleOptionsProps {
   formData: CampaignFormData;
@@ -45,8 +46,7 @@ export const CampaignScheduleOptions: React.FC<
             >
               تاريخ الإرسال *
             </label>
-            <input
-              type="date"
+            <DateInput
               name="scheduledAt"
               id="scheduledAt"
               value={formData.scheduledAt}

@@ -16,6 +16,7 @@ import {
   DollarSign,
   Filter,
 } from "lucide-react";
+import { DateInput } from '../../components/ui/DateInput';
 
 const getCompanyId = (): string | null => {
   try {
@@ -509,8 +510,7 @@ export default function EducationTeacherPaymentsPage() {
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
                     <label className="font-medium text-foreground">من تاريخ</label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
                       value={calcFrom}
                       onChange={(e) => setCalcFrom(e.target.value)}
@@ -518,8 +518,7 @@ export default function EducationTeacherPaymentsPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="font-medium text-foreground">إلى تاريخ</label>
-                    <input
-                      type="date"
+                    <DateInput
                       className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
                       value={calcTo}
                       onChange={(e) => setCalcTo(e.target.value)}

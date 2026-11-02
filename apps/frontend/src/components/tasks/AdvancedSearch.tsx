@@ -7,6 +7,7 @@ import {
   AdjustmentsHorizontalIcon,
   BookmarkIcon,
 } from "@heroicons/react/24/outline";
+import { DateInput } from '../ui/DateInput';
 
 interface SearchFilters {
   query: string;
@@ -524,16 +525,14 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               تاريخ الاستحقاق
             </label>
             <div className="flex space-x-2 space-x-reverse">
-              <input
-                type="date"
+              <DateInput
                 value={filters.dueDateFrom}
                 onChange={(e) =>
                   setFilters({ ...filters, dueDateFrom: e.target.value })
                 }
                 className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <input
-                type="date"
+              <DateInput
                 value={filters.dueDateTo}
                 onChange={(e) =>
                   setFilters({ ...filters, dueDateTo: e.target.value })
@@ -549,16 +548,14 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               تاريخ الإنشاء
             </label>
             <div className="flex space-x-2 space-x-reverse">
-              <input
-                type="date"
+              <DateInput
                 value={filters.createdDateFrom}
                 onChange={(e) =>
                   setFilters({ ...filters, createdDateFrom: e.target.value })
                 }
                 className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <input
-                type="date"
+              <DateInput
                 value={filters.createdDateTo}
                 onChange={(e) =>
                   setFilters({ ...filters, createdDateTo: e.target.value })

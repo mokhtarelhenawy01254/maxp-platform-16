@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
 import { PRESET_PERIODS } from "../../utils/overviewStatsHelpers";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 export interface OverviewPeriodSelectorProps {
   period: string;
@@ -32,8 +33,7 @@ export const OverviewPeriodSelector: React.FC<OverviewPeriodSelectorProps> = ({
       {period === "custom" && (
         <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto">
           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="date"
+          <DateInput
             value={customStart}
             max={customEnd}
             onChange={(e) => onCustomStartChange(e.target.value)}
@@ -43,8 +43,7 @@ export const OverviewPeriodSelector: React.FC<OverviewPeriodSelectorProps> = ({
           <span className="text-xs text-muted-foreground">
             {t("orders.overviewTo", { defaultValue: "إلى" })}
           </span>
-          <input
-            type="date"
+          <DateInput
             value={customEnd}
             min={customStart}
             onChange={(e) => onCustomEndChange(e.target.value)}

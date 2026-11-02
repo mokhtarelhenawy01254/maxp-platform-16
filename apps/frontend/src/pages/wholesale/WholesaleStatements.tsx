@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface StatementLine {
   date: string;
@@ -192,8 +193,7 @@ export default function WholesaleStatements() {
 
           <div className="space-y-1">
             <label className="text-[11px] font-medium text-foreground">من تاريخ</label>
-            <input
-              type="date"
+            <DateInput
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
               className="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
@@ -202,8 +202,7 @@ export default function WholesaleStatements() {
 
           <div className="space-y-1">
             <label className="text-[11px] font-medium text-foreground">إلى تاريخ</label>
-            <input
-              type="date"
+            <DateInput
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
               className="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"

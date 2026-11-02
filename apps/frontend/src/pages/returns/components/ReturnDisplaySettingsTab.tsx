@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Settings2, Eye, EyeOff, Package, Calendar, Save } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ReviewDisplayConfig } from '../../../services/returnService';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ReturnDisplaySettingsTabProps {
   settingsLoading: boolean;
@@ -225,8 +226,7 @@ export const ReturnDisplaySettingsTab: React.FC<ReturnDisplaySettingsTabProps> =
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-md">
-          <input
-            type="date"
+          <DateInput
             value={displayConfig.ordersStartDate ? displayConfig.ordersStartDate.split('T')[0] : ''}
             onChange={(e) =>
               setDisplayConfig((prev) => ({

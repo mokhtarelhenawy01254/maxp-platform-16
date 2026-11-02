@@ -1,5 +1,6 @@
 import React from "react";
 import { AssetFormData, AssetFormSupplierOption } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface AssetFormFinancialAndWarrantySectionProps {
   formData: AssetFormData;
@@ -68,8 +69,7 @@ export const AssetFormFinancialAndWarrantySection: React.FC<
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 تاريخ الشراء
               </label>
-              <input
-                type="date"
+              <DateInput
                 className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm py-2.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition font-mono tabular-nums"
                 value={formData.purchaseDate}
                 onChange={(e) =>
@@ -103,8 +103,7 @@ export const AssetFormFinancialAndWarrantySection: React.FC<
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
               تاريخ انتهاء الضمان
             </label>
-            <input
-              type="date"
+            <DateInput
               className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm py-2.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition font-mono tabular-nums"
               value={formData.warrantyEndDate}
               onChange={(e) =>

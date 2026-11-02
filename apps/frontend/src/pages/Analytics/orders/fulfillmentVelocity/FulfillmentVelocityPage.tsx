@@ -7,6 +7,7 @@ import { CreationCohortTable } from "./components/CreationCohortTable";
 import { CohortOrdersDrawer } from "./components/CohortOrdersDrawer";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 const daysAgo = (n: number) => {
   const d = new Date();
@@ -153,8 +154,7 @@ export const FulfillmentVelocityPage: React.FC<FulfillmentVelocityPageProps> = (
             {/* Date input */}
             <div className="flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs font-mono">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="date"
+              <DateInput
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
                 className="bg-transparent font-mono text-foreground outline-none text-xs"

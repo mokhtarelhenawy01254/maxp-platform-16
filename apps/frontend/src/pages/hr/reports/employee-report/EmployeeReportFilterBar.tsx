@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "../../../../components/ui/select";
 import { EmployeeOption } from "./types";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface EmployeeReportFilterBarProps {
   employees: EmployeeOption[];
@@ -76,8 +77,7 @@ export const EmployeeReportFilterBar: React.FC<
 
           <div className="space-y-2">
             <Label className="dark:text-gray-300">من تاريخ</Label>
-            <input
-              type="date"
+            <DateInput
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 font-mono tabular-nums"
@@ -86,8 +86,7 @@ export const EmployeeReportFilterBar: React.FC<
 
           <div className="space-y-2">
             <Label className="dark:text-gray-300">إلى تاريخ</Label>
-            <input
-              type="date"
+            <DateInput
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 font-mono tabular-nums"

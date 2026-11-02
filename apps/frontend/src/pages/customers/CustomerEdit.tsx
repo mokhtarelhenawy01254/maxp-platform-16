@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface CustomerFormData {
   firstName: string;
@@ -186,7 +187,7 @@ const CustomerEdit: React.FC = () => {
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 تاريخ الميلاد
               </label>
-              <input type="date" name="birthday" value={formData.birthday} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono" />
+              <DateInput name="birthday" value={formData.birthday} onChange={handleChange} className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono" />
             </div>
           </div>
         </section>

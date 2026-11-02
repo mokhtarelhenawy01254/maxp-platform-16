@@ -3,6 +3,7 @@ import { User, X, Camera, ShieldCheck, HeartPulse } from "lucide-react";
 import { BookingPatient, ReferringPhysician, PriceList, InsuranceCompany, InsuranceMemberType, PATIENT_STATUS_MAP, tryParseJSON, api, fetchJson } from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
 import { toast } from "sonner";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface Props {
   patient?: Partial<BookingPatient> | null;
@@ -231,7 +232,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
             </div>
             <div>
               <label className="block text-xs font-medium text-foreground mb-1">تاريخ الميلاد</label>
-              <input type="date" className={`${inputCls} font-mono`} value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
+              <DateInput className={`${inputCls} font-mono`} value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-medium text-foreground mb-1">فصيلة الدم</label>

@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import ThemeToggle from "../../components/ui/theme-toggle";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface ReportsPageHeaderProps {
   selectedDate: string;
@@ -27,8 +28,7 @@ export const ReportsPageHeader: React.FC<ReportsPageHeaderProps> = ({
       </div>
       <div className="flex items-center space-x-2 space-x-reverse self-end sm:self-auto">
         <ThemeToggle />
-        <input
-          type="date"
+        <DateInput
           value={selectedDate}
           onChange={(e) => onDateChange(e.target.value)}
           className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
