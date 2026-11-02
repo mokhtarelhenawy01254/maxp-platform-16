@@ -161,6 +161,89 @@ exports.getCourseDetails = async (req, res) => {
   }
 };
 
+async function assertCompanyCourseAccess(req, courseId) {
+  const companyId = getCompanyId(req);
+  if (!companyId) {
+    const err = new Error('Company ID is required');
+    err.status = 400;
+    throw err;
+  }
+  const course = await academyService.getCourseDetails(courseId, companyId);
+  if (!course) {
+    const err = new Error('Course not found');
+    err.status = 404;
+    throw err;
+  }
+  return { companyId, course };
+}
+
+exports.getYoutubePlaylist = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { companyId, course } = await assertCompanyCourseAccess(req, id);
+
+    const playlistUrl = (req.query.playlistUrl || course.youtubePlaylistId || '').trim();
+    if (!playlistUrl) {
+      return res.status(400).json({
+        success: false,
+        code: 'PLAYLIST_UNAVAILABLE',
+        error: 'لم يتم تحديد رابط أو معرف بلاي ليست/قناة يوتيوب',
+      });
+    }
+
+    const items = await academyService.fetchYoutubePlaylistItems({
+      playlistUrl,
+      companyId,
+    });
+
+    res.json({ success: true, items });
+  } catch (err) {
+    if (err.code === 'PLAYLIST_UNAVAILABLE' || err.message === 'PLAYLIST_UNAVAILABLE') {
+      return res.status(400).json({
+        success: false,
+        code: 'PLAYLIST_UNAVAILABLE',
+        error: 'البلاي ليست غير متاحة أو خاصة أو غير موجودة',
+      });
+    }
+    if (err.code === 'YOUTUBE_NOT_CONFIGURED' || err.message === 'YOUTUBE_NOT_CONFIGURED') {
+      return res.status(503).json({
+        success: false,
+        code: 'YOUTUBE_NOT_CONFIGURED',
+        error: 'إعدادات يوتيوب غير مهيأة (مطلوب YOUTUBE_API_KEY أو ربط حساب يوتيوب)',
+      });
+    }
+    const statusCode = err.status || 500;
+    res.status(statusCode).json({ success: false, error: err.message });
+  }
+};
+
+exports.importYoutubeLessons = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { companyId } = await assertCompanyCourseAccess(req, id);
+    const { items, moduleId } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'يجب اختيار فيديو واحد على الأقل للاستيراد',
+      });
+    }
+
+    const result = await academyService.importYoutubeLessons({
+      courseId: id,
+      companyId,
+      items,
+      moduleId,
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    const statusCode = err.status || 400;
+    res.status(statusCode).json({ success: false, error: err.message });
+  }
+};
+
 // -------------------------------------------------------------
 // Modules & Lessons
 // -------------------------------------------------------------

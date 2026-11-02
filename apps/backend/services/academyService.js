@@ -1,5 +1,109 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { resolveAiKey, BASE_URL_DEFAULTS, MODEL_DEFAULTS, callChatCompletion } = require('./radiologyAiDraftService');
+const youtubeTransport = require('./youtube/youtubeTransport');
+const youtubeOAuthService = require('./youtube/youtubeOAuthService');
+
+function parseIso8601DurationToMinutes(durationStr) {
+  if (!durationStr || typeof durationStr !== 'string') return 10;
+  const regex = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/;
+  const match = durationStr.match(regex);
+  if (!match) return 10;
+
+  const days = parseInt(match[1] || '0', 10);
+  const hours = parseInt(match[2] || '0', 10);
+  const minutes = parseInt(match[3] || '0', 10);
+  const seconds = parseInt(match[4] || '0', 10);
+
+  const totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+  if (totalSeconds <= 0) return 1;
+  const durationMin = Math.round(totalSeconds / 60);
+  return durationMin < 1 ? 1 : durationMin;
+}
+
+function extractYoutubeSource(rawInput) {
+  if (!rawInput || typeof rawInput !== 'string') return null;
+  const trimmed = rawInput.trim();
+  if (!trimmed) return null;
+
+  // 1. URL with list= query parameter (playlist)
+  try {
+    if (trimmed.includes('list=')) {
+      const parsedUrl = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+      const listParam = parsedUrl.searchParams.get('list');
+      if (listParam) {
+        return { type: 'PLAYLIST', id: listParam.trim() };
+      }
+    }
+  } catch (_) {
+    const listMatch = trimmed.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+    if (listMatch) {
+      return { type: 'PLAYLIST', id: listMatch[1].trim() };
+    }
+  }
+
+  // 2. Channel URL or channel ID starting with UC
+  const channelMatch = trimmed.match(/(?:channel\/|user\/|^)(UC[a-zA-Z0-9_-]{20,24})/);
+  if (channelMatch) {
+    return { type: 'CHANNEL', id: channelMatch[1].trim() };
+  }
+
+  // 3. Raw Playlist IDs
+  if (/^(PL|UU|FL|RD|OLAK5uy_)[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return { type: 'PLAYLIST', id: trimmed };
+  }
+
+  // 4. Raw Channel ID (UC...)
+  if (/^UC[a-zA-Z0-9_-]{20,}$/.test(trimmed)) {
+    return { type: 'CHANNEL', id: trimmed };
+  }
+
+  // 5. Generic playlist token fallback
+  if (/^[a-zA-Z0-9_-]{12,}$/.test(trimmed)) {
+    return { type: 'PLAYLIST', id: trimmed };
+  }
+
+  return null;
+}
+
+async function getYoutubeAuthHeadersAndParams(companyId) {
+  let accessToken = null;
+  if (companyId) {
+    try {
+      const account = await youtubeOAuthService.getAccount(companyId);
+      if (account) {
+        accessToken = await youtubeOAuthService.getValidAccessToken(account, companyId);
+      }
+    } catch (_) {}
+  }
+
+  const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
+
+  if (youtubeTransport.isMock()) {
+    return {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      params: accessToken ? {} : { key: apiKey || 'mock_yt_api_key' },
+    };
+  }
+
+  if (accessToken) {
+    return {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: {},
+    };
+  }
+
+  if (apiKey) {
+    return {
+      headers: {},
+      params: { key: apiKey },
+    };
+  }
+
+  const err = new Error('YOUTUBE_NOT_CONFIGURED');
+  err.code = 'YOUTUBE_NOT_CONFIGURED';
+  err.status = 503;
+  throw err;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Academy AI agents bridge — agent-first, inline-prompt fallback
@@ -135,6 +239,8 @@ class AcademyService {
     allowedTags = [],
     enableWatermark = true,
     isGlobal = false,
+    youtubePlaylistId,
+    youtubeSourceType,
   }) {
     const db = this.getDb();
     if (!companyId) throw new Error('companyId is required');
@@ -155,6 +261,8 @@ class AcademyService {
         enableWatermark: Boolean(enableWatermark),
         isGlobal: Boolean(isGlobal),
         isPublished: false,
+        youtubePlaylistId: youtubePlaylistId ? String(youtubePlaylistId).trim() : null,
+        youtubeSourceType: youtubeSourceType ? String(youtubeSourceType).trim().toUpperCase() : null,
       },
     });
 
@@ -203,6 +311,8 @@ class AcademyService {
         allowedTags: data.allowedTags !== undefined ? (Array.isArray(data.allowedTags) ? data.allowedTags : []) : undefined,
         enableWatermark: data.enableWatermark !== undefined ? Boolean(data.enableWatermark) : undefined,
         isGlobal: data.isGlobal !== undefined ? Boolean(data.isGlobal) : undefined,
+        youtubePlaylistId: data.youtubePlaylistId !== undefined ? (data.youtubePlaylistId ? String(data.youtubePlaylistId).trim() : null) : undefined,
+        youtubeSourceType: data.youtubeSourceType !== undefined ? (data.youtubeSourceType ? String(data.youtubeSourceType).trim().toUpperCase() : null) : undefined,
       },
     });
 
@@ -299,6 +409,253 @@ class AcademyService {
     });
     if (!course) throw new Error('Course not found');
     return course;
+  }
+
+  async fetchYoutubePlaylistItems({ playlistUrl, companyId }) {
+    if (!playlistUrl || !playlistUrl.trim()) {
+      const err = new Error('PLAYLIST_UNAVAILABLE');
+      err.code = 'PLAYLIST_UNAVAILABLE';
+      err.status = 400;
+      throw err;
+    }
+
+    const source = extractYoutubeSource(playlistUrl);
+    if (!source || !source.id) {
+      const err = new Error('PLAYLIST_UNAVAILABLE');
+      err.code = 'PLAYLIST_UNAVAILABLE';
+      err.status = 400;
+      throw err;
+    }
+
+    const auth = await getYoutubeAuthHeadersAndParams(companyId);
+
+    let playlistId = source.id;
+
+    // If source is a channel, retrieve its uploads playlist ID
+    if (source.type === 'CHANNEL') {
+      try {
+        const channelRes = await youtubeTransport.call({
+          method: 'GET',
+          url: 'https://www.googleapis.com/youtube/v3/channels',
+          headers: auth.headers,
+          params: {
+            ...auth.params,
+            part: 'contentDetails',
+            id: source.id,
+          },
+        });
+
+        const uploads = channelRes.data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+        if (!uploads) {
+          if (source.id.startsWith('UC')) {
+            playlistId = 'UU' + source.id.substring(2);
+          } else {
+            const err = new Error('PLAYLIST_UNAVAILABLE');
+            err.code = 'PLAYLIST_UNAVAILABLE';
+            err.status = 400;
+            throw err;
+          }
+        } else {
+          playlistId = uploads;
+        }
+      } catch (e) {
+        if (e.code === 'YOUTUBE_NOT_CONFIGURED') throw e;
+        const err = new Error('PLAYLIST_UNAVAILABLE');
+        err.code = 'PLAYLIST_UNAVAILABLE';
+        err.status = 400;
+        throw err;
+      }
+    }
+
+    let playlistItems = [];
+    try {
+      const itemsRes = await youtubeTransport.call({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/playlistItems',
+        headers: auth.headers,
+        params: {
+          ...auth.params,
+          part: 'snippet,contentDetails',
+          playlistId,
+          maxResults: 50,
+        },
+      });
+
+      playlistItems = itemsRes.data?.items || [];
+      if (!Array.isArray(playlistItems) || playlistItems.length === 0) {
+        if (itemsRes.data?.error) {
+          const err = new Error('PLAYLIST_UNAVAILABLE');
+          err.code = 'PLAYLIST_UNAVAILABLE';
+          err.status = 400;
+          throw err;
+        }
+      }
+    } catch (e) {
+      if (e.code === 'YOUTUBE_NOT_CONFIGURED') throw e;
+      const err = new Error('PLAYLIST_UNAVAILABLE');
+      err.code = 'PLAYLIST_UNAVAILABLE';
+      err.status = 400;
+      throw err;
+    }
+
+    const rawList = [];
+    for (const item of playlistItems) {
+      const videoId = item.contentDetails?.videoId || item.snippet?.resourceId?.videoId;
+      const title = item.snippet?.title;
+      if (!videoId || title === 'Private video' || title === 'Deleted video') {
+        continue;
+      }
+      const description = item.snippet?.description || '';
+      const thumbnails = item.snippet?.thumbnails || {};
+      const thumbnailUrl =
+        thumbnails.maxres?.url ||
+        thumbnails.standard?.url ||
+        thumbnails.high?.url ||
+        thumbnails.medium?.url ||
+        thumbnails.default?.url ||
+        null;
+
+      rawList.push({
+        videoId,
+        title,
+        description,
+        thumbnailUrl,
+        durationMin: 10,
+        videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      });
+    }
+
+    if (rawList.length === 0) {
+      return [];
+    }
+
+    try {
+      const videoIds = rawList.map((v) => v.videoId);
+      const videosRes = await youtubeTransport.call({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/videos',
+        headers: auth.headers,
+        params: {
+          ...auth.params,
+          part: 'contentDetails,snippet',
+          id: videoIds.join(','),
+        },
+      });
+
+      const videoMap = new Map();
+      if (videosRes.data?.items) {
+        for (const vItem of videosRes.data.items) {
+          const vId = vItem.id;
+          const durationStr = vItem.contentDetails?.duration;
+          const durationMin = parseIso8601DurationToMinutes(durationStr);
+          videoMap.set(vId, durationMin);
+        }
+      }
+
+      for (const item of rawList) {
+        if (videoMap.has(item.videoId)) {
+          item.durationMin = videoMap.get(item.videoId);
+        }
+      }
+    } catch (_) {
+      // Keep default 10 min
+    }
+
+    return rawList;
+  }
+
+  async importYoutubeLessons({ courseId, companyId, items, moduleId }) {
+    const db = this.getDb();
+    if (!courseId) throw new Error('courseId is required');
+    if (!companyId) throw new Error('companyId is required');
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('لا توجد عناصر للاستيراد');
+    }
+
+    const course = await db.academyCourse.findFirst({
+      where: { id: courseId, companyId },
+      include: {
+        modules: {
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!course) {
+      const err = new Error('Course not found');
+      err.status = 404;
+      throw err;
+    }
+
+    let targetModuleId = moduleId;
+    if (targetModuleId) {
+      const mod = await db.academyModule.findFirst({
+        where: { id: targetModuleId, courseId, companyId },
+      });
+      if (!mod) {
+        const err = new Error('Module not found');
+        err.status = 404;
+        throw err;
+      }
+    } else {
+      if (course.modules && course.modules.length > 0) {
+        targetModuleId = course.modules[0].id;
+      } else {
+        const newMod = await db.academyModule.create({
+          data: {
+            companyId,
+            courseId,
+            title: 'المحتوى الرئيسي',
+            sortOrder: 0,
+          },
+        });
+        targetModuleId = newMod.id;
+      }
+    }
+
+    const result = await db.$transaction(async (tx) => {
+      const lastLesson = await tx.academyLesson.findFirst({
+        where: { moduleId: targetModuleId },
+        orderBy: { sortOrder: 'desc' },
+      });
+
+      let currentSort = lastLesson ? lastLesson.sortOrder + 1 : 0;
+      const createdLessons = [];
+
+      for (const item of items) {
+        const videoId = String(item.videoId || '').trim();
+        if (!videoId) continue;
+
+        const title = (item.title || `فيديو ${videoId}`).trim();
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const durationMin = Number(item.durationMin) > 0 ? Number(item.durationMin) : 10;
+        const scriptText = item.description && item.description.trim() ? item.description.trim() : title;
+
+        const lesson = await tx.academyLesson.create({
+          data: {
+            companyId,
+            courseId,
+            moduleId: targetModuleId,
+            title,
+            sortOrder: currentSort++,
+            videoUrl,
+            durationMin,
+            scriptText,
+            isFreePreview: false,
+          },
+        });
+        createdLessons.push(lesson);
+      }
+
+      return createdLessons;
+    });
+
+    return {
+      success: true,
+      count: result.length,
+      moduleId: targetModuleId,
+      lessons: result,
+    };
   }
 
   // -------------------------------------------------------------

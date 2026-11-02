@@ -53,6 +53,8 @@ router.get('/courses', instructorAuth, controller.getCourses);
 router.get('/courses/:id', instructorAuth, controller.getCourseDetails);
 router.put('/courses/:id', instructorAuth, controller.updateCourse);
 router.delete('/courses/:id', instructorAuth, controller.deleteCourse);
+router.get('/courses/:id/youtube/playlist', instructorAuth, controller.getYoutubePlaylist);
+router.post('/courses/:id/youtube/import', instructorAuth, controller.importYoutubeLessons);
 router.get('/store-products', instructorAuth, controller.getStoreProducts);
 router.post('/sync-order-enrollment', instructorAuth, controller.syncOrderEnrollment);
 

@@ -70,6 +70,8 @@ export interface Course {
   visibility?: "PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED";
   allowedTags?: string[];
   enableWatermark?: boolean;
+  youtubePlaylistId?: string | null;
+  youtubeSourceType?: "PLAYLIST" | "CHANNEL" | null;
   isEnrolled?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -85,6 +87,15 @@ export interface AcademyStoreProduct {
   price: number;
   image?: string | null;
   sku?: string;
+}
+
+export interface YoutubePlaylistItem {
+  videoId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string | null;
+  durationMin: number;
+  videoUrl: string;
 }
 
 export interface MyEnrollment {
@@ -235,6 +246,21 @@ export const academyApi = {
 
   async deleteCourse(id: string): Promise<void> {
     await apiClient.delete(`/api/v1/academy/courses/${id}`);
+  },
+
+  // YouTube Playlist & Import
+  async fetchYoutubePlaylist(courseId: string, playlistUrl?: string): Promise<YoutubePlaylistItem[]> {
+    const params = playlistUrl ? { playlistUrl } : undefined;
+    const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/youtube/playlist`, { params });
+    return (res.data as any)?.items || [];
+  },
+
+  async importYoutubeLessons(
+    courseId: string,
+    payload: { items: { videoId: string; title: string; durationMin?: number; description?: string }[]; moduleId?: string }
+  ): Promise<{ success: boolean; count: number; moduleId: string; lessons: Lesson[] }> {
+    const res = await apiClient.post<any>(`/api/v1/academy/courses/${courseId}/youtube/import`, payload);
+    return res.data;
   },
 
   // Modules

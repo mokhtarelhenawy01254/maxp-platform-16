@@ -16,6 +16,8 @@ model AcademyCourse {
   visibility         String   @default("PUBLIC") // PUBLIC | UNLISTED | INVITE_ONLY | TAG_GATED
   allowedTags        String[] @default([])
   enableWatermark    Boolean  @default(true)
+  youtubePlaylistId  String?   // playlist id أو channel id
+  youtubeSourceType  String?   // "PLAYLIST" | "CHANNEL" (null = غير مربوط)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
