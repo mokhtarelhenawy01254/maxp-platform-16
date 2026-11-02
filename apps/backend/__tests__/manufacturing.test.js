@@ -1346,4 +1346,81 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     const updatedOrder = await currentPrisma.productionOrder.findFirst({ where: { id: order.id } });
     expect(updatedOrder.actualMaterialCost).toBe(18000.0);
   });
+
+  test('14. HZ-C-MATERIALS: BOM Component Product Linking & componentWarnings', async () => {
+    const companyId = 'company_materials_link_test';
+
+    // Seed a real product in Prisma
+    const realProduct = await currentPrisma.product.create({
+      data: {
+        companyId,
+        name: 'قماش ميلتون أصلي 100% قطن',
+        sku: 'FAB-MILTON-01',
+      },
+    });
+
+    // 1. BOM with component rawMaterialId = real product id -> componentWarnings is empty []
+    const bomLinked = await ManufacturingService.createBom(companyId, {
+      code: 'BOM-LINKED-REAL',
+      name: 'BOM خامات مرتبطة بمنتج حقيقي',
+      components: [
+        {
+          rawMaterialId: realProduct.id,
+          rawMaterialName: realProduct.name,
+          consumptionPerUnit: 1.5,
+          unit: 'METER',
+          scrapRate: 2.0,
+        },
+      ],
+    });
+
+    expect(Array.isArray(bomLinked.componentWarnings)).toBe(true);
+    expect(bomLinked.componentWarnings).toHaveLength(0);
+
+    // 2. BOM with component raw_xxx -> single warning with correct name and message
+    const bomUnlinked = await ManufacturingService.createBom(companyId, {
+      code: 'BOM-UNLINKED-FAKE',
+      name: 'BOM خامات غير مرتبطة بمنتجات',
+      components: [
+        {
+          rawMaterialId: 'raw_fabric_unlinked_99',
+          rawMaterialName: 'خامة قطنية وهمية غير مسجلة',
+          consumptionPerUnit: 2.0,
+          unit: 'METER',
+          scrapRate: 1.0,
+        },
+      ],
+    });
+
+    expect(Array.isArray(bomUnlinked.componentWarnings)).toBe(true);
+    expect(bomUnlinked.componentWarnings).toHaveLength(1);
+    expect(bomUnlinked.componentWarnings[0].rawMaterialId).toBe('raw_fabric_unlinked_99');
+    expect(bomUnlinked.componentWarnings[0].rawMaterialName).toBe('خامة قطنية وهمية غير مسجلة');
+    expect(bomUnlinked.componentWarnings[0].message).toBe('الخامة غير مرتبطة بمنتج — مش هتتخصم من المخزن');
+
+    // 3. BOM without components -> empty array [] (not undefined)
+    const bomEmpty = await ManufacturingService.createBom(companyId, {
+      code: 'BOM-EMPTY-COMPS',
+      name: 'BOM بدون مكونات',
+      components: [],
+    });
+
+    expect(Array.isArray(bomEmpty.componentWarnings)).toBe(true);
+    expect(bomEmpty.componentWarnings).toHaveLength(0);
+
+    // 4. updateBom also returns componentWarnings
+    const updatedBom = await ManufacturingService.updateBom(companyId, bomUnlinked.id, {
+      components: [
+        {
+          rawMaterialId: realProduct.id,
+          rawMaterialName: realProduct.name,
+          consumptionPerUnit: 1.5,
+          unit: 'METER',
+          scrapRate: 2.0,
+        },
+      ],
+    });
+    expect(Array.isArray(updatedBom.componentWarnings)).toBe(true);
+    expect(updatedBom.componentWarnings).toHaveLength(0);
+  });
 });

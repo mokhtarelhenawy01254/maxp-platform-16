@@ -390,6 +390,12 @@ export interface BomStandardStage {
   standardMinutes: number;
 }
 
+export interface BomComponentWarning {
+  rawMaterialId: string | null;
+  rawMaterialName?: string | null;
+  message: string;
+}
+
 export interface BillOfMaterials {
   id: string;
   companyId: string;
@@ -408,6 +414,7 @@ export interface BillOfMaterials {
   components?: BomComponentItem[];
   componentTree?: BomComponentNode[];
   pricing?: { bomTotal: number; nodeCount: number; rootCount: number; warnings: string[] };
+  componentWarnings?: BomComponentWarning[];
   standardStages?: BomStandardStage[];
   _count?: {
     orders?: number;

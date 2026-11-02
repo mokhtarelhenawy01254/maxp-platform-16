@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Layers, Copy, Edit, Clock, ShieldCheck, AlertCircle } from 'lucide-react';
-import { BillOfMaterials } from '../manufacturingApi';
+import { BillOfMaterials, ProductOption, manufacturingApi } from '../manufacturingApi';
 import BomComponentsTree from './components/BomComponentsTree';
 
 interface BomDetailDrawerProps {
@@ -9,6 +9,7 @@ interface BomDetailDrawerProps {
   onClose: () => void;
   onEdit: (bom: BillOfMaterials) => void;
   onClone: (bom: BillOfMaterials) => void;
+  products?: ProductOption[];
 }
 
 export const BomDetailDrawer: React.FC<BomDetailDrawerProps> = ({
@@ -17,7 +18,18 @@ export const BomDetailDrawer: React.FC<BomDetailDrawerProps> = ({
   onClose,
   onEdit,
   onClone,
+  products: initialProducts,
 }) => {
+  const [products, setProducts] = useState<ProductOption[]>(initialProducts || []);
+
+  useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      setProducts(initialProducts);
+    } else if (isOpen) {
+      manufacturingApi.getProducts().then(setProducts).catch(() => {});
+    }
+  }, [isOpen, initialProducts]);
+
   if (!isOpen || !bom) return null;
 
   const totalStandardMinutes = (bom.standardStages || []).reduce(
@@ -118,19 +130,35 @@ export const BomDetailDrawer: React.FC<BomDetailDrawerProps> = ({
                         </td>
                       </tr>
                     ) : (
-                      bom.components!.map((comp, idx) => (
-                        <tr key={idx} className="hover:bg-muted/20 transition">
-                          <td className="p-2.5 font-medium text-foreground">
-                            <div>{comp.rawMaterialName || comp.rawMaterialId}</div>
-                            {(comp.composition || comp.fabricWidthM || comp.targetGsm || comp.purchaseUnit) && (
-                              <div className="text-[10px] text-muted-foreground mt-0.5 flex flex-wrap gap-1.5 font-normal">
-                                {comp.composition && <span className="text-foreground/80 font-medium">{comp.composition}</span>}
-                                {comp.fabricWidthM && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">عرض: {comp.fabricWidthM} م</span>}
-                                {comp.targetGsm && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">{comp.targetGsm} GSM</span>}
-                                {comp.purchaseUnit && <span className="text-primary font-medium">شراء: {comp.purchaseUnit}</span>}
+                      bom.components!.map((comp, idx) => {
+                        const isLinked = Boolean(comp.rawMaterialId && products.some((p) => p.id === comp.rawMaterialId));
+                        return (
+                          <tr key={idx} className="hover:bg-muted/20 transition">
+                            <td className="p-2.5 font-medium text-foreground">
+                              <div className="flex items-center gap-1.5">
+                                <span>{comp.rawMaterialName || comp.rawMaterialId}</span>
+                                {isLinked ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                    مرتبط
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                                    title="هذه الخامة غير مرتبطة بمنتج في الكتالوج ولن يتم خصمها من المخزن"
+                                  >
+                                    غير مرتبط
+                                  </span>
+                                )}
                               </div>
-                            )}
-                          </td>
+                              {(comp.composition || comp.fabricWidthM || comp.targetGsm || comp.purchaseUnit) && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5 flex flex-wrap gap-1.5 font-normal">
+                                  {comp.composition && <span className="text-foreground/80 font-medium">{comp.composition}</span>}
+                                  {comp.fabricWidthM && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">عرض: {comp.fabricWidthM} م</span>}
+                                  {comp.targetGsm && <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">{comp.targetGsm} GSM</span>}
+                                  {comp.purchaseUnit && <span className="text-primary font-medium">شراء: {comp.purchaseUnit}</span>}
+                                </div>
+                              )}
+                            </td>
                           <td className="p-2.5 font-mono tabular-nums text-foreground">
                             {comp.consumptionPerUnit} {comp.consumptionUnit || comp.unit}
                           </td>
@@ -147,8 +175,9 @@ export const BomDetailDrawer: React.FC<BomDetailDrawerProps> = ({
                               {(comp.appliesToColors || ['ALL']).join(', ')}
                             </span>
                           </td>
-                        </tr>
-                      ))
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
