@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, Save, AlertCircle, Shirt, Calendar, DollarSign, Tag, User, Building2, Check } from 'lucide-react';
+import { X, Save, AlertCircle, Shirt, Calendar, DollarSign, Tag, User, Building2, Check, Plus, Trash2 } from 'lucide-react';
 import {
   manufacturingApi,
   SampleOrder,
