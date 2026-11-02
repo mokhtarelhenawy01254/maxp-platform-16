@@ -901,6 +901,21 @@ export interface SampleOrderAttachment {
   uploadedAt: string;
 }
 
+export interface SampleOrderItem {
+  id?: string;
+  companyId?: string;
+  sampleOrderId?: string;
+  productId?: string | null;
+  productName: string;
+  quantity: number;
+  size?: string | null;
+  color?: string | null;
+  unitPrice?: number | null;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stages' | 'expenses'> {
   stages?: Array<{
     name: string;
@@ -916,6 +931,7 @@ export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stag
     amount: number;
     catalogId?: string | null;
   }>;
+  items?: SampleOrderItem[];
 }
 
 export interface SampleExpenseCatalogItem {
@@ -1020,6 +1036,7 @@ export interface SampleOrder {
   expensesTotal?: number;
   components?: SampleComponent[];
   componentsTotal?: number;
+  items?: SampleOrderItem[];
   totalCost?: number;
   status: SampleOrderStatus;
   dueDate?: string | null;

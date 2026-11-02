@@ -787,6 +787,7 @@ model SampleOrder {
   payments         SamplePayment[]
   expenses         SampleOrderExpense[]
   components       SampleComponent[]
+  items            SampleOrderItem[]
   customer         Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
   bom              BillOfMaterials?     @relation(fields: [bomId], references: [id], onDelete: SetNull)
 
@@ -799,6 +800,28 @@ model SampleOrder {
   @@index([companyId, expectedDeliveryAt])
   @@index([companyId, sampleReceived])
   @@map("sample_orders")
+}
+
+/// بنود منتجات العينة (أمر العينة يقبل أكثر من منتج تام) — Task HZ-E
+model SampleOrderItem {
+  id            String   @id @default(cuid())
+  companyId     String
+  sampleOrderId String
+  productId     String?
+  productName   String
+  quantity      Int      @default(1)
+  size          String?
+  color         String?
+  unitPrice     Decimal? @db.Decimal(10, 2)
+  sortOrder     Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sampleOrder   SampleOrder @relation(fields: [sampleOrderId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, sampleOrderId])
+  @@index([sampleOrderId])
+  @@map("sample_order_items")
 }
 
 /// مكونات العينة (خامات/مكونات مستخدمة في تنفيذ العينة) — Task 83791d03

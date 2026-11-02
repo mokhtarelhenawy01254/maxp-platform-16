@@ -29,6 +29,39 @@ export const SampleInfoTab: React.FC<SampleInfoTabProps> = ({
 }) => {
   return (
     <div className="space-y-3 text-xs">
+      {sample.items && sample.items.length > 0 && (
+        <div className="p-3.5 rounded-xl border border-border/70 bg-card space-y-2.5">
+          <div className="flex items-center justify-between border-b pb-2">
+            <span className="font-bold text-foreground text-xs">منتجات العينة ({sample.items.length})</span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              إجمالي الكمية: {sample.items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0)} قطعة
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-[11px]">
+              <thead>
+                <tr className="border-b border-border/50 text-muted-foreground">
+                  <th className="py-1 px-1 font-medium">المنتج</th>
+                  <th className="py-1 px-1 font-medium">الكمية</th>
+                  <th className="py-1 px-1 font-medium">المقاس</th>
+                  <th className="py-1 px-1 font-medium">اللون</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {sample.items.map((it, idx) => (
+                  <tr key={it.id || idx} className="hover:bg-muted/30">
+                    <td className="py-1.5 px-1 font-medium text-foreground">{it.productName}</td>
+                    <td className="py-1.5 px-1 tabular-nums">{it.quantity}</td>
+                    <td className="py-1.5 px-1">{it.size || '-'}</td>
+                    <td className="py-1.5 px-1">{it.color || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="p-3.5 rounded-xl border border-border/70 bg-card space-y-2">
         <div className="flex justify-between border-b pb-2">
           <span className="text-muted-foreground">اسم المنتج:</span>

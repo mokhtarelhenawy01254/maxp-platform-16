@@ -217,7 +217,23 @@ class ManufacturingSampleService {
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );`,
-        `CREATE INDEX IF NOT EXISTS "sample_order_components_company_sample_idx" ON "sample_order_components"("companyId","sampleOrderId");`
+        `CREATE INDEX IF NOT EXISTS "sample_order_components_company_sample_idx" ON "sample_order_components"("companyId","sampleOrderId");`,
+        `CREATE TABLE IF NOT EXISTS "sample_order_items" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "sampleOrderId" TEXT NOT NULL REFERENCES "sample_orders"("id") ON DELETE CASCADE,
+          "productId" TEXT,
+          "productName" TEXT NOT NULL,
+          "quantity" INTEGER NOT NULL DEFAULT 1,
+          "size" TEXT,
+          "color" TEXT,
+          "unitPrice" DECIMAL(10,2),
+          "sortOrder" INTEGER NOT NULL DEFAULT 1,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );`,
+        `CREATE INDEX IF NOT EXISTS "sample_order_items_companyId_sampleOrderId_idx" ON "sample_order_items"("companyId","sampleOrderId");`,
+        `CREATE INDEX IF NOT EXISTS "sample_order_items_sampleOrderId_idx" ON "sample_order_items"("sampleOrderId");`
       ];
 
       for (const stmt of stmts) {
@@ -550,6 +566,7 @@ class ManufacturingSampleService {
             customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
             bom: { select: { id: true, code: true, name: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
+            items: { orderBy: { sortOrder: 'asc' } },
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -567,6 +584,7 @@ class ManufacturingSampleService {
               attachments: { orderBy: { uploadedAt: 'desc' } },
               customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
               expenses: { orderBy: { createdAt: 'asc' } },
+              items: { orderBy: { sortOrder: 'asc' } },
             },
             orderBy: { createdAt: 'desc' },
             skip,
@@ -653,6 +671,7 @@ class ManufacturingSampleService {
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           bom: { select: { id: true, code: true, name: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
+          items: { orderBy: { sortOrder: 'asc' } },
         },
       });
     } catch (err) {
@@ -666,6 +685,7 @@ class ManufacturingSampleService {
             payments: { orderBy: { paidAt: 'desc' } },
             customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
+            items: { orderBy: { sortOrder: 'asc' } },
           },
         });
       } else {
@@ -714,21 +734,74 @@ class ManufacturingSampleService {
     await this.ensureSchema();
     const prisma = getSharedPrismaClient();
 
+    let itemsToCreate = null;
     let productId = data.productId ? String(data.productId) : null;
     let productName = String(data.productName || '').trim();
-    if (productId) {
-      const product = await prisma.product.findFirst({ where: { id: productId, companyId }, select: { id: true, name: true } });
-      if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
-      if (!productName) productName = product.name;
-    }
-    if (!productName && !productId) throw httpErr(400, 'اسم المنتج إلزامي لإنشاء أمر العينة');
-    if (!productName) {
-      const err = new Error('اسم المنتج إلزامي لإنشاء أمر العينة');
-      err.statusCode = 400;
-      throw err;
+
+    if (data.items !== undefined) {
+      if (!Array.isArray(data.items)) {
+        throw httpErr(400, 'قائمة بنود المنتجات غير صالحة');
+      }
+      if (data.items.length === 0) {
+        throw httpErr(400, 'أضف منتج واحد على الأقل');
+      }
+      itemsToCreate = [];
+      for (let idx = 0; idx < data.items.length; idx++) {
+        const item = data.items[idx];
+        let itemProductId = item.productId ? String(item.productId) : null;
+        let itemProductName = String(item.productName || '').trim();
+        if (itemProductId) {
+          const product = await prisma.product.findFirst({
+            where: { id: itemProductId, companyId },
+            select: { id: true, name: true },
+          });
+          if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
+          if (!itemProductName) itemProductName = product.name;
+        }
+        if (!itemProductName) {
+          throw httpErr(400, 'اسم المنتج إلزامي لكل بند');
+        }
+        const itemQuantity = Math.max(1, parseInt(item.quantity, 10) || 1);
+        const itemSize = item.size ? String(item.size).trim().toUpperCase() : null;
+        const itemColor = item.color ? String(item.color).trim().toUpperCase() : null;
+        const itemUnitPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '' ? round2(item.unitPrice) : null;
+        const itemSortOrder = Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : idx + 1;
+        itemsToCreate.push({
+          productId: itemProductId,
+          productName: itemProductName,
+          quantity: itemQuantity,
+          size: itemSize,
+          color: itemColor,
+          unitPrice: itemUnitPrice,
+          sortOrder: itemSortOrder,
+        });
+      }
+
+      // First item sets header
+      const firstItem = itemsToCreate[0];
+      productId = firstItem.productId || productId;
+      productName = firstItem.productName || productName;
+      if (!data.size && firstItem.size) data.size = firstItem.size;
+      if (!data.color && firstItem.color) data.color = firstItem.color;
+    } else {
+      if (productId) {
+        const product = await prisma.product.findFirst({ where: { id: productId, companyId }, select: { id: true, name: true } });
+        if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
+        if (!productName) productName = product.name;
+      }
+      if (!productName && !productId) throw httpErr(400, 'اسم المنتج إلزامي لإنشاء أمر العينة');
+      if (!productName) {
+        const err = new Error('اسم المنتج إلزامي لإنشاء أمر العينة');
+        err.statusCode = 400;
+        throw err;
+      }
     }
 
-    const plannedQuantity = Math.max(1, parseInt(data.plannedQuantity, 10) || 1);
+    const itemsTotalQty = itemsToCreate ? itemsToCreate.reduce((sum, it) => sum + it.quantity, 0) : 0;
+    const hasExplicitPlannedQty = data.plannedQuantity !== undefined && data.plannedQuantity !== null && data.plannedQuantity !== '';
+    const plannedQuantity = itemsToCreate
+      ? (hasExplicitPlannedQty ? Math.max(1, parseInt(data.plannedQuantity, 10) || 1) : itemsTotalQty)
+      : Math.max(1, parseInt(data.plannedQuantity, 10) || 1);
     const materialSource = data.materialSource === 'CUSTOMER' ? 'CUSTOMER' : 'COMPANY';
     const fee = data.fee !== undefined && data.fee !== null && data.fee !== '' ? round2(data.fee) : null;
 
@@ -852,6 +925,25 @@ class ManufacturingSampleService {
           // مزامنة مصاريف العينة (T07)
           await this.syncSampleExpenses(tx, companyId, sample.id, incomingExpenses);
 
+          // إنشاء بنود منتجات العينة (Task HZ-E)
+          if (itemsToCreate && itemsToCreate.length > 0 && tx.sampleOrderItem) {
+            for (const it of itemsToCreate) {
+              await tx.sampleOrderItem.create({
+                data: {
+                  companyId,
+                  sampleOrderId: sample.id,
+                  productId: it.productId,
+                  productName: it.productName,
+                  quantity: it.quantity,
+                  size: it.size,
+                  color: it.color,
+                  unitPrice: it.unitPrice,
+                  sortOrder: it.sortOrder,
+                },
+              });
+            }
+          }
+
           let createdRecord;
           try {
             createdRecord = await tx.sampleOrder.findFirst({
@@ -864,6 +956,7 @@ class ManufacturingSampleService {
                 customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
                 bom: { select: { id: true, code: true, name: true } },
                 expenses: { orderBy: { createdAt: 'asc' } },
+                items: { orderBy: { sortOrder: 'asc' } },
               },
             });
           } catch (err) {
@@ -877,6 +970,7 @@ class ManufacturingSampleService {
                   payments: { orderBy: { paidAt: 'desc' } },
                   customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
                   expenses: { orderBy: { createdAt: 'asc' } },
+                  items: { orderBy: { sortOrder: 'asc' } },
                 },
               });
             } else {
@@ -1070,11 +1164,84 @@ class ManufacturingSampleService {
     }
     if (data.designNotes !== undefined) updateData.designNotes = data.designNotes ? String(data.designNotes).trim() : null;
 
+    let itemsToUpdate = null;
+    if (data.items !== undefined) {
+      if (!Array.isArray(data.items)) {
+        throw httpErr(400, 'قائمة بنود المنتجات غير صالحة');
+      }
+      if (data.items.length === 0) {
+        throw httpErr(400, 'أضف منتج واحد على الأقل');
+      }
+      itemsToUpdate = [];
+      for (let idx = 0; idx < data.items.length; idx++) {
+        const item = data.items[idx];
+        let itemProductId = item.productId ? String(item.productId) : null;
+        let itemProductName = String(item.productName || '').trim();
+        if (itemProductId) {
+          const product = await prisma.product.findFirst({
+            where: { id: itemProductId, companyId },
+            select: { id: true, name: true },
+          });
+          if (!product) throw httpErr(400, 'المنتج المختار غير موجود في هذه الشركة');
+          if (!itemProductName) itemProductName = product.name;
+        }
+        if (!itemProductName) {
+          throw httpErr(400, 'اسم المنتج إلزامي لكل بند');
+        }
+        const itemQuantity = Math.max(1, parseInt(item.quantity, 10) || 1);
+        const itemSize = item.size ? String(item.size).trim().toUpperCase() : null;
+        const itemColor = item.color ? String(item.color).trim().toUpperCase() : null;
+        const itemUnitPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '' ? round2(item.unitPrice) : null;
+        const itemSortOrder = Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : idx + 1;
+        itemsToUpdate.push({
+          productId: itemProductId,
+          productName: itemProductName,
+          quantity: itemQuantity,
+          size: itemSize,
+          color: itemColor,
+          unitPrice: itemUnitPrice,
+          sortOrder: itemSortOrder,
+        });
+      }
+
+      // First item sets header
+      const firstItem = itemsToUpdate[0];
+      updateData.productId = firstItem.productId || null;
+      updateData.productName = firstItem.productName;
+      if (firstItem.size) updateData.size = firstItem.size;
+      if (firstItem.color) updateData.color = firstItem.color;
+
+      const itemsTotalQty = itemsToUpdate.reduce((sum, it) => sum + it.quantity, 0);
+      const hasExplicitPlannedQty = data.plannedQuantity !== undefined && data.plannedQuantity !== null && data.plannedQuantity !== '';
+      updateData.plannedQuantity = hasExplicitPlannedQty
+        ? Math.max(1, parseInt(data.plannedQuantity, 10) || 1)
+        : itemsTotalQty;
+    }
+
     let updatedRecord;
     return await prisma.$transaction(async (tx) => {
       if (data.expenses !== undefined) {
         await tx.sampleOrderExpense.deleteMany({ where: { sampleOrderId: id } });
         await this.syncSampleExpenses(tx, companyId, id, data.expenses);
+      }
+
+      if (itemsToUpdate && tx.sampleOrderItem) {
+        await tx.sampleOrderItem.deleteMany({ where: { sampleOrderId: id } });
+        for (const it of itemsToUpdate) {
+          await tx.sampleOrderItem.create({
+            data: {
+              companyId,
+              sampleOrderId: id,
+              productId: it.productId,
+              productName: it.productName,
+              quantity: it.quantity,
+              size: it.size,
+              color: it.color,
+              unitPrice: it.unitPrice,
+              sortOrder: it.sortOrder,
+            },
+          });
+        }
       }
 
       try {
@@ -1089,6 +1256,7 @@ class ManufacturingSampleService {
             customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
             bom: { select: { id: true, code: true, name: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
+            items: { orderBy: { sortOrder: 'asc' } },
           },
         });
       } catch (err) {
@@ -1103,6 +1271,7 @@ class ManufacturingSampleService {
               payments: { orderBy: { paidAt: 'desc' } },
               customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
               expenses: { orderBy: { createdAt: 'asc' } },
+              items: { orderBy: { sortOrder: 'asc' } },
             },
           });
         } else {
@@ -1197,6 +1366,9 @@ class ManufacturingSampleService {
       }
       if (tx.sampleComponent) {
         await tx.sampleComponent.deleteMany({ where: { sampleOrderId: id } });
+      }
+      if (tx.sampleOrderItem) {
+        await tx.sampleOrderItem.deleteMany({ where: { sampleOrderId: id } });
       }
       if (tx.sampleShareLink) {
         await tx.sampleShareLink.deleteMany({ where: { sampleOrderId: id } });
@@ -1428,6 +1600,7 @@ class ManufacturingSampleService {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
         bom: { select: { id: true, code: true, name: true } },
         expenses: { orderBy: { createdAt: 'asc' } },
+        items: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -1744,6 +1917,7 @@ class ManufacturingSampleService {
         payments: { orderBy: { paidAt: 'desc' } },
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
         expenses: { orderBy: { createdAt: 'asc' } },
+        items: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -1823,6 +1997,7 @@ class ManufacturingSampleService {
           payments: { orderBy: { paidAt: 'desc' } },
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
+          items: { orderBy: { sortOrder: 'asc' } },
         },
       });
 
@@ -1869,6 +2044,7 @@ class ManufacturingSampleService {
           payments: { orderBy: { paidAt: 'desc' } },
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
+          items: { orderBy: { sortOrder: 'asc' } },
         },
       });
 
