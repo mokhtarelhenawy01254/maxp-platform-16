@@ -65,3 +65,75 @@ model CarrierTicketMessage {
   @@map("carrier_ticket_messages")
 }
 
+model ShipmentEvent {
+  id         String   @id @default(cuid())
+  companyId  String
+  shipmentId String
+  fromStatus String?
+  toStatus   String
+  reasonCode String?
+  notes      String?
+  actorType  String   // ADMIN | COURIER | CLIENT | SYSTEM
+  actorId    String?
+  actorName  String?
+  branchId   String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, shipmentId, createdAt])
+  @@map("shipment_events")
+}
+
+model ClientRateCard {
+  id              String   @id @default(cuid())
+  companyId       String
+  merchantId      String
+  name            String
+  governorateCode String?
+  basePrice       Decimal  @db.Decimal(10, 2)
+  baseWeightKg    Decimal  @default(1) @db.Decimal(10, 3)
+  extraKgPrice    Decimal  @default(0) @db.Decimal(10, 2)
+  codFeeFixed     Decimal  @default(0) @db.Decimal(10, 2)
+  codFeePercent   Decimal  @default(0) @db.Decimal(5, 2)
+  returnFee       Decimal  @default(0) @db.Decimal(10, 2)
+  minWeight       Decimal? @db.Decimal(10, 3)
+  maxWeight       Decimal? @db.Decimal(10, 3)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyId, merchantId, name])
+  @@index([companyId, merchantId, isActive])
+  @@map("client_rate_cards")
+}
+
+model ShippingPolicySettings {
+  id                    String   @id @default(cuid())
+  companyId             String   @unique
+  operatingModel        String   @default("INTERNAL") // INTERNAL | PARTNERS | HYBRID
+  codSettlementMode     String   @default("STATEMENT_WITH_REMITTANCE") // STATEMENT | STATEMENT_WITH_REMITTANCE | AUTO
+  intakeMode            String   @default("MIXED") // INTERNAL | PORTAL | API | MIXED
+  pricingBasis          String   @default("ZONE_WEIGHT") // ZONE | WEIGHT | VOLUMETRIC | TIERS | ZONE_WEIGHT
+  codFeeType            String   @default("FIXED") // FIXED | PERCENT | NONE
+  deliveryAttempts      Int      @default(3)
+  attemptIntervalHours  Int      @default(24)
+  afterAttemptsAction   String   @default("REVIEW") // RTO | REVIEW
+  proofOfDelivery       String   @default("OTP,PIN")
+  requirePinOnShareLink Boolean  @default(true)
+  publicTrackingMode    String   @default("WAYBILL") // WAYBILL | PHONE | OFF
+  publicTrackingMask    Boolean  @default(true)
+  clientPortalEnabled   Boolean  @default(true)
+  courierPortalEnabled  Boolean  @default(true)
+  offlineEnabled        Boolean  @default(true)
+  maxWeightKg           Decimal? @db.Decimal(10, 3)
+  maxCodAmount          Decimal? @db.Decimal(10, 2)
+  currency              String   @default("EGP")
+  invoiceVatPercent     Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("shipping_policy_settings")
+}
+

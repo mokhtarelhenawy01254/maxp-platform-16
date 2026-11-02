@@ -761,6 +761,24 @@ model Shipment {
   otpExpiresAt           DateTime?
   /// Wrong-code attempts against the delivery OTP — locked after 5, reset on resend/success
   otpAttempts            Int             @default(0)
+  recipientName          String?
+  recipientPhone         String?
+  recipientPhone2        String?
+  senderName             String?
+  senderPhone            String?
+  senderAddress          String?
+  weight                 Decimal?         @db.Decimal(10, 3)
+  dimensions             String?
+  pieces                 Int?             @default(1)
+  codAmount              Decimal?         @db.Decimal(10, 2)
+  declaredValue          Decimal?         @db.Decimal(10, 2)
+  contentDescription     String?
+  isFragile              Boolean?         @default(false)
+  allowOpenPackage       Boolean?         @default(true)
+  clientRateCardId       String?
+  attemptCount           Int              @default(0)
+  failureReasonCode      String?
+  source                 String?          @default("SHIPMENT")
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   company                Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -771,6 +789,7 @@ model Shipment {
   shippingCompany        ShippingCompany? @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
   courier                Courier?         @relation(fields: [courierId], references: [id], onDelete: SetNull)
   deliveryRun            DeliveryRun?     @relation(fields: [deliveryRunId], references: [id], onDelete: SetNull)
+  events                 ShipmentEvent[]
 
   @@index([companyId])
   @@index([orderId])
@@ -781,6 +800,10 @@ model Shipment {
   @@index([courierId])
   @@index([deliveryRunId])
   @@index([status])
+  @@index([companyId, createdAt])
+  @@index([companyId, status, createdAt])
+  @@index([trackingNumber])
+  @@index([companyId, merchantId, createdAt])
   @@map("shipments")
 }
 

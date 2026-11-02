@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { recordShipmentEvent } = require('./shipping/shipmentEventService');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -747,6 +748,17 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     const updatedShipment = await tx.shipment.update({
       where: { id: shipmentId },
       data: updateData
+    });
+
+    await recordShipmentEvent(tx, {
+      companyId,
+      shipmentId,
+      fromStatus: shipment.status,
+      toStatus: updateData.status,
+      notes: deliveryNotes?.trim() || null,
+      actorType: 'COURIER',
+      actorId: courierId || userId || null,
+      actorName: shipment.courier?.name || null,
     });
 
     if (shipment.orderId) {
@@ -1562,6 +1574,7 @@ module.exports = {
   listDeliveryRuns,
   getDeliveryRunById,
   updateDeliveryRunShipment,
+  updateShipmentStatus: updateDeliveryRunShipment,
   settleDeliveryRun,
   getCourierDashboardSummary,
   listCourierCommissions,
