@@ -20,6 +20,8 @@ interface CourseData {
   price: number;
   freePreviewLessons: number;
   thumbnailUrl?: string | null;
+  storeProductId?: string | null;
+  storeProduct?: { id: string; name?: string; price?: number } | null;
 }
 
 interface Props {
@@ -34,6 +36,7 @@ interface Props {
   copiedShare: boolean;
   onShare: () => void;
   onCheckout: () => void;
+  storeProductId?: string | null;
 }
 
 export const VisitorCourseLanding: React.FC<Props> = ({
@@ -47,9 +50,16 @@ export const VisitorCourseLanding: React.FC<Props> = ({
   copiedShare,
   onShare,
   onCheckout,
+  storeProductId,
 }) => {
   const isFreeCourse = Number(course.price) <= 0;
   const isDefaultCourse = course.id === "cmuzmwaxs07r2juml2v04xon5";
+
+  // Check valid store product ID (fallback to null if storeProduct was explicitly resolved to null)
+  const candidateProductId = storeProductId ?? course.storeProductId ?? null;
+  const effectiveStoreProductId =
+    candidateProductId && course.storeProduct !== null ? candidateProductId : null;
+  const storeProductUrl = effectiveStoreProductId ? `/store/product/${effectiveStoreProductId}` : null;
 
   // Single primary CTA target
   const startLearningUrl = firstLesson
@@ -78,15 +88,28 @@ export const VisitorCourseLanding: React.FC<Props> = ({
               <span>ابدأ الآن مجانًا</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onCheckout}
+          ) : storeProductUrl ? (
+            <Link
+              to={storeProductUrl}
               className="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-colors shadow-2xs"
             >
               <span>إتمام الاشتراك — {course.price} ج.م</span>
               <ArrowLeft className="w-3.5 h-3.5" />
-            </button>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={onCheckout}
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-colors shadow-2xs"
+              >
+                <span>إتمام الاشتراك — {course.price} ج.م</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] text-indigo-700/80 font-medium">
+                (الدفع داخل المنصة)
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -133,14 +156,29 @@ export const VisitorCourseLanding: React.FC<Props> = ({
                 </Link>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={onCheckout}
-                    className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
-                  >
-                    <span>اشترك الآن — {course.price} ج.م</span>
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+                  {storeProductUrl ? (
+                    <Link
+                      to={storeProductUrl}
+                      className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
+                    >
+                      <span>اشترك الآن — {course.price} ج.م</span>
+                      <ArrowLeft className="w-4 h-4" />
+                    </Link>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={onCheckout}
+                        className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
+                      >
+                        <span>اشترك الآن — {course.price} ج.م</span>
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-muted-foreground font-medium">
+                        (الدفع داخل المنصة)
+                      </span>
+                    </div>
+                  )}
 
                   {firstLesson && freeLessons > 0 && (
                     <Link
@@ -292,15 +330,30 @@ export const VisitorCourseLanding: React.FC<Props> = ({
             انضم الآن واستفد من كامل المنهج والتمارين العملية مع الكوتش الذكي في حسابك.
           </p>
 
-          <div className="pt-2 flex justify-center">
-            <button
-              type="button"
-              onClick={onCheckout}
-              className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm transition-all shadow-md shadow-indigo-950 active:scale-95 flex items-center gap-2"
-            >
-              <span>اشترك الآن — {course.price} ج.م</span>
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+          <div className="pt-2 flex flex-col items-center justify-center gap-2">
+            {storeProductUrl ? (
+              <Link
+                to={storeProductUrl}
+                className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm transition-all shadow-md shadow-indigo-950 active:scale-95 flex items-center gap-2"
+              >
+                <span>اشترك الآن — {course.price} ج.م</span>
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onCheckout}
+                  className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm transition-all shadow-md shadow-indigo-950 active:scale-95 flex items-center gap-2"
+                >
+                  <span>اشترك الآن — {course.price} ج.م</span>
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-slate-300 font-medium">
+                  (الدفع داخل المنصة)
+                </span>
+              </>
+            )}
           </div>
         </section>
       )}

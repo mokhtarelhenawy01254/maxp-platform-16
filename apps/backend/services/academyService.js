@@ -1410,6 +1410,18 @@ class AcademyService {
       };
     });
 
+    let storeProduct = null;
+    if (course.storeProductId) {
+      try {
+        storeProduct = await db.product.findFirst({
+          where: { id: course.storeProductId },
+          select: { id: true, name: true, price: true },
+        });
+      } catch (_e) {
+        storeProduct = null;
+      }
+    }
+
     return {
       course: {
         id: course.id,
@@ -1418,7 +1430,8 @@ class AcademyService {
         price: course.price,
         thumbnailUrl: course.thumbnailUrl,
         freePreviewLessons: course.freePreviewLessons,
-        storeProductId: course.storeProductId,
+        storeProductId: storeProduct ? course.storeProductId : null,
+        storeProduct: storeProduct || null,
       },
       isEnrolled,
       enrollmentId: enrollment?.id || null,

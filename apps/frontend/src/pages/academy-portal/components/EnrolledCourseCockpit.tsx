@@ -20,6 +20,7 @@ interface CourseData {
   price: number;
   freePreviewLessons: number;
   thumbnailUrl?: string | null;
+  storeProductId?: string | null;
 }
 
 interface Props {
@@ -148,18 +149,21 @@ export const EnrolledCourseCockpit: React.FC<Props> = ({
                   </Link>
                 )
               ) : (
-                <Link
-                  to={resumeUrl}
-                  className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  <span>
+                <div className="flex flex-col items-start gap-1.5">
+                  <Link
+                    to={resumeUrl}
+                    className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-200 transition-all flex items-center gap-2 active:scale-98"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    <span>ادخل الكورس</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </Link>
+                  <span className="text-xs text-muted-foreground font-medium">
                     {completedCount === 0
                       ? "ابدأ الدرس الأول الآن"
                       : `أكمل التعلم: ${nextLessonToStudy?.title || "الدرس التالي"}`}
                   </span>
-                  <ArrowLeft className="w-4 h-4" />
-                </Link>
+                </div>
               )}
             </div>
           </div>

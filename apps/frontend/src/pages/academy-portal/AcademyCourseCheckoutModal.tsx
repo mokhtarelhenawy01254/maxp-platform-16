@@ -108,7 +108,7 @@ const AcademyCourseCheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Modal Header */}
         <div className="p-5 sm:p-6 border-b border-border/60 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-primary block">اشتراك رقمي فوري</span>
+            <span className="text-xs font-semibold text-primary block">اشتراك رقمي فوري — الدفع داخل المنصة</span>
             <h3 className="text-base font-extrabold text-foreground leading-tight">
               {isSuccess ? "تم تفعيل الاشتراك بنجاح!" : "تأكيد الاشتراك في الكورس"}
             </h3>

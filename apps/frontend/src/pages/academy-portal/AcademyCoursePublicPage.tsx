@@ -14,6 +14,8 @@ interface CourseOutline {
     price: number;
     freePreviewLessons: number;
     thumbnailUrl?: string | null;
+    storeProductId?: string | null;
+    storeProduct?: { id: string; name?: string; price?: number } | null;
   };
   isEnrolled: boolean;
   enrollmentId?: string | null;
@@ -237,6 +239,7 @@ const AcademyCoursePublicPage: React.FC = () => {
           copiedShare={copiedShare}
           onShare={handleShareCourse}
           onCheckout={() => setCheckoutOpen(true)}
+          storeProductId={course.storeProductId}
         />
       )}
 
