@@ -1897,10 +1897,16 @@ const getActiveShippingZones = async (req, res) => {
 const calculatePublicShippingCost = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const governorate =
+    let governorate =
       typeof req.body?.governorate === 'string' && req.body.governorate.trim()
         ? req.body.governorate
         : req.query.governorate;
+
+    if (!governorate && (req.body?.shippingAddress || req.body?.customerAddress || req.body?.address)) {
+      const { normalizeOrderLocation } = require('../utils/orderLocationNormalizer');
+      const norm = normalizeOrderLocation(req.body);
+      governorate = norm.governorate || norm.rawGovernorate;
+    }
     const quoteItems = normalizePublicShippingQuoteItems(req.body?.items);
 
     console.log('[calculatePublicShippingCost] Request:', {
@@ -2003,6 +2009,12 @@ const calculatePublicShippingCost = async (req, res) => {
           deliveryTime: quote.deliveryTime,
           governorate: quote.governorate,
           methods: quote.methods,
+          shippingLine: {
+            cost: quote.price,
+            label: quote.price > 0 ? `الشحن: ${quote.price} ج.م` : 'شحن مجاني',
+            governorate: quote.governorate,
+            isFree: quote.price === 0,
+          },
         }
       };
       try {
@@ -2019,7 +2031,13 @@ const calculatePublicShippingCost = async (req, res) => {
         price: 0,
         deliveryTime: 'غير محدد',
         governorate: null,
-        methods: []
+        methods: [],
+        shippingLine: {
+          cost: 0,
+          label: 'شحن مجاني',
+          governorate: null,
+          isFree: true,
+        },
       },
       message: 'لم يتم العثور على منطقة شحن مطابقة'
     };

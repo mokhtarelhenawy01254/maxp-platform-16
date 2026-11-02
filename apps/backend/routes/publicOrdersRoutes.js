@@ -155,13 +155,16 @@ router.post('/checkout-draft', async (req, res) => {
     const attribution = sanitizeOrderAttribution(req.body?.attribution);
     const sessionDetails = await buildSessionDetails(req.body?.sessionDetails, req);
 
+    const { normalizeOrderLocation } = require('../utils/orderLocationNormalizer');
+    const draftLoc = normalizeOrderLocation(req.body);
+
     const checkoutData = {
       customerName: normalizeCheckoutDraftText(req.body?.customerName, 120),
       email: normalizeCheckoutDraftText(req.body?.email, 160).toLowerCase(),
       phone: normalizeCheckoutDraftText(req.body?.phone, 32),
-      address: normalizeCheckoutDraftText(req.body?.address, 255),
-      city: normalizeCheckoutDraftText(req.body?.city, 120),
-      governorate: normalizeCheckoutDraftText(req.body?.governorate, 120),
+      address: normalizeCheckoutDraftText(draftLoc.address || req.body?.address, 255),
+      city: normalizeCheckoutDraftText(draftLoc.city || req.body?.city, 120),
+      governorate: normalizeCheckoutDraftText(draftLoc.governorate || draftLoc.rawGovernorate || req.body?.governorate, 120),
       notes: normalizeCheckoutDraftText(req.body?.notes, 500),
       paymentMethod: normalizeCheckoutDraftText(req.body?.paymentMethod, 32),
       couponCode: normalizeCheckoutDraftText(req.body?.couponCode, 64),
@@ -292,12 +295,21 @@ router.post('/checkout-draft', async (req, res) => {
       });
     }
 
+    const draftShippingCost = Number(checkoutData.shippingCost || 0);
     return res.json({
       success: true,
       data: {
         cartId: resolvedCartId,
         checkoutStartedAt: savedCart.checkoutStartedAt,
         checkoutUpdatedAt: savedCart.checkoutUpdatedAt,
+        subtotal: Number(checkoutData.subtotal || 0),
+        shippingCost: draftShippingCost,
+        shippingLine: {
+          cost: draftShippingCost,
+          label: draftShippingCost > 0 ? `الشحن: ${draftShippingCost} ج.م` : 'شحن مجاني',
+          governorate: checkoutData.governorate || null,
+          isFree: draftShippingCost === 0,
+        },
         total: Number(savedCart.total || 0),
       },
     });
@@ -1357,10 +1369,21 @@ router.post('/', async (req, res) => {
     let shippingCost = 0;
     let matchingZone = null;
     let shippingQuote = null;
-    if (shippingAddress?.governorate) {
+
+    const { normalizeOrderLocation } = require('../utils/orderLocationNormalizer');
+    const storeLocation = normalizeOrderLocation({
+      shippingAddress,
+      customerAddress: req.body?.customerAddress || req.body?.address,
+      address: req.body?.address,
+      governorate: req.body?.governorate,
+      city: req.body?.city,
+    });
+    const candidateGov = storeLocation.governorate || storeLocation.rawGovernorate || shippingAddress?.governorate;
+
+    if (candidateGov) {
       shippingQuote = await resolvePublicShippingQuote({
         companyId: company.id,
-        governorate: shippingAddress.governorate,
+        governorate: candidateGov,
         shippingClassCounts,
       });
 
@@ -2131,8 +2154,8 @@ router.post('/', async (req, res) => {
           customerEmail: guestEmail || null,
           customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
           shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
-          governorate: normalizedGovernorate,
-          city: shippingAddress?.city || '',
+          governorate: normalizedGovernorate || storeLocation.governorate || shippingQuote?.governorate || storeLocation.rawGovernorate || null,
+          city: storeLocation.city || shippingAddress?.city || req.body?.city || '',
           subtotal: parseFloat(cartTotal),
           shipping: parseFloat(shippingCost || 0),
           discount: parseFloat(discountAmount || 0),

@@ -8881,9 +8881,22 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
       quantity: products.reduce((sum, p) => sum + p.quantity, 0),
 
       // معلومات الشحن
-      customerAddress: address || shippingAddress || '',
-      city: city || 'غير محدد',
-      governorate: governorate || '',
+      ...(() => {
+        const { normalizeOrderLocation } = require('../utils/orderLocationNormalizer');
+        const loc = normalizeOrderLocation({
+          governorate,
+          city,
+          address,
+          shippingAddress,
+          customerAddress: address || shippingAddress
+        });
+        return {
+          customerAddress: loc.address || address || (typeof shippingAddress === 'string' ? shippingAddress : JSON.stringify(shippingAddress || {})),
+          shippingAddress: loc.shippingAddress || shippingAddress,
+          city: loc.city || city || 'غير محدد',
+          governorate: loc.governorate || governorate || '',
+        };
+      })(),
       customerPhone: customerPhone || '',
 
       // التكاليف

@@ -13,6 +13,7 @@ const { splitCustomerName } = require('../utils/customerName');
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
 const exchangeChainGuard = require('./exchangeChainGuard');
+const { normalizeOrderLocation } = require('../utils/orderLocationNormalizer');
 
 const VALID_ORDER_SOURCES = new Set([
   'REGULAR',
@@ -162,6 +163,10 @@ class EnhancedOrderService {
     return aliases[normalized] || String(attributeName || '').trim();
   }
 
+  normalizeOrderLocation(data) {
+    return normalizeOrderLocation(data);
+  }
+
   normalizeOrderItemAttributes(attributes = {}) {
     if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
       return {};
@@ -185,6 +190,17 @@ class EnhancedOrderService {
    */
   async createEnhancedOrder(data) {
     try {
+      // 📍 تطبيع موحد لبيانات الموقع (المحافظة والمدينة والعنوان) قبل المعالجة
+      const normalizedLoc = normalizeOrderLocation(data);
+      if (normalizedLoc.governorate) {
+        data.governorate = normalizedLoc.governorate;
+      }
+      if (normalizedLoc.city) {
+        data.city = normalizedLoc.city;
+      }
+      if (normalizedLoc.shippingAddress && !data.shippingAddress) {
+        data.shippingAddress = normalizedLoc.shippingAddress;
+      }
       //console.log('🚀 [ENHANCED-ORDER] بدء إنشاء طلب محسن...');
       //console.log('📋 [ENHANCED-ORDER] البيانات المستلمة:', {
       //   conversationId: data.conversationId,
@@ -1189,18 +1205,30 @@ class EnhancedOrderService {
       subtotal = parseFloat(data.subtotal);
     }
 
+    // 📍 تطبيع موحد لبيانات الموقع قبل الحساب
+    const normalizedLoc = normalizeOrderLocation(data);
+    if (normalizedLoc.governorate) {
+      data.governorate = normalizedLoc.governorate;
+    }
+    if (normalizedLoc.city) {
+      data.city = normalizedLoc.city;
+    }
+
     console.log(`💰 [COSTS-CALC] بدء حساب التكاليف - المحافظة: "${data.governorate || data.city}" | المجموع الفرعي: ${subtotal} | الكمية: ${quantity}`);
 
     // ربط الشحن: استخدم المرسل يدوياً أو احسبه
     let shipping = 0;
     const hasProvidedShipping =
-      data.shippingCost !== undefined &&
-      data.shippingCost !== null &&
-      data.shippingCost !== '';
+      (data.shippingCost !== undefined && data.shippingCost !== null && data.shippingCost !== '') ||
+      (data.shipping !== undefined && data.shipping !== null && data.shipping !== '');
+    const providedShippingVal =
+      data.shippingCost !== undefined && data.shippingCost !== null && data.shippingCost !== ''
+        ? data.shippingCost
+        : data.shipping;
     const shippingLocation = data.governorate || data.city;
 
     if (hasProvidedShipping) {
-      shipping = parseFloat(data.shippingCost) || 0;
+      shipping = parseFloat(providedShippingVal) || 0;
       console.log(`📦 [COSTS-CALC] استخدام سعر الشحن اليدوي: ${shipping} جنيه`);
 
       if (shipping <= 0 && shippingLocation && data.companyId) {
@@ -1266,9 +1294,17 @@ class EnhancedOrderService {
       quantity,
       subtotal,
       shipping,
+      shippingCost: shipping,
+      shippingLine: {
+        cost: shipping,
+        label: shipping > 0 ? `الشحن: ${shipping} ج.م` : 'شحن مجاني',
+        governorate: data.governorate || data.city || null,
+        isFree: shipping === 0,
+      },
       tax,
       discount,
-      total
+      total,
+      finalTotal: total
     };
   }
 
@@ -1279,12 +1315,15 @@ class EnhancedOrderService {
   async calculateShipping(governorate, subtotal, companyId, options = {}) {
     const { fallbackToDefault = true } = options;
 
+    const normalizedLoc = normalizeOrderLocation({ governorate });
+    const resolvedGov = normalizedLoc.governorate || (governorate && governorate !== 'غير محدد' ? governorate : null);
+
     console.log(`\n🚚 [SHIPPING-CALC] ===== بدء حساب الشحن =====`);
-    console.log(`📍 [SHIPPING-CALC] المحافظة: "${governorate}"`);
+    console.log(`📍 [SHIPPING-CALC] المحافظة: "${governorate}" (resolved: "${resolvedGov}")`);
     console.log(`💰 [SHIPPING-CALC] المبلغ: ${subtotal} جنيه`);
     console.log(`🏢 [SHIPPING-CALC] الشركة: ${companyId}`);
 
-    if (!governorate || governorate === 'غير محدد') {
+    if (!resolvedGov || resolvedGov === 'غير محدد') {
       console.log(
         `⚠️ [SHIPPING-CALC] المحافظة غير محددة، استخدام السعر ${fallbackToDefault ? 'الافتراضي: 50' : 'الصِفري'} جنيه`
       );
@@ -1292,18 +1331,18 @@ class EnhancedOrderService {
       return fallbackToDefault ? 50 : 0;
     }
 
-    // ⚠️ تعطيل الشحن المجاني مؤقتاً للتحقق من المشكلة
-    // if (subtotal >= 500) {
-    //   console.log(`🎁 [SHIPPING-CALC] شحن مجاني للطلبات أكثر من 500 جنيه`);
-    //   return 0;
-    // }
-
     try {
       // استخدام خدمة الشحن للبحث في قاعدة البيانات
       const shippingService = require('./shippingService');
       console.log(`🔍 [SHIPPING-CALC] البحث في قاعدة البيانات...`);
 
-      const shippingInfo = await shippingService.findShippingInfo(governorate, companyId);
+      let shippingInfo = await shippingService.findShippingInfo(resolvedGov, companyId);
+      if (!shippingInfo?.found && governorate && governorate !== resolvedGov) {
+        const rawFallback = await shippingService.findShippingInfo(governorate, companyId);
+        if (rawFallback?.found) {
+          shippingInfo = rawFallback;
+        }
+      }
 
       console.log(`📦 [SHIPPING-CALC] نتيجة البحث:`, JSON.stringify(shippingInfo, null, 2));
 
@@ -1343,18 +1382,13 @@ class EnhancedOrderService {
   async prepareOrderData({ customer, conversation, orderNumber, costs, ...data }) {
     console.log('📋 [PREPARE-ORDER] تحضير بيانات الطلب - التكاليف:', costs);
 
-    // استخراج عنوان محدد إذا كان customerAddress JSON
-    let parsedAddress = null;
-    if (typeof data.customerAddress === 'string' && data.customerAddress.trim().startsWith('{')) {
-      try { parsedAddress = JSON.parse(data.customerAddress); } catch (e) { /* ignore */ }
-    } else if (typeof data.customerAddress === 'object' && !Array.isArray(data.customerAddress)) {
-      parsedAddress = data.customerAddress;
-    }
+    const normalizedLoc = normalizeOrderLocation(data);
+    let parsedAddress = normalizedLoc.customerAddress || normalizedLoc.shippingAddress;
 
-    const rawGovInput = parsedAddress?.governorate || data.governorate || '';
-    const rawCityInput = parsedAddress?.city || data.city || '';
-    const rawAreaInput = parsedAddress?.area || parsedAddress?.district || parsedAddress?.neighborhood || data.area || data.district || '';
-    const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
+    const rawGovInput = data.governorate || normalizedLoc.rawGovernorate || parsedAddress?.governorate || '';
+    const rawCityInput = data.city || normalizedLoc.rawCity || parsedAddress?.city || '';
+    const rawAreaInput = normalizedLoc.area || parsedAddress?.area || parsedAddress?.district || parsedAddress?.neighborhood || data.area || data.district || '';
+    const addrText = normalizedLoc.address || parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
 
     const { getTurboGovernorateName, isUnspecified } = require('../utils/turbo/governorateMapper');
     const { stripTechnicalCodesFromAddress, cleanLocationName } = require('../utils/turbo/addressParser');
@@ -1362,7 +1396,10 @@ class EnhancedOrderService {
     const cleanAddrText = stripTechnicalCodesFromAddress(addrText);
     const cleanCustomerAddr = stripTechnicalCodesFromAddress(typeof data.customerAddress === 'string' ? data.customerAddress : '') || cleanAddrText;
 
-    let resolvedGov = (!isUnspecified(rawGovInput) ? getTurboGovernorateName(rawGovInput, rawCityInput, cleanAddrText) : null);
+    let resolvedGov = normalizedLoc.governorate;
+    if (!resolvedGov && !isUnspecified(rawGovInput)) {
+      resolvedGov = getTurboGovernorateName(rawGovInput, rawCityInput, cleanAddrText);
+    }
     if (!resolvedGov && !isUnspecified(rawCityInput)) {
       resolvedGov = getTurboGovernorateName(rawCityInput, '', cleanAddrText);
     }
@@ -1370,8 +1407,8 @@ class EnhancedOrderService {
       resolvedGov = getTurboGovernorateName('', rawCityInput, cleanAddrText);
     }
 
-    const addrGov = resolvedGov || cleanLocationName(rawGovInput) || 'غير محدد';
-    const addrCity = cleanLocationName(!isUnspecified(rawCityInput) ? rawCityInput : (rawAreaInput || addrGov));
+    const addrGov = resolvedGov || cleanLocationName(rawGovInput) || (isUnspecified(rawGovInput) ? null : rawGovInput) || null;
+    const addrCity = cleanLocationName(!isUnspecified(rawCityInput) ? rawCityInput : (rawAreaInput || addrGov)) || null;
     const addrArea = cleanLocationName(rawAreaInput || '');
     const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
 
