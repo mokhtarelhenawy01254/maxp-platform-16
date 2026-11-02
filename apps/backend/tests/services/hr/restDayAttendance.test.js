@@ -51,8 +51,8 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
       overtimeRate: 1.0,
     };
 
-    it('Criterion 1 & 2: Rest day punch MUST be classified as OVERTIME with 0 late minutes and full work hours as overtime', () => {
-      // Ali Wazery on Friday 2026-09-04: checkIn 15:00 Cairo (12:00Z), checkOut 20:30 Cairo (17:30Z) -> 5.5 hours
+    it('Criterion 1 & 2: Rest day punch MUST be classified as WEEKEND with 0 late minutes and overtime after shift end', () => {
+      // Ali Wazery on Friday 2026-09-04: checkIn 15:00 Cairo (12:00Z), checkOut 20:30 Cairo (17:30Z) -> 5.5 hours work, 2.5 hours overtime past 18:00
       const checkIn = new Date('2026-09-04T12:00:00.000Z');
       const checkOut = new Date('2026-09-04T17:30:00.000Z');
 
@@ -65,11 +65,11 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
       });
 
       assert.strictEqual(result.isRestDay, true);
-      assert.strictEqual(result.status, 'OVERTIME');
+      assert.strictEqual(result.status, 'WEEKEND');
       assert.strictEqual(result.lateMinutes, 0);
       assert.strictEqual(result.earlyLeaveMinutes, 0);
       assert.strictEqual(result.workHours, 5.5);
-      assert.strictEqual(result.overtimeHours, 5.5);
+      assert.strictEqual(result.overtimeHours, 2.5);
     });
 
     it('Criterion 6: Normal working day late punch MUST be classified as LATE with accurate late minutes and 0 overtime', () => {
@@ -130,7 +130,7 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
       assert.strictEqual(fridayResult.isRestDay, false);
       assert.strictEqual(fridayResult.status, 'LATE');
 
-      // Sunday 2026-09-06 15:00 becomes OVERTIME because Sunday is now a rest day:
+      // Sunday 2026-09-06 15:00 becomes WEEKEND because Sunday is now a rest day:
       const sundayCheckIn = new Date('2026-09-06T12:00:00.000Z');
       const sundayCheckOut = new Date('2026-09-06T16:00:00.000Z');
       const sundayResult = attendanceService.classifyAttendanceRecord({
@@ -141,9 +141,9 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
         timezone: 'Africa/Cairo',
       });
       assert.strictEqual(sundayResult.isRestDay, true);
-      assert.strictEqual(sundayResult.status, 'OVERTIME');
+      assert.strictEqual(sundayResult.status, 'WEEKEND');
       assert.strictEqual(sundayResult.lateMinutes, 0);
-      assert.strictEqual(sundayResult.overtimeHours, 4);
+      assert.strictEqual(sundayResult.overtimeHours, 1);
     });
   });
 
@@ -165,12 +165,12 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
       const workingDaysConfig = [0, 1, 2, 3, 4, 6];
       // Simulated attendance records for Ali Wazery in Sep 2026:
       // 10 working days with 550 total late minutes
-      // 1 Friday record (2026-09-04) with 5.5 hours overtime and 0 late minutes (corrected)
+      // 1 Friday record (2026-09-04) with 2.5 hours overtime and 0 late minutes (corrected)
       const attendance = [
         { date: '2026-09-01', status: 'LATE', lateMinutes: 60, workHours: 8, overtimeHours: 0 },
         { date: '2026-09-02', status: 'LATE', lateMinutes: 50, workHours: 8, overtimeHours: 0 },
         { date: '2026-09-03', status: 'LATE', lateMinutes: 40, workHours: 8, overtimeHours: 0 },
-        { date: '2026-09-04', status: 'OVERTIME', lateMinutes: 0, workHours: 5.5, overtimeHours: 5.5 }, // Friday
+        { date: '2026-09-04', status: 'WEEKEND', lateMinutes: 0, workHours: 5.5, overtimeHours: 2.5 }, // Friday
         { date: '2026-09-05', status: 'LATE', lateMinutes: 70, workHours: 8, overtimeHours: 0 },
         { date: '2026-09-06', status: 'LATE', lateMinutes: 50, workHours: 8, overtimeHours: 0 },
         { date: '2026-09-07', status: 'LATE', lateMinutes: 60, workHours: 8, overtimeHours: 0 },
@@ -182,7 +182,7 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
 
       // Late occurrences: only working days with lateMinutes > 0 or status LATE
       const lateOccurrences = attendance.filter(a => {
-        if (a.status === 'OVERTIME') return false;
+        if (['OVERTIME', 'WEEKEND'].includes(a.status)) return false;
         const recordDate = new Date(a.date);
         if (!workingDaysConfig.includes(recordDate.getDay())) return false;
         return (a.lateMinutes > 0 || a.status === 'LATE');
@@ -192,7 +192,7 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
 
       // Total late minutes:
       const totalLateMinutes = attendance.reduce((sum, a) => {
-        if (a.status === 'OVERTIME') return sum;
+        if (['OVERTIME', 'WEEKEND'].includes(a.status)) return sum;
         const recordDate = new Date(a.date);
         if (!workingDaysConfig.includes(recordDate.getDay())) return sum;
         return sum + (a.lateMinutes || 0);
@@ -205,7 +205,7 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
         sum + (parseFloat(a.overtimeHours) || 0), 0
       );
 
-      assert.strictEqual(totalOvertimeHours, 5.5); // Exactly 5.5 hours!
+      assert.strictEqual(totalOvertimeHours, 2.5); // Exactly 2.5 hours!
     });
   });
 });

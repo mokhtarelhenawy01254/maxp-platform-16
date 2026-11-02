@@ -190,11 +190,113 @@ class AttendanceAutoCheckoutCron {
     }
   }
 
+  get prisma() {
+    return this._prisma || getSharedPrismaClient();
+  }
+
+  set prisma(val) {
+    this._prisma = val;
+  }
+
+  /**
+   * حساب الحقول المشتقة للإغلاق التلقائي (lateMinutes, earlyLeaveMinutes, overtimeHours, workHours, status)
+   */
+  calculateAutoCheckoutMetrics({
+    attendance,
+    checkoutTime,
+    shift = null,
+    settings = null,
+    latenessRules = null,
+    timezone = 'Africa/Cairo'
+  }) {
+    const checkInTime = attendance?.checkIn ? new Date(attendance.checkIn) : null;
+    const breakDuration = (shift?.unpaidBreak === true) ? (shift?.breakDuration || 0) : 0;
+    let workHours = 0;
+    if (checkInTime && checkoutTime) {
+      const actualWorkMinutes = Math.max(0, (new Date(checkoutTime).getTime() - checkInTime.getTime()) / 60000);
+      workHours = Math.max(0, Math.round((((actualWorkMinutes - breakDuration) / 60) * 100)) / 100);
+    }
+
+    const attendanceService = require('../services/hr/attendanceService');
+    const isRest = attendanceService.isRestDay(attendance.date || attendance.checkIn, settings, timezone);
+
+    const attendanceDayForDb = normalizeDateForDb(attendance.date || attendance.checkIn, timezone);
+    const startTime = shift?.startTime || settings?.workStartTime || '09:00';
+    const endTime = shift?.endTime || settings?.workEndTime || '17:00';
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    const isOvernightShift =
+      endHour < startHour || (endHour === startHour && endMinute < startMinute);
+
+    let workEnd = combineDateAndTime(attendanceDayForDb, endTime, timezone);
+    if (isOvernightShift && workEnd) {
+      workEnd.setUTCDate(workEnd.getUTCDate() + 1);
+    }
+
+    let lateMinutes = 0;
+    let earlyLeaveMinutes = 0;
+    let overtimeHours = 0;
+    let status = attendance?.status || 'PRESENT';
+
+    const checkoutDate = checkoutTime ? new Date(checkoutTime) : null;
+
+    if (isRest) {
+      status = 'WEEKEND';
+      lateMinutes = 0;
+      earlyLeaveMinutes = 0;
+      if (workEnd && checkoutDate && checkoutDate > workEnd) {
+        overtimeHours = Math.max(0, Math.round(((checkoutDate.getTime() - workEnd.getTime()) / 3600000) * 100) / 100);
+      }
+    } else {
+      // 1. Recompute lateMinutes from checkIn vs workStart+grace
+      const config = attendanceService.resolveShiftAndLatenessRules(
+        shift,
+        latenessRules,
+        settings
+      );
+      const workStart = combineDateAndTime(attendanceDayForDb, config.workStartTime, timezone);
+      if (workStart && checkInTime) {
+        const graceTime = new Date(workStart.getTime() + config.allowanceMinutes * 60000);
+        if (checkInTime > graceTime) {
+          lateMinutes = Math.floor((checkInTime.getTime() - graceTime.getTime()) / 60000);
+          status = 'LATE';
+        } else {
+          lateMinutes = 0;
+          if (status === 'LATE' || status === 'ABSENT') {
+            status = 'PRESENT';
+          }
+        }
+      }
+
+      // 2. Compute earlyLeaveMinutes (checkout vs workEnd)
+      if (workEnd && checkoutDate && checkoutDate < workEnd) {
+        const earlyGrace = Number(settings?.earlyLeaveGracePeriod || 15);
+        const diffEarly = Math.floor((workEnd.getTime() - checkoutDate.getTime()) / 60000);
+        if (diffEarly > earlyGrace) {
+          earlyLeaveMinutes = diffEarly;
+        }
+      }
+
+      // 3. Compute overtimeHours (hours past workEnd)
+      if (workEnd && checkoutDate && checkoutDate > workEnd) {
+        overtimeHours = Math.max(0, Math.round(((checkoutDate.getTime() - workEnd.getTime()) / 3600000) * 100) / 100);
+      }
+    }
+
+    return {
+      status,
+      lateMinutes,
+      earlyLeaveMinutes,
+      workHours,
+      overtimeHours,
+    };
+  }
+
   /**
    * معالجة إغلاق بصمة واحدة
    */
   async processAutoCheckout(attendance) {
-    const prisma = getSharedPrismaClient();
+    const prisma = this.prisma;
     const timezone = attendance.company?.timezone || 'Africa/Cairo';
     const now = getNowInTimezone(timezone);
 
@@ -257,13 +359,19 @@ class AttendanceAutoCheckoutCron {
       return;
     }
 
-    const checkInTime = new Date(attendance.checkIn);
-    const breakDuration = (shiftAssignment?.shift?.unpaidBreak === true) ? (shiftAssignment?.shift?.breakDuration || 0) : 0;
-    const actualWorkMinutes = Math.max(0, (checkoutTime - checkInTime) / 60000);
-    const workHours = Math.max(
-      0,
-      Math.round((((actualWorkMinutes - breakDuration) / 60) * 100)) / 100
-    );
+    const latenessRules = await prisma.latenessRules?.findUnique({
+      where: { companyId: attendance.companyId }
+    }).catch(() => null);
+
+    const metrics = this.calculateAutoCheckoutMetrics({
+      attendance,
+      checkoutTime,
+      shift: shiftAssignment?.shift,
+      settings,
+      latenessRules,
+      timezone
+    });
+
     const autoCloseNote = 'Auto-checkout by system at day rollover';
 
     const updateResult = await prisma.attendance.updateMany({
@@ -274,9 +382,11 @@ class AttendanceAutoCheckoutCron {
       data: {
         checkOut: checkoutTime,
         checkOutMethod: 'auto_system',
-        earlyLeaveMinutes: 0,
-        workHours,
-        overtimeHours: 0,
+        status: metrics.status,
+        lateMinutes: metrics.lateMinutes,
+        earlyLeaveMinutes: metrics.earlyLeaveMinutes,
+        workHours: metrics.workHours,
+        overtimeHours: metrics.overtimeHours,
         notes: attendance.notes
           ? `${attendance.notes} (${autoCloseNote})`
           : autoCloseNote

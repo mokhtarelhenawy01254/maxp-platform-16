@@ -213,6 +213,76 @@ class AttendanceService {
     };
   }
 
+  /**
+   * Helper to resolve rest day attendance metrics consistently across all paths.
+   * On rest days:
+   * - status: "WEEKEND"
+   * - lateMinutes: 0
+   * - earlyLeaveMinutes: 0
+   * - workHours: full presence duration
+   * - overtimeHours: max(0, (checkOut - scheduledEnd) / 3600000) using shift.endTime || settings.workEndTime (fallback 18:00)
+   */
+  resolveRestDayMetrics(optionsOrCheckIn, checkOutParam, shiftParam, settingsParam, timezoneParam = "Africa/Cairo", recordDateParam = null) {
+    let checkIn = optionsOrCheckIn;
+    let checkOut = checkOutParam;
+    let shift = shiftParam;
+    let settings = settingsParam;
+    let timezone = timezoneParam;
+    let recordDate = recordDateParam;
+
+    if (optionsOrCheckIn && typeof optionsOrCheckIn === "object" && !(optionsOrCheckIn instanceof Date)) {
+      ({
+        checkIn = null,
+        checkOut = null,
+        shift = null,
+        settings = null,
+        timezone = "Africa/Cairo",
+        recordDate = null,
+      } = optionsOrCheckIn);
+    }
+
+    let workHours = 0;
+    if (checkIn && checkOut) {
+      const startMs = new Date(checkIn).getTime();
+      const endMs = new Date(checkOut).getTime();
+      if (endMs > startMs) {
+        workHours = Math.round(((endMs - startMs) / 3600000) * 100) / 100;
+      }
+    }
+
+    let overtimeHours = 0;
+    if (checkOut) {
+      const workEndTime = shift?.endTime || settings?.workEndTime || "18:00";
+      const baseDate = recordDate || checkIn || checkOut;
+      const scheduledEnd = combineDateAndTime(baseDate, workEndTime, timezone);
+
+      if (shift?.startTime && shift?.endTime && scheduledEnd) {
+        const [startH, startM] = shift.startTime.split(":").map(Number);
+        const [endH, endM] = shift.endTime.split(":").map(Number);
+        if (endH < startH || (endH === startH && endM < startM)) {
+          scheduledEnd.setUTCDate(scheduledEnd.getUTCDate() + 1);
+        }
+      }
+
+      if (scheduledEnd) {
+        const checkOutMs = new Date(checkOut).getTime();
+        const endMs = scheduledEnd.getTime();
+        if (checkOutMs > endMs) {
+          overtimeHours = Math.round(((checkOutMs - endMs) / 3600000) * 100) / 100;
+        }
+      }
+    }
+
+    return {
+      isRestDay: true,
+      status: "WEEKEND",
+      lateMinutes: 0,
+      earlyLeaveMinutes: 0,
+      workHours,
+      overtimeHours,
+    };
+  }
+
   classifyAttendanceRecord({
     recordDate,
     checkIn,
@@ -234,14 +304,14 @@ class AttendanceService {
     }
 
     if (isRest) {
-      return {
-        isRestDay: true,
-        status: "OVERTIME",
-        lateMinutes: 0,
-        earlyLeaveMinutes: 0,
-        workHours,
-        overtimeHours: workHours,
-      };
+      return this.resolveRestDayMetrics({
+        recordDate: recordDate || checkIn,
+        checkIn,
+        checkOut,
+        shift,
+        settings,
+        timezone,
+      });
     }
 
     // Normal working day
@@ -945,7 +1015,7 @@ class AttendanceService {
       let status = "PRESENT";
 
       if (isTodayRestDay) {
-        status = "OVERTIME";
+        status = "WEEKEND";
         lateMinutes = 0;
       } else {
         const graceTime = new Date(
@@ -1386,9 +1456,17 @@ class AttendanceService {
       let finalStatus = attendance.status;
 
       if (isRecordRestDay) {
-        finalStatus = "OVERTIME";
+        finalStatus = "WEEKEND";
         earlyLeaveMinutes = 0;
-        overtimeHours = workHours; // كامل ساعات العمل في يوم الراحة تُحسب إضافي
+        const restMetrics = this.resolveRestDayMetrics({
+          recordDate: attendanceDayForCalc,
+          checkIn: checkInDate,
+          checkOut: now,
+          shift,
+          settings,
+          timezone,
+        });
+        overtimeHours = restMetrics.overtimeHours;
       } else {
         const minOvertimeHours = parseFloat(settings?.overtimeMinHours) || 1;
         if (now > workEnd) {
@@ -2474,19 +2552,22 @@ class AttendanceService {
       where: { companyId },
     });
 
-    const isRest = this.isRestDay(date, settings, timezone) || originalData.status === "OVERTIME";
+    const isRest = this.isRestDay(date, settings, timezone) || originalData.status === "OVERTIME" || originalData.status === "WEEKEND";
     if (isRest) {
-      if (checkIn && checkOut) {
-        const actualWorkMinutes = Math.max(0, (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 60000);
-        workHours = Math.max(0, actualWorkMinutes / 60);
-        overtimeHours = workHours;
-      }
+      const restMetrics = this.resolveRestDayMetrics({
+        recordDate: date,
+        checkIn,
+        checkOut,
+        shift,
+        settings,
+        timezone,
+      });
       return {
-        status: "OVERTIME",
+        status: "WEEKEND",
         lateMinutes: 0,
         earlyLeaveMinutes: 0,
-        workHours: workHours !== null ? Math.round(workHours * 100) / 100 : null,
-        overtimeHours: Math.round(overtimeHours * 100) / 100,
+        workHours: checkIn && checkOut ? restMetrics.workHours : (workHours !== null ? Math.round(workHours * 100) / 100 : null),
+        overtimeHours: restMetrics.overtimeHours,
       };
     }
 

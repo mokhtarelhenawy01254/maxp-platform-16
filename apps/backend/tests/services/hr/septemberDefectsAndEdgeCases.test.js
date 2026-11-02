@@ -2,6 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const attendanceService = require('../../../services/hr/attendanceService');
 const payrollService = require('../../../services/hr/payrollService');
+const attendanceAutoCheckoutCron = require('../../../cron/attendanceAutoCheckoutCron');
 
 describe('September 2026 HR & Payroll Defect Edge Cases Test Suite', () => {
 
@@ -52,16 +53,92 @@ describe('September 2026 HR & Payroll Defect Edge Cases Test Suite', () => {
     });
 
     assert.strictEqual(result.isRestDay, true);
+    assert.strictEqual(result.status, 'WEEKEND', 'Status must be WEEKEND');
     assert.strictEqual(result.lateMinutes, 0, 'Rest day punch must have 0 late minutes');
-    assert.strictEqual(result.earlyLeaveMinutes, 0);
-    assert.ok(['WEEKEND', 'OVERTIME'].includes(result.status), 'Status must be WEEKEND or OVERTIME');
+    assert.strictEqual(result.earlyLeaveMinutes, 0, 'Rest day punch must have 0 early leave minutes');
     assert.strictEqual(result.workHours, 5.5, 'Work hours on rest day should be full presence (5.5h)');
+    assert.strictEqual(result.overtimeHours, 2.5, 'Overtime on rest day past shift end must be exactly 2.5h');
+  });
 
-    // Hours past scheduled shift end (18:00): 20:30 - 18:00 = 2.5 hours
-    const shiftEndMinutes = 18 * 60;
-    const checkOutMinutes = 20 * 60 + 30;
-    const postShiftHours = (checkOutMinutes - shiftEndMinutes) / 60;
-    assert.strictEqual(postShiftHours, 2.5, 'Overtime past shift end must be exactly 2.5h');
+  it('Defect 2 (Manual PUT/POST): _calculateManualMetrics rest-day record produces WEEKEND status and overtime past shift end', async () => {
+    // Friday 2026-09-04 15:00->20:30, shift 10:00-18:00: status='WEEKEND', lateMinutes=0, earlyLeaveMinutes=0, workHours=5.5, overtimeHours=2.5
+    const originalPrisma = attendanceService.prisma;
+    const originalGetShift = attendanceService.getEmployeeShiftForDate;
+
+    try {
+      attendanceService.prisma = {
+        hRSettings: {
+          findUnique: async () => defaultSettings
+        },
+        latenessRules: {
+          findUnique: async () => null
+        }
+      };
+      attendanceService.getEmployeeShiftForDate = async () => ({
+        startTime: '10:00',
+        endTime: '18:00'
+      });
+
+      const checkIn = new Date('2026-09-04T12:00:00.000Z'); // 15:00 Cairo
+      const checkOut = new Date('2026-09-04T17:30:00.000Z'); // 20:30 Cairo
+      const attendanceDate = new Date('2026-09-04T00:00:00.000Z');
+
+      const metrics = await attendanceService._calculateManualMetrics(
+        'test-company-id',
+        'test-emp-id',
+        attendanceDate,
+        checkIn,
+        checkOut,
+        'Africa/Cairo',
+        { status: 'PRESENT' },
+        true
+      );
+
+      assert.strictEqual(metrics.status, 'WEEKEND');
+      assert.strictEqual(metrics.lateMinutes, 0);
+      assert.strictEqual(metrics.earlyLeaveMinutes, 0);
+      assert.strictEqual(metrics.workHours, 5.5);
+      assert.strictEqual(metrics.overtimeHours, 2.5);
+    } finally {
+      attendanceService.prisma = originalPrisma;
+      attendanceService.getEmployeeShiftForDate = originalGetShift;
+    }
+  });
+
+  it('Defect 9 (Auto-checkout): day rollover recomputes overtime past shift end and keeps lateMinutes consistent', async () => {
+    // Tuesday 2026-09-15: normal working day
+    // Shift: 10:00 - 18:00, lateGrace: 10m (allowed until 10:10)
+    // Check-in: 10:15 Cairo (07:15Z) -> 5m late beyond allowance
+    // Auto-checkout at rollover with checkout after end, e.g. 19:30 Cairo (16:30Z) -> 1.5h overtime
+    const checkIn = new Date('2026-09-15T07:15:00.000Z'); // 10:15 Cairo
+    const checkoutTime = new Date('2026-09-15T16:30:00.000Z'); // 19:30 Cairo (1.5h past 18:00)
+
+    const attendanceRecord = {
+      id: 'att-auto-1',
+      companyId: 'test-company-id',
+      userId: 'test-user-id',
+      date: new Date('2026-09-15T00:00:00.000Z'),
+      checkIn,
+      checkOut: null,
+      status: 'PRESENT',
+      lateMinutes: 0 // pre-rewrite value
+    };
+
+    const metrics = attendanceAutoCheckoutCron.calculateAutoCheckoutMetrics({
+      attendance: attendanceRecord,
+      checkoutTime,
+      shift: { startTime: '10:00', endTime: '18:00' },
+      settings: defaultSettings,
+      latenessRules: null,
+      timezone: 'Africa/Cairo'
+    });
+
+    assert.strictEqual(metrics.lateMinutes, 5, 'lateMinutes must be re-derived consistently (10:15 - 10:10 = 5m)');
+    assert.strictEqual(metrics.status, 'LATE');
+    assert.strictEqual(metrics.earlyLeaveMinutes, 0);
+    assert.strictEqual(metrics.overtimeHours, 1.5, 'overtimeHours must equal hours past scheduled shift end (19:30 - 18:00 = 1.5h)');
+    assert.strictEqual(metrics.workHours, 9.25, 'workHours must reflect full duration from 10:15 to 19:30 (9.25h)');
+    assert.strictEqual(metrics.overtimeHours > 0, true, 'Row in -> out after end must produce overtime > 0');
   });
 
   it('Defect 3: Mid-month hire base salary proration for current and previous months', () => {
