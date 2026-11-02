@@ -172,6 +172,25 @@ export interface Order {
   orderSource?: string;
   isWholesale?: boolean;
   wholesaleCustomerId?: string | null;
+  createdBy?: string | null;
+  createdByName?: string | null;
+  createdByUser?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+  } | null;
+  assignedTo?: string | null;
+  assignedToName?: string | null;
+  assignedToUser?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+  } | null;
+  assignmentStrategy?: string | null;
 }
 
 export type RawOrderItem = {
@@ -249,4 +268,11 @@ export type RawOrder = {
   orderSource?: string;
   isWholesale?: boolean;
   wholesaleCustomerId?: string | null;
+  createdBy?: string | null;
+  createdByName?: string | null;
+  createdByUser?: Order["createdByUser"];
+  assignedTo?: string | null;
+  assignedToName?: string | null;
+  assignedToUser?: Order["assignedToUser"];
+  assignmentStrategy?: string | null;
 };

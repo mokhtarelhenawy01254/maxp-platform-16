@@ -998,6 +998,16 @@ router.post('/', manualOrderAccess, async (req, res) => {
       }
     }
 
+    // 🔒 Ignore any client-provided creator fields
+    delete req.body.createdBy;
+    delete req.body.createdByName;
+    delete req.body.createdByRole;
+
+    const creatorUser = req.user;
+    const resolvedCreatorName = creatorUser
+      ? (`${creatorUser.firstName || ''} ${creatorUser.lastName || ''}`.trim() || creatorUser.email || creatorUser.name || null)
+      : null;
+
     const orderData = {
       ...req.body,
       status: finalStatus,
@@ -1017,10 +1027,10 @@ router.post('/', manualOrderAccess, async (req, res) => {
       // Affiliate info
       ...(affiliateId && { affiliateId, orderSource }),
 
-      // Creator info
-      createdBy: req.user.id,
-      createdByName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email,
-      createdByRole: req.user.role,
+      // Creator info (strictly stamped from authenticated user)
+      createdBy: creatorUser?.id || null,
+      createdByName: resolvedCreatorName,
+      createdByRole: creatorUser?.role || null,
 
       // Previous order link for exchange / return
       ...(validatedOriginalOrder ? {

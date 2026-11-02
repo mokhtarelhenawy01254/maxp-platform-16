@@ -218,6 +218,16 @@ export interface OrderDetailsType {
   returnRequests?: any[];
 
   // Confirmation & Assignment Fields
+  createdBy?: string | null;
+  createdByName?: string | null;
+  createdByUser?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+  } | null;
+  assignedToName?: string | null;
   confirmedAt?: string | null;
   confirmedBy?: string | null;
   confirmedByUser?: {

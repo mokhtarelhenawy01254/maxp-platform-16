@@ -906,7 +906,27 @@ const getMyOrders = async (req, res) => {
       const formattedGuest = guestOrders.map((g) => formatWorkspaceOrderRecord(g, true, null, null, null));
       const combined = [...formattedRegular, ...formattedGuest];
 
-      if (sort === 'oldest') {
+      if (cleanSearch) {
+        const s = String(cleanSearch).trim().toLowerCase();
+        const getRank = (order) => {
+          const num = String(order.orderNumber || '').trim().toLowerCase();
+          if (num === s) return 0;
+          if (num.startsWith(s)) return 1;
+          return 2;
+        };
+        combined.sort((a, b) => {
+          const rankA = getRank(a);
+          const rankB = getRank(b);
+          if (rankA !== rankB) return rankA - rankB;
+          if (sort === 'oldest') {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          } else if (sort === 'attempts') {
+            return (b.callAttempts || 0) - (a.callAttempts || 0);
+          } else {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+        });
+      } else if (sort === 'oldest') {
         combined.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       } else if (sort === 'attempts') {
         combined.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0));

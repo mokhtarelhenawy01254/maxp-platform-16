@@ -184,6 +184,25 @@ export const OrdersMobileComfortableItem: React.FC<OrdersMobileComfortableItemPr
           </span>
         </div>
       </div>
+
+      {/* Row 3: Creator & Assigned Employee Attribution */}
+      <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground pt-1 border-t border-border/70 w-full min-w-0">
+        <div className="flex items-center gap-1 min-w-0 truncate">
+          <span className="text-muted-foreground/80 shrink-0">المنشئ:</span>
+          <span className="font-medium text-foreground truncate">
+            {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر" : "—"))}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-muted-foreground/80">المسؤول:</span>
+          <span className="font-medium text-foreground">
+            {order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}
+          </span>
+          {order.assignmentStrategy === "round_robin" && (
+            <span className="text-[9px] text-blue-600 dark:text-blue-400 font-normal">(آلي)</span>
+          )}
+        </div>
+      </div>
     </>
   );
 };

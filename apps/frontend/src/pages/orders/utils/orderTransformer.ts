@@ -213,6 +213,23 @@ export const transformOrder = (order: RawOrder): Order => {
     orderSource: order.orderSource || (order.metadata as any)?.orderSource,
     isWholesale: Boolean(order.isWholesale || order.orderSource === 'WHOLESALE' || (order.metadata as any)?.isWholesale || order.wholesaleCustomerId),
     wholesaleCustomerId: order.wholesaleCustomerId || (order.metadata as any)?.wholesaleCustomerId || null,
+    createdBy: order.createdBy || order.createdByUser?.id || null,
+    createdByName:
+      order.createdByName ||
+      (order.createdByUser
+        ? `${order.createdByUser.firstName || ''}`.trim() + (order.createdByUser.lastName ? ` ${order.createdByUser.lastName}` : '') || order.createdByUser.email
+        : null) ||
+      null,
+    createdByUser: order.createdByUser || null,
+    assignedTo: order.assignedTo || order.assignedToUser?.id || null,
+    assignedToName:
+      order.assignedToName ||
+      (order.assignedToUser
+        ? `${order.assignedToUser.firstName || ''}`.trim() + (order.assignedToUser.lastName ? ` ${order.assignedToUser.lastName}` : '') || order.assignedToUser.email
+        : null) ||
+      null,
+    assignedToUser: order.assignedToUser || null,
+    assignmentStrategy: order.assignmentStrategy || null,
   };
 };
 

@@ -54,6 +54,16 @@ export const OrdersTableHeader: React.FC<OrdersTableHeaderProps> = ({
             {t("orders.customerRating", "تقييم العملاء")}
           </th>
         )}
+        {columns.includes("creator") && (
+          <th className={`${headerPadding} whitespace-nowrap text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
+            {t("orders.creator", "منشئ الطلب")}
+          </th>
+        )}
+        {columns.includes("assignedTo") && (
+          <th className={`${headerPadding} whitespace-nowrap text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
+            {t("orders.assignedTo", "الموظف المسؤول")}
+          </th>
+        )}
         {columns.includes("amount") && (
           <th className={`${headerPadding} whitespace-nowrap text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
             {t("orders.amount")}

@@ -7,6 +7,10 @@ export interface OrderConfirmationDistributionCardProps {
     confirmedAt?: string | null;
     confirmedBy?: string | null;
     confirmedByUser?: { firstName?: string; lastName?: string } | null;
+    createdBy?: string | null;
+    createdByName?: string | null;
+    createdByUser?: { firstName?: string; lastName?: string } | null;
+    sourceType?: string | null;
     assignedTo?: string | null;
     assignedToUser?: { firstName?: string; lastName?: string } | null;
     assignedBy?: string | null;
@@ -80,6 +84,12 @@ export const OrderConfirmationDistributionCard: React.FC<OrderConfirmationDistri
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">{t("orderDetails.confirmationDate", { defaultValue: "تاريخ التأكيد" })}</span>
           <span className="font-mono tabular-nums">{formatOptionalDate(order.confirmedAt)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">{t("orderDetails.orderCreator", { defaultValue: "منشئ الطلب" })}</span>
+          <span className="font-semibold text-foreground">
+            {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر إلكتروني" : "—"))}
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">{t("orderDetails.confirmedBy", { defaultValue: "الموظف المؤكد" })}</span>

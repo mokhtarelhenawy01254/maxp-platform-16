@@ -2754,7 +2754,39 @@ class EnhancedOrderService {
 
       // Use safeQuery for better error handling
       const orders = await this.safeQuery(async () => {
-        return await this.getPrisma().order.findMany({
+        if (search) {
+          const s = String(search).trim();
+          try {
+            // Re-order by exact orderNumber match first, prefix match second, then createdAt DESC
+            const rawRows = await this.getPrisma().$queryRawUnsafe(`
+              SELECT id FROM "orders"
+              WHERE "companyId" = $1
+              ORDER BY CASE
+                WHEN lower(btrim("orderNumber")) = lower(btrim($2)) THEN 0
+                WHEN "orderNumber" ILIKE $2 || '%' THEN 1
+                ELSE 2 END, "createdAt" DESC
+              LIMIT $3 OFFSET $4
+            `, companyId, s, limit, (page - 1) * limit);
+
+            if (Array.isArray(rawRows) && rawRows.length > 0) {
+              const rawIds = rawRows.map(r => r.id);
+              const fetchedOrders = await this.getPrisma().order.findMany({
+                where: { id: { in: rawIds } },
+                include: {
+                  customer: true,
+                  conversation: true,
+                  orderItems: true
+                }
+              });
+              const orderMap = new Map(fetchedOrders.map(o => [o.id, o]));
+              return rawIds.map(id => orderMap.get(id)).filter(Boolean);
+            }
+          } catch (sqlErr) {
+            console.warn('⚠️ [ENHANCED-ORDER] $queryRaw CASE re-order fallback:', sqlErr.message);
+          }
+        }
+
+        const fetched = await this.getPrisma().order.findMany({
           where,
           include: {
             customer: true,
@@ -2765,6 +2797,24 @@ class EnhancedOrderService {
           skip: (page - 1) * limit,
           take: limit
         });
+
+        if (search) {
+          const s = String(search).trim().toLowerCase();
+          const getRank = (order) => {
+            const num = String(order.orderNumber || '').trim().toLowerCase();
+            if (num === s) return 0;
+            if (num.startsWith(s)) return 1;
+            return 2;
+          };
+          fetched.sort((a, b) => {
+            const rankA = getRank(a);
+            const rankB = getRank(b);
+            if (rankA !== rankB) return rankA - rankB;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+        }
+
+        return fetched;
       }, 3);
 
       console.log('✅ [ENHANCED-ORDER] Orders fetched:', orders.length);

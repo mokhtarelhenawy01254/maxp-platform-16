@@ -412,7 +412,9 @@ class OrderService {
         customerName,
         customerPhone,
         city,
-        notes
+        notes,
+        createdBy,
+        createdByName
       } = data;
 
       //console.log('🛒 Creating new order from conversation:', {
@@ -643,6 +645,8 @@ class OrderService {
             company: { connect: { id: companyId } },
             customer: { connect: { id: resolvedCustomerId } },
             ...(existingConversationId ? { conversation: { connect: { id: existingConversationId } } } : {}),
+            createdBy: createdBy || null,
+            createdByName: createdByName || null,
             subtotal: parseFloat(subtotal.toFixed(2)),
             tax: 0,
             shipping: parseFloat(shipping.toFixed(2)),
@@ -773,7 +777,7 @@ class OrderService {
           await customerLoyaltyService.applyLoyaltyPointsForOrder({
             orderId: order.id,
             companyId,
-            changedBy: data.createdBy
+            changedBy: createdBy || data.createdBy || null
           }).catch((loyaltyError) => {
             console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
           });

@@ -60,6 +60,8 @@ export const OrdersSkeleton: React.FC<OrdersSkeletonProps> = ({
                   <div className="skeleton-shimmer h-3 w-36 rounded"></div>
                 </>
               )}
+              {col === "creator" && <div className="skeleton-shimmer h-4 w-20 rounded"></div>}
+              {col === "assignedTo" && <div className="skeleton-shimmer h-4 w-20 rounded"></div>}
               {col === "amount" && <div className="skeleton-shimmer h-4 w-16 rounded"></div>}
               {col === "status" && <div className="skeleton-shimmer h-5 w-20 rounded-full"></div>}
               {col === "payment" && <div className="skeleton-shimmer h-5 w-18 rounded-full"></div>}

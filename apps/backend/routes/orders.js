@@ -710,6 +710,7 @@ const removeConfirmationDistributionFields = (orderPayload) => {
   delete orderPayload.confirmedByUser;
   delete orderPayload.confirmationNotes;
   delete orderPayload.assignedTo;
+  delete orderPayload.assignedToName;
   delete orderPayload.assignedBy;
   delete orderPayload.assignedAt;
   delete orderPayload.assignmentStrategy;
@@ -730,6 +731,13 @@ const applyOrderDetailFeatureAccess = (
     removeConfirmationDistributionFields(sanitizedOrder);
     delete sanitizedOrder.affiliateId;
     delete sanitizedOrder.affiliate;
+    delete sanitizedOrder.assignedTo;
+    delete sanitizedOrder.assignedToName;
+    delete sanitizedOrder.assignedToUser;
+    delete sanitizedOrder.assignmentStrategy;
+    delete sanitizedOrder.createdBy;
+    delete sanitizedOrder.createdByName;
+    delete sanitizedOrder.createdByUser;
 
     const merchantOrderScope = sanitizeMerchantOrderScopeForMerchant(
       sanitizedOrder.merchantOrder || metadata.merchantOrder
@@ -754,6 +762,11 @@ const applyOrderDetailFeatureAccess = (
     delete metadata.extractionMethod;
     delete metadata.orderSource;
 
+    // 🛡️ Always preserve creator info for company staff
+    sanitizedOrder.createdBy = keepCreatedBy;
+    sanitizedOrder.createdByName = keepCreatedByName;
+    sanitizedOrder.createdByUser = keepCreatedByUser;
+
     // Preserve conversation linking and origin context for staff so conversation tracking is never broken
     if (keepConversationId) {
       sanitizedOrder.conversationId = keepConversationId;
@@ -772,7 +785,18 @@ const applyOrderDetailFeatureAccess = (
   }
 
   if (!featureAccess.confirmationDistribution) {
+    const keepAssignedTo = sanitizedOrder.assignedTo;
+    const keepAssignedToName = sanitizedOrder.assignedToName;
+    const keepAssignedToUser = sanitizedOrder.assignedToUser;
+    const keepAssignmentStrategy = sanitizedOrder.assignmentStrategy;
+
     removeConfirmationDistributionFields(sanitizedOrder);
+
+    // 🛡️ Always preserve assigned employee info for company staff
+    sanitizedOrder.assignedTo = keepAssignedTo;
+    sanitizedOrder.assignedToName = keepAssignedToName;
+    sanitizedOrder.assignedToUser = keepAssignedToUser;
+    sanitizedOrder.assignmentStrategy = keepAssignmentStrategy;
   }
 
   sanitizedOrder.metadata = metadata;
@@ -4274,14 +4298,29 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       ...guestOrders.map(o => o.guestPhone).filter(Boolean)
     ])];
     const allCustomerIds = [...new Set(regularOrders.map(o => o.customerId || o.customer?.id).filter(Boolean))];
+    const allAssignedToIds = [...new Set(regularOrders.map(o => o.assignedTo).filter(Boolean))];
 
     const guestCustomerByPhone = new Map();
     const statsByPhone = new Map();
     const statsByCustomerId = new Map();
+    const assignedUsersById = new Map();
 
     try {
       const prismaClient = getSharedPrismaClient();
       const promises = [];
+
+      if (allAssignedToIds.length > 0) {
+        promises.push(
+          prismaClient.user.findMany({
+            where: { id: { in: allAssignedToIds } },
+            select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+          }).then(foundUsers => {
+            foundUsers.forEach(u => assignedUsersById.set(u.id, u));
+          }).catch(err => {
+            console.warn('⚠️ [ORDERS] Failed to batch fetch assigned users:', err.message);
+          })
+        );
+      }
 
       if (allPhones.length > 0) {
         promises.push(
@@ -4773,6 +4812,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         conversation: order.conversation,
         affiliateId: order.affiliateId,
         affiliate: order.affiliate,
+        assignedTo: order.assignedTo || null,
+        assignedToName: order.assignedTo && assignedUsersById.has(order.assignedTo)
+          ? `${assignedUsersById.get(order.assignedTo).firstName || ''} ${assignedUsersById.get(order.assignedTo).lastName || ''}`.trim() || assignedUsersById.get(order.assignedTo).email
+          : (order.assignedTo ? 'موظف' : null),
+        assignedToUser: order.assignedTo ? (assignedUsersById.get(order.assignedTo) || null) : null,
+        assignmentStrategy: order.assignmentStrategy || null,
         createdBy: order.createdBy,
         createdByName: order.createdByName,
         createdByUser: order.createdByUser
@@ -4928,7 +4973,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         isViewed: order.isViewed ?? false,
         sourceType: 'storefront',
         extractionMethod: 'storefront',
-        orderSource: 'STOREFRONT'
+        orderSource: 'STOREFRONT',
+        assignedTo: null,
+        assignedToName: null,
+        assignedToUser: null,
+        assignmentStrategy: null,
+        createdBy: null,
+        createdByName: null,
+        createdByUser: null
       }, orderDetailFeatureAccess, { isMerchant: false });
     });
 
@@ -4969,6 +5021,18 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // وتمنع تكرار/فقدان الطلبات عند تساوي التواريخ أو عند وصول طلبات جديدة.
     const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders, ...formattedIncompleteCarts]
       .sort((a, b) => {
+        if (search) {
+          const s = String(search).trim().toLowerCase();
+          const getRank = (order) => {
+            const num = String(order.orderNumber || '').trim().toLowerCase();
+            if (num === s) return 0;
+            if (num.startsWith(s)) return 1;
+            return 2;
+          };
+          const rankA = getRank(a);
+          const rankB = getRank(b);
+          if (rankA !== rankB) return rankA - rankB;
+        }
         const timeDiff = new Date(b.createdAt) - new Date(a.createdAt);
         if (timeDiff !== 0) return timeDiff;
         return String(b.id || '').localeCompare(String(a.id || ''));
@@ -8903,7 +8967,19 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 // إنشاء طلب بسيط (للاختبار)
 router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const orderData = req.body;
+    const orderData = { ...req.body };
+    delete orderData.createdBy;
+    delete orderData.createdByName;
+
+    // 🔒 Server-side stamping of creator from authenticated user (ignore any client-provided creator fields)
+    const creatorUser = req.user;
+    orderData.createdBy = creatorUser?.id || null;
+    orderData.createdByName = creatorUser
+      ? (`${creatorUser.firstName || ''} ${creatorUser.lastName || ''}`.trim() || creatorUser.email || null)
+      : null;
+    if (creatorUser?.companyId) {
+      orderData.companyId = creatorUser.companyId;
+    }
 
     // التحقق من البيانات المطلوبة
     const requiredFields = ['productName', 'productPrice'];
@@ -8965,7 +9041,19 @@ router.post('/create-simple', verifyToken.authenticateToken, async (req, res) =>
 // إنشاء طلب يدوي (للاختبار)
 router.post('/create', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const orderData = req.body;
+    const orderData = { ...req.body };
+    delete orderData.createdBy;
+    delete orderData.createdByName;
+
+    // 🔒 Server-side stamping of creator from authenticated user (ignore any client-provided creator fields)
+    const creatorUser = req.user;
+    orderData.createdBy = creatorUser?.id || null;
+    orderData.createdByName = creatorUser
+      ? (`${creatorUser.firstName || ''} ${creatorUser.lastName || ''}`.trim() || creatorUser.email || null)
+      : null;
+    if (creatorUser?.companyId) {
+      orderData.companyId = creatorUser.companyId;
+    }
 
     // التحقق من البيانات المطلوبة
     const requiredFields = ['customerId', 'companyId', 'productName', 'productPrice'];
