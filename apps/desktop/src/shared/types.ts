@@ -75,6 +75,9 @@ export interface TrackerState {
     taskSummary?: string | null;
   } | null;
   lastHandoverNotes?: string | null;
+  /** تأكيد الاستئناف من السيرفر (Task 1d9f6982) */
+  resumeConfirmed?: boolean;
+  resumeWarning?: string | null;
 }
 
 

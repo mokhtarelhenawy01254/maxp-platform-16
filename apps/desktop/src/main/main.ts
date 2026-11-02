@@ -9,6 +9,7 @@ import { syncEngine } from '../tracker/syncEngine';
 import { localDb, getLocalDateString } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
+import { resolveResumeState } from '../shared/resumeConfirmation';
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
 
@@ -52,6 +53,9 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
+// تأكيد الاستئناف من السيرفر (Task 1d9f6982)
+let resumeConfirmed = true;
+let resumeWarning: string | null = null;
 let currentBreakReason = '';
 let currentBreakStartedAt: number | null = null;
 let sessionStartedAt: string | null = null;
@@ -618,9 +622,31 @@ async function resumeTracking(): Promise<void> {
   await activityTracker.start();
   await windowTracker.start();
   startIdleReminder();
+
+  // التأكيد من السيرفر (Task 1d9f6982): مفيش «مستأنف» في الواجهة قبل ما السيرفر يقبل
+  let syncOk = false;
+  let syncError: string | null = null;
+  try {
+    await syncEngine.sync();
+    syncOk = true;
+  } catch (err: any) {
+    syncError = err?.message || 'sync failed';
+    console.warn('[Resume] Server confirmation failed:', syncError);
+  }
+
+  const resumeState = resolveResumeState({ syncOk, error: syncError, wasPaused: true });
+  resumeConfirmed = resumeState.status === 'confirmed';
+  resumeWarning = resumeState.message;
+
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Workspace', 'تم استئناف جلسة العمل ومتابعة الإنتاجية', true);
+  showNotification(
+    'MaxP Workspace',
+    resumeConfirmed
+      ? 'تم استئناف جلسة العمل ومتابعة الإنتاجية'
+      : 'تم استئناف العمل محليًا — لم يتأكد من السيرفر بعد',
+    true
+  );
 }
 
 function logout(): void {
@@ -1906,6 +1932,9 @@ function sendStateToRenderer(): void {
     deviceType: currentDeviceType,
     isOvertime,
     activeOvertimeSession,
+    // تأكيد الاستئناف من السيرفر (Task 1d9f6982)
+    resumeConfirmed,
+    resumeWarning,
   });
 }
 
