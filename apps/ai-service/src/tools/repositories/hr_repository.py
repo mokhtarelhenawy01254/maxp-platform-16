@@ -366,6 +366,44 @@ class HrRepository(BaseRepository):
             "on_leave": int(row["leave_count"] or 0),
         }
 
+    async def is_people_manager(self, company_id: str, employee_id: str) -> bool:
+        """Check if an employee is a people manager (has active subordinates)."""
+        if not company_id or not employee_id:
+            return False
+
+        res = await self._session.execute(
+            text("""
+                SELECT EXISTS(
+                    SELECT 1 FROM hr_employees s
+                    WHERE s."companyId" = :cid AND s."managerId" = :eid AND s.status = 'ACTIVE'
+                ) AS has_reports
+            """),
+            {"cid": company_id, "eid": employee_id},
+        )
+        row = res.mappings().first()
+        return bool(row and row["has_reports"])
+
+    async def get_team_attendance_today(
+        self,
+        company_id: str,
+        manager_employee_id: str,
+    ) -> list[dict[str, Any]]:
+        """Fetch today's attendance records for subordinates of a given manager."""
+        query = """
+            SELECT e.id, e."firstName", e."lastName", e."employeeNumber",
+                   a.date, a."checkIn", a."checkOut", a."workHours", a."lateMinutes", a.status
+            FROM hr_employees e
+            LEFT JOIN hr_attendances a
+                   ON a."userId" = e."userId" AND a."companyId" = e."companyId" AND a.date = CURRENT_DATE
+            WHERE e."companyId" = :cid AND e."managerId" = :mid AND e.status = 'ACTIVE'
+            ORDER BY e."firstName"
+        """
+        res = await self._session.execute(
+            text(query),
+            {"cid": company_id, "mid": manager_employee_id},
+        )
+        return [dict(r) for r in res.mappings().all()]
+
     async def get_my_advances(
         self,
         company_id: str,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from agent_framework import FunctionTool
@@ -25,13 +26,20 @@ async def hr_my_profile(input_data: HrMyProfileInput) -> dict[str, Any]:
     if not company_id:
         return {"error": "company_id is required"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
 
     if not emp:
         return {"error": "لم يتم العثور على سجل وظيفي مرتبط بهذا الحساب"}
+
+    if input_data.employee_id and input_data.employee_id != emp["id"]:
+        return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
 
     return {
         "found": True,
@@ -144,17 +152,24 @@ async def hr_leave_balance(input_data: HrLeaveBalanceInput) -> dict[str, Any]:
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
+
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
 
         balance = await repo.get_leave_balance(
             company_id,
             employee_id=emp["id"],
-            user_id=emp.get("userId") or input_data.user_id,
+            user_id=emp.get("userId") or user_id,
         )
 
     if not balance:
@@ -208,14 +223,21 @@ async def hr_leave_request_create(input_data: HrLeaveRequestCreateInput) -> dict
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف لربط الطلب به"}
 
-        uid = emp.get("userId") or input_data.user_id or emp["id"]
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
+
+        uid = emp.get("userId") or user_id or emp["id"]
 
     client = get_backend_client()
     payload = {
@@ -296,14 +318,21 @@ async def hr_permission_request_create(input_data: HrPermissionRequestCreateInpu
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
 
-        uid = emp.get("userId") or input_data.user_id or emp["id"]
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
+
+        uid = emp.get("userId") or user_id or emp["id"]
 
     client = get_backend_client()
     payload = {
@@ -381,17 +410,24 @@ async def hr_requests_status(input_data: HrRequestsStatusInput) -> dict[str, Any
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
+
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
 
         result = await repo.get_requests_status(
             company_id,
             employee_id=emp["id"],
-            user_id=emp.get("userId") or input_data.user_id,
+            user_id=emp.get("userId") or user_id,
             limit=input_data.limit,
         )
 
@@ -514,16 +550,24 @@ hr_payslip_inquiry_tool = FunctionTool(
 
 class HrAttendanceTodayInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    user_id: str | None = Field(default=None, description="User ID of the employee (auto-injected)")
 
 
 async def hr_attendance_today(input_data: HrAttendanceTodayInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
+    user_id = input_data.user_id or ""
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
+    if not user_id:
+        return {"error": "غير مصرح — معرف المستخدم غير متوفر في الجلسة"}
 
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
+        emp = await repo.get_employee(company_id, user_id=user_id)
+        if not emp or not await repo.is_people_manager(company_id, emp["id"]):
+            return {"error": "غير مصرح — ملخص حضور الشركة متاح للمديرين والـHR فقط"}
+
         return await repo.get_company_attendance_today(company_id)
 
 
@@ -551,6 +595,77 @@ hr_attendance_today_tool = FunctionTool(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 8b. Team Attendance (Manager View)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class HrTeamAttendanceInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    user_id: str | None = Field(default=None, description="User ID of the manager (auto-injected)")
+
+
+async def hr_team_attendance(input_data: HrTeamAttendanceInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    user_id = input_data.user_id or ""
+    if not company_id:
+        return {"error": "معرف الشركة غير متوفر"}
+    if not user_id:
+        return {"error": "غير مصرح — معرف المستخدم غير متوفر في الجلسة"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = HrRepository(sess)
+        emp = await repo.get_employee(company_id, user_id=user_id)
+        if not emp:
+            return {"error": "لم يتم العثور على سجل وظيفي مرتبط بهذا الحساب"}
+
+        is_mgr = await repo.is_people_manager(company_id, emp["id"])
+        if not is_mgr:
+            return {"error": "غير مصرح — سجل حضور الفريق متاح للمديرين فقط"}
+
+        records = await repo.get_team_attendance_today(company_id, emp["id"])
+
+    return {
+        "date": str(date.today()),
+        "manager_id": emp["id"],
+        "manager_name": f"{emp['firstName']} {emp['lastName']}".strip(),
+        "team_count": len(records),
+        "records": records,
+    }
+
+
+def _format_hr_team_attendance(res: dict[str, Any]) -> str:
+    if res.get("error"):
+        return f"تنبيه: {res['error']}"
+
+    records = res.get("records") or []
+    if not records:
+        return f"لا توجد سجلات حضور مسجلة لفريق العمل اليوم ({res.get('date')})."
+
+    lines = [f"سجل حضور فريق العمل اليوم ({res.get('date')}):"]
+    for r in records:
+        name = f"{r.get('firstName', '')} {r.get('lastName', '')}".strip()
+        num = r.get("employeeNumber") or ""
+        status = r.get("status") or "لم يسجل بعد"
+        check_in = str(r.get("checkIn") or "")
+        check_out = str(r.get("checkOut") or "")
+        late = r.get("lateMinutes")
+        late_str = f" (تأخير {late} دقيقة)" if late else ""
+        times = f" [حضور: {check_in[:5]} - انصراف: {check_out[:5]}]" if check_in else ""
+        lines.append(f"- {name} ({num}): {status}{times}{late_str}")
+
+    return "\n".join(lines)
+
+
+hr_team_attendance_tool = FunctionTool(
+    name="hr_team_attendance",
+    description="استعلام المدير المباشر عن سجل وبصمة حضور وانصراف أعضاء فريقه المباشرين اليوم ومتابعة المتأخرين والغائبين.",
+    func=hr_team_attendance,
+    input_model=HrTeamAttendanceInput,
+    format_result=_format_hr_team_attendance,
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 9. Advances (سلف الموظفين)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -566,12 +681,22 @@ async def hr_my_advances(input_data: HrMyAdvancesInput) -> dict[str, Any]:
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
-        eid = emp["id"] if emp else ""
-        uid = (emp.get("userId") if emp else None) or input_data.user_id or ""
+        emp = await repo.get_employee(company_id, user_id=user_id)
+        if not emp:
+            return {"error": "لم يتم العثور على سجل الموظف"}
+
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
+
+        eid = emp["id"]
+        uid = emp.get("userId") or user_id
         advances = await repo.get_my_advances(company_id, user_id=uid, employee_id=eid, limit=input_data.limit)
 
     return {"advances": advances, "count": len(advances)}
@@ -622,16 +747,23 @@ async def hr_advance_request_create(input_data: HrAdvanceRequestCreateInput) -> 
     if (input_data.amount or 0) <= 0:
         return {"error": "مبلغ السلفة يجب أن يكون أكبر من الصفر"}
 
+    user_id = input_data.user_id or ""
+    if not user_id:
+        return {"error": "معرف الموظف غير متوفر في الجلسة"}
+
     sf = _db_mod.async_session
     if sf is None:
         return {"error": "قاعدة البيانات غير مهيأة حالياً"}
     async with sf() as sess:
         repo = HrRepository(sess)
-        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        emp = await repo.get_employee(company_id, user_id=user_id)
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف لربط طلب السلفة به"}
 
-        uid = emp.get("userId") or input_data.user_id or emp["id"]
+        if input_data.employee_id and input_data.employee_id != emp["id"]:
+            return {"error": "غير مصرح بالوصول لبيانات موظف آخر"}
+
+        uid = emp.get("userId") or user_id or emp["id"]
 
     inst_count = max(1, int(input_data.installments_count or 1))
     monthly_amt = round(float(input_data.amount) / inst_count, 2)
@@ -697,6 +829,7 @@ __all_tools__ = [
     hr_requests_status_tool,
     hr_payslip_inquiry_tool,
     hr_attendance_today_tool,
+    hr_team_attendance_tool,
     hr_my_advances_tool,
     hr_advance_request_create_tool,
 ]

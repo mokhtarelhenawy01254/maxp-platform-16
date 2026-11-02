@@ -83,6 +83,7 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "competitor_get_ads",
     "audit_read",
     "hr_attendance_today",
+    "hr_team_attendance",
     "hr_my_profile",
     "hr_my_attendance",
     "hr_leave_balance",
@@ -369,6 +370,7 @@ agent_spawn_tool = _registry.resolve("agent_spawn")
 agent_handoff_to_tool = _registry.resolve("agent_handoff_to")
 audit_read_tool = _registry.resolve("audit_read")
 hr_attendance_today_tool = _registry.resolve("hr_attendance_today")
+hr_team_attendance_tool = _registry.resolve("hr_team_attendance")
 hr_my_advances_tool = _registry.resolve("hr_my_advances")
 hr_advance_request_create_tool = _registry.resolve("hr_advance_request_create")
 unlock_advanced_tools_tool = _registry.resolve("unlock_advanced_tools")
@@ -479,6 +481,7 @@ from src.tools.definitions.audit import (  # noqa: E402 F401
 )
 from src.tools.definitions.hr import (  # noqa: E402 F401
     HrAttendanceTodayInput,
+    HrTeamAttendanceInput,
 )
 from src.tools.definitions._unlock import (  # noqa: E402 F401
     UnlockAdvancedToolsInput,

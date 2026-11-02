@@ -12,6 +12,7 @@ from src.tools.definitions.hr import (
     HrRequestsStatusInput,
     HrPayslipInquiryInput,
     HrAttendanceTodayInput,
+    HrTeamAttendanceInput,
     HrMyAdvancesInput,
     HrAdvanceRequestCreateInput,
     hr_my_profile,
@@ -22,6 +23,7 @@ from src.tools.definitions.hr import (
     hr_requests_status,
     hr_payslip_inquiry,
     hr_attendance_today,
+    hr_team_attendance,
     hr_my_advances,
     hr_advance_request_create,
     _format_hr_my_profile,
@@ -32,6 +34,7 @@ from src.tools.definitions.hr import (
     _format_hr_requests_status,
     _format_hr_payslip_inquiry,
     _format_hr_attendance_today,
+    _format_hr_team_attendance,
     _format_hr_my_advances,
     _format_hr_advance_request_create,
 )
@@ -59,6 +62,7 @@ def test_hr_tools_registered_in_registry():
         "hr_requests_status",
         "hr_payslip_inquiry",
         "hr_attendance_today",
+        "hr_team_attendance",
         "hr_my_advances",
         "hr_advance_request_create",
     ]
@@ -71,6 +75,7 @@ def test_hr_tools_registered_in_registry():
 def test_hr_tools_classification():
     # Advances read is advanced, create is write
     assert "hr_my_advances" in ADVANCED_TOOL_NAMES
+    assert "hr_team_attendance" in ADVANCED_TOOL_NAMES
     assert "hr_advance_request_create" in WRITE_TOOL_NAMES
     assert "hr_leave_request_create" in WRITE_TOOL_NAMES
     assert "hr_permission_request_create" in WRITE_TOOL_NAMES
@@ -87,6 +92,7 @@ def test_hr_assistant_role_tool_names():
         "hr_requests_status",
         "hr_payslip_inquiry",
         "hr_attendance_today",
+        "hr_team_attendance",
         "hr_my_advances",
         "hr_advance_request_create",
         "knowledge_search",
@@ -456,18 +462,116 @@ async def test_hr_scripted_agent_client_scenario():
 
 @pytest.mark.asyncio
 async def test_hr_attendance_today_execution():
+    fake_emp = {"id": "emp_01", "userId": "usr_mgr"}
     fake_data = {"present": 42, "late": 3, "absent": 5, "on_leave": 2}
     with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
         mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_instance.is_people_manager = AsyncMock(return_value=True)
         mock_instance.get_company_attendance_today = AsyncMock(return_value=fake_data)
 
-        res = await hr_attendance_today(HrAttendanceTodayInput(company_id="comp_1"))
+        res = await hr_attendance_today(HrAttendanceTodayInput(company_id="comp_1", user_id="usr_mgr"))
         assert res["present"] == 42
         assert res["late"] == 3
 
         formatted = _format_hr_attendance_today(res)
         assert "42" in formatted
         assert "حضور" in formatted
+
+
+@pytest.mark.asyncio
+async def test_attendance_today_denied_for_regular_employee():
+    fake_emp = {"id": "emp_01", "userId": "usr_regular"}
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_instance.is_people_manager = AsyncMock(return_value=False)
+
+        res = await hr_attendance_today(HrAttendanceTodayInput(company_id="comp_1", user_id="usr_regular"))
+        assert "error" in res
+        assert "غير مصرح" in res["error"]
+
+
+@pytest.mark.asyncio
+async def test_leave_balance_ignores_foreign_employee_id():
+    fake_emp = {"id": "emp_01", "userId": "usr_1", "firstName": "أحمد", "lastName": "علي"}
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+
+        # Passing a foreign employee_id
+        res = await hr_leave_balance(HrLeaveBalanceInput(
+            company_id="comp_1",
+            user_id="usr_1",
+            employee_id="emp_foreign",
+        ))
+        # Must deny access to foreign employee data
+        assert res.get("error") == "غير مصرح بالوصول لبيانات موظف آخر"
+        assert "emp_foreign" not in str(res)
+        # Ensure repository was scoped by user_id only
+        mock_instance.get_employee.assert_awaited_once_with("comp_1", user_id="usr_1")
+
+
+@pytest.mark.asyncio
+async def test_team_attendance_denied_without_reports():
+    fake_emp = {"id": "emp_01", "userId": "usr_regular", "firstName": "علي", "lastName": "حسن"}
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_emp)
+        mock_instance.is_people_manager = AsyncMock(return_value=False)
+
+        res = await hr_team_attendance(HrTeamAttendanceInput(company_id="comp_1", user_id="usr_regular"))
+        assert "error" in res
+        assert "غير مصرح" in res["error"]
+
+
+@pytest.mark.asyncio
+async def test_team_attendance_returns_only_subordinates():
+    fake_manager = {"id": "mgr_01", "userId": "usr_mgr", "firstName": "سارة", "lastName": "إبراهيم"}
+    fake_subordinates = [
+        {
+            "id": "emp_10",
+            "firstName": "أحمد",
+            "lastName": "علي",
+            "employeeNumber": "EMP-010",
+            "date": "2026-11-02",
+            "checkIn": "09:05",
+            "checkOut": None,
+            "workHours": None,
+            "lateMinutes": 5,
+            "status": "LATE",
+        },
+        {
+            "id": "emp_11",
+            "firstName": "محمود",
+            "lastName": "عادل",
+            "employeeNumber": "EMP-011",
+            "date": "2026-11-02",
+            "checkIn": "08:55",
+            "checkOut": None,
+            "workHours": None,
+            "lateMinutes": 0,
+            "status": "PRESENT",
+        },
+    ]
+    with patch("src.tools.definitions.hr.HrRepository") as MockRepo:
+        mock_instance = MockRepo.return_value
+        mock_instance.get_employee = AsyncMock(return_value=fake_manager)
+        mock_instance.is_people_manager = AsyncMock(return_value=True)
+        mock_instance.get_team_attendance_today = AsyncMock(return_value=fake_subordinates)
+
+        res = await hr_team_attendance(HrTeamAttendanceInput(company_id="comp_1", user_id="usr_mgr"))
+        assert "error" not in res
+        assert res["team_count"] == 2
+        assert len(res["records"]) == 2
+        assert res["records"][0]["id"] == "emp_10"
+        assert res["records"][1]["id"] == "emp_11"
+        mock_instance.get_team_attendance_today.assert_awaited_once_with("comp_1", "mgr_01")
+
+        formatted = _format_hr_team_attendance(res)
+        assert "أحمد علي" in formatted
+        assert "محمود عادل" in formatted
+        assert "تأخير 5 دقيقة" in formatted
 
 
 @pytest.mark.asyncio

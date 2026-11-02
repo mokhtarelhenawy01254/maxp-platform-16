@@ -33,6 +33,7 @@
     "hr_requests_status",
     "hr_payslip_inquiry",
     "hr_attendance_today",
+    "hr_team_attendance",
     "hr_my_advances",
     "hr_advance_request_create",
     "knowledge_search",
