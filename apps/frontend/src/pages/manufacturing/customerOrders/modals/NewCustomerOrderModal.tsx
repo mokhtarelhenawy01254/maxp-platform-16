@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Plus, Search, Building2, Globe, Calendar, DollarSign } from 'lucide-react';
 import { manufacturingApi, CustomerOrder } from '../../manufacturingApi';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface NewCustomerOrderModalProps {
   isOpen: boolean;
@@ -190,15 +191,10 @@ export const NewCustomerOrderModal: React.FC<NewCustomerOrderModalProps> = ({
               <label className="block text-xs font-bold text-foreground mb-1">
                 تاريخ التسليم المستهدف للطلب
               </label>
-              <div className="relative">
-                <Calendar className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="date"
-                  value={expectedDelivery}
-                  onChange={(e) => setExpectedDelivery(e.target.value)}
-                  className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
+              <DateInput
+                value={expectedDelivery}
+                onChange={setExpectedDelivery}
+              />
             </div>
 
             <div>

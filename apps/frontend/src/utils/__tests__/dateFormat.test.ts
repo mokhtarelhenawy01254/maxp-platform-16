@@ -1,11 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   formatDate,
+  formatDateValue,
   formatShortDate,
   formatTime,
   formatDateTime,
   getTimeAgo,
   isEnglishLocale,
+  parseDateFormatFromSettings,
+  DEFAULT_DATE_FORMAT,
 } from "../dateFormat";
 
 describe("dateFormat utility", () => {
@@ -44,6 +47,36 @@ describe("dateFormat utility", () => {
       const result = formatDate(sampleDate, "gregorian", undefined, "ar-EG");
       expect(result).toContain("سبتمبر");
       expect(result).toMatch(/[٠-٩]/);
+    });
+
+    it("formats date with DD/MM/YYYY accurately using Latin numerals", () => {
+      expect(formatDate(new Date("2026-10-28"), "DD/MM/YYYY")).toBe(
+        "28/10/2026",
+      );
+    });
+
+    it("preserves gregorian format output as regression check", () => {
+      const gregResult = formatDate(new Date("2026-10-28"), "gregorian");
+      expect(gregResult).toContain("أكتوبر");
+      expect(gregResult).toContain("٢٠٢٦");
+    });
+
+    it("formats date with MM/DD/YYYY and YYYY-MM-DD", () => {
+      expect(formatDate(new Date("2026-10-28"), "MM/DD/YYYY")).toBe(
+        "10/28/2026",
+      );
+      expect(formatDate(new Date("2026-10-28"), "YYYY-MM-DD")).toBe(
+        "2026-10-28",
+      );
+    });
+
+    it("returns dash for empty, null, undefined or invalid dates in numeric formats", () => {
+      expect(formatDate("", "DD/MM/YYYY")).toBe("—");
+      expect(formatDate(null, "DD/MM/YYYY")).toBe("—");
+      expect(formatDate(undefined, "DD/MM/YYYY")).toBe("—");
+      expect(formatDate("not-a-valid-date", "DD/MM/YYYY")).toBe("—");
+      expect(formatDate("not-a-valid-date", "MM/DD/YYYY")).toBe("—");
+      expect(formatDate("not-a-valid-date", "YYYY-MM-DD")).toBe("—");
     });
   });
 
@@ -116,6 +149,69 @@ describe("dateFormat utility", () => {
       expect(formatShortDate(null)).toBe("—");
       expect(formatShortDate(undefined)).toBe("—");
       expect(formatShortDate("not-a-date")).toBe("—");
+    });
+  });
+
+  describe("parseDateFormatFromSettings", () => {
+    it("parses valid supported date formats", () => {
+      expect(parseDateFormatFromSettings({ dateFormat: "DD/MM/YYYY" })).toBe(
+        "DD/MM/YYYY",
+      );
+      expect(parseDateFormatFromSettings({ dateFormat: "MM/DD/YYYY" })).toBe(
+        "MM/DD/YYYY",
+      );
+      expect(parseDateFormatFromSettings({ dateFormat: "YYYY-MM-DD" })).toBe(
+        "YYYY-MM-DD",
+      );
+      expect(parseDateFormatFromSettings({ dateFormat: "gregorian" })).toBe(
+        "gregorian",
+      );
+    });
+
+    it("falls back to DEFAULT_DATE_FORMAT when given invalid or unrecognized settings", () => {
+      expect(
+        parseDateFormatFromSettings({ dateFormat: "unsupported_format" }),
+      ).toBe(DEFAULT_DATE_FORMAT);
+      expect(parseDateFormatFromSettings(null)).toBe(DEFAULT_DATE_FORMAT);
+      expect(parseDateFormatFromSettings(undefined)).toBe(DEFAULT_DATE_FORMAT);
+      expect(parseDateFormatFromSettings({})).toBe(DEFAULT_DATE_FORMAT);
+    });
+
+    it("handles JSON string settings correctly", () => {
+      expect(
+        parseDateFormatFromSettings('{"dateFormat":"DD/MM/YYYY"}'),
+      ).toBe("DD/MM/YYYY");
+      expect(parseDateFormatFromSettings("invalid-json")).toBe(
+        DEFAULT_DATE_FORMAT,
+      );
+    });
+  });
+
+  describe("formatDateValue", () => {
+    it("returns ok true with formatted value for valid date", () => {
+      const res = formatDateValue(new Date("2026-10-28"), "DD/MM/YYYY");
+      expect(res.ok).toBe(true);
+      expect(res.value).toBe("28/10/2026");
+      expect(res.error).toBeNull();
+    });
+
+    it("returns ok false with error for empty or missing date", () => {
+      const resEmpty = formatDateValue("", "DD/MM/YYYY");
+      expect(resEmpty.ok).toBe(false);
+      expect(resEmpty.value).toBe("");
+      expect(resEmpty.error).toBeTruthy();
+
+      const resNull = formatDateValue(null, "DD/MM/YYYY");
+      expect(resNull.ok).toBe(false);
+      expect(resNull.value).toBe("");
+      expect(resNull.error).toBeTruthy();
+    });
+
+    it("returns ok false with error for invalid date", () => {
+      const resInvalid = formatDateValue("invalid-date", "DD/MM/YYYY");
+      expect(resInvalid.ok).toBe(false);
+      expect(resInvalid.value).toBe("");
+      expect(resInvalid.error).toBeTruthy();
     });
   });
 });

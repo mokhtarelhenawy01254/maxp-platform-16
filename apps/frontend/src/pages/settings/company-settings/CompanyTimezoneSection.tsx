@@ -17,6 +17,12 @@ interface CompanyTimezoneSectionProps {
   formatDate: (date: Date | string) => string;
 }
 
+const AVAILABLE_DATE_FORMATS: DateFormatType[] = [
+  "DD/MM/YYYY",
+  "MM/DD/YYYY",
+  "YYYY-MM-DD",
+];
+
 export const CompanyTimezoneSection: React.FC<CompanyTimezoneSectionProps> = ({
   timezone = "Asia/Riyadh",
   handleTimezoneChange,
@@ -114,10 +120,10 @@ export const CompanyTimezoneSection: React.FC<CompanyTimezoneSectionProps> = ({
             تنسيق التاريخ
           </span>
           <div className="space-y-2">
-            {Object.entries(DATE_FORMAT_LABELS).map(([format, label]) => (
+            {AVAILABLE_DATE_FORMATS.map((format) => (
               <label key={format} className="flex items-center cursor-pointer">
                 <input
-                  id={`company-date-format-${format}`}
+                  id={`company-date-format-${format.replace(/\//g, "-")}`}
                   type="radio"
                   name="dateFormat"
                   value={format}
@@ -127,7 +133,7 @@ export const CompanyTimezoneSection: React.FC<CompanyTimezoneSectionProps> = ({
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600"
                 />
                 <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-                  {label}
+                  {DATE_FORMAT_LABELS[format]}
                 </span>
               </label>
             ))}
@@ -136,7 +142,7 @@ export const CompanyTimezoneSection: React.FC<CompanyTimezoneSectionProps> = ({
             <p className="text-xs text-red-600 mt-1">{dateFormatError}</p>
           )}
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            التنسيق المختار: {DATE_FORMAT_LABELS[dateFormat]}
+            التنسيق المختار: {DATE_FORMAT_LABELS[dateFormat] || dateFormat}
           </p>
         </div>
         <div>
