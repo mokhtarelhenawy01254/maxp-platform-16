@@ -637,7 +637,7 @@ export const getSidebarConfig = (
                     },
                     { to: '/settings/store-pages', icon: FileText, label: t('sidebar.storePages') },
                     { to: '/settings/store?tab=branches', icon: Store, label: t('sidebar.storeSettings') },
-                    { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.storefrontStudio') },
+                    { to: '/settings/storefront/editor', icon: Sparkles, label: t('sidebar.storefrontStudio') },
                     { to: '/settings/store-payment-offers', icon: BadgePercent, label: t('sidebar.paymentOffers') },
                 ],
             },
@@ -1294,7 +1294,7 @@ export const getSidebarConfig = (
                 {
                     to: '/advertising/facebook-ads/decision-reports',
                     icon: FileBarChart,
-                    label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات',
+                    label: isEn ? 'Decision Reports & Profit' : t('sidebar.facebookAdsReports', 'تقارير الأرباح والقرارات'),
                 },
                 // 9. التوليف الإبداعي الديناميكي (DCO)
                 {

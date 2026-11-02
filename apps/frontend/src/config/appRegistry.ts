@@ -182,6 +182,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     color: 'purple',
     bgGradient: 'from-purple-500 to-purple-600',
     sectionIds: ['storefront-design'],
+    route: '/settings/storefront/editor',
     category: 'sales',
     requiredApps: [...STORE_DEPENDENT_APPS, 'conversion-suite'],
   },
