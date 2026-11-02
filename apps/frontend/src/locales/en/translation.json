@@ -6221,6 +6221,10 @@
       "model": "Determines the AI engine powering this assistant. Stronger models understand nuance but are slower",
       "tools": "Permissions that enable the assistant to perform specific tasks"
     },
+    "page": {
+      "title": "Agent Team",
+      "subtitle": "Agent profiles, tools, and channels"
+    },
     "sidebar": {
       "title": "Agent Profiles",
       "addTitle": "Add Agent",

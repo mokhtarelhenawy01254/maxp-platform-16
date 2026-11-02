@@ -126,7 +126,7 @@ export default function AgentProfileHeader({
               <span className="text-2xl shrink-0 leading-none">{draftIcon || "🤖"}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-bold text-foreground truncate">{draftName}</h1>
+                  <h2 className="text-sm font-bold text-foreground truncate">{draftName}</h2>
                   <ChevronDown className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform" />
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -207,7 +207,7 @@ export default function AgentProfileHeader({
                   className="h-8 text-base font-bold w-64 max-w-full"
                 />
               ) : (
-                <h1 className="text-base font-bold text-foreground truncate">{draftName}</h1>
+                <h2 className="text-base font-bold text-foreground truncate">{draftName}</h2>
               )}
 
               {/* Status indicator */}

@@ -127,6 +127,11 @@ export default function AgentProfilesPage() {
 
       {/* ── Main Panel ── */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
+        <div className="px-3 sm:px-5 pt-3">
+          <h1 className="text-lg font-bold">{t("agentProfiles.page.title", "فريق الايجنت")}</h1>
+          <p className="text-xs text-muted-foreground">{t("agentProfiles.page.subtitle", "ملفات الوكلاء وأدواتهم وقنواتهم")}</p>
+        </div>
+
         {/* Mobile Fallback Bar (Only when no agent profile is loaded) */}
         {isMobile && !(selectedAgent && profile) && (
           <div className="flex items-center justify-between gap-2 p-2.5 border-b border-border/50 lg:hidden bg-card/60">
@@ -137,7 +142,7 @@ export default function AgentProfilesPage() {
               className="gap-2 text-xs h-8"
             >
               <Menu className="size-4" />
-              <span>{t("agentProfiles.sidebar.title", "فريق الايجنت")}</span>
+              <span>{t("agentProfiles.page.title", "فريق الايجنت")}</span>
             </Button>
             <Button
               size="sm"
