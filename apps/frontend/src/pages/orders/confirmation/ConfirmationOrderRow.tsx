@@ -99,6 +99,32 @@ export const ConfirmationOrderRow: React.FC<ConfirmationOrderRowProps> = React.m
           {order.status}
         </div>
 
+        {/* منشئ الطلب */}
+        <div className="flex flex-col gap-0.5 text-xs min-w-[110px] self-start lg:self-center">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            منشئ الطلب
+          </span>
+          <span
+            className="font-medium text-foreground truncate max-w-[130px]"
+            title={order.createdByName || order.createdByUser?.firstName || (order.isGuestOrder ? 'المتجر (طلب زائر)' : 'غير محدد')}
+          >
+            {order.createdByName || (order.isGuestOrder ? 'المتجر' : 'غير محدد')}
+          </span>
+        </div>
+
+        {/* الموظف المسؤول */}
+        <div className="flex flex-col gap-0.5 text-xs min-w-[110px] self-start lg:self-center">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            الموظف المسؤول
+          </span>
+          <span
+            className="font-medium text-foreground truncate max-w-[130px]"
+            title={order.assignedToName || order.assignedToUser?.firstName || 'غير مخصص'}
+          >
+            {order.assignedToName || 'غير مخصص'}
+          </span>
+        </div>
+
         <ConfirmationOrderRowActions
           order={order}
           isCancelled={isCancelled}

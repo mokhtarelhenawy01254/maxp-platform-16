@@ -753,6 +753,71 @@ const getMyOrders = async (req, res) => {
       }
     }
 
+    // Unified Pending Confirmation Queue handler
+    const isConfirmationSource = req.query.source === 'confirmation' || req.query.tab === 'confirmation';
+    if ((requestedStatus === 'PENDING' || !requestedStatus) && isConfirmationSource) {
+      const orderConfirmationService = require('../services/orderConfirmationService');
+      const pendingWhere = orderConfirmationService.buildPendingWhere(companyId, {
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+        sourceType: req.query.sourceType,
+        assignedTo: isManager ? (assignedTo === 'all' ? null : (assignedTo || null)) : userId,
+        search,
+        includeAll: req.query.includeAll
+      });
+
+      const [orders, total] = await Promise.all([
+        prisma.order.findMany({
+          where: pendingWhere,
+          include: {
+            customer: {
+              select: {
+                id: true, firstName: true, lastName: true, phone: true,
+                deliveryRate: true, totalDelivered: true, totalOrdersCount: true, customerRating: true,
+              }
+            },
+            orderItems: {
+              include: {
+                product: {
+                  include: {
+                    productVariants: {
+                      where: { isActive: true },
+                      orderBy: { sortOrder: 'asc' }
+                    }
+                  }
+                },
+                productVariant: true
+              }
+            },
+            callAttemptLogs: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+              orderBy: { createdAt: 'desc' },
+              take: 10
+            }
+          },
+          orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.order.count({ where: pendingWhere })
+      ]);
+
+      const formattedOrders = orders.map((o) => formatWorkspaceOrderRecord(o, false, o.assignedAt, o.assignedTo, null));
+      let stats = null;
+      if (withStats) {
+        stats = await getWorkspaceStats(prisma, companyId, userId, { assignedTo, isManager });
+      }
+      const confirmationDisabled = await checkConfirmationDisabled(companyId);
+
+      return res.json({
+        success: true,
+        data: formattedOrders,
+        pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
+        stats,
+        confirmationDisabled
+      });
+    }
+
     // Unassigned Pool View for Managers
     if (isManager && assignedTo === 'unassigned') {
       const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();

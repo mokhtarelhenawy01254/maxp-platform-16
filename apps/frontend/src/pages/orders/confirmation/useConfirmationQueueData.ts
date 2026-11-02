@@ -10,6 +10,7 @@ import type {
   ConfirmationOrder,
   ConfirmationStats,
   FilterOption,
+  QueueCounts,
 } from "./types";
 import { useConfirmationQueueActions } from "./useConfirmationQueueActions";
 
@@ -39,6 +40,18 @@ export function useConfirmationQueueData() {
   const [limit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
+  const getTodayIso = () => new Date().toISOString().slice(0, 10);
+  const get30DaysAgoIso = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const [startDate, setStartDate] = useState<string>(() => get30DaysAgoIso());
+  const [endDate, setEndDate] = useState<string>(() => getTodayIso());
+  const [includeAll, setIncludeAll] = useState<boolean>(false);
+  const [counts, setCounts] = useState<QueueCounts>({ pending: 0, confirmed: 0, postponed: 0, cancelled: 0, total: 0 });
+
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -146,6 +159,13 @@ export function useConfirmationQueueData() {
       if (sourceFilter) params.sourceType = sourceFilter;
       if (onlyUnassigned) params.onlyUnassigned = true;
 
+      if (includeAll) {
+        params.includeAll = true;
+      } else {
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+      }
+
       const res = await orderConfirmationService.getQueue(params);
       if (res?.disabled) {
         setIsQueueDisabled(true);
@@ -155,6 +175,9 @@ export function useConfirmationQueueData() {
       if (res?.appliedFilters) {
         setAppliedFilters(res.appliedFilters);
       }
+      if (res?.counts) {
+        setCounts(res.counts);
+      }
       setOrders(Array.isArray(res.data) ? res.data : []);
       setTotalOrders(res.pagination?.total || 0);
       setTotalPages(res.pagination?.pages || 1);
@@ -163,7 +186,7 @@ export function useConfirmationQueueData() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, statusFilter, sourceFilter, onlyUnassigned, t]);
+  }, [page, limit, search, statusFilter, sourceFilter, onlyUnassigned, startDate, endDate, includeAll, t]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -263,12 +286,29 @@ export function useConfirmationQueueData() {
     [sourceFilter, sourceOptions, t],
   );
 
+  const handleSetLast30Days = useCallback(() => {
+    setIncludeAll(false);
+    setStartDate(get30DaysAgoIso());
+    setEndDate(getTodayIso());
+    setPage(1);
+  }, []);
+
+  const handleSetIncludeAll = useCallback(() => {
+    setIncludeAll(true);
+    setStartDate("");
+    setEndDate("");
+    setPage(1);
+  }, []);
+
   const resetQueueFilters = useCallback(() => {
     setSearchInput("");
     setSearch("");
     setStatusFilter("");
     setSourceFilter("");
     setOnlyUnassigned(false);
+    setIncludeAll(false);
+    setStartDate(get30DaysAgoIso());
+    setEndDate(getTodayIso());
     setPage(1);
   }, []);
 
@@ -295,6 +335,16 @@ export function useConfirmationQueueData() {
     setSourceFilter,
     onlyUnassigned,
     setOnlyUnassigned,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    includeAll,
+    setIncludeAll,
+    handleSetLast30Days,
+    handleSetIncludeAll,
+    counts,
+    setCounts,
     stats,
     statsLoading,
     statsStartDate,

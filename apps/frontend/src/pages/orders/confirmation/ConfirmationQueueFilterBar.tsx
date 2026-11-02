@@ -31,6 +31,13 @@ export interface ConfirmationQueueFilterBarProps {
   sourceFilterLabel: string;
   onOpenMobileFilters: () => void;
   setPage: (val: number) => void;
+  startDate?: string;
+  setStartDate?: (val: string) => void;
+  endDate?: string;
+  setEndDate?: (val: string) => void;
+  includeAll?: boolean;
+  onSetLast30Days?: () => void;
+  onSetIncludeAll?: () => void;
 }
 
 export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProps> = ({
@@ -50,6 +57,13 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
   sourceFilterLabel,
   onOpenMobileFilters,
   setPage,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  includeAll,
+  onSetLast30Days,
+  onSetIncludeAll,
 }) => {
   const { t } = useTranslation();
 
@@ -121,7 +135,9 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
     }
 
     // 7. Date filter
-    if (appliedFilters?.hasDateFilter) {
+    if (appliedFilters?.startDate || appliedFilters?.endDate) {
+      chips.push(`التاريخ: من ${appliedFilters.startDate || '—'} إلى ${appliedFilters.endDate || '—'}`);
+    } else if (appliedFilters?.hasDateFilter) {
       chips.push(t("orders.dateFilterApplied", { defaultValue: "نطاق تاريخ محدد" }));
     }
 
@@ -241,6 +257,66 @@ export const ConfirmationQueueFilterBar: React.FC<ConfirmationQueueFilterBarProp
             <UserX className="w-4 h-4" />
             <span>{t("orders.unassigned", { defaultValue: "غير مخصص" })}</span>
           </button>
+
+          {/* Date Filter Inputs */}
+          {setStartDate && setEndDate && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-muted-foreground font-medium">{t("common.from", { defaultValue: "من" })}:</span>
+                <input
+                  type="date"
+                  aria-label={String(t("common.from", { defaultValue: "من تاريخ" }))}
+                  value={startDate || ""}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setPage(1);
+                  }}
+                  disabled={includeAll}
+                  className="h-10 rounded-xl border border-border/70 bg-background px-2.5 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-muted-foreground font-medium">{t("common.to", { defaultValue: "إلى" })}:</span>
+                <input
+                  type="date"
+                  aria-label={String(t("common.to", { defaultValue: "إلى تاريخ" }))}
+                  value={endDate || ""}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setPage(1);
+                  }}
+                  disabled={includeAll}
+                  className="h-10 rounded-xl border border-border/70 bg-background px-2.5 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                />
+              </div>
+              {onSetLast30Days && (
+                <button
+                  type="button"
+                  onClick={onSetLast30Days}
+                  className={`h-10 px-3 rounded-xl text-xs font-semibold border transition-all ${
+                    !includeAll && (startDate || endDate)
+                      ? "bg-muted font-bold text-foreground border-border"
+                      : "bg-background text-muted-foreground border-border/70 hover:bg-muted"
+                  }`}
+                >
+                  {t("orders.last30Days", { defaultValue: "آخر 30 يوم" })}
+                </button>
+              )}
+              {onSetIncludeAll && (
+                <button
+                  type="button"
+                  onClick={onSetIncludeAll}
+                  className={`h-10 px-3 rounded-xl text-xs font-semibold border transition-all ${
+                    includeAll
+                      ? "bg-primary text-primary-foreground border-transparent shadow-xs"
+                      : "bg-background text-muted-foreground border-border/70 hover:bg-muted"
+                  }`}
+                >
+                  {t("orders.showAll", { defaultValue: "إظهار الكل" })}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
