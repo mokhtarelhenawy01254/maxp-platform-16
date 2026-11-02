@@ -6,6 +6,8 @@ import {
   Cell,
   Tooltip,
 } from "recharts";
+import { useTranslation } from "react-i18next";
+import { useCurrency } from "../../../hooks/useCurrency";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import { Card, CardContent } from "../../../components/ui/card";
 
@@ -31,9 +33,18 @@ const COLORS = [
 interface Props {
   sizes: VariationDimension[];
   colors: VariationDimension[];
+  isArabic?: boolean;
 }
 
-export const VariationsCharts: React.FC<Props> = ({ sizes, colors }) => {
+export const VariationsCharts: React.FC<Props> = ({ sizes, colors, isArabic: propIsArabic }) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = propIsArabic !== undefined ? propIsArabic : (!i18n.language || i18n.language.startsWith("ar"));
+  const { formatPrice } = useCurrency();
+
+  const tooltipLabel = isArabic
+    ? t("variationsAnalytics.qtyRevenue", "الكمية / الإيراد")
+    : t("variationsAnalytics.qtyRevenue", "Qty / Revenue");
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Top Sizes Donut */}
@@ -43,11 +54,11 @@ export const VariationsCharts: React.FC<Props> = ({ sizes, colors }) => {
             <div className="flex items-center gap-2">
               <SwatchBook className="h-4 w-4 text-blue-500" />
               <h3 className="text-sm font-semibold text-foreground">
-                المقاسات الأكثر طلباً
+                {t("variationsAnalytics.topSizes", isArabic ? "المقاسات الأكثر طلباً" : "Top Selling Sizes")}
               </h3>
             </div>
             <span className="text-xs text-muted-foreground font-mono">
-              {sizes.length} مقاس
+              {isArabic ? `${sizes.length} مقاس` : `${sizes.length} sizes`}
             </span>
           </div>
 
@@ -80,13 +91,16 @@ export const VariationsCharts: React.FC<Props> = ({ sizes, colors }) => {
                       fontSize: "12px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(val: any) => [Number(val).toLocaleString(), "قطعة"]}
+                    formatter={(v: any, _n: any, p: any) => [
+                      `${Number(v).toLocaleString()} · ${formatPrice(p?.payload?.revenue ?? 0)}`,
+                      tooltipLabel,
+                    ]}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                لا توجد بيانات مقاسات في الفترة
+                {isArabic ? "لا توجد بيانات مقاسات في الفترة" : "No size data in this period"}
               </div>
             )}
           </div>
@@ -100,11 +114,11 @@ export const VariationsCharts: React.FC<Props> = ({ sizes, colors }) => {
             <div className="flex items-center gap-2">
               <Palette className="h-4 w-4 text-rose-500" />
               <h3 className="text-sm font-semibold text-foreground">
-                الألوان الأكثر مبيعاً
+                {t("variationsAnalytics.topColors", isArabic ? "الألوان الأكثر مبيعاً" : "Top Selling Colors")}
               </h3>
             </div>
             <span className="text-xs text-muted-foreground font-mono">
-              {colors.length} لون
+              {isArabic ? `${colors.length} لون` : `${colors.length} colors`}
             </span>
           </div>
 
@@ -137,13 +151,16 @@ export const VariationsCharts: React.FC<Props> = ({ sizes, colors }) => {
                       fontSize: "12px",
                       color: "hsl(var(--foreground))",
                     }}
-                    formatter={(val: any) => [Number(val).toLocaleString(), "قطعة"]}
+                    formatter={(v: any, _n: any, p: any) => [
+                      `${Number(v).toLocaleString()} · ${formatPrice(p?.payload?.revenue ?? 0)}`,
+                      tooltipLabel,
+                    ]}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                لا توجد بيانات ألوان في الفترة
+                {isArabic ? "لا توجد بيانات ألوان في الفترة" : "No color data in this period"}
               </div>
             )}
           </div>

@@ -8020,6 +8020,7 @@ declare module 'react-i18next' {
         topColors: string;
         topVariations: string;
         sales: string;
+        qtyRevenue: string;
         variation: string;
         product: string;
         color: string;

@@ -51,7 +51,8 @@ type SortKey = "name" | "product" | "color" | "size" | "sales" | "revenue" | "or
 type SortDir = "asc" | "desc";
 
 const VariationsAnalytics: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = !i18n.language || i18n.language.startsWith("ar");
   const { formatPrice } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -275,7 +276,7 @@ const VariationsAnalytics: React.FC = () => {
       </div>
 
       {/* Visual Charts Component */}
-      <VariationsCharts sizes={stats?.sizes || []} colors={stats?.colors || []} />
+      <VariationsCharts sizes={stats?.sizes || []} colors={stats?.colors || []} isArabic={isArabic} />
 
       {/* Table Section */}
       <Card className="border-border/70 bg-card overflow-hidden">
