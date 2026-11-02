@@ -19,7 +19,7 @@ export const QuickOrderSummary: React.FC<{
           }`}
         >
           {ctrl.effectiveGovernorateField.enabled &&
-          (ctrl.isShippingLoading || Boolean(ctrl.resolvedGovernorate)) ? (
+          (ctrl.isShippingLoading || Boolean(ctrl.resolvedGovernorate || ctrl.normalizedGovValue || ctrl.formData?.governorate)) ? (
             <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
               <span>
                 {ctrl.shippingLabel}

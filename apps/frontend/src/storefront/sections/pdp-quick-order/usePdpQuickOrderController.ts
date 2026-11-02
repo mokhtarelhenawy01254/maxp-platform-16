@@ -761,6 +761,7 @@ export const usePdpQuickOrderController = ({
     effectiveAddressField,
     effectiveAlternatePhoneField,
     normalizedGovValue,
+    resolvedGovernorate,
     alternatePhone,
     setAlternatePhone,
     customAttributes,
