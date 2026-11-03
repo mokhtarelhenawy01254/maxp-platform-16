@@ -343,6 +343,12 @@ async function syncOfflineEvents(companyId, courierId, events = []) {
                 occurredAt: occurredAt || new Date().toISOString()
               }
             });
+            try {
+              const { applyProfitToShipment } = require('./shipping/profitService');
+              await applyProfitToShipment(tx, shipment.id);
+            } catch (pErr) {
+              console.warn('⚠️ [COURIER_PORTAL] Profit apply warning:', pErr.message);
+            }
           });
 
           results.push({ localId, status: 'accepted' });

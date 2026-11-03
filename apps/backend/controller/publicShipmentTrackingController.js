@@ -75,6 +75,7 @@ async function trackShipmentByWaybill(req, res) {
         updatedAt: true,
         createdAt: true,
         events: {
+          where: { toStatus: { not: 'COST_APPLIED' } },
           orderBy: { createdAt: 'desc' },
           take: 6,
           select: {

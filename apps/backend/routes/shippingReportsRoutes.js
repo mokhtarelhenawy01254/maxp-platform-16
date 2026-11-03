@@ -30,5 +30,8 @@ router.get('/summary', ...authMiddleware, shippingReportsController.getSummary);
 router.get('/by-governorate', ...authMiddleware, shippingReportsController.getByGovernorate);
 router.get('/by-client', ...authMiddleware, shippingReportsController.getByClient);
 router.get('/by-courier', ...authMiddleware, shippingReportsController.getByCourier);
+router.get('/profit', ...authMiddleware, shippingReportsController.getProfitReport);
+router.get('/profit/uncovered', ...authMiddleware, shippingReportsController.getUncoveredProfit);
+router.post('/profit/recalc', ...authMiddleware, shippingReportsController.recalcProfit);
 
 module.exports = router;

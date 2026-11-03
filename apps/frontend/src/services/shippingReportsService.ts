@@ -144,6 +144,49 @@ export interface CourierReportResponse {
   generatedAt: string;
 }
 
+export interface ProfitRow {
+  key: string;
+  name?: string;
+  label?: string;
+  shipments: number;
+  revenue: number;
+  courierCost: number;
+  margin: number;
+  marginPct: number;
+}
+
+export interface ProfitTotals {
+  shipments: number;
+  revenue: number;
+  courierCost: number;
+  margin: number;
+  marginPct: number;
+}
+
+export interface ProfitReportResponse {
+  success: boolean;
+  groupBy: 'client' | 'governorate' | 'courier';
+  range: DateRange;
+  rows: ProfitRow[];
+  totals: ProfitTotals;
+  generatedAt: string;
+}
+
+export interface UncoveredProfitResponse {
+  success: boolean;
+  count: number;
+  range: DateRange;
+  shipments: Array<{
+    id: string;
+    trackingNumber: string;
+    status: string;
+    cost: number;
+    courierId?: string | null;
+    courierName?: string | null;
+    createdAt: string;
+  }>;
+}
+
 export interface ReportQueryParams {
   from?: string;
   to?: string;
@@ -162,6 +205,21 @@ export const shippingReportsService = {
 
   async getByClient(params: ReportQueryParams = {}): Promise<ClientReportResponse> {
     const res = await api.get<ClientReportResponse>('/shipping-reports/by-client', { params });
+    return res.data;
+  },
+
+  async getProfitReport(params: ReportQueryParams & { groupBy?: 'client' | 'governorate' | 'courier' } = {}): Promise<ProfitReportResponse> {
+    const res = await api.get<ProfitReportResponse>('/shipping-reports/profit', { params });
+    return res.data;
+  },
+
+  async getUncoveredProfit(params: ReportQueryParams = {}): Promise<UncoveredProfitResponse> {
+    const res = await api.get<UncoveredProfitResponse>('/shipping-reports/profit/uncovered', { params });
+    return res.data;
+  },
+
+  async recalcProfit(data: { from?: string; to?: string } = {}): Promise<{ success: boolean; updatedCount: number }> {
+    const res = await api.post<{ success: boolean; updatedCount: number }>('/shipping-reports/profit/recalc', data);
     return res.data;
   },
 

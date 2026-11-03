@@ -46,6 +46,9 @@ export interface ShipmentItem {
     phone?: string | null;
   } | null;
   events?: ShipmentEventItem[];
+  courierCost?: number | null;
+  costSource?: string | null;
+  marginAmount?: number | null;
 }
 
 export interface ShipmentEventItem {

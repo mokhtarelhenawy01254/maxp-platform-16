@@ -255,6 +255,7 @@ async function getShipmentById(req, res) {
         createdAt: true,
         updatedAt: true,
         events: {
+          where: { toStatus: { not: 'COST_APPLIED' } },
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
