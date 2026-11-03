@@ -924,7 +924,7 @@ export interface SampleOrderItem {
   updatedAt?: string;
 }
 
-export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stages' | 'expenses'> {
+export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stages' | 'expenses' | 'components'> {
   stages?: Array<{
     name: string;
     sequence?: number;
@@ -940,6 +940,7 @@ export interface CreateSampleOrderInput extends Omit<Partial<SampleOrder>, 'stag
     catalogId?: string | null;
   }>;
   items?: SampleOrderItem[];
+  components?: SampleComponentInput[];
 }
 
 export interface SampleExpenseCatalogItem {
@@ -961,10 +962,22 @@ export interface SampleOrderExpense {
   createdAt: string;
 }
 
+export interface SampleComponentInput {
+  id?: string;
+  productId?: string | null;
+  name?: string;
+  quantity: number | string;
+  unit?: string;
+  unitPrice?: number | string;
+  totalCost?: number | string;
+  sortOrder?: number;
+}
+
 export interface SampleComponent {
   id: string;
   companyId?: string;
   sampleOrderId: string;
+  productId?: string | null;
   name: string;
   quantity: number | string;
   unit: string;
@@ -2059,13 +2072,13 @@ export const manufacturingApi = {
   },
   addSampleComponent: async (
     sampleId: string,
-    data: { name: string; quantity: number; unit?: string; unitPrice: number }
+    data: { productId?: string | null; name?: string; quantity: number; unit?: string; unitPrice?: number; sortOrder?: number }
   ): Promise<SampleComponent> =>
     (await apiClient.post(`/manufacturing/sample-orders/${sampleId}/components`, data)).data?.data,
   updateSampleComponent: async (
     sampleId: string,
     componentId: string,
-    data: Partial<{ name: string; quantity: number; unit: string; unitPrice: number; sortOrder: number }>
+    data: Partial<{ productId?: string | null; name: string; quantity: number; unit: string; unitPrice: number; sortOrder: number }>
   ): Promise<SampleComponent> =>
     (await apiClient.patch(`/manufacturing/sample-orders/${sampleId}/components/${componentId}`, data)).data?.data,
   deleteSampleComponent: async (sampleId: string, componentId: string) =>

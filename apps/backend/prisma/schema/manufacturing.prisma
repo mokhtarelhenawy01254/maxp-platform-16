@@ -830,6 +830,7 @@ model SampleComponent {
   id            String   @id @default(cuid())
   companyId     String
   sampleOrderId String
+  productId     String?
   name          String
   quantity      Decimal  @default(1) @db.Decimal(12, 3)
   unit          String   @default("قطعة")
@@ -843,6 +844,7 @@ model SampleComponent {
   sampleOrder   SampleOrder @relation(fields: [sampleOrderId], references: [id], onDelete: Cascade)
 
   @@index([companyId, sampleOrderId])
+  @@index([companyId, productId])
   @@map("sample_order_components")
 }
 

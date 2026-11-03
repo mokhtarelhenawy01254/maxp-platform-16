@@ -34,6 +34,7 @@ function createInMemoryStore() {
     sampleExpenseCatalogs: new Map(),
     sampleOrderExpenses: new Map(),
     sampleOrderItems: new Map(),
+    sampleComponents: new Map(),
     productionOrders: new Map(),
     boms: new Map(),
     partnerFactories: new Map(),
@@ -70,7 +71,10 @@ function createInMemoryStore() {
         const sampleItems = Array.from(store.sampleOrderItems.values())
           .filter((it) => it.sampleOrderId === item.id)
           .sort((a, b) => a.sortOrder - b.sortOrder);
-        return { ...item, stages, attachments, expenses, items: sampleItems };
+        const components = Array.from(store.sampleComponents.values())
+          .filter((c) => c.sampleOrderId === item.id)
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        return { ...item, stages, attachments, expenses, items: sampleItems, components };
       },
       findMany: async ({ where, skip = 0, take = 50 } = {}) => {
         let items = Array.from(store.sampleOrders.values());
@@ -96,6 +100,7 @@ function createInMemoryStore() {
           attachments: Array.from(store.sampleAttachments.values()).filter((att) => att.sampleOrderId === s.id),
           expenses: Array.from(store.sampleOrderExpenses.values()).filter((exp) => exp.sampleOrderId === s.id),
           items: Array.from(store.sampleOrderItems.values()).filter((it) => it.sampleOrderId === s.id).sort((a, b) => a.sortOrder - b.sortOrder),
+          components: Array.from(store.sampleComponents.values()).filter((c) => c.sampleOrderId === s.id).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)),
         }));
       },
       count: async ({ where } = {}) => {
@@ -134,7 +139,10 @@ function createInMemoryStore() {
         const items = Array.from(store.sampleOrderItems.values())
           .filter((it) => it.sampleOrderId === updated.id)
           .sort((a, b) => a.sortOrder - b.sortOrder);
-        return { ...updated, stages, attachments, expenses, items };
+        const components = Array.from(store.sampleComponents.values())
+          .filter((c) => c.sampleOrderId === updated.id)
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        return { ...updated, stages, attachments, expenses, items, components };
       },
       delete: async ({ where }) => {
         const existing = store.sampleOrders.get(where.id);
@@ -308,6 +316,116 @@ function createInMemoryStore() {
             }
           }
         }
+      },
+    },
+    sampleComponent: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.sampleComponents.values());
+        if (where?.id) items = items.filter((c) => c.id === where.id);
+        if (where?.sampleOrderId) items = items.filter((c) => c.sampleOrderId === where.sampleOrderId);
+        if (where?.companyId) items = items.filter((c) => c.companyId === where.companyId);
+        return items[0] || null;
+      },
+      findMany: async ({ where } = {}) => {
+        let items = Array.from(store.sampleComponents.values());
+        if (where?.sampleOrderId) items = items.filter((c) => c.sampleOrderId === where.sampleOrderId);
+        if (where?.companyId) items = items.filter((c) => c.companyId === where.companyId);
+        return items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      },
+      create: async ({ data }) => {
+        const id = `comp-${++store.counter}`;
+        const record = {
+          id,
+          ...data,
+          quantity: data.quantity !== undefined ? Number(data.quantity) : 1,
+          unitPrice: data.unitPrice !== undefined ? Number(data.unitPrice) : 0,
+          totalCost:
+            data.totalCost !== undefined
+              ? Number(data.totalCost)
+              : Math.round(Number(data.quantity || 1) * Number(data.unitPrice || 0) * 100) / 100,
+          sortOrder: data.sortOrder || 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        store.sampleComponents.set(id, record);
+        return record;
+      },
+      update: async ({ where, data }) => {
+        const item = store.sampleComponents.get(where.id);
+        if (!item) throw new Error('Component not found');
+        const updated = { ...item, ...data, updatedAt: new Date() };
+        store.sampleComponents.set(where.id, updated);
+        return updated;
+      },
+      delete: async ({ where }) => {
+        const item = store.sampleComponents.get(where.id);
+        if (item) store.sampleComponents.delete(where.id);
+        return item;
+      },
+      deleteMany: async ({ where } = {}) => {
+        let count = 0;
+        for (const [id, c] of store.sampleComponents.entries()) {
+          if (where?.sampleOrderId && c.sampleOrderId !== where.sampleOrderId) continue;
+          if (where?.companyId && c.companyId !== where.companyId) continue;
+          store.sampleComponents.delete(id);
+          count++;
+        }
+        return { count };
+      },
+    },
+    sampleOrderComponent: {
+      findFirst: async ({ where } = {}) => {
+        let items = Array.from(store.sampleComponents.values());
+        if (where?.id) items = items.filter((c) => c.id === where.id);
+        if (where?.sampleOrderId) items = items.filter((c) => c.sampleOrderId === where.sampleOrderId);
+        if (where?.companyId) items = items.filter((c) => c.companyId === where.companyId);
+        return items[0] || null;
+      },
+      findMany: async ({ where } = {}) => {
+        let items = Array.from(store.sampleComponents.values());
+        if (where?.sampleOrderId) items = items.filter((c) => c.sampleOrderId === where.sampleOrderId);
+        if (where?.companyId) items = items.filter((c) => c.companyId === where.companyId);
+        return items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      },
+      create: async ({ data }) => {
+        const id = `comp-${++store.counter}`;
+        const record = {
+          id,
+          ...data,
+          quantity: data.quantity !== undefined ? Number(data.quantity) : 1,
+          unitPrice: data.unitPrice !== undefined ? Number(data.unitPrice) : 0,
+          totalCost:
+            data.totalCost !== undefined
+              ? Number(data.totalCost)
+              : Math.round(Number(data.quantity || 1) * Number(data.unitPrice || 0) * 100) / 100,
+          sortOrder: data.sortOrder || 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        store.sampleComponents.set(id, record);
+        return record;
+      },
+      update: async ({ where, data }) => {
+        const item = store.sampleComponents.get(where.id);
+        if (!item) throw new Error('Component not found');
+        const updated = { ...item, ...data, updatedAt: new Date() };
+        store.sampleComponents.set(where.id, updated);
+        return updated;
+      },
+      delete: async ({ where }) => {
+        const item = store.sampleComponents.get(where.id);
+        if (item) store.sampleComponents.delete(where.id);
+        return item;
+      },
+      deleteMany: async ({ where } = {}) => {
+        let count = 0;
+        for (const [id, c] of store.sampleComponents.entries()) {
+          if (where?.sampleOrderId && c.sampleOrderId !== where.sampleOrderId) continue;
+          if (where?.companyId && c.companyId !== where.companyId) continue;
+          store.sampleComponents.delete(id);
+          count++;
+        }
+        return { count };
       },
     },
     productionOrder: {
@@ -1260,6 +1378,183 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
       expect(updatedLegacy.plannedQuantity).toBe(15);
       expect(updatedLegacy.designNotes).toBe('تحديث للعينة القديمة بدون بنود');
       expect(updatedLegacy.items).toEqual([]);
+    });
+  });
+
+  describe('Task HZ-G: Sample Components & Materials Table', () => {
+    beforeEach(() => {
+      // Seed products for materials testing
+      currentPrisma._store.products.set('prod-fabric-1', {
+        id: 'prod-fabric-1',
+        companyId,
+        name: 'قماش ميلتون قطن',
+        sku: 'FAB-MLT-01',
+        cost: 150,
+      });
+
+      currentPrisma._store.products.set('prod-rib-1', {
+        id: 'prod-rib-1',
+        companyId,
+        name: 'ريب قطن أساور',
+        sku: 'RIB-CTN-01',
+        cost: 80,
+      });
+
+      // Product in a different company
+      currentPrisma._store.products.set('prod-alien-1', {
+        id: 'prod-alien-1',
+        companyId: 'alien-company-999',
+        name: 'سوستة شركة تانية',
+        sku: 'ZIP-ALN-99',
+        cost: 10,
+      });
+    });
+
+    test('1. إنشاء عينة بـ3 مكونات (٢ منهم productId) → اتخزنوا + totalCost صح + componentsTotal صح', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'هودي أوفر سايز صيفي',
+        plannedQuantity: 1,
+        components: [
+          { productId: 'prod-fabric-1', quantity: 2.5, unit: 'متر', unitPrice: 150 }, // name defaults from product
+          { productId: 'prod-rib-1', name: 'ريب قطن أساور مخصص', quantity: 0.5, unit: 'كجم', unitPrice: 80 },
+          { name: 'خيط حياكة بوليستر كوري', quantity: 2, unit: 'بكرة', unitPrice: 25 }, // freeform
+        ],
+      });
+
+      expect(sample).toBeDefined();
+      expect(sample.components).toHaveLength(3);
+
+      // Verify Component 1
+      const comp1 = sample.components[0];
+      expect(comp1.productId).toBe('prod-fabric-1');
+      expect(comp1.name).toBe('قماش ميلتون قطن');
+      expect(comp1.quantity).toBe(2.5);
+      expect(comp1.unit).toBe('متر');
+      expect(comp1.unitPrice).toBe(150);
+      expect(comp1.totalCost).toBe(375); // 2.5 * 150
+      expect(comp1.sortOrder).toBe(1);
+
+      // Verify Component 2
+      const comp2 = sample.components[1];
+      expect(comp2.productId).toBe('prod-rib-1');
+      expect(comp2.name).toBe('ريب قطن أساور مخصص');
+      expect(comp2.quantity).toBe(0.5);
+      expect(comp2.unit).toBe('كجم');
+      expect(comp2.unitPrice).toBe(80);
+      expect(comp2.totalCost).toBe(40); // 0.5 * 80
+      expect(comp2.sortOrder).toBe(2);
+
+      // Verify Component 3 (Freeform)
+      const comp3 = sample.components[2];
+      expect(comp3.productId).toBeNull();
+      expect(comp3.name).toBe('خيط حياكة بوليستر كوري');
+      expect(comp3.quantity).toBe(2);
+      expect(comp3.unit).toBe('بكرة');
+      expect(comp3.unitPrice).toBe(25);
+      expect(comp3.totalCost).toBe(50); // 2 * 25
+      expect(comp3.sortOrder).toBe(3);
+
+      // Total components cost
+      expect(sample.componentsTotal).toBe(465); // 375 + 40 + 50
+
+      // Direct fetch parity
+      const fetched = await ManufacturingSampleService.getSampleOrderById(companyId, sample.id);
+      expect(fetched.components).toHaveLength(3);
+      expect(fetched.componentsTotal).toBe(465);
+      expect(fetched.components[0].name).toBe('قماش ميلتون قطن');
+      expect(fetched.components[1].name).toBe('ريب قطن أساور مخصص');
+      expect(fetched.components[2].name).toBe('خيط حياكة بوليستر كوري');
+    });
+
+    test('2. productId مش تابع للشركة → 400 («الخامة المختارة غير موجودة في هذه الشركة»)', async () => {
+      // In create
+      await expect(
+        ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+          productName: 'عينة مرفوضة خاماتها',
+          components: [
+            { productId: 'prod-alien-1', quantity: 1, unitPrice: 10 },
+          ],
+        })
+      ).rejects.toThrow('الخامة المختارة غير موجودة في هذه الشركة');
+
+      // Create valid sample first
+      const validSample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة مقبولة مبدئيًا',
+      });
+
+      // In update
+      await expect(
+        ManufacturingSampleService.updateSampleOrder(companyId, testUser, validSample.id, {
+          components: [
+            { productId: 'prod-non-existent-999', quantity: 1, unitPrice: 20 },
+          ],
+        })
+      ).rejects.toThrow('الخامة المختارة غير موجودة في هذه الشركة');
+    });
+
+    test('3. تحديث المكونات (من 3 لـ2) → القديم اتمسح والجديد اتخزن', async () => {
+      // 1. Create with 3 components
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'هودي أوفر سايز',
+        components: [
+          { productId: 'prod-fabric-1', quantity: 2, unitPrice: 150 },
+          { productId: 'prod-rib-1', quantity: 1, unitPrice: 80 },
+          { name: 'سوستة بلاستيك', quantity: 1, unitPrice: 10 },
+        ],
+      });
+      expect(sample.components).toHaveLength(3);
+      expect(sample.componentsTotal).toBe(390); // 300 + 80 + 10
+
+      // 2. Update to 2 components
+      const updated = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, sample.id, {
+        components: [
+          { productId: 'prod-fabric-1', name: 'قماش ميلتون تركي معدل', quantity: 3, unit: 'متر', unitPrice: 160 },
+          { name: 'تيكت رقبة منسوج', quantity: 1, unit: 'قطعة', unitPrice: 15 },
+        ],
+      });
+
+      expect(updated.components).toHaveLength(2);
+      expect(updated.components[0].productId).toBe('prod-fabric-1');
+      expect(updated.components[0].name).toBe('قماش ميلتون تركي معدل');
+      expect(updated.components[0].quantity).toBe(3);
+      expect(updated.components[0].totalCost).toBe(480); // 3 * 160
+
+      expect(updated.components[1].productId).toBeNull();
+      expect(updated.components[1].name).toBe('تيكت رقبة منسوج');
+      expect(updated.components[1].quantity).toBe(1);
+      expect(updated.components[1].totalCost).toBe(15); // 1 * 15
+
+      expect(updated.componentsTotal).toBe(495); // 480 + 15
+
+      // Verify direct fetch
+      const fetched = await ManufacturingSampleService.getSampleOrderById(companyId, sample.id);
+      expect(fetched.components).toHaveLength(2);
+      expect(fetched.componentsTotal).toBe(495);
+      expect(fetched.components[0].name).toBe('قماش ميلتون تركي معدل');
+      expect(fetched.components[1].name).toBe('تيكت رقبة منسوج');
+    });
+
+    test('4. عينة قديمة من غير components (Task HZ-G regression) → لسه شغالة', async () => {
+      // Create without components array
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة ريجريشن بدون جدول خامات',
+        plannedQuantity: 4,
+      });
+
+      expect(sample).toBeDefined();
+      expect(sample.components).toEqual([]);
+      expect(sample.componentsTotal).toBe(0);
+
+      // Update without components array
+      const updated = await ManufacturingSampleService.updateSampleOrder(companyId, testUser, sample.id, {
+        plannedQuantity: 6,
+        designNotes: 'تحديث للعينة القديمة بدون خامات',
+      });
+
+      expect(updated.plannedQuantity).toBe(6);
+      expect(updated.designNotes).toBe('تحديث للعينة القديمة بدون خامات');
+      expect(updated.components).toEqual([]);
+      expect(updated.componentsTotal).toBe(0);
     });
   });
 });
