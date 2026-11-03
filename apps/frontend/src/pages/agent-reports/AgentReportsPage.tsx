@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   agentReportsService,
@@ -31,23 +31,44 @@ export const AgentReportsPage: React.FC = () => {
   // Mobile navigation active tab
   const [mobileTab, setMobileTab] = useState<'types' | 'reports' | 'viewer'>('reports');
 
-  // Load Report Types & auto-select first type + newest report
+  // Track viewport width for desktop vs mobile layout (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkWidth = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+    return () => window.removeEventListener('resize', checkWidth);
+  }, []);
+
+  // Load Report Types & auto-select first type with reports + newest report
   const loadTypes = useCallback(async () => {
     setLoadingTypes(true);
     try {
       const data = await agentReportsService.getTypes();
       setTypes(data);
 
-      if (data.length > 0 && !selectedType) {
-        setSelectedType(data[0]);
-      }
+      setSelectedType((curr) => {
+        if (curr) return curr;
+        if (data.length === 0) return null;
+        const typeWithReports = data.find((t) => (t.reportsCount ?? 0) > 0);
+        return typeWithReports || data[0];
+      });
     } catch (err: unknown) {
       console.error('Failed to load report types:', err);
       toast.error('فشل في تحميل أنواع التقارير');
     } finally {
       setLoadingTypes(false);
     }
-  }, [selectedType]);
+  }, []);
 
   useEffect(() => {
     loadTypes();
@@ -87,6 +108,10 @@ export const AgentReportsPage: React.FC = () => {
   useEffect(() => {
     if (selectedType) {
       loadReports(selectedType.id, searchQuery);
+    } else {
+      setReports([]);
+      setSelectedReportId(null);
+      setActiveReport(null);
     }
   }, [selectedType, searchQuery, loadReports]);
 
@@ -215,9 +240,54 @@ export const AgentReportsPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-slate-100" dir="rtl">
-      {/* Mobile Tab Switcher (< lg) */}
-      <div className="lg:hidden flex items-center border-b border-slate-200 bg-white px-2 py-1.5 shrink-0">
+      <style>{`
+        @media (min-width: 1024px) {
+          .ar-mobile-nav {
+            display: none !important;
+          }
+          .ar-col-types {
+            display: flex !important;
+            width: 224px !important;
+            min-width: 224px !important;
+            max-width: 224px !important;
+            flex-shrink: 0 !important;
+          }
+          .ar-col-reports {
+            display: flex !important;
+            width: 256px !important;
+            min-width: 256px !important;
+            max-width: 256px !important;
+            flex-shrink: 0 !important;
+          }
+          .ar-col-viewer {
+            display: flex !important;
+            flex: 1 1 0% !important;
+            min-width: 480px !important;
+            overflow: hidden !important;
+          }
+        }
+        @media (max-width: 1023px) {
+          .ar-mobile-nav {
+            display: flex !important;
+          }
+          .ar-col-types, .ar-col-reports, .ar-col-viewer {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+          }
+          .ar-col-hidden {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Mobile Tab Switcher (< lg / < 1024px) */}
+      <div
+        className="ar-mobile-nav flex items-center border-b border-slate-200 bg-white px-2 py-1.5 shrink-0"
+        style={isDesktop ? { display: 'none' } : { display: 'flex' }}
+      >
         <button
+          type="button"
           onClick={() => setMobileTab('types')}
           className={`flex-1 py-1.5 text-xs font-medium rounded-lg text-center transition-colors ${
             mobileTab === 'types' ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600'
@@ -226,6 +296,7 @@ export const AgentReportsPage: React.FC = () => {
           الأنواع ({types.length})
         </button>
         <button
+          type="button"
           onClick={() => setMobileTab('reports')}
           className={`flex-1 py-1.5 text-xs font-medium rounded-lg text-center transition-colors ${
             mobileTab === 'reports' ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600'
@@ -234,6 +305,7 @@ export const AgentReportsPage: React.FC = () => {
           التقارير ({reports.length})
         </button>
         <button
+          type="button"
           onClick={() => setMobileTab('viewer')}
           className={`flex-1 py-1.5 text-xs font-medium rounded-lg text-center transition-colors ${
             mobileTab === 'viewer' ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600'
@@ -244,12 +316,19 @@ export const AgentReportsPage: React.FC = () => {
       </div>
 
       {/* Cockpit Surface - 3 Columns Layout on Desktop */}
-      <div className="flex-1 flex min-h-0 w-full overflow-hidden">
+      <div className="flex-1 flex flex-row min-h-0 w-full overflow-hidden">
         {/* Column 1: Report Types */}
         <div
-          className={`w-full lg:w-64 xl:w-72 shrink-0 h-full ${
-            mobileTab === 'types' ? 'block' : 'hidden lg:block'
+          className={`ar-col-types h-full flex flex-col overflow-hidden ${
+            !isDesktop && mobileTab !== 'types' ? 'ar-col-hidden' : ''
           }`}
+          style={
+            isDesktop
+              ? { width: 224, minWidth: 224, maxWidth: 224, flexShrink: 0 }
+              : !isDesktop && mobileTab !== 'types'
+              ? { display: 'none' }
+              : { width: '100%', flexShrink: 0 }
+          }
         >
           <ReportTypesColumn
             types={types}
@@ -263,9 +342,16 @@ export const AgentReportsPage: React.FC = () => {
 
         {/* Column 2: Reports List */}
         <div
-          className={`w-full lg:w-80 xl:w-96 shrink-0 h-full ${
-            mobileTab === 'reports' ? 'block' : 'hidden lg:block'
+          className={`ar-col-reports h-full flex flex-col overflow-hidden ${
+            !isDesktop && mobileTab !== 'reports' ? 'ar-col-hidden' : ''
           }`}
+          style={
+            isDesktop
+              ? { width: 256, minWidth: 256, maxWidth: 256, flexShrink: 0 }
+              : !isDesktop && mobileTab !== 'reports'
+              ? { display: 'none' }
+              : { width: '100%', flexShrink: 0 }
+          }
         >
           <ReportsListColumn
             selectedType={selectedType}
@@ -284,9 +370,16 @@ export const AgentReportsPage: React.FC = () => {
 
         {/* Column 3: HTML Viewer */}
         <div
-          className={`flex-1 min-w-0 h-full ${
-            mobileTab === 'viewer' ? 'block' : 'hidden lg:block'
+          className={`ar-col-viewer h-full flex flex-col overflow-hidden ${
+            !isDesktop && mobileTab !== 'viewer' ? 'ar-col-hidden' : ''
           }`}
+          style={
+            isDesktop
+              ? { flex: 1, minWidth: 480, overflow: 'hidden' }
+              : !isDesktop && mobileTab !== 'viewer'
+              ? { display: 'none' }
+              : { width: '100%', flexShrink: 0 }
+          }
         >
           <ReportViewerColumn
             report={activeReport}
