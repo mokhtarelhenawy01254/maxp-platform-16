@@ -3456,7 +3456,7 @@ const AppContent = () => {
                   path="/agency"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro', 'agency-system']}>
+                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro']}>
                         <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                           <AgencyDashboard />
                         </React.Suspense>
@@ -3468,7 +3468,7 @@ const AppContent = () => {
                   path="/agency/:tab"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro', 'agency-system']}>
+                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro']}>
                         <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                           <AgencyDashboard />
                         </React.Suspense>
@@ -3560,6 +3560,10 @@ const AppContent = () => {
                       <CompareApps />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/marketplace/project-break-even-calculator"
+                  element={<Navigate to="/marketplace/break-even" replace />}
                 />
                 <Route
                   path="/marketplace/:slug"
@@ -3810,7 +3814,7 @@ const AppContent = () => {
                   path="/tools/break-even"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['project-break-even-calculator', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['break-even', 'store-pro']}>
                         <ProjectBreakEvenCalculator />
                       </AppAccessRoute>
                     </Layout>
@@ -3820,7 +3824,7 @@ const AppContent = () => {
                   path="/tools/product-break-even"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['product-break-even-calculator', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['product-break-even', 'store-pro']}>
                         <ProductBreakEvenCalculator />
                       </AppAccessRoute>
                     </Layout>
@@ -3880,7 +3884,7 @@ const AppContent = () => {
                   path="/tools/monthly-pnl"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['monthly-pnl-calculator', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['monthly-pnl', 'store-pro']}>
                         <MonthlyPnLDashboard />
                       </AppAccessRoute>
                     </Layout>
@@ -4040,7 +4044,7 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app']}>
                         <Appointments />
                       </AppAccessRoute>
                     </Layout>
@@ -4900,6 +4904,7 @@ const AppContent = () => {
                   path="/tiktok/publish"
                   element={
                     <Layout>
+                      {/* /tiktok/publish was never gated; keep it open (task only fixes dead slug gates) */}
                       <TikTokPublish />
                     </Layout>
                   }
@@ -4908,7 +4913,7 @@ const AppContent = () => {
                   path="/youtube/publish"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['youtube-publish']}>
+                      <AppAccessRoute requiredAppSlugs={['tiktok-integrations']}>
                         <YoutubePublish />
                       </AppAccessRoute>
                     </Layout>
@@ -6209,7 +6214,7 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app']}>
                         <Appointments />
                       </AppAccessRoute>
                     </Layout>
@@ -6491,7 +6496,7 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app']}>
                         <Appointments />
                       </AppAccessRoute>
                     </Layout>
@@ -9100,7 +9105,7 @@ const AppContent = () => {
                   path="/accounting/*"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['accounting', 'accounting-app']} redirectMode="overlay-blur">
+                      <AppAccessRoute requiredAppSlugs={['accounting']} redirectMode="overlay-blur">
                         <AccountingRoutes />
                       </AppAccessRoute>
                     </Layout>
@@ -9112,7 +9117,7 @@ const AppContent = () => {
                   path="/manufacturing/*"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['manufacturing', 'manufacturing-app', 'cat-app-manufacturing']} redirectMode="overlay-blur">
+                      <AppAccessRoute requiredAppSlugs={['manufacturing']} redirectMode="overlay-blur">
                         <ManufacturingRoutes />
                       </AppAccessRoute>
                     </Layout>

@@ -2,68 +2,15 @@ import React, { ReactNode, useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Lock, CreditCard, ArrowLeft } from "lucide-react";
+import { Lock, CreditCard, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
 import ErrorBoundary from "../common/ErrorBoundary";
 import { APP_REGISTRY } from "../../config/appRegistry";
+import marketplaceAppSlugs from "../../data/marketplaceAppSlugs.json";
 
-export const APP_SLUG_ALIASES: Record<string, string[]> = {
-  "product-break-even-calculator": ["break-even"],
-  "pricing-strategy-calculator": ["pricing-strategy"],
-  "discount-impact-calculator": ["discount-impact"],
-  "refund-rate-calculator": ["refund-rate"],
-  "whatsapp-business": [
-    "whatsapp-integration",
-    "whatsapp-inbox",
-    "whatsapp-settings",
-    "whatsapp-notifications",
-    "whatsapp-templates",
-    "whatsapp-routing",
-    "unified-inbox",
-  ],
-  "whatsapp-cloud-api": ["whatsapp-business", "whatsapp-integration", "unified-inbox"],
-  "whatsapp-integration": ["whatsapp-business", "whatsapp-inbox", "unified-inbox"],
-  "telegram-business": ["telegram-integration", "telegram"],
-  "telegram-integration": ["telegram-business", "telegram"],
-  "crm-lite": ["crm-basic", "crm"],
-  "crm-basic": ["crm-lite", "crm"],
-  "unified-inbox": [
-    "whatsapp-business",
-    "whatsapp-integration",
-    "whatsapp-inbox",
-    "facebook-pages-connect",
-    "instagram-business",
-    "tiktok-integrations",
-    "telegram-business",
-    "telegram-integration",
-    "crm-lite",
-    "crm-basic",
-  ],
-  "orders-analytics": ["analytics-basic", "analytics-advanced", "analytics"],
-  "analytics-basic": ["orders-analytics", "analytics-advanced", "analytics"],
-  "hr-core": ["hr-basic", "hr-pro", "hr-attendance-pro", "hr-payroll", "hr-assets", "hr-recruitment"],
-  "hr-basic": ["hr-core", "hr-pro", "hr-attendance-pro", "hr-payroll", "hr-assets", "hr-recruitment"],
-  "dental-lab-app": ["dental-lab"],
-  "dental-lab": ["dental-lab-app"],
-  "booking-app": ["service-request-app", "service-requests", "medical-system", "booking-appointments"],
-  "order-shipping-turbo": [
-    "order-shipping-hub",
-    "order-shipping",
-    "order-shipping-bosta",
-    "order-shipping-qpexpress",
-  ],
-  "pos-pro": ["cafe-restaurant-pro", "store-pro", "ecommerce-pro"],
-  "business-tools": ["tasks", "tasks-management", "projects"],
-  "affiliate-pro": ["affiliate-program"],
-};
-
-function getCandidateSlugs(slug: string): string[] {
-  const normalized = slug.trim().toLowerCase();
-  const aliases = APP_SLUG_ALIASES[normalized] || [];
-  return Array.from(new Set([normalized, ...aliases]));
-}
-
+export { APP_SLUG_ALIASES, getCandidateSlugs, resolveCanonicalSlug } from "./appSlugAliases";
+import { APP_SLUG_ALIASES, getCandidateSlugs, resolveCanonicalSlug } from "./appSlugAliases";
 interface AppAccessRouteProps {
   children: ReactNode;
   requiredAppSlugs: string[];
@@ -115,7 +62,24 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
     });
   });
 
-  const primarySlug = requiredAppSlugs[0]?.trim() || "marketplace";
+  const rawPrimary = requiredAppSlugs[0]?.trim() || "marketplace";
+  const primarySlug = resolveCanonicalSlug(rawPrimary);
+
+  // Check whether any of the required slugs (or their aliases/candidates) exist in the marketplace catalog
+  const isKnownApp = React.useMemo(() => {
+    const catalogList: string[] = Array.isArray(marketplaceAppSlugs) ? (marketplaceAppSlugs as string[]) : [];
+    const knownSet = new Set<string>([
+      ...catalogList.map((s) => s.toLowerCase()),
+      ...Object.keys(APP_SLUG_ALIASES).map((s) => s.toLowerCase()),
+      ...Object.values(APP_SLUG_ALIASES).flat().map((s) => s.toLowerCase()),
+      ...APP_REGISTRY.map((a) => a.id.toLowerCase()),
+    ]);
+
+    return requiredAppSlugs.some((reqSlug) => {
+      const candidates = getCandidateSlugs(reqSlug);
+      return candidates.some((c) => knownSet.has(c));
+    });
+  }, [requiredAppSlugs]);
 
   const isDental = requiredAppSlugs.some((s) => s.toLowerCase().includes("dental"));
   const isMessaging = requiredAppSlugs.some((s) =>
@@ -130,6 +94,24 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
     }
 
     const FRIENDLY_APP_NAMES: Record<string, string> = {
+      "break-even": "حاسبة نقطة التعادل",
+      "project-break-even-calculator": "حاسبة نقطة التعادل",
+      "product-break-even": "حاسبة نقطة التعادل للمنتج",
+      "product-break-even-calculator": "حاسبة نقطة التعادل للمنتج",
+      "monthly-pnl": "حساب الأرباح والخسائر الشهري",
+      "monthly-pnl-calculator": "حساب الأرباح والخسائر الشهري",
+      "store-pro": "المتجر الاحترافي",
+      "marketing-agency-pro": "نظام إدارة الوكالات والشركاء",
+      "agency-system": "نظام إدارة الوكالات والشركاء",
+      "accounting": "نظام المحاسبة المالية",
+      "accounting-app": "نظام المحاسبة المالية",
+      "manufacturing": "نظام إدارة التصنيع",
+      "manufacturing-app": "نظام إدارة التصنيع",
+      "cat-app-manufacturing": "نظام إدارة التصنيع",
+      "service-request-app": "إدارة طلبات الخدمة والحجوزات",
+      "booking-appointments": "إدارة الحجوزات والمواعيد",
+      "tiktok-integrations": "تكامل تيك توك للأعمال",
+      "youtube-publish": "النشر وتكامل المنصات",
       "telegram-business": "تيليجرام للأعمال",
       "telegram-integration": "تكامل تيليجرام",
       "unified-inbox": "صندوق المحادثات الموحد",
@@ -139,6 +121,8 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
       "dental-lab": "معمل الأسنان",
       "booking-app": "نظام الحجوزات",
       "business-tools": "المهام والمشاريع (أدوات الأعمال)",
+      "pos-pro": "نقاط البيع الاحترافية POS",
+      "order-shipping-turbo": "الشحن السريع المتطور",
     };
 
     const names = requiredAppSlugs.map((slug) => {
@@ -162,24 +146,31 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   }, [requiredAppSlugs, t]);
 
   const modalDescription = React.useMemo(() => {
+    if (!isKnownApp) {
+      return `عذراً، التطبيق المطلوب («${formattedAppNames}») غير متوفر حالياً في متجر التطبيقات أو قد يكون تم تعديل الرابط. يمكنك التواصل مع الدعم الفني أو استعراض التطبيقات المتاحة في المتجر.`;
+    }
     if (isDental) {
-      return `لقد انتهت فترة الاشتراك في نظام «${formattedAppNames}». جميع بياناتك، سجلات الحالات، أطباء الأسنان، الفواتير، وفريق العمل محفوظة بالكامل ومؤمنة في حسابك. يرجى تجديد الاشتراك لمواصلة العمل وإدارة الحالات.`;
+      return `لقد انتهت فترة الاشتراك في نظام «${formattedAppNames}». جميع بياناتك، سجلات الحالات، أطباء الأسنان، الفواتير، وفريق العمل محفوظة بالكامل ومؤمنة في حسابك. يرجى تفعيل أو تجديد الاشتراك لمواصلة العمل وإدارة الحالات.`;
     }
     if (isMessaging) {
-      return `لقد انتهت فترة الاشتراك في خدمة «${formattedAppNames}». تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل، وتم تعليق إمكانية إرسال واستقبال الرسائل مؤقتاً لحين تجديد الاشتراك.`;
+      return `لقد انتهت فترة الاشتراك في خدمة «${formattedAppNames}». تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل، وتم تعليق إمكانية إرسال واستقبال الرسائل مؤقتاً لحين تفعيل الاشتراك.`;
     }
-    return `لقد انتهت فترة الاشتراك في تطبيق «${formattedAppNames}». جميع بياناتك وسجلاتك محفوظة ومؤمنة بالكامل في حسابك، وتم تعليق الوصول مؤقتاً لحين تجديد الاشتراك.`;
-  }, [isDental, isMessaging, formattedAppNames]);
+    return `هذه الصفحة تتطلب تفعيل تطبيق «${formattedAppNames}». التطبيق غير مفعّل في حساب شركتك حالياً. يمكنك تفعيله بسهولة من متجر التطبيقات للوصول إلى كافة وظائفه.`;
+  }, [isKnownApp, isDental, isMessaging, formattedAppNames]);
 
   useEffect(() => {
     if (!hasAccess && isAuthenticated && user && user.role !== "SUPER_ADMIN") {
       if (redirectMode !== "overlay-blur") {
-        toast.error(
-          `هذه الصفحة تتطلب اشتراكاً سارياً في تطبيق «${formattedAppNames}». يرجى تجديد أو تفعيل الاشتراك للمتابعة.`
-        );
+        if (!isKnownApp) {
+          toast.error(`التطبيق المطلوب «${formattedAppNames}» غير متوفر في النظام.`);
+        } else {
+          toast.error(
+            `هذه الصفحة تتطلب تفعيل تطبيق «${formattedAppNames}». يرجى تفعيل الاشتراك من المتجر للمتابعة.`
+          );
+        }
       }
     }
-  }, [hasAccess, isAuthenticated, user, formattedAppNames, redirectMode]);
+  }, [hasAccess, isAuthenticated, user, formattedAppNames, redirectMode, isKnownApp]);
 
   if (!hasAccess) {
     if (redirectMode === "overlay-blur") {
@@ -206,18 +197,26 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
               className="relative w-full max-w-md bg-card/95 border border-border/80 shadow-2xl rounded-2xl p-6 sm:p-7 text-center space-y-5 backdrop-blur-md"
             >
               {/* Lock Badge */}
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shadow-inner">
-                <Lock className="w-7 h-7" />
+              <div className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
+                isKnownApp 
+                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400"
+                  : "bg-destructive/10 border border-destructive/20 text-destructive"
+              }`}>
+                {isKnownApp ? <Lock className="w-7 h-7" /> : <AlertCircle className="w-7 h-7" />}
               </div>
 
               {/* Status & Copy */}
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
-                  <span>انتهى الاشتراك الشهري</span>
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                  isKnownApp
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                    : "bg-destructive/10 text-destructive border border-destructive/20"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isKnownApp ? "bg-amber-500" : "bg-destructive"} animate-pulse`} />
+                  <span>{isKnownApp ? "التطبيق مش مفعّل" : "التطبيق غير موجود"}</span>
                 </div>
                 <h2 id="expired-subscription-title" className="text-xl font-bold tracking-tight text-foreground">
-                  اشتراك «{formattedAppNames}» منتهي
+                  {isKnownApp ? `تطبيق «${formattedAppNames}» غير مفعّل` : "التطبيق غير متوفر"}
                 </h2>
                 <p id="expired-subscription-desc" className="text-sm text-muted-foreground leading-relaxed text-pretty">
                   {modalDescription}
@@ -226,14 +225,25 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
 
               {/* Actions */}
               <div className="pt-2 flex flex-col gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/marketplace/${encodeURIComponent(primarySlug)}`)}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>تجديد الاشتراك الآن</span>
-                </button>
+                {isKnownApp ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/marketplace/${encodeURIComponent(primarySlug)}`)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>اذهب للمتجر لتفعيل التطبيق</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/marketplace")}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>استعراض متجر التطبيقات</span>
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -253,24 +263,36 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
     if (redirectMode === "screen") {
       return (
         <AccessDenied
-          title="اشتراك غير مفعّل أو منتهي"
-          message={`هذه الصفحة تتطلب تفعيل أو تجديد اشتراك تطبيق «${formattedAppNames}». يرجى تجديد الاشتراك من متجر التطبيقات للمتابعة.`}
-          primaryActionText={`الانتقال لصفحة الاشتراك والتجديد («${formattedAppNames}»)`}
-          primaryActionPath={`/marketplace/${encodeURIComponent(primarySlug)}`}
+          title={isKnownApp ? "التطبيق مش مفعّل" : "التطبيق غير موجود"}
+          message={
+            isKnownApp
+              ? `هذه الصفحة تتطلب تفعيل تطبيق «${formattedAppNames}». يرجى تفعيل الاشتراك من متجر التطبيقات للمتابعة.`
+              : `عذراً، التطبيق المطلوب («${formattedAppNames}») غير متوفر في النظام.`
+          }
+          primaryActionText={
+            isKnownApp
+              ? "اذهب للمتجر لتفعيل التطبيق"
+              : "استعراض متجر التطبيقات"
+          }
+          primaryActionPath={
+            isKnownApp
+              ? `/marketplace/${encodeURIComponent(primarySlug)}`
+              : "/marketplace"
+          }
         />
       );
     }
 
     return (
       <Navigate
-        to={`/marketplace/${encodeURIComponent(primarySlug)}`}
+        to={isKnownApp ? `/marketplace/${encodeURIComponent(primarySlug)}` : "/marketplace"}
         replace
         state={{
           accessDenied: true,
           requiredApp: primarySlug,
           appName: formattedAppNames,
           from: location.pathname,
-          reason: "subscription_required_or_expired",
+          reason: isKnownApp ? "app_not_active" : "app_not_found",
         }}
       />
     );

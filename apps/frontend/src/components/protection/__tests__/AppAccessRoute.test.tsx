@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
@@ -110,12 +111,13 @@ describe("AppAccessRoute with overlay-blur mode", () => {
     // Alert dialog renewal pop-up is shown
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("انتهى الاشتراك الشهري")).toBeInTheDocument();
-    expect(screen.getByText(/اشتراك «واتساب للأعمال» منتهي/)).toBeInTheDocument();
+    // 2026-11-03: the blocked-app screen now separates "not activated" from "unknown app"
+    expect(screen.getByText("التطبيق مش مفعّل")).toBeInTheDocument();
+    expect(screen.getByText(/تطبيق «واتساب للأعمال» غير مفعّل/)).toBeInTheDocument();
     expect(screen.getByText(/تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل/)).toBeInTheDocument();
 
     // Action buttons
-    const renewBtn = screen.getByText("تجديد الاشتراك الآن");
+    const renewBtn = screen.getByText("اذهب للمتجر لتفعيل التطبيق");
     expect(renewBtn).toBeInTheDocument();
     fireEvent.click(renewBtn);
     expect(mockNavigate).toHaveBeenCalledWith("/marketplace/whatsapp-business");
@@ -173,11 +175,11 @@ describe("AppAccessRoute with overlay-blur mode", () => {
     // Alert dialog overlay is present
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("انتهى الاشتراك الشهري")).toBeInTheDocument();
-    expect(screen.getByText(/اشتراك «معمل الأسنان» منتهي/)).toBeInTheDocument();
+    expect(screen.getByText("التطبيق مش مفعّل")).toBeInTheDocument();
+    expect(screen.getByText(/تطبيق «معمل الأسنان» غير مفعّل/)).toBeInTheDocument();
     expect(screen.getByText(/جميع بياناتك، سجلات الحالات، أطباء الأسنان، الفواتير، وفريق العمل محفوظة بالكامل/)).toBeInTheDocument();
 
-    const renewBtn = screen.getByText("تجديد الاشتراك الآن");
+    const renewBtn = screen.getByText("اذهب للمتجر لتفعيل التطبيق");
     expect(renewBtn).toBeInTheDocument();
     fireEvent.click(renewBtn);
     expect(mockNavigate).toHaveBeenCalledWith("/marketplace/dental-lab-app");
