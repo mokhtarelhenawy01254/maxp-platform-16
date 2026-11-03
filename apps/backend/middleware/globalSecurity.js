@@ -382,6 +382,9 @@ const PUBLIC_ROUTES = [
   'POST /api/v1/courier-portal/verify-link-pin',
   'GET /api/v1/courier-portal/failure-reasons',
 
+  // Public Shipment Tracking (SHIP-W3)
+  'GET /api/v1/public/shipments/track/*',
+
   // Health and system routes
   'GET /health*',
   'GET /api/health*',

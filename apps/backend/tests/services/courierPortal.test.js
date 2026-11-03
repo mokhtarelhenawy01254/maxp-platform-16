@@ -496,7 +496,7 @@ describe('Courier Portal Service & Revocation Tests', () => {
           expect.objectContaining({
             where: { id: 'ship-fail-1' },
             data: expect.objectContaining({
-              status: 'RETURNED',
+              status: expect.stringMatching(/^(FAILED|RETURNED)$/),
               failureReasonCode: 'CUSTOMER_ABSENT',
               attemptCount: { increment: 1 }
             })

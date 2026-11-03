@@ -85,4 +85,16 @@ router.delete('/branches/:id', ...portalAuth, shippingPortalController.deleteBra
 router.get('/shipments/:id/label', ...portalAuth, shippingPortalController.getShipmentLabelPdf);
 router.post('/shipments/:id/receive', ...portalAuth, shippingPortalController.receiveShipmentAtHub);
 
+// Failure Reasons Management (SHIP-W3)
+router.get('/failure-reasons', ...portalAuth, shippingPortalController.getFailureReasons);
+router.post('/failure-reasons', ...portalAuth, shippingPortalController.createFailureReason);
+router.patch('/failure-reasons/:id', ...portalAuth, shippingPortalController.updateFailureReason);
+
+// Status Update & Reattempt (SHIP-W3)
+router.patch('/shipments/:id/status', ...portalAuth, shippingPortalController.updateShipmentStatus);
+router.post('/shipments/:id/reattempt', ...portalAuth, shippingPortalController.reattemptShipment);
+
+// Automated RTO Maintenance (SHIP-W3)
+router.post('/maintenance/run-rto', ...portalAuth, shippingPortalController.runRtoMaintenance);
+
 module.exports = router;

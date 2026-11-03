@@ -8,6 +8,8 @@ const { quotePrice } = require('../services/shipping/policyService');
 const { recordShipmentEvent } = require('../services/shipping/shipmentEventService');
 const crypto = require('crypto');
 const { generateWaybillPdf } = require('../services/shipping/waybillPdfService');
+const courierPortalService = require('../services/courierPortalService');
+const shippingRtoService = require('../services/shipping/shippingRtoService');
 
 function generatePickupNumber() {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -263,6 +265,15 @@ async function getShipments(req, res) {
       if (to) where.createdAt.lte = new Date(to);
     }
 
+    if (req.query.needsRtoReview === 'true' || req.query.rtoReview === 'true') {
+      where.events = {
+        some: {
+          reasonCode: 'NEEDS_RTO_REVIEW'
+        }
+      };
+      where.status = { notIn: ['RETURNED', 'DELIVERED', 'CANCELLED'] };
+    }
+
     if (search) {
       const q = String(search).trim();
       where.OR = [
@@ -338,9 +349,20 @@ async function getShipmentById(req, res) {
       });
     }
 
+    let failureReasonLabelAr = null;
+    if (shipment.failureReasonCode) {
+      const reasonObj = await prisma.deliveryFailureReason.findFirst({
+        where: { companyId, code: shipment.failureReasonCode }
+      });
+      failureReasonLabelAr = reasonObj?.labelAr || null;
+    }
+
     return res.json({
       success: true,
-      data: shipment,
+      data: {
+        ...shipment,
+        failureReasonLabelAr,
+      },
     });
   } catch (error) {
     console.error('[ShippingPortal] Error getting shipment:', error);
@@ -778,7 +800,259 @@ async function getMerchants(req, res) {
   }
 }
 
+const ALLOWED_REASON_ROLES = ['OWNER', 'COMPANY_ADMIN', 'OPERATIONS', 'SUPER_ADMIN', 'ADMIN'];
+
+async function getFailureReasons(req, res) {
+  try {
+    const { companyId } = req.user;
+    const reasons = await courierPortalService.getFailureReasons(companyId);
+    return res.json({ success: true, data: reasons });
+  } catch (error) {
+    console.error('[ShippingPortal] Error fetching failure reasons:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب أسباب الفشل' });
+  }
+}
+
+async function createFailureReason(req, res) {
+  try {
+    const { companyId, role } = req.user;
+    if (role && !ALLOWED_REASON_ROLES.includes(role)) {
+      return res.status(403).json({ success: false, error: 'غير مصرح لك بإضافة أسباب الفشل' });
+    }
+
+    const { code, labelAr, labelEn, requiresReschedule, isActive } = req.body || {};
+    const cleanCode = String(code || '').trim().toUpperCase();
+    const cleanLabelAr = String(labelAr || '').trim();
+
+    if (!cleanCode) {
+      return res.status(400).json({ success: false, error: 'كود سبب الفشل مطلوب' });
+    }
+    if (!cleanLabelAr) {
+      return res.status(400).json({ success: false, error: 'اسم سبب الفشل بالعربية مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.deliveryFailureReason.findFirst({
+      where: { companyId, code: cleanCode }
+    });
+
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'كود سبب الفشل مسجل مسبقاً' });
+    }
+
+    const reason = await prisma.deliveryFailureReason.create({
+      data: {
+        companyId,
+        code: cleanCode,
+        labelAr: cleanLabelAr,
+        labelEn: labelEn ? String(labelEn).trim() : null,
+        requiresReschedule: requiresReschedule !== false,
+        isActive: isActive !== false,
+      }
+    });
+
+    return res.status(201).json({ success: true, data: reason });
+  } catch (error) {
+    console.error('[ShippingPortal] Error creating failure reason:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إضافة سبب الفشل' });
+  }
+}
+
+async function updateFailureReason(req, res) {
+  try {
+    const { companyId, role } = req.user;
+    if (role && !ALLOWED_REASON_ROLES.includes(role)) {
+      return res.status(403).json({ success: false, error: 'غير مصرح لك بتعديل أسباب الفشل' });
+    }
+
+    const { id } = req.params;
+    const { labelAr, labelEn, requiresReschedule, isActive } = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+    const reason = await prisma.deliveryFailureReason.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!reason) {
+      return res.status(404).json({ success: false, error: 'سبب الفشل غير موجود' });
+    }
+
+    const data = {};
+    if (labelAr !== undefined) data.labelAr = String(labelAr).trim();
+    if (labelEn !== undefined) data.labelEn = labelEn ? String(labelEn).trim() : null;
+    if (requiresReschedule !== undefined) data.requiresReschedule = Boolean(requiresReschedule);
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+    const updated = await prisma.deliveryFailureReason.update({
+      where: { id },
+      data
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('[ShippingPortal] Error updating failure reason:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تعديل سبب الفشل' });
+  }
+}
+
+async function updateShipmentStatus(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { status, failureReasonCode, nextAttemptDate, notes } = req.body || {};
+
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'الحالة مطلوبة' });
+    }
+
+    const normalizedStatus = String(status).trim().toUpperCase();
+    const prisma = getSharedPrismaClient();
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    const updateData = {
+      status: normalizedStatus
+    };
+
+    if (normalizedStatus === 'FAILED') {
+      const cleanReason = String(failureReasonCode || '').trim();
+      if (!cleanReason) {
+        return res.status(400).json({ success: false, error: 'سبب الفشل مطلوب عند تسجيل عدم التسليم' });
+      }
+
+      updateData.failureReasonCode = cleanReason;
+      updateData.attemptCount = { increment: 1 };
+
+      let calculatedNext = nextAttemptDate ? new Date(nextAttemptDate) : null;
+      if (!calculatedNext) {
+        let requiresReschedule = true;
+        const reason = await prisma.deliveryFailureReason.findFirst({
+          where: { companyId, code: cleanReason }
+        });
+        if (reason) {
+          requiresReschedule = Boolean(reason.requiresReschedule);
+        } else if (cleanReason === 'REFUSED') {
+          requiresReschedule = false;
+        }
+        if (requiresReschedule) {
+          calculatedNext = new Date(Date.now() + 24 * 3600 * 1000);
+        }
+      }
+      if (calculatedNext) {
+        updateData.nextAttemptDate = calculatedNext;
+      }
+    }
+
+    const updated = await prisma.shipment.update({
+      where: { id },
+      data: updateData
+    });
+
+    await recordShipmentEvent(prisma, {
+      companyId,
+      shipmentId: id,
+      fromStatus: shipment.status,
+      toStatus: normalizedStatus,
+      reasonCode: failureReasonCode || null,
+      notes: notes || null,
+      actorType: req.user?.role === 'SHIPPING_CLIENT' ? 'CLIENT' : 'ADMIN',
+      actorId: req.user?.id || null,
+      actorName: req.user?.name || 'ADMIN'
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('[ShippingPortal] Error updating shipment status:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث حالة الشحنة' });
+  }
+}
+
+async function reattemptShipment(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { nextAttemptDate, courierId, notes } = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    if (['DELIVERED', 'CANCELLED', 'RETURNED'].includes(shipment.status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'لا يمكن إعادة جدولة شحنة مكتملة أو ملغاة أو مرتجعة بالكامل'
+      });
+    }
+
+    if (courierId) {
+      const courier = await prisma.courier.findFirst({
+        where: { id: courierId, companyId }
+      });
+      if (!courier) {
+        return res.status(400).json({ success: false, error: 'المندوب المحدد غير موجود' });
+      }
+    }
+
+    const nextDate = nextAttemptDate ? new Date(nextAttemptDate) : new Date(Date.now() + 24 * 3600 * 1000);
+
+    const updated = await prisma.shipment.update({
+      where: { id },
+      data: {
+        attemptCount: { increment: 1 },
+        nextAttemptDate: nextDate,
+        status: 'OUT_FOR_DELIVERY',
+        ...(courierId ? { courierId } : {})
+      }
+    });
+
+    await recordShipmentEvent(prisma, {
+      companyId,
+      shipmentId: id,
+      fromStatus: shipment.status,
+      toStatus: 'OUT_FOR_DELIVERY',
+      reasonCode: 'REATTEMPT_SCHEDULED',
+      notes: notes || `إعادة جدولة محاولة التوصيل بتاريخ ${nextDate.toISOString().slice(0, 10)}`,
+      actorType: 'ADMIN',
+      actorId: req.user.id,
+      actorName: req.user.name || 'ADMIN',
+      metadata: {
+        nextAttemptDate: nextDate,
+        courierId: courierId || shipment.courierId
+      }
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('[ShippingPortal] Error reattempting shipment:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إعادة جدولة الشحنة' });
+  }
+}
+
+async function runRtoMaintenance(req, res) {
+  try {
+    const { companyId } = req.user;
+    const result = await shippingRtoService.evaluate(companyId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('[ShippingPortal] Error running RTO maintenance:', error);
+    return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تشغيل معالجة RTO' });
+  }
+}
+
 module.exports = {
+
   getShippingQuote,
   createStandaloneShipment,
   getShipments,
@@ -1562,4 +1836,10 @@ module.exports = {
   deleteBranch,
   getShipmentLabelPdf,
   receiveShipmentAtHub,
+  getFailureReasons,
+  createFailureReason,
+  updateFailureReason,
+  updateShipmentStatus,
+  reattemptShipment,
+  runRtoMaintenance,
 };

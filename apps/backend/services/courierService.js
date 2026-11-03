@@ -15,9 +15,10 @@ const ALLOWED_FIELD_STATUSES = ['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED',
 // Run states whose shipments are financially or operationally closed
 const LOCKED_RUN_STATUSES = ['SETTLED', 'CANCELLED'];
 
-const serviceError = (message, statusCode) => {
+const serviceError = (message, statusCode, code) => {
   const err = new Error(message);
   if (statusCode) err.statusCode = statusCode;
+  if (code) err.code = code;
   return err;
 };
 
@@ -737,15 +738,17 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     updateData.collectedAt = new Date();
     updateData.otpAttempts = 0;
   } else if (normalizedStatus === 'RETURNED' || normalizedStatus === 'FAILED') {
-    updateData.status = 'RETURNED';
+    updateData.status = normalizedStatus === 'FAILED' ? 'FAILED' : 'RETURNED';
     const priorCollected = normalizeAmount(shipment.collectedAmount);
     // Never silently erase cash already collected — it stays on the shipment for reconciliation
     updateData.collectedAmount = priorCollected > 0 ? priorCollected : 0;
 
     if (normalizedStatus === 'FAILED') {
-      if (failureReasonCode) {
-        updateData.failureReasonCode = String(failureReasonCode).trim();
+      const cleanReason = String(failureReasonCode || '').trim();
+      if (!cleanReason) {
+        throw serviceError('سبب الفشل مطلوب عند تسجيل عدم التسليم (FAILED)', 400, 'FAILURE_REASON_REQUIRED');
       }
+      updateData.failureReasonCode = cleanReason;
       updateData.attemptCount = { increment: 1 };
 
       let calculatedNextAttempt = nextAttemptDate ? new Date(nextAttemptDate) : null;

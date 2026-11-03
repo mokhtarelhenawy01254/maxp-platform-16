@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Copy,
   Printer,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -38,6 +39,7 @@ export const ShippingParcelsList: React.FC = () => {
   // Filters state
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [needsRtoReview, setNeedsRtoReview] = useState(false);
   const [governorate, setGovernorate] = useState('');
   const [merchantId, setMerchantId] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -74,6 +76,7 @@ export const ShippingParcelsList: React.FC = () => {
         merchantId: merchantId || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
+        needsRtoReview: needsRtoReview || undefined,
       };
 
       const res = await shippingOpsService.getShipments(query);
@@ -96,6 +99,7 @@ export const ShippingParcelsList: React.FC = () => {
   const handleResetFilters = () => {
     setSearch('');
     setStatus('');
+    setNeedsRtoReview(false);
     setGovernorate('');
     setMerchantId('');
     setFromDate('');
@@ -195,6 +199,7 @@ export const ShippingParcelsList: React.FC = () => {
               <option value="CONFIRMED">{t('shippingOps.statusLabels.CONFIRMED', 'تم التأكيد')}</option>
               <option value="OUT_FOR_DELIVERY">{t('shippingOps.statusLabels.OUT_FOR_DELIVERY', 'قيد التسليم')}</option>
               <option value="DELIVERED">{t('shippingOps.statusLabels.DELIVERED', 'تم التسليم')}</option>
+              <option value="FAILED">{t('shippingOps.statusLabels.FAILED', 'فشل تسليم (FAILED)')}</option>
               <option value="FAILED_ATTEMPT">{t('shippingOps.statusLabels.FAILED_ATTEMPT', 'محاولة فاشلة')}</option>
               <option value="RETURNED">{t('shippingOps.statusLabels.RETURNED', 'مرتجع')}</option>
               <option value="CANCELLED">{t('shippingOps.statusLabels.CANCELLED', 'ملغية')}</option>
@@ -265,7 +270,25 @@ export const ShippingParcelsList: React.FC = () => {
             />
           </div>
 
-          {(search || status || governorate || merchantId || fromDate || toDate) && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setNeedsRtoReview((prev) => !prev);
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer ${
+                needsRtoReview
+                  ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+              <span>{isEn ? 'Needs RTO Review' : 'شحنات بحاجة لمراجعة RTO'}</span>
+            </button>
+          </div>
+
+          {(search || status || governorate || merchantId || fromDate || toDate || needsRtoReview) && (
             <button
               onClick={handleResetFilters}
               className="text-xs text-rose-600 hover:underline font-medium"

@@ -4,6 +4,11 @@ export interface ShipmentItem {
   id: string;
   companyId: string;
   trackingNumber: string;
+  barcode?: string | null;
+  attemptCount?: number;
+  failureReasonCode?: string | null;
+  failureReasonLabelAr?: string | null;
+  nextAttemptDate?: string | null;
   recipientName: string;
   recipientPhone: string;
   recipientPhone2?: string | null;
@@ -169,6 +174,7 @@ export interface ShipmentsQuery {
   from?: string;
   to?: string;
   search?: string;
+  needsRtoReview?: boolean;
   page?: number;
   limit?: number;
 }
@@ -250,4 +256,71 @@ export const shippingOpsService = {
     const res = await api.get<{ success: boolean; data: MerchantItem[] }>('/shipping-portal/merchants');
     return res.data.data || [];
   },
+
+  // Failure Reasons & Reattempt (SHIP-W3)
+  async getFailureReasons(): Promise<DeliveryFailureReasonItem[]> {
+    const res = await api.get<{ success: boolean; data: DeliveryFailureReasonItem[] }>('/shipping-portal/failure-reasons');
+    return res.data.data || [];
+  },
+
+  async createFailureReason(data: { code: string; labelAr: string; labelEn?: string; requiresReschedule?: boolean }): Promise<DeliveryFailureReasonItem> {
+    const res = await api.post<{ success: boolean; data: DeliveryFailureReasonItem }>('/shipping-portal/failure-reasons', data);
+    return res.data.data;
+  },
+
+  async updateFailureReason(id: string, data: Partial<DeliveryFailureReasonItem>): Promise<DeliveryFailureReasonItem> {
+    const res = await api.patch<{ success: boolean; data: DeliveryFailureReasonItem }>(`/shipping-portal/failure-reasons/${id}`, data);
+    return res.data.data;
+  },
+
+  async updateShipmentStatus(id: string, payload: { status: string; failureReasonCode?: string; nextAttemptDate?: string; notes?: string }): Promise<ShipmentItem> {
+    const res = await api.patch<{ success: boolean; data: ShipmentItem }>(`/shipping-portal/shipments/${id}/status`, payload);
+    return res.data.data;
+  },
+
+  async reattemptShipment(id: string, payload: { nextAttemptDate?: string; courierId?: string; notes?: string } = {}): Promise<ShipmentItem> {
+    const res = await api.post<{ success: boolean; data: ShipmentItem }>(`/shipping-portal/shipments/${id}/reattempt`, payload);
+    return res.data.data;
+  },
+
+  async runRtoMaintenance(): Promise<{ success: boolean; data: any }> {
+    const res = await api.post<{ success: boolean; data: any }>('/shipping-portal/maintenance/run-rto');
+    return res.data;
+  },
+
+  async trackPublicShipment(waybill: string): Promise<PublicTrackingResponse> {
+    const res = await api.get<{ success: boolean; data: PublicTrackingResponse }>(`/public/shipments/track/${encodeURIComponent(waybill)}`);
+    return res.data.data;
+  },
 };
+
+export interface DeliveryFailureReasonItem {
+  id: string;
+  companyId: string;
+  code: string;
+  labelAr: string;
+  labelEn?: string | null;
+  requiresReschedule: boolean;
+  isActive: boolean;
+}
+
+export interface PublicTrackingResponse {
+  waybill: string;
+  trackingNumber: string;
+  status: string;
+  recipientName: string;
+  recipientPhone: string;
+  destinationGovernorate: string;
+  destinationCity?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  events: Array<{
+    id: string;
+    status: string;
+    toStatus: string;
+    fromStatus?: string | null;
+    reasonCode?: string | null;
+    notes?: string | null;
+    createdAt: string;
+  }>;
+}

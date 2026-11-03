@@ -254,6 +254,8 @@ async function updateShipmentStatus(req, res) {
       deliveryNotes,
       pin: req.body?.pin,
       otp: req.body?.otp,
+      failureReasonCode: req.body?.failureReasonCode,
+      nextAttemptDate: req.body?.nextAttemptDate,
       userId: req.user?.id,
       // Field couriers may only update shipments assigned to them
       courierId: req.user?.role === 'COURIER' ? req.user?.courierId : undefined

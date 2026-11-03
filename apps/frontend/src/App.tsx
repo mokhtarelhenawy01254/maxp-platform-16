@@ -474,6 +474,9 @@ const CourierDuesPage = React.lazy(
 const CourierPerformancePage = React.lazy(
   () => import("./pages/shipping/couriers/CourierPerformancePage"),
 );
+const ShipmentTrackingPage = React.lazy(
+  () => import("./pages/public/ShipmentTrackingPage"),
+);
 const ShippingOpsDashboard = React.lazy(
   () => import("./pages/shipping-ops/ShippingOpsDashboard"),
 );
@@ -7578,6 +7581,16 @@ const AppContent = () => {
                 <Route
                   path="/courier/run/:id"
                   element={<CourierMobileRunPage />}
+                />
+
+                {/* Public Shipment Tracking (SHIP-W3: Waybill Tracking) */}
+                <Route
+                  path="/track"
+                  element={<ShipmentTrackingPage />}
+                />
+                <Route
+                  path="/track/:waybill"
+                  element={<ShipmentTrackingPage />}
                 />
 
                 {/* Shipping Client Portal (SHIP-W2C: Standalone Self-Service Shell) */}

@@ -833,6 +833,7 @@ app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);
 app.use("/api/v1/public/store-promotions", storePromotionRoutes);
+app.use("/api/v1/public/shipments", require("./routes/publicShipmentTrackingRoutes"));
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
 app.use("/api/v1/funnels", funnelRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
@@ -1370,6 +1371,14 @@ if (shouldOwnSingletonWork()) {
       console.log("✅ [CARRIER-SYNC] Carrier ticket sync cron started (every 15 min)");
     } catch (error) {
       console.error("❌ [CARRIER-SYNC] Failed to start carrier ticket sync cron:", error);
+    }
+
+    try {
+      const shippingRtoCron = require("./cron/shippingRtoCron");
+      shippingRtoCron.start();
+      console.log("✅ [RTO-CRON] Shipping automated RTO cron started (every 6 hours)");
+    } catch (error) {
+      console.error("❌ [RTO-CRON] Failed to start shipping automated RTO cron:", error);
     }
   }
 
