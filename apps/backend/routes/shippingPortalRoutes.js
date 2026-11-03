@@ -75,9 +75,14 @@ router.patch('/pickups/:id/assign', ...portalAuth, shippingPortalController.assi
 router.patch('/pickups/:id/complete', ...portalAuth, shippingPortalController.completePickupRequest);
 router.patch('/pickups/:id/cancel', ...portalAuth, shippingPortalController.cancelPickupRequest);
 
-// Branches (SHIP-W2)
+// Branches (SHIP-W2 & SHIP-W10)
+router.get('/branches/custody-diff', ...portalAuth, shippingPortalController.getCustodyDiff);
+router.get('/custody-diff', ...portalAuth, shippingPortalController.getCustodyDiff);
 router.get('/branches', ...portalAuth, shippingPortalController.getBranches);
 router.post('/branches', ...portalAuth, shippingPortalController.createBranch);
+router.get('/branches/:id/inventory', ...portalAuth, shippingPortalController.getBranchInventory);
+router.get('/branches/:id/summary', ...portalAuth, shippingPortalController.getBranchSummary);
+router.post('/branches/:id/transfer', ...portalAuth, shippingPortalController.transferBranchShipments);
 router.put('/branches/:id', ...portalAuth, shippingPortalController.updateBranch);
 router.delete('/branches/:id', ...portalAuth, shippingPortalController.deleteBranch);
 
@@ -100,4 +105,26 @@ router.post('/maintenance/run-rto', ...portalAuth, shippingPortalController.runR
 // Settlements & Statements (SHIP-W5)
 router.use('/settlements', ...portalAuth, require('./shippingPortalSettlementRoutes'));
 
+// Policy Settings (SHIP-W1A / SHIP-UAT-2)
+router.get('/policy', ...portalAuth, async (req, res) => {
+  try {
+    const policyService = require('../services/shipping/policyService');
+    const policy = await policyService.getPolicy(req.user.companyId);
+    return res.json({ success: true, data: policy });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/policy', ...portalAuth, async (req, res) => {
+  try {
+    const policyService = require('../services/shipping/policyService');
+    const updated = await policyService.updatePolicy(req.user.companyId, req.body);
+    return res.json({ success: true, data: updated, message: 'تم تحديث سياسة الشحن بنجاح' });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
+

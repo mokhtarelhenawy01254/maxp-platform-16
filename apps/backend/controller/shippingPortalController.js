@@ -10,6 +10,12 @@ const crypto = require('crypto');
 const { generateWaybillPdf } = require('../services/shipping/waybillPdfService');
 const courierPortalService = require('../services/courierPortalService');
 const shippingRtoService = require('../services/shipping/shippingRtoService');
+const {
+  getBranchInventory,
+  transferBranchShipments,
+  getBranchSummary,
+  getCustodyDiff,
+} = require('./branchCustodyController');
 
 function generatePickupNumber() {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -73,6 +79,9 @@ function formatShipment(shipment) {
     actualWeight: actualWeightVal,
     declaredWeightKg,
     actualWeightKg,
+    courierCost: raw.courierCost !== null && raw.courierCost !== undefined ? Number(raw.courierCost) : null,
+    costSource: raw.costSource || null,
+    marginAmount: raw.marginAmount !== null && raw.marginAmount !== undefined ? Number(raw.marginAmount) : null,
   };
 }
 
@@ -1032,7 +1041,20 @@ async function updateShipmentStatus(req, res) {
       console.warn('⚠️ [SHIPPING_PORTAL] Network sync notice:', netSyncErr.message);
     }
 
-    return res.json({ success: true, data: updated });
+    let finalShipment = updated;
+    if (normalizedStatus === 'DELIVERED' || normalizedStatus === 'PARTIALLY_DELIVERED') {
+      try {
+        const { applyProfitToShipment } = require('../services/shipping/profitService');
+        const profitRes = await applyProfitToShipment(prisma, id);
+        if (profitRes?.shipment) {
+          finalShipment = profitRes.shipment;
+        }
+      } catch (profitErr) {
+        console.warn('⚠️ [SHIPPING_PORTAL] Profit apply notice:', profitErr.message);
+      }
+    }
+
+    return res.json({ success: true, data: formatShipment(finalShipment) });
   } catch (error) {
     console.error('[ShippingPortal] Error updating shipment status:', error);
     return res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث حالة الشحنة' });
@@ -1859,6 +1881,7 @@ async function receiveShipmentAtHub(req, res) {
     const dataToUpdate = {
       status: 'RECEIVED_AT_HUB',
       branchId: branchId || shipment.branchId || null,
+      lastBranchAt: new Date(),
       ...(hasValidActualWeight
         ? {
             weight: newWeight,
@@ -1965,6 +1988,10 @@ module.exports = {
   createBranch,
   updateBranch,
   deleteBranch,
+  getBranchInventory,
+  transferBranchShipments,
+  getBranchSummary,
+  getCustodyDiff,
   getShipmentLabelPdf,
   receiveShipmentAtHub,
   getFailureReasons,

@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { EGYPT_GOVERNORATES } from '../../constants/egyptGovernorates';
 import { ShippingBranch, formatDate } from './shippingOpsShared';
+import { BranchCustodyTab } from './branches/BranchCustodyTab';
 
 export const BranchesPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -23,6 +24,7 @@ export const BranchesPage: React.FC = () => {
   const [branches, setBranches] = useState<ShippingBranch[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'custody' | 'branches'>('custody');
 
   // Modals
   const [showModal, setShowModal] = useState(false);
@@ -166,15 +168,46 @@ export const BranchesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition active:scale-95 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{isEn ? 'Add Branch' : 'إضافة فرع جديد'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab('custody')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'custody'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              {isEn ? 'Branch Custody' : 'عهدة الفرع والتحويل'}
+            </button>
+            <button
+              onClick={() => setActiveTab('branches')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'branches'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              {isEn ? 'Branches' : 'إدارة الفروع'}
+            </button>
+          </div>
+
+          {activeTab === 'branches' && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isEn ? 'Add Branch' : 'إضافة فرع جديد'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
+{activeTab === 'custody' ? (
+        <BranchCustodyTab branches={branches} />
+      ) : (
+        <>
       {/* Search Toolbar */}
       <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
         <div className="relative flex-1">
@@ -280,6 +313,10 @@ export const BranchesPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+
+        </>
+      )}
 
       {/* Add / Edit Modal */}
       {showModal && (

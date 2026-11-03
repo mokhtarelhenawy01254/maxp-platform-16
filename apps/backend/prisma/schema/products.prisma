@@ -799,7 +799,11 @@ model Shipment {
   pickupRequestId        String?
   actualWeight           Decimal?         @db.Decimal(10, 3)
   priceAdjustment        Decimal?         @db.Decimal(10, 2)
+  courierCost            Decimal?         @db.Decimal(10, 2)
+  costSource             String?
+  marginAmount           Decimal?         @db.Decimal(10, 2)
   barcode                String?
+  lastBranchAt           DateTime?
   branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   pickupRequest          PickupRequest?   @relation(fields: [pickupRequestId], references: [id], onDelete: SetNull)
   settlementLine         ShippingSettlementLine?
@@ -816,6 +820,7 @@ model Shipment {
   @@index([branchId])
   @@index([pickupRequestId])
   @@index([barcode])
+  @@index([lastBranchAt])
   @@index([status])
   @@index([companyId, createdAt])
   @@index([companyId, status, createdAt])

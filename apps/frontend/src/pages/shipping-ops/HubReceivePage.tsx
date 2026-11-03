@@ -49,12 +49,34 @@ export const HubReceivePage: React.FC = () => {
   const [lastReceived, setLastReceived] = useState<any | null>(null);
   const [lastAdjustment, setLastAdjustment] = useState<number | null>(null);
   const [historyLog, setHistoryLog] = useState<ReceivedLogItem[]>([]);
+  const [branchCustodyCount, setBranchCustodyCount] = useState<number | null>(null);
 
   const token = localStorage.getItem('token');
   const authHeaders = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
+
+  const fetchBranchCustodyCount = useCallback((bId: string) => {
+    if (!bId) {
+      setBranchCustodyCount(null);
+      return;
+    }
+    fetch(`/api/v1/shipping-portal/branches/${bId}/summary`, { headers: authHeaders })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.summary) {
+          setBranchCustodyCount(data.summary.totalShipments);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (selectedBranchId) {
+      fetchBranchCustodyCount(selectedBranchId);
+    }
+  }, [selectedBranchId, fetchBranchCustodyCount]);
 
   // Fetch branches on mount
   useEffect(() => {
@@ -96,7 +118,10 @@ export const HubReceivePage: React.FC = () => {
 
       const data = await res.json();
       if (data.success && data.shipment) {
-        toast.success(`تم استلام الشحنة ${data.shipment.trackingNumber} في الهاَب بنجاح`);
+        toast.success(`تم استلام الشحنة ${data.shipment.trackingNumber} في الهاَب وإضافتها لعهدة الفرع بنجاح`);
+        if (selectedBranchId) {
+          fetchBranchCustodyCount(selectedBranchId);
+        }
         setLastReceived(data.shipment);
         setLastAdjustment(data.priceAdjustment || 0);
 
@@ -221,6 +246,12 @@ export const HubReceivePage: React.FC = () => {
                   ))}
                 </select>
               </div>
+              {branchCustodyCount !== null && (
+                <div className="flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                  <Package className="w-3.5 h-3.5" />
+                  <span>عهدة الفرع الحالية: <strong className="font-mono">{branchCustodyCount}</strong> شحنة</span>
+                </div>
+              )}
             </div>
           </div>
 
