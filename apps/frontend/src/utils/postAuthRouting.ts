@@ -194,6 +194,7 @@ export const resolvePostAuthDestination = (
   }
 
   // 4) Role-based fallback.
+  if (user?.role === "SHIPPING_CLIENT") return "/client-portal/shipping";
   if (user?.role === "MERCHANT") return "/merchant-portal";
   if (user?.role === "AFFILIATE") return "/affiliates/dashboard";
   if (isSystemUserRole(user?.role)) {

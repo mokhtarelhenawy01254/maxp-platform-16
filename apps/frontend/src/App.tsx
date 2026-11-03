@@ -499,6 +499,27 @@ const HubReceivePage = React.lazy(
 const RateCardsPage = React.lazy(
   () => import("./pages/shipping-ops/RateCardsPage"),
 );
+const ClientPortalShell = React.lazy(
+  () => import("./pages/shipping-client/ClientPortalShell"),
+);
+const ClientDashboardPage = React.lazy(
+  () => import("./pages/shipping-client/ClientDashboardPage"),
+);
+const ClientNewShipmentPage = React.lazy(
+  () => import("./pages/shipping-client/ClientNewShipmentPage"),
+);
+const ClientShipmentsPage = React.lazy(
+  () => import("./pages/shipping-client/ClientShipmentsPage"),
+);
+const ClientShipmentDetailsPage = React.lazy(
+  () => import("./pages/shipping-client/ClientShipmentDetailsPage"),
+);
+const ClientPickupsPage = React.lazy(
+  () => import("./pages/shipping-client/ClientPickupsPage"),
+);
+const ClientBulkUploadPage = React.lazy(
+  () => import("./pages/shipping-client/ClientBulkUploadPage"),
+);
 const BulkStatusUpdate = React.lazy(
   () => import("./pages/orders/BulkStatusUpdatePage"),
 );
@@ -7526,6 +7547,24 @@ const AppContent = () => {
                 <Route
                   path="/courier/run/:id"
                   element={<CourierMobileRunPage />}
+                />
+
+                {/* Shipping Client Portal (SHIP-W2C: Standalone Self-Service Shell) */}
+                <Route
+                  path="/client-portal/shipping"
+                  element={
+                    <RoleProtectedRoute allowedRoles={['SHIPPING_CLIENT', 'SUPER_ADMIN']}>
+                      <ClientPortalShell />
+                    </RoleProtectedRoute>
+                  }
+                >
+                  <Route index element={<ClientDashboardPage />} />
+                  <Route path="shipments" element={<ClientShipmentsPage />} />
+                  <Route path="shipments/:id" element={<ClientShipmentDetailsPage />} />
+                  <Route path="new" element={<ClientNewShipmentPage />} />
+                  <Route path="pickups" element={<ClientPickupsPage />} />
+                  <Route path="bulk" element={<ClientBulkUploadPage />} />
+                </Route>
                 />
                 <Route
                   path="/orders/bulk-status"
