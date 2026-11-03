@@ -16,6 +16,7 @@ enum PermissionDomain {
   FINANCE
   AI
   INVENTORY
+  COURIER_FLEET
 
   @@map("permission_domains")
 }
