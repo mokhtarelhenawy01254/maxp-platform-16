@@ -74,5 +74,18 @@ export const matchesSuperAdminNavigationPath = (
     return pathnameMatch && searchMatch;
   }
 
+  // Treat company details (/super-admin/companies/:companyId and /super-admin/companies-v2/:companyId)
+  // as matching the companies management navigation item (/super-admin/companies-v2)
+  if (
+    itemPath === "/super-admin/companies-v2" &&
+    (pathname === "/super-admin/companies" ||
+      pathname === "/super-admin/companies-v2" ||
+      pathname.startsWith("/super-admin/companies-v2/") ||
+      (pathname.startsWith("/super-admin/companies/") &&
+        !pathname.startsWith("/super-admin/companies-reports")))
+  ) {
+    return true;
+  }
+
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 };

@@ -1095,6 +1095,10 @@ const SuperAdminCompaniesReports = React.lazy(
 const SuperAdminCompanyDetails = React.lazy(
   () => import("./pages/super-admin/SuperAdminCompanyDetails"),
 );
+const SuperAdminCompanyDetailsRedirect: React.FC = () => {
+  const { companyId } = useParams<{ companyId: string }>();
+  return <Navigate to={`/super-admin/companies-v2/${companyId || ""}`} replace />;
+};
 const SuperAdminSelfReviewLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminSelfReviewLogs"),
 );
@@ -2727,12 +2731,16 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/companies/:companyId"
+              path="/super-admin/companies-v2/:companyId"
               element={
                 <Layout>
                   <SuperAdminCompanyDetails />
                 </Layout>
               }
+            />
+            <Route
+              path="/super-admin/companies/:companyId"
+              element={<SuperAdminCompanyDetailsRedirect />}
             />
             <Route
               path="/super-admin/users"
