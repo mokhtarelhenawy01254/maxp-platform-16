@@ -317,22 +317,38 @@ router.get('/network', verifyToken.authenticateToken, async (req, res) => {
       where: {
         companyId: { not: companyId },
       },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            logo: true,
-            phone: true,
-            email: true,
-            website: true,
-          },
-        },
+    });
+
+    if (!policies || policies.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const companyIds = policies.map((p) => p.companyId).filter(Boolean);
+    const companies = await prisma.company.findMany({
+      where: {
+        id: { in: companyIds },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+        phone: true,
+        email: true,
+        website: true,
       },
     });
 
+    const companyMap = new Map(companies.map((c) => [c.id, c]));
+    const activePolicies = policies.filter((p) => companyMap.has(p.companyId));
+
+    if (!activePolicies.length) {
+      return res.json({ success: true, data: [] });
+    }
+
     const networkCarriers = await Promise.all(
-      policies.map(async (p) => {
+      activePolicies.map(async (p) => {
+        const comp = companyMap.get(p.companyId);
         const clientMerchant = await prisma.merchant.findFirst({
           where: {
             companyId: p.companyId,
@@ -344,11 +360,11 @@ router.get('/network', verifyToken.authenticateToken, async (req, res) => {
 
         return {
           companyId: p.companyId,
-          name: p.company?.name || 'شركة شحن MaxP',
-          logo: p.company?.logo || null,
-          phone: p.company?.phone || null,
-          email: p.company?.email || null,
-          website: p.company?.website || null,
+          name: comp?.name || 'شركة شحن MaxP',
+          logo: comp?.logo || null,
+          phone: comp?.phone || null,
+          email: comp?.email || null,
+          website: comp?.website || null,
           operatingModel: p.operatingModel,
           intakeMode: p.intakeMode,
           isLinked: Boolean(clientMerchant),
