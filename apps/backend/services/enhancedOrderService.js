@@ -492,13 +492,22 @@ class EnhancedOrderService {
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل
-      if (String(order.status || '').trim().toUpperCase() === 'CONFIRMED') {
-        try {
+      // 🚚 Turbo Integration: إنشاء شحنة تلقائياً وفق توقيت الإعدادات (ON_ORDER)
+      try {
+        const { shouldCreateShipmentNow } = require('./shippingProviderService');
+        const turboCarrier = await this.prisma.shippingCompany.findFirst({
+          where: { companyId: data.companyId, providerKey: 'TURBO', isActive: true },
+          select: { settings: true, providerKey: true, integrationMode: true }
+        });
+
+        if (shouldCreateShipmentNow(turboCarrier?.settings, 'ON_ORDER')) {
           const orderService = require('./orderService');
-          await orderService.autoCreateTurboShipmentForOrder(order, data.companyId);
-        } catch (turboError) {
-          console.error(`❌ [TURBO-AUTO] Failed to create shipment in enhancedOrderService for order ${order.orderNumber}:`, turboError.message);
+          await orderService.autoCreateTurboShipmentForOrder(order, data.companyId, { stage: 'ON_ORDER' });
+        } else {
+          console.log(`ℹ️ [TURBO-AUTO] Shipment postponed on order creation for ${order.orderNumber} (trigger: not ON_ORDER)`);
         }
+      } catch (turboError) {
+        console.error(`❌ [TURBO-AUTO] Failed to check/create shipment in enhancedOrderService for order ${order.orderNumber}:`, turboError.message);
       }
 
       // Trigger auto-distribution immediately

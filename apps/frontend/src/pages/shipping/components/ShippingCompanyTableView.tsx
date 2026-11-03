@@ -1,5 +1,6 @@
 import React from "react";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import { ShippingCompanyLogo } from "./ShippingCompanyLogo";
 import type { ShippingCompany } from "../types";
 
 export interface ShippingCompanyTableViewProps {
@@ -33,11 +34,14 @@ export const ShippingCompanyTableView: React.FC<ShippingCompanyTableViewProps> =
           {displayedCompanies.map((company) => (
             <tr key={company.id} className="hover:bg-muted/20 transition-colors">
               <td className="px-4 py-3 font-semibold text-foreground">
-                <div className="flex items-center gap-2">
-                  <span>{company.name}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    /{company.slug || company.id.slice(0, 8)}
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <ShippingCompanyLogo company={company} size={28} />
+                  <div>
+                    <span>{company.name}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground mr-1.5">
+                      /{company.slug || company.id.slice(0, 8)}
+                    </span>
+                  </div>
                 </div>
               </td>
               <td className="px-4 py-3">
@@ -76,13 +80,22 @@ export const ShippingCompanyTableView: React.FC<ShippingCompanyTableViewProps> =
                   >
                     إعدادات
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(company, e)}
-                    className="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10 transition"
-                  >
-                    <TrashIcon className="size-3.5" />
-                  </button>
+                  {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
+                    String(company.providerKey || '').trim().toUpperCase()
+                  ) ? (
+                    <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
+                      شركة مدمجة — استخدم إيقاف العمل
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(company, e)}
+                      className="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10 transition"
+                      title="حذف الشركة"
+                    >
+                      <TrashIcon className="size-3.5" />
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

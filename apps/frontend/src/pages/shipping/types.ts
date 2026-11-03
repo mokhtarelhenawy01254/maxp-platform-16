@@ -25,6 +25,8 @@ export interface ShippingCompanyFormData {
   providerKey: string;
   integrationMode: string;
   autoCreateShipments: boolean;
+  shipmentCreateTrigger?: string;
+  logoUrl?: string;
   isActive: boolean;
   username: string;
   password: string;

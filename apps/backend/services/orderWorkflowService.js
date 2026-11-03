@@ -375,12 +375,21 @@ class OrderWorkflowService {
                 console.warn(`[WORKFLOW] metadata sync failed for ${order.id}:`, prepErr.message);
             }
 
-            if (String(nextStatusDef.code || '').trim().toUpperCase() === 'CONFIRMED') {
+            const nextStatusCode = String(nextStatusDef.code || '').trim().toUpperCase();
+            if (nextStatusCode === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(nextStatusCode)) {
                 try {
-                    const orderService = require('./orderService');
-                    orderService.autoCreateTurboShipmentForOrder(order.id, companyId).catch(err => {
-                        console.warn(`[WORKFLOW] Turbo auto-create failed for ${order.id}:`, err.message);
+                    const carrier = await this.prisma.shippingCompany.findFirst({
+                        where: { companyId, providerKey: 'TURBO', isActive: true },
+                        select: { settings: true }
                     });
+                    const { shouldCreateShipmentNow } = require('./shippingProviderService');
+                    const targetStage = nextStatusCode === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+                    if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+                        const orderService = require('./orderService');
+                        orderService.autoCreateTurboShipmentForOrder(order.id, companyId, { stage: targetStage }).catch(err => {
+                            console.warn(`[WORKFLOW] Turbo auto-create failed for ${order.id}:`, err.message);
+                        });
+                    }
                 } catch (turboWfErr) {
                     console.warn('[WORKFLOW] Turbo auto-create require failed:', turboWfErr.message);
                 }
@@ -529,14 +538,22 @@ class OrderWorkflowService {
                 console.warn(`[WORKFLOW] metadata sync failed for ${request.orderId}:`, prepErr.message);
             }
 
-            // 🚚 Turbo Auto-Create shipment on approval to CONFIRMED
+            // 🚚 Turbo Auto-Create shipment on approval according to trigger (ON_CONFIRM or ON_READY)
             const targetStatusCode = String(request.toStatus?.code || apprStored || '').trim().toUpperCase();
-            if (targetStatusCode === 'CONFIRMED') {
+            if (targetStatusCode === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(targetStatusCode)) {
                 try {
-                    const orderService = require('./orderService');
-                    orderService.autoCreateTurboShipmentForOrder(request.orderId, companyId).catch(err => {
-                        console.warn(`[WORKFLOW] Turbo auto-create on approval failed for ${request.orderId}:`, err.message);
+                    const carrier = await this.prisma.shippingCompany.findFirst({
+                        where: { companyId, providerKey: 'TURBO', isActive: true },
+                        select: { settings: true }
                     });
+                    const { shouldCreateShipmentNow } = require('./shippingProviderService');
+                    const targetStage = targetStatusCode === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+                    if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+                        const orderService = require('./orderService');
+                        orderService.autoCreateTurboShipmentForOrder(request.orderId, companyId, { stage: targetStage }).catch(err => {
+                            console.warn(`[WORKFLOW] Turbo auto-create on approval failed for ${request.orderId}:`, err.message);
+                        });
+                    }
                 } catch (turboWfErr) {
                     console.warn('[WORKFLOW] Turbo auto-create require failed on approval:', turboWfErr.message);
                 }

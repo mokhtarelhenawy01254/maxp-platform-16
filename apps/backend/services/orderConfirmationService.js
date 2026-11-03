@@ -1582,10 +1582,17 @@ class OrderConfirmationService {
         } catch (_) {}
 
         try {
-          const orderService = require('./orderService');
-          orderService.autoCreateTurboShipmentForOrder(confirmed, companyId).catch(err => {
-            console.warn('⚠️ [TURBO-AUTO] orderConfirmationService regular error:', err.message);
+          const carrier = await this.prisma.shippingCompany.findFirst({
+            where: { companyId, providerKey: 'TURBO', isActive: true },
+            select: { settings: true }
           });
+          const { shouldCreateShipmentNow } = require('./shippingProviderService');
+          if (shouldCreateShipmentNow(carrier?.settings, 'ON_CONFIRM')) {
+            const orderService = require('./orderService');
+            orderService.autoCreateTurboShipmentForOrder(confirmed, companyId, { stage: 'ON_CONFIRM' }).catch(err => {
+              console.warn('⚠️ [TURBO-AUTO] orderConfirmationService regular error:', err.message);
+            });
+          }
         } catch (turboErr) {
           console.warn('⚠️ [TURBO-AUTO] orderConfirmationService require error:', turboErr.message);
         }

@@ -19,6 +19,8 @@ export const INITIAL_SHIPPING_FORM_DATA: ShippingCompanyFormData = {
   providerKey: 'MANUAL',
   integrationMode: 'MANUAL',
   autoCreateShipments: false,
+  shipmentCreateTrigger: 'ON_ORDER',
+  logoUrl: '',
   isActive: true,
   username: '',
   password: '',
@@ -95,6 +97,8 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
       providerKey: company.providerKey || 'MANUAL',
       integrationMode: company.integrationMode || 'MANUAL',
       autoCreateShipments: Boolean(settings.autoCreateShipments),
+      shipmentCreateTrigger: settings.shipmentCreateTrigger || (settings.autoCreateShipments ? 'ON_ORDER' : 'ON_ORDER'),
+      logoUrl: settings.logoUrl || '',
       isActive: autoActivate ? true : company.isActive,
       username: settings.username || '',
       password: settings.password || '',
@@ -123,6 +127,8 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
 
       const settingsPayload = {
         autoCreateShipments: formData.autoCreateShipments,
+        shipmentCreateTrigger: formData.shipmentCreateTrigger || 'ON_ORDER',
+        logoUrl: formData.logoUrl || undefined,
         username: formData.username || undefined,
         password: formData.password || undefined,
         customerId: formData.customerId ? Number(formData.customerId) : undefined,
@@ -144,6 +150,8 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
 
       const payload = {
         ...formData,
+        shipmentCreateTrigger: formData.shipmentCreateTrigger || 'ON_ORDER',
+        logoUrl: formData.logoUrl || undefined,
         integrationMode: resolvedIntegrationMode,
         settings: JSON.stringify(settingsPayload),
       };
@@ -175,6 +183,26 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
     setFormData,
     handleTestConnection,
     handleOpenSettings,
+    handleTriggerChange: async (newTrigger: string) => {
+      setFormData((prev) => ({ ...prev, shipmentCreateTrigger: newTrigger }));
+      if (editingCompany) {
+        try {
+          const rawSettings = parseSettings(editingCompany.settings);
+          const updatedSettings = {
+            ...rawSettings,
+            shipmentCreateTrigger: newTrigger,
+          };
+          await apiClient.put(`/shipping-companies/${editingCompany.id}`, {
+            shipmentCreateTrigger: newTrigger,
+            settings: JSON.stringify(updatedSettings),
+          });
+          toast.success('تم حفظ توقيت إنشاء البوليصة فوراً');
+          onSuccess();
+        } catch (err: any) {
+          toast.error('تعذر الحفظ الفوري لتوقيت البوليصة');
+        }
+      }
+    },
     handleOpenNewModal,
     handleSubmit,
   };

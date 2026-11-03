@@ -16,6 +16,13 @@ const PROVIDER_KEYS = Object.freeze({
 
 const INTEGRATION_MODES = new Set(['MANUAL', 'DEMO', 'LIVE']);
 
+const SHIPMENT_CREATE_TRIGGERS = Object.freeze({
+  ON_ORDER: 'ON_ORDER',
+  ON_CONFIRM: 'ON_CONFIRM',
+  ON_READY: 'ON_READY',
+  NONE: 'NONE',
+});
+
 const DEMO_CARRIER_DEFINITIONS = Object.freeze([
   {
     providerKey: PROVIDER_KEYS.BOSTA_DEMO,
@@ -113,16 +120,68 @@ const normalizeIntegrationMode = (value, providerKey) => {
 const normalizeSettings = (settings, providerKey, integrationMode) => {
   const parsed = safeJsonParse(settings, {});
   const defaultAutoCreate = integrationMode === 'DEMO';
+  const autoCreateShipments =
+    parsed.autoCreateShipments !== undefined
+      ? Boolean(parsed.autoCreateShipments)
+      : defaultAutoCreate;
+
+  let shipmentCreateTrigger = parsed.shipmentCreateTrigger;
+  const validTriggers = [
+    SHIPMENT_CREATE_TRIGGERS.ON_ORDER,
+    SHIPMENT_CREATE_TRIGGERS.ON_CONFIRM,
+    SHIPMENT_CREATE_TRIGGERS.ON_READY,
+  ];
+
+  if (!shipmentCreateTrigger || !validTriggers.includes(shipmentCreateTrigger)) {
+    shipmentCreateTrigger = autoCreateShipments
+      ? SHIPMENT_CREATE_TRIGGERS.ON_ORDER
+      : SHIPMENT_CREATE_TRIGGERS.NONE;
+  }
 
   return {
     ...parsed,
-    autoCreateShipments:
-      parsed.autoCreateShipments !== undefined
-        ? Boolean(parsed.autoCreateShipments)
-        : defaultAutoCreate,
+    autoCreateShipments,
+    shipmentCreateTrigger,
     providerKey,
     integrationMode,
   };
+};
+
+const shouldCreateShipmentNow = (settings, stage) => {
+  if (!stage) return false;
+  const rawSettings =
+    settings && typeof settings === 'object' && settings.settings !== undefined
+      ? settings.settings
+      : settings;
+
+  const normalized = normalizeSettings(
+    rawSettings,
+    settings?.providerKey || rawSettings?.providerKey,
+    settings?.integrationMode || rawSettings?.integrationMode,
+  );
+
+  if (!normalized.autoCreateShipments) {
+    return false;
+  }
+
+  const trigger = normalized.shipmentCreateTrigger;
+  if (!trigger || trigger === SHIPMENT_CREATE_TRIGGERS.NONE) {
+    return false;
+  }
+
+  const normalizedStage = String(stage).trim().toUpperCase();
+
+  if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_ORDER) {
+    return ['ON_ORDER', 'ORDER_CREATED', 'CREATED'].includes(normalizedStage);
+  }
+  if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_CONFIRM) {
+    return ['ON_CONFIRM', 'CONFIRMED', 'ORDER_CONFIRMED'].includes(normalizedStage);
+  }
+  if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_READY) {
+    return ['ON_READY', 'READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING'].includes(normalizedStage);
+  }
+
+  return trigger === normalizedStage;
 };
 
 const mergeMetadata = (metadata, patch) => ({
@@ -563,11 +622,13 @@ function getTicketAdapter({ providerKey, integrationMode, credentials } = {}) {
 
 module.exports = {
   PROVIDER_KEYS,
+  SHIPMENT_CREATE_TRIGGERS,
   DEMO_CARRIER_DEFINITIONS,
   TICKET_PROVIDERS,
   normalizeProviderKey,
   normalizeIntegrationMode,
   normalizeSettings,
+  shouldCreateShipmentNow,
   createProviderShipment,
   ensureDemoShippingCompanies,
   getTicketAdapter,

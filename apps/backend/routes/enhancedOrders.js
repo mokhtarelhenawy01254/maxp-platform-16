@@ -1254,13 +1254,23 @@ router.patch('/:id/status', async (req, res) => {
       }
     }
 
-    // 🚚 إنشاء شحنة تربو تلقائياً إذا تم تأكيد الطلب
-    if (String(status || '').trim().toUpperCase() === 'CONFIRMED') {
+    // 🚚 إنشاء شحنة تربو تلقائياً وفق توقيت الإعدادات (ON_CONFIRM أو ON_READY)
+    const upperStatus = String(status || '').trim().toUpperCase();
+    if (upperStatus === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(upperStatus)) {
       try {
-        const orderService = require('../services/orderService');
-        orderService.autoCreateTurboShipmentForOrder(updatedOrder, companyId).catch(turboErr => {
-          console.warn(`⚠️ [TURBO-AUTO] enhancedOrders route error:`, turboErr.message);
+        const carrier = await enhancedOrderService.getPrisma().shippingCompany.findFirst({
+          where: { companyId, providerKey: 'TURBO', isActive: true },
+          select: { settings: true }
         });
+        const { shouldCreateShipmentNow } = require('../services/shippingProviderService');
+        const targetStage = upperStatus === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+
+        if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+          const orderService = require('../services/orderService');
+          orderService.autoCreateTurboShipmentForOrder(updatedOrder, companyId, { stage: targetStage }).catch(turboErr => {
+            console.warn(`⚠️ [TURBO-AUTO] enhancedOrders route error:`, turboErr.message);
+          });
+        }
       } catch (err) {}
     }
 

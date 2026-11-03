@@ -43,6 +43,7 @@ const ShippingCompanies: React.FC = () => {
     handleOpenNewModal,
     handleSubmit,
     handleDelete,
+    handleTriggerChange,
     copyWebhookUrl,
   } = useShippingCompaniesData();
 
@@ -257,6 +258,7 @@ const ShippingCompanies: React.FC = () => {
         handleTestConnection={handleTestConnection}
         handleSubmit={handleSubmit}
         copyWebhookUrl={copyWebhookUrl}
+        handleTriggerChange={handleTriggerChange}
       />
     </div>
   );

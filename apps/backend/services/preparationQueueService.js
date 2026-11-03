@@ -255,13 +255,23 @@ const updatePreparationOrderStatus = async ({
     const hasNoShipment = !order.turboTrackingNumber && !order.turboShipmentId;
     const isHoldReleaseTransition = wasHoldStage && isNewStageNotHold && hasNoShipment;
 
-    if (isConfirmedTransition || isHoldReleaseTransition) {
-      setImmediate(() => {
+    const isReadyTransition = ['READY', 'READY_TO_SHIP'].includes(normalizedStatus) || ['READY', 'READY_TO_SHIP'].includes(mappedStatus);
+
+    if (isConfirmedTransition || isHoldReleaseTransition || isReadyTransition) {
+      setImmediate(async () => {
         try {
-          const orderService = require('./orderService');
-          orderService.autoCreateTurboShipmentForOrder(updatedOrder.id, companyId).catch(err => {
-            console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for ${updatedOrder.id}:`, err.message);
+          const targetStage = isReadyTransition ? 'ON_READY' : 'ON_CONFIRM';
+          const carrier = await prisma.shippingCompany.findFirst({
+            where: { companyId, providerKey: 'TURBO', isActive: true },
+            select: { settings: true }
           });
+          const { shouldCreateShipmentNow } = require('./shippingProviderService');
+          if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+            const orderService = require('./orderService');
+            orderService.autoCreateTurboShipmentForOrder(updatedOrder.id, companyId, { stage: targetStage }).catch(err => {
+              console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for ${updatedOrder.id}:`, err.message);
+            });
+          }
         } catch (prepTurboErr) {
           console.warn('[PREPARATION-QUEUE] Turbo auto-create require failed:', prepTurboErr.message);
         }

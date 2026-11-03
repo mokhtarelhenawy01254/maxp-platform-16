@@ -1,5 +1,7 @@
 import React from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { apiClient } from "../../../services/apiClient";
+import { toast } from "sonner";
 import type { ShippingCompany, ShippingCompanyFormData, TestedProfile } from "../types";
 
 export interface CarrierWizardsProps {
@@ -250,6 +252,74 @@ export const ManualFleetWizard: React.FC<Pick<CarrierWizardsProps, "formData" | 
           placeholder="driver@company.com"
           className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
         />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        شعار الشركة المخصصة (اللوجو)
+      </label>
+      <div className="flex items-center gap-3">
+        {formData.logoUrl ? (
+          <img
+            src={formData.logoUrl}
+            alt="شعار الشركة"
+            className="w-10 h-10 object-contain rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 text-xs">
+            لا يوجد
+          </div>
+        )}
+        <div className="flex-1 space-y-1">
+          <input
+            type="file"
+            accept="image/*"
+            id="manualCompanyLogoUpload"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const uploadData = new FormData();
+              uploadData.append('image', file);
+              try {
+                const res = await (apiClient as any).post('/upload/single', uploadData, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (res.data?.url) {
+                  setFormData((prev: any) => ({ ...prev, logoUrl: res.data.url }));
+                  toast.success('تم رفع الشعار بنجاح');
+                }
+              } catch (err) {
+                toast.error('تعذر رفع الشعار');
+              }
+            }}
+            className="hidden"
+          />
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="manualCompanyLogoUpload"
+              className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-medium bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+            >
+              اختر ملف الشعار
+            </label>
+            {formData.logoUrl && (
+              <button
+                type="button"
+                onClick={() => setFormData((prev: any) => ({ ...prev, logoUrl: '' }))}
+                className="text-xs text-rose-500 hover:underline"
+              >
+                إزالة
+              </button>
+            )}
+          </div>
+          <input
+            type="text"
+            value={formData.logoUrl || ''}
+            onChange={(e) => setFormData((prev: any) => ({ ...prev, logoUrl: e.target.value }))}
+            placeholder="أو أدخل رابط الشعار مباشرة (URL)"
+            className="w-full px-3 py-1 text-[11px] font-mono border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+          />
+        </div>
       </div>
     </div>
   </div>

@@ -30,6 +30,12 @@ const buildProviderFields = (body, carrier = {}) => {
   if (body.autoCreateShipments !== undefined) {
     settings.autoCreateShipments = Boolean(body.autoCreateShipments);
   }
+  if (body.shipmentCreateTrigger !== undefined) {
+    settings.shipmentCreateTrigger = String(body.shipmentCreateTrigger).trim().toUpperCase();
+  }
+  if (body.logoUrl !== undefined) {
+    settings.logoUrl = String(body.logoUrl).trim();
+  }
 
   // Merge carrier-specific parameters
   if (body.username !== undefined) settings.username = String(body.username).trim();
@@ -764,6 +770,17 @@ router.delete('/:id', verifyToken.authenticateToken, async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ success: false, error: 'Company not found' });
+    }
+
+    // 403 Forbidden for integrated providers
+    const INTEGRATED_PROVIDER_KEYS = new Set(['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO']);
+    const normKey = String(existing.providerKey || '').trim().toUpperCase();
+    if (INTEGRATED_PROVIDER_KEYS.has(normKey)) {
+      return res.status(403).json({
+        success: false,
+        message: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.',
+        error: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.'
+      });
     }
 
     await prisma.shippingCompany.delete({

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ShippingCompanies from "../ShippingCompanies";
 import { apiClient } from "../../../services/apiClient";
+
+afterEach(() => cleanup());
 
 vi.mock("../../../services/apiClient", () => ({
   apiClient: {
@@ -71,6 +73,25 @@ describe("ShippingCompanies Suite", () => {
     expect(screen.getByText("الشركات المفعلة")).toBeInTheDocument();
   });
 
+  it("prevents deletion for integrated company and allows it for manual company", async () => {
+    render(
+      <BrowserRouter>
+        <ShippingCompanies />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("كيو بي إكسبريس").length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Integrated company shows non-deletable notice
+    expect(screen.getByText("شركة مدمجة — استخدم إيقاف العمل")).toBeInTheDocument();
+
+    // Manual company has delete button
+    const deleteButtons = screen.getAllByTitle("حذف الشركة");
+    expect(deleteButtons.length).toBe(1);
+  });
+
   it("switches view mode from cards to table and back", async () => {
     render(
       <BrowserRouter>
@@ -98,7 +119,7 @@ describe("ShippingCompanies Suite", () => {
     });
   });
 
-  it("opens modal on click of add company button", async () => {
+  it("opens modal on click of add company button and displays trigger options", async () => {
     render(
       <BrowserRouter>
         <ShippingCompanies />
@@ -115,6 +136,7 @@ describe("ShippingCompanies Suite", () => {
     await waitFor(() => {
       expect(screen.getByText("إضافة شركة شحن جديدة")).toBeInTheDocument();
       expect(screen.getByText("اسم شركة الشحن أو المندوب *")).toBeInTheDocument();
+      expect(screen.getByLabelText(/إنشاء الشحنات تلقائياً/)).toBeInTheDocument();
     });
   });
 });

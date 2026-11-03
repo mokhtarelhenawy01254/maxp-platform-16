@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Pencil, Trash2 } from 'lucide-react';
+import { ShippingCompanyLogo } from './ShippingCompanyLogo';
 import i18n from '../../../i18n';
 import type { ShippingCompany } from '../hooks/useShippingCompanyDetailController';
 
@@ -33,6 +34,7 @@ export const ShippingCompanyDetailHeader: React.FC<ShippingCompanyDetailHeaderPr
           >
             {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
           </Link>
+          <ShippingCompanyLogo company={company} size={40} />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight">{company.name}</h1>
@@ -60,14 +62,22 @@ export const ShippingCompanyDetailHeader: React.FC<ShippingCompanyDetailHeaderPr
             <Pencil size={13} />
             <span>{t('shipping.k_22')}</span>
           </Link>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="h-9 px-3.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2 transition-all shadow-xs active:scale-[0.98]"
-          >
-            <Trash2 size={13} />
-            <span>{t('shipping.k_23')}</span>
-          </button>
+          {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
+            String(company.providerKey || '').trim().toUpperCase()
+          ) ? (
+            <span className="text-xs text-muted-foreground px-3 py-1.5 rounded-lg bg-muted/40 border border-border/50">
+              شركة مدمجة — استخدم إيقاف العمل
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="h-9 px-3.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2 transition-all shadow-xs active:scale-[0.98]"
+            >
+              <Trash2 size={13} />
+              <span>{t('shipping.k_23')}</span>
+            </button>
+          )}
         </div>
       </div>
 

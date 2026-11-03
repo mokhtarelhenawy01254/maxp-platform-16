@@ -2530,7 +2530,7 @@ class OrderService {
           // 🚚 Turbo Integration: Auto-create shipment via unified method
           if (isConfirmingOrder) {
             try {
-              await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId);
+              await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId, { stage: 'ON_CONFIRM' });
             } catch (turboAutoErr) {
               console.error(`❌ [TURBO-AUTO-BG] Error in updateOrderStatus for ${orderNumber}:`, turboAutoErr.message);
             }
@@ -3252,7 +3252,7 @@ class OrderService {
 
       // 🚚 Turbo Integration: Auto-create shipment via unified method
       try {
-        await this.autoCreateTurboShipmentForOrder(order, companyId);
+        await this.autoCreateTurboShipmentForOrder(order, companyId, { stage: 'ON_CONFIRM' });
       } catch (turboError) {
         console.error(`❌ [TURBO-AUTO] Failed in confirmOrder for order ${orderNumber}:`, turboError.message);
       }
@@ -3413,6 +3413,15 @@ class OrderService {
       // If Turbo not enabled at all, skip silently (standard for companies not using Turbo)
       if (!turboEnabled) {
         return { skipped: true, reason: 'TURBO_NOT_ENABLED' };
+      }
+
+      // Check shipmentCreateTrigger against requested stage
+      if (options.stage && !options.force) {
+        const { shouldCreateShipmentNow } = require('./shippingProviderService');
+        if (!shouldCreateShipmentNow(turboCarrier?.settings, options.stage)) {
+          console.log(`ℹ️ [TURBO-AUTO] Shipment creation skipped: trigger mismatch for stage ${options.stage}`);
+          return { skipped: true, reason: 'TRIGGER_STAGE_MISMATCH', stage: options.stage };
+        }
       }
 
       // If Turbo enabled but auto-creation is disabled in settings

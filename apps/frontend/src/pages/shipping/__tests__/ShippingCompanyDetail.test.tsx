@@ -60,15 +60,24 @@ const mockCompanyData = {
   updatedAt: "2026-10-15T15:30:00Z",
 };
 
+const mockManualCompanyData = {
+  id: "sc-manual-1",
+  name: "مندوب القاهرة اليدوي",
+  phone: "01011112222",
+  email: "cairo@fleet.local",
+  website: "",
+  apiKey: "",
+  apiUrl: "",
+  providerKey: "MANUAL",
+  integrationMode: "MANUAL",
+  isActive: true,
+  createdAt: "2026-01-10T10:00:00Z",
+  updatedAt: "2026-10-15T15:30:00Z",
+};
+
 describe("ShippingCompanyDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn().mockResolvedValue({
-      json: vi.fn().mockResolvedValue({
-        success: true,
-        data: mockCompanyData,
-      }),
-    } as unknown as Response);
   });
 
   afterEach(() => {
@@ -76,6 +85,13 @@ describe("ShippingCompanyDetail", () => {
   });
 
   it("fetches and renders company dossier, header, and telemetry ribbon", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockCompanyData,
+      }),
+    } as unknown as Response);
+
     render(
       <MemoryRouter initialEntries={["/shipping-companies/sc-turbo-1"]}>
         <Routes>
@@ -95,6 +111,13 @@ describe("ShippingCompanyDetail", () => {
   });
 
   it("renders contact channels and API credentials correctly", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockCompanyData,
+      }),
+    } as unknown as Response);
+
     render(
       <MemoryRouter initialEntries={["/shipping-companies/sc-turbo-1"]}>
         <Routes>
@@ -112,8 +135,13 @@ describe("ShippingCompanyDetail", () => {
     });
   });
 
-  it("handles delete trigger on button click", async () => {
-    window.confirm = vi.fn(() => true);
+  it("hides delete button for integrated carrier (TURBO) and shows arabic warning", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockCompanyData,
+      }),
+    } as unknown as Response);
 
     render(
       <MemoryRouter initialEntries={["/shipping-companies/sc-turbo-1"]}>
@@ -127,7 +155,34 @@ describe("ShippingCompanyDetail", () => {
       expect(screen.getByText("توربو إكسبريس Turbo")).toBeInTheDocument();
     });
 
+    // Delete button must NOT exist for integrated Turbo carrier
+    expect(screen.queryByRole("button", { name: /حذف/i })).not.toBeInTheDocument();
+    expect(screen.getByText("شركة مدمجة — استخدم إيقاف العمل")).toBeInTheDocument();
+  });
+
+  it("allows delete button for custom/manual company", async () => {
+    window.confirm = vi.fn(() => true);
+    global.fetch = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockManualCompanyData,
+      }),
+    } as unknown as Response);
+
+    render(
+      <MemoryRouter initialEntries={["/shipping-companies/sc-manual-1"]}>
+        <Routes>
+          <Route path="/shipping-companies/:id" element={<ShippingCompanyDetail />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("مندوب القاهرة اليدوي")).toBeInTheDocument();
+    });
+
     const deleteBtn = screen.getByRole("button", { name: /حذف/i });
+    expect(deleteBtn).toBeInTheDocument();
     fireEvent.click(deleteBtn);
 
     expect(window.confirm).toHaveBeenCalledWith("هل أنت متأكد من حذف شركة الشحن هذه؟");

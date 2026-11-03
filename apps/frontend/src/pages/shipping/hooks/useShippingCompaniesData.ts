@@ -153,6 +153,7 @@ export const useShippingCompaniesData = () => {
     handleOpenSettings: formOps.handleOpenSettings,
     handleOpenNewModal: formOps.handleOpenNewModal,
     handleSubmit: formOps.handleSubmit,
+    handleTriggerChange: formOps.handleTriggerChange,
     handleDelete,
     copyWebhookUrl,
   };

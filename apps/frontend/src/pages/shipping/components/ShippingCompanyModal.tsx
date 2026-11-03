@@ -30,6 +30,7 @@ export interface ShippingCompanyModalProps {
   handleTestConnection: (companyId?: string) => Promise<void>;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   copyWebhookUrl: () => void;
+  handleTriggerChange?: (trigger: string) => Promise<void>;
 }
 
 export const ShippingCompanyModal: React.FC<ShippingCompanyModalProps> = ({
@@ -45,6 +46,7 @@ export const ShippingCompanyModal: React.FC<ShippingCompanyModalProps> = ({
   handleTestConnection,
   handleSubmit,
   copyWebhookUrl,
+  handleTriggerChange,
 }) => {
   if (!showModal) return null;
 
@@ -135,21 +137,55 @@ export const ShippingCompanyModal: React.FC<ShippingCompanyModalProps> = ({
             </label>
           </div>
 
-          {/* Auto Create Shipments Checkbox */}
-          <div className="flex items-start gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="modalAutoCreate"
-              checked={formData.autoCreateShipments}
-              onChange={(e) => setFormData((prev) => ({ ...prev, autoCreateShipments: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-            />
-            <label htmlFor="modalAutoCreate" className="text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
-              <span className="font-semibold">إنشاء الشحنات تلقائياً</span>
-              <span className="block text-[11px] text-gray-400">
-                إرسال الطلب لشركة الشحن آلياً بمجرد تأكيد الطلب أو نقله للتجهيز
-              </span>
-            </label>
+          {/* Auto Create Shipments & Trigger Timing */}
+          <div className="space-y-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="modalAutoCreate"
+                checked={formData.autoCreateShipments}
+                onChange={(e) => setFormData((prev) => ({ ...prev, autoCreateShipments: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+              />
+              <label htmlFor="modalAutoCreate" className="text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                <span className="font-semibold text-gray-900 dark:text-white">إنشاء الشحنات تلقائياً</span>
+                <span className="block text-[11px] text-gray-500 dark:text-gray-400">
+                  توليد بوليصة الشحن آلياً عند وصول الطلب للمرحلة المحددة أدناه
+                </span>
+              </label>
+            </div>
+
+            {formData.autoCreateShipments && (
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+                <label htmlFor="modalShipmentTrigger" className="block text-xs font-semibold text-gray-800 dark:text-gray-200">
+                  توقيت إنشاء بوليصة الشحن
+                </label>
+                <select
+                  id="modalShipmentTrigger"
+                  value={formData.shipmentCreateTrigger || 'ON_ORDER'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (handleTriggerChange) {
+                      handleTriggerChange(val);
+                    } else {
+                      setFormData((prev) => ({ ...prev, shipmentCreateTrigger: val }));
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="ON_ORDER">عند إنشاء الطلب — إنشاء البوليصة فور تسجيل الطلب بالمتجر</option>
+                  <option value="ON_CONFIRM">عند تأكيد الطلب — إنشاء البوليصة بعد مراجعة وتأكيد الطلب</option>
+                  <option value="ON_READY">عند الجاهز للشحن — إنشاء البوليصة بعد اكتمال التجهيز</option>
+                </select>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {formData.shipmentCreateTrigger === 'ON_CONFIRM'
+                    ? '⚡ يتم تأجيل البوليصة حتى يتحول الطلب إلى حالة "مؤكد" (CONFIRMED).'
+                    : formData.shipmentCreateTrigger === 'ON_READY'
+                    ? '📦 يتم تأجيل البوليصة حتى يدخل الطلب مرحلة "جاهز للشحن" (READY TO SHIP).'
+                    : '🚀 يتم إرسال البوليصة فوراً بمجرد إنشاء الطلب لأول مرة بالمتجر.'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons & Test Connection */}

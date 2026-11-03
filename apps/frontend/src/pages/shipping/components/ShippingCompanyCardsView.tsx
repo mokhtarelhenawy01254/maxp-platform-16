@@ -5,6 +5,7 @@ import {
   TrashIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { ShippingCompanyLogo } from "./ShippingCompanyLogo";
 import type { ShippingCompany } from "../types";
 
 export interface ShippingCompanyCardsViewProps {
@@ -42,9 +43,7 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
               {/* Top Row: Name, Slug & Active Switch */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-9 rounded-lg border border-border/80 bg-muted/40 text-foreground flex items-center justify-center shrink-0">
-                    <TruckIcon className="size-4.5" />
-                  </div>
+                  <ShippingCompanyLogo company={company} size={36} />
                   <div>
                     <h3 className="text-sm font-bold text-foreground">
                       {company.name}
@@ -127,14 +126,22 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={(e) => handleDelete(company, e)}
-                className="p-1.5 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10 transition active:scale-[0.98]"
-                title="حذف الشركة"
-              >
-                <TrashIcon className="size-3.5" />
-              </button>
+              {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
+                String(company.providerKey || '').trim().toUpperCase()
+              ) ? (
+                <span className="text-[11px] text-muted-foreground bg-muted/30 border border-border/40 px-2 py-1 rounded-md shrink-0">
+                  شركة مدمجة — استخدم إيقاف العمل
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => handleDelete(company, e)}
+                  className="p-1.5 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10 transition active:scale-[0.98]"
+                  title="حذف الشركة"
+                >
+                  <TrashIcon className="size-3.5" />
+                </button>
+              )}
             </div>
           </div>
         );
