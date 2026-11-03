@@ -58,6 +58,10 @@ function registerPendingVerifyToken(token, ttlMs = 60 * 60 * 1000) {
   if (!token || typeof token !== 'string') return;
   const clean = token.trim();
   if (clean.length >= 4) {
+    if (pendingVerifyTokens.size >= 500) {
+      const oldestKey = pendingVerifyTokens.keys().next().value;
+      if (oldestKey) pendingVerifyTokens.delete(oldestKey);
+    }
     pendingVerifyTokens.set(clean, Date.now() + ttlMs);
   }
 }

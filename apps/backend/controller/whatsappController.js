@@ -485,6 +485,20 @@ async function createSession(req, res) {
                 });
             }
 
+            // منع ربط نفس رقم هاتف Meta بشركة أخرى نشطة (حماية العزل متعدد الشركات)
+            const existingBinding = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: {
+                    metaPhoneNumberId: String(metaPhoneNumberId).trim(),
+                    companyId: { not: companyId },
+                    status: 'CONNECTED'
+                }
+            });
+            if (existingBinding) {
+                return res.status(400).json({
+                    error: 'معرف الهاتف (Phone Number ID) هذا مربوط بالفعل بجلسة نشطة تابعة لشركة أخرى'
+                });
+            }
+
             const axios = require('axios');
             const graphVersion = metaApiVersion || process.env.META_GRAPH_API_VERSION || 'v26.0';
             const graphBase = `https://graph.facebook.com/${graphVersion}`;
@@ -564,10 +578,14 @@ async function createSession(req, res) {
             sessionData = await waitForSessionLinkState(session.id);
         }
 
+        const safeSession = { ...session };
+        delete safeSession.metaAccessToken;
+        delete safeSession.metaWebhookSecret;
+
         res.status(201).json({
             success: true,
             session: {
-                ...session,
+                ...safeSession,
                 status: isMetaProvider ? session.status : (sessionData?.status || 'QR_PENDING'),
                 phoneNumber: cleanPhone || session.phoneNumber,
                 qrCode: sessionData?.qrCode || null,
@@ -1154,6 +1172,7 @@ async function updateSession(req, res) {
             typeof metaAccessToken === 'string' &&
             metaAccessToken.trim() !== '' &&
             !metaAccessToken.includes('***') &&
+            !metaAccessToken.startsWith('enc:v1:') &&
             metaAccessToken.trim().length > 10
         ) {
             let cleanToken = metaAccessToken.trim();
@@ -1216,7 +1235,11 @@ async function updateSession(req, res) {
             }
         });
 
-        res.json({ success: true, session });
+        const safeSession = { ...session };
+        delete safeSession.metaAccessToken;
+        delete safeSession.metaWebhookSecret;
+
+        res.json({ success: true, session: safeSession });
     } catch (error) {
         console.error('❌ Error updating session:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث الجلسة' });
