@@ -122,8 +122,11 @@ async function quotePrice({
       const extraKgPrice = Number(card.extraKgPrice || 0);
 
       const extraWeight = Math.max(0, weight - baseWeight);
-      // Extra weight billed per completed kg units (e.g. 2.5 - 1 = 1.5 -> 1 extra unit)
-      const extraUnits = extraWeight <= 0 ? 0 : Math.floor(extraWeight);
+      // SHIP-H1: Extra weight rounded UP (ceil) to nearest whole kg with floating-point epsilon protection
+      let extraUnits = 0;
+      if (weight > baseWeight) {
+        extraUnits = Math.ceil(Math.max(0, weight - baseWeight) - 1e-9);
+      }
       const extraWeightFee = extraUnits * extraKgPrice;
 
       let codFee = 0;

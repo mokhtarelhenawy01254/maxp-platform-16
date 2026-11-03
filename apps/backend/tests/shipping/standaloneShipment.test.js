@@ -154,8 +154,8 @@ describe('Standalone Shipment & Policy Engine (SHIP-W1A Acceptance Gate)', () =>
     });
   });
 
-  // 2. Weight 2.5 + rate card (base 70, baseWeight 1, extraKg 10) -> 80
-  test('2. Rate card calculation: weight 2.5 + (base 70, baseWeight 1, extraKg 10) -> exactly 80', async () => {
+  // 2. Weight 2.5 + rate card (base 70, baseWeight 1, extraKg 10) -> exactly 90 (SHIP-H1 ceiling: 2 extra units)
+  test('2. Rate card calculation: weight 2.5 + (base 70, baseWeight 1, extraKg 10) -> exactly 90', async () => {
     mockPrisma.clientRateCard.findMany.mockResolvedValue([
       {
         id: 'card-vip-1',
@@ -181,12 +181,12 @@ describe('Standalone Shipment & Policy Engine (SHIP-W1A Acceptance Gate)', () =>
       prisma: mockPrisma,
     });
 
-    expect(quote.price).toBe(80);
+    expect(quote.price).toBe(90);
     expect(quote.source).toBe('RATE_CARD');
     expect(quote.breakdown.basePrice).toBe(70);
-    expect(quote.breakdown.extraWeightFee).toBe(10);
-    expect(quote.breakdown.extraUnits).toBe(1);
-    expect(quote.breakdown.total).toBe(80);
+    expect(quote.breakdown.extraWeightFee).toBe(20);
+    expect(quote.breakdown.extraUnits).toBe(2);
+    expect(quote.breakdown.total).toBe(90);
 
     // Also verify via HTTP POST /api/v1/shipping-portal/quote
     mockPrisma.merchant.findFirst.mockResolvedValue({
@@ -206,7 +206,7 @@ describe('Standalone Shipment & Policy Engine (SHIP-W1A Acceptance Gate)', () =>
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.price).toBe(80);
+    expect(res.body.data.price).toBe(90);
     expect(res.body.data.source).toBe('RATE_CARD');
   });
 
