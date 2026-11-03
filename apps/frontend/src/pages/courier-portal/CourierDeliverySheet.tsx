@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import courierPortalApi, { FailureReason, FALLBACK_FAILURE_REASONS } from './services/courierPortalApi';
 import { enqueueAction } from './services/offlineQueue';
+import { DateInput } from '../../components/ui/DateInput';
 
 export type DeliverySheetActionType = 'DELIVERED' | 'FAILED' | 'DELAYED';
 
@@ -331,8 +332,8 @@ export const CourierDeliverySheet: React.FC<CourierDeliverySheetProps> = ({
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   تاريخ المحاولة القادمة (اختياري)
                 </label>
-                <input
-                  type="date"
+                <DateInput
+                  
                   value={nextAttemptDate}
                   onChange={(e) => setNextAttemptDate(e.target.value)}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500"
@@ -347,8 +348,8 @@ export const CourierDeliverySheet: React.FC<CourierDeliverySheetProps> = ({
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   الموعد البديل المتفق عليه <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="date"
+                <DateInput
+                  
                   value={nextAttemptDate}
                   onChange={(e) => setNextAttemptDate(e.target.value)}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"

@@ -28,6 +28,7 @@ import {
   getPickupStatusBadge,
   formatDate,
 } from './shippingOpsShared';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const PickupsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -606,8 +607,8 @@ export const PickupsPage: React.FC = () => {
                   <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">
                     {isEn ? 'Scheduled Date *' : 'تاريخ الاستلام *'}
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
+                    
                     required
                     value={createForm.scheduledDate}
                     onChange={(e) => setCreateForm({ ...createForm, scheduledDate: e.target.value })}
@@ -724,8 +725,8 @@ export const PickupsPage: React.FC = () => {
             <div className="space-y-3 text-sm">
               <div>
                 <label className="block text-xs font-medium mb-1">تاريخ الاستلام</label>
-                <input
-                  type="date"
+                <DateInput
+                  
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"

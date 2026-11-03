@@ -24,6 +24,7 @@ import {
 } from '../../services/shippingOpsService';
 import { EGYPT_GOVERNORATES } from '../../constants/egyptGovernorates';
 import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel } from './shippingOpsShared';
+import { DateInput } from '../../components/ui/DateInput';
 
 export const ShippingParcelsList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -243,8 +244,8 @@ export const ShippingParcelsList: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-slate-500 font-medium">{t('shippingOps.list.dateFrom', 'من')}:</span>
-            <input
-              type="date"
+            <DateInput
+              
               value={fromDate}
               onChange={(e) => {
                 setFromDate(e.target.value);
@@ -253,8 +254,8 @@ export const ShippingParcelsList: React.FC = () => {
               className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
             />
             <span className="text-slate-500 font-medium">{t('shippingOps.list.dateTo', 'إلى')}:</span>
-            <input
-              type="date"
+            <DateInput
+              
               value={toDate}
               onChange={(e) => {
                 setToDate(e.target.value);
