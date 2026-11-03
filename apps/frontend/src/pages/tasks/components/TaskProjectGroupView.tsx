@@ -45,6 +45,7 @@ interface TaskProjectGroupViewProps {
   viewMode: TaskViewMode;
   onToggleViewMode: (mode: TaskViewMode) => void;
   isApprover?: boolean;
+  hideToolbar?: boolean;
 }
 
 const statusBadges: Record<string, { label: string; className: string }> = {
@@ -87,6 +88,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
   viewMode = "grouped",
   onToggleViewMode,
   isApprover,
+  hideToolbar = false,
 }) => {
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
 
@@ -145,70 +147,72 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* Quick Filters & View Switcher Bar */}
-      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/75 p-2 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-        {/* Quick time filter chips */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-semibold text-muted-foreground px-1 hidden md:inline">
-            تصفية سريعة:
-          </span>
+      {/* Quick Filters & View Switcher Bar (only when not handled by external unified control bar) */}
+      {!hideToolbar && (
+        <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/75 p-2 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+          {/* Quick time filter chips */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted-foreground px-1 hidden md:inline">
+              تصفية سريعة:
+            </span>
 
-          {(
-            [
-              { key: "all", label: "كل المهام" },
-              { key: "today", label: "اليوم" },
-              { key: "week", label: "هذا الأسبوع" },
-              { key: "overdue", label: "متأخرة ⚠️" },
-            ] as const
-          ).map((chip) => {
-            const isActive = quickFilter === chip.key;
-            return (
-              <button
-                key={chip.key}
-                type="button"
-                onClick={() => onQuickFilterChange(chip.key)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                    : "bg-background/80 text-foreground hover:bg-muted/80 border border-border/50"
-                }`}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
+            {(
+              [
+                { key: "all", label: "كل المهام" },
+                { key: "today", label: "اليوم" },
+                { key: "week", label: "هذا الأسبوع" },
+                { key: "overdue", label: "متأخرة ⚠️" },
+              ] as const
+            ).map((chip) => {
+              const isActive = quickFilter === chip.key;
+              return (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={() => onQuickFilterChange(chip.key)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                      : "bg-background/80 text-foreground hover:bg-muted/80 border border-border/50"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* View Switcher buttons */}
-        <div className="flex items-center gap-1 self-end sm:self-auto border-t sm:border-t-0 pt-1 sm:pt-0 border-border/40">
-          <button
-            type="button"
-            onClick={() => onToggleViewMode("grouped")}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
-              viewMode === "grouped"
-                ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="عرض مجمّع بالمشاريع"
-          >
-            <LayoutGrid className="size-3.5" />
-            <span>عرض بالمشاريع</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggleViewMode("flat")}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
-              viewMode === "flat"
-                ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="عرض قائمة مسطحة"
-          >
-            <List className="size-3.5" />
-            <span>قائمة مسطحة</span>
-          </button>
+          {/* View Switcher buttons */}
+          <div className="flex items-center gap-1 self-end sm:self-auto border-t sm:border-t-0 pt-1 sm:pt-0 border-border/40">
+            <button
+              type="button"
+              onClick={() => onToggleViewMode("grouped")}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                viewMode === "grouped"
+                  ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="عرض مجمّع بالمشاريع"
+            >
+              <LayoutGrid className="size-3.5" />
+              <span>عرض بالمشاريع</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleViewMode("flat")}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                viewMode === "flat"
+                  ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="عرض قائمة مسطحة"
+            >
+              <List className="size-3.5" />
+              <span>قائمة مسطحة</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Projects List */}
       <div className="space-y-3">

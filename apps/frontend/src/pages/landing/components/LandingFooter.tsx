@@ -19,7 +19,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
     };
 
   return (
-    <footer className="relative border-t border-white/[0.08] bg-[#050505] pt-20 pb-12 overflow-hidden">
+    <footer className="relative border-t border-white/[0.08] bg-[#050505] pt-20 pb-28 sm:pb-16 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Pre-footer Open Action Section (Zero Box-in-Box) */}
@@ -48,8 +48,8 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
-                to="/register"
-                onClick={handleLeadClick("footer_cta_register", "/register")}
+                to="/auth/register"
+                onClick={handleLeadClick("footer_cta_register", "/auth/register")}
                 onMouseEnter={onPreloadRegister}
                 onFocus={onPreloadRegister}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-white text-black font-bold px-8 py-4 text-sm hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-xl shadow-white/10"
@@ -76,7 +76,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
           </div>
         </div>
 
-        {/* Footer Navigation Columns — Open Clean Grid */}
+        {/* Footer Navigation Columns - Open Clean Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 text-xs">
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
@@ -121,8 +121,8 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-white text-xs">روابط سريعة</h4>
             <ul className="space-y-2 text-zinc-400">
-              <li><Link to="/login" className="hover:text-white transition-colors">تسجيل الدخول</Link></li>
-              <li><Link to="/register" className="hover:text-white transition-colors">إنشاء حساب جديد</Link></li>
+              <li><Link to="/auth/login" className="hover:text-white transition-colors">تسجيل الدخول</Link></li>
+              <li><Link to="/auth/register" className="hover:text-white transition-colors">إنشاء حساب جديد</Link></li>
               <li><a href="#calculator" className="hover:text-white transition-colors">حاسبة الوفر</a></li>
               <li><a href="#faq" className="hover:text-white transition-colors">الأسئلة الشائعة</a></li>
             </ul>

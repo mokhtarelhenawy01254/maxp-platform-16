@@ -376,6 +376,12 @@ const PUBLIC_ROUTES = [
   'POST /api/v1/auth/reset-password',
   'POST /api/v1/auth/send-verification',
 
+  // Courier Portal public routes
+  'POST /api/v1/courier-portal/login',
+  'POST /api/v1/courier-portal/logout',
+  'POST /api/v1/courier-portal/verify-link-pin',
+  'GET /api/v1/courier-portal/failure-reasons',
+
   // Health and system routes
   'GET /health*',
   'GET /api/health*',

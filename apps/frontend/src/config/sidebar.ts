@@ -637,7 +637,7 @@ export const getSidebarConfig = (
                     },
                     { to: '/settings/store-pages', icon: FileText, label: t('sidebar.storePages') },
                     { to: '/settings/store?tab=branches', icon: Store, label: t('sidebar.storeSettings') },
-                    { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.storefrontStudio') },
+                    { to: '/settings/storefront/editor', icon: Sparkles, label: t('sidebar.storefrontStudio') },
                     { to: '/settings/store-payment-offers', icon: BadgePercent, label: t('sidebar.paymentOffers') },
                 ],
             },
@@ -934,6 +934,34 @@ export const getSidebarConfig = (
             ],
             // 🔒 إخفاء القسم بالكامل إذا كان التطبيق غير مفعل في الماركت بليس
             hidden: user?.role === 'AFFILIATE' || !isAppActive('internal-courier-fleet')
+        },
+
+        // 3️⃣.3 عمليات وتشغيل الشحن (SHIP-W1B)
+        {
+            id: 'shipping-ops',
+            title: isEn ? 'Shipping' : 'الشحن',
+            icon: Package,
+            items: [
+                { to: '/shipping-ops', icon: LayoutDashboard, label: isEn ? 'Shipping Dashboard' : 'لوحة تشغيل الشحن', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/parcels', icon: Package, label: isEn ? 'Parcels & Shipments' : 'الشحنات والطرود', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/parcels/new', icon: Plus, label: isEn ? 'New Standalone Parcel' : 'إنشاء طرد جديد', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/pickups', icon: Truck, label: isEn ? 'Pickup Requests' : 'طلبات الاستلام (Pickup)', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/hub-receive', icon: ScanLine, label: isEn ? 'Hub Inward & Sorting' : 'استلام وفرز الهاَب', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/branches', icon: Building2, label: isEn ? 'Shipping Branches' : 'فروع ومراكز الشحن', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/rate-cards', icon: CreditCard, label: isEn ? 'Client Rate Cards' : 'بطاقات أسعار العملاء', requiredPermissions: ['orders.shipping.view'] },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
+        },
+
+        // 3️⃣.4 تقارير الوكلاء (AR-1)
+        {
+            id: 'agent-reports',
+            title: isEn ? 'Agent Reports' : 'تقارير الوكلاء',
+            icon: FileText,
+            items: [
+                { to: '/agent-reports', icon: FileBarChart, label: isEn ? 'Agent Reports' : 'تقارير الوكلاء' },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('agent-reports')
         },
 
         // 3️⃣.5 إحصائيات الطلبات
@@ -1294,7 +1322,7 @@ export const getSidebarConfig = (
                 {
                     to: '/advertising/facebook-ads/decision-reports',
                     icon: FileBarChart,
-                    label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات',
+                    label: isEn ? 'Decision Reports & Profit' : t('sidebar.facebookAdsReports', 'تقارير الأرباح والقرارات'),
                 },
                 // 9. التوليف الإبداعي الديناميكي (DCO)
                 {
@@ -1882,30 +1910,30 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 9️⃣ إدارة المهام
+        // 9️⃣ إدارة المهام والمشاريع
         {
             id: 'tasks',
             title: t('sidebar.tasksWorkspace'),
             icon: CheckCircle2,
-            hidden: !isAppActive('business-tools'),
+            hidden: !(
+                ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(user?.role || '') ||
+                isAnyAppActive(['business-tools', 'tasks', 'tasks-management', 'projects'])
+            ),
             items: [
+                { to: '/tasks', icon: CheckCircle2, label: t('sidebar.tasks') || 'كل المهام' },
+                { to: '/tasks/projects', icon: FolderOpen, label: t('sidebar.taskProjects') || 'المشاريع' },
+                { to: '/tasks/categories', icon: Tag, label: t('sidebar.taskCategories') || 'أقسام المهام' },
+                { to: '/tasks/compliance', icon: ShieldCheck, label: 'متابعة الإنجاز' },
+                { to: '/tasks/backlog', icon: Sparkles, label: 'الأفكار وقائمة الانتظار' },
+                { to: '/goals', icon: Target, label: t('sidebar.goals') || 'أهداف العمل' },
+                { to: '/tasks/settings', icon: Settings, label: t('sidebar.taskSettings') || 'إعدادات المهام' },
                 {
-                    to: '/tasks',
-                    icon: CheckCircle2,
-                    label: t('sidebar.tasks'),
-                    children: [
-                        { to: '/goals', label: t('sidebar.goals') },
-                        { to: '/tasks/projects', label: t('sidebar.taskProjects') },
-                        { to: '/tasks/categories', label: t('sidebar.taskCategories') },
-                        { to: '/tasks/settings', label: t('sidebar.taskSettings') },
-                        {
-                            to: '/tasks/integrations',
-                            label: t('sidebar.taskIntegrations'),
-                            hidden: !canManageTaskIntegrations,
-                        },
-                    ],
+                    to: '/tasks/integrations',
+                    icon: PlugZap,
+                    label: t('sidebar.taskIntegrations') || 'تكاملات المهام',
+                    hidden: !canManageTaskIntegrations,
                 },
-            ]
+            ],
         },
 
         // 1️⃣1️⃣ التطبيقات والفواتير
@@ -1967,7 +1995,7 @@ export const getSidebarConfig = (
     if (assignedApps && assignedApps.length > 0) {
         const normalizedAssigned = assignedApps.map((a) => a.trim().toLowerCase()).filter(Boolean);
         const isAssigned = (section: SidebarSection): boolean => {
-            if (['OWNER', 'SUPER_ADMIN'].includes(user?.role || '') && ['company', 'settings', 'my-account', 'marketplace'].includes(section.id)) {
+            if (['OWNER', 'SUPER_ADMIN'].includes(user?.role || '') && ['company', 'settings', 'my-account', 'marketplace', 'agent-reports'].includes(section.id)) {
                 return true;
             }
             if (user?.role === 'SUPER_ADMIN' && section.id.startsWith('platform-') && section.requiredRoles?.includes('SUPER_ADMIN')) {
@@ -1999,6 +2027,7 @@ const SECTION_APP_FALLBACKS: Record<string, string[]> = {
     'forms': ['forms-app'],
     'tasks': ['business-tools'],
     'academy': ['academy-app'],
+    'agent-reports': ['agent-reports', 'agent-reports-app', 'cat-app-agent-reports'],
 };
 
 /**

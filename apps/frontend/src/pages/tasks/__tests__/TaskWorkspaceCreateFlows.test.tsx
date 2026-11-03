@@ -210,7 +210,7 @@ describe("Task workspace create flows", () => {
     fireEvent.change(screen.getByLabelText(/عنوان المهمة/i), {
       target: { value: "متابعة العميل الجديد" },
     });
-    fireEvent.change(screen.getByLabelText(/^الوصف/i), {
+    fireEvent.change(screen.getByTestId("task-description-input"), {
       target: { value: "التأكد من اكتمال البيانات وربط المهمة بالمشروع." },
     });
     fireEvent.change(screen.getByLabelText(/المشروع/i), {

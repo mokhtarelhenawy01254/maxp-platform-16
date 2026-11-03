@@ -86,6 +86,8 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     useState<TaskWorkspaceSettings>(DEFAULT_TASK_WORKSPACE_SETTINGS);
   const [viewMode, setViewMode] = useState<TaskViewMode>("grouped");
   const [quickFilter, setQuickFilter] = useState<TaskQuickFilter>("all");
+  const [isTodayStripOpen, setIsTodayStripOpen] = useState(false);
+  const [isGoalsStripOpen, setIsGoalsStripOpen] = useState(false);
   const [activeProjectWorkspace, setActiveProjectWorkspace] =
     useState<Project | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -623,6 +625,13 @@ export function useTasksPageController(embeddedInModal?: boolean) {
       }
       if (unifiedFilters.tag && unifiedFilters.tag !== "all") {
         queryParams.append("tag", unifiedFilters.tag);
+      }
+      if (
+        hideCompleted &&
+        !filters.status &&
+        (!unifiedFilters.status || unifiedFilters.status === "all")
+      ) {
+        queryParams.append("excludeCompleted", "true");
       }
       queryParams.append("page", currentPage.toString());
       queryParams.append("limit", itemsPerPage.toString());
@@ -1399,6 +1408,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     filters,
     unifiedFilters,
     taskFilter,
+    hideCompleted,
     currentPage,
     itemsPerPage,
     debouncedSearch,
@@ -1474,6 +1484,10 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     viewMode,
     quickFilter,
     setQuickFilter,
+    isTodayStripOpen,
+    setIsTodayStripOpen,
+    isGoalsStripOpen,
+    setIsGoalsStripOpen,
     handleToggleViewMode,
     activeProjectWorkspace,
     handleOpenProjectWorkspace,

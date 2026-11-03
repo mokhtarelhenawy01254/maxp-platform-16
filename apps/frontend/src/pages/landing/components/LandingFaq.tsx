@@ -29,7 +29,7 @@ export const LandingFaq: React.FC = () => {
     },
     {
       q: "ما هي تكلفة الاشتراك وهل يوجد التزام سنوي إجباري؟",
-      a: "مفيش اشتراك موحّد واحد — بتدفع على التطبيقات اللي بتفعّلها. فيها مجاني تقدر تبدأ بيه فورًا، وتقدر تلغي أو ترقّي في أي وقت بضغطة زر.",
+      a: "مفيش اشتراك موحّد واحد. بتدفع على التطبيقات اللي بتفعّلها، وفيها مجاني تقدر تبدأ بيه فورًا، وتقدر تلغي أو ترقّي في أي وقت بضغطة زر.",
     },
     {
       q: "هل أحتاج مبرمج أو خبرة تقنية عشان أشغل السيستم؟",
@@ -41,7 +41,7 @@ export const LandingFaq: React.FC = () => {
     <section id="faq" className="relative py-24 sm:py-32 border-t border-white/[0.06]">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         
-        {/* Section Heading — Open Layout */}
+        {/* Section Heading - Open Layout */}
         <div className="max-w-2xl mb-14 text-right">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
             <HelpCircle className="w-3.5 h-3.5 text-red-400" />

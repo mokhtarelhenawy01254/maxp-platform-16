@@ -64,6 +64,7 @@ model Company {
   shipments                       Shipment[]
   couriers                        Courier[]
   deliveryRuns                    DeliveryRun[]
+  deliveryFailureReasons          DeliveryFailureReason[]
   projects                        Project[]
   SupportTicket                   SupportTicket[]
   tasks                           Task[]

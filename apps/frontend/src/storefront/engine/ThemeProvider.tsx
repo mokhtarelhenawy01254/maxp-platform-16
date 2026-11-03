@@ -20,6 +20,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700';
 const STOREFRONT_THEME_FONT_DISPLAY = 'swap';
+const MAX_STOREFRONT_THEME_FONTS = 4;
 const GENERIC_OR_LOCAL_FONTS = new Set([
   'ui-sans-serif',
   'system-ui',
@@ -34,7 +35,51 @@ const GENERIC_OR_LOCAL_FONTS = new Set([
   'dejavu sans bold',
   'tahoma',
   'arial',
+  'segoe ui',
+  'cursive',
 ]);
+
+const KNOWN_ARABIC_FONTS = new Set([
+  'ibm plex sans arabic',
+  'cairo',
+  'tajawal',
+  'almarai',
+  'alexandria',
+  'noto kufi arabic',
+  'noto naskh arabic',
+  'noto sans arabic',
+  'rubik',
+  'baloo bhaijaan 2',
+  'amiri',
+  'aref ruqaa ink',
+  'reem kufi',
+  'el messiri',
+  'changa',
+]);
+
+export const extractThemeFontFamilies = (fontStack: string): string[] => {
+  if (!fontStack) return [];
+  const families: string[] = [];
+  const parts = fontStack.split(',').map((p) => p.trim().replace(/['"]/g, ''));
+
+  // 1. First non-generic, non-local font family from stack
+  const first = parts[0];
+  if (first && !GENERIC_OR_LOCAL_FONTS.has(first.toLowerCase())) {
+    families.push(first);
+  }
+
+  // 2. First known Arabic font family in same stack (if distinct from first)
+  for (const part of parts) {
+    if (part && KNOWN_ARABIC_FONTS.has(part.toLowerCase())) {
+      if (!families.some((f) => f.toLowerCase() === part.toLowerCase())) {
+        families.push(part);
+      }
+      break;
+    }
+  }
+
+  return families;
+};
 
 const createEmptyPage = () => ({ sections: [] });
 
@@ -358,30 +403,29 @@ export const StorefrontThemeProvider: React.FC<{
     const storeFontFamily = resolvedPageVars['--store-font-family'];
     const fontsToLoad = new Set<string>();
 
-    const extractFontFamily = (fontStack: string): string | null => {
-      // Get the first font from a CSS font stack like "'Outfit', sans-serif"
-      const first = fontStack.split(',')[0]?.trim().replace(/['"]/g, '');
-      if (!first || GENERIC_OR_LOCAL_FONTS.has(first.toLowerCase())) return null;
-      return first;
+    const addFamiliesFromStack = (fontStack?: string) => {
+      if (!fontStack) return;
+      const families = extractThemeFontFamilies(fontStack);
+      for (const font of families) {
+        if (fontsToLoad.size >= MAX_STOREFRONT_THEME_FONTS) break;
+        const alreadyAdded = Array.from(fontsToLoad).some(
+          (f) => f.toLowerCase() === font.toLowerCase(),
+        );
+        if (!alreadyAdded) {
+          fontsToLoad.add(font);
+        }
+      }
     };
 
-    if (headingFont) {
-      const font = extractFontFamily(headingFont);
-      if (font) fontsToLoad.add(font);
-    }
-    if (bodyFont) {
-      const font = extractFontFamily(bodyFont);
-      if (font) fontsToLoad.add(font);
-    }
-    if (storeFontFamily) {
-      const font = extractFontFamily(storeFontFamily);
-      if (font) fontsToLoad.add(font);
-    }
+    if (headingFont) addFamiliesFromStack(headingFont);
+    if (bodyFont) addFamiliesFromStack(bodyFont);
+    if (storeFontFamily) addFamiliesFromStack(storeFontFamily);
 
     if (fontsToLoad.size === 0) return;
 
-    // Build Google Fonts URL for only the needed fonts
+    // Build Google Fonts URL for only the needed fonts (capped strictly at 4)
     const families = Array.from(fontsToLoad)
+      .slice(0, MAX_STOREFRONT_THEME_FONTS)
       .map(
         (f) =>
           `family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@${STOREFRONT_THEME_FONT_WEIGHTS}`,

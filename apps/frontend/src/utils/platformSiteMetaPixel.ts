@@ -61,7 +61,7 @@ export const getPlatformSiteMetaPixelSettings =
     currentPlatformSiteMetaPixelSettings;
 
 export const trackPlatformSiteLead = (
-  eventSource: string,
+  eventSourceOrData: string | Record<string, unknown>,
   data: Record<string, unknown> = {},
 ) => {
   if (
@@ -71,7 +71,21 @@ export const trackPlatformSiteLead = (
     return;
   }
 
-  return trackMetaLead(buildContextPayload(eventSource, data));
+  const resolvedSource =
+    typeof eventSourceOrData === "string"
+      ? eventSourceOrData
+      : typeof eventSourceOrData?.event_source === "string"
+        ? (eventSourceOrData.event_source as string)
+        : typeof eventSourceOrData?.cta_type === "string"
+          ? (eventSourceOrData.cta_type as string)
+          : "platform_lead";
+
+  const resolvedData =
+    typeof eventSourceOrData === "object" && eventSourceOrData !== null
+      ? { ...eventSourceOrData, ...data }
+      : data;
+
+  return trackMetaLead(buildContextPayload(resolvedSource, resolvedData));
 };
 
 export const trackPlatformSiteCompleteRegistration = (

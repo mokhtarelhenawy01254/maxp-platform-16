@@ -342,7 +342,7 @@ export const StorefrontRoutes: React.FC<StorefrontRoutesProps> = ({
   );
 
   const cartPageElement = (
-    <div key={`cart:${routePageKey}`} className="w-full flex flex-col">
+    <div key={`cart:${routePageKey}`} className="w-full flex flex-col pb-28 md:pb-0">
       {isSproutRoom
         ? sproutRoomPageBanner(
             theme.direction === 'rtl' ? 'السلة' : 'Cart',

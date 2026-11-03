@@ -161,13 +161,13 @@ export const LandingLivePlayground: React.FC = () => {
                     <button
                       key={p.q}
                       onClick={() => handleSelectQuestion(idx)}
-                      className={`w-full text-right p-3.5 rounded-xl border text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                      className={`w-full text-right p-3.5 rounded-xl border text-xs sm:text-sm font-medium transition-all cursor-pointer active:scale-[0.98] ${
                         selectedQuestion === idx
                           ? "bg-emerald-950/40 border-emerald-500 text-white"
                           : "bg-white/[0.02] border-white/[0.06] text-zinc-300 hover:border-white/20"
                       }`}
                     >
-                      <span>💬 "{p.q}"</span>
+                      <span className="text-zinc-200">“{p.q}”</span>
                     </button>
                   ))}
                 </div>
@@ -265,17 +265,17 @@ export const LandingLivePlayground: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 p-3 rounded-lg bg-zinc-900 border border-white/[0.05]">
                       <div>
                         <span className="text-zinc-500 block text-[10px]">رقم التتبع Tracking #</span>
-                        <span className="text-white font-bold">BST-89240182</span>
+                        <span className="text-white font-bold tabular-nums">BST-89240182</span>
                       </div>
                       <div>
                         <span className="text-zinc-500 block text-[10px]">التحصيل عند الاستلام (COD)</span>
-                        <span className="text-emerald-400 font-bold">850.00 ج.م</span>
+                        <span className="text-emerald-400 font-bold tabular-nums">850.00 ج.م</span>
                       </div>
                     </div>
 
                     <div className="p-3 rounded-lg bg-zinc-900 border border-white/[0.05]">
                       <span className="text-zinc-500 block text-[10px] mb-1">العميل والعنوان</span>
-                      <span className="text-white block font-sans font-bold">أحمد سامي — 01029384756</span>
+                      <span className="text-white block font-sans font-bold">أحمد سامي (01029384756)</span>
                       <span className="text-zinc-400 text-[11px] font-sans">القاهرة • مدينة نصر • شارع مكرم عبيد</span>
                     </div>
 
@@ -335,19 +335,19 @@ export const LandingLivePlayground: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="p-4 rounded-xl bg-zinc-900 border border-amber-500/30 text-center">
                     <span className="text-[10px] text-zinc-400 block mb-1">فرع مدينة نصر (محل)</span>
-                    <span className="text-2xl font-black font-mono text-amber-400">{stockItem.nasrCity}</span>
+                    <span className="text-2xl font-black font-mono tabular-nums text-amber-400">{stockItem.nasrCity}</span>
                     <span className="text-[10px] text-zinc-500 block mt-1">كاشير POS مباشر</span>
                   </div>
 
                   <div className="p-4 rounded-xl bg-zinc-900 border border-white/[0.06] text-center">
                     <span className="text-[10px] text-zinc-400 block mb-1">المتجر الإلكتروني لايف</span>
-                    <span className="text-2xl font-black font-mono text-blue-400">{stockItem.onlineStore}</span>
+                    <span className="text-2xl font-black font-mono tabular-nums text-blue-400">{stockItem.onlineStore}</span>
                     <span className="text-[10px] text-zinc-500 block mt-1">متزامن بالثانية</span>
                   </div>
 
                   <div className="p-4 rounded-xl bg-zinc-900 border border-white/[0.06] text-center">
                     <span className="text-[10px] text-zinc-400 block mb-1">المخزن الرئيسي (العبور)</span>
-                    <span className="text-2xl font-black font-mono text-emerald-400">{stockItem.mainWarehouse}</span>
+                    <span className="text-2xl font-black font-mono tabular-nums text-emerald-400">{stockItem.mainWarehouse}</span>
                     <span className="text-[10px] text-zinc-500 block mt-1">جاهز لأوامر التحويل</span>
                   </div>
                 </div>

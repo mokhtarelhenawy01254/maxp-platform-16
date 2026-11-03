@@ -5,7 +5,8 @@ import {
   ClipboardDocumentIcon,
   ChatBubbleLeftRightIcon,
   ArrowRightCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  NoSymbolIcon
 } from '@heroicons/react/24/outline';
 import { DeliveryRun, DeliveryRunItem } from '../../../../services/courierService';
 
@@ -17,6 +18,7 @@ interface DeliveryRunDetailModalProps {
   onViewWaybill: (val: { run: DeliveryRun; shipment?: DeliveryRunItem }) => void;
   onPrint: () => void;
   onOpenReassign: (shipment: DeliveryRunItem) => void;
+  onRevokeLink?: (run: DeliveryRun) => void;
   formatDate: (date: any) => string;
   formatPrice: (price: number) => string;
 }
@@ -29,6 +31,7 @@ export const DeliveryRunDetailModal: React.FC<DeliveryRunDetailModalProps> = ({
   onViewWaybill,
   onPrint,
   onOpenReassign,
+  onRevokeLink,
   formatDate,
   formatPrice
 }) => {
@@ -44,6 +47,15 @@ export const DeliveryRunDetailModal: React.FC<DeliveryRunDetailModalProps> = ({
             </h3>
           </div>
           <div className="flex items-center flex-wrap gap-2">
+            {onRevokeLink && (
+              <button
+                onClick={() => onRevokeLink(selectedRun)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-lg hover:bg-rose-100 transition"
+              >
+                <NoSymbolIcon className="w-4 h-4" />
+                إلغاء الرابط
+              </button>
+            )}
             <button
               onClick={() => onCopyMobileLink(selectedRun)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"

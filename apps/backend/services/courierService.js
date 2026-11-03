@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { recordShipmentEvent } = require('./shipping/shipmentEventService');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -604,12 +605,13 @@ async function getDeliveryRunById(companyId, runId) {
         userId: run.courierId,
         courierId: run.courierId,
         runId: run.id,
-        companyId: run.companyId
+        companyId: run.companyId,
+        mobileTokenVersion: run.mobileTokenVersion || 0,
+        linkToken: true
       },
       getJwtSecret(),
-      // 7 days: long enough for a full run lifecycle, short enough that a leaked
-      // WhatsApp link does not stay a valid courier identity for a month.
-      { expiresIn: '7d' }
+      // 72 hours: shortened from 7 days, revokable via mobileTokenVersion
+      { expiresIn: '72h' }
     );
   } catch (err) {
     console.warn('⚠️ Could not sign mobileToken:', err?.message);
@@ -648,7 +650,7 @@ async function getDeliveryRunById(companyId, runId) {
  * - runId and courierId (when the caller is a field courier) are enforced as ownership filters
  * - shipments of SETTLED/CANCELLED runs are locked
  */
-async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId, pin, otp }) {
+async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId, pin, otp, failureReasonCode, nextAttemptDate, localId }) {
   const prisma = getSharedPrismaClient();
 
   const normalizedStatus = String(status || '').toUpperCase();
@@ -739,6 +741,34 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     const priorCollected = normalizeAmount(shipment.collectedAmount);
     // Never silently erase cash already collected — it stays on the shipment for reconciliation
     updateData.collectedAmount = priorCollected > 0 ? priorCollected : 0;
+
+    if (normalizedStatus === 'FAILED') {
+      if (failureReasonCode) {
+        updateData.failureReasonCode = String(failureReasonCode).trim();
+      }
+      updateData.attemptCount = { increment: 1 };
+
+      let calculatedNextAttempt = nextAttemptDate ? new Date(nextAttemptDate) : null;
+      if (!calculatedNextAttempt) {
+        let requiresReschedule = true;
+        if (failureReasonCode) {
+          const reason = await prisma.deliveryFailureReason.findFirst({
+            where: { companyId, code: String(failureReasonCode).trim() }
+          });
+          if (reason) {
+            requiresReschedule = Boolean(reason.requiresReschedule);
+          } else if (String(failureReasonCode).trim() === 'REFUSED') {
+            requiresReschedule = false;
+          }
+        }
+        if (requiresReschedule) {
+          calculatedNextAttempt = new Date(Date.now() + 24 * 3600 * 1000);
+        }
+      }
+      if (calculatedNextAttempt) {
+        updateData.nextAttemptDate = calculatedNextAttempt;
+      }
+    }
   } else {
     updateData.status = 'DELAYED';
   }
@@ -747,6 +777,29 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     const updatedShipment = await tx.shipment.update({
       where: { id: shipmentId },
       data: updateData
+    });
+
+    const eventMetadata = {};
+    if (localId) eventMetadata.localId = localId;
+    if (failureReasonCode) eventMetadata.failureReasonCode = failureReasonCode;
+    if (normalizedStatus === 'FAILED') {
+      eventMetadata.attemptCount = (shipment.attemptCount || 0) + 1;
+    }
+    if (updateData.nextAttemptDate) {
+      eventMetadata.nextAttemptDate = updateData.nextAttemptDate;
+    }
+
+    await recordShipmentEvent(tx, {
+      companyId,
+      shipmentId,
+      fromStatus: shipment.status,
+      toStatus: updateData.status,
+      reasonCode: failureReasonCode || null,
+      notes: deliveryNotes?.trim() || null,
+      actorType: 'COURIER',
+      actorId: courierId || userId || null,
+      actorName: shipment.courier?.name || null,
+      metadata: Object.keys(eventMetadata).length > 0 ? eventMetadata : null,
     });
 
     if (shipment.orderId) {
@@ -1550,6 +1603,33 @@ async function resendShipmentOtp(companyId, { shipmentId, userId }) {
   };
 }
 
+/**
+ * Revoke mobile share links for a delivery run by bumping mobileTokenVersion
+ */
+async function revokeDeliveryRunLink(companyId, runId) {
+  const prisma = getSharedPrismaClient();
+
+  const run = await prisma.deliveryRun.findFirst({
+    where: { id: runId, companyId }
+  });
+
+  if (!run) {
+    throw serviceError('مأمورية التوصيل غير موجودة', 404);
+  }
+
+  const updatedRun = await prisma.deliveryRun.update({
+    where: { id: runId },
+    data: {
+      mobileTokenVersion: { increment: 1 }
+    }
+  });
+
+  return {
+    runId: updatedRun.id,
+    mobileTokenVersion: updatedRun.mobileTokenVersion
+  };
+}
+
 module.exports = {
   listCouriers,
   getCourierById,
@@ -1562,11 +1642,13 @@ module.exports = {
   listDeliveryRuns,
   getDeliveryRunById,
   updateDeliveryRunShipment,
+  updateShipmentStatus: updateDeliveryRunShipment,
   settleDeliveryRun,
   getCourierDashboardSummary,
   listCourierCommissions,
   payCourierCommissions,
   getCouriersPerformance,
   reassignShipments,
-  resendShipmentOtp
+  resendShipmentOtp,
+  revokeDeliveryRunLink
 };

@@ -1400,7 +1400,7 @@ const createNewCompany = async (req, res) => {
         const registrationUserAgent = req.headers['user-agent'] || null;
 
         // Fetch platform default sidebar layout
-        let defaultSidebarLayout = 'three-tier';
+        let defaultSidebarLayout = 'classic';
         try {
             const platformDefaultSidebar = await getSharedPrismaClient().systemSettings.findUnique({
                 where: { systemName: 'platform_default_sidebar' },

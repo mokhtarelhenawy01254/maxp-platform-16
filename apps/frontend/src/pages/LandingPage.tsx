@@ -15,7 +15,7 @@ import { trackPlatformSiteLead } from "../utils/platformSiteMetaPixel";
 
 const LandingPage: React.FC = () => {
   useEffect(() => {
-    document.title = "Max P Business OS — نظام تشغيل التجارة والمتاجر للشركات في مصر";
+    document.title = "Max P Business OS. نظام تشغيل التجارة والمتاجر للشركات في مصر";
   }, []);
 
   const preloadAuth = () => {

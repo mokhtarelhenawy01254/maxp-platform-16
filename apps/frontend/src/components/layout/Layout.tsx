@@ -262,7 +262,11 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/super-admin/ai-chat") ||
     location.pathname.startsWith("/tickets");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
-  const currentLayout = resolvedUserLayout || "three-tier";
+  const baseLayout: SidebarLayoutType = resolvedUserLayout || "classic";
+  // Strict NAV-1 Law: On desktop (screen >= 1024px, i.e. !isMobile), never render HorizontalNav
+  // or a duplicate horizontal destinations bar. If layout is 'horizontal', treat as 'classic' on desktop.
+  // Mobile drawer behavior is preserved as-is.
+  const currentLayout: SidebarLayoutType = (!isMobile && baseLayout === "horizontal") ? "classic" : baseLayout;
   const companyScopeKey = user?.companyId || user?.company?.id || "no-company";
   const isHorizontalLayout = currentLayout === "horizontal";
   const isMerchantUser = user?.role === "MERCHANT";

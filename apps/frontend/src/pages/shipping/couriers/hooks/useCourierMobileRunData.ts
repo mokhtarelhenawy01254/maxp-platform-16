@@ -1,3 +1,4 @@
+import courierPortalApi from '../../../courier-portal/services/courierPortalApi';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -15,6 +16,19 @@ export const useCourierMobileRunData = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'delivered' | 'returned'>('pending');
 
+  // PIN Verification Modal State
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`courier_run_session_${id}`) || null;
+    } catch {
+      return null;
+    }
+  });
+  const [isPinPromptOpen, setIsPinPromptOpen] = useState(false);
+  const [linkPinInput, setLinkPinInput] = useState('');
+  const [verifyingPin, setVerifyingPin] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+
   // Action Modal State
   const [selectedShipment, setSelectedShipment] = useState<DeliveryRunItem | null>(null);
   const [actionType, setActionType] = useState<'DELIVERED' | 'DELAYED' | 'RETURNED' | null>(null);
@@ -25,20 +39,62 @@ export const useCourierMobileRunData = () => {
   const [submitting, setSubmitting] = useState(false);
   const [viewingWaybillShipment, setViewingWaybillShipment] = useState<DeliveryRunItem | null>(null);
 
-  const fetchRun = useCallback(async () => {
+  const fetchRun = useCallback(async (explicitToken?: string) => {
     if (!id) return;
     setLoading(true);
+    const activeToken = explicitToken || sessionToken || token;
     try {
-      const res = await courierService.getDeliveryRun(id, token);
+      const res = await courierService.getDeliveryRun(id, activeToken);
       if (res.success && res.data) {
         setRun(res.data);
+        setIsPinPromptOpen(false);
       }
     } catch (err: any) {
-      toast.error(err?.message || 'تعذر تحميل مأمورية التوصيل');
+      const errStatus = err?.response?.status;
+      const errData = err?.response?.data;
+      const errCode = errData?.code || err?.code;
+      const errMsg = errData?.message || err?.message || '';
+      if (errStatus === 401 && (errCode === 'COURIER_PIN_REQUIRED' || errMsg.includes('PIN') || errMsg.includes('رمز'))) {
+        setIsPinPromptOpen(true);
+      } else {
+        toast.error(errMsg || 'تعذر تحميل مأمورية التوصيل');
+      }
     } finally {
       setLoading(false);
     }
-  }, [id, token]);
+  }, [id, token, sessionToken]);
+
+  const handleVerifyLinkPin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!id || !linkPinInput.trim()) return;
+    setVerifyingPin(true);
+    setPinError(null);
+    try {
+      const res = await courierPortalApi.verifyLinkPin({
+        runId: id,
+        pin: linkPinInput.trim(),
+        token,
+      });
+      const verifiedToken = res?.sessionToken || res?.token;
+      if (verifiedToken) {
+        setSessionToken(verifiedToken);
+        try {
+          sessionStorage.setItem(`courier_run_session_${id}`, verifiedToken);
+        } catch {}
+        setIsPinPromptOpen(false);
+        setLinkPinInput('');
+        toast.success('تم التحقق من الـ PIN بنجاح');
+        await fetchRun(verifiedToken);
+      } else {
+        setPinError('رمز PIN غير صحيح');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'رمز PIN غير صحيح، يرجى إعادة المحاولة';
+      setPinError(typeof msg === 'string' ? msg : 'رمز PIN غير صحيح');
+    } finally {
+      setVerifyingPin(false);
+    }
+  };
 
   useEffect(() => {
     fetchRun();
@@ -92,7 +148,7 @@ export const useCourierMobileRunData = () => {
           pin: run.pinRequired ? fieldPin.trim() : undefined,
           otp: actionType === 'DELIVERED' && run.otpRequired ? deliveryOtp.trim() : undefined,
         },
-        token
+        sessionToken || token
       );
 
       toast.success(
@@ -157,5 +213,13 @@ export const useCourierMobileRunData = () => {
     returnedShipments,
     pendingShipments,
     displayedShipments,
+    isPinPromptOpen,
+    setIsPinPromptOpen,
+    linkPinInput,
+    setLinkPinInput,
+    verifyingPin,
+    pinError,
+    setPinError,
+    handleVerifyLinkPin,
   };
 };

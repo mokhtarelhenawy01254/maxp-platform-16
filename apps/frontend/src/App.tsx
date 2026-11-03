@@ -454,11 +454,50 @@ const CourierSettlementPage = React.lazy(
 const CourierMobileRunPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierMobileRunPage"),
 );
+const CourierLoginPage = React.lazy(
+  () => import("./pages/courier-portal/CourierLoginPage"),
+);
+const CourierHomePage = React.lazy(
+  () => import("./pages/courier-portal/CourierHomePage"),
+);
+const CourierRunPage = React.lazy(
+  () => import("./pages/courier-portal/CourierRunPage"),
+);
+const CourierCustodyPage = React.lazy(
+  () => import("./pages/courier-portal/CourierCustodyPage"),
+);
 const CourierDuesPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierDuesPage"),
 );
 const CourierPerformancePage = React.lazy(
   () => import("./pages/shipping/couriers/CourierPerformancePage"),
+);
+const ShippingOpsDashboard = React.lazy(
+  () => import("./pages/shipping-ops/ShippingOpsDashboard"),
+);
+const AgentReportsPage = React.lazy(
+  () => import("./pages/agent-reports/AgentReportsPage"),
+);
+const ShippingParcelsList = React.lazy(
+  () => import("./pages/shipping-ops/ShippingParcelsList"),
+);
+const NewParcelPage = React.lazy(
+  () => import("./pages/shipping-ops/NewParcelPage"),
+);
+const ShippingParcelDetails = React.lazy(
+  () => import("./pages/shipping-ops/ShippingParcelDetails"),
+);
+const PickupsPage = React.lazy(
+  () => import("./pages/shipping-ops/PickupsPage"),
+);
+const BranchesPage = React.lazy(
+  () => import("./pages/shipping-ops/BranchesPage"),
+);
+const HubReceivePage = React.lazy(
+  () => import("./pages/shipping-ops/HubReceivePage"),
+);
+const RateCardsPage = React.lazy(
+  () => import("./pages/shipping-ops/RateCardsPage"),
 );
 const BulkStatusUpdate = React.lazy(
   () => import("./pages/orders/BulkStatusUpdatePage"),
@@ -1889,7 +1928,8 @@ if (typeof window !== "undefined") {
   p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
   p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
   p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
-  p["/tasks"] = () => import("./pages/tasks/Dashboard");
+  p["/tasks"] = () => import("./pages/tasks/Tasks");
+  p["/tasks/dashboard"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
   p["/inventory/studio"] = () => import("./pages/inventory/studio/InventoryAiStudioPage");
   p["/support"] = () => import("./pages/support/SupportCenter");
@@ -3979,6 +4019,22 @@ const AppContent = () => {
                 />
                 <Route
                   path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
                   element={
                     <Layout>
                       <Tasks />
@@ -6139,6 +6195,22 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/tasks/integrations"
                   element={
                     <Layout>
@@ -6398,6 +6470,22 @@ const AppContent = () => {
                 />
                 <Route
                   path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
                   element={
                     <Layout>
                       <Tasks />
@@ -7327,6 +7415,113 @@ const AppContent = () => {
                       </AppAccessRoute>
                     </Layout>
                   }
+                />
+                <Route
+                  path="/shipping-ops"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingOpsDashboard />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingParcelsList />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels/new"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <NewParcelPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/parcels/:id"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingParcelDetails />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/pickups"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <PickupsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/branches"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <BranchesPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/hub-receive"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <HubReceivePage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/rate-cards"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <RateCardsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/agent-reports"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['agent-reports']}>
+                        <AgentReportsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                {/* Courier Portal (Standalone mobile fleet shell) */}
+                <Route
+                  path="/courier-portal/login"
+                  element={<CourierLoginPage />}
+                />
+                <Route
+                  path="/courier-portal"
+                  element={<CourierHomePage />}
+                />
+                <Route
+                  path="/courier-portal/runs/:id"
+                  element={<CourierRunPage />}
+                />
+                <Route
+                  path="/courier-portal/custody"
+                  element={<CourierCustodyPage />}
                 />
                 <Route
                   path="/courier/run/:id"

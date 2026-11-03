@@ -64,7 +64,7 @@ export const LandingDayInLifeFlow: React.FC = () => {
           <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest block mb-2">
             دورة حياة الأوردر • من الشات للخزنة
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight text-balance">
             كيف يتحرك الأوردر في نشاطك التجاري؟
           </h2>
           <p className="mt-3 text-base text-zinc-400">
@@ -72,7 +72,7 @@ export const LandingDayInLifeFlow: React.FC = () => {
           </p>
         </div>
 
-        {/* 4 Steps Timeline Rail — Clean Open Surface */}
+        {/* 4 Steps Timeline Rail - Clean Open Surface */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
           {ORDER_STEPS.map((step, idx) => {
             const isCurrent = idx === activeStep;
@@ -103,7 +103,7 @@ export const LandingDayInLifeFlow: React.FC = () => {
           })}
         </div>
 
-        {/* Detailed Breakdown for Active Step — Open Single Depth Surface */}
+        {/* Detailed Breakdown for Active Step - Open Single Depth Surface */}
         <div className="pt-8 border-t border-white/[0.06] grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">

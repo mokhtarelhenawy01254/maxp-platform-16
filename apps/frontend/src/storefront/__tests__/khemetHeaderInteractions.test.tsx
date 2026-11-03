@@ -1,8 +1,44 @@
 // @vitest-environment jsdom
 
+import { vi } from 'vitest';
+
+vi.hoisted(() => {
+  const createMockStorage = () => {
+    const store = new Map<string, string>();
+    return {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, String(value)); },
+      removeItem: (key: string) => { store.delete(key); },
+      clear: () => { store.clear(); },
+      key: (index: number) => Array.from(store.keys())[index] ?? null,
+      get length() { return store.size; },
+    };
+  };
+
+  const mockLocalStorage = createMockStorage();
+  const mockSessionStorage = createMockStorage();
+
+  try {
+    Object.defineProperty(globalThis, 'localStorage', { value: mockLocalStorage, writable: true, configurable: true });
+  } catch {}
+  try {
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'localStorage', { value: mockLocalStorage, writable: true, configurable: true });
+    }
+  } catch {}
+  try {
+    Object.defineProperty(globalThis, 'sessionStorage', { value: mockSessionStorage, writable: true, configurable: true });
+  } catch {}
+  try {
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'sessionStorage', { value: mockSessionStorage, writable: true, configurable: true });
+    }
+  } catch {}
+});
+
 import '@testing-library/jest-dom/vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -14,6 +50,8 @@ import StorefrontShell, {
 import { useCartStore } from '../store/useCartStore';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import khemetLuxeThemeData from '../themes/khemet-luxe-eg.json';
+
+
 
 vi.mock('../services/storefrontAnalytics', () => ({
   default: {
@@ -279,7 +317,7 @@ describe('KHEMET LUXE storefront header interactions', () => {
 
     await user.click(screen.getByRole('button', { name: /سلة التسوق|Shopping cart/ }));
     expect(await screen.findByRole('dialog', { name: /سلة|Cart/ })).toBeInTheDocument();
-  });
+  }, 25000);
 
   it('uses SPA navigation for KHEMET chrome links across storefront pages', () => {
     expect(

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { Menu, X, ArrowLeft } from "lucide-react";
 import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 
@@ -15,14 +15,13 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { scrollY } = useScroll();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    return scrollY.on("change", (latest) => {
+      setScrolled(latest > 20);
+    });
+  }, [scrollY]);
 
   const handleLeadClick =
     (eventSource: string, destination: string) => () => {
@@ -156,7 +155,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-xs font-bold text-black bg-white px-4 py-2 rounded-full"
                 >
-                  ابدأ مجاناً
+                  تجربة مجانية
                 </Link>
               </div>
             </motion.div>

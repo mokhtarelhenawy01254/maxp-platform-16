@@ -23,27 +23,27 @@ export const LandingRoiCalculator: React.FC = () => {
             <span>الوفر الشهري الموثق عند الاستبدال</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-            بدل ٥–٨ اشتراكات منفصلة..
+            بدل 5-8 اشتراكات منفصلة..
             <br />
             <span className="text-zinc-400 font-normal">باقة واحدة تشتغل مع بعض.</span>
           </h2>
           <p className="mt-3 text-base text-zinc-400 leading-relaxed">
-            الأرقام هنا موثقة من قائمة الأسعار الرسمية — بدون تقديرات ولا افتراضات.
+            الأرقام هنا موثقة من قائمة الأسعار الرسمية. بدون تقديرات ولا افتراضات.
           </p>
         </div>
 
-        {/* Documented Figures — Open Clean Vertical Column */}
+        {/* Documented Figures - Open Clean Vertical Column */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
 
           <div className="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-white/[0.08] pt-8 lg:pt-0 lg:pl-10">
             <span className="text-xs font-mono text-zinc-400 block mb-1">
               صافي الوفر المتوقع شهرياً:
             </span>
-            <div className="text-4xl sm:text-5xl font-black text-white tracking-tight" dir="ltr">
-              4,200–7,700 <span className="text-xl text-emerald-400 font-bold">ج.م/شهر</span>
+            <div className="text-4xl sm:text-5xl font-black text-white tracking-tight font-mono tabular-nums" dir="ltr">
+              4,200-7,700 <span className="text-xl text-emerald-400 font-bold font-sans">ج.م/شهر</span>
             </div>
             <span className="text-xs text-zinc-400 font-mono mt-2 block">
-              عند استبدال ٥–٨ اشتراكات منفصلة بباقة MaxP
+              عند استبدال 5-8 اشتراكات منفصلة بباقة MaxP
             </span>
           </div>
 
@@ -51,27 +51,27 @@ export const LandingRoiCalculator: React.FC = () => {
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between text-sm border-b border-white/[0.06] pb-3">
               <span className="text-zinc-400">تكلفة الأدوات المنفصلة اللي بتستبدلها (واتساب رسمي، كاشير، مخازن، فواتير):</span>
-              <span className="font-mono font-bold text-white" dir="ltr">4,500–8,000 ج.م</span>
+              <span className="font-mono tabular-nums font-bold text-white" dir="ltr">4,500-8,000 ج.م</span>
             </div>
 
             <div className="text-sm text-zinc-400 border-b border-white/[0.06] pb-3">
-              اشتراكك الشهري = مجموع التطبيقات اللي بفعّلها — وفي تطبيقات مجانية تبدأ بيها فورًا.
+              اشتراكك الشهري = مجموع التطبيقات اللي بفعّلها. وفي تطبيقات مجانية تبدأ بيها فورًا.
             </div>
 
             <div className="flex items-center justify-between text-sm border-b border-white/[0.06] pb-3">
               <span className="text-zinc-400">طاقة معالجة المحادثات:</span>
-              <span className="font-mono font-bold text-white">أكثر من 1,000 محادثة شهرياً</span>
+              <span className="font-mono tabular-nums font-bold text-white">أكثر من 1,000 محادثة شهرياً</span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-400">الباقات المتخصصة تبدأ من:</span>
-              <span className="font-mono font-bold text-white" dir="ltr">999 ج.م</span>
+              <span className="font-mono tabular-nums font-bold text-white" dir="ltr">999 ج.م</span>
             </div>
 
             {/* CTA */}
             <div className="pt-6">
               <Link
-                to="/register"
+                to="/auth/register"
                 onClick={() =>
                   trackPlatformSiteLead({
                     cta_type: "roi_calculator_start",

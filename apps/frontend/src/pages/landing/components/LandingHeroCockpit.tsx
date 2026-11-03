@@ -42,10 +42,10 @@ export const LandingHeroCockpit: React.FC = () => {
   };
 
   return (
-    <section id="cockpit" className="relative pt-32 sm:pt-40 pb-20 sm:pb-28 overflow-hidden">
-      {/* Background Cinematic Radial Ambient Light */}
+    <section id="cockpit" className="relative pt-20 sm:pt-28 pb-16 sm:pb-20 overflow-hidden">
+      {/* Background Architectural Subtle Ambient Illumination */}
       <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] sm:w-[900px] h-[400px] bg-gradient-to-b from-red-600/[0.07] via-emerald-500/[0.04] to-transparent blur-[140px] pointer-events-none rounded-full"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] sm:w-[900px] h-[360px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.05),transparent_70%)] blur-[100px] pointer-events-none rounded-full"
         aria-hidden="true"
       />
 
@@ -62,7 +62,7 @@ export const LandingHeroCockpit: React.FC = () => {
 
         {/* Hero Headline & Subtitle */}
         <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14">
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.12]">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.12] text-balance">
             ودّع تشتت 6 برامج وشيتات إكسيل.
             <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
@@ -120,7 +120,7 @@ export const LandingHeroCockpit: React.FC = () => {
           </div>
         </div>
 
-        {/* The Living 3-Device Cockpit — Open Single Depth Surface */}
+        {/* The Living 3-Device Cockpit - Open Single Depth Surface */}
         <div className="relative max-w-6xl mx-auto pt-6">
           {/* Device Tabs Selector for Mobile / Quick Focus */}
           <div className="flex items-center justify-center gap-2 mb-6 sm:hidden">
@@ -160,7 +160,7 @@ export const LandingHeroCockpit: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
             {/* Panel 1: Customer WhatsApp (Phone View) */}
             <div
-              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-[#09090b] border transition-all duration-300 ${
+              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-zinc-950/80 backdrop-blur-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 ${
                 activeDevice === "phone" || simStep === 1
                   ? "border-emerald-500/50 shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-500/20"
                   : "border-white/[0.08] opacity-90 hover:border-white/20"
@@ -171,7 +171,7 @@ export const LandingHeroCockpit: React.FC = () => {
                   <Smartphone className="w-4 h-4 text-emerald-400" />
                   <span className="font-bold text-white">واتساب العميل والـ AI</span>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono tabular-nums text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
                   رد في 1.8 ثانية
                 </span>
               </div>
@@ -195,15 +195,15 @@ export const LandingHeroCockpit: React.FC = () => {
 
                 {/* Order Confirmation */}
                 <div className="p-2.5 rounded-lg bg-zinc-950 border border-emerald-500/30 text-[11px] text-zinc-300 flex items-center justify-between">
-                  <span>كود المنتج: SH-BLK-43</span>
-                  <span className="font-bold text-emerald-400">850 ج.م COD</span>
+                  <span className="font-mono tabular-nums">كود: SH-BLK-43</span>
+                  <span className="font-mono tabular-nums font-bold text-emerald-400">850 ج.م COD</span>
                 </div>
               </div>
             </div>
 
             {/* Panel 2: Storefront & Cloud POS (Tablet View) */}
             <div
-              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-[#09090b] border transition-all duration-300 ${
+              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-zinc-950/80 backdrop-blur-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 ${
                 activeDevice === "pos" || simStep === 2
                   ? "border-blue-500/50 shadow-2xl shadow-blue-500/10 ring-1 ring-blue-500/20"
                   : "border-white/[0.08] opacity-90 hover:border-white/20"
@@ -214,7 +214,7 @@ export const LandingHeroCockpit: React.FC = () => {
                   <Tablet className="w-4 h-4 text-blue-400" />
                   <span className="font-bold text-white">كاشير وجرد الفرع (POS)</span>
                 </div>
-                <span className="text-[10px] font-mono text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono tabular-nums text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded-full">
                   تزامن آني 100%
                 </span>
               </div>
@@ -224,7 +224,7 @@ export const LandingHeroCockpit: React.FC = () => {
                 <div className="p-3 rounded-xl bg-zinc-900/90 text-zinc-200">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="font-semibold text-zinc-300">فرع مدينة نصر (محل)</span>
-                    <span className="font-mono text-blue-400 font-bold">16 -&gt; 15 قطعة</span>
+                    <span className="font-mono tabular-nums text-blue-400 font-bold">16 -&gt; 15 قطعة</span>
                   </div>
                   <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                     <div className="bg-blue-500 h-full w-[70%]" />
@@ -238,12 +238,12 @@ export const LandingHeroCockpit: React.FC = () => {
                     <span className="font-bold text-white">شيفت كاشير الفرع</span>
                     <span className="text-[10px] text-emerald-400 font-mono">نشط</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400">إجمالي مبيعات اليوم بالمحل: 28,400 ج.م • 34 فاتورة</p>
+                  <p className="text-[11px] text-zinc-400">إجمالي مبيعات اليوم بالمحل: <span className="font-mono tabular-nums text-zinc-200">28,400</span> ج.م • <span className="font-mono tabular-nums text-zinc-200">34</span> فاتورة</p>
                 </div>
 
                 {/* Barcode Kiosk Feedback */}
                 <div className="p-2.5 rounded-lg bg-zinc-950 border border-white/[0.06] text-[11px] flex items-center justify-between text-zinc-300">
-                  <span>باركود ممسوح: 622109482</span>
+                  <span>باركود ممسوح: <span className="font-mono tabular-nums text-zinc-200">622109482</span></span>
                   <span className="text-zinc-400 font-mono">طابعة إيصالات جاهزة</span>
                 </div>
               </div>
@@ -251,7 +251,7 @@ export const LandingHeroCockpit: React.FC = () => {
 
             {/* Panel 3: Central Operations & Shipping Server */}
             <div
-              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-[#09090b] border transition-all duration-300 ${
+              className={`md:col-span-4 p-5 sm:p-6 rounded-2xl bg-zinc-950/80 backdrop-blur-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 ${
                 activeDevice === "server" || simStep === 3
                   ? "border-red-500/50 shadow-2xl shadow-red-500/10 ring-1 ring-red-500/20"
                   : "border-white/[0.08] opacity-90 hover:border-white/20"
@@ -271,19 +271,19 @@ export const LandingHeroCockpit: React.FC = () => {
                 {/* Bosta Waybill Card */}
                 <div className="p-3 rounded-xl bg-zinc-900/90 text-zinc-200 border-r-2 border-red-500">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-white">بوليصة شحن: BST-892401</span>
+                    <span className="font-bold text-white font-mono tabular-nums">بوليصة: BST-892401</span>
                     <span className="text-[10px] font-mono text-emerald-400">جاهزة للاستلام</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400">بوسطة • الدفع عند الاستلام: 850 ج.م • تتبع لحظي</p>
+                  <p className="text-[11px] text-zinc-400">بوسطة • التحصيل عند الاستلام: <span className="font-mono tabular-nums text-zinc-200">850</span> ج.م • تتبع لحظي</p>
                 </div>
 
                 {/* Net Profit Calculation */}
                 <div className="p-3 rounded-xl bg-emerald-950/20 border-r-2 border-emerald-500 text-zinc-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-white">صافي ربح الأوردر (P&L)</span>
-                    <span className="font-mono font-bold text-emerald-400">+290 ج.م</span>
+                    <span className="font-mono tabular-nums font-bold text-emerald-400">+290 ج.م</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400">بعد خصم: تكلفة المنتج (410ج) + الشحن (45ج) + الـ ROAS الإعلاني (105ج)</p>
+                  <p className="text-[10px] text-zinc-400">بعد خصم: المنتج (<span className="font-mono tabular-nums">410ج</span>) + الشحن (<span className="font-mono tabular-nums">45ج</span>) + الإعلانات (<span className="font-mono tabular-nums">105ج</span>)</p>
                 </div>
 
                 {/* ETA Compliance */}

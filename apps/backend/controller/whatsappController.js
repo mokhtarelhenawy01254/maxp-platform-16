@@ -883,7 +883,7 @@ async function inspectMetaSession(req, res) {
             const phoneRes = await axios.get(graphBase + '/' + session.metaPhoneNumberId, {
                 params: {
                     access_token: accessToken,
-                    fields: 'id,display_phone_number,verified_name,code_verification_status,quality_rating,name_status,messaging_limit_tier,status,account_mode,is_pin_enabled,health_status'
+                    fields: 'id,display_phone_number,verified_name,code_verification_status,quality_rating,name_status,new_display_name,new_name_status,messaging_limit_tier,status,account_mode,is_pin_enabled,health_status'
                 },
                 timeout: 10000
             });
@@ -995,6 +995,83 @@ async function registerMetaSession(req, res) {
         });
     } catch (error) {
         console.error('❌ Error registering Meta session:', error.response?.data || error.message);
+        const metaError = error.response?.data?.error;
+        return res.status(error.response?.status || 400).json({
+            success: false,
+            error: metaError?.message || error.message,
+            metaError
+        });
+    }
+}
+
+
+/**
+ * إرسال طلب اعتماد أو تغيير اسم الظهور لرقم الهاتف على Meta Cloud API
+ * POST /api/v1/whatsapp/sessions/:id/meta-update-name
+ */
+async function updateMetaDisplayName(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const { newDisplayName } = req.body;
+
+        const cleanName = newDisplayName ? String(newDisplayName).trim() : '';
+        if (!cleanName || cleanName.length < 2) {
+            return res.status(400).json({
+                success: false,
+                error: 'اسم الظهور الجديد مطلوب ويجب ألا يقل عن حرفين'
+            });
+        }
+
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ success: false, error: 'الجلسة غير موجودة' });
+        }
+
+        if (session.provider !== 'META_CLOUD') {
+            return res.status(400).json({ success: false, error: 'هذه الجلسة ليست من مزود Meta Cloud API' });
+        }
+
+        const accessToken = decryptField(session.metaAccessToken);
+        if (!accessToken || !session.metaPhoneNumberId) {
+            return res.status(400).json({
+                success: false,
+                error: 'بيانات Meta غير مكتملة في هذه الجلسة (Phone Number ID أو Token مفقود)'
+            });
+        }
+
+        const axios = require('axios');
+        const apiVersion = session.metaApiVersion || process.env.META_GRAPH_API_VERSION || 'v26.0';
+        const graphBase = 'https://graph.facebook.com/' + apiVersion;
+
+        console.log('📱 [updateMetaDisplayName] Requesting new display name "' + cleanName + '" for phone ' + session.metaPhoneNumberId);
+
+        const nameRes = await axios.post(
+            graphBase + '/' + session.metaPhoneNumberId,
+            {
+                new_display_name: cleanName
+            },
+            {
+                headers: {
+                    Authorization: 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 15000
+            }
+        );
+
+        console.log('✅ [updateMetaDisplayName] Meta display name request submitted:', nameRes.data);
+
+        return res.json({
+            success: true,
+            message: 'تم إرسال طلب اعتماد اسم الظهور إلى Meta بنجاح',
+            metaResponse: nameRes.data
+        });
+    } catch (error) {
+        console.error('❌ Error updating Meta display name:', error.response?.data || error.message);
         const metaError = error.response?.data?.error;
         return res.status(error.response?.status || 400).json({
             success: false,
@@ -5374,6 +5451,7 @@ module.exports = {
     getSession,
     inspectMetaSession,
     registerMetaSession,
+    updateMetaDisplayName,
     updateSession,
     deleteSession,
     connectSession,

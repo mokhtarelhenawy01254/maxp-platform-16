@@ -25,8 +25,8 @@ const InvoiceQR: React.FC<InvoiceQRProps> = ({
   if (!value) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 text-center select-none rounded-xl p-2.5 print:p-0">
-      <div className="rounded-lg bg-white p-1.5 print:p-0">
+    <div className="flex flex-col items-center justify-center gap-1 text-center select-none print:p-0">
+      <div className="print:p-0">
         <QRCodeSVG
           value={value}
           size={size}
@@ -41,8 +41,8 @@ const InvoiceQR: React.FC<InvoiceQRProps> = ({
         <span
           className={
             compact
-              ? "text-[10px] font-semibold text-foreground print:text-black"
-              : "text-xs font-semibold tracking-tight text-foreground print:text-black"
+              ? "text-[10px] font-semibold text-slate-900 print:text-black"
+              : "text-xs font-semibold tracking-tight text-slate-900 print:text-black"
           }
         >
           {label}
@@ -52,8 +52,8 @@ const InvoiceQR: React.FC<InvoiceQRProps> = ({
         style={{ maxWidth: `${Math.max(size + 24, 72)}px` }}
         className={
           compact
-            ? "truncate font-mono text-[9px] text-muted-foreground tabular-nums print:text-black"
-            : "truncate font-mono text-[10px] text-muted-foreground tabular-nums print:text-black"
+            ? "truncate font-mono text-[9px] text-slate-700 tabular-nums print:text-black"
+            : "truncate font-mono text-[10px] text-slate-700 tabular-nums print:text-black"
         }
         title={value}
       >

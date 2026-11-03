@@ -28,7 +28,8 @@ const SidebarLayoutFactory: React.FC<SidebarLayoutFactoryProps> = (props) => {
     case "three-tier":
       return <ThreeTierSidebar {...props} />;
     case "horizontal":
-      return <HorizontalNav {...props} />;
+      // Strict NAV-1 Law: Desktop enforces classic sidebar (single navigation source).
+      return props.mobileMode ? <ThreeTierSidebar {...props} /> : <ClassicSidebar {...props} />;
     case "floating":
       return <FloatingSidebar {...props} />;
     case "minimal":

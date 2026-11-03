@@ -368,13 +368,13 @@ const register = async (req, res) => {
       where: { systemName: "platform_default_sidebar" },
     });
 
-    let defaultSidebarLayout = "three-tier";
+    let defaultSidebarLayout = "classic";
     let defaultSidebarSections = {};
 
     if (platformDefaultSidebar?.config) {
       try {
         const config = JSON.parse(platformDefaultSidebar.config);
-        defaultSidebarLayout = config.layout || "three-tier";
+        defaultSidebarLayout = config.layout || "classic";
         defaultSidebarSections = config.sections || {};
       } catch (e) {
         console.warn("Failed to parse platform default sidebar config:", e);

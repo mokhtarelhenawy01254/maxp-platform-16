@@ -85,6 +85,12 @@ router.get(
   courierController.getRunShareLink
 );
 
+router.post(
+  '/runs/:id/revoke-link',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.revokeRunLink
+);
+
 // Field updates (Courier updates delivery attempt: delivered, delayed, returned)
 router.patch(
   '/runs/:runId/shipments/:shipmentId',

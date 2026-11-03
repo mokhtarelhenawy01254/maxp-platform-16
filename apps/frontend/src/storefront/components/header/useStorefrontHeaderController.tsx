@@ -177,8 +177,8 @@ export const useStorefrontHeaderController = (
 
   const globalMenu = Array.isArray(effectiveGlobalHeader?.menu) ? effectiveGlobalHeader.menu : undefined;
   const resolvedNavItems =
-    Array.isArray(globalMenu) && globalMenu.length > 0
-      ? globalMenu.slice(0, 8).map((m) => ({ label: m.label || "", to: m.href || "/" }))
+    globalMenu !== undefined
+      ? globalMenu.slice(0, 8).map((m: any) => ({ label: m.label || "", to: m.href || m.to || m.url || "/" }))
       : Array.isArray(theme.header?.navigation) && theme.header.navigation.length > 0
       ? theme.header.navigation
       : Array.isArray(menuFromDesignTokens) && menuFromDesignTokens.length > 0
@@ -210,10 +210,13 @@ export const useStorefrontHeaderController = (
 
   const filteredNavItems = resolvedNavItems?.filter((nav) => !isDraftPage(nav.to));
 
-  const navLinks = (filteredNavItems?.map((nav) => ({
+  const navLinks = (
+    filteredNavItems
+      ? filteredNavItems.map((nav) => ({
     label: nav.label,
     to: buildStorefrontPath(location.pathname, nav.to, location.search),
-  })) || [
+  }))
+      : [
     {
       label: theme.direction === "rtl" ? "الرئيسية" : "Home",
       to: buildStorefrontPath(location.pathname, "/", location.search),

@@ -8,6 +8,7 @@ import { DeliveryRunDetailModal } from './components/DeliveryRunDetailModal';
 import { DeliveryRunReassignModal } from './components/DeliveryRunReassignModal';
 import { DeliveryRunWaybillModal } from './components/DeliveryRunWaybillModal';
 import { CreateDeliveryRunModal } from './components/CreateDeliveryRunModal';
+import { NoSymbolIcon } from '@heroicons/react/24/outline';
 
 const DeliveryRunsPage: React.FC = () => {
   const { formatPrice } = useCurrency();
@@ -53,7 +54,12 @@ const DeliveryRunsPage: React.FC = () => {
     handleOpenCreateRun,
     toggleReadyOrder,
     handleConfirmCreateRun,
-    handlePrint
+    handlePrint,
+    revokingRun,
+    setRevokingRun,
+    isRevoking,
+    handleRevokeLink,
+    confirmRevokeLink
   } = useDeliveryRunsData();
 
   return (
@@ -74,6 +80,7 @@ const DeliveryRunsPage: React.FC = () => {
         handleCopyMobileLink={handleCopyMobileLink}
         handleShareWhatsApp={handleShareWhatsApp}
         handleOpenDetail={handleOpenDetail}
+        onRevokeLink={handleRevokeLink}
         formatDate={formatDate}
         formatPrice={formatPrice}
       />
@@ -87,6 +94,7 @@ const DeliveryRunsPage: React.FC = () => {
           onViewWaybill={setViewingWaybill}
           onPrint={handlePrint}
           onOpenReassign={openReassign}
+          onRevokeLink={handleRevokeLink}
           formatDate={formatDate}
           formatPrice={formatPrice}
         />
@@ -133,6 +141,49 @@ const DeliveryRunsPage: React.FC = () => {
         onConfirm={handleConfirmCreateRun}
         formatPrice={formatPrice}
       />
+      {/* Link Revocation Confirmation Modal */}
+      {revokingRun && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4" dir="rtl">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center">
+                <NoSymbolIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                  إلغاء صلاحية رابط المندوب
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  المأمورية {revokingRun.runNumber}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              هل أنت متأكد من إلغاء صلاحية هذا الرابط؟ لن يتمكن المندوب من فتحه بهذا الرابط القديم.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRevokingRun(null)}
+                disabled={isRevoking}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={confirmRevokeLink}
+                disabled={isRevoking}
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                {isRevoking ? 'جاري الإلغاء...' : 'تأكيد إلغاء الرابط'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

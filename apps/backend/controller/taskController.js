@@ -959,6 +959,7 @@ const taskController = {
         dueDateFrom,
         dueDateTo,
         tag,
+        excludeCompleted,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -1023,7 +1024,11 @@ const taskController = {
         companyId,
         ...(projectId && { projectId }),
         ...(categoryId && { categoryId }),
-        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
+        ...(normalizeStatusFilter(status)
+          ? { status: normalizeStatusFilter(status) }
+          : excludeCompleted === "true"
+          ? { status: { notIn: ["COMPLETED", "CANCELLED"] } }
+          : {}),
         ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
         ...(assignedTo && assignedTo !== "all" && { assignedTo }),
       };
@@ -2689,6 +2694,7 @@ const taskController = {
         dueDateFrom,
         dueDateTo,
         tag,
+        excludeCompleted,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -2740,7 +2746,11 @@ const taskController = {
       const where = {
         companyId,
         ...(projectId && { projectId }),
-        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
+        ...(normalizeStatusFilter(status)
+          ? { status: normalizeStatusFilter(status) }
+          : excludeCompleted === "true"
+          ? { status: { notIn: ["COMPLETED", "CANCELLED"] } }
+          : {}),
         ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
       };
 
@@ -2836,6 +2846,7 @@ const taskController = {
         dueDateFrom,
         dueDateTo,
         tag,
+        excludeCompleted,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -2889,7 +2900,11 @@ const taskController = {
         companyId,
         createdBy: userId,
         ...(projectId && { projectId }),
-        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
+        ...(normalizeStatusFilter(status)
+          ? { status: normalizeStatusFilter(status) }
+          : excludeCompleted === "true"
+          ? { status: { notIn: ["COMPLETED", "CANCELLED"] } }
+          : {}),
         ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
         ...(assignedTo && assignedTo !== "all" && { assignedTo }),
       };

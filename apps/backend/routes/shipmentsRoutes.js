@@ -8,6 +8,8 @@ const BostaService = require('../services/bostaService');
 const QpExpressService = require('../services/qpExpressService');
 const { STATUS_FILTER_ALIASES } = require('../utils/turbo/constants');
 const { classifyCarrierShipmentStage } = require('../utils/statusNormalizer');
+const { recordShipmentEvent } = require('../services/shipping/shipmentEventService');
+const policyService = require('../services/shipping/policyService');
 
 // 🛡️ Courier mobile share-link tokens are scoped to the internal fleet module (/api/v1/couriers).
 // They must never reach external-carrier operations: creating, cancelling, or syncing shipments
@@ -462,7 +464,123 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
     const { orderId, shippingCompanyId, trackingNumber, manualDeliveryNotes } = req.body;
 
     if (!orderId) {
-      return res.status(400).json({ success: false, error: 'orderId is required' });
+      const {
+        recipientName,
+        recipientPhone,
+        recipientPhone2,
+        governorate,
+        destinationGovernorate,
+        city,
+        destinationCity,
+        address,
+        destinationAddress,
+        senderName,
+        senderPhone,
+        senderAddress,
+        weight,
+        weightKg,
+        pieces,
+        codAmount,
+        declaredValue,
+        contentDescription,
+        isFragile,
+        allowOpenPackage,
+        merchantId,
+        cost,
+      } = req.body;
+
+      const name = (recipientName || '').trim();
+      const phone = (recipientPhone || '').trim();
+      const gov = (destinationGovernorate || governorate || '').trim();
+
+      if (!name || !phone || !gov) {
+        return res.status(400).json({
+          success: false,
+          error: 'recipientName, recipientPhone, and governorate are required for standalone shipments',
+        });
+      }
+
+      let shippingCompany = null;
+      if (shippingCompanyId) {
+        shippingCompany = await prisma.shippingCompany.findFirst({
+          where: { id: shippingCompanyId, companyId },
+        });
+      }
+
+      const carrierType = shippingCompany?.providerKey || 'MANUAL';
+      let calculatedCost = cost !== undefined && cost !== null ? Number(cost) : null;
+      let rateCardId = null;
+      let pricingSource = 'MANUAL';
+
+      if (!shippingCompanyId || carrierType === 'MANUAL') {
+        const quote = await policyService.quotePrice({
+          companyId,
+          merchantId: merchantId || null,
+          governorate: gov,
+          weightKg: Number(weightKg || weight || 1),
+          codAmount: codAmount ? Number(codAmount) : 0,
+          prisma,
+        });
+        calculatedCost = quote.price;
+        rateCardId = quote.rateCardId || null;
+        pricingSource = quote.source;
+      }
+
+      const generatedTracking = trackingNumber || `TRK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      const shipment = await prisma.shipment.create({
+        data: {
+          companyId,
+          recipientName: name,
+          recipientPhone: phone,
+          recipientPhone2: recipientPhone2 ? String(recipientPhone2).trim() : null,
+          senderName: senderName ? String(senderName).trim() : null,
+          senderPhone: senderPhone ? String(senderPhone).trim() : null,
+          senderAddress: senderAddress ? String(senderAddress).trim() : null,
+          destinationGovernorate: gov,
+          destinationCity: city || destinationCity ? String(city || destinationCity).trim() : null,
+          destinationAddress: address || destinationAddress ? String(address || destinationAddress).trim() : null,
+          weight: weightKg || weight ? Number(weightKg || weight) : 1,
+          pieces: pieces ? Math.max(1, parseInt(pieces, 10)) : 1,
+          codAmount: codAmount !== undefined && codAmount !== null && codAmount !== '' ? Number(codAmount) : null,
+          collectedAmount: null,
+          declaredValue: declaredValue ? Number(declaredValue) : null,
+          contentDescription: contentDescription ? String(contentDescription).trim() : null,
+          isFragile: Boolean(isFragile),
+          allowOpenPackage: allowOpenPackage !== false,
+          clientRateCardId: rateCardId,
+          merchantId: merchantId || null,
+          shippingCompanyId: shippingCompany?.id || null,
+          carrierType,
+          status: 'PENDING',
+          source: 'SHIPMENT',
+          trackingNumber: generatedTracking,
+          cost: calculatedCost,
+          currency: 'EGP',
+          metadata: manualDeliveryNotes
+            ? JSON.stringify({ notes: manualDeliveryNotes, pricingSource })
+            : JSON.stringify({ pricingSource }),
+        },
+        include: { shippingCompany: true },
+      });
+
+      await recordShipmentEvent(prisma, {
+        companyId,
+        shipmentId: shipment.id,
+        fromStatus: null,
+        toStatus: 'PENDING',
+        reasonCode: 'CREATED',
+        notes: 'تم إنشاء الشحنة المستقلة',
+        actorType: 'ADMIN',
+        actorId: req.user?.id || null,
+        actorName: req.user?.name || null,
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: shipment,
+        message: 'تم حفظ بيانات الشحن بنجاح',
+      });
     }
 
     const order = await prisma.order.findFirst({
@@ -504,6 +622,18 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
           metadata: manualDeliveryNotes ? JSON.stringify({ notes: manualDeliveryNotes }) : null,
         },
         include: { shippingCompany: true, order: true },
+      });
+
+      await recordShipmentEvent(prisma, {
+        companyId,
+        shipmentId: shipment.id,
+        fromStatus: null,
+        toStatus: 'PENDING',
+        reasonCode: 'CREATED',
+        notes: 'تم إنشاء الشحنة للطلب',
+        actorType: 'ADMIN',
+        actorId: req.user?.id || null,
+        actorName: req.user?.name || null,
       });
     } else {
       shipment = await prisma.shipment.update({
@@ -579,6 +709,16 @@ router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken,
             }),
           },
         });
+        if (tracking.status !== shipment.status) {
+          await recordShipmentEvent(prisma, {
+            companyId,
+            shipmentId: shipment.id,
+            fromStatus: shipment.status,
+            toStatus: tracking.status,
+            notes: 'تمت المزامنة من Turbo',
+            actorType: 'SYSTEM',
+          });
+        }
         return res.json({ success: true, tracking, message: 'تمت المزامنة بنجاح' });
       }
     }
@@ -601,6 +741,16 @@ router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken,
             }),
           },
         });
+        if (tracking.state !== shipment.status) {
+          await recordShipmentEvent(prisma, {
+            companyId,
+            shipmentId: shipment.id,
+            fromStatus: shipment.status,
+            toStatus: tracking.state,
+            notes: 'تمت المزامنة من Bosta',
+            actorType: 'SYSTEM',
+          });
+        }
         return res.json({ success: true, tracking, message: 'تمت المزامنة بنجاح' });
       }
     }
@@ -622,6 +772,16 @@ router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken,
             }),
           },
         });
+        if (tracking.status !== shipment.status) {
+          await recordShipmentEvent(prisma, {
+            companyId,
+            shipmentId: shipment.id,
+            fromStatus: shipment.status,
+            toStatus: tracking.status,
+            notes: 'تمت المزامنة من QP Express',
+            actorType: 'SYSTEM',
+          });
+        }
         return res.json({ success: true, tracking, message: 'تمت المزامنة مع QP Express بنجاح' });
       } else {
         return res.status(404).json({
@@ -680,6 +840,18 @@ router.post('/:id/cancel', verifyToken.authenticateToken, blockCourierMobileToke
           cancelReason: reason || null,
         }),
       },
+    });
+
+    await recordShipmentEvent(prisma, {
+      companyId,
+      shipmentId: shipment.id,
+      fromStatus: shipment.status,
+      toStatus: 'CANCELLED',
+      reasonCode: 'CANCELLED_BY_ADMIN',
+      notes: reason || 'Cancelled by admin',
+      actorType: 'ADMIN',
+      actorId: req.user?.id || null,
+      actorName: req.user?.name || null,
     });
 
     res.json({ success: true, data: updated, message: 'تم إلغاء الشحنة بنجاح' });
