@@ -849,6 +849,15 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
       }
     }
 
+    if (isDelivered) {
+      try {
+        const { applyProfitToShipment } = require('./shipping/profitService');
+        await applyProfitToShipment(tx, shipmentId);
+      } catch (profitErr) {
+        console.warn('⚠️ [COURIER_SERVICE] Profit calculation warning:', profitErr.message);
+      }
+    }
+
     // If all shipments in delivery run are resolved, check if run can be marked COMPLETED
     if (shipment.deliveryRunId && !LOCKED_RUN_STATUSES.includes(shipment.deliveryRun?.status || '')) {
       const remainingPending = await tx.shipment.count({
@@ -961,6 +970,18 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
     }
   }
 
+  // Auto-resolve treasury account if not explicitly passed and cash was collected
+  let resolvedTreasuryAccountId = treasuryAccountId || null;
+  if (!resolvedTreasuryAccountId && cashAmount > 0) {
+    const existingTreasury = await prisma.treasuryAccount.findFirst({
+      where: { companyId, isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+    });
+    if (existingTreasury) {
+      resolvedTreasuryAccountId = existingTreasury.id;
+    }
+  }
+
   return prisma.$transaction(async (tx) => {
     // Claim the run atomically BEFORE any money moves — two concurrent settles can never
     // both pass: only the first updateMany matching status != SETTLED flips the row.
@@ -972,7 +993,7 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
         settledBy: userId || null,
         totalCODCollected: cashAmount,
         notes: notes?.trim() || run.notes,
-        treasuryAccountId: treasuryAccountId || null
+        treasuryAccountId: resolvedTreasuryAccountId
       }
     });
 
@@ -982,10 +1003,10 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
 
     let treasuryTransaction = null;
 
-    // 1. If Treasury Account is provided and cash is received, deposit into TreasuryAccount
-    if (treasuryAccountId && cashAmount > 0) {
+    // 1. If Treasury Account is provided (or auto-resolved) and cash is received, deposit into TreasuryAccount
+    if (resolvedTreasuryAccountId && cashAmount > 0) {
       const account = await tx.treasuryAccount.findFirst({
-        where: { id: treasuryAccountId, companyId }
+        where: { id: resolvedTreasuryAccountId, companyId }
       });
 
       if (!account) {
@@ -995,7 +1016,7 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
       // Atomic balance move — two runs settling concurrently on the same treasury
       // account must never read-then-write over each other's deposit.
       const updatedAccount = await tx.treasuryAccount.update({
-        where: { id: treasuryAccountId },
+        where: { id: resolvedTreasuryAccountId },
         data: { balance: { increment: cashAmount } }
       });
       const newBalance = normalizeAmount(updatedAccount.balance);
@@ -1004,7 +1025,7 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
       treasuryTransaction = await tx.treasuryTransaction.create({
         data: {
           companyId,
-          treasuryAccountId,
+          treasuryAccountId: resolvedTreasuryAccountId,
           amount: cashAmount,
           type: 'DEPOSIT',
           runningBalance: newBalance,
@@ -1658,6 +1679,7 @@ module.exports = {
   getDeliveryRunById,
   updateDeliveryRunShipment,
   updateShipmentStatus: updateDeliveryRunShipment,
+  updateShipmentFieldStatus: updateDeliveryRunShipment,
   settleDeliveryRun,
   getCourierDashboardSummary,
   listCourierCommissions,

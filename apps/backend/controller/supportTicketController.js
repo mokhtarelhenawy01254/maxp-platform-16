@@ -135,14 +135,17 @@ const transformTicket = (ticket) => {
       name: `${ticket.assignedUser.firstName} ${ticket.assignedUser.lastName}`,
       email: ticket.assignedUser.email
     } : null,
-    messages: ticket.SupportMessage || ticket.messages || []
+    messages: ticket.SupportMessage || ticket.messages || [],
+    messageCount: ticket._count?.SupportMessage ?? (ticket.SupportMessage ? ticket.SupportMessage.length : 0),
+    shipmentId: ticket.shipmentId || null,
+    orderId: ticket.orderId || null
   };
 };
 
 // Create new ticket
 const createTicket = async (req, res) => {
   try {
-    let { subject, category, content } = req.body;
+    let { subject, category, content, orderId, shipmentId, priority } = req.body;
     if (!subject && content) {
       subject = content.trim().slice(0, 50);
     }
@@ -158,7 +161,10 @@ const createTicket = async (req, res) => {
         category: mapCategory(category),
         status: 'OPEN',
         userId,
-        companyId
+        companyId,
+        orderId: orderId || null,
+        shipmentId: shipmentId || null,
+        priority: priority ? mapPriority(priority) : 'MEDIUM'
       },
       include: {
         user: {
@@ -227,11 +233,22 @@ const createTicket = async (req, res) => {
 const getUserTickets = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { status, category, page = 1, limit = 10 } = req.query;
+    const { status, category, page = 1, limit = 10, shipmentId, orderId } = req.query;
 
-    const where = { userId };
+    const isCompanyStaff = ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const where = {};
+    if (isCompanyStaff && req.user.companyId) {
+      where.companyId = req.user.companyId;
+    } else if (req.user.companyId) {
+      where.OR = [{ userId }, { companyId: req.user.companyId, userId }];
+    } else {
+      where.userId = userId;
+    }
+
     if (status) where.status = mapStatus(status);
     if (category) where.category = mapCategory(category);
+    if (shipmentId) where.shipmentId = shipmentId;
+    if (orderId) where.orderId = orderId;
 
     const [tickets, total] = await Promise.all([
       getPrisma().supportTicket.findMany({
@@ -240,7 +257,8 @@ const getUserTickets = async (req, res) => {
           user: {
             select: { id: true, firstName: true, lastName: true, email: true }
           },
-          SupportMessage: { take: 1, orderBy: { createdAt: 'desc' } }
+          SupportMessage: { take: 1, orderBy: { createdAt: 'desc' } },
+          _count: { select: { SupportMessage: true } }
         },
         orderBy: { createdAt: 'desc' },
         take: parseInt(limit),
@@ -276,7 +294,13 @@ const getTicketDetails = async (req, res) => {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'superadmin';
 
-    const where = isAdmin ? { ticketId } : { ticketId, userId };
+    const where = isAdmin ? { ticketId } : {
+      ticketId,
+      OR: [
+        { userId },
+        ...(req.user.companyId ? [{ companyId: req.user.companyId }] : [])
+      ]
+    };
 
     const fetchTicket = async () => {
       return await getPrisma().supportTicket.findFirst({
@@ -359,7 +383,13 @@ const addMessage = async (req, res) => {
     const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'superadmin';
 
     const execute = async () => {
-      const where = isAdmin ? { ticketId } : { ticketId, userId };
+      const where = isAdmin ? { ticketId } : {
+        ticketId,
+        OR: [
+          { userId },
+          ...(req.user.companyId ? [{ companyId: req.user.companyId }] : [])
+        ]
+      };
 
       const ticket = await getPrisma().supportTicket.findFirst({
         where,
@@ -504,23 +534,24 @@ const addMessage = async (req, res) => {
   }
 };
 
-// Update ticket details (Admin only: Status, Priority, AssignedUser)
+// Update ticket details (Admin or company staff closing/updating status)
 const updateTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { status, priority, assignedUserId } = req.body;
 
     const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'superadmin';
-    if (!isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'غير مسموح لك بتحديث التذكرة'
-      });
-    }
+    const isCompanyStaff = ['OWNER', 'COMPANY_ADMIN', 'MANAGER'].includes(req.user.role);
 
     const execute = async () => {
       const ticket = await getPrisma().supportTicket.findFirst({
-        where: { ticketId },
+        where: isAdmin ? { ticketId } : {
+          ticketId,
+          OR: [
+            { userId: req.user.id },
+            ...(req.user.companyId ? [{ companyId: req.user.companyId }] : [])
+          ]
+        },
         include: {
           user: {
             select: { id: true, companyId: true, firstName: true, lastName: true }
@@ -528,7 +559,12 @@ const updateTicket = async (req, res) => {
         }
       });
       if (!ticket) {
-        return null;
+        return { notFound: true };
+      }
+
+      // Non-admin users can update status (e.g. close ticket), but not reassign or change priority
+      if (!isAdmin && !isCompanyStaff && ticket.userId !== req.user.id) {
+        return { forbidden: true };
       }
 
       const updateData = {};
@@ -539,8 +575,10 @@ const updateTicket = async (req, res) => {
         updateData.status = targetNewStatus;
         if (targetNewStatus === 'CLOSED') updateData.closedAt = new Date();
       }
-      if (priority) updateData.priority = mapPriority(priority);
-      if (assignedUserId) updateData.assignedUserId = assignedUserId;
+      if (isAdmin) {
+        if (priority) updateData.priority = mapPriority(priority);
+        if (assignedUserId) updateData.assignedUserId = assignedUserId;
+      }
 
       const updatedTicket = await getPrisma().supportTicket.update({
         where: { id: ticket.id },
@@ -591,10 +629,16 @@ const updateTicket = async (req, res) => {
     };
 
     const updatedTicket = await tenantContext.bypass(execute);
-    if (!updatedTicket) {
+    if (!updatedTicket || updatedTicket.notFound) {
       return res.status(404).json({
         success: false,
         message: 'التذكرة غير موجودة'
+      });
+    }
+    if (updatedTicket.forbidden) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مسموح لك بتحديث التذكرة'
       });
     }
 

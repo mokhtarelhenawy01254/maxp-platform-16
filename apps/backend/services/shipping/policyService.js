@@ -186,8 +186,111 @@ async function quotePrice({
   throw err;
 }
 
+const ALLOWED_POLICY_KEYS = [
+  'deliveryAttempts',
+  'attemptIntervalHours',
+  'afterAttemptsAction',
+  'codSettlementMode',
+  'proofOfDelivery',
+  'publicTrackingMode',
+  'clientPortalEnabled',
+  'courierPortalEnabled',
+  'offlineEnabled',
+  'maxShipmentsPerCourierPerDay',
+  'maxWeightKg',
+  'maxCodAmount',
+  'invoiceVatPercent',
+];
+
+/**
+ * Update company shipping policy settings partially
+ * @param {string} companyId
+ * @param {Object} payload
+ * @param {Object} [customPrisma]
+ * @returns {Promise<Object>}
+ */
+async function updatePolicy(companyId, payload = {}, customPrisma = null) {
+  if (!companyId) {
+    const err = new Error('معرف الشركة مطلوب لتحديث السياسة');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const keys = Object.keys(payload || {});
+  const invalidKeys = keys.filter((k) => !ALLOWED_POLICY_KEYS.includes(k));
+  if (invalidKeys.length > 0) {
+    const err = new Error('مفاتيح غير مسموح بها في إعدادات السياسة: ' + invalidKeys.join(', '));
+    err.statusCode = 400;
+    err.code = 'INVALID_POLICY_KEY';
+    throw err;
+  }
+
+  const prisma = customPrisma || getSharedPrismaClient();
+
+  const sanitized = {};
+  if (payload.deliveryAttempts !== undefined) {
+    sanitized.deliveryAttempts = Math.max(1, parseInt(payload.deliveryAttempts, 10) || 3);
+  }
+  if (payload.attemptIntervalHours !== undefined) {
+    sanitized.attemptIntervalHours = Math.max(0, parseInt(payload.attemptIntervalHours, 10) || 0);
+  }
+  if (payload.afterAttemptsAction !== undefined) {
+    const action = String(payload.afterAttemptsAction).trim().toUpperCase();
+    if (!['RTO', 'AUTO_RTO', 'REVIEW'].includes(action)) {
+      const err = new Error('إجراء ما بعد المحاولات يجب أن يكون RTO أو REVIEW');
+      err.statusCode = 400;
+      throw err;
+    }
+    sanitized.afterAttemptsAction = action === 'AUTO_RTO' ? 'RTO' : action;
+  }
+  if (payload.codSettlementMode !== undefined) {
+    sanitized.codSettlementMode = String(payload.codSettlementMode).trim();
+  }
+  if (payload.proofOfDelivery !== undefined) {
+    sanitized.proofOfDelivery = String(payload.proofOfDelivery).trim();
+  }
+  if (payload.publicTrackingMode !== undefined) {
+    sanitized.publicTrackingMode = String(payload.publicTrackingMode).trim();
+  }
+  if (payload.clientPortalEnabled !== undefined) {
+    sanitized.clientPortalEnabled = Boolean(payload.clientPortalEnabled);
+  }
+  if (payload.courierPortalEnabled !== undefined) {
+    sanitized.courierPortalEnabled = Boolean(payload.courierPortalEnabled);
+  }
+  if (payload.offlineEnabled !== undefined) {
+    sanitized.offlineEnabled = Boolean(payload.offlineEnabled);
+  }
+  if (payload.maxShipmentsPerCourierPerDay !== undefined) {
+    sanitized.maxShipmentsPerCourierPerDay = Math.max(1, parseInt(payload.maxShipmentsPerCourierPerDay, 10) || 60);
+  }
+  if (payload.maxWeightKg !== undefined) {
+    sanitized.maxWeightKg = payload.maxWeightKg !== null ? parseFloat(payload.maxWeightKg) : null;
+  }
+  if (payload.maxCodAmount !== undefined) {
+    sanitized.maxCodAmount = payload.maxCodAmount !== null ? parseFloat(payload.maxCodAmount) : null;
+  }
+  if (payload.invoiceVatPercent !== undefined) {
+    sanitized.invoiceVatPercent = Math.max(0, parseFloat(payload.invoiceVatPercent) || 0);
+  }
+
+  const updated = await prisma.shippingPolicySettings.upsert({
+    where: { companyId },
+    update: sanitized,
+    create: {
+      companyId,
+      ...DEFAULT_POLICY_SETTINGS,
+      ...sanitized,
+    },
+  });
+
+  return updated;
+}
+
 module.exports = {
   getPolicy,
+  updatePolicy,
   quotePrice,
   DEFAULT_POLICY_SETTINGS,
+  ALLOWED_POLICY_KEYS,
 };
