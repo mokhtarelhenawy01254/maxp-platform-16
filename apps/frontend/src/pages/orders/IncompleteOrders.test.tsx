@@ -8,6 +8,16 @@ jest.mock("../../i18n", () => ({
   getDirection: () => "rtl",
 }));
 
+// الصفحة بتستمع على order:incomplete:new — لازم السوكيت يتعمل له mock،
+// وإلا الاستيراد الحقيقي لـ socketService (فيه import.meta.env) يكسر ts-jest.
+jest.mock("../../services/socketService", () => ({
+  socketService: {
+    on: jest.fn(),
+    off: jest.fn(),
+    getSocket: jest.fn(() => ({})),
+  },
+}));
+
 jest.mock("../../services/apiClient", () => ({
   apiClient: {
     get: jest.fn().mockResolvedValue({
