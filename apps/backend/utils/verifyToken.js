@@ -343,6 +343,7 @@ const authenticateToken = async (req, res, next) => {
             id: true,
             name: true,
             phone: true,
+            pinHash: true,
             companyId: true,
             status: true,
             isActive: true
@@ -356,6 +357,54 @@ const authenticateToken = async (req, res, next) => {
           message: 'المندوب غير مسجل أو حسابه معطل',
           code: 'COURIER_NOT_FOUND'
         });
+      }
+
+      if (decoded.runId) {
+        const run = await executeWithRetry(async () =>
+          prisma.deliveryRun.findFirst({
+            where: { id: decoded.runId, companyId: courierCompanyId },
+            select: { id: true, mobileTokenVersion: true }
+          })
+        );
+
+        if (!run) {
+          return res.status(401).json({
+            success: false,
+            message: 'مأمورية التوصيل غير موجودة',
+            code: 'RUN_NOT_FOUND'
+          });
+        }
+
+        if (decoded.mobileTokenVersion !== undefined && Number(decoded.mobileTokenVersion) < Number(run.mobileTokenVersion || 0)) {
+          return res.status(401).json({
+            success: false,
+            message: 'تم إلغاء صلاحية هذا الرابط',
+            code: 'LINK_REVOKED'
+          });
+        }
+
+        if (decoded.linkToken || !decoded.pinVerified) {
+          const isVerifyPinRoute = req.originalUrl?.includes('/verify-link-pin');
+          if (!isVerifyPinRoute && courier.pinHash) {
+            const policy = await executeWithRetry(async () =>
+              prisma.shippingPolicySettings.findUnique({
+                where: { companyId: courierCompanyId },
+                select: { requireCourierPinOnLink: true, requirePinOnShareLink: true }
+              })
+            );
+            const pinRequired = policy
+              ? (policy.requireCourierPinOnLink ?? policy.requirePinOnShareLink ?? true)
+              : true;
+
+            if (pinRequired && !decoded.pinVerified) {
+              return res.status(401).json({
+                success: false,
+                message: 'يرجى إدخال رمز PIN للمتابعة إلى مأمورية التوصيل',
+                code: 'COURIER_PIN_REQUIRED'
+              });
+            }
+          }
+        }
       }
 
       req.user = {

@@ -454,6 +454,18 @@ const CourierSettlementPage = React.lazy(
 const CourierMobileRunPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierMobileRunPage"),
 );
+const CourierLoginPage = React.lazy(
+  () => import("./pages/courier-portal/CourierLoginPage"),
+);
+const CourierHomePage = React.lazy(
+  () => import("./pages/courier-portal/CourierHomePage"),
+);
+const CourierRunPage = React.lazy(
+  () => import("./pages/courier-portal/CourierRunPage"),
+);
+const CourierCustodyPage = React.lazy(
+  () => import("./pages/courier-portal/CourierCustodyPage"),
+);
 const CourierDuesPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierDuesPage"),
 );
@@ -7493,6 +7505,23 @@ const AppContent = () => {
                       </AppAccessRoute>
                     </Layout>
                   }
+                />
+                {/* Courier Portal (Standalone mobile fleet shell) */}
+                <Route
+                  path="/courier-portal/login"
+                  element={<CourierLoginPage />}
+                />
+                <Route
+                  path="/courier-portal"
+                  element={<CourierHomePage />}
+                />
+                <Route
+                  path="/courier-portal/runs/:id"
+                  element={<CourierRunPage />}
+                />
+                <Route
+                  path="/courier-portal/custody"
+                  element={<CourierCustodyPage />}
                 />
                 <Route
                   path="/courier/run/:id"

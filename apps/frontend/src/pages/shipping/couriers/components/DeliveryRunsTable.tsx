@@ -4,7 +4,8 @@ import {
   ArrowPathIcon,
   EyeIcon,
   ClipboardDocumentIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  NoSymbolIcon
 } from '@heroicons/react/24/outline';
 import { DeliveryRun } from '../../../../services/courierService';
 import { STATUS_CONFIG } from '../constants/deliveryRunsConstants';
@@ -23,6 +24,7 @@ interface DeliveryRunsTableProps {
   handleCopyMobileLink: (run: DeliveryRun) => void;
   handleShareWhatsApp: (run: DeliveryRun) => void;
   handleOpenDetail: (runId: string) => void;
+  onRevokeLink?: (run: DeliveryRun) => void;
   formatDate: (date: any) => string;
   formatPrice: (price: number) => string;
 }
@@ -41,6 +43,7 @@ export const DeliveryRunsTable: React.FC<DeliveryRunsTableProps> = ({
   handleCopyMobileLink,
   handleShareWhatsApp,
   handleOpenDetail,
+  onRevokeLink,
   formatDate,
   formatPrice
 }) => {
@@ -105,7 +108,7 @@ export const DeliveryRunsTable: React.FC<DeliveryRunsTableProps> = ({
                 </tr>
               ) : (
                 runs.map((r) => {
-                  const statusConf = STATUS_CONFIG[r.status] || STATUS_CONFIG.DISPATCHED;
+                  const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['DISPATCHED'] ?? { label: r.status, color: '' };
                   return (
                     <tr key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
                       <td className="py-3.5 px-4 font-mono font-semibold text-slate-900 dark:text-slate-100">
@@ -152,6 +155,15 @@ export const DeliveryRunsTable: React.FC<DeliveryRunsTableProps> = ({
                           >
                             <ChatBubbleLeftRightIcon className="w-4 h-4" />
                           </button>
+                          {onRevokeLink && (
+                            <button
+                              onClick={() => onRevokeLink(r)}
+                              title="إلغاء صلاحية الرابط الحالي"
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                            >
+                              <NoSymbolIcon className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleOpenDetail(r.id)}
                             title="عرض تفاصيل المانيفست وطباعة البوالص"

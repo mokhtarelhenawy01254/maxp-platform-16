@@ -12,6 +12,8 @@ export function useDeliveryRunsData() {
   const [pagination, setPagination] = useState<{ total: number; page: number; pages: number } | null>(null);
   const [selectedRun, setSelectedRun] = useState<DeliveryRun | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [revokingRun, setRevokingRun] = useState<DeliveryRun | null>(null);
+  const [isRevoking, setIsRevoking] = useState(false);
 
   // Waybill and Share Link States
   const [viewingWaybill, setViewingWaybill] = useState<{ run: DeliveryRun; shipment?: DeliveryRunItem } | null>(null);
@@ -68,7 +70,7 @@ export function useDeliveryRunsData() {
         setActiveCouriers(res.data);
         if (res.data.length > 0 && !selectedCourierId) {
           const available = res.data.find((c) => c.status === 'AVAILABLE');
-          setSelectedCourierId(available ? available.id : res.data[0].id);
+          setSelectedCourierId(available ? available.id : (res.data[0]?.id || ''));
         }
       }
     } catch (err: any) {
@@ -153,10 +155,34 @@ export function useDeliveryRunsData() {
     }
   };
 
+  const handleRevokeLink = (run: DeliveryRun) => {
+    setRevokingRun(run);
+  };
+
+  const confirmRevokeLink = async () => {
+    if (!revokingRun) return;
+    setIsRevoking(true);
+    try {
+      const res = await courierService.revokeRunLink(revokingRun.id);
+      if (res.success) {
+        toast.success(res.message || 'تم إلغاء صلاحية الرابط بنجاح وإصدار رابط جديد');
+        if (selectedRun?.id === revokingRun.id) {
+          await handleOpenDetail(selectedRun.id);
+        }
+        fetchRuns();
+        setRevokingRun(null);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'تعذر إلغاء صلاحية الرابط');
+    } finally {
+      setIsRevoking(false);
+    }
+  };
+
   const loadReadyOrders = async () => {
     setLoadingReadyOrders(true);
     try {
-      const res = await api.get('/orders', {
+      const res = await api.get<any>('/orders', {
         params: { status: 'READY_TO_SHIP', limit: 25 }
       });
       const list = Array.isArray(res?.data?.orders)
@@ -275,6 +301,11 @@ export function useDeliveryRunsData() {
     handleOpenCreateRun,
     toggleReadyOrder,
     handleConfirmCreateRun,
-    handlePrint
+    handlePrint,
+    revokingRun,
+    setRevokingRun,
+    isRevoking,
+    handleRevokeLink,
+    confirmRevokeLink
   };
 }

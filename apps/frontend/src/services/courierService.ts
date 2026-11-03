@@ -218,6 +218,9 @@ const courierService = {
     return api.get<{ success: boolean; data: DeliveryRun }>(`/couriers/runs/${id}`, requestConfig).then((r) => r.data);
   },
 
+  revokeRunLink: (runId: string): Promise<{ success: boolean; message: string; mobileTokenVersion: number }> =>
+    api.post<{ success: boolean; message: string; mobileTokenVersion: number }>(`/couriers/runs/${runId}/revoke-link`).then((r) => r.data),
+
   getRunShareLink: (id: string): Promise<{ success: boolean; data: { runId: string; runNumber: string; mobileToken: string; shareUrl: string; courierPhone?: string; courierName?: string } }> =>
     api.get(`/couriers/runs/${id}/share-link`).then((r) => r.data),
 

@@ -326,6 +326,31 @@ async function getRunShareLink(req, res) {
 }
 
 /**
+ * POST /api/v1/couriers/runs/:id/revoke-link
+ */
+async function revokeRunLink(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const result = await courierService.revokeDeliveryRunLink(companyId, req.params.id);
+    res.json({
+      success: true,
+      data: result,
+      message: 'تم إلغاء صلاحية الروابط السابقة للمأمورية بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in revokeRunLink:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'تعذر إلغاء صلاحية رابط المأمورية'
+    });
+  }
+}
+
+/**
  * PUT /api/v1/couriers/:id/pin
  * Set or clear a courier's field PIN (managers only)
  */
@@ -492,5 +517,6 @@ module.exports = {
   payCommissions,
   getPerformance,
   reassignShipments,
-  resendOtp
+  resendOtp,
+  revokeRunLink
 };

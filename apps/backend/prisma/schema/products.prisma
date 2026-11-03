@@ -778,6 +778,7 @@ model Shipment {
   clientRateCardId       String?
   attemptCount           Int              @default(0)
   failureReasonCode      String?
+  nextAttemptDate        DateTime?
   source                 String?          @default("SHIPMENT")
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
