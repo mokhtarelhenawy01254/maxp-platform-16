@@ -480,6 +480,9 @@ const ShipmentTrackingPage = React.lazy(
 const ShippingOpsDashboard = React.lazy(
   () => import("./pages/shipping-ops/ShippingOpsDashboard"),
 );
+const AutoAssignPage = React.lazy(
+  () => import("./pages/shipping-ops/AutoAssignPage"),
+);
 const AgentReportsPage = React.lazy(
   () => import("./pages/agent-reports/AgentReportsPage"),
 );
@@ -509,6 +512,9 @@ const ClientsPage = React.lazy(
 );
 const ShippingOpsSettlementsPage = React.lazy(
   () => import("./pages/shipping-ops/SettlementsPage"),
+);
+const ShippingReportsPage = React.lazy(
+  () => import("./pages/shipping-ops/ShippingReportsPage"),
 );
 const ClientSettlementsPage = React.lazy(
   () => import("./pages/shipping-client/ClientSettlementsPage"),
@@ -7511,6 +7517,16 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/shipping-ops/auto-assign"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <AutoAssignPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/shipping-ops/parcels/:id"
                   element={
                     <Layout>
@@ -7576,6 +7592,16 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
                         <ShippingOpsSettlementsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/reports"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingReportsPage />
                       </AppAccessRoute>
                     </Layout>
                   }
