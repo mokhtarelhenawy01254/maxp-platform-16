@@ -29,6 +29,7 @@ import {
   getDaysRemaining,
   getAppDestination,
 } from "../../types/myAppsTypes";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../appSettingsSupport";
 
 interface MyAppsCardProps {
   installed: InstalledApp;
@@ -168,13 +169,15 @@ export const MyAppsCard: React.FC<MyAppsCardProps> = ({
                 {isExpired ? <Sparkles size={14} className="text-amber-500" /> : <Zap size={14} className="text-primary" />}
                 <span>{isExpired ? "تجديد الاشتراك" : "فتح التطبيق"}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-2 cursor-pointer text-xs font-semibold"
-                onClick={() => navigate(`/my-apps/${installed.app.slug}/settings`)}
-              >
-                <Settings2 size={14} />
-                <span>إعدادات الأداة</span>
-              </DropdownMenuItem>
+              {supportsAppSettings(installed.app.slug) && (
+                <DropdownMenuItem
+                  className="gap-2 cursor-pointer text-xs font-semibold"
+                  onClick={() => navigate(`/my-apps/${installed.app.slug}/settings`)}
+                >
+                  <Settings2 size={14} />
+                  <span>إعدادات الأداة</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className="gap-2 cursor-pointer text-xs font-semibold"
                 onClick={() => onOpenDrawer(installed)}

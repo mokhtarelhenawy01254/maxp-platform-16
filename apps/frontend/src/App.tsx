@@ -1,5 +1,7 @@
 import React, { Suspense, useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams, Outlet } from "react-router-dom";
+import { toast } from "sonner";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "./pages/marketplace/appSettingsSupport";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
@@ -1599,6 +1601,22 @@ const StorefrontThemesMarketplace = React.lazy(
 );
 const AppDetails = React.lazy(() => import("./pages/marketplace/AppDetails"));
 const AppSettings = React.lazy(() => import("./pages/marketplace/AppSettings"));
+const AppSettingsGuard: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const isSupported = Boolean(slug && supportsAppSettings(slug));
+
+  useEffect(() => {
+    if (!isSupported && slug) {
+      toast.info("التطبيق ده مالوش إعدادات — دي صفحته");
+    }
+  }, [isSupported, slug]);
+
+  if (!isSupported) {
+    return <Navigate to={`/marketplace/${slug || ""}`} replace />;
+  }
+
+  return <AppSettings />;
+};
 const MyApps = React.lazy(() => import("./pages/marketplace/MyApps"));
 const CustomerWalletRouteEntry = React.lazy(
   () => import("./pages/wallet/WalletRouteEntry"),
@@ -3603,7 +3621,7 @@ const AppContent = () => {
                   path="/my-apps/:slug/settings"
                   element={
                     <Layout>
-                      <AppSettings />
+                      <AppSettingsGuard />
                     </Layout>
                   }
                 />
@@ -3611,7 +3629,7 @@ const AppContent = () => {
                   path="/marketplace/:slug/settings"
                   element={
                     <Layout>
-                      <AppSettings />
+                      <AppSettingsGuard />
                     </Layout>
                   }
                 />
@@ -3627,7 +3645,7 @@ const AppContent = () => {
                   path="/marketplace/apps/:slug/settings"
                   element={
                     <Layout>
-                      <AppSettings />
+                      <AppSettingsGuard />
                     </Layout>
                   }
                 />

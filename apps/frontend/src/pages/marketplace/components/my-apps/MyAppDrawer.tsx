@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import type { InstalledApp } from "@/types/marketplace";
 import { getAppDestination } from "../../types/myAppsTypes";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../appSettingsSupport";
 
 interface MyAppDrawerProps {
   selectedApp: InstalledApp | null;
@@ -138,18 +139,33 @@ export const MyAppDrawer: React.FC<MyAppDrawerProps> = ({
                 <span>فتح وتشغيل الأداة</span>
               </Button>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 rounded-xl text-xs font-semibold gap-1.5"
-                  onClick={() => {
-                    const slug = selectedApp.app.slug;
-                    onClose();
-                    navigate(`/my-apps/${slug}/settings`);
-                  }}
-                >
-                  <Settings2 size={14} />
-                  <span>الإعدادات</span>
-                </Button>
+                {supportsAppSettings(selectedApp.app.slug) ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl text-xs font-semibold gap-1.5"
+                    onClick={() => {
+                      const slug = selectedApp.app.slug;
+                      onClose();
+                      navigate(`/my-apps/${slug}/settings`);
+                    }}
+                  >
+                    <Settings2 size={14} />
+                    <span>الإعدادات</span>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl text-xs font-semibold gap-1.5"
+                    onClick={() => {
+                      const dest = getAppDestination(selectedApp.app);
+                      onClose();
+                      navigate(dest);
+                    }}
+                  >
+                    <ArrowUpRight size={14} />
+                    <span>فتح التطبيق</span>
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10"

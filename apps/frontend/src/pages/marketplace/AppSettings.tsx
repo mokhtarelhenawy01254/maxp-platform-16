@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowLeft,
@@ -7,6 +9,7 @@ import {
   Settings2,
   Sparkles,
 } from "lucide-react";
+import { supportsAppSettings } from "./appSettingsSupport";
 import { useMarketplaceAppSettingsData } from "./hooks/useMarketplaceAppSettingsData";
 import { AppSettingsInsights } from "./components/settings/AppSettingsInsights";
 import { InternalCourierFleetSettingsTab } from "./components/settings/InternalCourierFleetSettingsTab";
@@ -66,7 +69,8 @@ export default function AppSettings() {
           />
         );
       case "conversion-suite":
-        return isUpsellCenter ? (
+      case "upsell-center":
+        return isUpsellCenter || slug === "upsell-center" ? (
           <UpsellCenterTab
             activeUpsellSection={activeUpsellSection}
             setUpsellSection={setUpsellSection}
@@ -114,13 +118,16 @@ export default function AppSettings() {
           />
         );
       default:
-        return (
-          <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center text-gray-600 dark:text-gray-400">
-            لا توجد شاشة إعدادات مخصصة لهذا التطبيق حتى الآن.
-          </div>
-        );
+        return null;
     }
   };
+
+  useEffect(() => {
+    if (!loading && companyApp && slug && !supportsAppSettings(slug)) {
+      toast.info("التطبيق ده مالوش إعدادات — دي صفحته");
+      navigate(`/marketplace/${slug}`, { replace: true });
+    }
+  }, [loading, companyApp, slug, navigate]);
 
   if (loading) {
     return (
@@ -152,6 +159,10 @@ export default function AppSettings() {
     );
   }
 
+  if (slug && !supportsAppSettings(slug)) {
+    return <Navigate to={`/marketplace/${slug}`} replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
@@ -177,10 +188,10 @@ export default function AppSettings() {
                   <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                     {pageTitle}
                   </h1>
-                  {supported && (
+                  {(supported || supportsAppSettings(slug)) && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                       <Sparkles size={14} />
-                      {slug === "internal-courier-fleet" ? "Fleet Operations" : isUpsellCenter ? "Unified" : "Template Ready"}
+                      {slug === "internal-courier-fleet" ? "Fleet Operations" : (isUpsellCenter || slug === "upsell-center") ? "Unified" : "Template Ready"}
                     </span>
                   )}
                 </div>
