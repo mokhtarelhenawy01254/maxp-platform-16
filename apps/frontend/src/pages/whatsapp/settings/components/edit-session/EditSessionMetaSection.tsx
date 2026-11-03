@@ -66,6 +66,7 @@ export const EditSessionMetaSection: React.FC<EditSessionMetaSectionProps> = ({
               id="edit-meta-access"
               type="password"
               value={editingSession.metaAccessToken || ""}
+              placeholder="•••••••••••••••• (اتركه فارغاً للحفاظ على الرمز الحالي)"
               onChange={(event) =>
                 setEditingSession((previous) =>
                   previous

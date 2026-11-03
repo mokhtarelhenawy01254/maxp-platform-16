@@ -20,9 +20,19 @@ const ACTIVE_METADATA_FILTER = {
 };
 
 function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
+  const cleanPhone = displayPhoneNumber
+    ? String(displayPhoneNumber).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim()
+    : undefined;
+  const digitsOnly = displayPhoneNumber
+    ? String(displayPhoneNumber).replace(/\D/g, '')
+    : undefined;
+
   const identifiers = [
-    phoneNumberId ? { metaPhoneNumberId: phoneNumberId } : undefined,
-    displayPhoneNumber ? { metaDisplayPhoneNumber: displayPhoneNumber } : undefined
+    phoneNumberId ? { metaPhoneNumberId: String(phoneNumberId).trim() } : undefined,
+    displayPhoneNumber ? { metaDisplayPhoneNumber: displayPhoneNumber } : undefined,
+    cleanPhone && cleanPhone !== displayPhoneNumber ? { metaDisplayPhoneNumber: cleanPhone } : undefined,
+    digitsOnly ? { phoneNumber: digitsOnly } : undefined,
+    digitsOnly ? { metaDisplayPhoneNumber: { contains: digitsOnly } } : undefined
   ].filter(Boolean);
 
   if (identifiers.length === 0) {
@@ -61,7 +71,9 @@ async function isVerifyTokenValid(token) {
   const WELL_KNOWN_TOKENS = new Set([
     'maxp_verify_token',
     '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314',
-    'a37f7ff77bb9d7707bf7a494b3e813f6feaccdad6c2e1e9f4bc270460be592f5'
+    'a37f7ff77bb9d7707bf7a494b3e813f6feaccdad6c2e1e9f4bc270460be592f5',
+    'maxp-whatsapp-webhook-verify-2026',
+    'maxwhats_2026'
   ]);
   if (WELL_KNOWN_TOKENS.has(cleanToken)) {
     return true;
