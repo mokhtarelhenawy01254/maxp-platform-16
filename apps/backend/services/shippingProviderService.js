@@ -12,9 +12,10 @@ const PROVIDER_KEYS = Object.freeze({
   BOSTA_DEMO: 'BOSTA_DEMO',
   MYLERZ_DEMO: 'MYLERZ_DEMO',
   ARAMEX_DEMO: 'ARAMEX_DEMO',
+  MAXP_NETWORK: 'MAXP_NETWORK',
 });
 
-const INTEGRATION_MODES = new Set(['MANUAL', 'DEMO', 'LIVE']);
+const INTEGRATION_MODES = new Set(['MANUAL', 'DEMO', 'LIVE', 'INTERNAL']);
 
 const SHIPMENT_CREATE_TRIGGERS = Object.freeze({
   ON_ORDER: 'ON_ORDER',
@@ -91,6 +92,9 @@ const normalizeProviderKey = (value, carrier = {}) => {
   }
 
   const text = `${carrier.slug || ''} ${carrier.name || ''}`.toLowerCase();
+  if (explicit === 'MAXP_NETWORK' || text.includes('maxp_network') || text.includes('شبكة') || text.includes('شحن على maxp')) {
+    return PROVIDER_KEYS.MAXP_NETWORK;
+  }
   if (text.includes('turbo') || text.includes('تربو')) return PROVIDER_KEYS.TURBO;
   if (text.includes('bosta') || text.includes('بوستا')) {
     const mode = String(carrier.integrationMode || '').toUpperCase();
@@ -113,6 +117,7 @@ const normalizeIntegrationMode = (value, providerKey) => {
     return normalized;
   }
 
+  if (providerKey === PROVIDER_KEYS.MAXP_NETWORK) return 'INTERNAL';
   if (providerKey && providerKey.endsWith('_DEMO')) return 'DEMO';
   return providerKey === PROVIDER_KEYS.TURBO ? 'LIVE' : 'MANUAL';
 };
@@ -401,6 +406,39 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
       skipped: true,
       reason: 'AUTO_CREATE_DISABLED',
       serviceLevel: provider.serviceLevel,
+    });
+  }
+
+  if (providerKey === PROVIDER_KEYS.MAXP_NETWORK) {
+    const maxpNetworkAdapter = require('./shipping/adapters/maxpNetworkAdapter');
+    const result = await maxpNetworkAdapter.createShipment({
+      orderId: shipment.orderId,
+      shippingCompanyId: shippingCompany.id,
+      storeCompanyId: shipment.companyId,
+      shipmentId: shipment.id,
+      weight: shipment.weight,
+      pieces: shipment.pieces,
+      codAmount: shipment.codAmount,
+    });
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        reason: result.reason || 'MAXP_NETWORK_ERROR',
+        statusCode: result.statusCode || 400,
+      };
+    }
+
+    return updateShipmentFromProviderResult(prisma, shipment, provider, {
+      success: true,
+      status: 'PENDING',
+      externalShipmentId: result.externalShipmentId,
+      trackingNumber: result.trackingNumber,
+      labelUrl: result.labelUrl,
+      serviceLevel: result.serviceLevel || 'MaxP Network Standard',
+      cost: null,
+      data: result,
     });
   }
 

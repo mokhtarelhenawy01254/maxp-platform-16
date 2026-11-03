@@ -966,6 +966,18 @@ async function updateShipmentStatus(req, res) {
       actorName: req.user?.name || 'ADMIN'
     });
 
+    try {
+      const { syncNetworkShipmentToStore } = require('../services/shipping/networkShipmentSyncService');
+      await syncNetworkShipmentToStore(prisma, updated, normalizedStatus, {
+        actorId: req.user?.id || null,
+        actorType: req.user?.role === 'SHIPPING_CLIENT' ? 'CLIENT' : 'ADMIN',
+        notes: notes || null,
+        reasonCode: failureReasonCode || null,
+      });
+    } catch (netSyncErr) {
+      console.warn('⚠️ [SHIPPING_PORTAL] Network sync notice:', netSyncErr.message);
+    }
+
     return res.json({ success: true, data: updated });
   } catch (error) {
     console.error('[ShippingPortal] Error updating shipment status:', error);

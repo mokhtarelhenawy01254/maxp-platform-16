@@ -654,7 +654,14 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
         shipment.id,
         { force: true, allowLiveCreate: true },
       );
-      return res.json({
+      if (!dispatchResult.success && dispatchResult.error) {
+        return res.status(dispatchResult.statusCode || 400).json({
+          success: false,
+          error: dispatchResult.error,
+          reason: dispatchResult.reason,
+        });
+      }
+      return res.status(201).json({
         success: true,
         data: dispatchResult,
         message: 'تم إنشاء الشحنة وتوجيهها لشركة الشحن',
@@ -691,7 +698,15 @@ router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken,
     const providerKey = shipment.shippingCompany?.providerKey || shipment.carrierType;
 
     // Turbo Live Sync
-    if (providerKey === 'TURBO' && shipment.trackingNumber) {
+    if (providerKey === 'MAXP_NETWORK') {
+      const maxpNetworkAdapter = require('../services/shipping/adapters/maxpNetworkAdapter');
+      await maxpNetworkAdapter.cancelShipment({
+        shipmentId: shipment.id,
+        trackingNumber: shipment.trackingNumber,
+        storeCompanyId: companyId,
+        reason,
+      });
+    } else if (providerKey === 'TURBO' && shipment.trackingNumber) {
       const company = await prisma.company.findUnique({ where: { id: companyId } });
       const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
       const turboService = new TurboService(turboApiKey, companyId);
@@ -752,6 +767,30 @@ router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken,
           });
         }
         return res.json({ success: true, tracking, message: 'تمت المزامنة بنجاح' });
+      }
+    }
+
+    // MAXP_NETWORK Live Sync
+    if (providerKey === 'MAXP_NETWORK') {
+      const maxpNetworkAdapter = require('../services/shipping/adapters/maxpNetworkAdapter');
+      const syncResult = await maxpNetworkAdapter.syncShipment({
+        shipmentId: shipment.id,
+        trackingNumber: shipment.trackingNumber,
+        storeCompanyId: companyId,
+      });
+      if (syncResult.success) {
+        return res.json({
+          success: true,
+          tracking: syncResult.tracking,
+          status: syncResult.status,
+          mappedStatus: syncResult.mappedStatus,
+          message: 'تمت مزامنة الشحنة عبر شبكة MaxP بنجاح',
+        });
+      } else {
+        return res.status(syncResult.statusCode || 400).json({
+          success: false,
+          error: syncResult.error || 'تعذر مزامنة الشحنة عبر شبكة MaxP',
+        });
       }
     }
 
@@ -820,7 +859,15 @@ router.post('/:id/cancel', verifyToken.authenticateToken, blockCourierMobileToke
 
     const providerKey = shipment.shippingCompany?.providerKey || shipment.carrierType;
 
-    if (providerKey === 'TURBO' && shipment.trackingNumber) {
+    if (providerKey === 'MAXP_NETWORK') {
+      const maxpNetworkAdapter = require('../services/shipping/adapters/maxpNetworkAdapter');
+      await maxpNetworkAdapter.cancelShipment({
+        shipmentId: shipment.id,
+        trackingNumber: shipment.trackingNumber,
+        storeCompanyId: companyId,
+        reason,
+      });
+    } else if (providerKey === 'TURBO' && shipment.trackingNumber) {
       const company = await prisma.company.findUnique({ where: { id: companyId } });
       const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
       const turboService = new TurboService(turboApiKey, companyId);

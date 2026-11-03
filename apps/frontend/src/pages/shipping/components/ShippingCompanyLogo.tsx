@@ -39,6 +39,9 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   if (key === 'TURBO' || slug.includes('turbo') || name.includes('turbo') || name.includes('تربو')) {
     return '/brands/turbo.svg';
   }
+  if (key === 'MAXP_NETWORK' || slug.includes('maxp_network') || name.includes('شبكة maxp') || name.includes('شحن على maxp')) {
+    return '/brands/maxp_network.svg';
+  }
   if (key === 'BOSTA' || key === 'BOSTA_DEMO' || slug.includes('bosta') || name.includes('bosta') || name.includes('بوستا')) {
     return '/brands/bosta.svg';
   }

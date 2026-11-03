@@ -14,6 +14,7 @@ import {
   BostaWizard,
   TurboWizard,
   ManualFleetWizard,
+  MaxpNetworkWizard,
 } from "./ShippingCarrierWizards";
 import { ShippingAdvancedSettings } from "./ShippingAdvancedSettings";
 
@@ -80,7 +81,68 @@ export const ShippingCompanyModal: React.FC<ShippingCompanyModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-right">
+          {!editingCompany && (
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                نوع مزوّد الشحن
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-muted/40 rounded-xl border border-border/80 text-xs">
+                {[
+                  { key: "MAXP_NETWORK", label: "شحن على MaxP", badge: "شبكة" },
+                  { key: "QP_EXPRESS", label: "كيو بي", badge: "LIVE" },
+                  { key: "BOSTA", label: "بوستا", badge: "LIVE" },
+                  { key: "TURBO", label: "تربو", badge: "LIVE" },
+                  { key: "MANUAL", label: "أسطول يدوي", badge: "يدوي" },
+                ].map((p) => {
+                  const active = formData.providerKey === p.key;
+                  return (
+                    <button
+                      type="button"
+                      key={p.key}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          providerKey: p.key,
+                          integrationMode:
+                            p.key === "MAXP_NETWORK"
+                              ? "INTERNAL"
+                              : p.key === "MANUAL"
+                              ? "MANUAL"
+                              : "LIVE",
+                        }))
+                      }
+                      className={`py-2 px-1.5 rounded-lg font-medium transition text-center flex flex-col items-center justify-center gap-0.5 active:scale-[0.98] ${
+                        active
+                          ? "bg-background text-foreground shadow-xs border border-border font-bold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                      }`}
+                    >
+                      <span className="truncate w-full">{p.label}</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                          p.key === "MAXP_NETWORK"
+                            ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {p.badge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Provider Wizards */}
+          {formData.providerKey === "MAXP_NETWORK" && (
+            <MaxpNetworkWizard
+              formData={formData}
+              setFormData={setFormData}
+              editingCompany={editingCompany}
+              testedProfile={testedProfile}
+            />
+          )}
           {formData.providerKey === "QP_EXPRESS" && (
             <QpExpressWizard
               formData={formData}

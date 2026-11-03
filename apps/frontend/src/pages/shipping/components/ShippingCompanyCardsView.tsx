@@ -74,6 +74,12 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
 
               {/* Telemetry Chips */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {company.providerKey === "MAXP_NETWORK" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                    <span className="size-1.5 rounded-full bg-indigo-500" />
+                    <span>شحن على MaxP</span>
+                  </span>
+                )}
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
                   isLive
                     ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"

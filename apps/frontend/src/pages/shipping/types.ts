@@ -9,6 +9,7 @@ export interface ShippingCompany {
   apiUrl?: string;
   providerKey?: string;
   integrationMode?: string;
+  linkedCompanyId?: string;
   settings?: string | null;
   isActive: boolean;
   createdAt: string;
@@ -24,6 +25,7 @@ export interface ShippingCompanyFormData {
   apiUrl: string;
   providerKey: string;
   integrationMode: string;
+  linkedCompanyId?: string;
   autoCreateShipments: boolean;
   shipmentCreateTrigger?: string;
   logoUrl?: string;
@@ -38,7 +40,7 @@ export interface ShippingCompanyFormData {
 }
 
 export interface TestedProfile {
-  customerId?: number;
+  customerId?: number | string;
   customerName?: string;
   address?: string;
 }

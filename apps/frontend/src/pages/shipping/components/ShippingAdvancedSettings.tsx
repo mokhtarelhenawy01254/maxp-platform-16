@@ -50,9 +50,14 @@ export const ShippingAdvancedSettings: React.FC<ShippingAdvancedSettingsProps> =
               </label>
               <select
                 value={formData.providerKey}
-                onChange={(e) => setFormData((prev) => ({ ...prev, providerKey: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({
+                  ...prev,
+                  providerKey: e.target.value,
+                  integrationMode: e.target.value === 'MAXP_NETWORK' ? 'INTERNAL' : prev.integrationMode
+                }))}
                 className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
               >
+                <option value="MAXP_NETWORK">شحن على MaxP (شبكة شركات MaxP)</option>
                 <option value="QP_EXPRESS">كيو بي إكسبريس (QP Express)</option>
                 <option value="BOSTA">بوستا (Bosta Courier)</option>
                 <option value="TURBO">تربو (Turbo Courier)</option>
@@ -69,6 +74,7 @@ export const ShippingAdvancedSettings: React.FC<ShippingAdvancedSettingsProps> =
                 onChange={(e) => setFormData((prev) => ({ ...prev, integrationMode: e.target.value }))}
                 className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
               >
+                <option value="INTERNAL">داخلي مباشر عبر شبكة MaxP (INTERNAL)</option>
                 <option value="LIVE">مباشر حقيقي (LIVE API)</option>
                 <option value="DEMO">بيئة تجريبية (Demo Sandbox)</option>
                 <option value="MANUAL">يدوي بدون API (Manual)</option>

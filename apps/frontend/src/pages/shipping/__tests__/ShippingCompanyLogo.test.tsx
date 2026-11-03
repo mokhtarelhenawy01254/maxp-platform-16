@@ -47,6 +47,18 @@ describe("ShippingCompanyLogo Component", () => {
     expect(img.getAttribute("src")).toBe("/brands/qp_express.svg");
   });
 
+  it("renders official SVG brand logo for MAXP_NETWORK", () => {
+    const company = {
+      name: "شبكة ماكس بي",
+      providerKey: "MAXP_NETWORK",
+    };
+
+    render(<ShippingCompanyLogo company={company} size={40} />);
+    const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img.getAttribute("src")).toBe("/brands/maxp_network.svg");
+  });
+
   it("prioritizes custom logoUrl from settings for custom carriers", () => {
     const company = {
       name: "أسطول المناديب السريع",

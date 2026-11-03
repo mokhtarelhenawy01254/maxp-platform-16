@@ -45,8 +45,12 @@ export const ShippingCompanyTableView: React.FC<ShippingCompanyTableViewProps> =
                 </div>
               </td>
               <td className="px-4 py-3">
-                <span className="font-mono text-[11px] px-2 py-0.5 rounded-full border border-border/60 bg-muted/40 text-muted-foreground">
-                  {company.integrationMode || "MANUAL"}
+                <span className={`font-mono text-[11px] px-2 py-0.5 rounded-full border ${
+                  company.providerKey === "MAXP_NETWORK"
+                    ? "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 font-bold"
+                    : "border-border/60 bg-muted/40 text-muted-foreground"
+                }`}>
+                  {company.providerKey === "MAXP_NETWORK" ? "شحن على MaxP" : (company.integrationMode || "MANUAL")}
                 </span>
               </td>
               <td className="px-4 py-3">

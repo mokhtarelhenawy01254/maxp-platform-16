@@ -806,35 +806,47 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     });
 
     if (shipment.orderId) {
-      let orderStatus = 'OUT_FOR_DELIVERY';
-      let customStatusCode = null;
+      const { syncNetworkShipmentToStore } = require('./shipping/networkShipmentSyncService');
+      const networkSync = await syncNetworkShipmentToStore(tx, shipment, updateData.status, {
+        actorId: courierId || userId || null,
+        actorType: 'COURIER',
+            reason: `تحديث ميداني للشحنة عبر أسطول المناديب: ${updateData.status}`,
+      }).catch((err) => {
+        console.warn('⚠️ [COURIER_SERVICE] Network sync notice:', err.message);
+        return { success: false, skipped: true };
+      });
 
-      if (updateData.status === 'DELIVERED') {
-        orderStatus = 'DELIVERED';
-      } else if (updateData.status === 'RETURNED') {
-        orderStatus = 'RETURNED';
-      } else if (updateData.status === 'DELAYED') {
-        orderStatus = 'OUT_FOR_DELIVERY';
-        customStatusCode = 'DELAYED_WITH_CAPTAIN';
+      if (networkSync?.skipped) {
+        let orderStatus = 'OUT_FOR_DELIVERY';
+        let customStatusCode = null;
+
+        if (updateData.status === 'DELIVERED') {
+          orderStatus = 'DELIVERED';
+        } else if (updateData.status === 'RETURNED') {
+          orderStatus = 'RETURNED';
+        } else if (updateData.status === 'DELAYED') {
+          orderStatus = 'OUT_FOR_DELIVERY';
+          customStatusCode = 'DELAYED_WITH_CAPTAIN';
+        }
+
+        await tx.order.update({
+          where: { id: shipment.orderId },
+          data: {
+            status: orderStatus,
+            ...(customStatusCode ? { customStatusCode } : {})
+          }
+        }).catch(() => {});
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: shipment.orderId,
+            status: orderStatus,
+            oldStatus: shipment.order?.status || null,
+            changedBy: userId || null,
+            reason: `تحديث ميداني للشحنة عبر أسطول المناديب: ${updateData.status}`,
+          }
+        }).catch(() => {});
       }
-
-      await tx.order.update({
-        where: { id: shipment.orderId },
-        data: {
-          status: orderStatus,
-          ...(customStatusCode ? { customStatusCode } : {})
-        }
-      });
-
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: shipment.orderId,
-          status: orderStatus,
-          oldStatus: shipment.order?.status || null,
-          changedBy: userId || null,
-          reason: `تحديث ميداني للشحنة عبر أسطول المناديب: ${updateData.status}`
-        }
-      });
     }
 
     // If all shipments in delivery run are resolved, check if run can be marked COMPLETED

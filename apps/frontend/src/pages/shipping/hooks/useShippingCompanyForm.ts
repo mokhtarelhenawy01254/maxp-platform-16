@@ -18,6 +18,7 @@ export const INITIAL_SHIPPING_FORM_DATA: ShippingCompanyFormData = {
   apiUrl: '',
   providerKey: 'MANUAL',
   integrationMode: 'MANUAL',
+  linkedCompanyId: '',
   autoCreateShipments: false,
   shipmentCreateTrigger: 'ON_ORDER',
   logoUrl: '',
@@ -96,6 +97,7 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
           : ''),
       providerKey: company.providerKey || 'MANUAL',
       integrationMode: company.integrationMode || 'MANUAL',
+      linkedCompanyId: company.linkedCompanyId || settings.linkedCompanyId || '',
       autoCreateShipments: Boolean(settings.autoCreateShipments),
       shipmentCreateTrigger: settings.shipmentCreateTrigger || (settings.autoCreateShipments ? 'ON_ORDER' : 'ON_ORDER'),
       logoUrl: settings.logoUrl || '',
@@ -137,10 +139,13 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
         mainClientCode: formData.mainClientCode || undefined,
         senderNumber: formData.senderNumber || undefined,
         apiKey: formData.apiKey || undefined,
+        linkedCompanyId: formData.linkedCompanyId || undefined,
       };
 
       const resolvedIntegrationMode =
-        formData.providerKey === 'QP_EXPRESS' && (formData.username || formData.password)
+        formData.providerKey === 'MAXP_NETWORK'
+          ? 'INTERNAL'
+          : formData.providerKey === 'QP_EXPRESS' && (formData.username || formData.password)
           ? 'LIVE'
           : formData.providerKey === 'BOSTA' && formData.apiKey
           ? 'LIVE'

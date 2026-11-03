@@ -324,3 +324,173 @@ export const ManualFleetWizard: React.FC<Pick<CarrierWizardsProps, "formData" | 
     </div>
   </div>
 );
+
+export interface NetworkShippingCompany {
+  companyId: string;
+  name: string;
+  logo: string | null;
+  phone: string | null;
+  email: string | null;
+  operatingModel?: string;
+  isLinked: boolean;
+  merchantId: string | null;
+}
+
+export const MaxpNetworkWizard: React.FC<CarrierWizardsProps> = ({
+  formData,
+  setFormData,
+}) => {
+  const [networkCarriers, setNetworkCarriers] = React.useState<NetworkShippingCompany[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchNetwork = async () => {
+      try {
+        const res: any = await apiClient.get('/shipping-companies/network');
+        if (mounted && res.data?.success && Array.isArray(res.data.data)) {
+          setNetworkCarriers(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to load network carriers:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchNetwork();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSelectCarrier = (carrier: NetworkShippingCompany) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || carrier.name,
+      phone: prev.phone || carrier.phone || '',
+      email: prev.email || carrier.email || '',
+      providerKey: 'MAXP_NETWORK',
+      integrationMode: 'INTERNAL',
+      linkedCompanyId: carrier.companyId,
+      logoUrl: prev.logoUrl || carrier.logo || '',
+    }));
+  };
+
+  const selectedCarrier = networkCarriers.find(
+    (c) => c.companyId === formData.linkedCompanyId
+  );
+
+  return (
+    <div className="space-y-3.5">
+      <div className="p-3.5 bg-gradient-to-r from-indigo-50/90 to-purple-50/60 dark:from-indigo-950/40 dark:to-purple-950/20 rounded-xl border border-indigo-200 dark:border-indigo-800/60 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm text-indigo-950 dark:text-indigo-200">
+              شبكة شحن MaxP (MAXP Network)
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 font-bold">
+              ربط داخلي مباشر (INTERNAL)
+            </span>
+          </div>
+          {selectedCarrier && selectedCarrier.isLinked && (
+            <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-md">
+              مرتبط معتمد #{selectedCarrier.merchantId?.slice(-6)}
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs text-indigo-950 dark:text-indigo-300/90 leading-relaxed">
+          <strong>الربط الداخلي:</strong> يمكنك اختيار شركة شحن تعمل على منصة MaxP لتحويل الطلبات إلى طرود في نظامها فوراً بدون الحاجة إلى مفاتيح API خارجية.
+        </p>
+
+        {selectedCarrier && !selectedCarrier.isLinked && (
+          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-900 dark:text-amber-300">
+            ⚠️ <strong>غير مربوط بهذه الشركة بعد:</strong> يجب أن يقوم مدير شركة الشحن بإضافة متجرك كعميل لديه في لوحة التحكم وتفعيل الربط أولاً.
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200">
+          اختر شركة الشحن من شبكة MaxP *
+        </label>
+
+        {loading ? (
+          <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
+            جاري تحميل شركات الشحن المتاحة على الشبكة...
+          </div>
+        ) : networkCarriers.length === 0 ? (
+          <div className="p-4 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
+            لا توجد شركات شحن مفعلة حالياً على شبكة MaxP تقبل الربط المباشر.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto">
+            {networkCarriers.map((carrier) => {
+              const isSelected = formData.linkedCompanyId === carrier.companyId;
+              return (
+                <div
+                  key={carrier.companyId}
+                  onClick={() => handleSelectCarrier(carrier)}
+                  className={`p-3 rounded-lg border cursor-pointer transition flex items-center justify-between text-xs ${
+                    isSelected
+                      ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-xs"
+                      : "border-border/80 hover:bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {carrier.logo ? (
+                      <img
+                        src={carrier.logo}
+                        alt={carrier.name}
+                        className="w-7 h-7 rounded-md object-contain border border-border/60 bg-white"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-md border border-border/80 bg-muted/60 flex items-center justify-center font-bold text-[11px]">
+                        {carrier.name.slice(0, 2)}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-foreground">{carrier.name}</p>
+                      {carrier.phone && (
+                        <p className="text-[11px] text-muted-foreground font-mono" dir="ltr">
+                          {carrier.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    {carrier.isLinked ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-semibold">
+                        مربوط وجاهز
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-semibold">
+                        بانتظار اعتماد الشركة
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          اسم شركة الشحن في متجرك *
+        </label>
+        <input
+          type="text"
+          required
+          value={formData.name}
+          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+          placeholder="مثال: شركة النور للشحن (MaxP Network)"
+          className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        />
+      </div>
+    </div>
+  );
+};
+
