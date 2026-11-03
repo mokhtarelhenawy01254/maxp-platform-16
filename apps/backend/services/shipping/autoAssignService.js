@@ -117,13 +117,17 @@ async function suggest({
           select: {
             id: true,
             orderNumber: true,
-            customerName: true,
-            customerPhone: true,
-            customerGovernorate: true,
-            customerCity: true,
-            customerAddress: true,
+            governorate: true,
+            city: true,
             shippingAddress: true,
             total: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phone: true,
+              },
+            },
           },
         },
       },
@@ -162,13 +166,17 @@ async function suggest({
           select: {
             id: true,
             orderNumber: true,
-            customerName: true,
-            customerPhone: true,
-            customerGovernorate: true,
-            customerCity: true,
-            customerAddress: true,
+            governorate: true,
+            city: true,
             shippingAddress: true,
             total: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phone: true,
+              },
+            },
           },
         },
       },
@@ -180,9 +188,9 @@ async function suggest({
       if (normGovFilter) {
         shipments = shipments.filter((s) => {
           const sGov = normalizeGovernorateName(
-            s.destinationGovernorate || s.order?.customerGovernorate,
-            s.destinationCity || s.order?.customerCity,
-            s.destinationAddress || s.order?.customerAddress
+            s.destinationGovernorate || s.order?.governorate,
+            s.destinationCity || s.order?.city,
+            s.destinationAddress || s.order?.shippingAddress
           );
           return sGov === normGovFilter;
         });
@@ -247,9 +255,9 @@ async function suggest({
     }
 
     // Resolve normalized governorate
-    const rawGov = shipment.destinationGovernorate || shipment.order?.customerGovernorate;
-    const rawCity = shipment.destinationCity || shipment.order?.customerCity;
-    const rawAddress = shipment.destinationAddress || shipment.order?.customerAddress;
+    const rawGov = shipment.destinationGovernorate || shipment.order?.governorate;
+    const rawCity = shipment.destinationCity || shipment.order?.city;
+    const rawAddress = shipment.destinationAddress || shipment.order?.shippingAddress;
     const normalizedGov = normalizeGovernorateName(rawGov, rawCity, rawAddress);
 
     if (!normalizedGov) {
@@ -517,7 +525,15 @@ async function apply({ companyId, assignments = [], userId = null }) {
       // Update delivery run totals
       const runShipments = await tx.shipment.findMany({
         where: { deliveryRunId: run.id },
-        include: { order: true },
+        select: {
+          id: true,
+          codAmount: true,
+          order: {
+            select: {
+              total: true,
+            },
+          },
+        },
       });
 
       const totalShipments = runShipments.length;
