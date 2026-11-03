@@ -37,8 +37,9 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
 }) => {
   const activeVerifyToken =
     webhookDetailsSession?.metaWebhookVerifyToken?.trim() ||
+    newMetaWebhookVerifyToken?.trim() ||
     platformVerifyToken?.trim() ||
-    "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314";
+    "maxp_verify_token";
   const { t } = useTranslation();
 
   return (
@@ -129,17 +130,17 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
               </Button>
             </div>
             <div className="flex items-center justify-between text-[11px] text-[color:var(--color-muted-foreground)] px-1 pt-0.5">
-              <span>رمز بديل مختصر معتمد:</span>
+              <span>رمز بديل معتمد (64 محرف):</span>
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText("maxp_verify_token");
-                  toast.success("تم نسخ الرمز البديل: maxp_verify_token");
+                  navigator.clipboard.writeText("61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314");
+                  toast.success("تم نسخ الرمز البديل بنجاح");
                 }}
                 className="font-mono text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
-                title="اضغط لنسخ الرمز المختصر"
+                title="اضغط لنسخ الرمز البديل"
               >
-                <code>maxp_verify_token</code>
+                <code>61d94df...7314</code>
                 <Copy className="size-2.5" />
               </button>
             </div>
@@ -151,17 +152,25 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
               <span className="font-medium text-[color:var(--color-foreground)]">
                 الحقول المطلوبة (Webhook fields):
               </span>
-              <Badge
-                variant="outline"
-                className="font-mono text-xs bg-emerald-500/10 border-emerald-300 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-300"
-              >
-                messages
-              </Badge>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge
+                  variant="outline"
+                  className="font-mono text-xs bg-emerald-500/10 border-emerald-300 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-300"
+                >
+                  messages
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="font-mono text-xs bg-sky-500/10 border-sky-300 text-sky-800 dark:border-sky-500/40 dark:text-sky-300"
+                >
+                  message_template_status_update
+                </Badge>
+              </div>
             </div>
             <p className="text-[11px] text-[color:var(--color-muted-foreground)] leading-relaxed">
               في لوحة تحكم Meta، اضغط <strong>Manage</strong> في حقل Webhook fields
-              واشترك في <strong>messages</strong> لتصلك الرسائل وتحديثات القراءة
-              والتسليم مباشرة إلى لوحة التحكم.
+              واشترك في <strong>messages</strong> وأيضاً <strong>message_template_status_update</strong> لتصلك الرسائل وتحديثات القراءة
+              والتسليم وحالات القوالب مباشرة إلى لوحة التحكم.
             </p>
           </div>
 
@@ -196,9 +205,13 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
               </li>
               <li>
                 في جدول <strong>Webhook fields</strong> اضغط{" "}
-                <strong>Manage</strong> وفعّل حقل{" "}
+                <strong>Manage</strong> وفعّل حقول{" "}
                 <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-primary font-bold">
                   messages
+                </code>{" "}
+                و{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-primary font-bold">
+                  message_template_status_update
                 </code>
                 .
               </li>

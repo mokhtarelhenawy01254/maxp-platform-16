@@ -93,7 +93,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           }
           className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition max-sm:flex-1 border active:scale-[0.98] ${
             notPrintedFilter === "not_printed"
-              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs border-transparent font-bold"
+              ? "bg-primary text-primary-foreground shadow-xs border-primary font-bold"
               : "border-border/70 bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
@@ -108,7 +108,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           }
           className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition max-sm:flex-1 border active:scale-[0.98] ${
             noShippingCodeFilter === "no_shipping_code"
-              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs border-transparent font-bold"
+              ? "bg-primary text-primary-foreground shadow-xs border-primary font-bold"
               : "border-border/70 bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
@@ -121,7 +121,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           }
           className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition max-sm:flex-1 border active:scale-[0.98] ${
             workTypeFilter === "exchange"
-              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs border-transparent font-bold"
+              ? "bg-primary text-primary-foreground shadow-xs border-primary font-bold"
               : "border-border/70 bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >

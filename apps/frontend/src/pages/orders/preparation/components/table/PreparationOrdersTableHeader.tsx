@@ -16,7 +16,7 @@ export const PreparationOrdersTableHeader: React.FC<PreparationOrdersTableHeader
 
   return (
     <thead>
-      <tr className="border-b border-slate-200/90 bg-slate-50/80 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-600 dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-200">
+      <tr className="border-b border-border/70 bg-muted/40 text-[11px] font-mono font-semibold uppercase tracking-wider text-muted-foreground">
         <th className="w-10 px-3 py-2.5">
           <span className="sr-only">{t("preparation.table.selectColumn")}</span>
         </th>

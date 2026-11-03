@@ -467,13 +467,35 @@ async function createSession(req, res) {
             resolvedMetaToken = resolvedMetaToken.substring(eaaIdx).trim();
         }
 
-        let resolvedDisplayPhone = metaDisplayPhoneNumber || null;
+        let resolvedDisplayPhone = metaDisplayPhoneNumber
+            ? String(metaDisplayPhoneNumber).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim()
+            : null;
         let resolvedCleanPhone = cleanPhone;
+        if (resolvedDisplayPhone) {
+            const digits = resolvedDisplayPhone.replace(/\D/g, '');
+            if (digits) {
+                resolvedCleanPhone = digits;
+            }
+        }
 
         if (isMetaProvider) {
             if (!resolvedMetaToken || !metaPhoneNumberId) {
                 return res.status(400).json({
                     error: 'بيانات Meta غير مكتملة (Access Token و Phone Number ID مطلوبان لكل جلسة)'
+                });
+            }
+
+            // منع ربط نفس رقم هاتف Meta بشركة أخرى نشطة (حماية العزل متعدد الشركات)
+            const existingBinding = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: {
+                    metaPhoneNumberId: String(metaPhoneNumberId).trim(),
+                    companyId: { not: companyId },
+                    status: 'CONNECTED'
+                }
+            });
+            if (existingBinding) {
+                return res.status(400).json({
+                    error: 'معرف الهاتف (Phone Number ID) هذا مربوط بالفعل بجلسة نشطة تابعة لشركة أخرى'
                 });
             }
 
@@ -491,8 +513,9 @@ async function createSession(req, res) {
                     timeout: 10000
                 });
                 if (phoneRes.data?.display_phone_number) {
-                    resolvedDisplayPhone = resolvedDisplayPhone || phoneRes.data.display_phone_number;
-                    const digits = phoneRes.data.display_phone_number.replace(/\D/g, '');
+                    const fetchedDisplay = String(phoneRes.data.display_phone_number).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim();
+                    resolvedDisplayPhone = resolvedDisplayPhone || fetchedDisplay;
+                    const digits = fetchedDisplay.replace(/\D/g, '');
                     if (digits) {
                         resolvedCleanPhone = digits;
                     }
@@ -518,11 +541,7 @@ async function createSession(req, res) {
         // إنشاء الجلسة في قاعدة البيانات
         let resolvedVerifyToken = metaWebhookVerifyToken && String(metaWebhookVerifyToken).trim()
             ? String(metaWebhookVerifyToken).trim()
-            : null;
-        if (isMetaProvider && !resolvedVerifyToken) {
-            const crypto = require('crypto');
-            resolvedVerifyToken = crypto.randomBytes(12).toString('hex');
-        }
+            : (isMetaProvider ? 'maxp_verify_token' : null);
 
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
@@ -536,9 +555,9 @@ async function createSession(req, res) {
                 status: isMetaProvider ? 'CONNECTED' : 'QR_PENDING',
                 phoneNumber: resolvedCleanPhone || undefined,
                 metadata,
-                metaPhoneNumberId,
-                metaWabaId,
-                metaBusinessId,
+                metaPhoneNumberId: metaPhoneNumberId ? String(metaPhoneNumberId).trim() : undefined,
+                metaWabaId: metaWabaId ? String(metaWabaId).trim() : undefined,
+                metaBusinessId: metaBusinessId ? String(metaBusinessId).trim() : undefined,
                 metaAccessToken: resolvedMetaToken ? encryptTokenIfNeeded(resolvedMetaToken) : undefined,
                 metaApiVersion,
                 metaWebhookVerifyToken: resolvedVerifyToken,
@@ -559,10 +578,14 @@ async function createSession(req, res) {
             sessionData = await waitForSessionLinkState(session.id);
         }
 
+        const safeSession = { ...session };
+        delete safeSession.metaAccessToken;
+        delete safeSession.metaWebhookSecret;
+
         res.status(201).json({
             success: true,
             session: {
-                ...session,
+                ...safeSession,
                 status: isMetaProvider ? session.status : (sessionData?.status || 'QR_PENDING'),
                 phoneNumber: cleanPhone || session.phoneNumber,
                 qrCode: sessionData?.qrCode || null,
@@ -1143,6 +1166,49 @@ async function updateSession(req, res) {
             if (active) active.metadata = existingMeta;
         }
 
+        // 🛡️ حماية Meta Access Token من المسح عند التعديل بدون إدخال رمز جديد
+        let resolvedMetaAccessToken = existingSession.metaAccessToken;
+        if (
+            typeof metaAccessToken === 'string' &&
+            metaAccessToken.trim() !== '' &&
+            !metaAccessToken.includes('*') &&
+            !metaAccessToken.includes('•') &&
+            !metaAccessToken.startsWith('enc:v1:') &&
+            metaAccessToken.trim().length > 10
+        ) {
+            let cleanToken = metaAccessToken.trim();
+            const eaaIdx = cleanToken.indexOf('EAA');
+            if (eaaIdx > 0) {
+                cleanToken = cleanToken.substring(eaaIdx).trim();
+            }
+            resolvedMetaAccessToken = encryptTokenIfNeeded(cleanToken);
+        }
+
+        // تنظيف رقم الهاتف وإزالة محارف Unicode المخفية
+        let resolvedDisplayPhoneNumber = metaDisplayPhoneNumber !== undefined
+            ? (metaDisplayPhoneNumber ? String(metaDisplayPhoneNumber).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim() : null)
+            : (existingSession.metaDisplayPhoneNumber ? String(existingSession.metaDisplayPhoneNumber).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim() : null);
+
+        let resolvedPhoneNumber = existingSession.phoneNumber;
+        if (resolvedDisplayPhoneNumber && (provider === 'META_CLOUD' || existingSession.provider === 'META_CLOUD')) {
+            const digits = resolvedDisplayPhoneNumber.replace(/\D/g, '');
+            if (digits) {
+                resolvedPhoneNumber = digits;
+            }
+        }
+
+        let resolvedVerifyToken = metaWebhookVerifyToken !== undefined && String(metaWebhookVerifyToken).trim()
+            ? String(metaWebhookVerifyToken).trim()
+            : (existingSession.metaWebhookVerifyToken || 'maxp_verify_token');
+
+        let resolvedPhoneNumberId = metaPhoneNumberId !== undefined
+            ? (metaPhoneNumberId ? String(metaPhoneNumberId).trim() : null)
+            : existingSession.metaPhoneNumberId;
+
+        let resolvedWabaId = metaWabaId !== undefined
+            ? (metaWabaId ? String(metaWabaId).trim() : null)
+            : existingSession.metaWabaId;
+
         const session = await getSharedPrismaClient().whatsAppSession.update({
             where: { id },
             data: {
@@ -1158,18 +1224,23 @@ async function updateSession(req, res) {
                 loadBalanceWeight: loadBalanceWeight ? parseInt(loadBalanceWeight) : undefined,
                 metadata: updatedMetadata,
                 provider,
-                metaPhoneNumberId,
-                metaWabaId,
-                metaBusinessId,
-                metaAccessToken: encryptTokenIfNeeded(metaAccessToken),
+                phoneNumber: resolvedPhoneNumber,
+                metaPhoneNumberId: resolvedPhoneNumberId,
+                metaWabaId: resolvedWabaId,
+                metaBusinessId: metaBusinessId !== undefined ? (metaBusinessId ? String(metaBusinessId).trim() : null) : existingSession.metaBusinessId,
+                metaAccessToken: resolvedMetaAccessToken,
                 metaApiVersion,
-                metaWebhookVerifyToken,
+                metaWebhookVerifyToken: resolvedVerifyToken,
                 metaWebhookSecret,
-                metaDisplayPhoneNumber
+                metaDisplayPhoneNumber: resolvedDisplayPhoneNumber
             }
         });
 
-        res.json({ success: true, session });
+        const safeSession = { ...session };
+        delete safeSession.metaAccessToken;
+        delete safeSession.metaWebhookSecret;
+
+        res.json({ success: true, session: safeSession });
     } catch (error) {
         console.error('❌ Error updating session:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث الجلسة' });
@@ -2653,19 +2724,16 @@ async function getSettings(req, res) {
             });
         }
 
-        const fbConfig = facebookAppConfig.getFacebookOAuthConfig();
-        const defaultWebhookVerifyToken = fbConfig.whatsappWebhookVerifyToken
-            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
-            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
-        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
+        const defaultWebhookVerifyToken = 'maxp_verify_token';
+        const webhookUrl = 'https://maxp.online/api/v1/whatsapp-meta';
 
         res.json({
             settings,
             metaWebhook: {
                 webhookUrl,
                 verifyToken: defaultWebhookVerifyToken,
-                alternativeVerifyToken: 'maxp_verify_token',
-                fields: ['messages']
+                alternativeVerifyToken: '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314',
+                fields: ['messages', 'message_template_status_update']
             }
         });
     } catch (error) {
@@ -5766,10 +5834,8 @@ async function getFacebookConfig(req, res) {
         const appId = config.whatsappAppId || config.appId;
         const configId = config.whatsappConfigId || config.configId;
 
-        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
-        const defaultWebhookVerifyToken = config.whatsappWebhookVerifyToken
-            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
-            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
+        const webhookUrl = 'https://maxp.online/api/v1/whatsapp-meta';
+        const defaultWebhookVerifyToken = 'maxp_verify_token';
 
         if (!appId || facebookAppConfig.isPlaceholderFacebookCredential(appId)) {
             return res.status(200).json({
@@ -5798,18 +5864,15 @@ async function getFacebookConfig(req, res) {
 
 async function getMetaWebhookInfo(req, res) {
     try {
-        const config = facebookAppConfig.getFacebookOAuthConfig();
-        const verifyToken = config.whatsappWebhookVerifyToken
-            || process.env.META_WA_WEBHOOK_VERIFY_TOKEN
-            || '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314';
-        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
+        const verifyToken = 'maxp_verify_token';
+        const webhookUrl = 'https://maxp.online/api/v1/whatsapp-meta';
 
         res.json({
             success: true,
             webhookUrl,
             verifyToken,
-            alternativeVerifyToken: 'maxp_verify_token',
-            fields: ['messages']
+            alternativeVerifyToken: '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314',
+            fields: ['messages', 'message_template_status_update']
         });
     } catch (error) {
         console.error('❌ Error getting Meta webhook info:', error.message);
@@ -5990,11 +6053,15 @@ async function facebookConnect(req, res) {
             }
         }
 
+        const cleanMetaDisplay = metaDisplayPhone ? String(metaDisplayPhone).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim() : null;
+        const cleanDigits = cleanMetaDisplay ? cleanMetaDisplay.replace(/\D/g, '') : undefined;
+
         // Step 6: Create WhatsAppSession in DB
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
                 companyId,
-                name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
+                name: sessionName || `WhatsApp Cloud (${cleanMetaDisplay || 'Connecting...'})`,
+                phoneNumber: cleanDigits,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
                 metaAccessToken: encryptField(longLivedToken),
@@ -6002,9 +6069,9 @@ async function facebookConnect(req, res) {
                 metaWabaId: wabaId,
                 metaPhoneNumberId: metaPhoneNumberId,
                 metaBusinessId: businessId,
-                metaDisplayPhoneNumber: metaDisplayPhone,
+                metaDisplayPhoneNumber: cleanMetaDisplay,
                 metaApiVersion: META_GRAPH_VERSION,
-                metaWebhookVerifyToken: require('crypto').randomBytes(12).toString('hex'),
+                metaWebhookVerifyToken: 'maxp_verify_token',
                 aiEnabled: true,
                 autoReply: false,
                 aiMode: 'suggest',
@@ -6250,10 +6317,14 @@ async function facebookEmbeddedConnect(req, res) {
             console.warn('⚠️ Could not disconnect old session with same phoneNumberId:', discErr.message);
         }
 
+        const cleanDisplay = displayPhoneNumber ? String(displayPhoneNumber).replace(/[\u200e\u200f\u202a-\u202e\s]/g, '').trim() : null;
+        const cleanDigits = cleanDisplay ? cleanDisplay.replace(/\D/g, '') : undefined;
+
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
                 companyId,
-                name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
+                name: sessionName || `WhatsApp Cloud (${cleanDisplay || phoneNumberId})`,
+                phoneNumber: cleanDigits,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
                 metaAccessToken: encryptField(longLivedToken),
@@ -6261,9 +6332,9 @@ async function facebookEmbeddedConnect(req, res) {
                 metaWabaId: wabaId,
                 metaPhoneNumberId: phoneNumberId,
                 metaBusinessId: businessId,
-                metaDisplayPhoneNumber: displayPhoneNumber,
+                metaDisplayPhoneNumber: cleanDisplay,
                 metaApiVersion: META_GRAPH_VERSION,
-                metaWebhookVerifyToken: require('crypto').randomBytes(12).toString('hex'),
+                metaWebhookVerifyToken: 'maxp_verify_token',
                 metadata: JSON.stringify({ registrationPin }),
                 aiEnabled: true,
                 autoReply: false,

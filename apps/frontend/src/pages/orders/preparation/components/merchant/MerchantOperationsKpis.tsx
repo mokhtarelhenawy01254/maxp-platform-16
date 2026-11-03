@@ -67,7 +67,7 @@ export const MerchantOperationsKpis: React.FC<MerchantOperationsKpisProps> = ({
         subValue: t("merchant.statSubValues.piecesAssigned", { count: totals.assignedPieces }),
         icon: ClockIcon,
         className:
-          "border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-850 dark:text-slate-100",
+          "border-border/70 bg-card text-card-foreground",
       },
       {
         label: t("merchant.moneyCards.dueAfterDelivery"),
@@ -75,7 +75,7 @@ export const MerchantOperationsKpis: React.FC<MerchantOperationsKpisProps> = ({
         subValue: t("merchant.statSubValues.piecesCount", { count: totals.payablePieces }),
         icon: BanknotesIcon,
         className:
-          "border-emerald-200 bg-white text-emerald-900 dark:border-emerald-800 dark:bg-slate-850 dark:text-emerald-300",
+          "border-emerald-200 bg-emerald-50/50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
       },
       {
         label: t("merchant.moneyCards.inShippingValue"),
@@ -83,7 +83,7 @@ export const MerchantOperationsKpis: React.FC<MerchantOperationsKpisProps> = ({
         subValue: t("merchant.statSubValues.piecesCount", { count: totals.inShippingPieces }),
         icon: TruckIcon,
         className:
-          "border-sky-200 bg-white text-sky-900 dark:border-sky-800 dark:bg-slate-850 dark:text-sky-300",
+          "border-sky-200 bg-sky-50/50 text-sky-900 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300",
       },
       {
         label: t("merchant.moneyCards.shippingCost"),
@@ -94,7 +94,7 @@ export const MerchantOperationsKpis: React.FC<MerchantOperationsKpisProps> = ({
             : t("merchant.moneyCards.noPaymentsRecorded"),
         icon: BanknotesIcon,
         className:
-          "border-amber-200 bg-white text-amber-900 dark:border-amber-800 dark:bg-slate-850 dark:text-amber-300",
+          "border-amber-200 bg-amber-50/50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
       },
     ],
     [formatPrice, t, totals],

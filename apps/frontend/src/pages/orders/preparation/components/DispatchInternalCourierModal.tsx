@@ -95,7 +95,7 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
             <Link
               to="/shipping/couriers"
               onClick={onClose}
-              className="inline-flex items-center gap-1 px-3 py-1.5 font-semibold text-white bg-slate-900 dark:bg-slate-50 dark:text-slate-900 rounded-lg hover:bg-slate-800 transition shadow-sm"
+              className="inline-flex items-center gap-1 px-3 py-1.5 font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition shadow-xs"
             >
               الانتقال لإدارة المناديب
             </Link>
@@ -113,8 +113,8 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                       onClick={() => setSelectedCourierId(c.id)}
                       className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
                         isSelected
-                          ? 'border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800/90 ring-1 ring-slate-900/10'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                          : 'border-border/70 hover:border-border'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -123,11 +123,11 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                           name="courier"
                           checked={isSelected}
                           onChange={() => setSelectedCourierId(c.id)}
-                          className="w-4 h-4 text-slate-900"
+                          className="w-4 h-4 text-primary"
                         />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-1" dir="ltr">
+                          <div className="font-semibold text-foreground">{c.name}</div>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1" dir="ltr">
                             <PhoneIcon className="w-3 h-3" />
                             {c.phone}
                           </div>
@@ -144,7 +144,7 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                           {c.status === 'AVAILABLE' ? 'متاح بالمقر' : 'في الميدان'}
                         </span>
                         {c.activeShipmentsCount > 0 && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">معاه {c.activeShipmentsCount} طرد</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">معاه {c.activeShipmentsCount} طرد</div>
                         )}
                       </div>
                     </label>
@@ -160,15 +160,15 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="مثال: تسليمات مسائية - خط سير مدينة نصر والتجمع"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 bg-background border border-border/70 text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                className="px-4 py-2 border border-border/70 bg-background text-foreground rounded-lg hover:bg-muted transition"
               >
                 إلغاء
               </button>
@@ -176,7 +176,7 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                 type="button"
                 disabled={!selectedCourierId || submitting}
                 onClick={handleConfirm}
-                className="px-5 py-2 text-white bg-slate-900 dark:bg-slate-50 dark:text-slate-900 font-semibold rounded-lg hover:bg-slate-800 transition active:scale-95 disabled:opacity-50"
+                className="px-5 py-2 text-primary-foreground bg-primary font-semibold rounded-lg hover:bg-primary/90 transition active:scale-95 disabled:opacity-50"
               >
                 {submitting ? 'جاري إنشاء المانيفست...' : 'تأكيد الإسناد وإصدار المانيفست'}
               </button>

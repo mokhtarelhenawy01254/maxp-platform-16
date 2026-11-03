@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AgentReportsPage from '../AgentReportsPage';
 import { agentReportsService, AgentReportType, AgentReportItem, AgentReportDetail } from '../../../services/agentReportsService';
@@ -32,7 +32,7 @@ jest.mock('../../../services/agentReportsService', () => ({
   },
 }));
 
-describe('Agent Reports Frontend (Ticket AR-1 Acceptance Gates 6 & 7)', () => {
+describe('Agent Reports Frontend (Ticket AR-1 & AR-FIX-1)', () => {
   const mockTypes: AgentReportType[] = [
     {
       id: 'type-ai',
@@ -215,5 +215,183 @@ describe('Agent Reports Frontend (Ticket AR-1 Acceptance Gates 6 & 7)', () => {
 
     // Ensure AI previous reports are no longer in Column 2
     expect(screen.queryByText('تقرير الذكاء الاصطناعي الأسبوعي 43')).not.toBeInTheDocument();
+  });
+
+  it('AR-FIX-1: Enforces guaranteed column widths (224px col1, 256px col2, flex-1 col3) and hides top tabs on desktop (>= 1024px)', async () => {
+    // Set window width to 1280px (desktop)
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1280 });
+
+    const { container } = render(
+      <MemoryRouter>
+        <AgentReportsPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('إبديت الذكاء الاصطناعي').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Mobile tabs must be display: none on desktop
+    const mobileNav = container.querySelector('.ar-mobile-nav') as HTMLElement;
+    expect(mobileNav).not.toBeNull();
+    expect(mobileNav.style.display).toBe('none');
+
+    // Column 1 must have width: 224px (within 200–250px)
+    const col1 = container.querySelector('.ar-col-types') as HTMLElement;
+    expect(col1).not.toBeNull();
+    expect(col1.style.width).toBe('224px');
+    expect(col1.style.flexShrink).toBe('0');
+
+    // Column 2 must have width: 256px (within 240–290px)
+    const col2 = container.querySelector('.ar-col-reports') as HTMLElement;
+    expect(col2).not.toBeNull();
+    expect(col2.style.width).toBe('256px');
+    expect(col2.style.flexShrink).toBe('0');
+
+    // Column 3 must have flex: 1 and minWidth: 480px
+    const col3 = container.querySelector('.ar-col-viewer') as HTMLElement;
+    expect(col3).not.toBeNull();
+    expect(col3.style.flex).toBe('1');
+    expect(col3.style.minWidth).toBe('480px');
+  });
+
+  it('AR-FIX-1: Automatically selects first type WITH reports (reportsCount > 0) when the first type in list is empty', async () => {
+    const typesWithFirstEmpty: AgentReportType[] = [
+      {
+        id: 'type-empty-first',
+        slug: 'empty-type',
+        name: 'نوع فارغ',
+        description: 'نوع ليس به أي تقارير',
+        icon: 'folder',
+        sortOrder: 1,
+        isActive: true,
+        reportsCount: 0,
+        createdAt: '2026-11-01T00:00:00Z',
+        updatedAt: '2026-11-01T00:00:00Z',
+      },
+      {
+        id: 'type-has-reports',
+        slug: 'active-type',
+        name: 'نوع به تقارير',
+        description: 'نوع نشط به تقارير',
+        icon: 'sparkles',
+        sortOrder: 2,
+        isActive: true,
+        reportsCount: 1,
+        createdAt: '2026-11-02T00:00:00Z',
+        updatedAt: '2026-11-02T00:00:00Z',
+      },
+    ];
+
+    (agentReportsService.getTypes as any).mockResolvedValue(typesWithFirstEmpty);
+    (agentReportsService.getReports as any).mockImplementation(({ typeId }: { typeId: string }) => {
+      if (typeId === 'type-has-reports') {
+        return Promise.resolve({ items: mockAiReports, total: 2 });
+      }
+      return Promise.resolve({ items: [], total: 0 });
+    });
+
+    render(
+      <MemoryRouter>
+        <AgentReportsPage />
+      </MemoryRouter>,
+    );
+
+    // Expect 'نوع به تقارير' to be auto-selected and its reports loaded
+    await waitFor(() => {
+      expect(screen.getAllByText('تقرير الذكاء الاصطناعي الأسبوعي 44').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('AR-FIX-1: Displays empty state in columns 2 and 3 when all report types have 0 reports', async () => {
+    const allEmptyTypes: AgentReportType[] = [
+      {
+        id: 'type-empty-1',
+        slug: 'empty-1',
+        name: 'نوع فارغ 1',
+        description: 'نوع 1',
+        icon: 'folder',
+        sortOrder: 1,
+        isActive: true,
+        reportsCount: 0,
+        createdAt: '2026-11-01T00:00:00Z',
+        updatedAt: '2026-11-01T00:00:00Z',
+      },
+    ];
+
+    (agentReportsService.getTypes as any).mockResolvedValue(allEmptyTypes);
+    (agentReportsService.getReports as any).mockResolvedValue({ items: [], total: 0 });
+
+    render(
+      <MemoryRouter>
+        <AgentReportsPage />
+      </MemoryRouter>,
+    );
+
+    // Column 2 should show empty reports message
+    await waitFor(() => {
+      expect(screen.getByText('مفيش تقارير في النوع ده')).toBeInTheDocument();
+    });
+
+    // Column 3 should show no report selected message
+    expect(screen.getByText('لم يتم اختيار أي تقرير')).toBeInTheDocument();
+  });
+
+  it('AR-FIX-1: Mobile viewport (< 1024px) shows mobile navigation and switching tabs toggles columns', async () => {
+    // Set viewport width to 420px (mobile)
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 420 });
+
+    const { container } = render(
+      <MemoryRouter>
+        <AgentReportsPage />
+      </MemoryRouter>,
+    );
+
+    // Trigger window resize listener
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('إبديت الذكاء الاصطناعي').length).toBeGreaterThanOrEqual(1);
+    });
+
+    const mobileNav = container.querySelector('.ar-mobile-nav') as HTMLElement;
+    expect(mobileNav).not.toBeNull();
+    expect(mobileNav.style.display).toBe('flex');
+
+    const col1 = container.querySelector('.ar-col-types') as HTMLElement;
+    const col2 = container.querySelector('.ar-col-reports') as HTMLElement;
+    const col3 = container.querySelector('.ar-col-viewer') as HTMLElement;
+
+    const navButtons = mobileNav.querySelectorAll('button');
+    expect(navButtons.length).toBe(3);
+    const typesTabButton = navButtons[0];
+    const reportsTabButton = navButtons[1];
+    const viewerTabButton = navButtons[2];
+
+    // Switch to types tab
+    fireEvent.click(typesTabButton);
+
+    expect(col1.style.display).not.toBe('none');
+    expect(col2.style.display).toBe('none');
+    expect(col3.style.display).toBe('none');
+
+    // Switch to reports tab
+    fireEvent.click(reportsTabButton);
+
+    expect(col1.style.display).toBe('none');
+    expect(col2.style.display).not.toBe('none');
+    expect(col3.style.display).toBe('none');
+
+    // Switch to viewer tab
+    fireEvent.click(viewerTabButton);
+
+    expect(col1.style.display).toBe('none');
+    expect(col2.style.display).toBe('none');
+    expect(col3.style.display).not.toBe('none');
+
+    // Reset innerWidth to 1280
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1280 });
   });
 });

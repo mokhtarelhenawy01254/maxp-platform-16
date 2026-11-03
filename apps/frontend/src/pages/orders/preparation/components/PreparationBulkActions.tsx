@@ -64,20 +64,20 @@ const PreparationBulkActions = ({
     <><div className="flex flex-wrap items-center gap-2 max-sm:flex-col max-sm:items-stretch">
       {!compact && (
         <>
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t("preparation.bulkActions.title")}</span>
+          <span className="text-sm font-semibold text-foreground">{t("preparation.bulkActions.title")}</span>
 
-          <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
             <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500" />
             {t("preparation.bulkActions.selected", { count: selectedOrdersCount })}
           </span>
 
-          <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block dark:bg-gray-700" />
+          <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
 
           <div className="flex items-center gap-1.5 max-sm:w-full max-sm:justify-stretch">
             <button
               onClick={onSelectAll}
               disabled={totalVisibleOrders === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition active:scale-[0.98] hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700 max-sm:flex-1"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 px-3 py-1.5 text-xs font-medium text-foreground transition active:scale-[0.98] hover:border-border hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
             >
               <Squares2X2Icon className="h-4 w-4" />
               {allVisibleSelected ? t("preparation.bulkActions.deselectAll") : t("preparation.bulkActions.selectAll")}
@@ -85,14 +85,14 @@ const PreparationBulkActions = ({
             <button
               onClick={onClearSelection}
               disabled={selectedOrdersCount === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition active:scale-[0.98] hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200 max-sm:flex-1"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 px-3 py-1.5 text-xs font-medium text-muted-foreground transition active:scale-[0.98] hover:border-border hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
             >
               <XCircleIcon className="h-4 w-4" />
               {t("preparation.bulkActions.clearSelection")}
             </button>
           </div>
 
-          <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block dark:bg-gray-700" />
+          <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
         </>
       )}
 
@@ -107,7 +107,7 @@ const PreparationBulkActions = ({
           value={bulkStatus}
           onChange={(e) => onBulkStatusChange(e.target.value)}
           disabled={!preparationEnabled || !bulkStatusUpdateEnabled}
-          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500 sm:max-w-xs max-sm:w-full"
+          className="flex-1 rounded-xl border border-border/70 bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none transition focus:border-primary sm:max-w-xs max-sm:w-full"
         >
           <option value="">{t("preparation.bulkActions.targetStage")}</option>
           {statusOptions.map((status) => (
@@ -127,7 +127,7 @@ const PreparationBulkActions = ({
             selectedOrdersCount === 0 ||
             bulkUpdating
           }
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-3.5 py-1.5 text-xs font-medium text-white transition active:scale-[0.98] hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 max-sm:flex-1"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground transition active:scale-[0.98] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
         >
           {bulkUpdating ? (
             <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
@@ -147,7 +147,7 @@ const PreparationBulkActions = ({
             totalVisibleOrders === 0 ||
             bulkUpdating
           }
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-700 px-3.5 py-1.5 text-xs font-medium text-white transition active:scale-[0.98] hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-600 dark:hover:bg-gray-500 max-sm:flex-1"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-secondary px-3.5 py-1.5 text-xs font-medium text-secondary-foreground transition active:scale-[0.98] hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
         >
           {bulkUpdating ? (
             <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
@@ -161,7 +161,7 @@ const PreparationBulkActions = ({
         <button
           onClick={onClearSelection || onClear}
           disabled={selectedOrdersCount === 0 && !bulkStatus}
-          className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition active:scale-[0.98] hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 max-sm:flex-1"
+          className="inline-flex items-center justify-center rounded-xl border border-border/70 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition active:scale-[0.98] hover:border-border hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
         >
           {t("preparation.bulkActions.clearSelection", "إلغاء التحديد")}
         </button>
@@ -183,7 +183,7 @@ const PreparationBulkActions = ({
         ) : null}
 
         {/* Send to Shipping */}
-        <span className="mx-0.5 hidden h-4 w-px bg-gray-200 sm:block dark:bg-gray-700" />
+        <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
         <button
           onClick={onSendToShipping || onSendToTurbo}
           disabled={selectedOrdersCount === 0 || sendingToTurbo}
@@ -201,7 +201,7 @@ const PreparationBulkActions = ({
           <button
             onClick={onSendToInternalCourier}
             disabled={selectedOrdersCount === 0 || sendingToTurbo}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-1.5 text-xs font-medium transition active:scale-[0.98] hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-background text-foreground px-3 py-1.5 text-xs font-medium transition active:scale-[0.98] hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
           >
             <TruckIcon className="h-3.5 w-3.5 text-emerald-600" />
             <span>مندوب داخلي</span>
