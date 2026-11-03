@@ -114,14 +114,31 @@ export const NotificationLogsTable: React.FC<NotificationLogsTableProps> = ({
                     )}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {log.status === 'FAILED' && log.failureReason ? (
-                    <span
-                      className="block max-w-[200px] truncate text-xs text-destructive font-mono"
-                      title={log.failureReason}
+                <TableCell className="max-w-[240px] whitespace-nowrap">
+                  {log.status === 'FAILED' && (log.failureReason || log.errorCode) ? (
+                    <div
+                      className="flex items-center gap-1.5 overflow-hidden"
+                      title={
+                        log.errorCode
+                          ? `[${log.errorCode}] ${log.failureReason || ''}`
+                          : log.failureReason || ''
+                      }
                     >
-                      {log.failureReason}
-                    </span>
+                      {log.errorCode && (
+                        <span
+                          className="shrink-0 rounded bg-red-100 px-1 py-0.5 text-[10px] font-mono font-bold text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                          dir="ltr"
+                        >
+                          #{log.errorCode}
+                        </span>
+                      )}
+                      <span
+                        className="truncate text-xs font-mono text-destructive"
+                        dir="auto"
+                      >
+                        {log.failureReason || `كود ${log.errorCode}`}
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground/60">—</span>
                   )}

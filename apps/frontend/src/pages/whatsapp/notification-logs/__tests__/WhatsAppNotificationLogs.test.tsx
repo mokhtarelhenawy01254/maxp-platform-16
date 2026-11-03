@@ -72,6 +72,24 @@ const mockLogs = [
     whatsappMessageId: null,
     createdAt: '2026-10-23T15:00:00.000Z',
   },
+  {
+    id: 'log-3',
+    status: 'FAILED',
+    messageType: 'TEMPLATE',
+    sessionId: 'sess-1',
+    sessionName: 'جلسة المبيعات',
+    sessionPhone: '201011112222',
+    recipientPhone: '201077776666',
+    recipientName: 'خالد إبراهيم',
+    eventType: 'ORDER_CONFIRMED',
+    category: 'ORDERS',
+    content: 'تم تأكيد طلبك',
+    failureReason: 'Payment issue: visit business.facebook.com/billing_hub to resolve unpaid invoices',
+    errorCode: '131042',
+    whatsappMessageId: 'wamid.HBgLMTIzNDU2',
+    createdAt: '2026-10-23T16:00:00.000Z',
+    orderNumber: 'ORD-1122',
+  },
 ];
 
 describe('WhatsAppNotificationLogs (Batch 428)', () => {
@@ -127,8 +145,10 @@ describe('WhatsAppNotificationLogs (Batch 428)', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('تم التسليم')).toBeInTheDocument();
-      expect(screen.getByText('فشل')).toBeInTheDocument();
+      // The details dialog now repeats the status as a prominent badge, so the table
+      // may expose the same label more than once per row group.
+      expect(screen.getAllByText('تم التسليم').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('فشل').length).toBeGreaterThan(0);
     });
 
     expect(screen.getByText(/User phone number not registered/)).toBeInTheDocument();
@@ -175,6 +195,31 @@ describe('WhatsAppNotificationLogs (Batch 428)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('لا توجد سجلات مطابقة')).toBeInTheDocument();
+    });
+  });
+
+  it('opens dialog for failed log 131042 and displays Arabic error translation and Meta link', async () => {
+    render(
+      <MemoryRouter>
+        <WhatsAppNotificationLogs />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('خالد إبراهيم')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('خالد إبراهيم'));
+
+    await waitFor(() => {
+      expect(screen.getByText('تفاصيل الإشعار المرسل')).toBeInTheDocument();
+      expect(screen.getByText(/حساب واتساب عليه مدفوعات معلّقة/)).toBeInTheDocument();
+      expect(screen.getByText('كود 131042')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /فتح في Meta/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /فتح الطلب/i })).toHaveAttribute(
+        'href',
+        '/orders?search=ORD-1122'
+      );
     });
   });
 });
