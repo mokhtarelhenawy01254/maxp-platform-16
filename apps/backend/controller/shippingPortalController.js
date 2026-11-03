@@ -24,6 +24,59 @@ function generateTrackingNumber() {
 }
 
 /**
+ * Format shipment response to ensure declaredWeightKg, actualWeightKg,
+ * numeric weights and costs are consistently exposed.
+ */
+function formatShipment(shipment) {
+  if (!shipment) return null;
+  const raw = typeof shipment.toJSON === 'function' ? shipment.toJSON() : { ...shipment };
+
+  let declaredWeight = null;
+  let actualWeightFromMeta = null;
+
+  if (raw.metadata) {
+    try {
+      const metadataObj = typeof raw.metadata === 'string' ? JSON.parse(raw.metadata) : raw.metadata;
+      if (metadataObj && metadataObj.declaredWeightKg !== undefined && metadataObj.declaredWeightKg !== null) {
+        declaredWeight = Number(metadataObj.declaredWeightKg);
+      }
+      if (metadataObj && metadataObj.actualWeightKg !== undefined && metadataObj.actualWeightKg !== null) {
+        actualWeightFromMeta = Number(metadataObj.actualWeightKg);
+      }
+    } catch (_) {}
+  }
+
+  const actualWeightVal = raw.actualWeight !== null && raw.actualWeight !== undefined
+    ? Number(raw.actualWeight)
+    : actualWeightFromMeta;
+
+  const currentWeightVal = raw.weight !== null && raw.weight !== undefined
+    ? Number(raw.weight)
+    : null;
+
+  const declaredWeightKg = declaredWeight !== null
+    ? declaredWeight
+    : (raw.declaredWeightKg !== undefined && raw.declaredWeightKg !== null
+        ? Number(raw.declaredWeightKg)
+        : currentWeightVal);
+
+  const actualWeightKg = actualWeightVal !== null
+    ? actualWeightVal
+    : (raw.actualWeightKg !== undefined && raw.actualWeightKg !== null
+        ? Number(raw.actualWeightKg)
+        : null);
+
+  return {
+    ...raw,
+    weight: currentWeightVal,
+    cost: raw.cost !== null && raw.cost !== undefined ? Number(raw.cost) : null,
+    actualWeight: actualWeightVal,
+    declaredWeightKg,
+    actualWeightKg,
+  };
+}
+
+/**
  * POST /api/v1/shipping-portal/quote
  * Calculate shipping price for a client/merchant parcel
  */
@@ -188,8 +241,8 @@ async function createStandaloneShipment(req, res) {
         carrierType: 'MANUAL',
         trackingNumber,
         metadata: notes || manualDeliveryNotes
-          ? JSON.stringify({ notes: notes || manualDeliveryNotes, pricingSource: quote.source })
-          : JSON.stringify({ pricingSource: quote.source }),
+          ? JSON.stringify({ notes: notes || manualDeliveryNotes, pricingSource: quote.source, declaredWeightKg: finalWeight })
+          : JSON.stringify({ pricingSource: quote.source, declaredWeightKg: finalWeight }),
       },
     });
 
@@ -209,12 +262,13 @@ async function createStandaloneShipment(req, res) {
         trackingNumber,
         cost: quote.price,
         pricingSource: quote.source,
+        declaredWeightKg: finalWeight,
       },
     });
 
     return res.status(201).json({
       success: true,
-      data: shipment,
+      data: formatShipment(shipment),
       message: 'تم إنشاء الطرد بنجاح',
     });
   } catch (error) {
@@ -303,7 +357,7 @@ async function getShipments(req, res) {
 
     return res.json({
       success: true,
-      data: shipments,
+      data: shipments.map(formatShipment),
       pagination: {
         total,
         page: pageNum,
@@ -360,7 +414,7 @@ async function getShipmentById(req, res) {
     return res.json({
       success: true,
       data: {
-        ...shipment,
+        ...formatShipment(shipment),
         failureReasonLabelAr,
       },
     });
@@ -1754,13 +1808,17 @@ async function receiveShipmentAtHub(req, res) {
       ? parseFloat(actualWeight)
       : null;
 
-    let priceAdjustment = 0;
+    const hasValidActualWeight = newWeight !== null && !isNaN(newWeight) && newWeight > 0;
+    const originalWeight = shipment.weight !== null && shipment.weight !== undefined ? Number(shipment.weight) : null;
     const originalCost = Number(shipment.cost || 0);
-    let newCost = originalCost;
 
-    if (newWeight !== null && !isNaN(newWeight) && newWeight > 0) {
+    let priceAdjustment = 0;
+    let newCost = originalCost;
+    let quote = null;
+
+    if (hasValidActualWeight) {
       try {
-        const quote = await quotePrice({
+        quote = await quotePrice({
           companyId,
           merchantId: shipment.merchantId,
           governorate: shipment.destinationGovernorate,
@@ -1775,43 +1833,104 @@ async function receiveShipmentAtHub(req, res) {
       }
     }
 
+    // Extract and update metadata
+    let metadataObj = {};
+    if (shipment.metadata) {
+      try {
+        metadataObj = typeof shipment.metadata === 'string' ? JSON.parse(shipment.metadata) : { ...shipment.metadata };
+      } catch (_) {
+        metadataObj = {};
+      }
+    }
+    if (!metadataObj || typeof metadataObj !== 'object') {
+      metadataObj = {};
+    }
+
+    if (hasValidActualWeight) {
+      // Preserve original declared weight in metadata if not already recorded
+      if (metadataObj.declaredWeightKg === undefined || metadataObj.declaredWeightKg === null) {
+        metadataObj.declaredWeightKg = originalWeight;
+      }
+      metadataObj.actualWeightKg = newWeight;
+      metadataObj.weightAdjustedAt = new Date().toISOString();
+      metadataObj.lastPriceAdjustment = priceAdjustment;
+    }
+
+    const dataToUpdate = {
+      status: 'RECEIVED_AT_HUB',
+      branchId: branchId || shipment.branchId || null,
+      ...(hasValidActualWeight
+        ? {
+            weight: newWeight,
+            actualWeight: newWeight,
+            cost: newCost,
+            priceAdjustment: priceAdjustment,
+            metadata: JSON.stringify(metadataObj),
+          }
+        : {
+            priceAdjustment: 0,
+          }),
+    };
+
     const updated = await prisma.shipment.update({
       where: { id: shipment.id },
-      data: {
-        status: 'RECEIVED_AT_HUB',
-        branchId: branchId || shipment.branchId || null,
-        ...(newWeight !== null && !isNaN(newWeight) ? { actualWeight: newWeight } : {}),
-        priceAdjustment: priceAdjustment,
-      },
+      data: dataToUpdate,
       include: { branch: true },
     });
 
-    // Record ShipmentEvent with WEIGHT_ADJUSTED
+    // Record ShipmentEvent with WEIGHT_ADJUSTED if weight was updated, otherwise HUB_RECEIVED
+    const isWeightAdjusted = hasValidActualWeight && (
+      (originalWeight !== null && originalWeight !== newWeight) ||
+      priceAdjustment !== 0
+    );
+
+    const eventReason = isWeightAdjusted ? 'WEIGHT_ADJUSTED' : 'HUB_RECEIVED';
+    const eventNotes = isWeightAdjusted
+      ? `تم استلام الشحنة في الهاَب وتعديل الوزن: من ${originalWeight ?? '—'} كجم إلى ${newWeight} كجم. فرق السعر: ${priceAdjustment > 0 ? '+' : ''}${priceAdjustment} ج.م (من ${originalCost} إلى ${newCost} ج.م)`
+      : `تم استلام الشحنة في الهاَب بنجاح`;
+
     await recordShipmentEvent(prisma, {
       companyId,
       shipmentId: shipment.id,
       fromStatus: shipment.status,
       toStatus: 'RECEIVED_AT_HUB',
-      reasonCode: priceAdjustment !== 0 ? 'WEIGHT_ADJUSTED' : 'HUB_RECEIVED',
-      notes: `تم استلام الشحنة في الهاَب. الوزن الفعلي: ${newWeight || shipment.weight || '—'} كجم. فرق السعر: ${priceAdjustment} ج.م`,
+      reasonCode: eventReason,
+      notes: eventNotes,
       actorType: req.user?.role === 'SHIPPING_CLIENT' ? 'CLIENT' : 'ADMIN',
       actorId: req.user?.id || null,
       actorName: req.user?.name || 'موظف الهاَب',
       branchId: branchId || shipment.branchId || null,
       metadata: {
-        actualWeight: newWeight,
-        previousWeight: shipment.weight,
+        from: {
+          weight: originalWeight,
+          cost: originalCost,
+        },
+        to: {
+          weight: hasValidActualWeight ? newWeight : originalWeight,
+          cost: hasValidActualWeight ? newCost : originalCost,
+        },
+        financialImpact: hasValidActualWeight ? priceAdjustment : 0,
+        priceAdjustment: hasValidActualWeight ? priceAdjustment : 0,
+        difference: hasValidActualWeight ? priceAdjustment : 0,
+        fromWeight: originalWeight,
+        toWeight: hasValidActualWeight ? newWeight : originalWeight,
+        fromCost: originalCost,
+        toCost: hasValidActualWeight ? newCost : originalCost,
+        declaredWeightKg: metadataObj.declaredWeightKg ?? originalWeight,
+        actualWeightKg: hasValidActualWeight ? newWeight : (shipment.actualWeight ? Number(shipment.actualWeight) : null),
         originalCost,
-        newCost,
-        priceAdjustment,
+        newCost: hasValidActualWeight ? newCost : originalCost,
+        quoteBreakdown: quote?.breakdown || null,
       },
     });
 
+    const formatted = formatShipment(updated);
+
     return res.json({
       success: true,
-      shipment: updated,
-      data: updated,
-      priceAdjustment,
+      shipment: formatted,
+      data: formatted,
+      priceAdjustment: hasValidActualWeight ? priceAdjustment : 0,
       message: 'تم استلام الشحنة في الهاَب بنجاح',
     });
   } catch (error) {
