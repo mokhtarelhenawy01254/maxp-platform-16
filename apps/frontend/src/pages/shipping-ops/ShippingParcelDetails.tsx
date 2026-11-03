@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../hooks/useAuthSimple';
 import {
   ArrowRight,
   Copy,
@@ -18,7 +17,6 @@ import {
   AlertTriangle,
   Printer,
   RotateCcw,
-  TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { shippingOpsService, ShipmentItem } from '../../services/shippingOpsService';
@@ -29,8 +27,6 @@ export const ShippingParcelDetails: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === 'en';
-  const { user } = useAuth();
-  const isFinancialAuthorized = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'ADMIN', 'OPERATIONS'].includes(user?.role || '');
 
   const [shipment, setShipment] = useState<ShipmentItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -315,41 +311,6 @@ export const ShippingParcelDetails: React.FC = () => {
                 {formatCurrency(shipment.cost, shipment.currency)}
               </span>
             </div>
-            {isFinancialAuthorized && shipment.marginAmount !== null && shipment.marginAmount !== undefined && (
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>الهامش والربحية</span>
-                  </span>
-                  {shipment.costSource && (
-                    <span className="text-[10px] font-normal px-2 py-0.5 rounded bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700">
-                      {shipment.costSource === 'COMMISSION_RULE' ? 'لائحة عمولات' : shipment.costSource === 'FALLBACK_GOV_AVG' ? 'متوسط المحافظة' : shipment.costSource}
-                    </span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500">تكلفة المندوب:</span>
-                  <span className="font-medium tabular-nums text-slate-700 dark:text-slate-300">
-                    {formatCurrency(shipment.courierCost ?? 0, shipment.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500">صافي الهامش:</span>
-                  <span className={`font-bold tabular-nums ${(shipment.marginAmount ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    {formatCurrency(shipment.marginAmount ?? 0, shipment.currency)}
-                  </span>
-                </div>
-                {shipment.cost > 0 && (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-500">نسبة الهامش:</span>
-                    <span className={`font-semibold tabular-nums ${(shipment.marginAmount ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {Math.round(((shipment.marginAmount ?? 0) / shipment.cost) * 1000) / 10}%
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
             {shipment.declaredValue && (
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">القيمة المعلنة للبضاعة:</span>
