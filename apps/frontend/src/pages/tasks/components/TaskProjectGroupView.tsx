@@ -88,6 +88,7 @@ export const TaskProjectGroupView: React.FC<TaskProjectGroupViewProps> = ({
   viewMode = "grouped",
   onToggleViewMode,
   isApprover,
+  hideToolbar = false,
 }) => {
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
 
