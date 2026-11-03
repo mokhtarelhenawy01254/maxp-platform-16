@@ -92,7 +92,7 @@ export default function ClientPickupsPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto">
+    <div className="space-y-5 w-full max-w-[1800px] mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-gray-200">
         <div>

@@ -238,7 +238,7 @@ export const AutoAssignPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 p-3 sm:p-6" dir="rtl">
+    <div className="w-full max-w-[1800px] mx-auto space-y-4 p-3 sm:p-6" dir="rtl">
       {/* Page Title & Context */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
         <div>

@@ -90,7 +90,7 @@ export const SettlementsPage: React.FC = () => {
   const totalParcels = settlements.reduce((s, item) => s + (item.totalShipments || 0), 0);
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 bg-white dark:bg-slate-900 min-h-screen" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-5 bg-white dark:bg-slate-900 min-h-screen w-full max-w-[1800px] mx-auto" dir="rtl">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>

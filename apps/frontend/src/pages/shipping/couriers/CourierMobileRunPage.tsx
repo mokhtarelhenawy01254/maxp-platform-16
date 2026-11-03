@@ -130,7 +130,7 @@ const CourierMobileRunPage: React.FC = () => {
       />
 
       {/* Orders List */}
-      <div className="p-3.5 space-y-3 max-w-lg mx-auto">
+      <div className="p-3.5 sm:p-6 space-y-3 w-full max-w-[1800px] mx-auto">
         {displayedShipments.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-400">لا توجد طلبات في هذا التبويب</div>
         ) : (

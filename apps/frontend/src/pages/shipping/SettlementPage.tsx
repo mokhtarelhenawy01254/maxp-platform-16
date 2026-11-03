@@ -45,7 +45,7 @@ const SettlementPage: React.FC = () => {
   } = useShippingSettlementController();
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-12" dir="rtl">
+    <div className="space-y-4 w-full max-w-[1800px] mx-auto pb-12" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/70">
         <div>

@@ -63,7 +63,7 @@ export const CourierCustodyPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16" dir="rtl">
       {/* Top Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 px-4 py-3 shadow-xs">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
+        <div className="w-full max-w-[1800px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link
               to="/courier-portal"
@@ -93,7 +93,7 @@ export const CourierCustodyPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-lg mx-auto p-3.5 space-y-4">
+      <main className="w-full max-w-[1800px] mx-auto p-3.5 sm:p-6 space-y-4">
         {/* Total Cash in Custody Hero Card */}
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl p-4 shadow-md space-y-3">
           <div className="flex items-center justify-between">

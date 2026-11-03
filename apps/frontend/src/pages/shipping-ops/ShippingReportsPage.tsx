@@ -8,6 +8,7 @@ import {
   MapPin,
   Users,
   Truck,
+  TrendingUp,
 } from 'lucide-react';
 import {
   shippingReportsService,
@@ -25,8 +26,9 @@ import { ShippingReportsSummaryTab } from './reports/ShippingReportsSummaryTab';
 import { ShippingReportsGovTab } from './reports/ShippingReportsGovTab';
 import { ShippingReportsClientTab } from './reports/ShippingReportsClientTab';
 import { ShippingReportsCourierTab } from './reports/ShippingReportsCourierTab';
+import { ShippingReportsProfitTab } from './profit/ShippingReportsProfitTab';
 
-type ReportTab = 'summary' | 'governorate' | 'client' | 'courier';
+type ReportTab = 'summary' | 'governorate' | 'client' | 'courier' | 'profit';
 
 export const ShippingReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('summary');
@@ -136,6 +138,7 @@ export const ShippingReportsPage: React.FC = () => {
     { id: 'governorate', label: 'المحافظات', icon: MapPin },
     { id: 'client', label: 'العملاء', icon: Users },
     { id: 'courier', label: 'المناديب', icon: Truck },
+    { id: 'profit', label: 'الربحية', icon: TrendingUp },
   ] as const;
 
   const presets: { id: DatePreset; label: string }[] = [
@@ -146,7 +149,7 @@ export const ShippingReportsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
+    <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1800px] mx-auto text-slate-900 dark:text-slate-100">
       {/* Cockpit Header (No in-page navigation element) */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
@@ -281,6 +284,9 @@ export const ShippingReportsPage: React.FC = () => {
         )}
         {activeTab === 'client' && (
           <ShippingReportsClientTab data={clientData} loading={loading} />
+        )}
+        {activeTab === 'profit' && (
+          <ShippingReportsProfitTab getEffectiveDateRange={getEffectiveDateRange} />
         )}
         {activeTab === 'courier' && (
           <ShippingReportsCourierTab data={courierData} loading={loading} />

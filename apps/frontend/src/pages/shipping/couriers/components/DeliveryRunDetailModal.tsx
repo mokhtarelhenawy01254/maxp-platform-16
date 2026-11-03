@@ -37,7 +37,7 @@ export const DeliveryRunDetailModal: React.FC<DeliveryRunDetailModalProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm print:p-0 print:bg-white">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-xl flex flex-col overflow-hidden print:border-none print:shadow-none print:max-h-none">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-[1200px] max-h-[90vh] shadow-xl flex flex-col overflow-hidden print:border-none print:shadow-none print:max-h-none">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 print:hidden">
           <div className="flex items-center gap-2">

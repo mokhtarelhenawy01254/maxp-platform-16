@@ -36,7 +36,7 @@ const CourierSettlementPage: React.FC = () => {
   } = useCourierSettlementController();
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto text-foreground">
+    <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1800px] mx-auto text-foreground">
       {/* Header */}
       <CourierSettlementHeader />
 

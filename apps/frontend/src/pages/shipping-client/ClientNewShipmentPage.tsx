@@ -182,7 +182,7 @@ export default function ClientNewShipmentPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full max-w-[1800px] mx-auto space-y-6">
       <div className="pb-3 border-b border-gray-200 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">إنشاء شحنة جديدة</h1>

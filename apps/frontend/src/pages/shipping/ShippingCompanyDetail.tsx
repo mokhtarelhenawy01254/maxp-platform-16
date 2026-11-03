@@ -32,7 +32,7 @@ const ShippingCompanyDetail: React.FC = () => {
   if (error || !company) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground" dir={i18n.dir()}>
-        <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+        <div className="w-full max-w-[1800px] mx-auto px-4 py-16 text-center">
           <div className="p-8 rounded-xl border border-dashed border-border/70 bg-card/40 space-y-3">
             <Truck className="size-12 text-muted-foreground/60 mx-auto" />
             <h3 className="text-sm font-semibold">{error || t('shipping.k_35')}</h3>
@@ -51,7 +51,7 @@ const ShippingCompanyDetail: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground" dir={i18n.dir()}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <ShippingCompanyDetailHeader
           company={company}
           providerLabels={providerLabels}

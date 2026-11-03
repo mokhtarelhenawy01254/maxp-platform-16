@@ -100,7 +100,7 @@ export const CourierHomePage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16" dir="rtl">
       {/* Top Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 px-4 py-3 shadow-xs">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
+        <div className="w-full max-w-[1800px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
               <TruckIcon className="w-5 h-5" />
@@ -148,7 +148,7 @@ export const CourierHomePage: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-lg mx-auto p-3.5 space-y-4">
+      <main className="w-full max-w-[1800px] mx-auto p-3.5 sm:p-6 space-y-4">
         {/* Offline Queue Sync Banner */}
         {queueCount > 0 && (
           <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-xl p-3 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 shadow-xs">

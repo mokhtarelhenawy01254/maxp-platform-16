@@ -179,7 +179,7 @@ export const CarrierInboxPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-4" dir="rtl">
+    <div className="w-full max-w-[1800px] mx-auto p-4 md:p-6 space-y-4" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border rounded-xl p-4 shadow-sm">
         <div className="flex items-center gap-3">

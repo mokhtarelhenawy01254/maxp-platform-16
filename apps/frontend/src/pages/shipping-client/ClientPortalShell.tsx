@@ -65,7 +65,7 @@ export default function ClientPortalShell() {
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-4">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 w-full">
           <Outlet />
         </main>
       </div>

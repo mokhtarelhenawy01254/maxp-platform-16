@@ -79,7 +79,7 @@ export const ClientSettlementsPage: React.FC = () => {
   const totalNet = settlements.reduce((s, item) => s + Number(item.netPayout || 0), 0);
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto" dir="rtl">
+    <div className="space-y-4 w-full max-w-[1800px] mx-auto" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-3">
         <div>
