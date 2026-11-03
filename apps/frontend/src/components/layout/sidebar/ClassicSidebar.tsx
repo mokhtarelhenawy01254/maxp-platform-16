@@ -420,7 +420,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
         </div>
       )}
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav aria-label={t("sidebar.navigation") || "Navigation"} className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {processedSections
           .filter((s) => !s.hidden)
           .map((section) => {
@@ -504,7 +504,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               </div>
             );
           })}
-      </div>
+      </nav>
     </div>
   );
 };

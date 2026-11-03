@@ -10,7 +10,7 @@ import {
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { isSidebarPathActive } from "./matchSidebarPath";
-import { CompanyLogo } from "@/components/ui/CompanyLogo";
+import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 import { useSidebarNavLink } from "./useSidebarNavLink";
 
@@ -160,7 +160,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
   }, [visibleSectionsWithItems]);
 
   useEffect(() => {
-    if (activeRailItemRef.current) {
+    if (activeRailItemRef.current && typeof activeRailItemRef.current.scrollIntoView === 'function') {
       activeRailItemRef.current.scrollIntoView({
         block: "nearest",
         behavior: "smooth",
@@ -369,7 +369,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
             </Link>
           </div>
 
-          <div className="business-sidebar-rail-scroll">
+          <nav aria-label={t("sidebar.rail") || "Sidebar Rail"} className="business-sidebar-rail-scroll">
             {visibleSectionsWithItems.map((section) => {
               const isActive = activeSectionId === section.id;
 
@@ -399,7 +399,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 </button>
               );
             })}
-          </div>
+          </nav>
         </div>
       ) : null}
 

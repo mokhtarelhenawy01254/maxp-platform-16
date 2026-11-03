@@ -138,6 +138,20 @@ jest.mock("../../ActiveUsersMonitor", () => ({
   default: () => <div data-testid="active-users-monitor" />,
 }));
 
+jest.mock("../../merchant-copilot", () => ({
+  __esModule: true,
+  MerchantCopilot: () => null,
+  MerchantCopilotDrawer: () => null,
+  MerchantCopilotHost: () => null,
+  toggleMerchantCopilot: () => {},
+}));
+
+jest.mock("../layoutMode", () => ({
+  __esModule: true,
+  shouldUseSuperAdminShell: () => false,
+  FEATURE_UNIFIED_SUPERADMIN_SHELL: true,
+}));
+
 jest.mock("../../../services/apiClient", () => ({
   apiClient: {
     get: jest.fn(() => Promise.resolve({ status: 200, data: { success: true, data: {} } })),

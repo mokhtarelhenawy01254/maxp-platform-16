@@ -403,7 +403,7 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
         return res.json({
           success: true,
           data: {
-            layout: 'three-tier',
+            layout: 'classic',
             settings: {}
           }
         });
@@ -464,7 +464,7 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
     res.json({
       success: true,
       data: {
-        layout: company.sidebarLayout || 'three-tier',
+        layout: company.sidebarLayout || 'classic',
         settings: sidebarSettings,
         apps: appsMap
       },

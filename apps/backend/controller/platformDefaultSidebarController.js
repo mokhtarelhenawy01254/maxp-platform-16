@@ -4,7 +4,7 @@ const {
 } = require("../services/sharedDatabase");
 
 const SYSTEM_NAME = "platform_default_sidebar";
-const DEFAULT_LAYOUT = "three-tier";
+const DEFAULT_LAYOUT = "classic";
 const ALLOWED_LAYOUTS = ["classic", "three-tier", "horizontal", "floating", "minimal", "app-dashboard"];
 
 const DEFAULT_SETTINGS = Object.freeze({

@@ -817,7 +817,7 @@ const createOwnerCompany = async (req, res) => {
                             timezone,
                             isActive: true,
                             // useCentralKeys field removed
-                            sidebarLayout: 'three-tier',
+                            sidebarLayout: 'classic',
                             settings: JSON.stringify({
                                 lastSystemChange: new Date().toISOString(),
                                 systemChangeBy: userId,

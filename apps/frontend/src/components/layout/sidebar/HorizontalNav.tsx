@@ -112,7 +112,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
   };
 
   return (
-    <div className="app-header-theme business-horizontal-nav" ref={navRef}>
+    <nav className="app-header-theme business-horizontal-nav horizontal-nav" data-nav="horizontal" ref={navRef}>
       <div className="container mx-auto px-4">
         <div className="flex items-center h-16 overflow-x-auto no-scrollbar gap-2">
           <div className="shrink-0 ml-4 flex items-center">
@@ -221,7 +221,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
           <div className="flex-1" />
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
 
