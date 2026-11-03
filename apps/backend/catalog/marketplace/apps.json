@@ -4507,5 +4507,44 @@
     "engineCompatibility": null,
     "createdAt": "2026-10-24T00:00:00Z",
     "updatedAt": "2026-10-24T00:00:00Z"
+  },
+  {
+    "id": "cat-app-agent-reports",
+    "slug": "agent-reports",
+    "name": "تقارير الوكلاء",
+    "nameEn": "Agent Reports",
+    "description": "قسم داخلي لعرض وتصفح تقارير الوكلاء المستقلة بـ 3 أعمدة وعارض HTML معزول.",
+    "descriptionEn": "Internal section to view and browse self-contained agent reports in 3 columns with sandboxed HTML viewer.",
+    "category": "REPORTS",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق العمل وأصحاب الأعمال لمتابعة تقارير الذكاء الاصطناعي وجت هاب والشحن.",
+      "surface": "قسم تقارير الوكلاء المستقل.",
+      "outcome": "رؤية كاملة لتقارير الوكلاء في واجهة تفاعلية آمنة."
+    },
+    "features": {
+      "reportsView": {
+        "enabled": true,
+        "name": "عارض التقارير",
+        "description": "استعراض تقارير الوكلاء في iframe معزول.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "file-text",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
   }
 ]

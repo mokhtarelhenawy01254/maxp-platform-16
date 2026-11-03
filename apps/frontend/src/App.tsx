@@ -463,6 +463,9 @@ const CourierPerformancePage = React.lazy(
 const ShippingOpsDashboard = React.lazy(
   () => import("./pages/shipping-ops/ShippingOpsDashboard"),
 );
+const AgentReportsPage = React.lazy(
+  () => import("./pages/agent-reports/AgentReportsPage"),
+);
 const ShippingParcelsList = React.lazy(
   () => import("./pages/shipping-ops/ShippingParcelsList"),
 );
@@ -7438,6 +7441,16 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
                         <RateCardsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/agent-reports"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['agent-reports']}>
+                        <AgentReportsPage />
                       </AppAccessRoute>
                     </Layout>
                   }

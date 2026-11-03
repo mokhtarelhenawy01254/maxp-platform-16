@@ -950,6 +950,17 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
         },
 
+        // 3️⃣.4 تقارير الوكلاء (AR-1)
+        {
+            id: 'agent-reports',
+            title: isEn ? 'Agent Reports' : 'تقارير الوكلاء',
+            icon: FileText,
+            items: [
+                { to: '/agent-reports', icon: FileBarChart, label: isEn ? 'Agent Reports' : 'تقارير الوكلاء' },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('agent-reports')
+        },
+
         // 3️⃣.5 إحصائيات الطلبات
         {
             id: 'orders-analytics',
@@ -1981,7 +1992,7 @@ export const getSidebarConfig = (
     if (assignedApps && assignedApps.length > 0) {
         const normalizedAssigned = assignedApps.map((a) => a.trim().toLowerCase()).filter(Boolean);
         const isAssigned = (section: SidebarSection): boolean => {
-            if (['OWNER', 'SUPER_ADMIN'].includes(user?.role || '') && ['company', 'settings', 'my-account', 'marketplace'].includes(section.id)) {
+            if (['OWNER', 'SUPER_ADMIN'].includes(user?.role || '') && ['company', 'settings', 'my-account', 'marketplace', 'agent-reports'].includes(section.id)) {
                 return true;
             }
             if (user?.role === 'SUPER_ADMIN' && section.id.startsWith('platform-') && section.requiredRoles?.includes('SUPER_ADMIN')) {
@@ -2013,6 +2024,7 @@ const SECTION_APP_FALLBACKS: Record<string, string[]> = {
     'forms': ['forms-app'],
     'tasks': ['business-tools'],
     'academy': ['academy-app'],
+    'agent-reports': ['agent-reports', 'agent-reports-app', 'cat-app-agent-reports'],
 };
 
 /**

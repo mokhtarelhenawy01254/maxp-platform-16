@@ -1,0 +1,40 @@
+model AgentReportType {
+  id          String        @id @default(cuid())
+  companyId   String
+  slug        String        // ai-update | github-daily | shipping
+  name        String        // «إبديت الذكاء الاصطناعي»
+  description String?
+  icon        String?
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  reports     AgentReport[]
+
+  @@unique([companyId, slug])
+  @@index([companyId, sortOrder])
+  @@index([companyId, isActive])
+  @@map("agent_report_types")
+}
+
+model AgentReport {
+  id          String          @id @default(cuid())
+  companyId   String
+  typeId      String
+  type        AgentReportType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  title       String
+  slug        String          // <typeSlug>-<YYYY-MM-DD>-<random6>
+  periodLabel String?         // «1/1/2027» أو «2026-11-03»
+  summary     String?         // سطرين تظهر في العمود التاني
+  html        String          @db.Text
+  sizeBytes   Int             @default(0)
+  status      String          @default("PUBLISHED") // PUBLISHED | DRAFT
+  createdBy   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([companyId, slug])
+  @@index([companyId, typeId, createdAt])
+  @@index([companyId, status])
+  @@map("agent_reports")
+}

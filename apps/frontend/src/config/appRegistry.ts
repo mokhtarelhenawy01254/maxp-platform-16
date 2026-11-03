@@ -328,6 +328,18 @@ export const APP_REGISTRY: AppDefinition[] = [
     route: '/marketplace',
   },
   {
+    id: 'agent-reports',
+    nameKey: 'sidebar.agentReports',
+    descriptionKey: 'sidebar.agentReports',
+    icon: DocumentTextIcon,
+    color: 'emerald',
+    bgGradient: 'from-emerald-500 to-emerald-600',
+    sectionIds: ['agent-reports'],
+    category: 'reports',
+    route: '/agent-reports',
+    requiredApps: ['agent-reports'],
+  },
+  {
     id: 'billing',
     nameKey: 'sidebar.billingSection',
     descriptionKey: 'appDashboard.app.billing.description',
