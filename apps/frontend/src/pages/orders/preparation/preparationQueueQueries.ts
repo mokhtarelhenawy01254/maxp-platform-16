@@ -34,6 +34,7 @@ import type {
   StockFilter,
   WarehouseOption,
   ItemCountFilter,
+  WorkTypeFilter,
 } from "./types";
 
 export interface ApiListResponse<T> {
@@ -65,6 +66,7 @@ export interface UsePreparationQueueDataParams {
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
+  workTypeFilter: WorkTypeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -164,6 +166,7 @@ export const buildOrdersQueryKey = (
     params.itemCountFilter,
     params.notPrintedFilter,
     params.noShippingCodeFilter,
+    params.workTypeFilter,
     (params.search || "").trim().toLowerCase(),
     prioritizeShortageOrders ? "prioritized" : "chronological",
     params.sortBy,
@@ -194,6 +197,7 @@ export const fetchOrdersData = async (
         itemCountFilter: params.itemCountFilter,
         notPrinted: params.notPrintedFilter === "not_printed" || undefined,
         noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
+        workType: params.workTypeFilter === "exchange" ? "exchange" : undefined,
         search: (params.search || "").trim() || undefined,
         prioritizeShortageOrders,
         sortBy: params.sortBy,

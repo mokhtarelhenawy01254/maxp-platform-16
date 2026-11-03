@@ -19,6 +19,7 @@ describe("buildPreparationFiltersPayload", () => {
     itemCountFilter: "single_item",
     notPrintedFilter: "not_printed",
     noShippingCodeFilter: "no_shipping_code",
+    workTypeFilter: "exchange",
     search: "test",
     sortBy: "date",
     sortOrder: "desc",
@@ -42,6 +43,7 @@ describe("buildPreparationFiltersPayload", () => {
     expect(payload.itemCountFilter).toBe("single_item");
     expect(payload.notPrinted).toBe("true");
     expect(payload.noShippingCode).toBe("true");
+    expect(payload.workType).toBe("exchange");
     expect(payload.search).toBe("deferred search term");
   });
 

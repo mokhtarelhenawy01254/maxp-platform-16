@@ -27,6 +27,7 @@ const TaskDetailsPage: React.FC = () => {
     id,
     navigate,
     isApprover,
+    canApprove,
     task,
     loading,
     activeTab,
@@ -131,7 +132,7 @@ const TaskDetailsPage: React.FC = () => {
         <TaskDetailsHeader
           task={task}
           runningTimer={runningTimer}
-          isApprover={isApprover}
+          isApprover={canApprove}
           onStartTimer={startTimer}
           onStopTimer={stopTimer}
           onToggleWatcher={toggleWatcher}

@@ -8,6 +8,7 @@ import type { PreparationFilterSection } from "../constants";
 import type {
   ItemCountFilter,
   NoShippingCodeFilter,
+  WorkTypeFilter,
   NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
@@ -42,6 +43,7 @@ export interface PreparationFiltersProps {
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
+  workTypeFilter: WorkTypeFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
   warehouses: WarehouseOption[];
@@ -61,6 +63,7 @@ export interface PreparationFiltersProps {
   onItemCountFilterChange: (value: ItemCountFilter) => void;
   onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
   onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
+  onWorkTypeFilterChange: (value: WorkTypeFilter) => void;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
@@ -94,6 +97,7 @@ export const PreparationFilters = ({
   itemCountFilter,
   notPrintedFilter,
   noShippingCodeFilter,
+  workTypeFilter,
   sortBy,
   sortOrder,
   warehouses,
@@ -113,6 +117,7 @@ export const PreparationFilters = ({
   onItemCountFilterChange,
   onNotPrintedFilterChange,
   onNoShippingCodeFilterChange,
+  onWorkTypeFilterChange,
   onSortChange,
 }: PreparationFiltersProps) => {
   const [localSearch, setLocalSearch] = useState(search);
@@ -152,7 +157,8 @@ export const PreparationFilters = ({
     shortageFollowUpFilter !== "all" ||
     itemCountFilter !== "all" ||
     notPrintedFilter !== "all" ||
-    noShippingCodeFilter !== "all";
+    noShippingCodeFilter !== "all" ||
+    workTypeFilter !== "all";
 
   const hasActiveFilters =
     activeFilter !== "ALL" ||
@@ -176,6 +182,7 @@ export const PreparationFilters = ({
     onItemCountFilterChange("all");
     onNotPrintedFilterChange("all");
     onNoShippingCodeFilterChange("all");
+    onWorkTypeFilterChange("all");
     onSortChange("createdAt", "desc");
     setLocalSearch("");
   };
@@ -233,6 +240,7 @@ export const PreparationFilters = ({
       <PreparationToggleBar
         notPrintedFilter={notPrintedFilter}
         noShippingCodeFilter={noShippingCodeFilter}
+        workTypeFilter={workTypeFilter}
         productFilter={productFilter}
         localProductFilter={localProductFilter}
         setLocalProductFilter={setLocalProductFilter}
@@ -250,6 +258,7 @@ export const PreparationFilters = ({
         visibleFilterSections={visibleFilterSections}
         onNotPrintedFilterChange={onNotPrintedFilterChange}
         onNoShippingCodeFilterChange={onNoShippingCodeFilterChange}
+        onWorkTypeFilterChange={onWorkTypeFilterChange}
         onProductFilterChange={onProductFilterChange}
         onProductIdFilterChange={onProductIdFilterChange}
         onVariantIdFilterChange={onVariantIdFilterChange}

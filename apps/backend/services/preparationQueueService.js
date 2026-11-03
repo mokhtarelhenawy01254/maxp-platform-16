@@ -246,8 +246,16 @@ const updatePreparationOrderStatus = async ({
       notifyPreparationStageChange({ companyId, orderPayload: updatedOrder, status: normalizedStatus });
     });
 
-    // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED
-    if (mappedStatus === 'CONFIRMED' || normalizedStatus === 'CONFIRMED') {
+    // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED or released from hold stages
+    const isConfirmedTransition = (mappedStatus === 'CONFIRMED' || normalizedStatus === 'CONFIRMED');
+    const wasHoldStage = PREPARATION_HOLD_STAGES.has(previousPreparationStatus) ||
+      previousPreparationStatus === 'ON_HOLD_PREP' ||
+      previousPreparationStatus === 'STOCK_SHORTAGE';
+    const isNewStageNotHold = !PREPARATION_HOLD_STAGES.has(normalizedStatus);
+    const hasNoShipment = !order.turboTrackingNumber && !order.turboShipmentId;
+    const isHoldReleaseTransition = wasHoldStage && isNewStageNotHold && hasNoShipment;
+
+    if (isConfirmedTransition || isHoldReleaseTransition) {
       setImmediate(() => {
         try {
           const orderService = require('./orderService');
@@ -270,7 +278,7 @@ const updatePreparationOrderStatus = async ({
         { orderNumber: orderIdentifier, companyId }
       ]
     },
-    select: { id: true, status: true, metadata: true }
+    select: { id: true, status: true, metadata: true, turboShipmentId: true, turboTrackingNumber: true }
   });
 
   if (guestOrder) {
@@ -336,8 +344,16 @@ const updatePreparationOrderStatus = async ({
       }
     });
 
-    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED
-    if (normalizedStatus === 'CONFIRMED') {
+    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED or released from hold stages
+    const isGuestConfirmedTransition = (normalizedStatus === 'CONFIRMED');
+    const wasGuestHoldStage = PREPARATION_HOLD_STAGES.has(previousPreparationStatus) ||
+      previousPreparationStatus === 'ON_HOLD_PREP' ||
+      previousPreparationStatus === 'STOCK_SHORTAGE';
+    const isGuestNewStageNotHold = !PREPARATION_HOLD_STAGES.has(normalizedStatus);
+    const hasGuestNoShipment = !guestOrder.turboTrackingNumber && !guestOrder.turboShipmentId;
+    const isGuestHoldReleaseTransition = wasGuestHoldStage && isGuestNewStageNotHold && hasGuestNoShipment;
+
+    if (isGuestConfirmedTransition || isGuestHoldReleaseTransition) {
       setImmediate(() => {
         try {
           const orderService = require('./orderService');
@@ -482,6 +498,19 @@ const getOrderHoldDetails = (order) => {
   return { reason: '', state: 'released' };
 };
 
+// «استبدال» نوع عمل جوه التجهيز (task 69cc5d36): أوردر البديل بيتعرّف من metadata
+// (requestType='exchange' أو originalOrderId) — من غير أي تغيير في السكيما.
+const PREPARATION_WORK_TYPE_EXCHANGE = 'exchange';
+const PREPARATION_WORK_TYPE_NORMAL = 'normal';
+
+const getPreparationWorkType = (metadata) => {
+  const metadataObject = parsePreparationJsonObject(metadata);
+  const requestType = toPreparationUpper(metadataObject.requestType);
+  return requestType === 'EXCHANGE' || Boolean(metadataObject.originalOrderId)
+    ? PREPARATION_WORK_TYPE_EXCHANGE
+    : PREPARATION_WORK_TYPE_NORMAL;
+};
+
 const getEffectivePreparationStatus = (status, metadata, customStatusCode = null) => {
   const normalizedStatus = toPreparationUpper(status);
   const metadataObject = parsePreparationJsonObject(metadata);
@@ -489,12 +518,8 @@ const getEffectivePreparationStatus = (status, metadata, customStatusCode = null
     metadataObject[PREPARATION_STATUS_METADATA_KEY]
   );
 
-  // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
-  const isExchangeReplacement =
-    normalizedStatus === 'EXCHANGED' &&
-    (toPreparationUpper(metadataObject.requestType) === 'EXCHANGE' || Boolean(metadataObject.originalOrderId)) &&
-    !metadataStatus;
-
+  // EXCHANGED is terminal — it belongs to the ORIGINAL order only. A replacement is
+  // saved as PENDING_PREPARATION and walks the normal preparation cycle (task 69cc5d36).
   if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
     return normalizedStatus;
   }
@@ -508,10 +533,6 @@ const getEffectivePreparationStatus = (status, metadata, customStatusCode = null
     if (customUpper && !PREPARATION_TERMINAL_STATUSES.has(customUpper)) {
       return customUpper;
     }
-  }
-
-  if (isExchangeReplacement) {
-    return 'PENDING_PREPARATION';
   }
 
   return metadataStatus || normalizedStatus;
@@ -841,12 +862,18 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
   const parsedRegularMetadata = parsePreparationJsonObject(order.metadata);
   const originalOrderId = parsedRegularMetadata.originalOrderId || null;
   const originalOrderNumber = parsedRegularMetadata.originalOrderNumber || null;
+  const workType = getPreparationWorkType(order.metadata);
+  const requestType = parsedRegularMetadata.requestType
+    ? String(parsedRegularMetadata.requestType).toLowerCase()
+    : null;
 
   return {
     id: order.orderNumber,
     orderNumber: order.orderNumber,
     originalOrderId,
     originalOrderNumber,
+    workType,
+    requestType,
     customerName: finalCustomerName,
     customerPhone: hasLimitedMerchantView ? '' : (order.customer?.phone || order.customerPhone || ''),
     customerEmail: hasLimitedMerchantView ? '' : (order.customer?.email || order.customerEmail || ''),
@@ -965,6 +992,10 @@ const mapGuestOrderToSimple = (order) => {
     orderNumber: order.orderNumber,
     originalOrderId,
     originalOrderNumber,
+    workType: getPreparationWorkType(order.metadata),
+    requestType: parsedRegularMetadata.requestType
+      ? String(parsedRegularMetadata.requestType).toLowerCase()
+      : null,
     customerName: order.guestName || '',
     customerPhone: order.guestPhone || '',
     customerEmail: order.guestEmail || '',
@@ -1246,8 +1277,13 @@ const matchesPreparationFilters = ({
   sizeFilter,
   productIdFilter,
   variantIdFilter,
+  workTypeFilter = 'all',
 }) => {
   if (!order.warehouseMatch) return false;
+
+  if (workTypeFilter === PREPARATION_WORK_TYPE_EXCHANGE && order.workType !== PREPARATION_WORK_TYPE_EXCHANGE) {
+    return false;
+  }
 
   if (itemCountFilter === 'single' && order.itemInsights.length !== 1) return false;
   if (itemCountFilter === 'multiple' && order.itemInsights.length <= 1) return false;
@@ -1380,13 +1416,7 @@ const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata, customS
   if (useMetadata) {
     const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), NULLIF(${tableAlias}."customStatusCode", ''), ${tableAlias}."status"::text)`;
     const placeholders = statuses.map((s) => builder.pushValue(s));
-    const baseCondition = `${effectiveStatus} IN (${placeholders.join(', ')})`;
-    if (stage === 'WAITING') {
-      // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
-      const exchangeExceptionCondition = `(${tableAlias}."status"::text = 'EXCHANGED' AND (${tableAlias}."metadata"::jsonb->>'requestType' = 'exchange' OR ${tableAlias}."metadata"::jsonb->>'originalOrderId' IS NOT NULL) AND (${tableAlias}."metadata"::jsonb->>'preparationStatus' IS NULL OR ${tableAlias}."metadata"::jsonb->>'preparationStatus' = ''))`;
-      return `(${baseCondition} OR ${exchangeExceptionCondition})`;
-    }
-    return baseCondition;
+    return `${effectiveStatus} IN (${placeholders.join(', ')})`;
   }
 
   const placeholders = statuses.map((s) => builder.pushValue(s));
@@ -1466,6 +1496,7 @@ const fetchPreparationCandidateRows = async ({
   limit,
   activeStage,
   search,
+  workType = 'all',
   customPrepCodes = [],
   customStageMap = null,
 }) => {
@@ -1504,21 +1535,23 @@ const fetchPreparationCandidateRows = async ({
 
     builder.add(builder.equals('o."companyId"', companyId));
 
-    // EXCHANGED is terminal for the ORIGINAL order; a replacement awaiting preparation is still shown (see task 4b5b8635)
-    const exchangeExceptionSql = `(o."status"::text = 'EXCHANGED' AND (o."metadata"::jsonb->>'requestType' = 'exchange' OR o."metadata"::jsonb->>'originalOrderId' IS NOT NULL) AND (o."metadata"::jsonb->>'preparationStatus' IS NULL OR o."metadata"::jsonb->>'preparationStatus' = ''))`;
+    if (workType === 'exchange') {
+      // «استبدال» نوع عمل — أوردر البديل بس (task 69cc5d36)
+      builder.add(
+        `(o."metadata"::jsonb->>'requestType' = 'exchange' OR o."metadata"::jsonb->>'originalOrderId' IS NOT NULL)`
+      );
+    }
 
     if (customPrepCodes && customPrepCodes.length > 0) {
       const customPlaceholders = customPrepCodes.map((c) => builder.pushValue(c));
       const termPlaceholders = PREPARATION_DB_TERMINAL_STATUSES.map((s) => builder.pushValue(s));
       const absPlaceholders = [...PREPARATION_TERMINAL_STATUSES].map((s) => builder.pushValue(s));
       builder.add(
-        `(((o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR o."customStatusCode" IN (${customPlaceholders.join(', ')})) AND o."status"::text NOT IN (${absPlaceholders.join(', ')})) OR ${exchangeExceptionSql})`
+        `((o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR o."customStatusCode" IN (${customPlaceholders.join(', ')})) AND o."status"::text NOT IN (${absPlaceholders.join(', ')}))`
       );
     } else {
       const termPlaceholders = PREPARATION_DB_TERMINAL_STATUSES.map((s) => builder.pushValue(s));
-      builder.add(
-        `(o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR ${exchangeExceptionSql})`
-      );
+      builder.add(`(o."status"::text NOT IN (${termPlaceholders.join(', ')}))`);
     }
 
     if (affiliateId) {
@@ -1553,6 +1586,11 @@ const fetchPreparationCandidateRows = async ({
 
   const buildGuestSql = () => {
     if (merchantId) {
+      return { sql: null, values: [] };
+    }
+
+    // أوردرات الضيوف مش بتتحول لاستبدال — فلتر «استبدال» مالوش صفوف هنا (task 69cc5d36)
+    if (workType === 'exchange') {
       return { sql: null, values: [] };
     }
 
@@ -1742,6 +1780,9 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
   const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const workTypeFilter = String(query.workType || 'all').trim().toLowerCase() === PREPARATION_WORK_TYPE_EXCHANGE
+    ? PREPARATION_WORK_TYPE_EXCHANGE
+    : 'all';
   const notPrinted = query.notPrinted === 'true';
   const noShippingCode = query.noShippingCode === 'true';
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
@@ -1813,6 +1854,7 @@ const getPreparationQueue = async ({ user, query }) => {
       limit: batchSize,
       activeStage: 'ALL',
       search: searchQuery,
+      workType: workTypeFilter,
       customPrepCodes,
       customStageMap,
     });
@@ -1897,6 +1939,7 @@ const getPreparationQueue = async ({ user, query }) => {
         sizeFilter,
         productIdFilter,
         variantIdFilter,
+        workTypeFilter,
       });
 
       if (!matchesFilters) {
@@ -2037,6 +2080,9 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
   const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const workTypeFilter = String(query.workType || 'all').trim().toLowerCase() === PREPARATION_WORK_TYPE_EXCHANGE
+    ? PREPARATION_WORK_TYPE_EXCHANGE
+    : 'all';
   const notPrinted = query.notPrinted === 'true';
   const noShippingCode = query.noShippingCode === 'true';
   const productFilter = String(query.productFilter || '').trim().toLowerCase();
@@ -2095,6 +2141,7 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
       limit: batchSize,
       activeStage: 'ALL',
       search: searchQuery,
+      workType: workTypeFilter,
       customPrepCodes,
       customStageMap,
     });
@@ -2161,6 +2208,7 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
         sizeFilter,
         productIdFilter,
         variantIdFilter,
+        workTypeFilter,
       });
 
       if (!matchesFilters) return;

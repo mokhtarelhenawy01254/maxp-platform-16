@@ -3,6 +3,7 @@ import type { Task, TaskSortBy } from "../../types";
 
 export interface TaskTableProps {
   canApprove?: boolean;
+  approverUserId?: string;
   userRole?: string;
   onReloadTasks?: () => void;
   paginatedTasks: Task[];

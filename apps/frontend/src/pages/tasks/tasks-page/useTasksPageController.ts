@@ -200,12 +200,13 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     "COMPANY_ADMIN",
     "SUPER_ADMIN",
   ].includes(user?.role || "");
-  const isApprover = [
+  const isManagerOrAdmin = [
     "SUPER_ADMIN",
     "COMPANY_ADMIN",
     "OWNER",
     "MANAGER",
   ].includes(user?.role || "");
+  const isApprover = isManagerOrAdmin;
 
   useEffect(() => {
     if (activeTab === "integrations" && !canManageIntegrations) {
@@ -1176,11 +1177,31 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     }
   };
 
+  const canBulkApprove =
+    isManagerOrAdmin ||
+    (selectedTasks.length > 0 &&
+      selectedTasks.some((id) => {
+        const t = safeTasks.find((task) => task.id === id);
+        return t && t.createdBy === activeUserId;
+      }));
+
   const handleBulkStatusChange = async (newStatus: string) => {
     if (selectedTasks.length === 0) return;
 
     const token = getAccessToken();
-    for (const taskId of selectedTasks) {
+    const isCompletedAction =
+      String(newStatus).toLowerCase() === "completed";
+    const tasksToProcess =
+      isCompletedAction && !isManagerOrAdmin
+        ? selectedTasks.filter((taskId) => {
+            const t = safeTasks.find((task) => task.id === taskId);
+            return t && t.createdBy === activeUserId;
+          })
+        : selectedTasks;
+
+    if (tasksToProcess.length === 0) return;
+
+    for (const taskId of tasksToProcess) {
       await fetch(buildApiUrl(`tasks/${taskId}/status`), {
         method: "PUT",
         headers: {
@@ -1190,7 +1211,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
         body: JSON.stringify({ status: newStatus }),
       });
     }
-    const count = selectedTasks.length;
+    const count = tasksToProcess.length;
     await reloadAll();
     setSelectedTasks([]);
     toast.success(
@@ -1436,7 +1457,7 @@ export function useTasksPageController(embeddedInModal?: boolean) {
     activeTab,
     setActiveTab,
     canManageIntegrations,
-    isApprover,
+    isApprover: canBulkApprove,
     activeUserId,
     // Data
     tasks,

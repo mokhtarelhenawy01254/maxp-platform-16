@@ -228,6 +228,8 @@ class ManufacturingSampleService {
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );`,
         `CREATE INDEX IF NOT EXISTS "sample_order_components_company_sample_idx" ON "sample_order_components"("companyId","sampleOrderId");`,
+        `ALTER TABLE "sample_order_components" ADD COLUMN IF NOT EXISTS "productId" TEXT;`,
+        `CREATE INDEX IF NOT EXISTS "sample_order_components_companyId_productId_idx" ON "sample_order_components"("companyId","productId");`,
         `CREATE TABLE IF NOT EXISTS "sample_order_items" (
           "id" TEXT PRIMARY KEY,
           "companyId" TEXT NOT NULL,
@@ -577,6 +579,7 @@ class ManufacturingSampleService {
             bom: { select: { id: true, code: true, name: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
             items: { orderBy: { sortOrder: 'asc' } },
+            components: { orderBy: { sortOrder: 'asc' } },
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -595,6 +598,7 @@ class ManufacturingSampleService {
               customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
               expenses: { orderBy: { createdAt: 'asc' } },
               items: { orderBy: { sortOrder: 'asc' } },
+              components: { orderBy: { sortOrder: 'asc' } },
             },
             orderBy: { createdAt: 'desc' },
             skip,
@@ -682,6 +686,7 @@ class ManufacturingSampleService {
           bom: { select: { id: true, code: true, name: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
           items: { orderBy: { sortOrder: 'asc' } },
+          components: { orderBy: { sortOrder: 'asc' } },
         },
       });
     } catch (err) {
@@ -696,6 +701,7 @@ class ManufacturingSampleService {
             customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
             items: { orderBy: { sortOrder: 'asc' } },
+            components: { orderBy: { sortOrder: 'asc' } },
           },
         });
       } else {
@@ -821,6 +827,57 @@ class ManufacturingSampleService {
         const err = new Error('اسم المنتج إلزامي لإنشاء أمر العينة');
         err.statusCode = 400;
         throw err;
+      }
+    }
+
+    let componentsToCreate = null;
+    if (data.components !== undefined) {
+      if (!Array.isArray(data.components)) {
+        throw httpErr(400, 'قائمة بنود الخامات غير صالحة');
+      }
+      componentsToCreate = [];
+      for (let idx = 0; idx < data.components.length; idx++) {
+        const item = data.components[idx];
+        let compProductId = item.productId ? String(item.productId) : null;
+        let compName = String(item.name || '').trim();
+        if (compProductId) {
+          const product = await prisma.product.findFirst({
+            where: { id: compProductId, companyId },
+            select: { id: true, name: true, cost: true },
+          });
+          if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
+          if (!compName) compName = product.name;
+        }
+        if (!compName) {
+          throw httpErr(400, 'اسم الخامة إلزامي لكل بند');
+        }
+        const rawQty = item.quantity !== undefined && item.quantity !== null && item.quantity !== ''
+          ? Number(item.quantity)
+          : 1;
+        const compQuantity = sampleComponentMath.normalizeQuantity(rawQty);
+        if (compQuantity === null) {
+          throw httpErr(400, 'الكمية لازم تكون رقم أكبر من صفر');
+        }
+        const rawPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
+          ? Number(item.unitPrice)
+          : 0;
+        const compUnitPrice = sampleComponentMath.normalizePrice(rawPrice);
+        if (compUnitPrice === null) {
+          throw httpErr(400, 'سعر الوحدة لازم يكون رقم ≥ 0');
+        }
+        const compUnit = String(item.unit || '').trim() || 'قطعة';
+        const compTotalCost = round2(compQuantity * compUnitPrice);
+        const compSortOrder = Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : idx + 1;
+        componentsToCreate.push({
+          productId: compProductId,
+          name: compName,
+          quantity: compQuantity,
+          unit: compUnit,
+          unitPrice: compUnitPrice,
+          totalCost: compTotalCost,
+          sortOrder: compSortOrder,
+          priceSnapshotAt: new Date(),
+        });
       }
     }
 
@@ -971,6 +1028,27 @@ class ManufacturingSampleService {
             }
           }
 
+          // إنشاء مكونات/خامات العينة (Task HZ-G)
+          const compDelegate = tx.sampleComponent || tx.sampleOrderComponent;
+          if (componentsToCreate && compDelegate) {
+            for (const comp of componentsToCreate) {
+              await compDelegate.create({
+                data: {
+                  companyId,
+                  sampleOrderId: sample.id,
+                  productId: comp.productId,
+                  name: comp.name,
+                  quantity: comp.quantity,
+                  unit: comp.unit,
+                  unitPrice: comp.unitPrice,
+                  totalCost: comp.totalCost,
+                  sortOrder: comp.sortOrder,
+                  priceSnapshotAt: comp.priceSnapshotAt,
+                },
+              });
+            }
+          }
+
           let createdRecord;
           try {
             createdRecord = await tx.sampleOrder.findFirst({
@@ -984,6 +1062,7 @@ class ManufacturingSampleService {
                 bom: { select: { id: true, code: true, name: true } },
                 expenses: { orderBy: { createdAt: 'asc' } },
                 items: { orderBy: { sortOrder: 'asc' } },
+                components: { orderBy: { sortOrder: 'asc' } },
               },
             });
           } catch (err) {
@@ -998,6 +1077,7 @@ class ManufacturingSampleService {
                   customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
                   expenses: { orderBy: { createdAt: 'asc' } },
                   items: { orderBy: { sortOrder: 'asc' } },
+                  components: { orderBy: { sortOrder: 'asc' } },
                 },
               });
             } else {
@@ -1264,6 +1344,57 @@ class ManufacturingSampleService {
         : itemsTotalQty;
     }
 
+    let componentsToUpdate = null;
+    if (data.components !== undefined) {
+      if (!Array.isArray(data.components)) {
+        throw httpErr(400, 'قائمة بنود الخامات غير صالحة');
+      }
+      componentsToUpdate = [];
+      for (let idx = 0; idx < data.components.length; idx++) {
+        const item = data.components[idx];
+        let compProductId = item.productId ? String(item.productId) : null;
+        let compName = String(item.name || '').trim();
+        if (compProductId) {
+          const product = await prisma.product.findFirst({
+            where: { id: compProductId, companyId },
+            select: { id: true, name: true, cost: true },
+          });
+          if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
+          if (!compName) compName = product.name;
+        }
+        if (!compName) {
+          throw httpErr(400, 'اسم الخامة إلزامي لكل بند');
+        }
+        const rawQty = item.quantity !== undefined && item.quantity !== null && item.quantity !== ''
+          ? Number(item.quantity)
+          : 1;
+        const compQuantity = sampleComponentMath.normalizeQuantity(rawQty);
+        if (compQuantity === null) {
+          throw httpErr(400, 'الكمية لازم تكون رقم أكبر من صفر');
+        }
+        const rawPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
+          ? Number(item.unitPrice)
+          : 0;
+        const compUnitPrice = sampleComponentMath.normalizePrice(rawPrice);
+        if (compUnitPrice === null) {
+          throw httpErr(400, 'سعر الوحدة لازم يكون رقم ≥ 0');
+        }
+        const compUnit = String(item.unit || '').trim() || 'قطعة';
+        const compTotalCost = round2(compQuantity * compUnitPrice);
+        const compSortOrder = Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : idx + 1;
+        componentsToUpdate.push({
+          productId: compProductId,
+          name: compName,
+          quantity: compQuantity,
+          unit: compUnit,
+          unitPrice: compUnitPrice,
+          totalCost: compTotalCost,
+          sortOrder: compSortOrder,
+          priceSnapshotAt: new Date(),
+        });
+      }
+    }
+
     let updatedRecord;
     return await prisma.$transaction(async (tx) => {
       if (data.expenses !== undefined) {
@@ -1290,6 +1421,28 @@ class ManufacturingSampleService {
         }
       }
 
+      // تحديث مكونات/خامات العينة (Task HZ-G)
+      const compDelegate = tx.sampleComponent || tx.sampleOrderComponent;
+      if (componentsToUpdate && compDelegate) {
+        await compDelegate.deleteMany({ where: { sampleOrderId: id } });
+        for (const comp of componentsToUpdate) {
+          await compDelegate.create({
+            data: {
+              companyId,
+              sampleOrderId: id,
+              productId: comp.productId,
+              name: comp.name,
+              quantity: comp.quantity,
+              unit: comp.unit,
+              unitPrice: comp.unitPrice,
+              totalCost: comp.totalCost,
+              sortOrder: comp.sortOrder,
+              priceSnapshotAt: comp.priceSnapshotAt,
+            },
+          });
+        }
+      }
+
       try {
         updatedRecord = await tx.sampleOrder.update({
           where: { id },
@@ -1303,6 +1456,7 @@ class ManufacturingSampleService {
             bom: { select: { id: true, code: true, name: true } },
             expenses: { orderBy: { createdAt: 'asc' } },
             items: { orderBy: { sortOrder: 'asc' } },
+            components: { orderBy: { sortOrder: 'asc' } },
           },
         });
       } catch (err) {
@@ -1318,6 +1472,7 @@ class ManufacturingSampleService {
               customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
               expenses: { orderBy: { createdAt: 'asc' } },
               items: { orderBy: { sortOrder: 'asc' } },
+              components: { orderBy: { sortOrder: 'asc' } },
             },
           });
         } else {
@@ -1647,6 +1802,7 @@ class ManufacturingSampleService {
         bom: { select: { id: true, code: true, name: true } },
         expenses: { orderBy: { createdAt: 'asc' } },
         items: { orderBy: { sortOrder: 'asc' } },
+        components: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -1964,6 +2120,7 @@ class ManufacturingSampleService {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
         expenses: { orderBy: { createdAt: 'asc' } },
         items: { orderBy: { sortOrder: 'asc' } },
+        components: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -2044,6 +2201,7 @@ class ManufacturingSampleService {
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
           items: { orderBy: { sortOrder: 'asc' } },
+          components: { orderBy: { sortOrder: 'asc' } },
         },
       });
 
@@ -2091,6 +2249,7 @@ class ManufacturingSampleService {
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           expenses: { orderBy: { createdAt: 'asc' } },
           items: { orderBy: { sortOrder: 'asc' } },
+          components: { orderBy: { sortOrder: 'asc' } },
         },
       });
 
@@ -2393,7 +2552,17 @@ class ManufacturingSampleService {
     const prisma = getSharedPrismaClient();
     await this.assertSampleEditable(prisma, companyId, sampleId, 'إضافة');
 
-    const name = String(data.name || '').trim();
+    let productId = data.productId ? String(data.productId) : null;
+    let name = String(data.name || '').trim();
+    if (productId) {
+      const product = await prisma.product.findFirst({
+        where: { id: productId, companyId },
+        select: { id: true, name: true, cost: true },
+      });
+      if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
+      if (!name) name = product.name;
+    }
+
     if (!name) {
       const err = new Error('اسم المكوّن إلزامي');
       err.statusCode = 400;
@@ -2421,6 +2590,7 @@ class ManufacturingSampleService {
       data: {
         companyId,
         sampleOrderId: sampleId,
+        productId,
         name,
         quantity,
         unit,
@@ -2447,9 +2617,26 @@ class ManufacturingSampleService {
 
     const patch = {};
 
+    if (data.productId !== undefined) {
+      if (data.productId) {
+        const pId = String(data.productId);
+        const product = await prisma.product.findFirst({
+          where: { id: pId, companyId },
+          select: { id: true, name: true },
+        });
+        if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
+        patch.productId = pId;
+        if (data.name === undefined && !component.name) {
+          patch.name = product.name;
+        }
+      } else {
+        patch.productId = null;
+      }
+    }
+
     if (data.name !== undefined) {
       const name = String(data.name || '').trim();
-      if (!name) {
+      if (!name && !patch.productId && !component.productId) {
         const err = new Error('اسم المكوّن إلزامي');
         err.statusCode = 400;
         throw err;

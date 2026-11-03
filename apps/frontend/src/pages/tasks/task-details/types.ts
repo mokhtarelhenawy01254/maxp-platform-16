@@ -86,6 +86,7 @@ export interface TaskDetails {
   metricCurrentValue: number;
   tags: string[];
   color: string | null;
+  createdBy?: string;
   project: TaskProject | null;
   assignedUser: TaskPerson | null;
   createdByUser: TaskPerson | null;
@@ -309,6 +310,12 @@ export const normalizeTaskDetails = (rawValue: unknown): TaskDetails => {
           }
         : null,
     assignedUser: toTaskPerson(raw.assignedUser || raw.assignee),
+    createdBy: getString(
+      raw.createdBy ||
+        raw.createdById ||
+        (isRecord(raw.createdByUser) ? raw.createdByUser.id : "") ||
+        (isRecord(raw.creator) ? raw.creator.id : "")
+    ),
     createdByUser: toTaskPerson(raw.createdByUser || raw.creator),
     parentTask: parentTaskRecord
       ? {

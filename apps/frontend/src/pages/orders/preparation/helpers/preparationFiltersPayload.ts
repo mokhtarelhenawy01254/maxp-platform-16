@@ -26,6 +26,7 @@ export function buildPreparationFiltersPayload({
       uiState.notPrintedFilter === "not_printed" ? "true" : undefined,
     noShippingCode:
       uiState.noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
+    workType: uiState.workTypeFilter === "exchange" ? "exchange" : undefined,
     search: deferredSearch,
     sortBy: uiState.sortBy,
     sortOrder: uiState.sortOrder,

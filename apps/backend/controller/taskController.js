@@ -1786,7 +1786,16 @@ const taskController = {
         }
 
         let normalizedStatus = normalizeStatus(status);
-        const isAssigneeOnly = !isManagerOrAdmin && existingTask.createdBy !== currentUserId && existingTask.assignedTo === currentUserId;
+        const isTaskCreator = existingTask.createdBy === currentUserId;
+        const isAssigneeOnly = !isManagerOrAdmin && !isTaskCreator && existingTask.assignedTo === currentUserId;
+
+        // التحقق من صلاحية الاعتماد: منشئ المهمة أو المدير فقط
+        if (existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED" && !isManagerOrAdmin && !isTaskCreator) {
+          return res.status(403).json({
+            success: false,
+            error: "ليس لديك صلاحية اعتماد هذه المهمة (الاعتماد متاح للمدير أو منشئ المهمة فقط)",
+          });
+        }
 
         // إذا كان المنفذ فقط يحاول إنهاء المهمة ذاتياً، يتم توجيهها لمرحلة المراجعة والاعتماد
         if (isAssigneeOnly && normalizedStatus === "COMPLETED") {
@@ -2138,7 +2147,16 @@ const taskController = {
       }
 
       let normalizedStatus = normalizeStatus(status);
-      const isAssigneeOnly = !isManagerOrAdmin && existingTask.createdBy !== currentUserId && existingTask.assignedTo === currentUserId;
+      const isTaskCreator = existingTask.createdBy === currentUserId;
+      const isAssigneeOnly = !isManagerOrAdmin && !isTaskCreator && existingTask.assignedTo === currentUserId;
+
+      // التحقق من صلاحية الاعتماد: منشئ المهمة أو المدير فقط
+      if (existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED" && !isManagerOrAdmin && !isTaskCreator) {
+        return res.status(403).json({
+          success: false,
+          error: "ليس لديك صلاحية اعتماد هذه المهمة (الاعتماد متاح للمدير أو منشئ المهمة فقط)",
+        });
+      }
 
       // إذا كان المنفذ فقط يحاول إنهاء المهمة ذاتياً، يتم توجيهها لمرحلة المراجعة والاعتماد
       if (isAssigneeOnly && normalizedStatus === "COMPLETED") {

@@ -58,6 +58,7 @@ export const PreparationQueueFiltersContainer: React.FC<
         itemCountFilter={uiState.itemCountFilter}
         notPrintedFilter={uiState.notPrintedFilter}
         noShippingCodeFilter={uiState.noShippingCodeFilter}
+        workTypeFilter={uiState.workTypeFilter}
         sortBy={uiState.sortBy}
         sortOrder={uiState.sortOrder}
         shortageOwnerOptions={props.shortageOwnerOptions}
@@ -80,6 +81,7 @@ export const PreparationQueueFiltersContainer: React.FC<
         onItemCountFilterChange={uiActions.setItemCountFilter}
         onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
         onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
+        onWorkTypeFilterChange={uiActions.setWorkTypeFilter}
         onSortChange={(sortBy, sortOrder) =>
           uiActions.setSort({ sortBy, sortOrder })
         }

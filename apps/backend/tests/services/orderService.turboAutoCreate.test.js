@@ -1,4 +1,18 @@
-const mockFormatOrderForTurbo = jest.fn().mockReturnValue({ orderNumber: 'ORD-123' });
+const defaultFormattedOrder = {
+  orderNumber: 'ORD-123',
+  customerName: 'John Doe',
+  customerPhone: '01012345678',
+  shippingAddress: 'شارع التحرير مبنى 10',
+  governorate: 'القاهرة',
+  city: 'الدقي',
+  items: [{ id: 'item_1', name: 'Product 1', quantity: 1, price: 100 }]
+};
+
+const mockFormatOrderForTurbo = jest.fn().mockImplementation((order) => ({
+  ...defaultFormattedOrder,
+  ...(order?.orderNumber ? { orderNumber: order.orderNumber } : {}),
+  ...(order?.customerPhone ? { customerPhone: order.customerPhone } : {})
+}));
 const mockCreateShipment = jest.fn().mockResolvedValue({
   success: true,
   shipmentId: 'TURBO-SHP-001',
@@ -27,7 +41,11 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockFormatOrderForTurbo.mockReturnValue({ orderNumber: 'ORD-123' });
+    mockFormatOrderForTurbo.mockImplementation((order) => ({
+      ...defaultFormattedOrder,
+      ...(order?.orderNumber ? { orderNumber: order.orderNumber } : {}),
+      ...(order?.customerPhone ? { customerPhone: order.customerPhone } : {})
+    }));
     mockCreateShipment.mockResolvedValue({
       success: true,
       shipmentId: 'TURBO-SHP-001',
@@ -367,6 +385,92 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
         })
       );
     });
+
+    test('13. Transient failure: retries on transient errors and succeeds on 3rd attempt (max 3 attempts)', async () => {
+      const order = {
+        id: 'ord_retry_success',
+        orderNumber: 'ORD-RETRY-1',
+        companyId: 'comp_1',
+        customerPhone: '01012345678',
+        shippingAddress: 'شارع التحرير',
+        governorate: 'القاهرة',
+        turboShipmentId: null,
+        customer: { name: 'Retry Customer' },
+        orderItems: [{ id: 'item_1' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      jest.spyOn(orderService, 'checkDuplicateActiveTurboShipment').mockResolvedValue(null);
+
+      mockTurboInstance.createShipment
+        .mockRejectedValueOnce(new Error('لم يتم تلقي استجابة من سيرفر تربو (timeout)'))
+        .mockRejectedValueOnce(new Error('ETIMEDOUT: connection timed out'))
+        .mockResolvedValueOnce({
+          success: true,
+          shipmentId: 'TURBO-SHP-001',
+          trackingNumber: 'TRK-998877',
+          status: 'turbo_sent',
+          labelUrl: 'https://turbo-eg.com/label/001',
+          data: { code: 'TURBO-SHP-001', bar_code: 'TRK-998877' }
+        });
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1', {
+        retryDelays: [5, 5]
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.shipmentId).toBe('TURBO-SHP-001');
+      expect(result.trackingNumber).toBe('TRK-998877');
+      expect(result.attempts).toBe(3);
+      expect(mockTurboInstance.createShipment).toHaveBeenCalledTimes(3);
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ord_retry_success' },
+          data: expect.objectContaining({
+            turboShipmentId: 'TURBO-SHP-001',
+            turboTrackingNumber: 'TRK-998877'
+          })
+        })
+      );
+    });
+
+    test('14. Data failure: does NOT retry on data validation errors and exits immediately after 1 attempt', async () => {
+      const order = {
+        id: 'ord_data_fail',
+        orderNumber: 'ORD-DATA-1',
+        companyId: 'comp_1',
+        customerPhone: '01012345678',
+        shippingAddress: 'شارع التحرير',
+        governorate: 'القاهرة',
+        turboShipmentId: null,
+        customer: { name: 'Data Err Customer' },
+        orderItems: [{ id: 'item_1' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      jest.spyOn(orderService, 'checkDuplicateActiveTurboShipment').mockResolvedValue(null);
+
+      mockTurboInstance.createShipment.mockResolvedValueOnce({
+        success: false,
+        error: 'رقم هاتف العميل غير صحيح أو غير مفعل في شبكات المحمول'
+      });
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1', {
+        retryDelays: [5, 5]
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.attempts).toBe(1);
+      expect(mockTurboInstance.createShipment).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ord_data_fail' },
+          data: expect.objectContaining({
+            metadata: expect.stringContaining('"attempts":1')
+          })
+        })
+      );
+    });
   });
 
   describe('autoCreateTurboShipmentForGuestOrder', () => {
@@ -378,6 +482,8 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
         guestName: 'أحمد علي',
         guestPhone: '01012345678',
         guestEmail: 'guest@example.com',
+        shippingAddress: 'شارع الهرم الرئيسي',
+        governorate: 'الجيزة',
         total: 250,
         shippingCost: 50,
         items: JSON.stringify([{ id: 'p1', name: 'تيشيرت', quantity: 1, price: 200 }]),

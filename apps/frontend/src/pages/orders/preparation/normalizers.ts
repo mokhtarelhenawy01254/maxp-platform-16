@@ -102,6 +102,12 @@ const normalizeShipment = (shipment: Record<string, unknown>): SimpleOrderShipme
   carrierType: String(shipment.carrierType || "MANUAL"),
 });
 
+const toOptionalString = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() !== "" ? value : null;
+
+const toOptionalLowerString = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() !== "" ? value.trim().toLowerCase() : null;
+
 export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
   const metadata = parseMaybeJsonObject(order.metadata);
 
@@ -128,6 +134,19 @@ export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
     turboShipmentId: String(order.turboShipmentId || "") || null,
     turboShipmentStatus: String(order.turboShipmentStatus || "") || null,
     shipments: Array.isArray(order.shipments) ? order.shipments.map(normalizeShipment) : [],
+    // «استبدال» كنوع عمل — الباك بيرجّع workType/requestType، والـ metadata fallback
+    // للنصوص القديمة (task 69cc5d36)
+    originalOrderId: order.originalOrderId || toOptionalString(metadata.originalOrderId),
+    originalOrderNumber:
+      order.originalOrderNumber || toOptionalString(metadata.originalOrderNumber),
+    requestType:
+      order.requestType || toOptionalLowerString(metadata.requestType),
+    workType:
+      order.workType ||
+      (String(order.requestType || metadata.requestType || "").toLowerCase() === "exchange" ||
+      Boolean(metadata.originalOrderId)
+        ? "exchange"
+        : "normal"),
   };
 };
 

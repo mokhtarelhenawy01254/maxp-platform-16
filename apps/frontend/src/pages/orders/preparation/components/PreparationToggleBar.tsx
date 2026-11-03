@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ChevronDown } from "lucide-react";
-import type { NotPrintedFilter, NoShippingCodeFilter } from "../types";
+import type { NotPrintedFilter, NoShippingCodeFilter, WorkTypeFilter } from "../types";
 import type { ProductOption } from "./useProductFilterOptions";
 
 export interface PreparationToggleBarProps {
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
+  workTypeFilter: WorkTypeFilter;
   productFilter: string;
   localProductFilter: string;
   setLocalProductFilter: (val: string) => void;
@@ -24,6 +25,7 @@ export interface PreparationToggleBarProps {
   visibleFilterSections: string[];
   onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
   onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
+  onWorkTypeFilterChange: (value: WorkTypeFilter) => void;
   onProductFilterChange: (value: string) => void;
   onProductIdFilterChange: (value: string) => void;
   onVariantIdFilterChange: (value: string) => void;
@@ -37,6 +39,7 @@ const selectStyle =
 export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
   notPrintedFilter,
   noShippingCodeFilter,
+  workTypeFilter,
   localProductFilter,
   setLocalProductFilter,
   showProductSuggestions,
@@ -53,6 +56,7 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
   visibleFilterSections,
   onNotPrintedFilterChange,
   onNoShippingCodeFilterChange,
+  onWorkTypeFilterChange,
   onProductFilterChange,
   onProductIdFilterChange,
   onVariantIdFilterChange,
@@ -109,6 +113,19 @@ export const PreparationToggleBar: React.FC<PreparationToggleBarProps> = ({
           }`}
         >
           {t("preparation.filters.noShippingCode", { defaultValue: "بدون بوليصة" })}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onWorkTypeFilterChange(workTypeFilter === "exchange" ? "all" : "exchange")
+          }
+          className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition max-sm:flex-1 border active:scale-[0.98] ${
+            workTypeFilter === "exchange"
+              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs border-transparent font-bold"
+              : "border-border/70 bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          {t("preparation.filters.exchangeWorkType", { defaultValue: "استبدال" })}
         </button>
       </div>
 
