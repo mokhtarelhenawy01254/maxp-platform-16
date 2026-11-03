@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+// Operix Luxury Landing is synchronously imported to eliminate legacy variant flash
 import { OperixLuxuryLanding } from "./operix-luxury/OperixLuxuryLanding";
 import { platformSiteHomepageService } from "../../services/platformSiteHomepageService";
 import {
