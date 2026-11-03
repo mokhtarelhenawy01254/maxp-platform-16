@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
@@ -5,6 +6,28 @@ import { MemoryRouter } from "react-router-dom";
 import SidebarLayoutFactory from "../SidebarLayoutFactory";
 import HorizontalNav from "../HorizontalNav";
 import type { SidebarSection } from "../../../../types/layout";
+
+if (typeof window !== "undefined") {
+  if (!window.matchMedia) {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  }
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any;
+  }
+}
 
 vi.mock("../../../../hooks/useAuthSimple", () => ({
   useAuth: () => ({
