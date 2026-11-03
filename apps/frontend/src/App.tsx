@@ -947,9 +947,6 @@ const PlatformLandingPage = React.lazy(
 const MaxPMerchantsLanding = React.lazy(
   () => import("./pages/public/MaxPMerchantsLanding"),
 );
-const OperixLuxuryLanding = React.lazy(
-  () => import("./pages/landing/operix-luxury/OperixLuxuryLanding"),
-);
 const MgAgencyLeadLanding = React.lazy(
   () => import("./pages/landing/MgAgencyLeadLanding"),
 );
@@ -2552,8 +2549,6 @@ const AppContent = () => {
             />
             <Route path="/shadcn-demo" element={<ShadcnDemo />} />
             <Route path="/for-merchants" element={<MaxPMerchantsLanding />} />
-            <Route path="/operix" element={<OperixLuxuryLanding />} />
-            <Route path="/luxury" element={<OperixLuxuryLanding />} />
             {activeLpSlugs && !activeLpSlugs.has("mg") ? <Route path="/lp/mg" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("mg-agency") ? <Route path="/lp/mg-agency" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("messaging") ? <Route path="/lp/messaging" element={<Navigate to="/" replace />} /> : <Route path="/lp/messaging" element={<MessagingLanding />} />}
