@@ -9,7 +9,7 @@ import {
   Settings2,
   Sparkles,
 } from "lucide-react";
-import { supportsAppSettings } from "./appSettingsSupport";
+import { supportsAppSettings } from "../../config/appSettingsSupport";
 import { useMarketplaceAppSettingsData } from "./hooks/useMarketplaceAppSettingsData";
 import { AppSettingsInsights } from "./components/settings/AppSettingsInsights";
 import { InternalCourierFleetSettingsTab } from "./components/settings/InternalCourierFleetSettingsTab";

@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate, useParams, Outlet } from "react-router-dom";
 import { toast } from "sonner";
-import { supportsAppSettings, APP_SETTINGS_SLUGS } from "./pages/marketplace/appSettingsSupport";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "./config/appSettingsSupport";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";

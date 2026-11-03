@@ -96,7 +96,7 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 // (~3.5MB / 80 files) on every page — public landings included. Guarded by
 // scripts/check-entry-chunks.cjs rule 1b.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:config\/(?:index|environment|appRegistry|templates|themes\/index)|services\/(?:api|apiClient|uploadService|pushNotificationService|appUpdateService|orderSoundPatterns|socketService|telephonyService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl|deviceFingerprint|sessionRefresh|textEncoding)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:config\/(?:index|environment|appRegistry|appSettingsSupport|templates|themes\/index)|services\/(?:api|apiClient|uploadService|pushNotificationService|appUpdateService|orderSoundPatterns|socketService|telephonyService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl|deviceFingerprint|sessionRefresh|textEncoding)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared TanStack Query Client instances
 const APP_QUERY_CLIENT_MODULE_PATTERN =

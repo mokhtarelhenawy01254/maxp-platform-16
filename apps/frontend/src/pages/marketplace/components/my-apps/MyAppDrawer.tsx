@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import type { InstalledApp } from "@/types/marketplace";
 import { getAppDestination } from "../../types/myAppsTypes";
-import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../appSettingsSupport";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../../../config/appSettingsSupport";
 
 interface MyAppDrawerProps {
   selectedApp: InstalledApp | null;

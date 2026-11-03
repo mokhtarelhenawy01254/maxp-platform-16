@@ -29,7 +29,7 @@ import {
   getDaysRemaining,
   getAppDestination,
 } from "../../types/myAppsTypes";
-import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../appSettingsSupport";
+import { supportsAppSettings, APP_SETTINGS_SLUGS } from "../../../../config/appSettingsSupport";
 
 interface MyAppsCardProps {
   installed: InstalledApp;
