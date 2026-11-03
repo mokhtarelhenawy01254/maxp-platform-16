@@ -29,7 +29,7 @@ export const PreparationOrdersProblemCell: React.FC<PreparationOrdersProblemCell
             onClick={() => onEditProblemReason(orderNumber)}
             disabled={rowBusy}
             title={String(t("preparation.problemPanel.edit"))}
-            className="mt-0.5 shrink-0 rounded border border-slate-200 bg-white p-1 text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            className="mt-0.5 shrink-0 rounded border border-border/70 bg-background p-1 text-foreground transition hover:bg-muted disabled:opacity-50"
           >
             <PencilIcon className="h-3 w-3" />
           </button>
@@ -53,7 +53,7 @@ export const PreparationOrdersProblemCell: React.FC<PreparationOrdersProblemCell
           )}
         </div>
       ) : (
-        <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+        <span className="text-xs text-muted-foreground/60">—</span>
       )}
     </td>
   );

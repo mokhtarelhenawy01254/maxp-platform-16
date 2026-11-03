@@ -41,7 +41,7 @@ export const PreparationColumnSettingsDropdown: React.FC<PreparationColumnSettin
           onClick={() => setShowFilters((prev) => !prev)}
           className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition active:scale-[0.98] cursor-pointer ${
             showFilters
-              ? "border-transparent bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+              ? "border-primary bg-primary text-primary-foreground shadow-xs"
               : "border-border/70 bg-card text-foreground hover:bg-muted"
           }`}
           title={showFilters ? t("preparation.hideFilters", { defaultValue: "إخفاء الفلاتر" }) : t("preparation.showFilters", { defaultValue: "إظهار الفلاتر" })}

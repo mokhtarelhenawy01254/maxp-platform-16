@@ -137,7 +137,7 @@ export const PreparationTabsBar: React.FC<PreparationTabsBarProps> = ({
             onClick={() => setShowAdvanced((v) => !v)}
             className={`flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition active:scale-[0.98] ${
               showAdvanced || hasAdvancedFilters
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                ? "bg-primary text-primary-foreground shadow-xs border border-primary"
                 : "border border-border/70 bg-background/80 text-foreground hover:bg-muted"
             }`}
           >

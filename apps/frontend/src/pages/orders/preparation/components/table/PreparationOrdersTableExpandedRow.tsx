@@ -105,7 +105,7 @@ export const PreparationOrdersTableExpandedRow: React.FC<
   onPrintPreparationSlip,
 }) => {
   return (
-    <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+    <tr className="bg-muted/20 border-b border-border/60">
       <td colSpan={totalCols} className="px-4 py-4">
         <div className="space-y-2.5">
           <PreparationOrderItemsList

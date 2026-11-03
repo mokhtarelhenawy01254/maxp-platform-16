@@ -73,9 +73,9 @@ export const PreparationOrdersTableRow: React.FC<PreparationOrdersTableRowProps>
   return (
     <Fragment key={order.orderNumber}>
       <tr
-        className={`border-b border-slate-100 dark:border-slate-800/80 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50 ${
-          isEvenRow ? "bg-white dark:bg-slate-900" : "bg-slate-50/40 dark:bg-slate-900/60"
-        } ${isExpanded ? "bg-slate-50/90 shadow-xs dark:bg-slate-800/60" : ""}`}
+        className={`border-b border-border/40 transition-colors hover:bg-muted/40 ${
+          isEvenRow ? "bg-card" : "bg-muted/15"
+        } ${isExpanded ? "bg-muted/30 shadow-xs" : ""}`}
       >
         <PreparationOrdersTableRowMainCells
           order={order}

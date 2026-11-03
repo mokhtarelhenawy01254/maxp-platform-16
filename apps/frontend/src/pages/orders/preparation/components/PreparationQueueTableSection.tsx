@@ -17,7 +17,7 @@ export const PreparationQueueTableSection: React.FC<
   PreparationQueueTableSectionProps
 > = ({ selectionBarProps, ordersContainerProps }) => {
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
+    <section className="rounded-xl border border-border/70 bg-card text-card-foreground shadow-xs overflow-hidden">
       <PreparationSelectionBar {...selectionBarProps} />
       <PreparationOrdersContainer {...ordersContainerProps} />
     </section>
