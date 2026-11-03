@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import JsBarcode from "jsbarcode";
 
 const stripNonAscii = (v: string): string =>
-  v.replace(/[^\x20-\x7E]/g, "").trim() || "N/A";
+  (v || "").replace(/[^\x20-\x7E]/g, "").trim() || "N/A";
 
 interface InvoiceBarcodeProps {
   value: string;
@@ -10,6 +10,7 @@ interface InvoiceBarcodeProps {
   height?: number;
   width?: number;
   compact?: boolean;
+  className?: string;
 }
 
 const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
@@ -18,6 +19,7 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   height = 46,
   width = 2,
   compact = false,
+  className = "",
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -42,17 +44,25 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   }, [safeValue, height, width]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1 text-center select-none print:p-0">
+    <div
+      data-testid="invoice-barcode-container"
+      className={`flex flex-col items-center justify-center gap-1 text-center select-none print:p-0 ${className}`}
+    >
       <div
         className={
           compact
+            // the barcode block sits on a forced white surface in both themes,
+            // so the caption/code must stay dark — text-foreground goes white in dark mode
             ? "text-xs font-bold text-slate-900 print:text-black"
             : "text-xs font-bold tracking-tight text-slate-900 print:text-black"
         }
       >
         {label}
       </div>
-      <div className="print:p-0">
+      <div
+        data-testid="barcode-container"
+        className="rounded-md border border-border/60 bg-white p-1 shadow-none print:border-0 print:bg-transparent print:p-0"
+      >
         <svg
           ref={svgRef}
           className="mx-auto block max-w-full"

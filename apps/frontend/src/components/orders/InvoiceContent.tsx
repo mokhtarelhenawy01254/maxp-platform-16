@@ -257,7 +257,12 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
            <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}>
              {showOrderBarcode && (
-                <InvoiceBarcode value={invoice.order!.orderNumber!} label={i18n.t("invoiceContent.orderCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                <div
+                  data-testid="order-barcode-container"
+                  className="rounded-md border border-border/60 bg-white p-1 shadow-none print:border-0 print:bg-transparent print:p-0"
+                >
+                  <InvoiceBarcode value={invoice.order!.orderNumber!} label={i18n.t("invoiceContent.orderCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                </div>
              )}
            </div>
         </div>
@@ -401,7 +406,12 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         >
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              {showShipBarcode && trackingNumberVal ? (
-                <InvoiceBarcode value={String(trackingNumberVal)} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                <div
+                  data-testid="shipping-barcode-container"
+                  className="rounded-md border border-border/60 bg-white p-1 shadow-none print:border-0 print:bg-transparent print:p-0"
+                >
+                  <InvoiceBarcode value={String(trackingNumberVal)} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                </div>
              ) : (
                <span style={{ color: "#94a3b8" }}>—</span>
              )}
