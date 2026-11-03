@@ -1896,30 +1896,30 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 9️⃣ إدارة المهام
+        // 9️⃣ إدارة المهام والمشاريع
         {
             id: 'tasks',
             title: t('sidebar.tasksWorkspace'),
             icon: CheckCircle2,
-            hidden: !isAppActive('business-tools'),
+            hidden: !(
+                ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(user?.role || '') ||
+                isAnyAppActive(['business-tools', 'tasks', 'tasks-management', 'projects'])
+            ),
             items: [
+                { to: '/tasks', icon: CheckCircle2, label: t('sidebar.tasks') || 'كل المهام' },
+                { to: '/tasks/projects', icon: FolderOpen, label: t('sidebar.taskProjects') || 'المشاريع' },
+                { to: '/tasks/categories', icon: Tag, label: t('sidebar.taskCategories') || 'أقسام المهام' },
+                { to: '/tasks/compliance', icon: ShieldCheck, label: 'متابعة الإنجاز' },
+                { to: '/tasks/backlog', icon: Sparkles, label: 'الأفكار وقائمة الانتظار' },
+                { to: '/goals', icon: Target, label: t('sidebar.goals') || 'أهداف العمل' },
+                { to: '/tasks/settings', icon: Settings, label: t('sidebar.taskSettings') || 'إعدادات المهام' },
                 {
-                    to: '/tasks',
-                    icon: CheckCircle2,
-                    label: t('sidebar.tasks'),
-                    children: [
-                        { to: '/goals', label: t('sidebar.goals') },
-                        { to: '/tasks/projects', label: t('sidebar.taskProjects') },
-                        { to: '/tasks/categories', label: t('sidebar.taskCategories') },
-                        { to: '/tasks/settings', label: t('sidebar.taskSettings') },
-                        {
-                            to: '/tasks/integrations',
-                            label: t('sidebar.taskIntegrations'),
-                            hidden: !canManageTaskIntegrations,
-                        },
-                    ],
+                    to: '/tasks/integrations',
+                    icon: PlugZap,
+                    label: t('sidebar.taskIntegrations') || 'تكاملات المهام',
+                    hidden: !canManageTaskIntegrations,
                 },
-            ]
+            ],
         },
 
         // 1️⃣1️⃣ التطبيقات والفواتير

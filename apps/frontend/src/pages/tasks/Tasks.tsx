@@ -172,14 +172,16 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     >
       <BusinessPageShell className="tasks-page p-2.5 pb-24 md:px-4 md:py-3 xl:px-5 xl:py-4">
         <div className="mx-auto max-w-[1360px] space-y-2.5">
-          <TaskWorkspaceTabs
-            activeTab={controller.activeTab}
-            onTabChange={controller.setActiveTab}
-            canManageIntegrations={controller.canManageIntegrations}
-            taskCount={controller.tasks.length}
-            projectCount={controller.projects.length}
-            categoryCount={controller.categories.length}
-          />
+          {embeddedInModal && (
+            <TaskWorkspaceTabs
+              activeTab={controller.activeTab}
+              onTabChange={controller.setActiveTab}
+              canManageIntegrations={controller.canManageIntegrations}
+              taskCount={controller.tasks.length}
+              projectCount={controller.projects.length}
+              categoryCount={controller.categories.length}
+            />
+          )}
 
           <div className="space-y-2">{renderActiveTabContent()}</div>
 

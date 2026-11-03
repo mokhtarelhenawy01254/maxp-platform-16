@@ -947,6 +947,9 @@ const PlatformLandingPage = React.lazy(
 const MaxPMerchantsLanding = React.lazy(
   () => import("./pages/public/MaxPMerchantsLanding"),
 );
+const OperixLuxuryLanding = React.lazy(
+  () => import("./pages/landing/operix-luxury/OperixLuxuryLanding"),
+);
 const MgAgencyLeadLanding = React.lazy(
   () => import("./pages/landing/MgAgencyLeadLanding"),
 );
@@ -1904,7 +1907,8 @@ if (typeof window !== "undefined") {
   p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
   p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
   p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
-  p["/tasks"] = () => import("./pages/tasks/Dashboard");
+  p["/tasks"] = () => import("./pages/tasks/Tasks");
+  p["/tasks/dashboard"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
   p["/inventory/studio"] = () => import("./pages/inventory/studio/InventoryAiStudioPage");
   p["/support"] = () => import("./pages/support/SupportCenter");
@@ -2548,6 +2552,8 @@ const AppContent = () => {
             />
             <Route path="/shadcn-demo" element={<ShadcnDemo />} />
             <Route path="/for-merchants" element={<MaxPMerchantsLanding />} />
+            <Route path="/operix" element={<OperixLuxuryLanding />} />
+            <Route path="/luxury" element={<OperixLuxuryLanding />} />
             {activeLpSlugs && !activeLpSlugs.has("mg") ? <Route path="/lp/mg" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("mg-agency") ? <Route path="/lp/mg-agency" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("messaging") ? <Route path="/lp/messaging" element={<Navigate to="/" replace />} /> : <Route path="/lp/messaging" element={<MessagingLanding />} />}
@@ -3994,6 +4000,22 @@ const AppContent = () => {
                 />
                 <Route
                   path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
                   element={
                     <Layout>
                       <Tasks />
@@ -6154,6 +6176,22 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/tasks/integrations"
                   element={
                     <Layout>
@@ -6413,6 +6451,22 @@ const AppContent = () => {
                 />
                 <Route
                   path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/compliance"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/backlog"
                   element={
                     <Layout>
                       <Tasks />
