@@ -7565,7 +7565,6 @@ const AppContent = () => {
                   <Route path="pickups" element={<ClientPickupsPage />} />
                   <Route path="bulk" element={<ClientBulkUploadPage />} />
                 </Route>
-                />
                 <Route
                   path="/orders/bulk-status"
                   element={
