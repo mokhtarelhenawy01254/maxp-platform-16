@@ -59,6 +59,14 @@ export interface Product {
   hasQuantityOffers?: boolean;
   quantityOffersCount?: number;
   quantityOffers?: any[];
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  lastModifiedBy?: {
+    userName?: string;
+    userId?: string;
+    updatedAt?: string | Date;
+    action?: string;
+  } | null;
 }
 
 export type SortField = "name" | "price" | "stock" | "createdAt" | "updatedAt";

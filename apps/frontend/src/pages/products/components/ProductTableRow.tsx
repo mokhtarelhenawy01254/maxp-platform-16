@@ -378,8 +378,15 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           )}
         </div>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap text-xs font-mono tabular-nums text-zinc-400 dark:text-zinc-500">
-        {formatDate(product.updatedAt)}
+      <td className="px-4 py-3 whitespace-nowrap text-xs">
+        <div className="flex flex-col">
+          <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate max-w-[140px]">
+            {product.lastModifiedBy?.userName || "—"}
+          </span>
+          <span className="text-[11px] font-mono tabular-nums text-zinc-400 dark:text-zinc-500">
+            {formatDate(product.lastModifiedBy?.updatedAt ? new Date(product.lastModifiedBy.updatedAt) : product.updatedAt)}
+          </span>
+        </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
         <div className="flex items-center gap-1">

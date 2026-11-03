@@ -1,0 +1,17 @@
+model ProductAuditLog {
+  id        String   @id @default(cuid())
+  companyId String
+  productId String
+  userId    String?
+  userName  String?
+  action    String
+  changes   Json?
+  source    String   @default("UI")
+  createdAt DateTime @default(now())
+
+  @@index([companyId, productId, createdAt])
+  @@index([companyId, userId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("product_audit_logs")
+}

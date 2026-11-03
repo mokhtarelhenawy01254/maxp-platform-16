@@ -10,6 +10,7 @@ const path = require('path');
 const internalSyncService = require('../services/internalSyncService');
 const merchantService = require('../services/merchantService');
 const fulfillmentService = require('../services/fulfillmentService');
+const productAuditService = require('../services/productAuditService');
 const { safeJsonParse } = require('../utils/jsonUtils');
 const { parseProductMetadata } = require('../utils/productMetadataUtils');
 const {
@@ -238,6 +239,8 @@ const PRODUCT_LIST_SELECT = {
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
+  createdBy: true,
+  updatedBy: true,
   metadata: true,
   barcode: true,
   easyOrdersId: true,
@@ -728,6 +731,56 @@ const getAllProducts = async (req, res) => {
       });
     }
 
+    const productIds = products.map((p) => p.id);
+    const latestAuditMap = {};
+    if (productIds.length > 0) {
+      try {
+        const prisma = getSharedPrismaClient();
+        if (prisma.productAuditLog && typeof prisma.productAuditLog.findMany === 'function') {
+          const logs = await safeQuery(() =>
+            prisma.productAuditLog.findMany({
+              where: {
+                companyId,
+                productId: { in: productIds },
+              },
+              orderBy: { createdAt: 'desc' },
+            })
+          );
+          if (logs && logs.length > 0) {
+            for (const log of logs) {
+              if (!latestAuditMap[log.productId]) {
+                latestAuditMap[log.productId] = {
+                  userName: log.userName,
+                  userId: log.userId,
+                  updatedAt: log.createdAt,
+                  action: log.action,
+                };
+              }
+            }
+          }
+        } else {
+          const logs = await prisma.$queryRawUnsafe(
+            `SELECT DISTINCT ON ("productId") "productId", "userName", "userId", "createdAt", "action"
+             FROM "product_audit_logs"
+             WHERE "companyId" = $1 AND "productId" = ANY($2::text[])
+             ORDER BY "productId", "createdAt" DESC`,
+            companyId,
+            productIds
+          );
+          for (const log of (logs || [])) {
+            latestAuditMap[log.productId] = {
+              userName: log.userName,
+              userId: log.userId,
+              updatedAt: log.createdAt,
+              action: log.action,
+            };
+          }
+        }
+      } catch (auditErr) {
+        // Safe fallback - don't break product listing
+      }
+    }
+
     res.json({
       success: true,
       data: products.map(p => {
@@ -777,6 +830,9 @@ const getAllProducts = async (req, res) => {
           shippingClass,
           excludeFromFreeShipping,
           workflow,
+          createdBy: p.createdBy || null,
+          updatedBy: p.updatedBy || null,
+          lastModifiedBy: latestAuditMap[p.id] || null,
           merchantContext: currentMerchant
             ? {
                 merchantId: currentMerchant.id,
@@ -1468,6 +1524,8 @@ const getAuthorizedProductForMutation = async (req, productId, select = {}) => {
       id: true,
       companyId: true,
       deletedAt: true,
+  createdBy: true,
+  updatedBy: true,
       name: true,
       images: true,
       mainImage: true,
@@ -1583,6 +1641,16 @@ const updateSingleProduct = async (req, res) => {
     const existingProduct = await getAuthorizedProductForMutation(req, id, {
       sku: true,
       slug: true,
+      price: true,
+      cost: true,
+      comparePrice: true,
+      stock: true,
+      description: true,
+      barcode: true,
+      categoryId: true,
+      weight: true,
+      dimensions: true,
+      trackInventory: true,
     });
     const currentMerchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
@@ -1611,10 +1679,12 @@ const updateSingleProduct = async (req, res) => {
       'preOrderDate', 'preOrderMessage', 'slug', 'isDropshipped', 
       'merchantProductId', 'basePrice', 'allowAffiliateMarkup', 
       'affiliateVisibility', 'affiliateVisibleAffiliateIds', 
-      'affiliateCommission', 'commissionType', 'showFakeStock'
+      'affiliateCommission', 'commissionType', 'showFakeStock', 'updatedBy'
     ];
 
-    const updateData = {};
+    const updateData = {
+      updatedBy: req.user?.id || null,
+    };
     
     // Only copy valid fields from request body
     VALID_PRODUCT_FIELDS.forEach(field => {
@@ -2079,6 +2149,27 @@ const updateSingleProduct = async (req, res) => {
     // Invalidate public and storefront product Redis & HTML caches immediately
     await invalidateStorefrontProductCaches(companyId, product.id);
 
+    try {
+      const diff = productAuditService.computeProductDiff(existingProduct, product);
+      if (Object.keys(diff).length > 0) {
+        const isOnlyStatus =
+          Object.keys(diff).length === 1 &&
+          (diff.isActive !== undefined || diff.status !== undefined);
+        await productAuditService.logProductChange({
+          companyId,
+          productId: id,
+          user: req.user,
+          action: isOnlyStatus ? 'STATUS_CHANGE' : 'UPDATE',
+          before: existingProduct,
+          after: product,
+          source: req.body?.source || 'UI',
+          changes: diff,
+        });
+      }
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log product update audit:', auditErr.message);
+    }
+
     //console.log(`✅ [server] Product updated: ${product.name}`);
     res.json({
       success: true,
@@ -2147,8 +2238,21 @@ const deleteSingleProduct = async (req, res) => {
       where: { id: id },
       data: {
         deletedAt: new Date(),
+        updatedBy: req.user?.id || null,
       }
     });
+
+    try {
+      await productAuditService.logProductChange({
+        companyId,
+        productId: id,
+        user: req.user,
+        action: 'DELETE',
+        source: 'UI',
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log product deletion audit:', auditErr.message);
+    }
 
     await invalidateStorefrontProductCaches(companyId, id);
 
@@ -2240,8 +2344,24 @@ const restoreProduct = async (req, res) => {
       where: { id: id },
       data: {
         deletedAt: null,
+        updatedBy: req.user?.id || null,
       }
     });
+
+    try {
+      await productAuditService.logProductChange({
+        companyId,
+        productId: id,
+        user: req.user,
+        action: 'STATUS_CHANGE',
+        source: 'UI',
+        changes: {
+          deletedAt: { before: existingProduct.deletedAt, after: null },
+        },
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log product restoration audit:', auditErr.message);
+    }
 
     await invalidateStorefrontProductCaches(companyId, id);
 
@@ -2531,6 +2651,8 @@ const createProduct = async (req, res) => {
         dimensions: req.body.dimensions ? JSON.stringify(req.body.dimensions) : null,
         metadata: workflowPayload.metadata,
         mainImage: resolvedMedia.mainImage,
+        createdBy: req.user?.id || null,
+        updatedBy: req.user?.id || null,
         updatedAt: now
       },
       include: {
@@ -2645,6 +2767,21 @@ const createProduct = async (req, res) => {
     }
 
     await invalidateStorefrontProductCaches(companyId, product.id);
+
+    // Log create / import audit
+    try {
+      const auditSource = req.body.source || (req.body.isImport ? 'IMPORT' : 'UI');
+      await productAuditService.logProductChange({
+        companyId,
+        productId: product.id,
+        user: req.user,
+        action: auditSource === 'IMPORT' ? 'IMPORT' : 'CREATE',
+        after: product,
+        source: auditSource,
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log product create audit:', auditErr.message);
+    }
 
     res.json({
       success: true,
@@ -3258,6 +3395,22 @@ const updateProductWorkflow = async (req, res) => {
       });
 
     await invalidateStorefrontProductCaches(companyId, product.id);
+
+    // Log create / import audit
+    try {
+      await productAuditService.logProductChange({
+        companyId,
+        productId: product.id,
+        user: req.user,
+        action: 'STATUS_CHANGE',
+        source: 'UI',
+        changes: {
+          workflowStatus: { before: existingWorkflow?.status || null, after: action },
+        },
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log workflow audit:', auditErr.message);
+    }
 
     res.json({
       success: true,
@@ -4257,8 +4410,21 @@ const bulkUpdateVisibility = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const result = await prisma.product.updateMany({
       where: { id: { in: productIds }, companyId },
-      data: { isHidden: Boolean(isHidden) },
+      data: { isHidden: Boolean(isHidden), updatedBy: req.user?.id || null },
     });
+
+    try {
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: req.body?.source || 'UI',
+        changes: { isHidden: { before: !Boolean(isHidden), after: Boolean(isHidden) } },
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log bulk visibility audit:', auditErr.message);
+    }
 
     await invalidateStorefrontProductCaches(companyId);
 
@@ -4282,7 +4448,9 @@ const bulkUpdateAffiliateVisibility = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const data = {};
+    const data = {
+      updatedBy: req.user?.id || null,
+    };
 
     if (typeof allowAffiliateMarkup === 'boolean') {
       data.allowAffiliateMarkup = allowAffiliateMarkup;
@@ -4300,6 +4468,23 @@ const bulkUpdateAffiliateVisibility = async (req, res) => {
       where: { id: { in: productIds }, companyId },
       data,
     });
+
+    try {
+      const changes = Object.keys(data).reduce((acc, k) => {
+        if (k !== 'updatedBy') acc[k] = { before: null, after: data[k] };
+        return acc;
+      }, {});
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: req.body?.source || 'UI',
+        changes,
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log bulk affiliate visibility audit:', auditErr.message);
+    }
 
     await invalidateStorefrontProductCaches(companyId);
 
@@ -4333,7 +4518,7 @@ const bulkUpdateTrackInventory = async (req, res) => {
 
     const productResult = await prisma.product.updateMany({
       where: { id: { in: productIds }, companyId },
-      data: { trackInventory: Boolean(trackInventory) },
+      data: { trackInventory: Boolean(trackInventory), updatedBy: req.user?.id || null },
     });
 
     let variantCount = 0;
@@ -4345,6 +4530,19 @@ const bulkUpdateTrackInventory = async (req, res) => {
       variantCount = variantResult.count;
     }
 
+    try {
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: req.body?.source || 'UI',
+        changes: { trackInventory: { before: !Boolean(trackInventory), after: Boolean(trackInventory) } },
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log bulk track inventory audit:', auditErr.message);
+    }
+
     // Swan use-case: 96 product bulk fix — log for audit
     console.log(`✅ [BULK-TRACK-INVENTORY] company=${companyId} trackInventory=${trackInventory} products=${productResult.count} variants=${variantCount}`);
 
@@ -4354,6 +4552,65 @@ const bulkUpdateTrackInventory = async (req, res) => {
   } catch (err) {
     console.error('Bulk trackInventory update error:', err);
     res.status(500).json({ success: false, message: 'فشل في تحديث تتبع المخزون' });
+  }
+};
+
+
+
+const getProductHistory = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+    const { id } = req.params;
+    const { page, limit } = req.query;
+
+    const result = await productAuditService.getProductHistory({
+      companyId,
+      productId: id,
+      page,
+      limit,
+    });
+
+    return res.json({
+      success: true,
+      data: result.logs,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    console.error('Error fetching product history:', err);
+    return res.status(500).json({ success: false, message: 'فشل في استرجاع سجل تعديلات المنتج' });
+  }
+};
+
+const getAuditLogs = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+    const { userId, action, from, to, productId, page, limit } = req.query;
+
+    const result = await productAuditService.getCompanyAuditLogs({
+      companyId,
+      userId,
+      action,
+      productId,
+      from,
+      to,
+      page,
+      limit,
+    });
+
+    return res.json({
+      success: true,
+      data: result.logs,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    console.error('Error fetching audit logs:', err);
+    return res.status(500).json({ success: false, message: 'فشل في استرجاع سجل التعديلات' });
   }
 };
 
@@ -4389,6 +4646,9 @@ module.exports = {
   restoreProduct,
   permanentDeleteProduct,
   // Visual Search
-  visualSearchProduct
+  visualSearchProduct,
+  // Product Audit & History
+  getProductHistory,
+  getAuditLogs,
 }
 

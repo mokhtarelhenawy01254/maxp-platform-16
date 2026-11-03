@@ -147,7 +147,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                 className={`px-4 py-3.5 ${alignClass} text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em] cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors select-none`}
               >
                 <div className="flex items-center gap-1">
-                  {isEn ? "Last Updated" : "آخر تحديث"}
+                  {isEn ? "Last Modified By" : "آخر تعديل بواسطة"}
                   <SortIcon field="updatedAt" />
                 </div>
               </th>

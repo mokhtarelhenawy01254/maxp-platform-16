@@ -16,6 +16,7 @@ import {
   EyeIcon,
   MegaphoneIcon,
   MagnifyingGlassIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 // Hooks
@@ -1188,6 +1189,15 @@ export function useProductNewController() {
     { id: "shipping", name: t("products.tabs.shipping"), icon: TruckIcon },
     { id: "seo", name: t("products.tabs.seo"), icon: MagnifyingGlassIcon },
     { id: "advanced", name: t("products.tabs.advanced"), icon: Cog6ToothIcon },
+    ...(isEditMode
+      ? [
+          {
+            id: "audit",
+            name: "سجل التعديلات",
+            icon: ClockIcon,
+          },
+        ]
+      : []),
   ];
 
   const workflowLabel = getWorkflowStatusLabel(workflow.status);

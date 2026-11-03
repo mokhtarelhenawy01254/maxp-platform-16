@@ -58,6 +58,17 @@ router.delete('/bulk/delete', verifyToken.authenticateToken, requireDbPermission
 router.patch('/bulk/visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateVisibility);
 router.patch('/bulk/affiliate-visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateAffiliateVisibility);
 router.patch('/bulk/track-inventory', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateTrackInventory);
+// 🛡️ Product Audit Routes (Immutable)
+router.get('/audit', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getAuditLogs);
+router.all('/audit', (req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return res.status(405).json({ success: false, message: 'سجل التعديلات غير قابل للتعديل أو الحذف' });
+  }
+  next();
+});
+router.all('/audit/:auditId', (req, res) => {
+  return res.status(405).json({ success: false, message: 'سجل التعديلات غير قابل للتعديل أو الحذف' });
+});
 router.get('/categories', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getCategory);
 router.post('/categories', verifyToken.authenticateToken, requireDbPermission('products.create'), upload.single('image'), productController.createNewCategory);
 router.put('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.single('image'), productController.updateCategory);
@@ -69,6 +80,18 @@ router.get('/:id/volume-discounts', verifyToken.authenticateToken, requireDbPerm
 router.post('/:id/volume-discounts', verifyToken.authenticateToken, requireDbPermission('products.edit'), volumeDiscountController.createVolumeDiscount);
 router.put('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, requireDbPermission('products.edit'), volumeDiscountController.updateVolumeDiscount);
 router.delete('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, requireDbPermission('products.delete'), volumeDiscountController.deleteVolumeDiscount);
+
+// Product History (Audit)
+router.get('/:id/history', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getProductHistory);
+router.all('/:id/history', (req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return res.status(405).json({ success: false, message: 'سجل التعديلات غير قابل للتعديل أو الحذف' });
+  }
+  next();
+});
+router.all('/:id/history/:historyId', (req, res) => {
+  return res.status(405).json({ success: false, message: 'سجل التعديلات غير قابل للتعديل أو الحذف' });
+});
 
 // Parameterized routes must come after specific routes
 router.post('/:id/workflow', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.updateProductWorkflow);

@@ -13,6 +13,7 @@ import { WhatsappTab } from "../tabs/WhatsappTab";
 import { ShippingTab } from "../tabs/ShippingTab";
 import { SeoTab } from "../tabs/SeoTab";
 import { AdvancedTab } from "../tabs/AdvancedTab";
+import { ProductAuditTab } from "../tabs/ProductAuditTab";
 
 interface ProductNewTabContentProps {
   activeTab: string;
@@ -376,6 +377,10 @@ export const ProductNewTabContent: React.FC<ProductNewTabContentProps> = ({
           productMetadata={productMetadata}
           setProductMetadata={setProductMetadata}
         />
+      )}
+
+      {activeTab === "audit" && (
+        <ProductAuditTab productId={effectiveProductId || formData?.id} />
       )}
     </div>
   );
