@@ -43,8 +43,18 @@ export const IssueMaterialsModal: React.FC<IssueMaterialsModalProps> = ({
         setSourceWarehouseId(order.sourceWarehouseId || (whs[0]?.id ?? ''));
       });
 
-      // Prefill items from order BOM components if available
-      if (order.bom?.components && order.bom.components.length > 0) {
+      // Prefill items from order.materials if available, else fallback to BOM components
+      if (order.materials && order.materials.length > 0) {
+        setItems(
+          order.materials.map((m) => ({
+            rawMaterialId: m.productId || m.id || `raw_${Date.now()}`,
+            rawMaterialName: m.name || m.productId || '',
+            quantity: Math.round(Number(m.plannedQuantity)),
+            unit: m.unit || 'PIECE',
+            unitCost: Number(m.unitCost) || 0,
+          }))
+        );
+      } else if (order.bom?.components && order.bom.components.length > 0) {
         setItems(
           order.bom.components.map((c) => ({
             rawMaterialId: c.rawMaterialId,

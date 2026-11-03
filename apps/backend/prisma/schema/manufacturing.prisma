@@ -251,6 +251,7 @@ model ProductionOrder {
   customer           Customer?                     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   attachments        ManufacturingAttachment[]
   factoryAgreements  FactoryAgreement[]
+  materials          ProductionOrderMaterial[]
 
   @@unique([companyId, orderNumber])
   @@index([companyId, status])
@@ -283,6 +284,27 @@ model ProductionOrderVariantMatrix {
   @@unique([orderId, size, color])
   @@index([orderId])
   @@map("production_order_variant_matrices")
+}
+
+/// Planned Raw Materials for an Order (جدول خامات أمر الإنتاج - مملوء من BOM وقابل للتعديل)
+model ProductionOrderMaterial {
+  id              String          @id @default(cuid())
+  companyId       String
+  orderId         String
+  productId       String?
+  name            String
+  plannedQuantity Decimal         @db.Decimal(12, 4)
+  unit            String          @default("PIECE")
+  unitCost        Decimal         @default(0) @db.Decimal(12, 2)
+  source          String          @default("BOM") // BOM | MANUAL
+  sortOrder       Int             @default(1)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  order           ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, orderId])
+  @@map("production_order_materials")
 }
 
 /// Active Production Stages for an Order (مراحل التشغيل التنفيذية لأمر الإنتاج)

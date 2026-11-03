@@ -52,6 +52,7 @@ const createInMemoryStore = () => {
     bomStandardStages: [],
     productionOrders: [],
     productionOrderVariantMatrices: [],
+    productionOrderMaterials: [],
     productionStages: [],
     materialIssues: [],
     materialIssueItems: [],
@@ -250,6 +251,11 @@ const createInMemoryStore = () => {
       if (include.variants) {
         clone.variants = allState.productionOrderVariantMatrices.filter((v) => v.orderId === item.id);
       }
+      if (include.materials) {
+        clone.materials = (allState.productionOrderMaterials || [])
+          .filter((m) => m.orderId === item.id)
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
       if (include.stages) {
         clone.stages = allState.productionStages
           .filter((s) => s.orderId === item.id)
@@ -338,6 +344,7 @@ const createInMemoryStore = () => {
     bomStandardStage: createTableHandlers('bomStandardStages', state.bomStandardStages, 'bss'),
     productionOrder: createTableHandlers('productionOrders', state.productionOrders, 'po'),
     productionOrderVariantMatrix: createTableHandlers('productionOrderVariantMatrices', state.productionOrderVariantMatrices, 'povm'),
+    productionOrderMaterial: createTableHandlers('productionOrderMaterials', state.productionOrderMaterials, 'pom'),
     productionStage: createTableHandlers('productionStages', state.productionStages, 'ps'),
     materialIssue: createTableHandlers('materialIssues', state.materialIssues, 'mi'),
     materialIssueItem: createTableHandlers('materialIssueItems', state.materialIssueItems, 'mii'),
@@ -1511,5 +1518,174 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
     expect(sm.type).toBe('IN');
     expect(sm.reason).toBe('ADJUSTMENT');
     expect(sm.quantity).toBe(35);
+  });
+
+  describe('HZ-H: Production Order Materials Table (جدول خامات أمر الإنتاج)', () => {
+    test('1. Create order from BOM auto-populates materials (quantity = consumption * totalPlannedQty)', async () => {
+      await currentPrisma.product.create({
+        data: {
+          id: 'prod_raw_fabric_hzh',
+          companyId: companyA,
+          name: 'قماش ميلتون قطن',
+          cost: 150.0,
+        },
+      });
+
+      const bom = await ManufacturingService.createBom(companyA, {
+        code: 'BOM-HZH-AUTO',
+        name: 'سويت شيرت HZ-H',
+        components: [
+          {
+            rawMaterialId: 'prod_raw_fabric_hzh',
+            rawMaterialName: 'قماش ميلتون قطن',
+            consumptionPerUnit: 1.5,
+            unit: 'METER',
+          },
+        ],
+      });
+
+      const order = await ManufacturingService.createOrder(companyA, {
+        bomId: bom.id,
+        variantMatrix: [
+          { size: 'M', color: 'BLACK', plannedQuantity: 10 },
+          { size: 'L', color: 'BLACK', plannedQuantity: 20 },
+        ],
+      });
+
+      expect(order.materials).toBeDefined();
+      expect(order.materials).toHaveLength(1);
+      const mat = order.materials[0];
+      expect(mat.name).toBe('قماش ميلتون قطن');
+      expect(mat.productId).toBe('prod_raw_fabric_hzh');
+      // totalPlannedQty = 30; consumption = 1.5 -> 30 * 1.5 = 45.0
+      expect(Number(mat.plannedQuantity)).toBe(45);
+      expect(mat.unit).toBe('METER');
+      expect(Number(mat.unitCost)).toBe(150);
+      expect(mat.source).toBe('BOM');
+
+      // Verify getOrderById also returns materials
+      const fetched = await ManufacturingService.getOrderById(companyA, order.id);
+      expect(fetched.materials).toBeDefined();
+      expect(fetched.materials).toHaveLength(1);
+      expect(Number(fetched.materials[0].plannedQuantity)).toBe(45);
+    });
+
+    test('2. Create order with explicit materials stores them as-is with source MANUAL', async () => {
+      await currentPrisma.product.create({
+        data: {
+          id: 'prod_raw_thread_hzh',
+          companyId: companyA,
+          name: 'خيط حياكة بوليستر',
+          cost: 25.0,
+        },
+      });
+
+      const bom = await ManufacturingService.createBom(companyA, {
+        code: 'BOM-HZH-MANUAL',
+        name: 'تي شيرت مخصص',
+        components: [],
+      });
+
+      const order = await ManufacturingService.createOrder(companyA, {
+        bomId: bom.id,
+        variantMatrix: [{ size: 'S', color: 'WHITE', plannedQuantity: 10 }],
+        materials: [
+          {
+            productId: 'prod_raw_thread_hzh',
+            name: 'خيط حياكة بوليستر',
+            plannedQuantity: 5,
+            unit: 'ROLL',
+            unitCost: 30.0,
+            source: 'MANUAL',
+            sortOrder: 1,
+          },
+          {
+            name: 'تكت لوجو حر',
+            plannedQuantity: 10,
+            unit: 'PIECE',
+            unitCost: 2.5,
+            source: 'MANUAL',
+            sortOrder: 2,
+          },
+        ],
+      });
+
+      expect(order.materials).toBeDefined();
+      expect(order.materials).toHaveLength(2);
+      expect(order.materials[0].source).toBe('MANUAL');
+      expect(order.materials[0].productId).toBe('prod_raw_thread_hzh');
+      expect(Number(order.materials[0].plannedQuantity)).toBe(5);
+      expect(Number(order.materials[0].unitCost)).toBe(30.0);
+
+      expect(order.materials[1].source).toBe('MANUAL');
+      expect(order.materials[1].productId).toBeNull();
+      expect(order.materials[1].name).toBe('تكت لوجو حر');
+      expect(Number(order.materials[1].plannedQuantity)).toBe(10);
+      expect(Number(order.materials[1].unitCost)).toBe(2.5);
+    });
+
+    test('3. Throws 400 when productId in materials does not belong to company', async () => {
+      await currentPrisma.product.create({
+        data: {
+          id: 'prod_comp_b_exclusive',
+          companyId: companyB,
+          name: 'خامة خاصة بالشركة المنافسة',
+          cost: 500.0,
+        },
+      });
+
+      const bom = await ManufacturingService.createBom(companyA, {
+        code: 'BOM-HZH-TENANT',
+        name: 'BOM عزل المستأجرين',
+        components: [],
+      });
+
+      let threw = false;
+      let errorObj = null;
+      try {
+        await ManufacturingService.createOrder(companyA, {
+          bomId: bom.id,
+          variantMatrix: [{ size: 'M', color: 'RED', plannedQuantity: 5 }],
+          materials: [
+            {
+              productId: 'prod_comp_b_exclusive',
+              name: 'خامة متسللة',
+              plannedQuantity: 2,
+            },
+          ],
+        });
+      } catch (err) {
+        threw = true;
+        errorObj = err;
+      }
+
+      expect(threw).toBe(true);
+      expect(errorObj.statusCode).toBe(400);
+      expect(errorObj.message).toContain('غير موجود أو لا ينتمي لنفس الشركة');
+    });
+
+    test('4. Regression: legacy order without materials works normally in getOrderById and lifecycle', async () => {
+      const legacyOrder = await currentPrisma.productionOrder.create({
+        data: {
+          companyId: companyA,
+          orderNumber: 'MO-LEGACY-001',
+          bomId: 'bom_legacy',
+          plannedQuantity: 50,
+          producedQuantity: 0,
+          status: 'PLANNED',
+          actualMaterialCost: 0,
+          actualLaborCost: 0,
+          actualOverheadCost: 0,
+          totalCost: 0,
+          unitCost: 0,
+        },
+      });
+
+      const fetched = await ManufacturingService.getOrderById(companyA, legacyOrder.id);
+      expect(fetched).toBeDefined();
+      expect(fetched.id).toBe(legacyOrder.id);
+      expect(fetched.materials).toBeDefined();
+      expect(fetched.materials).toEqual([]);
+    });
   });
 });

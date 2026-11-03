@@ -10,7 +10,7 @@ import {
   ProductOption,
 } from '../manufacturingApi';
 import { WizardVariantMatrixStep } from './wizard/WizardVariantMatrixStep';
-import { WizardRequirementsPreviewStep } from './wizard/WizardRequirementsPreviewStep';
+import { WizardRequirementsPreviewStep, WizardMaterialItem } from './wizard/WizardRequirementsPreviewStep';
 import { DateInput } from '../../../components/ui/DateInput';
 
 interface NewOrderWizardModalProps {
@@ -62,9 +62,12 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
   // Matrix quantities: size_color -> qty (تبدأ فاضية {} بدون أي كميات جاهزة)
   const [matrix, setMatrix] = useState<Record<string, number>>({});
 
-  // Resolved materials preview
+  // Resolved materials & editable table state (H4/H5)
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState<VariantRequirementResolution | null>(null);
+  const [materials, setMaterials] = useState<WizardMaterialItem[]>([]);
+  const [lastResolvedQty, setLastResolvedQty] = useState<number>(0);
+  const [hasUserModifiedMaterials, setHasUserModifiedMaterials] = useState<boolean>(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -95,6 +98,9 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
       setNotes('');
       setError(null);
       setResolved(null);
+      setMaterials([]);
+      setLastResolvedQty(0);
+      setHasUserModifiedMaterials(false);
 
       setLoading(true);
       setProductsLoading(true);
@@ -188,6 +194,64 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
     try {
       const res = await manufacturingApi.resolveVariantRequirements(selectedBomId, variantList);
       setResolved(res);
+
+      const buildBomItem = (m: any, idx: number): WizardMaterialItem => {
+        const matchedProd = products.find((p) => p.id === m.rawMaterialId);
+        return {
+          key: `bom_${m.rawMaterialId}_${idx}`,
+          productId: matchedProd ? matchedProd.id : (products.some((p) => p.id === m.rawMaterialId) ? m.rawMaterialId : null),
+          rawMaterialId: m.rawMaterialId,
+          name: m.rawMaterialName || matchedProd?.name || m.rawMaterialId || 'خامة',
+          plannedQuantity: m.totalRequiredQuantity,
+          unit: m.unit || 'PIECE',
+          unitCost: matchedProd?.cost || 0,
+          source: 'BOM',
+          sortOrder: idx + 1,
+        };
+      };
+
+      if (materials.length === 0) {
+        // Initial setup from resolved BOM requirements
+        const initialMats = (res.aggregatedMaterials || []).map(buildBomItem);
+        setMaterials(initialMats);
+        setLastResolvedQty(totalPlannedQty);
+        setHasUserModifiedMaterials(false);
+      } else if (totalPlannedQty !== lastResolvedQty) {
+        // Total planned matrix quantity changed
+        let shouldRecalc = true;
+        if (hasUserModifiedMaterials) {
+          shouldRecalc = window.confirm(
+            'تم تعديل كميات المقاسات. هل ترغب في إعادة احتساب كميات بنود الـ BOM تلقائياً مع الإبقاء على البنود اليدوية؟'
+          );
+        }
+
+        if (shouldRecalc) {
+          const manualItems = materials.filter((m) => m.source === 'MANUAL');
+          const updatedBomItems = (res.aggregatedMaterials || []).map((m, idx) => {
+            const existingBomItem = materials.find((item) => item.source === 'BOM' && item.rawMaterialId === m.rawMaterialId);
+            const matchedProd = products.find((p) => p.id === m.rawMaterialId);
+            return {
+              key: existingBomItem?.key || `bom_${m.rawMaterialId}_${idx}`,
+              productId: existingBomItem?.productId || (matchedProd ? matchedProd.id : null),
+              rawMaterialId: m.rawMaterialId,
+              name: existingBomItem?.name || m.rawMaterialName || matchedProd?.name || m.rawMaterialId || 'خامة',
+              plannedQuantity: m.totalRequiredQuantity,
+              unit: existingBomItem?.unit || m.unit || 'PIECE',
+              unitCost: existingBomItem?.unitCost !== undefined ? existingBomItem.unitCost : (matchedProd?.cost || 0),
+              source: 'BOM' as const,
+              sortOrder: idx + 1,
+            };
+          });
+
+          const combined = [...updatedBomItems, ...manualItems].map((item, idx) => ({
+            ...item,
+            sortOrder: idx + 1,
+          }));
+          setMaterials(combined);
+          setLastResolvedQty(totalPlannedQty);
+        }
+      }
+
       setStep(3);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'فشل احتساب احتياجات الخامات');
@@ -214,6 +278,15 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
         dueDate: dueDate || null,
         notes: notes || null,
         variantMatrix: variantList,
+        materials: materials.map((m, idx) => ({
+          productId: m.productId || null,
+          name: m.name,
+          plannedQuantity: Number(m.plannedQuantity) || 0,
+          unit: m.unit || 'PIECE',
+          unitCost: Number(m.unitCost) || 0,
+          source: m.source,
+          sortOrder: idx + 1,
+        })),
         stages: selectedBom?.standardStages || [],
         orderType,
         customerId: customerId || null,
@@ -290,6 +363,10 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
                   onChange={(e) => {
                     const newId = e.target.value;
                     setSelectedBomId(newId);
+                    setMaterials([]);
+                    setResolved(null);
+                    setLastResolvedQty(0);
+                    setHasUserModifiedMaterials(false);
                     const b = boms.find((x) => x.id === newId);
                     if (b?.productId) {
                       setSelectedProductId(b.productId);
@@ -595,6 +672,12 @@ export const NewOrderWizardModal: React.FC<NewOrderWizardModalProps> = ({
               totalPlannedQty={totalPlannedQty}
               variantCount={variantList.length}
               resolved={resolved}
+              materials={materials}
+              onChangeMaterials={(mats) => {
+                setMaterials(mats);
+                setHasUserModifiedMaterials(true);
+              }}
+              products={products}
             />
           )}
         </div>

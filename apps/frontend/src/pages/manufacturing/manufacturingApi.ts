@@ -433,6 +433,21 @@ export interface ProductionOrderVariantMatrix {
   scrappedQuantity: number;
 }
 
+export interface ProductionOrderMaterial {
+  id?: string;
+  companyId?: string;
+  orderId?: string;
+  productId?: string | null;
+  name: string;
+  plannedQuantity: number;
+  unit: string;
+  unitCost: number;
+  source: 'BOM' | 'MANUAL';
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ProductionStage {
   id: string;
   orderId: string;
@@ -762,6 +777,7 @@ export interface ProductionOrder {
   executionFactoryCount?: number;
   bom?: BillOfMaterials;
   variants?: ProductionOrderVariantMatrix[];
+  materials?: ProductionOrderMaterial[];
   stages?: ProductionStage[];
   materialIssues?: MaterialIssue[];
   goodsReceipts?: FinishedGoodsReceipt[];
@@ -1227,6 +1243,15 @@ export const manufacturingApi = {
     dueDate?: string | null;
     notes?: string | null;
     variantMatrix: Array<{ size: string; color: string; plannedQuantity: number; sku?: string }>;
+    materials?: Array<{
+      productId?: string | null;
+      name: string;
+      plannedQuantity: number;
+      unit?: string;
+      unitCost?: number;
+      source?: 'BOM' | 'MANUAL';
+      sortOrder?: number;
+    }>;
     stages?: BomStandardStage[];
     orderType?: ProductionOrderType;
     customerId?: string | null;

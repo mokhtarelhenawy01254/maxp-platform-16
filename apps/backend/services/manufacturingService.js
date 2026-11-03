@@ -536,6 +536,22 @@ class ManufacturingService {
         CREATE UNIQUE INDEX IF NOT EXISTS "production_order_variant_matrices_orderId_size_color_key" ON "production_order_variant_matrices"("orderId", "size", "color");
         CREATE INDEX IF NOT EXISTS "production_order_variant_matrices_orderId_idx" ON "production_order_variant_matrices"("orderId");
 
+        CREATE TABLE IF NOT EXISTS "production_order_materials" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "orderId" TEXT NOT NULL,
+          "productId" TEXT,
+          "name" TEXT NOT NULL,
+          "plannedQuantity" DECIMAL(12,4) NOT NULL,
+          "unit" TEXT NOT NULL DEFAULT 'PIECE',
+          "unitCost" DECIMAL(12,2) NOT NULL DEFAULT 0.0,
+          "source" TEXT NOT NULL DEFAULT 'BOM',
+          "sortOrder" INTEGER NOT NULL DEFAULT 1,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS "production_order_materials_companyId_orderId_idx" ON "production_order_materials"("companyId", "orderId");
+
         CREATE TABLE IF NOT EXISTS "production_stages" (
           "id" TEXT PRIMARY KEY,
           "orderId" TEXT NOT NULL,
@@ -1305,11 +1321,102 @@ class ManufacturingService {
         }
       }
 
+      // H2: Production Order Materials (جدول الخامات في أمر الإنتاج)
+      if (Array.isArray(data.materials)) {
+        for (let i = 0; i < data.materials.length; i++) {
+          const mat = data.materials[i];
+          const name = String(mat.name || mat.rawMaterialName || '').trim();
+          if (!name) {
+            const err = new Error('اسم الخامة مطلوب في جدول الخامات');
+            err.statusCode = 400;
+            throw err;
+          }
+
+          let productId = mat.productId ? String(mat.productId).trim() : null;
+          let product = null;
+          if (productId) {
+            if (tx.product?.findFirst) {
+              product = await tx.product.findFirst({
+                where: { id: productId, companyId },
+              });
+            }
+            if (!product) {
+              const err = new Error('المنتج المحدد في جدول الخامات غير موجود أو لا ينتمي لنفس الشركة');
+              err.statusCode = 400;
+              throw err;
+            }
+          }
+
+          const plannedQty = round4(mat.plannedQuantity !== undefined ? mat.plannedQuantity : mat.quantity || 0);
+          if (plannedQty < 0) {
+            const err = new Error('الكمية المخططة للخامة لا يمكن أن تكون سالبة');
+            err.statusCode = 400;
+            throw err;
+          }
+
+          const unit = String(mat.unit || 'PIECE').trim();
+          const unitCost = round2(mat.unitCost !== undefined && mat.unitCost !== null ? mat.unitCost : (product?.cost || 0));
+          const source = mat.source === 'MANUAL' ? 'MANUAL' : (mat.source || 'BOM');
+          const sortOrder = mat.sortOrder !== undefined ? Number(mat.sortOrder) : i + 1;
+
+          await tx.productionOrderMaterial.create({
+            data: {
+              companyId,
+              orderId: order.id,
+              productId,
+              name,
+              plannedQuantity: plannedQty,
+              unit,
+              unitCost,
+              source,
+              sortOrder,
+            },
+          });
+        }
+      } else if (Array.isArray(bom.components) && bom.components.length > 0) {
+        // Fallback: auto-create from BOM components
+        const parentIds = new Set((bom.components || []).map((c) => c.parentId).filter(Boolean));
+        const leafComponents = bom.components.filter((c) => !parentIds.has(c.id));
+        const totalPlannedQty = Number(plannedQuantity || 0);
+
+        let sortOrder = 1;
+        for (const comp of leafComponents) {
+          let product = null;
+          if (comp.rawMaterialId && tx.product?.findFirst) {
+            product = await tx.product.findFirst({
+              where: { id: comp.rawMaterialId, companyId },
+            });
+          }
+
+          const productId = product ? product.id : null;
+          const name = comp.rawMaterialName || (product ? product.name : null) || comp.rawMaterialId || 'خامة';
+          const consumptionPerUnit = Number(comp.consumptionPerUnit || 0);
+          const plannedQty = round4(consumptionPerUnit * totalPlannedQty);
+          const unit = comp.unit || 'PIECE';
+          const unitCost = round2(product?.cost || 0);
+
+          await tx.productionOrderMaterial.create({
+            data: {
+              companyId,
+              orderId: order.id,
+              productId,
+              name,
+              plannedQuantity: plannedQty,
+              unit,
+              unitCost,
+              source: 'BOM',
+              sortOrder: sortOrder++,
+            },
+          });
+        }
+      }
+
       return await tx.productionOrder.findFirst({
         where: { id: order.id, companyId },
         include: {
           bom: true,
           variants: true,
+          materials: { orderBy: { sortOrder: 'asc' } },
           stages: { orderBy: { sequence: 'asc' } },
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
           customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
@@ -1325,6 +1432,7 @@ class ManufacturingService {
       include: {
         bom: { include: { components: true, standardStages: true } },
         variants: true,
+        materials: { orderBy: { sortOrder: 'asc' } },
         stages: {
           orderBy: { sequence: 'asc' },
           include: { partnerFactory: { select: { id: true, name: true, code: true, contactPerson: true, phone: true } } },
@@ -1346,6 +1454,13 @@ class ManufacturingService {
       },
     });
     if (!order) throw new Error('أمر الإنتاج غير موجود');
+
+    if (order && !order.materials && client.productionOrderMaterial?.findMany) {
+      order.materials = await client.productionOrderMaterial.findMany({
+        where: { companyId, orderId },
+        orderBy: { sortOrder: 'asc' },
+      });
+    }
 
     const contractValue = order.salePricePerUnit !== null && order.salePricePerUnit !== undefined
       ? round2(Number(order.plannedQuantity || 0) * Number(order.salePricePerUnit || 0))
@@ -2923,6 +3038,9 @@ class ManufacturingService {
       }
       if (tx.productionOrderStage) {
         await tx.productionOrderStage.deleteMany({ where: { orderId } });
+      }
+      if (tx.productionOrderMaterial) {
+        await tx.productionOrderMaterial.deleteMany({ where: { orderId } });
       }
 
       // 8. Revert or unlink source sample order if applicable
