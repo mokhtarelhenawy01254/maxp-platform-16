@@ -28,6 +28,9 @@ if (typeof jest !== 'undefined') {
   jest.mock('../services/sharedDatabase', () => ({
     getSharedPrismaClient: () => global.__testPrisma || currentPrisma,
   }));
+  jest.mock('../services/manufacturingNotificationService', () => ({
+    emit: jest.fn().mockResolvedValue(true),
+  }));
 }
 
 const ManufacturingService = require('../services/manufacturingService');
@@ -199,6 +202,19 @@ const createInMemoryStore = () => {
       return { count };
     },
 
+    count: async ({ where = {} } = {}) => {
+      let count = 0;
+      for (const it of stateArray) {
+        let match = true;
+        for (const [k, v] of Object.entries(where)) {
+          if (v === undefined) continue;
+          if (it[k] !== v) { match = false; break; }
+        }
+        if (match) count++;
+      }
+      return count;
+    },
+
     upsert: async ({ where, create, update }) => {
       let existing = stateArray.find((it) => {
         for (const [k, v] of Object.entries(where)) {
@@ -279,6 +295,15 @@ const createInMemoryStore = () => {
       }
       if (include.scrapRecords) {
         clone.scrapRecords = allState.scrapRecords.filter((s) => s.orderId === item.id);
+      }
+      if (include.children) {
+        clone.children = allState.productionOrders
+          .filter((o) => o.parentOrderId === item.id)
+          .map((ch) => attachIncludes('productionOrders', ch, typeof include.children === 'object' ? include.children.include : undefined, allState));
+      }
+      if (include.parent) {
+        const p = allState.productionOrders.find((o) => o.id === item.parentOrderId);
+        clone.parent = p ? attachIncludes('productionOrders', p, typeof include.parent === 'object' ? include.parent.include : undefined, allState) : null;
       }
     } else if (tableName === 'materialIssues' && include.items) {
       clone.items = allState.materialIssueItems.filter((it) => it.issueId === item.id);
@@ -1686,6 +1711,306 @@ describe('Manufacturing Execution System & Costing Test Suite (Wave 1)', () => {
       expect(fetched.id).toBe(legacyOrder.id);
       expect(fetched.materials).toBeDefined();
       expect(fetched.materials).toEqual([]);
+    });
+  });
+
+  // ==========================================================================
+  // TASK HZ-I: Multi-Product Production Order Batch (Parent & Child Hierarchy)
+  // ==========================================================================
+  describe('Task HZ-I: Multi-Product Production Order (Parent & Child Orders)', () => {
+    let bom1, bom2, prod1, prod2;
+
+    beforeEach(async () => {
+      prod1 = await currentPrisma.product.create({
+        data: {
+          id: 'prod_hz_i_tshirt',
+          companyId: companyA,
+          name: 'تيشيرت بولو رجالي',
+          sku: 'TS-POLO-01',
+          cost: 120.0,
+        },
+      });
+
+      prod2 = await currentPrisma.product.create({
+        data: {
+          id: 'prod_hz_i_hoodie',
+          companyId: companyA,
+          name: 'هودي شتوي مبطن',
+          sku: 'HD-WINT-02',
+          cost: 250.0,
+        },
+      });
+
+      bom1 = await ManufacturingService.createBom(companyA, {
+        code: 'BOM-HZI-POLO',
+        name: 'BOM تيشيرت بولو',
+        productId: prod1.id,
+        wasteMarginPercent: 3.0,
+        laborCostPerUnit: 25.0,
+        overheadCostPerUnit: 10.0,
+        components: [],
+      });
+
+      bom2 = await ManufacturingService.createBom(companyA, {
+        code: 'BOM-HZI-HOODIE',
+        name: 'BOM هودي شتوي',
+        productId: prod2.id,
+        wasteMarginPercent: 5.0,
+        laborCostPerUnit: 40.0,
+        overheadCostPerUnit: 15.0,
+        components: [],
+      });
+    });
+
+    test('1. Two items create 1 parent order + 2 child orders with correct sums and hierarchy', async () => {
+      const batchResult = await ManufacturingService.createOrderBatch(companyA, {
+        brandName: 'Brand Zenith',
+        customerCountry: 'مصر',
+        dueDate: '2026-12-01',
+        notes: 'تشغيل دفعة مجمعة لمنتجين',
+        items: [
+          {
+            bomId: bom1.id,
+            productId: prod1.id,
+            variantMatrix: [
+              { size: 'M', color: 'BLACK', plannedQuantity: 30 },
+              { size: 'L', color: 'BLACK', plannedQuantity: 20 },
+            ],
+          },
+          {
+            bomId: bom2.id,
+            productId: prod2.id,
+            variantMatrix: [
+              { size: 'L', color: 'NAVY', plannedQuantity: 15 },
+              { size: 'XL', color: 'NAVY', plannedQuantity: 25 },
+            ],
+          },
+        ],
+      });
+
+      expect(batchResult).toBeDefined();
+      expect(batchResult.count).toBe(2);
+      expect(batchResult.parent).toBeDefined();
+
+      const parentOrder = batchResult.parent;
+      expect(parentOrder.orderNumber).toBeDefined();
+      // Total planned quantity = (30 + 20) + (15 + 25) = 50 + 40 = 90
+      expect(Number(parentOrder.plannedQuantity)).toBe(90);
+      expect(parentOrder.bomId).toBe(bom1.id);
+      expect(parentOrder.productId).toBe(prod1.id);
+      expect(parentOrder.brandName).toBe('Brand Zenith');
+      expect(parentOrder.status).toBe('PLANNED');
+
+      // Check child orders
+      expect(batchResult.children).toHaveLength(2);
+      const child1 = batchResult.children[0];
+      const child2 = batchResult.children[1];
+
+      expect(child1.parentOrderId).toBe(parentOrder.id);
+      expect(Number(child1.plannedQuantity)).toBe(50);
+      expect(child1.bomId).toBe(bom1.id);
+
+      expect(child2.parentOrderId).toBe(parentOrder.id);
+      expect(Number(child2.plannedQuantity)).toBe(40);
+      expect(child2.bomId).toBe(bom2.id);
+
+      // Verify getOrderById includes children for parent and parent for child
+      const fetchedParent = await ManufacturingService.getOrderById(companyA, parentOrder.id);
+      expect(fetchedParent.children).toBeDefined();
+      expect(fetchedParent.children.length).toBe(2);
+
+      const fetchedChild = await ManufacturingService.getOrderById(companyA, child1.id);
+      expect(fetchedChild.parent).toBeDefined();
+      expect(fetchedChild.parent.id).toBe(parentOrder.id);
+      expect(fetchedChild.parent.orderNumber).toBe(parentOrder.orderNumber);
+    });
+
+    test('2. Rollback when one item fails inside batch creation', async () => {
+      const initialOrderCount = currentPrisma._state.productionOrders.length;
+
+      let threw = false;
+      let errorObj = null;
+      try {
+        await ManufacturingService.createOrderBatch(companyA, {
+          brandName: 'Brand Fails',
+          items: [
+            {
+              bomId: bom1.id,
+              productId: prod1.id,
+              variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 10 }],
+            },
+            {
+              bomId: 'non_existent_bom_id', // Invalid BOM -> should trigger rollback
+              productId: prod2.id,
+              variantMatrix: [{ size: 'L', color: 'WHITE', plannedQuantity: 15 }],
+            },
+          ],
+        });
+      } catch (err) {
+        threw = true;
+        errorObj = err;
+      }
+
+      expect(threw).toBe(true);
+      // Ensure zero orders were persisted (atomic rollback)
+      expect(currentPrisma._state.productionOrders.length).toBe(initialOrderCount);
+    });
+
+    test('3. Regression: single order path (createOrder) maintains legacy fields and behavior', async () => {
+      const singleOrder = await ManufacturingService.createOrder(companyA, {
+        bomId: bom1.id,
+        productId: prod1.id,
+        brandName: 'Brand Solo',
+        notes: 'أمر فردي قياسي',
+        variantMatrix: [
+          { size: 'M', color: 'RED', plannedQuantity: 10 },
+          { size: 'L', color: 'RED', plannedQuantity: 15 },
+        ],
+      });
+
+      expect(singleOrder).toBeDefined();
+      expect(Number(singleOrder.plannedQuantity)).toBe(25);
+      expect(singleOrder.parentOrderId).toBeNull();
+      expect(singleOrder.bomId).toBe(bom1.id);
+      expect(singleOrder.brandName).toBe('Brand Solo');
+
+      const fetched = await ManufacturingService.getOrderById(companyA, singleOrder.id);
+      expect(fetched.parent).toBeNull();
+      expect(fetched.children).toEqual([]);
+    });
+
+    test('4. Receiving finished goods on parent order throws 400 error', async () => {
+      const batchResult = await ManufacturingService.createOrderBatch(companyA, {
+        brandName: 'Brand Receive Block',
+        items: [
+          {
+            bomId: bom1.id,
+            productId: prod1.id,
+            variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 10 }],
+          },
+          {
+            bomId: bom2.id,
+            productId: prod2.id,
+            variantMatrix: [{ size: 'L', color: 'NAVY', plannedQuantity: 10 }],
+          },
+        ],
+      });
+
+      const parentId = batchResult.parent.id;
+      let threw = false;
+      let errorObj = null;
+
+      try {
+        await ManufacturingService.receiveFinishedGoods(companyA, parentId, {
+          items: [{ goodQuantity: 5, size: 'M', color: 'BLACK' }],
+        });
+      } catch (err) {
+        threw = true;
+        errorObj = err;
+      }
+
+      expect(threw).toBe(true);
+      expect(errorObj.statusCode).toBe(400);
+      expect(errorObj.message).toContain('استلم على الأمر الفرعي الخاص بالمنتج');
+    });
+
+    test('5. Completing parent order before children are completed throws 400 error', async () => {
+      const batchResult = await ManufacturingService.createOrderBatch(companyA, {
+        brandName: 'Brand Early Closure Block',
+        items: [
+          {
+            bomId: bom1.id,
+            productId: prod1.id,
+            variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 10 }],
+          },
+          {
+            bomId: bom2.id,
+            productId: prod2.id,
+            variantMatrix: [{ size: 'L', color: 'NAVY', plannedQuantity: 10 }],
+          },
+        ],
+      });
+
+      const parentId = batchResult.parent.id;
+      let threw = false;
+      let errorObj = null;
+
+      try {
+        await ManufacturingService.completeOrder(companyA, parentId);
+      } catch (err) {
+        threw = true;
+        errorObj = err;
+      }
+
+      expect(threw).toBe(true);
+      expect(errorObj.statusCode).toBe(400);
+      expect(errorObj.message).toContain('لا يمكن إقفال الأمر الأب: توجد أوامر فرعية غير مكتملة');
+    });
+
+    test('6. Completing all child orders allows parent completion with aggregated totals', async () => {
+      const batchResult = await ManufacturingService.createOrderBatch(companyA, {
+        brandName: 'Brand Success Closure',
+        items: [
+          {
+            bomId: bom1.id,
+            productId: prod1.id,
+            variantMatrix: [{ size: 'M', color: 'BLACK', plannedQuantity: 10 }],
+          },
+          {
+            bomId: bom2.id,
+            productId: prod2.id,
+            variantMatrix: [{ size: 'L', color: 'NAVY', plannedQuantity: 10 }],
+          },
+        ],
+      });
+
+      const parentId = batchResult.parent.id;
+      const child1 = batchResult.children[0];
+      const child2 = batchResult.children[1];
+
+      // Simulate completion on child 1 (settled quantities)
+      await currentPrisma.productionOrder.update({
+        where: { id: child1.id },
+        data: {
+          status: 'COMPLETED',
+          producedQuantity: 10,
+          actualMaterialCost: 500,
+          actualLaborCost: 250,
+          actualOverheadCost: 100,
+          totalCost: 850,
+        },
+      });
+
+      // Child 2 is still PLANNED -> parent complete still blocked
+      let threw = false;
+      try {
+        await ManufacturingService.completeOrder(companyA, parentId);
+      } catch (err) {
+        threw = true;
+      }
+      expect(threw).toBe(true);
+
+      // Settle and complete child 2
+      await currentPrisma.productionOrder.update({
+        where: { id: child2.id },
+        data: {
+          status: 'COMPLETED',
+          producedQuantity: 10,
+          actualMaterialCost: 800,
+          actualLaborCost: 400,
+          actualOverheadCost: 150,
+          totalCost: 1350,
+        },
+      });
+
+      // Now parent complete succeeds
+      const completedParent = await ManufacturingService.completeOrder(companyA, parentId);
+      expect(completedParent.status).toBe('COMPLETED');
+      expect(Number(completedParent.producedQuantity)).toBe(20);
+      expect(Number(completedParent.actualMaterialCost)).toBe(1300);
+      expect(Number(completedParent.actualLaborCost)).toBe(650);
+      expect(Number(completedParent.actualOverheadCost)).toBe(250);
+      expect(Number(completedParent.totalCost)).toBe(2200);
     });
   });
 });

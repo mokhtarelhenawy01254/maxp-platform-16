@@ -520,6 +520,8 @@ class ManufacturingService {
         CREATE INDEX IF NOT EXISTS "production_orders_companyId_productId_idx" ON "production_orders"("companyId", "productId");
         ALTER TABLE "production_orders" ADD COLUMN IF NOT EXISTS "publicToken" TEXT;
         CREATE UNIQUE INDEX IF NOT EXISTS "production_orders_publicToken_key" ON "production_orders"("publicToken");
+        ALTER TABLE "production_orders" ADD COLUMN IF NOT EXISTS "parentOrderId" TEXT;
+        CREATE INDEX IF NOT EXISTS "production_orders_companyId_parentOrderId_idx" ON "production_orders"("companyId", "parentOrderId");
 
         CREATE TABLE IF NOT EXISTS "production_order_variant_matrices" (
           "id" TEXT PRIMARY KEY,
@@ -1190,9 +1192,16 @@ class ManufacturingService {
     return `${prefix}${String(nextSeq).padStart(5, '0')}`;
   }
 
-  static async createOrder(companyId, data, userId = null) {
+  static async createOrder(companyId, data, userId = null, existingTx = null) {
+    if (Array.isArray(data.items) && data.items.length > 0 && !data.bomId) {
+      return await this.createOrderBatch(companyId, data, userId);
+    }
+
     const prisma = getSharedPrismaClient();
     const bom = await this.getBomById(companyId, data.bomId);
+    if (!bom) {
+      throw new Error('قائمة المكونات (BOM) المحددة غير موجودة');
+    }
 
     if (!Array.isArray(data.variantMatrix) || data.variantMatrix.length === 0) {
       throw new Error('مصفوفة إنتاج المقاسات والألوان مطلوبة لإنشاء أمر الإنتاج');
@@ -1230,11 +1239,12 @@ class ManufacturingService {
     const sourceWarehouseId = data.sourceWarehouseId || settings.defaultSourceWarehouseId || null;
     const targetWarehouseId = data.targetWarehouseId || settings.defaultTargetWarehouseId || null;
 
-    return await prisma.$transaction(async (tx) => {
+    const runInTx = async (tx) => {
       const order = await tx.productionOrder.create({
         data: {
           companyId,
           orderNumber,
+          parentOrderId: data.parentOrderId ? String(data.parentOrderId) : null,
           bomId: bom.id,
           productId: data.productId || bom.productId || null,
           plannedQuantity: round2(plannedQuantity),
@@ -1422,6 +1432,184 @@ class ManufacturingService {
           customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
         },
       });
+    };
+
+    return existingTx ? runInTx(existingTx) : prisma.$transaction(runInTx);
+  }
+
+  /**
+   * Task HZ-I: Create Multi-Product Production Order Batch
+   * Creates parent aggregator order + child orders per finished product inside a single atomic transaction.
+   */
+  static async createOrderBatch(companyId, data, userId = null) {
+    const prisma = getSharedPrismaClient();
+
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      const err = new Error('يجب تحديد بند واحد على الأقل من المنتجات التامة لإصدار أمر الإنتاج');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const firstItem = data.items[0];
+    if (!firstItem || !firstItem.bomId) {
+      const err = new Error('قائمة المكونات (BOM) مطلوبة لكل بند في أمر الإنتاج');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const firstBom = await this.getBomById(companyId, firstItem.bomId);
+    if (!firstBom) {
+      const err = new Error('قائمة المكونات للبند الأول غير موجودة');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    let totalPlannedQuantity = 0;
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      if (!item.bomId) {
+        const err = new Error(`قائمة المكونات (BOM) مطلوبة للبند رقم ${i + 1}`);
+        err.statusCode = 400;
+        throw err;
+      }
+      if (!Array.isArray(item.variantMatrix) || item.variantMatrix.length === 0) {
+        const err = new Error(`مصفوفة المقاسات والألوان مطلوبة للبند رقم ${i + 1}`);
+        err.statusCode = 400;
+        throw err;
+      }
+      let itemQty = 0;
+      for (const v of item.variantMatrix) {
+        const q = Number(v.plannedQuantity || v.quantity || 0);
+        if (q < 0) {
+          const err = new Error(`الكميات المخططة لا يمكن أن تكون سالبة في البند رقم ${i + 1}`);
+          err.statusCode = 400;
+          throw err;
+        }
+        itemQty += q;
+      }
+      if (itemQty <= 0) {
+        const err = new Error(`إجمالي الكمية المخططة للبند رقم ${i + 1} يجب أن يكون أكبر من الصفر`);
+        err.statusCode = 400;
+        throw err;
+      }
+      totalPlannedQuantity += itemQty;
+    }
+
+    if (totalPlannedQuantity <= 0) {
+      const err = new Error('إجمالي الكمية المخططة لأمر الإنتاج يجب أن يكون أكبر من الصفر');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const settings = await this.getSettings(companyId);
+    const sourceWarehouseId = data.sourceWarehouseId || settings.defaultSourceWarehouseId || null;
+    const targetWarehouseId = data.targetWarehouseId || settings.defaultTargetWarehouseId || null;
+
+    if (data.customerOrderId) {
+      const parentCo = await prisma.customerOrder.findFirst({
+        where: { id: data.customerOrderId, companyId },
+      });
+      if (!parentCo) {
+        const err = new Error('أمر العميل المراد الربط معه غير موجود أو لا ينتمي لنفس الشركة');
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    const parentOrderNumber = data.orderNumber || (await this.generateOrderNumber(companyId));
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Create parent order header
+      const parentOrder = await tx.productionOrder.create({
+        data: {
+          companyId,
+          orderNumber: parentOrderNumber,
+          bomId: firstItem.bomId,
+          productId: firstItem.productId || firstBom.productId || null,
+          plannedQuantity: round2(totalPlannedQuantity),
+          producedQuantity: 0.0,
+          scrappedQuantity: 0.0,
+          status: 'PLANNED',
+          sourceWarehouseId,
+          targetWarehouseId,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          actualMaterialCost: 0.0,
+          actualLaborCost: 0.0,
+          actualOverheadCost: 0.0,
+          totalCost: 0.0,
+          unitCost: 0.0,
+          notes: data.notes || null,
+          createdById: userId ? String(userId) : null,
+          customerOrderId: data.customerOrderId || null,
+          orderType: data.orderType || 'FULL_PACKAGE',
+          customerId: data.customerId || null,
+          brandName: data.brandName ? String(data.brandName).trim() : null,
+          customerCountry: data.customerCountry ? String(data.customerCountry).trim() : null,
+          salePricePerUnit: data.salePricePerUnit !== undefined && data.salePricePerUnit !== null
+            ? round2(data.salePricePerUnit)
+            : null,
+          deliveryAddress: data.deliveryAddress ? String(data.deliveryAddress).trim() : null,
+          deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod).trim() : null,
+          responsibleUserId: data.responsibleUserId ? String(data.responsibleUserId) : null,
+          publicToken: crypto.randomUUID(),
+        },
+      });
+
+      // 2. Create child order for each item using createOrder (reusing existing logic)
+      const childOrders = [];
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i];
+        const childOrderNumber = item.orderNumber || `${parentOrderNumber}-${i + 1}`;
+
+        const childPayload = {
+          ...data,
+          ...item,
+          orderNumber: childOrderNumber,
+          parentOrderId: parentOrder.id,
+          sourceWarehouseId: item.sourceWarehouseId || sourceWarehouseId,
+          targetWarehouseId: item.targetWarehouseId || targetWarehouseId,
+          startDate: item.startDate || data.startDate || null,
+          dueDate: item.dueDate || data.dueDate || null,
+          notes: item.notes || data.notes || null,
+          orderType: item.orderType || data.orderType || 'FULL_PACKAGE',
+          customerId: item.customerId || data.customerId || null,
+          customerOrderId: item.customerOrderId || data.customerOrderId || null,
+          brandName: item.brandName || data.brandName || null,
+          customerCountry: item.customerCountry || data.customerCountry || null,
+          salePricePerUnit: item.salePricePerUnit !== undefined ? item.salePricePerUnit : data.salePricePerUnit,
+          deliveryAddress: item.deliveryAddress || data.deliveryAddress || null,
+          deliveryMethod: item.deliveryMethod || data.deliveryMethod || null,
+          responsibleUserId: item.responsibleUserId || data.responsibleUserId || null,
+        };
+
+        const child = await this.createOrder(companyId, childPayload, userId, tx);
+        childOrders.push(child);
+      }
+
+      const fullParent = await tx.productionOrder.findFirst({
+        where: { id: parentOrder.id, companyId },
+        include: {
+          bom: true,
+          variants: true,
+          children: {
+            orderBy: { orderNumber: 'asc' },
+            include: {
+              bom: { select: { id: true, code: true, name: true } },
+              variants: true,
+            },
+          },
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
+        },
+      });
+
+      return {
+        ...fullParent,
+        parent: fullParent,
+        children: childOrders,
+        count: childOrders.length,
+      };
     });
   }
 
@@ -1441,6 +1629,33 @@ class ManufacturingService {
         goodsReceipts: { include: { items: true }, orderBy: { createdAt: 'asc' } },
         scrapRecords: { orderBy: { createdAt: 'asc' } },
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        parent: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            brandName: true,
+            plannedQuantity: true,
+            producedQuantity: true,
+          },
+        },
+        children: {
+          orderBy: { orderNumber: 'asc' },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            productId: true,
+            bomId: true,
+            plannedQuantity: true,
+            producedQuantity: true,
+            scrappedQuantity: true,
+            totalCost: true,
+            unitCost: true,
+            dueDate: true,
+            bom: { select: { id: true, code: true, name: true } },
+          },
+        },
         customerOrder: {
           select: {
             id: true,
@@ -1538,6 +1753,7 @@ class ManufacturingService {
     }
     if (filters.bomId) where.bomId = filters.bomId;
     if (filters.productId) where.productId = filters.productId;
+    if (filters.parentOrderId !== undefined) where.parentOrderId = filters.parentOrderId;
 
     const orders = await prisma.productionOrder.findMany({
       where,
@@ -1549,12 +1765,40 @@ class ManufacturingService {
           include: { partnerFactory: { select: { id: true, name: true, code: true, contactPerson: true, phone: true } } },
         },
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        parent: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            brandName: true,
+            plannedQuantity: true,
+            producedQuantity: true,
+          },
+        },
+        children: {
+          orderBy: { orderNumber: 'asc' },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            productId: true,
+            bomId: true,
+            plannedQuantity: true,
+            producedQuantity: true,
+            scrappedQuantity: true,
+            totalCost: true,
+            unitCost: true,
+            dueDate: true,
+            bom: { select: { id: true, code: true, name: true } },
+          },
+        },
         customerOrder: { select: { id: true, orderNumber: true, status: true, brandName: true } },
         _count: {
           select: {
             materialIssues: true,
             goodsReceipts: true,
             scrapRecords: true,
+            children: true,
           },
         },
       },
@@ -1579,11 +1823,28 @@ class ManufacturingService {
       throw new Error(`لا يمكن اعتماد أمر في حالة "${order.status}". يجب أن يكون في حالة مخطط (PLANNED)`);
     }
 
-    return await prisma.productionOrder.update({
+    const released = await prisma.productionOrder.update({
       where: { id: orderId },
       data: { status: 'RELEASED' },
       include: { variants: true, stages: true },
     });
+
+    if (order.parentOrderId) {
+      try {
+        const parent = await prisma.productionOrder.findFirst({
+          where: { id: order.parentOrderId, companyId },
+          select: { status: true },
+        });
+        if (parent && parent.status === 'PLANNED') {
+          await prisma.productionOrder.update({
+            where: { id: order.parentOrderId },
+            data: { status: 'RELEASED' },
+          });
+        }
+      } catch (_) {}
+    }
+
+    return released;
   }
 
   static async startOrder(companyId, orderId, options = {}) {
@@ -1621,6 +1882,15 @@ class ManufacturingService {
         },
         include: { variants: true, stages: true },
       });
+
+      if (order.parentOrderId) {
+        try {
+          await tx.productionOrder.update({
+            where: { id: order.parentOrderId },
+            data: { status: 'IN_PROGRESS' },
+          });
+        } catch (_) {}
+      }
 
       // Optionally auto-issue materials if requested (Idempotent Guard)
       if (autoIssue) {
@@ -1691,6 +1961,15 @@ class ManufacturingService {
 
     if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
       throw new Error(`لا يمكن صرف خامات لأمر في حالة "${order.status}"`);
+    }
+
+    const childCount = await prisma.productionOrder.count
+      ? await prisma.productionOrder.count({ where: { companyId, parentOrderId: orderId } })
+      : (await prisma.productionOrder.findMany({ where: { companyId, parentOrderId: orderId }, select: { id: true } })).length;
+    if (childCount > 0) {
+      const err = new Error('لا يمكن صرف خامات على الأمر الرئيسي. اصرف على الأمر الفرعي الخاص بالمنتج');
+      err.statusCode = 400;
+      throw err;
     }
 
     const warehouseId = data.sourceWarehouseId || order.sourceWarehouseId;
@@ -2055,6 +2334,15 @@ class ManufacturingService {
       throw new Error(`لا يمكن استلام إنتاج تام لأمر في حالة "${order.status}"`);
     }
 
+    const childCount = await prisma.productionOrder.count
+      ? await prisma.productionOrder.count({ where: { companyId, parentOrderId: orderId } })
+      : (await prisma.productionOrder.findMany({ where: { companyId, parentOrderId: orderId }, select: { id: true } })).length;
+    if (childCount > 0) {
+      const err = new Error('لا يمكن استلام إنتاج تام على الأمر الرئيسي. استلم على الأمر الفرعي الخاص بالمنتج');
+      err.statusCode = 400;
+      throw err;
+    }
+
     // الأوامر القديمة اللي اتعملت من BOM مربوط بمنتج: نستنتج المنتج من الـBOM
     // بدل ما نمنع الاستلام — الشرط الحقيقي هو وجود منتج تام نضيف عليه الرصيد.
     const effectiveProductId = order.productId || order.bom?.productId || null;
@@ -2272,6 +2560,65 @@ class ManufacturingService {
       throw new Error('لا يمكن إقفال أمر إنتاج ملغي');
     }
 
+    // Task HZ-I: Check if this is a parent order
+    const childOrders = await prisma.productionOrder.findMany({
+      where: { companyId, parentOrderId: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        plannedQuantity: true,
+        producedQuantity: true,
+        scrappedQuantity: true,
+        actualMaterialCost: true,
+        actualLaborCost: true,
+        actualOverheadCost: true,
+        totalCost: true,
+      },
+    });
+
+    if (childOrders.length > 0) {
+      const uncompleted = childOrders.filter((c) => c.status !== 'COMPLETED');
+      if (uncompleted.length > 0) {
+        const names = uncompleted.map((c) => c.orderNumber).join('، ');
+        const err = new Error(`لا يمكن إقفال الأمر الأب: توجد أوامر فرعية غير مكتملة (${names})`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // If all children are completed, aggregate totals and complete parent order
+      const totalProduced = childOrders.reduce((sum, c) => sum + Number(c.producedQuantity || 0), 0);
+      const totalScrapped = childOrders.reduce((sum, c) => sum + Number(c.scrappedQuantity || 0), 0);
+      const totalMatCost = childOrders.reduce((sum, c) => sum + Number(c.actualMaterialCost || 0), 0);
+      const totalLaborCost = childOrders.reduce((sum, c) => sum + Number(c.actualLaborCost || 0), 0);
+      const totalMOH = childOrders.reduce((sum, c) => sum + Number(c.actualOverheadCost || 0), 0);
+      const totalCost = childOrders.reduce((sum, c) => sum + Number(c.totalCost || 0), 0);
+      const unitCost = totalProduced > 0 ? round2(totalCost / totalProduced) : 0;
+
+      const updatedParent = await prisma.productionOrder.update({
+        where: { id: orderId },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          producedQuantity: round2(totalProduced),
+          scrappedQuantity: round2(totalScrapped),
+          actualMaterialCost: round2(totalMatCost),
+          actualLaborCost: round2(totalLaborCost),
+          actualOverheadCost: round2(totalMOH),
+          totalCost: round2(totalCost),
+          unitCost: round2(unitCost),
+        },
+        include: { variants: true, stages: true },
+      });
+
+      ManufacturingNotificationService.emit('PRODUCTION_ORDER_COMPLETED', {
+        companyId,
+        productionOrder: updatedParent,
+      }).catch(() => {});
+
+      return updatedParent;
+    }
+
     const planned = Number(order.plannedQuantity);
     const produced = Number(order.producedQuantity);
     const scrapped = Number(order.scrappedQuantity);
@@ -2394,6 +2741,51 @@ class ManufacturingService {
       companyId,
       productionOrder: finalUpdatedOrder,
     }).catch(() => {});
+
+    // Task HZ-I: If this was a child order, update the parent order status and totals
+    if (order.parentOrderId) {
+      try {
+        const siblings = await prisma.productionOrder.findMany({
+          where: { companyId, parentOrderId: order.parentOrderId },
+          select: {
+            id: true,
+            status: true,
+            producedQuantity: true,
+            scrappedQuantity: true,
+            actualMaterialCost: true,
+            actualLaborCost: true,
+            actualOverheadCost: true,
+            totalCost: true,
+          },
+        });
+        const updatedSiblings = siblings.map((s) => (s.id === orderId ? { ...s, status: 'COMPLETED' } : s));
+        const allCompleted = updatedSiblings.every((s) => s.status === 'COMPLETED');
+        const anyInProgress = updatedSiblings.some((s) => ['IN_PROGRESS', 'QC_PENDING', 'RELEASED', 'COMPLETED'].includes(s.status));
+        const totalProduced = updatedSiblings.reduce((sum, s) => sum + Number(s.producedQuantity || 0), 0);
+        const totalScrapped = updatedSiblings.reduce((sum, s) => sum + Number(s.scrappedQuantity || 0), 0);
+        const totalMatCost = updatedSiblings.reduce((sum, s) => sum + Number(s.actualMaterialCost || 0), 0);
+        const totalLaborCost = updatedSiblings.reduce((sum, s) => sum + Number(s.actualLaborCost || 0), 0);
+        const totalMOH = updatedSiblings.reduce((sum, s) => sum + Number(s.actualOverheadCost || 0), 0);
+        const totalCost = updatedSiblings.reduce((sum, s) => sum + Number(s.totalCost || 0), 0);
+        const unitCost = totalProduced > 0 ? round2(totalCost / totalProduced) : 0;
+
+        await prisma.productionOrder.update({
+          where: { id: order.parentOrderId },
+          data: {
+            ...(allCompleted ? { status: 'COMPLETED', completedAt: new Date() } : anyInProgress ? { status: 'IN_PROGRESS' } : {}),
+            producedQuantity: round2(totalProduced),
+            scrappedQuantity: round2(totalScrapped),
+            actualMaterialCost: round2(totalMatCost),
+            actualLaborCost: round2(totalLaborCost),
+            actualOverheadCost: round2(totalMOH),
+            totalCost: round2(totalCost),
+            unitCost: round2(unitCost),
+          },
+        });
+      } catch (err) {
+        console.warn('[MES] Parent order status update error:', err.message);
+      }
+    }
 
     return finalUpdatedOrder;
   }

@@ -346,12 +346,30 @@ export const ManufacturingOrdersPage: React.FC = () => {
                     return (
                       <tr key={ord.id} className="hover:bg-muted/20 transition">
                         <td className="p-3 font-mono font-bold">
-                          <Link
-                            to={`/manufacturing/orders/${ord.id}`}
-                            className="text-primary hover:underline"
-                          >
-                            {ord.orderNumber}
-                          </Link>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              to={`/manufacturing/orders/${ord.id}`}
+                              className="text-primary hover:underline"
+                            >
+                              {ord.orderNumber}
+                            </Link>
+                            {((ord.children && ord.children.length > 0) || (ord._count?.children && ord._count.children > 0)) && (
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                                title={`أمر إنتاج رئيسي يضم ${ord.children?.length || ord._count?.children} أوامر فرعية`}
+                              >
+                                {ord.children?.length || ord._count?.children} أوامر فرعية
+                              </span>
+                            )}
+                          </div>
+                          {ord.parent && (
+                            <span className="text-[10px] text-muted-foreground block font-sans font-normal mt-0.5">
+                              فرعي من:{' '}
+                              <Link to={`/manufacturing/orders/${ord.parent.id || ord.parentOrderId}`} className="text-primary hover:underline">
+                                {ord.parent.orderNumber}
+                              </Link>
+                            </span>
+                          )}
                         </td>
                         <td className="p-3">
                           <div className="font-semibold text-foreground">{ord.bom?.name || '—'}</div>

@@ -156,6 +156,21 @@ class ManufacturingController {
     }
   }
 
+  static async createOrderBatch(req, res) {
+    try {
+      const companyId = ManufacturingController.getCompanyId(req);
+      const userId = req.user?.id || null;
+      const result = await ManufacturingService.createOrderBatch(companyId, req.body, userId);
+      res.status(201).json({
+        success: true,
+        data: result,
+        message: `تم إنشاء ${result.count || (result.children ? result.children.length : 0)} أمر إنتاج بنجاح`,
+      });
+    } catch (error) {
+      res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+  }
+
   static async updateOrder(req, res) {
     try {
       const companyId = ManufacturingController.getCompanyId(req);

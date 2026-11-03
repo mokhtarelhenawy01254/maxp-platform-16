@@ -742,6 +742,30 @@ export interface ProductionOrder {
   unitCost: number;
   notes?: string | null;
   publicToken?: string | null;
+  // Multi-Product Hierarchy (Task HZ-I)
+  parentOrderId?: string | null;
+  parent?: {
+    id: string;
+    orderNumber: string;
+    status: ProductionOrderStatus;
+    brandName?: string | null;
+    plannedQuantity?: number;
+    producedQuantity?: number;
+  } | null;
+  children?: Array<{
+    id: string;
+    orderNumber: string;
+    status: ProductionOrderStatus;
+    productId?: string | null;
+    bomId?: string;
+    plannedQuantity?: number;
+    producedQuantity?: number;
+    scrappedQuantity?: number;
+    totalCost?: number;
+    unitCost?: number;
+    dueDate?: string | null;
+    bom?: { id: string; code: string; name: string };
+  }>;
   // Contract Manufacturing (Wave 1) Fields
   customerOrderId?: string | null;
   customerOrder?: {
@@ -787,6 +811,7 @@ export interface ProductionOrder {
     materialIssues?: number;
     goodsReceipts?: number;
     scrapRecords?: number;
+    children?: number;
   };
 }
 
@@ -1145,6 +1170,49 @@ export interface ProductionStageTemplateSet {
   items?: ProductionStageTemplateSetItem[];
 }
 
+export interface CreateOrderBatchItemInput {
+  bomId: string;
+  productId?: string | null;
+  variantMatrix: Array<{ size: string; color: string; plannedQuantity: number; sku?: string }>;
+  dueDate?: string | null;
+  notes?: string | null;
+  materials?: Array<{
+    productId?: string | null;
+    name: string;
+    plannedQuantity: number;
+    unit?: string;
+    unitCost?: number;
+    source?: 'BOM' | 'MANUAL';
+    sortOrder?: number;
+  }>;
+  stages?: BomStandardStage[];
+  salePricePerUnit?: number | null;
+}
+
+export interface CreateOrderBatchInput {
+  items: CreateOrderBatchItemInput[];
+  customerId?: string | null;
+  customerOrderId?: string | null;
+  brandName?: string | null;
+  orderType?: ProductionOrderType;
+  sourceWarehouseId?: string | null;
+  targetWarehouseId?: string | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  customerCountry?: string | null;
+  salePricePerUnit?: number | null;
+  deliveryAddress?: string | null;
+  deliveryMethod?: string | null;
+  responsibleUserId?: string | null;
+}
+
+export interface CreateOrderBatchResponse {
+  parent: ProductionOrder;
+  children: ProductionOrder[];
+  count: number;
+}
+
 export const manufacturingApi = {
   // Settings
   getSettings: async (): Promise<ManufacturingSettings> => {
@@ -1264,6 +1332,10 @@ export const manufacturingApi = {
     responsibleUserId?: string | null;
   }): Promise<ProductionOrder> => {
     const res = await apiClient.post('/manufacturing/orders', data);
+    return res.data?.data;
+  },
+  createOrderBatch: async (data: CreateOrderBatchInput): Promise<CreateOrderBatchResponse> => {
+    const res = await apiClient.post('/manufacturing/orders/batch', data);
     return res.data?.data;
   },
   updateOrder: async (id: string, data: Record<string, any>): Promise<ProductionOrder> => {

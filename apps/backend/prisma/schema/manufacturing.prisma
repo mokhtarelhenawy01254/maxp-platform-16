@@ -239,9 +239,14 @@ model ProductionOrder {
   sizeChartId        String?
   sourceSampleOrderId String?
 
+  // Multi-Product Parent Order Hierarchy (أمر إنتاج بأكثر من منتج تام — Task HZ-I)
+  parentOrderId      String?
+
   bom                BillOfMaterials               @relation(fields: [bomId], references: [id], onDelete: Restrict)
   techPack           TechPack?                     @relation(fields: [techPackId], references: [id], onDelete: SetNull)
   sizeChart          SizeChart?                    @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
+  parent             ProductionOrder?              @relation("ProductionOrderHierarchy", fields: [parentOrderId], references: [id], onDelete: SetNull)
+  children           ProductionOrder[]             @relation("ProductionOrderHierarchy")
   variants           ProductionOrderVariantMatrix[]
   stages             ProductionStage[]
   materialIssues     MaterialIssue[]
@@ -263,6 +268,8 @@ model ProductionOrder {
   @@index([companyId, techPackId])
   @@index([companyId, sizeChartId])
   @@index([companyId, sourceSampleOrderId])
+  @@index([companyId, parentOrderId])
+  @@index([parentOrderId])
   @@map("production_orders")
 }
 

@@ -54,6 +54,7 @@ router.patch('/orders/:id', controller.updateOrder);
 router.put('/orders/:id', controller.updateOrder);
 router.delete('/orders/:id', controller.deleteOrder);
 router.get('/orders', controller.listOrders);
+router.post('/orders/batch', controller.createOrderBatch);
 router.post('/orders', controller.createOrder);
 router.post('/orders/:id/release', controller.releaseOrder);
 router.post('/orders/:id/start', controller.startOrder);
