@@ -26,6 +26,7 @@ import {
   SampleComponentInput,
   BillOfMaterials,
 } from '../manufacturingApi';
+import { DateInput } from '../../../components/ui/DateInput';
 
 type TabKey = 'products' | 'materials' | 'costs' | 'factory';
 
@@ -1409,8 +1410,8 @@ export const EditSampleModal: React.FC<EditSampleModalProps> = ({
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>تاريخ التسليم المتوقع</span>
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
+                    
                     value={expectedDeliveryAt}
                     onChange={(e) => setExpectedDeliveryAt(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -1422,8 +1423,8 @@ export const EditSampleModal: React.FC<EditSampleModalProps> = ({
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>تاريخ الاستحقاق النهائي</span>
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
+                    
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -1445,8 +1446,8 @@ export const EditSampleModal: React.FC<EditSampleModalProps> = ({
                 {sampleReceived && (
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">تاريخ الاستلام:</span>
-                    <input
-                      type="date"
+                    <DateInput
+                      
                       value={receivedAt}
                       onChange={(e) => setReceivedAt(e.target.value)}
                       className="px-2 py-1 text-xs rounded border border-border bg-background text-foreground"

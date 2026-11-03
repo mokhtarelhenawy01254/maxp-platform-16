@@ -26,6 +26,7 @@ import {
   SampleComponentInput,
 } from '../manufacturingApi';
 import { CustomerPicker } from './CustomerPicker';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateSampleModalProps {
   isOpen: boolean;
@@ -1520,8 +1521,8 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                     موعد استلام العينة من المصنع
                   </label>
                   <div className="relative">
-                    <input
-                      type="date"
+                    <DateInput
+                      
                       value={expectedDeliveryAt}
                       onChange={(e) => setExpectedDeliveryAt(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -1556,8 +1557,8 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                       تاريخ استلام العينة
                     </label>
                     <div className="relative max-w-xs">
-                      <input
-                        type="date"
+                      <DateInput
+                        
                         value={receivedAt}
                         onChange={(e) => setReceivedAt(e.target.value)}
                         className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -1601,8 +1602,8 @@ export const CreateSampleModal: React.FC<CreateSampleModalProps> = ({ isOpen, on
                 <div>
                   <label className="block text-xs font-semibold text-foreground mb-1">موعد تسليم العينة للعميل</label>
                   <div className="relative">
-                    <input
-                      type="date"
+                    <DateInput
+                      
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
