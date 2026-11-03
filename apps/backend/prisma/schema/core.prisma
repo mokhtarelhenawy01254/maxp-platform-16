@@ -408,6 +408,7 @@ model User {
   avatar                                            String?
   phone                                             String?
   role                                              String?
+  merchantId                                        String?
   isActive                                          Boolean                  @default(true)
   isEmailVerified                                   Boolean                  @default(false)
   emailVerifiedAt                                   DateTime?
@@ -519,6 +520,7 @@ model User {
   @@index([companyId])
   @@index([departmentId])
   @@index([positionId])
+  @@index([merchantId])
   @@map("users")
 }
 
