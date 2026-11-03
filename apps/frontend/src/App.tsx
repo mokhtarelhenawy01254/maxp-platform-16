@@ -499,6 +499,9 @@ const HubReceivePage = React.lazy(
 const RateCardsPage = React.lazy(
   () => import("./pages/shipping-ops/RateCardsPage"),
 );
+const ClientsPage = React.lazy(
+  () => import("./pages/shipping-ops/ClientsPage"),
+);
 const ClientPortalShell = React.lazy(
   () => import("./pages/shipping-client/ClientPortalShell"),
 );
@@ -7513,6 +7516,16 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
                         <RateCardsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/clients"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ClientsPage />
                       </AppAccessRoute>
                     </Layout>
                   }

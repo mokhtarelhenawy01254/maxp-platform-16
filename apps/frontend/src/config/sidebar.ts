@@ -943,6 +943,7 @@ export const getSidebarConfig = (
             icon: Package,
             items: [
                 { to: '/shipping-ops', icon: LayoutDashboard, label: isEn ? 'Shipping Dashboard' : 'لوحة تشغيل الشحن', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/clients', icon: Users, label: isEn ? 'Shipping Clients' : 'عملاء الشحن', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/parcels', icon: Package, label: isEn ? 'Parcels & Shipments' : 'الشحنات والطرود', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/parcels/new', icon: Plus, label: isEn ? 'New Standalone Parcel' : 'إنشاء طرد جديد', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/pickups', icon: Truck, label: isEn ? 'Pickup Requests' : 'طلبات الاستلام (Pickup)', requiredPermissions: ['orders.shipping.view'] },
