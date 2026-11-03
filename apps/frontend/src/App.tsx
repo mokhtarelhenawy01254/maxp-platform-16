@@ -507,6 +507,12 @@ const RateCardsPage = React.lazy(
 const ClientsPage = React.lazy(
   () => import("./pages/shipping-ops/ClientsPage"),
 );
+const ShippingOpsSettlementsPage = React.lazy(
+  () => import("./pages/shipping-ops/SettlementsPage"),
+);
+const ClientSettlementsPage = React.lazy(
+  () => import("./pages/shipping-client/ClientSettlementsPage"),
+);
 const ClientPortalShell = React.lazy(
   () => import("./pages/shipping-client/ClientPortalShell"),
 );
@@ -7565,6 +7571,16 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/shipping-ops/settlements"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingOpsSettlementsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/agent-reports"
                   element={
                     <Layout fullWidth>
@@ -7621,6 +7637,7 @@ const AppContent = () => {
                   <Route path="new" element={<ClientNewShipmentPage />} />
                   <Route path="pickups" element={<ClientPickupsPage />} />
                   <Route path="bulk" element={<ClientBulkUploadPage />} />
+                  <Route path="settlements" element={<ClientSettlementsPage />} />
                 </Route>
                 <Route
                   path="/orders/bulk-status"

@@ -192,3 +192,53 @@ model ShippingBranch {
 }
 
 
+model ShippingSettlement {
+  id                    String                   @id @default(cuid())
+  companyId             String
+  merchantId            String
+  settlementNumber      String
+  status                String                   @default("DRAFT") /// DRAFT | ISSUED | APPROVED | PAID | REJECTED
+  periodStart           DateTime
+  periodEnd             DateTime
+  totalShipments        Int                      @default(0)
+  deliveredCount        Int                      @default(0)
+  returnedCount         Int                      @default(0)
+  grossCOD              Decimal                  @default(0) @db.Decimal(12, 2)
+  shippingFeesTotal     Decimal                  @default(0) @db.Decimal(12, 2)
+  codFeesTotal          Decimal                  @default(0) @db.Decimal(12, 2)
+  returnFeesTotal       Decimal                  @default(0) @db.Decimal(12, 2)
+  netPayout             Decimal                  @default(0) @db.Decimal(12, 2)
+  paymentMethod         String?
+  paymentReference      String?
+  treasuryTransactionId String?
+  approvedBy            String?
+  approvedAt            DateTime?
+  paidAt                DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  lines                 ShippingSettlementLine[]
+
+  @@unique([companyId, settlementNumber])
+  @@index([companyId, merchantId, status])
+  @@map("shipping_settlements")
+}
+
+model ShippingSettlementLine {
+  id              String             @id @default(cuid())
+  settlementId    String
+  shipmentId      String             @unique
+  codAmount       Decimal            @default(0) @db.Decimal(12, 2)
+  collectedAmount Decimal            @default(0) @db.Decimal(12, 2)
+  shippingFee     Decimal            @default(0) @db.Decimal(12, 2)
+  codFee          Decimal            @default(0) @db.Decimal(12, 2)
+  returnFee       Decimal            @default(0) @db.Decimal(12, 2)
+  net             Decimal            @default(0) @db.Decimal(12, 2)
+  createdAt       DateTime           @default(now())
+
+  settlement      ShippingSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  shipment        Shipment           @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@map("shipping_settlement_lines")
+}

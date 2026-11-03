@@ -950,6 +950,7 @@ export const getSidebarConfig = (
                 { to: '/shipping-ops/hub-receive', icon: ScanLine, label: isEn ? 'Hub Inward & Sorting' : 'استلام وفرز الهاَب', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/branches', icon: Building2, label: isEn ? 'Shipping Branches' : 'فروع ومراكز الشحن', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/rate-cards', icon: CreditCard, label: isEn ? 'Client Rate Cards' : 'بطاقات أسعار العملاء', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/settlements', icon: Receipt, label: isEn ? 'COD Settlements' : 'تسويات وكشوف COD', requiredPermissions: ['orders.shipping.view'] },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
         },

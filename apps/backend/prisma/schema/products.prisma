@@ -698,6 +698,7 @@ model MerchantProduct {
 model Merchant {
   id               String            @id @default(cuid())
   companyId        String
+  linkedCompanyId  String?
   name             String
   email            String            @unique
   phone            String?
@@ -722,6 +723,7 @@ model Merchant {
   warehouses       Warehouse[]
 
   @@index([companyId])
+  @@index([linkedCompanyId])
   @@index([isActive])
   @@index([fulfillmentMode])
   @@index([defaultWarehouseId])
@@ -800,6 +802,7 @@ model Shipment {
   barcode                String?
   branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   pickupRequest          PickupRequest?   @relation(fields: [pickupRequestId], references: [id], onDelete: SetNull)
+  settlementLine         ShippingSettlementLine?
 
   @@unique([companyId, barcode])
   @@index([companyId])

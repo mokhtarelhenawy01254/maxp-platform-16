@@ -97,4 +97,7 @@ router.post('/shipments/:id/reattempt', ...portalAuth, shippingPortalController.
 // Automated RTO Maintenance (SHIP-W3)
 router.post('/maintenance/run-rto', ...portalAuth, shippingPortalController.runRtoMaintenance);
 
+// Settlements & Statements (SHIP-W5)
+router.use('/settlements', ...portalAuth, require('./shippingPortalSettlementRoutes'));
+
 module.exports = router;

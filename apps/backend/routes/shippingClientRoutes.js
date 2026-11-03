@@ -63,4 +63,7 @@ router.post('/pickups', ...clientAuth, shippingClientController.createPickup);
 // Rate Card (Client's card only, no internal costs)
 router.get('/rate-card', ...clientAuth, shippingClientController.getRateCard);
 
+// Settlements (SHIP-W5)
+router.use('/settlements', ...clientAuth, require('./shippingClientSettlementRoutes'));
+
 module.exports = router;

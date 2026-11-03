@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/client-portal/shipping/shipments', label: 'شحناتي' },
   { to: '/client-portal/shipping/new', label: 'شحنة جديدة' },
   { to: '/client-portal/shipping/pickups', label: 'البيكاب' },
+  { to: '/client-portal/shipping/settlements', label: 'التسويات والكشوف' },
   { to: '/client-portal/shipping/bulk', label: 'رفع مجمّع' },
 ];
 

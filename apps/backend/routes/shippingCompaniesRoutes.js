@@ -46,12 +46,17 @@ const buildProviderFields = (body, carrier = {}) => {
   if (body.mainClientCode !== undefined) settings.mainClientCode = body.mainClientCode;
   if (body.senderNumber !== undefined) settings.senderNumber = body.senderNumber;
   if (body.apiKey !== undefined && body.apiKey) settings.apiKey = String(body.apiKey).trim();
+  if (body.linkedCompanyId !== undefined) settings.linkedCompanyId = String(body.linkedCompanyId).trim();
 
-  return {
+  const resFields = {
     providerKey,
     integrationMode,
     settings: shippingProviderService.safeJsonStringify(settings),
   };
+  if (body.linkedCompanyId || settings.linkedCompanyId) {
+    resFields.linkedCompanyId = body.linkedCompanyId || settings.linkedCompanyId;
+  }
+  return resFields;
 };
 
 const ensureDefaultShippingCompanies = async (prisma, companyId) => {
@@ -302,6 +307,63 @@ router.post('/ensure-defaults', verifyToken.authenticateToken, async (req, res) 
   }
 });
 
+// GET /api/v1/shipping-companies/network - Get available shipping companies on MaxP Network
+router.get('/network', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { companyId } = req.user;
+
+    const policies = await prisma.shippingPolicySettings.findMany({
+      where: {
+        companyId: { not: companyId },
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            phone: true,
+            email: true,
+            website: true,
+          },
+        },
+      },
+    });
+
+    const networkCarriers = await Promise.all(
+      policies.map(async (p) => {
+        const clientMerchant = await prisma.merchant.findFirst({
+          where: {
+            companyId: p.companyId,
+            linkedCompanyId: companyId,
+            isActive: true,
+          },
+          select: { id: true, name: true, commissionRate: true },
+        });
+
+        return {
+          companyId: p.companyId,
+          name: p.company?.name || 'شركة شحن MaxP',
+          logo: p.company?.logo || null,
+          phone: p.company?.phone || null,
+          email: p.company?.email || null,
+          website: p.company?.website || null,
+          operatingModel: p.operatingModel,
+          intakeMode: p.intakeMode,
+          isLinked: Boolean(clientMerchant),
+          merchantId: clientMerchant?.id || null,
+        };
+      })
+    );
+
+    return res.json({ success: true, data: networkCarriers });
+  } catch (error) {
+    console.error('Error fetching network shipping companies:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get single shipping company by ID or slug
 router.get('/:idOrSlug', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -356,6 +418,26 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
     // Auto-generate slug if not provided
     const companySlug = slug || buildSlug(name);
     const providerFields = buildProviderFields({ ...req.body, slug: companySlug });
+
+    if (providerFields.providerKey === 'MAXP_NETWORK') {
+      const parsedSettings = shippingProviderService.safeJsonParse(providerFields.settings, {});
+      const linkedCompanyId = req.body.linkedCompanyId || parsedSettings.linkedCompanyId;
+      if (!linkedCompanyId) {
+        return res.status(400).json({ success: false, error: 'يجب تحديد شركة الشحن المزوّدة من شبكة MaxP' });
+      }
+
+      const clientMerchant = await prisma.merchant.findFirst({
+        where: {
+          companyId: linkedCompanyId,
+          linkedCompanyId: companyId,
+          isActive: true,
+        },
+      });
+
+      if (!clientMerchant) {
+        return res.status(400).json({ success: false, error: 'غير مربوط بشركة شحن', reason: 'MERCHANT_NOT_LINKED' });
+      }
+    }
 
     let finalApiUrl = apiUrl;
     if (providerFields.providerKey === 'QP_EXPRESS' && !finalApiUrl) {
@@ -466,6 +548,26 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
       { ...req.body, slug: companySlug || existing.slug },
       existing,
     );
+
+    if (providerFields.providerKey === 'MAXP_NETWORK') {
+      const parsedSettings = shippingProviderService.safeJsonParse(providerFields.settings, {});
+      const linkedCompanyId = req.body.linkedCompanyId || parsedSettings.linkedCompanyId || existing.linkedCompanyId;
+      if (!linkedCompanyId) {
+        return res.status(400).json({ success: false, error: 'يجب تحديد شركة الشحن المزوّدة من شبكة MaxP' });
+      }
+
+      const clientMerchant = await prisma.merchant.findFirst({
+        where: {
+          companyId: linkedCompanyId,
+          linkedCompanyId: companyId,
+          isActive: true,
+        },
+      });
+
+      if (!clientMerchant) {
+        return res.status(400).json({ success: false, error: 'غير مربوط بشركة شحن', reason: 'MERCHANT_NOT_LINKED' });
+      }
+    }
 
     let finalApiUrl = apiUrl !== undefined ? apiUrl : existing.apiUrl;
     if (providerFields.providerKey === 'QP_EXPRESS' && !finalApiUrl) {
@@ -637,6 +739,26 @@ router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, r
         success: true,
         status: 'CONNECTED',
         message: 'بيئة الشحن التجريبية (Demo Sandbox) متصلة وجاهزة للعمل',
+      });
+    }
+
+    if (providerKey === 'MAXP_NETWORK') {
+      const parsedSettings = shippingProviderService.safeJsonParse(company.settings, {});
+      const targetId = company.linkedCompanyId || parsedSettings.linkedCompanyId;
+      if (!targetId) {
+        return res.status(400).json({ success: false, error: 'غير مربوط بشركة شحن' });
+      }
+      const clientMerchant = await prisma.merchant.findFirst({
+        where: { companyId: targetId, linkedCompanyId: companyId, isActive: true },
+      });
+      if (!clientMerchant) {
+        return res.status(400).json({ success: false, error: 'غير مربوط بشركة شحن' });
+      }
+      return res.json({
+        success: true,
+        status: 'CONNECTED',
+        data: { customerId: clientMerchant.id, customerName: clientMerchant.name },
+        message: 'الاتصال ناجح ومكتمل مع شركة الشحن عبر شبكة MaxP',
       });
     }
 
