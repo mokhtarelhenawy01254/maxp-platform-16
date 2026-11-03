@@ -278,5 +278,106 @@ describe("NotificationDropdown browser order notifications", () => {
       );
     });
   });
+
+  it("plays incomplete order alarm when order:incomplete:new arrives with default pattern coins and duration 3500ms", async () => {
+    const defaultSettings = createSettings();
+    mockApiGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: defaultSettings,
+      },
+    });
+
+    (
+      window.localStorage.getItem as jest.MockedFunction<
+        typeof window.localStorage.getItem
+      >
+    ).mockImplementation((key: string) => {
+      if (key === "accessToken") return "token-123";
+      if (key === "maxp:notification-settings") return JSON.stringify(defaultSettings);
+      return null;
+    });
+
+    render(<NotificationDropdown />);
+
+    await waitFor(() => {
+      expect(socketHandlers["order:incomplete:new"]).toEqual(expect.any(Function));
+    });
+
+    const { socketService } = require("../../../services/socketService");
+
+    act(() => {
+      socketHandlers["order:incomplete:new"]({
+        cartId: "cart_1",
+        companyId: "company-1",
+        customerName: "سارة",
+        total: 450,
+        itemCount: 2,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    await waitFor(() => {
+      expect(socketService.playOrderAlarm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationMs: 3500,
+          pattern: "coins",
+        }),
+      );
+    });
+  });
+
+  it("does not play incomplete order alarm when channels.incompleteSound.enabled is false", async () => {
+    const disabledSettings = createSettings({
+      channels: {
+        ...createSettings().channels,
+        incompleteSound: {
+          enabled: false,
+          volume: 80,
+          pattern: "coins",
+        },
+      },
+    });
+
+    mockApiGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: disabledSettings,
+      },
+    });
+
+    (
+      window.localStorage.getItem as jest.MockedFunction<
+        typeof window.localStorage.getItem
+      >
+    ).mockImplementation((key: string) => {
+      if (key === "accessToken") return "token-123";
+      if (key === "maxp:notification-settings") return JSON.stringify(disabledSettings);
+      return null;
+    });
+
+    render(<NotificationDropdown />);
+
+    await waitFor(() => {
+      expect(socketHandlers["order:incomplete:new"]).toEqual(expect.any(Function));
+    });
+
+    const { socketService } = require("../../../services/socketService");
+
+    act(() => {
+      socketHandlers["order:incomplete:new"]({
+        cartId: "cart_1",
+        companyId: "company-1",
+        customerName: "سارة",
+        total: 450,
+        itemCount: 2,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    await waitFor(() => {
+      expect(socketService.playOrderAlarm).not.toHaveBeenCalled();
+    });
+  });
 });
 

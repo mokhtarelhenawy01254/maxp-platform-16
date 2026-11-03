@@ -1,7 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { getDirection } from "../../i18n";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
+import { socketService } from "../../services/socketService";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
   getCurrentCompanyActiveApps,
@@ -61,6 +62,42 @@ export const IncompleteOrders: React.FC = () => {
     buildParams,
     handleRetry,
   } = useIncompleteOrdersData();
+
+  const handleRetryRef = useRef(handleRetry);
+  useEffect(() => {
+    handleRetryRef.current = handleRetry;
+  }, [handleRetry]);
+
+  useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleIncompleteOrder = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
+      debounceTimer = setTimeout(() => {
+        handleRetryRef.current();
+        debounceTimer = null;
+      }, 1500);
+    };
+
+    socketService.on("order:incomplete:new", handleIncompleteOrder);
+
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      socketService.off("order:incomplete:new", handleIncompleteOrder);
+    };
+  }, []);
 
   const {
     confirmConvertCartId,
