@@ -1171,7 +1171,8 @@ async function updateSession(req, res) {
         if (
             typeof metaAccessToken === 'string' &&
             metaAccessToken.trim() !== '' &&
-            !metaAccessToken.includes('***') &&
+            !metaAccessToken.includes('*') &&
+            !metaAccessToken.includes('•') &&
             !metaAccessToken.startsWith('enc:v1:') &&
             metaAccessToken.trim().length > 10
         ) {

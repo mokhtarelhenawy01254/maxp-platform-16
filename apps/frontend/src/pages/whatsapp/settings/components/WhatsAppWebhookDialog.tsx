@@ -37,6 +37,7 @@ export const WhatsAppWebhookDialog: React.FC<WhatsAppWebhookDialogProps> = ({
 }) => {
   const activeVerifyToken =
     webhookDetailsSession?.metaWebhookVerifyToken?.trim() ||
+    newMetaWebhookVerifyToken?.trim() ||
     platformVerifyToken?.trim() ||
     "maxp_verify_token";
   const { t } = useTranslation();
