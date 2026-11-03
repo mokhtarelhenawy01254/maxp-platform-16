@@ -1,6 +1,19 @@
 import React, { useState, useMemo } from "react";
-import { Search, X, SlidersHorizontal, Plus, RotateCcw } from "lucide-react";
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  Plus,
+  RotateCcw,
+  Download,
+  FolderPlus,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Layers,
+} from "lucide-react";
 
+import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { TaskControlBarDropdowns } from "./TaskControlBarDropdowns";
@@ -19,44 +32,66 @@ import type {
 } from "../types";
 
 export interface TaskWorkspaceControlBarProps {
+  // Title & Header Telemetry
+  headline?: string;
+  taskStats?: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+    overdue: number;
+  };
+  visibleTasksCount?: number;
+  selectedTasksCount?: number;
+  showOverdueIndicators?: boolean;
+
+  // Actions
+  onExportToCSV?: () => void;
+  onScrollToBulkActions?: () => void;
+  onOpenCreateProject?: () => void;
+  onOpenCreateGoal?: () => void;
+  onCreateTask?: () => void;
+  setShowCreateTaskModal?: (val: boolean) => void;
+
+  // Search
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   setCurrentPage?: (val: number) => void;
 
+  // Scope & Filters
   taskFilter: TaskScopeFilter;
   setTaskFilter: (val: TaskScopeFilter) => void;
-
   quickFilter?: string;
   setQuickFilter?: (val: any) => void;
-
   filters: TaskFiltersState;
   setFilters: (val: TaskFiltersState) => void;
   projects?: Project[];
   categories?: TaskCategory[];
   users?: TaskUser[];
 
+  // Hide Completed
   hideCompleted: boolean;
   setHideCompleted: (val: boolean) => void;
 
+  // View Mode
   viewMode?: TaskViewMode | "kanban" | "list";
   onViewModeChange?: (mode: "flat" | "grouped" | "kanban") => void;
   onToggleViewMode?: () => void;
 
+  // Sorting
   sortBy: TaskSortBy;
   setSortBy: (val: TaskSortBy) => void;
   sortOrder: "asc" | "desc";
   setSortOrder: (val: "asc" | "desc") => void;
 
+  // Strips
   todayTasksCount?: number;
   showTodayStrip?: boolean;
   onToggleTodayStrip?: () => void;
-
   goalsCount?: number;
   showGoalsStrip?: boolean;
   onToggleGoalsStrip?: () => void;
 
-  onCreateTask?: () => void;
-  setShowCreateTaskModal?: (val: boolean) => void;
   className?: string;
 }
 
@@ -70,7 +105,24 @@ const emptyFilters: TaskFiltersState = {
   dueDateTo: "",
 };
 
+const scopeLabels: Record<TaskScopeFilter, string> = {
+  all: "كل المهام",
+  "my-tasks": "مهامي",
+  "assigned-by-me": "أنشأتها أنا",
+};
+
 export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = ({
+  headline,
+  taskStats = { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 },
+  visibleTasksCount,
+  selectedTasksCount = 0,
+  showOverdueIndicators = true,
+  onExportToCSV,
+  onScrollToBulkActions,
+  onOpenCreateProject,
+  onOpenCreateGoal,
+  onCreateTask,
+  setShowCreateTaskModal,
   searchQuery,
   setSearchQuery,
   setCurrentPage,
@@ -97,11 +149,11 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
   goalsCount,
   showGoalsStrip,
   onToggleGoalsStrip,
-  onCreateTask,
-  setShowCreateTaskModal,
   className = "",
 }) => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const openTasksCount = taskStats.pending + taskStats.inProgress;
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -135,12 +187,77 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
 
   return (
     <div
-      className={`rounded-2xl border border-border/60 bg-card/85 shadow-xs backdrop-blur-md transition-all ${className}`}
+      className={`rounded-2xl border border-border/60 bg-card/90 shadow-sm backdrop-blur-md transition-all ${className}`}
     >
-      {/* Primary Cockpit Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2 sm:p-2.5">
-        {/* Search Input with Clear Button */}
-        <div className="relative min-w-[170px] max-w-[260px] flex-1">
+      {/* Primary Cockpit Bar (Unified Single Surface) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 sm:px-3 sm:py-2.5">
+        
+        {/* Right side (RTL): Title + Scope Badge + Compact Live Telemetry */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-foreground">
+              المهام
+            </h1>
+            <Badge
+              variant="outline"
+              className="rounded-full border-primary/20 bg-primary/10 px-2.5 py-0 text-[10px] font-semibold text-primary"
+            >
+              {scopeLabels[taskFilter] || "كل المهام"}
+            </Badge>
+          </div>
+
+          {/* Compact Telemetry Chips */}
+          <div className="hidden lg:flex items-center gap-1.5 text-xs">
+            <span
+              className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-background/60 px-2 py-0.5 text-[11px]"
+              title="المهام المفتوحة (انتظار + قيد التنفيذ)"
+            >
+              <Clock className="size-3 text-blue-500" />
+              <span className="text-muted-foreground">مفتوحة:</span>
+              <strong className="font-semibold text-foreground font-mono tabular-nums">
+                {openTasksCount}
+              </strong>
+            </span>
+
+            <span
+              className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-background/60 px-2 py-0.5 text-[11px]"
+              title="المهام قيد الانتظار"
+            >
+              <span className="size-1.5 rounded-full bg-amber-500" />
+              <span className="text-muted-foreground">انتظار:</span>
+              <strong className="font-semibold text-foreground font-mono tabular-nums">
+                {taskStats.pending}
+              </strong>
+            </span>
+
+            <span
+              className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-background/60 px-2 py-0.5 text-[11px]"
+              title="المهام المكتملة"
+            >
+              <CheckCircle2 className="size-3 text-emerald-500" />
+              <span className="text-muted-foreground">مكتملة:</span>
+              <strong className="font-semibold text-foreground font-mono tabular-nums">
+                {taskStats.completed}
+              </strong>
+            </span>
+
+            {showOverdueIndicators && taskStats.overdue > 0 && (
+              <span
+                className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-700 dark:text-rose-400 font-semibold"
+                title="المهام المتأخرة عن الموعد"
+              >
+                <AlertCircle className="size-3 text-rose-500 animate-pulse" />
+                <span>متأخرة:</span>
+                <strong className="font-bold font-mono tabular-nums">
+                  {taskStats.overdue}
+                </strong>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Center: Search Input with Clear Button */}
+        <div className="relative min-w-[160px] sm:min-w-[200px] max-w-[260px] flex-1">
           <Search className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
           <Input
             id="task-cockpit-search"
@@ -166,35 +283,58 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
           ) : null}
         </div>
 
-        {/* Scope and Quick Views (Desktop) */}
-        <TaskControlBarScopeViews
-          taskFilter={taskFilter}
-          setTaskFilter={setTaskFilter}
-          quickFilter={quickFilter}
-          setQuickFilter={setQuickFilter}
-          filters={filters}
-          setFilters={setFilters}
-          setCurrentPage={setCurrentPage}
-        />
+        {/* Left side (RTL): Actions & Single Primary CTA */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Bulk actions trigger if tasks selected */}
+          {selectedTasksCount > 0 && onScrollToBulkActions && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onScrollToBulkActions}
+              className="h-8 gap-1 rounded-lg border-primary/30 bg-primary/5 text-primary text-xs font-medium"
+            >
+              <span>الإجراءات ({selectedTasksCount})</span>
+            </Button>
+          )}
 
-        {/* Metric Trigger Chips */}
-        <TaskControlBarMetricChips
-          todayTasksCount={todayTasksCount}
-          showTodayStrip={showTodayStrip}
-          onToggleTodayStrip={onToggleTodayStrip}
-          goalsCount={goalsCount}
-          showGoalsStrip={showGoalsStrip}
-          onToggleGoalsStrip={onToggleGoalsStrip}
-        />
+          {/* Export CSV action */}
+          {onExportToCSV && selectedTasksCount === 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onExportToCSV}
+              className="h-8 gap-1 rounded-lg border-border/60 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+              title="تصدير إلى CSV"
+            >
+              <Download className="size-3.5" />
+              <span className="hidden sm:inline">تصدير</span>
+            </Button>
+          )}
 
-        {/* Right Controls: View Modes, Mobile Toggle, Primary CTA */}
-        <div className="flex items-center gap-1.5">
+          {/* New Project shortcut */}
+          {onOpenCreateProject && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenCreateProject}
+              className="hidden xl:inline-flex h-8 gap-1 rounded-lg border-border/60 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <FolderPlus className="size-3.5" />
+              <span>مشروع</span>
+            </Button>
+          )}
+
+          {/* View Mode Switcher (List / Groups / Kanban) */}
           <TaskControlBarViewModeSwitcher
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}
             onToggleViewMode={onToggleViewMode}
           />
 
+          {/* Mobile Filters Toggle */}
           <Button
             type="button"
             variant="outline"
@@ -210,10 +350,12 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
             )}
           </Button>
 
+          {/* The ONLY Primary CTA on the Page */}
           <Button
             type="button"
             size="sm"
             onClick={handleCreate}
+            data-testid="tasks-open-create-modal"
             className="h-8 gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98]"
           >
             <Plus className="size-3.5" />
@@ -222,9 +364,21 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
         </div>
       </div>
 
-      {/* Desktop Secondary Filter Ribbon */}
-      <div className="hidden md:flex flex-wrap items-center justify-between gap-2 border-t border-border/40 px-3 py-1.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+      {/* Desktop Secondary Filter Ribbon (Unified Lower Tier) */}
+      <div className="hidden md:flex flex-wrap items-center justify-between gap-2 border-t border-border/40 px-3 py-1.5 bg-muted/5">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Scope and Quick Views */}
+          <TaskControlBarScopeViews
+            taskFilter={taskFilter}
+            setTaskFilter={setTaskFilter}
+            quickFilter={quickFilter}
+            setQuickFilter={setQuickFilter}
+            filters={filters}
+            setFilters={setFilters}
+            setCurrentPage={setCurrentPage}
+          />
+
+          {/* Dropdown Filters (Project, Assignee) */}
           <TaskControlBarDropdowns
             filters={filters}
             setFilters={setFilters}
@@ -233,6 +387,7 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
             users={users}
           />
 
+          {/* Hide Completed Toggle Pill */}
           <button
             type="button"
             onClick={() => {
@@ -252,16 +407,28 @@ export const TaskWorkspaceControlBar: React.FC<TaskWorkspaceControlBarProps> = (
           </button>
         </div>
 
-        <TaskControlBarSortClear
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          setCurrentPage={setCurrentPage}
-          hasActiveFilters={hasActiveFilters}
-          activeFilterCount={activeFilterCount}
-          onResetAll={resetAll}
-        />
+        {/* Left Side: Strips Metric Chips + Sort & Reset */}
+        <div className="flex items-center gap-2">
+          <TaskControlBarMetricChips
+            todayTasksCount={todayTasksCount}
+            showTodayStrip={showTodayStrip}
+            onToggleTodayStrip={onToggleTodayStrip}
+            goalsCount={goalsCount}
+            showGoalsStrip={showGoalsStrip}
+            onToggleGoalsStrip={onToggleGoalsStrip}
+          />
+
+          <TaskControlBarSortClear
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            setCurrentPage={setCurrentPage}
+            hasActiveFilters={hasActiveFilters}
+            activeFilterCount={activeFilterCount}
+            onResetAll={resetAll}
+          />
+        </div>
       </div>
 
       {/* Mobile Drawer Foldout */}

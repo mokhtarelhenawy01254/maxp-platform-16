@@ -4,7 +4,6 @@ import { Button } from "../../../components/ui/button";
 import { TaskWorkspaceControlBar } from "../components/TaskWorkspaceControlBar";
 import { GoalProgressStrip } from "../components/GoalProgressStrip";
 import { TaskTable } from "../components/TaskTable";
-import { TaskWorkspaceHeader } from "../components/TaskWorkspaceHeader";
 import { TodayTasksFocusStrip } from "../components/TodayTasksFocusStrip";
 import { TaskProjectGroupView } from "../components/TaskProjectGroupView";
 import { TaskWorkspaceEmptyState } from "../components/TaskWorkspaceEmptyState";
@@ -129,25 +128,25 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
         </div>
       )}
 
-      <TaskWorkspaceHeader
-        taskFilter={taskFilter}
-        hasCommandState={hasCommandState}
-        selectedTasksCount={selectedTasksCount}
-        visibleTasksCount={filteredAndSortedTasks.length}
-        headline={operatorHeadline}
-        description={operatorDescription}
-        taskStats={taskStats}
-        setShowFilterSidebar={setShowFilterSidebar}
-        setShowCreateTaskModal={setShowCreateTaskModal}
-        setShowCreateProjectModal={setShowCreateProjectModal}
-        setShowCreateGoalModal={setShowCreateGoalModal}
-        exportToCSV={exportToCSV}
-        scrollToBulkActions={scrollToBulkActions}
-        showOverdueIndicators={workspaceSettings.highlightOverdue}
-        showProjectShortcut={workspaceSettings.showProjectShortcut}
-      />
-
+      {/* Unified Single-Surface Cockpit Bar (Zero Duplicate Headers) */}
       <TaskWorkspaceControlBar
+        headline={operatorHeadline}
+        taskStats={taskStats}
+        visibleTasksCount={filteredAndSortedTasks.length}
+        selectedTasksCount={selectedTasksCount}
+        showOverdueIndicators={workspaceSettings.highlightOverdue}
+        onExportToCSV={exportToCSV}
+        onScrollToBulkActions={scrollToBulkActions}
+        onOpenCreateProject={
+          workspaceSettings.showProjectShortcut
+            ? () => setShowCreateProjectModal(true)
+            : undefined
+        }
+        onOpenCreateGoal={
+          setShowCreateGoalModal
+            ? () => setShowCreateGoalModal(true)
+            : undefined
+        }
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setCurrentPage={setCurrentPage}
@@ -317,6 +316,7 @@ export const TasksMainTab: React.FC<TasksMainTabProps> = ({ controller }) => {
           isApprover={isApprover}
           formatDate={formatDate}
           formatPrice={formatPrice}
+          hideToolbar={true}
         />
       ) : (
         <div className="space-y-2">
