@@ -23,6 +23,7 @@ import {
 import api from "../../services/api";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface Warning {
   id: string;
@@ -161,9 +162,9 @@ const EditWarning: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="incidentDate">تاريخ الحادث *</Label>
-                <Input
+                <DateInput
                   id="incidentDate"
-                  type="date"
+                  
                   value={formData.incidentDate}
                   onChange={(e) =>
                     setFormData({ ...formData, incidentDate: e.target.value })

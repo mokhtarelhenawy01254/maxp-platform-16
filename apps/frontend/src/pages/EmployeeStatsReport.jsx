@@ -53,6 +53,7 @@ import {
   Send,
   Package,
 } from "lucide-react";
+import { DateInput } from '../components/ui/DateInput';
 
 const COLORS = [
   "#3b82f6",
@@ -497,8 +498,8 @@ const EmployeeStatsReport = () => {
             <>
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-muted-foreground">من</label>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="h-8 text-xs font-mono"
                   value={customDates.startDate}
                   onChange={(e) =>
@@ -508,8 +509,8 @@ const EmployeeStatsReport = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-muted-foreground">إلى</label>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="h-8 text-xs font-mono"
                   value={customDates.endDate}
                   onChange={(e) =>

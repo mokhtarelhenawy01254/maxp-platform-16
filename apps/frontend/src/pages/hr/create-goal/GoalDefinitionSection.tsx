@@ -16,6 +16,7 @@ import {
   STATUS_OPTIONS,
 } from "./types";
 import { getEmployeeLabel } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface GoalDefinitionSectionProps {
   form: GoalFormState;
@@ -161,9 +162,9 @@ export const GoalDefinitionSection: React.FC<GoalDefinitionSectionProps> = ({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">تاريخ البداية</label>
-          <Input
+          <DateInput
             data-testid="goal-start-date-input"
-            type="date"
+            
             value={form.startDate}
             onChange={(event) => setField("startDate", event.target.value)}
             className="rounded-2xl font-mono tabular-nums"
@@ -172,9 +173,9 @@ export const GoalDefinitionSection: React.FC<GoalDefinitionSectionProps> = ({
 
         <div className="space-y-2">
           <label className="text-sm font-medium">تاريخ النهاية</label>
-          <Input
+          <DateInput
             data-testid="goal-end-date-input"
-            type="date"
+            
             value={form.endDate}
             onChange={(event) => setField("endDate", event.target.value)}
             className="rounded-2xl font-mono tabular-nums"

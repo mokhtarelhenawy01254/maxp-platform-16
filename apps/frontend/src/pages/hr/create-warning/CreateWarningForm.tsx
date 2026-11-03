@@ -32,6 +32,7 @@ import {
 } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { WarningFormData } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateWarningFormProps {
   employees: any[];
@@ -123,8 +124,8 @@ export const CreateWarningForm: React.FC<CreateWarningFormProps> = ({
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     className="h-12 pr-10 bg-background/50 font-mono tabular-nums"
                     {...register("incidentDate", {
                       required: "التاريخ مطلوب",

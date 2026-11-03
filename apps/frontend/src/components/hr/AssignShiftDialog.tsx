@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { tToast } from "../../utils/i18n-toast";
 import { getDateRange } from '../../utils/shiftHelpers';
 import { cn } from '../../lib/utils';
+import { DateInput } from '../ui/DateInput';
 
 interface Employee {
   id: string;
@@ -265,8 +266,8 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
             <div className={dateRangeMode ? 'grid grid-cols-2 gap-4' : ''}>
               <div className="space-y-1.5">
                 {dateRangeMode && <Label className="text-[10px] font-bold text-gray-400 mr-1">تاريخ البدء</Label>}
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={assignmentDate}
                   onChange={(e) => {
                     setAssignmentDate(e.target.value);
@@ -278,8 +279,8 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
               {dateRangeMode && (
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold text-gray-400 mr-1">تاريخ الانتهاء</Label>
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     min={assignmentDate}

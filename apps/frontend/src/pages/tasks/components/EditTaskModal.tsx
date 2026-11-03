@@ -13,6 +13,7 @@ import {
   taskModalControlClassName,
   taskModalTextareaClassName,
 } from "./TaskModalTokens";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface EditTaskModalProps {
   show: boolean;
@@ -403,8 +404,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               </TaskModalField>
 
               <TaskModalField label="تاريخ البدء">
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={task.startDate ? task.startDate.split("T")[0] : ""}
                   onChange={(event) =>
                     setEditingTask({
@@ -417,8 +418,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               </TaskModalField>
 
               <TaskModalField label="تاريخ الاستحقاق">
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={task.dueDate ? task.dueDate.split("T")[0] : ""}
                   onChange={(event) =>
                     setEditingTask({

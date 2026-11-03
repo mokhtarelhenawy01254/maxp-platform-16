@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { LeaveFormData, leaveTypeConfig } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AddLeaveDialogProps {
   t: (key: string, options?: any) => string;
@@ -200,8 +201,8 @@ export const AddLeaveDialog: React.FC<AddLeaveDialogProps> = ({
                 <Calendar className="h-4 w-4" />
                 {t("employee.leaves.fromDateLabel")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.startDate}
                 onChange={(e) =>
                   setFormData({ ...formData, startDate: e.target.value })
@@ -221,8 +222,8 @@ export const AddLeaveDialog: React.FC<AddLeaveDialogProps> = ({
                 <Calendar className="h-4 w-4" />
                 {t("employee.leaves.toDateLabel")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.endDate}
                 onChange={(e) =>
                   setFormData({ ...formData, endDate: e.target.value })

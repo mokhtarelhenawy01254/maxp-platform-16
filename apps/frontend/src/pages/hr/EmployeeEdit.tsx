@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { DateInput } from '../../components/ui/DateInput';
 
 type EmployeeFormData = {
   firstName: string;
@@ -227,7 +228,7 @@ const EmployeeEdit: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>تاريخ التعيين</Label>
-                    <Input type="date" {...register("hireDate")} />
+                    <DateInput  {...register("hireDate")} />
                   </div>
                 </div>
               </CardContent>

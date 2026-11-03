@@ -18,6 +18,7 @@ import { Label } from "../../../components/ui/label";
 import { Textarea } from "../../../components/ui/textarea";
 import { PerformanceReviewFormData } from "./types";
 import { RATING_SCALE_LABELS } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreatePerformanceReviewDetailsCardProps {
   isEditing: boolean;
@@ -56,8 +57,8 @@ export const CreatePerformanceReviewDetailsCard: React.FC<
 
             <div className="space-y-2">
               <Label className="font-bold">بداية الفترة</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.periodStart}
                 onChange={(e) =>
                   onChange({ ...formData, periodStart: e.target.value })
@@ -67,8 +68,8 @@ export const CreatePerformanceReviewDetailsCard: React.FC<
             </div>
             <div className="space-y-2">
               <Label className="font-bold">نهاية الفترة</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.periodEnd}
                 onChange={(e) =>
                   onChange({ ...formData, periodEnd: e.target.value })

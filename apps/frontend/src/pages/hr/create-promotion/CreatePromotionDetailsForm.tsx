@@ -18,6 +18,7 @@ import { Label } from "../../../components/ui/label";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
 import { PromotionFormData } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreatePromotionDetailsFormProps {
   register: UseFormRegister<PromotionFormData>;
@@ -120,8 +121,8 @@ export const CreatePromotionDetailsForm: React.FC<
                   <Calendar className="h-4 w-4 text-gray-500" />
                   تاريخ الترقية
                 </Label>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="font-mono tabular-nums"
                   {...register("promotionDate", { required: "مطلوب" })}
                 />
@@ -137,8 +138,8 @@ export const CreatePromotionDetailsForm: React.FC<
                   <Calendar className="h-4 w-4 text-gray-500" />
                   تاريخ السريان
                 </Label>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="font-mono tabular-nums"
                   {...register("effectiveDate", { required: "مطلوب" })}
                 />

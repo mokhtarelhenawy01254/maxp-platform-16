@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { LeaveRecord } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface PayrollLeavesCardProps {
   leaves: LeaveRecord[];
@@ -103,8 +104,8 @@ export const PayrollLeavesCard: React.FC<PayrollLeavesCardProps> = ({
                     </div>
                     <div>
                       <Label className="text-xs">تاريخ البداية</Label>
-                      <Input
-                        type="date"
+                      <DateInput
+                        
                         value={format(leave.startDate, "yyyy-MM-dd")}
                         onChange={(e) => {
                           const newLeaves = [...leaves];
@@ -123,8 +124,8 @@ export const PayrollLeavesCard: React.FC<PayrollLeavesCardProps> = ({
                     </div>
                     <div>
                       <Label className="text-xs">تاريخ النهاية</Label>
-                      <Input
-                        type="date"
+                      <DateInput
+                        
                         value={format(leave.endDate, "yyyy-MM-dd")}
                         onChange={(e) => {
                           const newLeaves = [...leaves];

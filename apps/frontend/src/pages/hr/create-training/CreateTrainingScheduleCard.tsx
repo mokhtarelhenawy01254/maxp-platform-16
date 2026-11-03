@@ -11,6 +11,7 @@ import { Label } from "../../../components/ui/label";
 import { Card, CardContent, CardHeader } from "../../../components/ui/card";
 import { TrainingFormData } from "./types";
 import { TRAINING_STATUS_OPTIONS } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateTrainingScheduleCardProps {
   control: Control<TrainingFormData>;
@@ -38,8 +39,8 @@ export const CreateTrainingScheduleCard: React.FC<
               </Label>
               <div className="relative">
                 <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="h-12 pr-10 border-purple-50 focus:ring-purple-200 rounded-xl font-mono tabular-nums"
                   {...register("startDate", {
                     required: "تاريخ البدء مطلوب",
@@ -57,8 +58,8 @@ export const CreateTrainingScheduleCard: React.FC<
               <Label className="font-bold">تاريخ الانتهاء المتوقع</Label>
               <div className="relative">
                 <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="h-12 pr-10 border-purple-50 focus:ring-purple-200 rounded-xl font-mono tabular-nums"
                   {...register("endDate")}
                 />

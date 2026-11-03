@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { PermissionFormData, PermissionType } from "./types";
 import { permissionTypeConfig, calculateHours } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AddPermissionDialogProps {
   open: boolean;
@@ -158,8 +159,8 @@ export const AddPermissionDialog: React.FC<AddPermissionDialogProps> = ({
               <Label className="text-right block font-bold text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
                 {t("employee.permissions.dateLabel")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.date}
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })

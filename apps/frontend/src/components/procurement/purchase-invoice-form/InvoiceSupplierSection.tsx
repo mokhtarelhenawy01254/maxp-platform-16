@@ -23,6 +23,7 @@ import {
   PurchaseOrderSummary,
   PurchaseInvoiceFormData,
 } from "./types";
+import { DateInput } from '../../ui/DateInput';
 
 export interface InvoiceSupplierSectionProps {
   formData: PurchaseInvoiceFormData;
@@ -293,8 +294,8 @@ export const InvoiceSupplierSection: React.FC<InvoiceSupplierSectionProps> = ({
               <Label className="text-xs font-medium">
                 {t("procurement.purchaseInvoiceForm.invoiceDateLabel", "تاريخ الفاتورة")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 className="h-11 rounded-xl text-xs"
                 value={formData.invoiceDate}
                 onChange={(e) =>
@@ -306,8 +307,8 @@ export const InvoiceSupplierSection: React.FC<InvoiceSupplierSectionProps> = ({
               <Label className="text-xs font-medium">
                 {t("procurement.purchaseInvoiceForm.dueDateLabel", "تاريخ الاستحقاق")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 className="h-11 rounded-xl text-xs"
                 value={formData.dueDate}
                 onChange={(e) =>

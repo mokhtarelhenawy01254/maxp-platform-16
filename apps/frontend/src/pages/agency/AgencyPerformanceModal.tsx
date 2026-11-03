@@ -21,6 +21,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
 import { Textarea } from "../../components/ui/textarea";
+import { DateInput } from '../../components/ui/DateInput';
 
 export interface DailyLog {
   id?: string;
@@ -318,8 +319,8 @@ export const AgencyPerformanceModal: React.FC<AgencyPerformanceModalProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  type="date"
+                <DateInput
+                  
                   className="h-10 sm:h-9 text-base sm:text-xs font-bold rounded-xl flex-1"
                   value={perfForm.date}
                   onChange={(e) => handleDateChange(e.target.value)}

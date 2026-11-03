@@ -17,6 +17,7 @@ import {
   CONTRACT_OPTIONS,
 } from "./types";
 import { useTranslation } from "react-i18next";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface UserFormHrSectionProps {
   userForm: UserFormState;
@@ -116,9 +117,9 @@ export const UserFormHrSection: React.FC<UserFormHrSectionProps> = ({
 
         <div className="space-y-2">
           <Label htmlFor="user-hire-date">تاريخ التعيين</Label>
-          <Input
+          <DateInput
             id="user-hire-date"
-            type="date"
+            
             value={userForm.hireDate}
             onChange={(e) => onUpdateForm("hireDate", e.target.value)}
             className="h-10 rounded-xl font-mono"

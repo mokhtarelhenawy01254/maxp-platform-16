@@ -11,6 +11,7 @@ import type {
   CustomerBlockReasonOption,
   NewRuleState,
 } from './types';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreateCustomerBlockRuleCardProps {
   newRule: NewRuleState;
@@ -128,9 +129,9 @@ export const CreateCustomerBlockRuleCard: React.FC<CreateCustomerBlockRuleCardPr
           <Label htmlFor="block-expires" className="text-xs font-semibold text-foreground">
             {t('customerBlocks.k_53', 'تاريخ انتهاء الحظر (اختياري)')
           }</Label>
-          <Input
+          <DateInput
             id="block-expires"
-            type="date"
+            
             value={newRule.expiresAt}
             onChange={(event) =>
               setNewRule((current) => ({

@@ -51,6 +51,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { DateInput } from '../ui/DateInput';
 
 interface SupplierPayment {
   id: string;
@@ -566,9 +567,9 @@ const SupplierPayments: React.FC = () => {
                   <Label htmlFor="edit-date" className="text-xs font-semibold">
                     تاريخ السداد <span className="text-destructive">*</span>
                   </Label>
-                  <Input
+                  <DateInput
                     id="edit-date"
-                    type="date"
+                    
                     required
                     value={editForm.paymentDate}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, paymentDate: e.target.value }))}
@@ -638,9 +639,9 @@ const SupplierPayments: React.FC = () => {
                     <Label htmlFor="edit-check-date" className="text-xs font-semibold">
                       تاريخ استحقاق الشيك
                     </Label>
-                    <Input
+                    <DateInput
                       id="edit-check-date"
-                      type="date"
+                      
                       value={editForm.checkDate}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, checkDate: e.target.value }))}
                     />

@@ -3,6 +3,7 @@ import { Calendar, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePreset, PRESET_LABELS, PRESET_ORDER } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface EmployeeAnalyticsDateControlsProps {
   preset: DatePreset;
@@ -44,16 +45,16 @@ export const EmployeeAnalyticsDateControls: React.FC<EmployeeAnalyticsDateContro
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <Calendar className="size-4 text-muted-foreground" />
-            <Input
-              type="date"
+            <DateInput
+              
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
               className="h-8 w-auto text-xs"
             />
           </div>
           <span className="text-xs text-muted-foreground">إلى</span>
-          <Input
-            type="date"
+          <DateInput
+            
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
             className="h-8 w-auto text-xs"

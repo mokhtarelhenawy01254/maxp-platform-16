@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import type { DateRangeToolbarProps } from "./types";
+import { DateInput } from '../../components/ui/DateInput';
 
 export default function DateRangeToolbar({
   currentRangeLabel,
@@ -48,16 +49,16 @@ export default function DateRangeToolbar({
 
       {showCustomRangeInputs && (
         <div className="flex items-center gap-1.5">
-          <Input
-            type="date"
+          <DateInput
+            
             value={start}
             onChange={(e) => onStartChange(e.target.value)}
             className="h-8 w-32 sm:w-36 text-xs bg-background border-border/60"
             aria-label={fromLabel}
           />
           <span className="text-xs text-muted-foreground">-</span>
-          <Input
-            type="date"
+          <DateInput
+            
             value={end}
             onChange={(e) => onEndChange(e.target.value)}
             className="h-8 w-32 sm:w-36 text-xs bg-background border-border/60"

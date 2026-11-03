@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Benefit, Employee, EnrollmentFormData } from "./types";
 import { getTypeIcon, getTypeLabel } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface BenefitDetailsDialogProps {
   open: boolean;
@@ -267,8 +268,8 @@ export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
                           <CheckCircle className="h-4 w-4 text-primary" />
                           تاريخ بدء الاستحقاق
                         </Label>
-                        <Input
-                          type="date"
+                        <DateInput
+                          
                           value={enrollmentFormData.startDate}
                           onChange={(e) =>
                             setEnrollmentFormData({

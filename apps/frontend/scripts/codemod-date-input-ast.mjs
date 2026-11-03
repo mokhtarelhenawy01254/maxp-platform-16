@@ -82,20 +82,11 @@ for (const file of files) {
           report.skipped.push([file, 'non self-closing <input> at ' + open.loc.start.line]);
         } else {
           let replacement = raw;
-          // remove the type attribute (plus its leading whitespace)
+          // remove the type attribute, then rename the tag
           const attrStart = typeAttr.start - open.start;
           const attrEnd = typeAttr.end - open.start;
-          let before = replacement.slice(0, attrStart);
-          const after = replacement.slice(attrEnd);
-          // <input type="date"  -> <input
-          const tagMatch = before.match(/<\s*input/);
-          if (tagMatch) {
-            const cut = tagMatch.index + tagMatch[0].length;
-            replacement = before.slice(0, cut) + after;
-          } else {
-            replacement = before.replace(/</, before.slice(0, cut + 1)) + after;
-          }
-          replacement = replacement.replace(/<\s*input\b/, '<DateInput');
+          replacement = replacement.slice(0, attrStart) + replacement.slice(attrEnd);
+          replacement = replacement.replace(/^<\s*(input|Input)\b/, '<DateInput');
           edits.push([open.start, open.end, replacement]);
         }
       }

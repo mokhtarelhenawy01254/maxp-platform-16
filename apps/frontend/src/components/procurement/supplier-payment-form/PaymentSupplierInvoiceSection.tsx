@@ -25,6 +25,7 @@ import {
   PurchaseInvoiceSummary,
   SupplierPaymentFormData,
 } from "./types";
+import { DateInput } from '../../ui/DateInput';
 
 interface PaymentSupplierInvoiceSectionProps {
   formData: SupplierPaymentFormData;
@@ -230,8 +231,8 @@ export const PaymentSupplierInvoiceSection: React.FC<
               <Calendar className="size-3.5 text-primary" />
               تاريخ الصرف والسداد *
             </Label>
-            <Input
-              type="date"
+            <DateInput
+              
               required
               className="h-11 rounded-xl font-mono"
               value={formData.paymentDate}

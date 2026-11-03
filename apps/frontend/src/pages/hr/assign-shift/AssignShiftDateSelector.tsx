@@ -2,6 +2,7 @@ import React from "react";
 import { Label } from "../../../components/ui/label";
 import { Input } from "../../../components/ui/input";
 import { Calendar } from "lucide-react";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AssignShiftDateSelectorProps {
   dateRangeMode: boolean;
@@ -31,8 +32,8 @@ export const AssignShiftDateSelector: React.FC<
           {dateRangeMode && (
             <Label className="text-xs text-muted-foreground mb-1">من</Label>
           )}
-          <Input
-            type="date"
+          <DateInput
+            
             value={assignmentDate}
             onChange={(e) => onAssignmentDateChange(e.target.value)}
             className="bg-gray-50/50 dark:bg-gray-800/50"
@@ -41,8 +42,8 @@ export const AssignShiftDateSelector: React.FC<
         {dateRangeMode && (
           <div>
             <Label className="text-xs text-muted-foreground mb-1">إلى</Label>
-            <Input
-              type="date"
+            <DateInput
+              
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
               min={assignmentDate}

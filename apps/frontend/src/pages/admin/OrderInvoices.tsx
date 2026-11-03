@@ -46,6 +46,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../../components/ui/tooltip";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface OrderInvoice {
   id: string;
@@ -551,16 +552,16 @@ const OrderInvoices: React.FC = () => {
                 </Select>
 
                 <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
                     className="h-8.5 w-32 text-xs bg-background/80"
                     title={t("orders.orderInvoices_fromDate")}
                   />
                   <span>-</span>
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
                     className="h-8.5 w-32 text-xs bg-background/80"

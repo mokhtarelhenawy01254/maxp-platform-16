@@ -13,6 +13,7 @@ import {
   taskModalControlClassName,
   taskModalTextareaClassName,
 } from "./TaskModalTokens";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface CreateProjectModalProps {
   show: boolean;
@@ -145,8 +146,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </TaskModalField>
 
             <TaskModalField label="تاريخ البدء">
-              <Input
-                type="date"
+              <DateInput
+                
                 value={newProject.startDate}
                 onChange={(event) =>
                   setNewProject({
@@ -159,8 +160,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </TaskModalField>
 
             <TaskModalField label="تاريخ الانتهاء">
-              <Input
-                type="date"
+              <DateInput
+                
                 value={newProject.endDate}
                 onChange={(event) =>
                   setNewProject({ ...newProject, endDate: event.target.value })

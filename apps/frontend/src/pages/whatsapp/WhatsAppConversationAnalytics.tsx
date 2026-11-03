@@ -18,6 +18,7 @@ import {
   TopTagsCard,
   useWhatsAppConversationAnalyticsController,
 } from "./conversation-analytics";
+import { DateInput } from '../../components/ui/DateInput';
 
 export const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({
   companyId,
@@ -100,16 +101,16 @@ export const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = (
             <div className="flex items-center gap-1.5 font-mono text-xs">
               <div className="flex items-center gap-1">
                 <Calendar className="size-3.5 text-muted-foreground" />
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="h-7 w-auto text-xs font-mono"
                 />
               </div>
               <span className="text-xs text-muted-foreground">إلى</span>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="h-7 w-auto text-xs font-mono"

@@ -22,6 +22,7 @@ import { CheckCircle, AlertTriangle, Calculator, User } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../../utils/i18n-toast";
 import api from "../../../services/api";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const RewardApplication: React.FC = () => {
   const { t } = useTranslation();
@@ -143,8 +144,8 @@ const RewardApplication: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>من تاريخ</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.periodStart}
                 onChange={(e) =>
                   setFormData({ ...formData, periodStart: e.target.value })
@@ -153,8 +154,8 @@ const RewardApplication: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>إلى تاريخ</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.periodEnd}
                 onChange={(e) =>
                   setFormData({ ...formData, periodEnd: e.target.value })

@@ -18,6 +18,7 @@ import {
   RATINGS,
 } from "./types";
 import { buildEmptyGroup, buildEmptyRule } from "./criteriaUtils";
+import { DateInput } from '../../../../components/ui/DateInput';
 
 interface CustomerListRuleBuilderV2Props {
   criteria: CriteriaV2;
@@ -337,16 +338,16 @@ export const CustomerListRuleBuilderV2: React.FC<CustomerListRuleBuilderV2Props>
                             </Select>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="date"
+                            <DateInput
+                              
                               className="h-9 text-xs w-32"
                               value={rule.dateFrom ? rule.dateFrom.slice(0, 10) : ""}
                               onChange={(e) => handleUpdateRule(gIdx, rIdx, { dateFrom: e.target.value })}
                               title="من تاريخ"
                             />
                             <span className="text-xs text-[color:var(--color-muted-foreground)]">-</span>
-                            <Input
-                              type="date"
+                            <DateInput
+                              
                               className="h-9 text-xs w-32"
                               value={rule.dateTo ? rule.dateTo.slice(0, 10) : ""}
                               onChange={(e) => handleUpdateRule(gIdx, rIdx, { dateTo: e.target.value })}
@@ -360,15 +361,15 @@ export const CustomerListRuleBuilderV2: React.FC<CustomerListRuleBuilderV2Props>
                       {rule.field === "orderedInPeriod" && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-[color:var(--color-muted-foreground)]">من:</span>
-                          <Input
-                            type="date"
+                          <DateInput
+                            
                             className="h-9 text-xs w-36"
                             value={rule.dateFrom ? rule.dateFrom.slice(0, 10) : ""}
                             onChange={(e) => handleUpdateRule(gIdx, rIdx, { dateFrom: e.target.value })}
                           />
                           <span className="text-xs text-[color:var(--color-muted-foreground)]">إلى:</span>
-                          <Input
-                            type="date"
+                          <DateInput
+                            
                             className="h-9 text-xs w-36"
                             value={rule.dateTo ? rule.dateTo.slice(0, 10) : ""}
                             onChange={(e) => handleUpdateRule(gIdx, rIdx, { dateTo: e.target.value })}
@@ -427,8 +428,8 @@ export const CustomerListRuleBuilderV2: React.FC<CustomerListRuleBuilderV2Props>
                       {/* 4. lastOrderBefore / lastOrderAfter */}
                       {(rule.field === "lastOrderBefore" || rule.field === "lastOrderAfter") && (
                         <div className="w-44">
-                          <Input
-                            type="date"
+                          <DateInput
+                            
                             className="h-9 text-xs"
                             value={rule.value ? String(rule.value).slice(0, 10) : ""}
                             onChange={(e) => handleUpdateRule(gIdx, rIdx, { value: e.target.value })}

@@ -32,6 +32,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "../../components/ui/tooltip";
+import { DateInput } from '../../components/ui/DateInput';
 
 type ResignationFormData = {
     resignationDate: string;
@@ -234,8 +235,8 @@ const MyResignation = () => {
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             </Label>
-                                            <Input
-                                                type="date"
+                                            <DateInput
+                                                
                                                 className="h-12 text-lg border-gray-200 focus:border-red-500 focus:ring-red-200 transition-all bg-white"
                                                 {...register("resignationDate", { required: t("employee.resignation.dateRequired") })}
                                                 onChange={(e) => {
@@ -252,8 +253,8 @@ const MyResignation = () => {
                                                 <Calendar className="w-4 h-4 text-blue-500" />
                                                 {t("employee.resignation.lastWorkingDay")}
                                             </Label>
-                                            <Input
-                                                type="date"
+                                            <DateInput
+                                                
                                                 className="h-12 text-lg border-gray-200 focus:border-blue-500 focus:ring-blue-200 transition-all bg-white"
                                                 {...register("lastWorkingDay", { required: t("employee.resignation.lastWorkingDayRequired") })}
                                             />

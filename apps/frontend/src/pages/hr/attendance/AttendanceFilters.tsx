@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { EmployeeSimple, AutoCloseReviewStatus } from "./types";
 import { getLocalDateString } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AttendanceFiltersProps {
   selectedDate: string;
@@ -54,8 +55,8 @@ export const AttendanceFilters: React.FC<AttendanceFiltersProps> = ({
     <Card>
       <CardContent className="p-6 flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="flex flex-wrap gap-4 items-center">
-          <Input
-            type="date"
+          <DateInput
+            
             value={selectedDate}
             onChange={(e) => {
               setSelectedDate(e.target.value);
@@ -79,8 +80,8 @@ export const AttendanceFilters: React.FC<AttendanceFiltersProps> = ({
             </label>
           </div>
           {useDateRange && (
-            <Input
-              type="date"
+            <DateInput
+              
               value={endDate}
               onChange={(e) => {
                 setEndDate(e.target.value);

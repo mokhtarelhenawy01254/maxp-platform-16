@@ -18,6 +18,7 @@ import {
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { CreditCard, Plus, RefreshCw, Search, ChevronRight, ChevronLeft, Eye, Filter } from "lucide-react";
 import { cn } from "../lib/utils";
+import { DateInput } from '../components/ui/DateInput';
 
 const SuperAdminPayments = () => {
   const navigate = useNavigate();
@@ -231,14 +232,14 @@ const SuperAdminPayments = () => {
             <SelectItem value="CASH">نقدي</SelectItem>
           </SelectContent>
         </Select>
-        <Input
-          type="date"
+        <DateInput
+          
           value={filters.dateFrom}
           onChange={e => handleFilterChange("dateFrom", e.target.value)}
           className="h-8 text-xs w-32 bg-background/50 font-mono"
         />
-        <Input
-          type="date"
+        <DateInput
+          
           value={filters.dateTo}
           onChange={e => handleFilterChange("dateTo", e.target.value)}
           className="h-8 text-xs w-32 bg-background/50 font-mono"

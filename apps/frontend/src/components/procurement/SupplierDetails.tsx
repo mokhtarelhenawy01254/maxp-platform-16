@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DateInput } from '../ui/DateInput';
 
 interface StatementEntry {
   date: string;
@@ -574,9 +575,9 @@ export default function SupplierDetails() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="pay-date">تاريخ الدفع *</Label>
-                <Input
+                <DateInput
                   id="pay-date"
-                  type="date"
+                  
                   required
                   value={paymentForm.paymentDate}
                   onChange={e => setPaymentForm(prev => ({ ...prev, paymentDate: e.target.value }))}

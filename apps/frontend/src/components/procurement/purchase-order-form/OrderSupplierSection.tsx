@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "../../../utils/currency";
 import { Supplier, PurchaseOrderFormData } from "./types";
+import { DateInput } from '../../ui/DateInput';
 
 interface OrderSupplierSectionProps {
   formData: PurchaseOrderFormData;
@@ -214,8 +215,8 @@ export const OrderSupplierSection: React.FC<OrderSupplierSectionProps> = ({
             <Label className="text-sm font-medium">
               {t("procurement.purchaseOrderForm.orderDateLabel", "تاريخ الأمر")}
             </Label>
-            <Input
-              type="date"
+            <DateInput
+              
               className="h-11 rounded-xl font-mono"
               value={formData.orderDate}
               onChange={(e) =>
@@ -229,8 +230,8 @@ export const OrderSupplierSection: React.FC<OrderSupplierSectionProps> = ({
             <Label className="text-sm font-medium">
               {t("procurement.purchaseOrderForm.expectedDeliveryLabel", "التسليم المتوقع")}
             </Label>
-            <Input
-              type="date"
+            <DateInput
+              
               className="h-11 rounded-xl font-mono"
               value={formData.expectedDelivery}
               onChange={(e) =>

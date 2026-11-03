@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
+import { DateInput } from '../../../components/ui/DateInput';
 
 const PERIOD_OPTIONS: Array<{ id: PeriodType; label: string }> = [
   { id: "today", label: "اليوم" },
@@ -98,16 +99,16 @@ export default function SuperAdminDailyOrdersPage() {
           {/* Custom Range Picker */}
           {period === "custom" && (
             <div className="flex items-center gap-1 text-xs">
-              <Input
-                type="date"
+              <DateInput
+                
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
                 className="h-8 w-32 text-xs bg-background/50 font-mono"
                 title="من تاريخ"
               />
               <span className="text-muted-foreground text-xs">إلى</span>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
                 className="h-8 w-32 text-xs bg-background/50 font-mono"

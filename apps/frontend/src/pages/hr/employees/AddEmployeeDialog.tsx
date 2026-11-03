@@ -29,6 +29,7 @@ import { EmployeeFormData, Department, LookupResponse } from "./types";
 import { EmployeeSmartDetectionCard } from "./EmployeeSmartDetectionCard";
 import { EmployeePersonalFields } from "./EmployeePersonalFields";
 import { EmployeeDeductionSettingsSection } from "./EmployeeDeductionSettingsSection";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AddEmployeeDialogProps {
   open: boolean;
@@ -195,8 +196,8 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
 
             <div className="space-y-2">
               <Label>{t("employees.hireDate")}</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.hireDate}
                 onChange={(e) =>
                   setFormData({ ...formData, hireDate: e.target.value })
@@ -251,8 +252,8 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
 
             <div className="space-y-2">
               <Label>{t("employees.dateOfBirth")}</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.dateOfBirth}
                 onChange={(e) =>
                   setFormData({ ...formData, dateOfBirth: e.target.value })

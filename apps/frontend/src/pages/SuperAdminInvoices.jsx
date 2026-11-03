@@ -19,6 +19,7 @@ import {
 } from "../components/ui/table";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { FileText, Plus, Search, Filter, RefreshCw, Eye, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { DateInput } from '../components/ui/DateInput';
 
 const SuperAdminInvoices = () => {
   const navigate = useNavigate();
@@ -317,14 +318,14 @@ const SuperAdminInvoices = () => {
                   <SelectItem value="DOWNGRADE">تخفيض</SelectItem>
                 </SelectContent>
               </Select>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={filters.dateFrom}
                 onChange={e => handleFilterChange("dateFrom", e.target.value)}
                 className="h-8 text-xs w-36 bg-background"
               />
-              <Input
-                type="date"
+              <DateInput
+                
                 value={filters.dateTo}
                 onChange={e => handleFilterChange("dateTo", e.target.value)}
                 className="h-8 text-xs w-36 bg-background"
@@ -462,14 +463,14 @@ const SuperAdminInvoices = () => {
                     <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={orderFilters.dateFrom}
                   onChange={e => handleOrderFilterChange("dateFrom", e.target.value)}
                   className="h-8 text-xs w-36 bg-background"
                 />
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={orderFilters.dateTo}
                   onChange={e => handleOrderFilterChange("dateTo", e.target.value)}
                   className="h-8 text-xs w-36 bg-background"
@@ -550,7 +551,7 @@ const SuperAdminInvoices = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Input type="date" label="تاريخ الاستحقاق" value={formData.dueDate} onChange={e => setFormData(p => ({ ...p, dueDate: e.target.value }))} />
+            <DateInput  label="تاريخ الاستحقاق" value={formData.dueDate} onChange={e => setFormData(p => ({ ...p, dueDate: e.target.value }))} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>إلغاء</Button>

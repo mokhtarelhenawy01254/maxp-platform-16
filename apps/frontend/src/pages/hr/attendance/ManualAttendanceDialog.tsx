@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ManualAttendanceForm, ManualOverrides, EmployeeSimple } from "./types";
 import { getLocalTimeString } from "./helpers";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ManualAttendanceDialogProps {
   open: boolean;
@@ -91,8 +92,8 @@ export const ManualAttendanceDialog: React.FC<ManualAttendanceDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>التاريخ</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={manualForm.date}
                 onChange={(e) =>
                   setManualForm({ ...manualForm, date: e.target.value })

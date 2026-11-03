@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateInput } from '../ui/DateInput';
 
 export interface PurchaseOrderItemData {
   id: string;
@@ -282,8 +283,8 @@ export const ReceiveItemsDialog: React.FC<ReceiveItemsDialogProps> = ({
               <Label className="text-xs text-muted-foreground">
                 {t("procurement.receiveItemsDialog.receivedDate", "تاريخ الاستلام")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={receivedDate}
                 onChange={(e) => setReceivedDate(e.target.value)}
                 className="h-9 mt-1"

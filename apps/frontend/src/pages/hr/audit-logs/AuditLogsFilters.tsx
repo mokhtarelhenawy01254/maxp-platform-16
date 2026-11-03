@@ -10,6 +10,7 @@ import {
 } from "../../../components/ui/select";
 import { Search } from "lucide-react";
 import { AuditFilters } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface AuditLogsFiltersProps {
   filters: AuditFilters;
@@ -100,16 +101,16 @@ export const AuditLogsFilters: React.FC<AuditLogsFiltersProps> = ({
             </SelectContent>
           </Select>
 
-          <Input
-            type="date"
+          <DateInput
+            
             className="w-[160px]"
             value={filters.startDate}
             onChange={(e) =>
               onFilterChange({ ...filters, startDate: e.target.value })
             }
           />
-          <Input
-            type="date"
+          <DateInput
+            
             className="w-[160px]"
             value={filters.endDate}
             onChange={(e) =>

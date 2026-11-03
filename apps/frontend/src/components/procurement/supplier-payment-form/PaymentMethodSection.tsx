@@ -11,6 +11,7 @@ import {
   PurchaseInvoiceSummary,
   SupplierPaymentFormData,
 } from "./types";
+import { DateInput } from '../../ui/DateInput';
 
 interface PaymentMethodSectionProps {
   formData: SupplierPaymentFormData;
@@ -170,8 +171,8 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">تاريخ استحقاق الشيك</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.checkDate}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, checkDate: e.target.value }))

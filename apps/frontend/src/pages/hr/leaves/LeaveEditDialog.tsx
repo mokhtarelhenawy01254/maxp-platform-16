@@ -29,6 +29,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { LeaveRequest, EditLeaveFormData, leaveTypeConfig } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface LeaveEditDialogProps {
   open: boolean;
@@ -151,8 +152,8 @@ export const LeaveEditDialog: React.FC<LeaveEditDialogProps> = ({
                 <Calendar className="h-4 w-4" />
                 {t("employee.leaves.fromDateLabel")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={editFormData.startDate}
                 onChange={(e) =>
                   setEditFormData({
@@ -168,8 +169,8 @@ export const LeaveEditDialog: React.FC<LeaveEditDialogProps> = ({
                 <Calendar className="h-4 w-4" />
                 {t("employee.leaves.toDateLabel")}
               </Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={editFormData.endDate}
                 onChange={(e) =>
                   setEditFormData({

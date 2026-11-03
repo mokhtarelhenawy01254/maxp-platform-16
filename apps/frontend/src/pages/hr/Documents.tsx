@@ -32,6 +32,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
+import { DateInput } from '../../components/ui/DateInput';
 
 interface Document {
   id: string;
@@ -341,8 +342,8 @@ const Documents: React.FC = () => {
             </div>
             <div>
               <Label>تاريخ الانتهاء (اختياري)</Label>
-              <Input
-                type="date"
+              <DateInput
+                
                 value={formData.expiryDate}
                 onChange={(e) =>
                   setFormData({ ...formData, expiryDate: e.target.value })

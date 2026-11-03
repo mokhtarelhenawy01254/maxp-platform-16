@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { EmployeeOption, statusOptions } from "./types";
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ManualAttendanceFiltersProps {
   showAllEmployees: boolean;
@@ -74,8 +75,8 @@ export const ManualAttendanceFilters: React.FC<ManualAttendanceFiltersProps> = (
             <div className="flex flex-wrap gap-4 items-center">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">التاريخ:</span>
-                <Input
-                  type="date"
+                <DateInput
+                  
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-[160px] font-mono tabular-nums text-sm"
@@ -101,8 +102,8 @@ export const ManualAttendanceFilters: React.FC<ManualAttendanceFiltersProps> = (
               {useDateRange && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
                   <span className="text-sm font-medium">إلى:</span>
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-[160px] font-mono tabular-nums text-sm"

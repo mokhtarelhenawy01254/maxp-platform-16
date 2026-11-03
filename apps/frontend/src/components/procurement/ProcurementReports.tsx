@@ -36,6 +36,7 @@ import {
   ProductReportRow,
   SupplierOption,
 } from './reports/reportTypes';
+import { DateInput } from '../ui/DateInput';
 
 const getDefaultDates = () => {
   const end = new Date();
@@ -314,9 +315,9 @@ export default function ProcurementReports() {
           {/* Start Date */}
           <div>
             <Label htmlFor="rep-start" className="text-xs">من تاريخ</Label>
-            <Input
+            <DateInput
               id="rep-start"
-              type="date"
+              
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="mt-1 h-9 text-xs"
@@ -327,9 +328,9 @@ export default function ProcurementReports() {
           {/* End Date */}
           <div>
             <Label htmlFor="rep-end" className="text-xs">إلى تاريخ</Label>
-            <Input
+            <DateInput
               id="rep-end"
-              type="date"
+              
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="mt-1 h-9 text-xs"

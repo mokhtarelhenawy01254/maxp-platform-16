@@ -27,6 +27,7 @@ import {
   taskModalInlineCardClassName,
   taskModalTextareaClassName,
 } from "./TaskModalTokens";
+import { DateInput } from '../../../components/ui/DateInput';
 
 export interface CreateTaskModalProps {
   showCreateTaskModal: boolean;
@@ -450,8 +451,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </TaskModalField>
 
                 <TaskModalField label="تاريخ البدء">
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={newTask.startDate}
                     onChange={(event) =>
                       setNewTask({ ...newTask, startDate: event.target.value })
@@ -461,8 +462,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </TaskModalField>
 
                 <TaskModalField label="تاريخ الاستحقاق">
-                  <Input
-                    type="date"
+                  <DateInput
+                    
                     value={newTask.dueDate}
                     onChange={(event) =>
                       setNewTask({ ...newTask, dueDate: event.target.value })
