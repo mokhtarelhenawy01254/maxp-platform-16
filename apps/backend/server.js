@@ -409,6 +409,7 @@ const courierPortalRoutes = require("./routes/courierPortalRoutes");
 const shippingClientRoutes = require("./routes/shippingClientRoutes");
 const shippingClientAdminRoutes = require("./routes/shippingClientAdminRoutes");
 const shippingReportsRoutes = require("./routes/shippingReportsRoutes");
+const shippingAssignRoutes = require("./routes/shippingAssignRoutes");
 const bulkStatusUpdateRoutes = require("./routes/bulkStatusUpdateRoutes");
 const easyWarehouseRoutes = require("./routes/easyWarehouseRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
@@ -1268,6 +1269,7 @@ app.use("/api/v1/courier-portal", courierPortalRoutes);
 app.use("/api/v1/shipping-client", shippingClientRoutes);
 app.use("/api/v1/shipping-clients-admin", shippingClientAdminRoutes);
 app.use("/api/v1/shipping-reports", shippingReportsRoutes);
+app.use("/api/v1/shipping-assign", shippingAssignRoutes);
 app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
 app.use("/api/v1/easy-warehouse", easyWarehouseRoutes);
 

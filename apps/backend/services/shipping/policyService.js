@@ -27,6 +27,7 @@ const DEFAULT_POLICY_SETTINGS = {
   maxCodAmount: null,
   currency: 'EGP',
   invoiceVatPercent: 0,
+  maxShipmentsPerCourierPerDay: 60,
 };
 
 /**

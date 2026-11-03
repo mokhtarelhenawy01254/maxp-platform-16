@@ -130,6 +130,7 @@ model ShippingPolicySettings {
   offlineEnabled        Boolean  @default(true)
   maxWeightKg           Decimal? @db.Decimal(10, 3)
   maxCodAmount          Decimal? @db.Decimal(10, 2)
+  maxShipmentsPerCourierPerDay Int @default(60)
   currency              String   @default("EGP")
   invoiceVatPercent     Decimal  @default(0) @db.Decimal(5, 2)
   createdAt             DateTime @default(now())
