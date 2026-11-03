@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { apiClient } from "../../../services/apiClient";
-import * as namedSonner from "sonner";
+import { toast } from "sonner";
 import type {
   Chat,
   Message,
@@ -11,8 +11,7 @@ import type {
 } from "./types";
 import { buildChatReferencePayload, buildChatReferenceQuery } from "./helpers";
 
-const sonnerToast =
-  namedSonner.toast || (namedSonner as any).default || namedSonner;
+const sonnerToast = toast;
 
 let _optimisticIdCounter = 0;
 

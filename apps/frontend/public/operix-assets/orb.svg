@@ -1,0 +1,21 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="746" height="746" viewBox="0 0 746 746" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="68c155124c67c94294b5b940_Group%201000001051.svg" clip-path="url(#clip0_0_5)">
+<path id="Vector" d="M373 746C579.002 746 746 579.002 746 373C746 166.998 579.002 0 373 0C166.998 0 0 166.998 0 373C0 579.002 166.998 746 373 746Z" fill="url(#paint0_linear_0_5)" fill-opacity="0.16"/>
+<path id="Vector_2" d="M373 744.5C578.174 744.5 744.5 578.174 744.5 373C744.5 167.826 578.174 1.5 373 1.5C167.826 1.5 1.5 167.826 1.5 373C1.5 578.174 167.826 744.5 373 744.5Z" stroke="white" stroke-opacity="0.06" stroke-width="3" stroke-dasharray="394 394"/>
+<path id="Vector_3" d="M533.827 549.792C631.467 460.97 638.615 309.812 549.792 212.173C460.97 114.533 309.812 107.385 212.173 196.208C114.533 285.03 107.385 436.188 196.208 533.827C285.03 631.467 436.188 638.615 533.827 549.792Z" fill="url(#paint1_linear_0_5)" fill-opacity="0.16"/>
+<path id="Vector_4" d="M532.818 548.683C629.845 460.418 636.948 310.209 548.683 213.182C460.418 116.155 310.209 109.052 213.182 197.317C116.155 285.582 109.052 435.791 197.317 532.818C285.582 629.845 435.791 636.948 532.818 548.683Z" stroke="white" stroke-opacity="0.06" stroke-width="3" stroke-dasharray="394 394"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_5" x1="373" y1="746" x2="373" y2="0" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_5" x1="533.827" y1="549.792" x2="212.173" y2="196.208" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<clipPath id="clip0_0_5">
+<rect width="746" height="746" fill="white"/>
+</clipPath>
+</defs>
+</svg>

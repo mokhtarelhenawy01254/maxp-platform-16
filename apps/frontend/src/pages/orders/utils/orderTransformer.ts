@@ -206,11 +206,13 @@ export const transformOrder = (order: RawOrder): Order => {
     sourceType: order.sourceType || "",
     affiliateId: order.affiliateId || undefined,
     affiliate: order.affiliate,
-    orderSource: order.orderSource || (typeof order.orderNumber === "string" && order.orderNumber.includes("-AFF-") ? "AFFILIATE_DIRECT" : undefined),
+    orderSource:
+      order.orderSource ||
+      (order.metadata as any)?.orderSource ||
+      (typeof order.orderNumber === "string" && order.orderNumber.includes("-AFF-") ? "AFFILIATE_DIRECT" : undefined),
     merchantOrder: order.merchantOrder,
     turboShipmentStatus: order.turboShipmentStatus || order.metadata?.turboShipmentStatus || undefined,
     turboTrackingNumber: order.turboTrackingNumber || order.metadata?.turboTrackingNumber || undefined,
-    orderSource: order.orderSource || (order.metadata as any)?.orderSource,
     isWholesale: Boolean(order.isWholesale || order.orderSource === 'WHOLESALE' || (order.metadata as any)?.isWholesale || order.wholesaleCustomerId),
     wholesaleCustomerId: order.wholesaleCustomerId || (order.metadata as any)?.wholesaleCustomerId || null,
     createdBy: order.createdBy || order.createdByUser?.id || null,

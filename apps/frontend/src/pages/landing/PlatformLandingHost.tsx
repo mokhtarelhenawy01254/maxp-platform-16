@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import LandingPage from "../LandingPage";
+import { OperixLuxuryLanding } from "./operix-luxury/OperixLuxuryLanding";
 import { platformSiteHomepageService } from "../../services/platformSiteHomepageService";
 import {
   DEFAULT_PLATFORM_LANDING_VARIANT_ID,
@@ -9,7 +9,8 @@ import {
   isPlatformLandingVariantId,
 } from "./platformLandingRegistry";
 
-// Lazy-load alternate landing variants to keep the initial landing bundle minimal
+// Lazy-load alternate legacy/preview variants to keep the initial landing bundle clean
+const LandingPage = React.lazy(() => import("../LandingPage"));
 const PlatformLandingSalesFlow = React.lazy(() => import("./PlatformLandingSalesFlow"));
 const PlatformLandingExecutiveAtlas = React.lazy(() => import("./PlatformLandingExecutiveAtlas"));
 const PlatformLandingBusinessOs = React.lazy(() => import("./PlatformLandingBusinessOs"));
@@ -32,6 +33,7 @@ const variantComponents: Record<
   "merchant-performs": MerchantPerformsLanding,
   "merchant-annual": MerchantAnnualLanding,
   "merchant-poster": MerchantPosterLanding,
+  "operix-luxury": OperixLuxuryLanding,
 };
 
 interface PlatformLandingRendererProps {
@@ -103,10 +105,16 @@ export const PlatformLandingRenderer: React.FC<
     }
   }, [activeVariantId]);
 
-  const ActiveComponent = variantComponents[activeVariantId] || LandingPage;
+  const ActiveComponent = variantComponents[activeVariantId] || OperixLuxuryLanding;
 
   return (
-    <Suspense fallback={<LandingPage />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-[#013735]/15 border-t-[#013735] animate-spin" />
+        </div>
+      }
+    >
       <ActiveComponent />
     </Suspense>
   );

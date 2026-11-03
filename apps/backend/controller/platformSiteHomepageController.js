@@ -4,8 +4,9 @@ const {
 } = require("../services/sharedDatabase");
 
 const SYSTEM_NAME = "platform_public_landing";
-const DEFAULT_ACTIVE_LANDING_ID = "enterprise-os";
+const DEFAULT_ACTIVE_LANDING_ID = "operix-luxury";
 const ALLOWED_LANDING_IDS = [
+  "operix-luxury",
   "enterprise-os",
   "sales-flow",
   "executive-atlas",

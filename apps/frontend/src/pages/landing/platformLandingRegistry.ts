@@ -7,7 +7,8 @@ export type PlatformLandingVariantId =
   | "merchant-dossier"
   | "merchant-performs"
   | "merchant-annual"
-  | "merchant-poster";
+  | "merchant-poster"
+  | "operix-luxury";
 
 export interface PlatformLandingVariantDefinition {
   id: PlatformLandingVariantId;
@@ -22,7 +23,7 @@ export interface PlatformLandingVariantDefinition {
 }
 
 export const DEFAULT_PLATFORM_LANDING_VARIANT_ID: PlatformLandingVariantId =
-  "enterprise-os";
+  "operix-luxury";
 
 export const PLATFORM_LANDING_PREVIEW_BASE_PATH = "/preview/platform-home";
 
@@ -164,6 +165,24 @@ export const PLATFORM_LANDING_VARIANTS: PlatformLandingVariantDefinition[] = [
       "مركز قيادة موحّد",
       "سرد 5 محاور تشغيل",
       "مقارنة أثر وتكلفة واضحة",
+    ],
+  },
+  {
+    id: "operix-luxury",
+    label: "النسخة النهارية الفاخرة (Operix Caliber)",
+    badge: "طراز البورسلين والزمرد الفاخر",
+    summary:
+      "تصميم نهاري فائق الفخامة والوضوح بنمط Operix: خط الإسكندرية العربي، تدرجات الزمرد والنعناع النضر، شاشة تشغيل حية (Cockpit)، وبنكرياس عمليات متكامل لتقليل المرتجعات.",
+    audience:
+      "لمتاجر التجارة الإلكترونية وفرق العمليات في مصر والخليج التي تبحث عن أقصى درجات الثقة والملموسية التشغيلية.",
+    tone: "نهاري راقٍ، بورسلين عاجي مع زمرد داكن ونعناع مشرق.",
+    accent: "#3fffba",
+    surface: "#f0f5f3",
+    focusPoints: [
+      "عنوان 3D Flip تفاعلي مع خط توقيع",
+      "شاشة تشغيل حية متعددة التابات (Cockpit)",
+      "شريط شركاء وموديولات Bento متوازنة",
+      "أرقام واضحة وتقليل مرتجعات 45%",
     ],
   },
 ];
