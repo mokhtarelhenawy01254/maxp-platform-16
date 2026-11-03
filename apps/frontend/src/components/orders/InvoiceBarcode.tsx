@@ -42,17 +42,17 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   }, [safeValue, height, width]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 text-center select-none rounded-xl p-2.5 print:p-0">
+    <div className="flex flex-col items-center justify-center gap-1 text-center select-none print:p-0">
       <div
         className={
           compact
-            ? "text-xs font-bold text-foreground print:text-black"
-            : "text-xs font-bold tracking-tight text-foreground print:text-black"
+            ? "text-xs font-bold text-slate-900 print:text-black"
+            : "text-xs font-bold tracking-tight text-slate-900 print:text-black"
         }
       >
         {label}
       </div>
-      <div className="rounded-lg bg-white p-1.5 print:p-0">
+      <div className="print:p-0">
         <svg
           ref={svgRef}
           className="mx-auto block max-w-full"
@@ -67,8 +67,8 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
       <span
         className={
           compact
-            ? "font-mono text-[11px] font-bold tracking-wider text-foreground tabular-nums print:text-black"
-            : "font-mono text-xs font-bold tracking-wider text-foreground tabular-nums print:text-black"
+            ? "font-mono text-[11px] font-bold tracking-wider text-slate-900 tabular-nums print:text-black"
+            : "font-mono text-xs font-bold tracking-wider text-slate-900 tabular-nums print:text-black"
         }
       >
         {safeValue}
