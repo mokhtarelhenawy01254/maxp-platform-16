@@ -137,7 +137,7 @@ async function preview({ companyId, merchantId, from, to, prismaClient = null })
 
   const merchant = await prisma.merchant.findFirst({
     where: { id: merchantId, companyId },
-    select: { id: true, name: true, phone: true, email: true, code: true },
+    select: { id: true, name: true, phone: true, email: true },
   });
   if (!merchant) throw serviceError('سجل عميل الشحن غير موجود', 404);
 

@@ -114,6 +114,12 @@ describe('SHIP-W5 HTTP Portal & Client API Integration', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(res.body.data.summary).toHaveProperty('grossCOD');
+    expect(res.body.data.summary).toHaveProperty('shippingFeesTotal');
+    expect(res.body.data.summary).toHaveProperty('codFeesTotal');
+    expect(res.body.data.summary).toHaveProperty('returnFeesTotal');
+    expect(res.body.data.summary).toHaveProperty('netPayout');
+    expect(res.body.data.summary).toHaveProperty('totalShipments');
     expect(res.body.data.summary.totalShipments).toBe(1);
     expect(res.body.data.summary.grossCOD).toBe(300);
     expect(res.body.data.summary.netPayout).toBe(255);
