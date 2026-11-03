@@ -15,10 +15,11 @@ import {
   CheckCircle2,
   Calendar,
   AlertTriangle,
+  Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { shippingOpsService, ShipmentItem } from '../../services/shippingOpsService';
-import { getStatusBadge, formatDate, formatCurrency } from './shippingOpsShared';
+import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel } from './shippingOpsShared';
 
 export const ShippingParcelDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -143,6 +144,14 @@ export const ShippingParcelDetails: React.FC = () => {
             <ArrowRight className="w-4 h-4 rtl:rotate-180" />
             <span>{isEn ? 'Back to List' : 'سجل الشحنات'}</span>
           </Link>
+
+          <button
+            onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+          >
+            <Printer className="w-4 h-4" />
+            <span>{isEn ? 'Print Waybill (A6)' : 'طباعة البوليصة (A6)'}</span>
+          </button>
 
           {isPending && (
             <button

@@ -475,6 +475,15 @@ const NewParcelPage = React.lazy(
 const ShippingParcelDetails = React.lazy(
   () => import("./pages/shipping-ops/ShippingParcelDetails"),
 );
+const PickupsPage = React.lazy(
+  () => import("./pages/shipping-ops/PickupsPage"),
+);
+const BranchesPage = React.lazy(
+  () => import("./pages/shipping-ops/BranchesPage"),
+);
+const HubReceivePage = React.lazy(
+  () => import("./pages/shipping-ops/HubReceivePage"),
+);
 const RateCardsPage = React.lazy(
   () => import("./pages/shipping-ops/RateCardsPage"),
 );
@@ -7431,6 +7440,36 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
                         <ShippingParcelDetails />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/pickups"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <PickupsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/branches"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <BranchesPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/hub-receive"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <HubReceivePage />
                       </AppAccessRoute>
                     </Layout>
                   }

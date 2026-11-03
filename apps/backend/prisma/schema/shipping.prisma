@@ -137,3 +137,57 @@ model ShippingPolicySettings {
   @@map("shipping_policy_settings")
 }
 
+model PickupRequest {
+  id                String          @id @default(cuid())
+  companyId         String
+  merchantId        String?
+  pickupNumber      String
+  status            String          @default("REQUESTED") // REQUESTED | SCHEDULED | ASSIGNED | COMPLETED | CANCELLED
+  scheduledDate     DateTime
+  timeSlot          String?
+  contactName       String
+  contactPhone      String
+  pickupAddress     String
+  city              String?
+  governorate       String
+  expectedParcels   Int             @default(1)
+  actualParcels     Int?
+  assignedCourierId String?
+  branchId          String?
+  notes             String?
+  completedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  branch            ShippingBranch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  shipments         Shipment[]
+
+  @@unique([companyId, pickupNumber])
+  @@index([companyId, status, scheduledDate])
+  @@index([companyId, merchantId])
+  @@index([assignedCourierId])
+  @@index([branchId])
+  @@map("pickup_requests")
+}
+
+model ShippingBranch {
+  id          String          @id @default(cuid())
+  companyId   String
+  name        String
+  code        String
+  governorate String
+  address     String?
+  phone       String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  pickups     PickupRequest[]
+  shipments   Shipment[]
+
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@map("shipping_branches")
+}
+
+

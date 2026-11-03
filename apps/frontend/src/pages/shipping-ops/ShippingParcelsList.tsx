@@ -13,6 +13,7 @@ import {
   Boxes,
   CheckCircle2,
   Copy,
+  Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -22,7 +23,7 @@ import {
   ShipmentsQuery,
 } from '../../services/shippingOpsService';
 import { EGYPT_GOVERNORATES } from '../../constants/egyptGovernorates';
-import { getStatusBadge, formatDate, formatCurrency } from './shippingOpsShared';
+import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel } from './shippingOpsShared';
 
 export const ShippingParcelsList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -319,6 +320,13 @@ export const ShippingParcelsList: React.FC = () => {
                             {s.trackingNumber}
                           </Link>
                           <button
+                            onClick={() => printShipmentLabel(s.id, s.trackingNumber)}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
+                            title={isEn ? 'Print Waybill (A6)' : 'طباعة البوليصة'}
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleCopyTracking(s.trackingNumber)}
                             className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
                             title="نسخ رقم التتبع"
@@ -363,6 +371,13 @@ export const ShippingParcelsList: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
+                          <button
+                            onClick={() => printShipmentLabel(s.id, s.trackingNumber)}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
+                            title={isEn ? 'Print Waybill (A6)' : 'طباعة البوليصة'}
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
                           {isCancelable && (
                             <button
                               onClick={() => {

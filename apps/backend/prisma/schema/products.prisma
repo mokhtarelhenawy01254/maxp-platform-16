@@ -790,7 +790,15 @@ model Shipment {
   courier                Courier?         @relation(fields: [courierId], references: [id], onDelete: SetNull)
   deliveryRun            DeliveryRun?     @relation(fields: [deliveryRunId], references: [id], onDelete: SetNull)
   events                 ShipmentEvent[]
+  branchId               String?
+  pickupRequestId        String?
+  actualWeight           Decimal?         @db.Decimal(10, 3)
+  priceAdjustment        Decimal?         @db.Decimal(10, 2)
+  barcode                String?
+  branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  pickupRequest          PickupRequest?   @relation(fields: [pickupRequestId], references: [id], onDelete: SetNull)
 
+  @@unique([companyId, barcode])
   @@index([companyId])
   @@index([orderId])
   @@index([merchantId])
@@ -799,6 +807,9 @@ model Shipment {
   @@index([shippingCompanyId])
   @@index([courierId])
   @@index([deliveryRunId])
+  @@index([branchId])
+  @@index([pickupRequestId])
+  @@index([barcode])
   @@index([status])
   @@index([companyId, createdAt])
   @@index([companyId, status, createdAt])

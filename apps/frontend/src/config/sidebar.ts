@@ -945,6 +945,9 @@ export const getSidebarConfig = (
                 { to: '/shipping-ops', icon: LayoutDashboard, label: isEn ? 'Shipping Dashboard' : 'لوحة تشغيل الشحن', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/parcels', icon: Package, label: isEn ? 'Parcels & Shipments' : 'الشحنات والطرود', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/parcels/new', icon: Plus, label: isEn ? 'New Standalone Parcel' : 'إنشاء طرد جديد', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/pickups', icon: Truck, label: isEn ? 'Pickup Requests' : 'طلبات الاستلام (Pickup)', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/hub-receive', icon: ScanLine, label: isEn ? 'Hub Inward & Sorting' : 'استلام وفرز الهاَب', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/branches', icon: Building2, label: isEn ? 'Shipping Branches' : 'فروع ومراكز الشحن', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/rate-cards', icon: CreditCard, label: isEn ? 'Client Rate Cards' : 'بطاقات أسعار العملاء', requiredPermissions: ['orders.shipping.view'] },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
