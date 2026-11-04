@@ -4043,7 +4043,7 @@ class AttendanceService {
         }),
         this.prisma.employee.findMany({
           where: { companyId, userId: { in: userIds } },
-          select: { id: true, userId: true, employeeId: true, departmentId: true },
+          select: { id: true, userId: true, employeeNumber: true, departmentId: true },
         }),
         this.prisma.attendance.findMany({
           where: {
@@ -4087,7 +4087,7 @@ class AttendanceService {
             id: attempt.id,
             userId: attempt.userId,
             userName,
-            employeeCode: emp?.employeeId || null,
+            employeeCode: emp?.employeeNumber || null,
             attendanceDate: attempt.attendanceDate,
             attemptedAt: attempt.attemptedAt,
             action: attempt.action,
@@ -4104,7 +4104,7 @@ class AttendanceService {
           const currentCount = employeeCounter.get(attempt.userId) || {
             userId: attempt.userId,
             userName,
-            employeeCode: emp?.employeeId || null,
+            employeeCode: emp?.employeeNumber || null,
             count: 0,
             latestAttemptAt: attempt.attemptedAt,
           };
