@@ -60,6 +60,10 @@ const mockPrisma = {
   companyApp: {
     findFirst: jest.fn(),
   },
+  returnRequest: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+  },
 };
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -105,6 +109,7 @@ const shipmentsRoutes = require('../../routes/shipmentsRoutes');
 const courierService = require('../../services/courierService');
 const profitService = require('../../services/shipping/profitService');
 const policyService = require('../../services/shipping/policyService');
+const shippingRtoService = require('../../services/shipping/shippingRtoService');
 
 const app = express();
 app.use(express.json());
@@ -647,6 +652,145 @@ describe('SHIP-W11 Acceptance Gate', () => {
       expect(report.totals.courierCost).toBe(20);
       expect(report.totals.rtoCostTotal).toBe(40); // rtoCostTotal verified!
       expect(report.totals.margin).toBe(110); // 170 - 20 - 40 = 110!
+    });
+
+    test('4.4: shippingRtoService.evaluate applies rtoCost=40, recalculates margin, and records RTO_COST_APPLIED on auto-RTO', async () => {
+      mockPrisma.shippingPolicySettings.findUnique.mockResolvedValue({
+        companyId: 'company-w11-1',
+        deliveryAttempts: 3,
+        afterAttemptsAction: 'RTO',
+        rtoChargeReturnLeg: true,
+        rtoReturnLegPrice: 40,
+      });
+
+      const failedShipment = {
+        id: 'ship-rto-eval-1',
+        companyId: 'company-w11-1',
+        status: 'FAILED',
+        attemptCount: 3,
+        cost: 70,
+        courierCost: 0,
+        rtoCost: null,
+        marginAmount: null,
+        destinationGovernorate: 'القاهرة',
+        events: [],
+      };
+
+      mockPrisma.shipment.findMany.mockResolvedValue([failedShipment]);
+      mockPrisma.shipmentEvent.findFirst.mockResolvedValue(null);
+
+      let updatedData = null;
+      mockPrisma.shipment.update.mockImplementation(async ({ data }) => {
+        updatedData = data;
+        return { ...failedShipment, ...data };
+      });
+
+      const res = await shippingRtoService.evaluate('company-w11-1');
+
+      expect(res.success).toBe(true);
+      expect(res.rtoCount).toBe(1);
+      expect(updatedData.status).toBe('RETURNED');
+      expect(updatedData.rtoCost).toBe(40);
+      expect(updatedData.marginAmount).toBe(30); // 70 - 0 - 40 = 30
+
+      // Verify RTO_COST_APPLIED event was created
+      expect(mockPrisma.shipmentEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            shipmentId: 'ship-rto-eval-1',
+            reasonCode: 'RTO_COST_APPLIED',
+          }),
+        })
+      );
+    });
+
+    test('4.5: Duplicate run of shippingRtoService.evaluate does NOT double rtoCost and does not insert duplicate event', async () => {
+      mockPrisma.shippingPolicySettings.findUnique.mockResolvedValue({
+        companyId: 'company-w11-1',
+        deliveryAttempts: 3,
+        afterAttemptsAction: 'RTO',
+        rtoChargeReturnLeg: true,
+        rtoReturnLegPrice: 40,
+      });
+
+      // Shipment already processed with rtoCost: 40
+      const alreadyReturnedShipment = {
+        id: 'ship-rto-eval-2',
+        companyId: 'company-w11-1',
+        status: 'RETURNED',
+        attemptCount: 3,
+        cost: 70,
+        courierCost: 0,
+        rtoCost: 40,
+        marginAmount: 30,
+        events: [{ reasonCode: 'RTO_COST_APPLIED' }],
+      };
+
+      // Even if candidate query returned it
+      mockPrisma.shipment.findMany.mockResolvedValue([alreadyReturnedShipment]);
+      mockPrisma.shipmentEvent.findFirst.mockResolvedValue({ reasonCode: 'RTO_COST_APPLIED' });
+
+      let updatedData = null;
+      mockPrisma.shipment.update.mockImplementation(async ({ data }) => {
+        updatedData = data;
+        return { ...alreadyReturnedShipment, ...data };
+      });
+
+      mockPrisma.shipmentEvent.create.mockClear();
+
+      const res = await shippingRtoService.evaluate('company-w11-1');
+      expect(res.success).toBe(true);
+      expect(updatedData.rtoCost).toBe(40); // NOT 80!
+      expect(updatedData.marginAmount).toBe(30); // NOT -10!
+
+      // Verify no second RTO_COST_APPLIED event was created
+      const rtoCostCalls = mockPrisma.shipmentEvent.create.mock.calls.filter(
+        c => c[0]?.data?.reasonCode === 'RTO_COST_APPLIED'
+      );
+      expect(rtoCostCalls.length).toBe(0);
+    });
+
+    test('4.6: shippingRtoService.evaluate when rtoChargeReturnLeg is false sets rtoCost=null and margin=cost', async () => {
+      mockPrisma.shippingPolicySettings.findUnique.mockResolvedValue({
+        companyId: 'company-w11-1',
+        deliveryAttempts: 3,
+        afterAttemptsAction: 'RTO',
+        rtoChargeReturnLeg: false,
+        rtoReturnLegPrice: null,
+      });
+
+      const failedShipment = {
+        id: 'ship-rto-eval-3',
+        companyId: 'company-w11-1',
+        status: 'FAILED',
+        attemptCount: 3,
+        cost: 70,
+        courierCost: 0,
+        rtoCost: null,
+        destinationGovernorate: 'القاهرة',
+        events: [],
+      };
+
+      mockPrisma.shipment.findMany.mockResolvedValue([failedShipment]);
+
+      let updatedData = null;
+      mockPrisma.shipment.update.mockImplementation(async ({ data }) => {
+        updatedData = data;
+        return { ...failedShipment, ...data };
+      });
+
+      mockPrisma.shipmentEvent.create.mockClear();
+
+      const res = await shippingRtoService.evaluate('company-w11-1');
+      expect(res.success).toBe(true);
+      expect(updatedData.status).toBe('RETURNED');
+      expect(updatedData.rtoCost).toBe(null);
+      expect(updatedData.marginAmount).toBe(70);
+
+      const rtoCostCalls = mockPrisma.shipmentEvent.create.mock.calls.filter(
+        c => c[0]?.data?.reasonCode === 'RTO_COST_APPLIED'
+      );
+      expect(rtoCostCalls.length).toBe(0);
     });
   });
 });

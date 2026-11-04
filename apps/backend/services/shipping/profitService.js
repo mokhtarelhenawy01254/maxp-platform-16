@@ -79,7 +79,8 @@ async function computeCourierCost(shipment, courier = null) {
   }
 
   courierCost = round2(courierCost);
-  const marginAmount = round2(Number(shipment.cost || 0) - courierCost);
+  const rtoCost = shipment.rtoCost !== null && shipment.rtoCost !== undefined ? Number(shipment.rtoCost) : 0;
+  const marginAmount = round2(Number(shipment.cost || 0) - courierCost - rtoCost);
 
   return {
     courierCost,
@@ -109,15 +110,25 @@ async function applyProfitToShipment(prismaClient, shipmentId, options = {}) {
     throw new Error(`Shipment with id ${shipmentId} not found`);
   }
 
-  const { courierCost, costSource, marginAmount } = await computeCourierCost(shipment, shipment.courier);
+  const rtoCost = options.rtoCost !== undefined
+    ? (options.rtoCost !== null ? Number(options.rtoCost) : null)
+    : (shipment.rtoCost !== null && shipment.rtoCost !== undefined ? Number(shipment.rtoCost) : null);
+
+  const shipmentForCost = { ...shipment, rtoCost };
+  const { courierCost, costSource, marginAmount } = await computeCourierCost(shipmentForCost, shipment.courier);
+
+  const updateData = {
+    courierCost,
+    costSource,
+    marginAmount
+  };
+  if (options.rtoCost !== undefined) {
+    updateData.rtoCost = rtoCost;
+  }
 
   const updated = await prisma.shipment.update({
     where: { id: shipmentId },
-    data: {
-      courierCost,
-      costSource,
-      marginAmount
-    },
+    data: updateData,
     include: {
       courier: true,
       merchant: true

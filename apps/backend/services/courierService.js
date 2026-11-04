@@ -905,6 +905,52 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
       } catch (profitErr) {
         console.warn('⚠️ [COURIER_SERVICE] Profit calculation warning:', profitErr.message);
       }
+    } else if (updateData.status === 'RETURNED') {
+      try {
+        const policyService = require('./shipping/policyService');
+        const policy = await policyService.getPolicy(companyId, tx);
+        if (policy?.rtoChargeReturnLeg) {
+          const rtoPrice = Number(policy.rtoReturnLegPrice !== null && policy.rtoReturnLegPrice !== undefined ? policy.rtoReturnLegPrice : 0);
+          const currentCost = Number(shipment.cost || 0);
+          const courierCost = Number(updatedShipment.courierCost || 0);
+          const marginAmount = Math.round((currentCost - rtoPrice - courierCost) * 100) / 100;
+
+          await tx.shipment.update({
+            where: { id: shipmentId },
+            data: {
+              rtoCost: rtoPrice,
+              marginAmount
+            }
+          });
+
+          const existingRtoEvent = await tx.shipmentEvent.findFirst({
+            where: {
+              shipmentId,
+              reasonCode: 'RTO_COST_APPLIED'
+            }
+          });
+
+          if (!existingRtoEvent) {
+            const { recordShipmentEvent } = require('./shipping/shipmentEventService');
+            await recordShipmentEvent(tx, {
+              companyId,
+              shipmentId,
+              fromStatus: shipment.status,
+              toStatus: 'RETURNED',
+              reasonCode: 'RTO_COST_APPLIED',
+              notes: `تطبيق تكلفة رحلة العودة (RTO): ${rtoPrice} ج.م`,
+              actorType: 'COURIER',
+              metadata: {
+                rtoCost: rtoPrice,
+                marginAmount,
+                courierCost
+              }
+            });
+          }
+        }
+      } catch (rtoErr) {
+        console.warn('⚠️ [COURIER_SERVICE] RTO cost apply notice:', rtoErr.message);
+      }
     }
 
     // If all shipments in delivery run are resolved, check if run can be marked COMPLETED

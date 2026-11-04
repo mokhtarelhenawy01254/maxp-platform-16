@@ -1117,7 +1117,14 @@ async function updateShipmentStatus(req, res) {
             }
           });
 
-          await recordShipmentEvent(prisma, {
+          const existingRtoEvent = await prisma.shipmentEvent.findFirst({
+            where: {
+              shipmentId: id,
+              reasonCode: 'RTO_COST_APPLIED'
+            }
+          });
+          if (!existingRtoEvent) {
+            await recordShipmentEvent(prisma, {
             companyId,
             shipmentId: id,
             fromStatus: shipment.status,
@@ -1131,6 +1138,7 @@ async function updateShipmentStatus(req, res) {
               courierCost
             }
           });
+          }
         }
       } catch (rtoErr) {
         console.warn('⚠️ [SHIPPING_PORTAL] RTO cost apply notice:', rtoErr.message);

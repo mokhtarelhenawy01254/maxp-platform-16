@@ -1,5 +1,5 @@
 /**
- * Shipping RTO Service (SHIP-W3)
+ * Shipping RTO Service (SHIP-W3 / SHIP-W11.1)
  * Evaluates failed shipments against company delivery policy
  * Automates Return-to-Origin (AUTO_RTO) or flags for operations review (NEEDS_RTO_REVIEW).
  */
@@ -28,18 +28,28 @@ async function evaluate(companyId) {
   const isAutoRto = rawAction === 'AUTO_RTO' || rawAction === 'RTO';
 
   // Find candidate shipments that are FAILED with attemptCount >= maxAttempts
-  // and are not already in terminal status (RETURNED, DELIVERED, CANCELLED)
+  // or already RETURNED shipments where attemptCount >= maxAttempts and rtoCost is not yet set
   const candidateShipments = await prisma.shipment.findMany({
     where: {
       companyId,
-      status: 'FAILED',
-      attemptCount: { gte: maxAttempts }
+      OR: [
+        {
+          status: 'FAILED',
+          attemptCount: { gte: maxAttempts }
+        },
+        {
+          status: 'RETURNED',
+          attemptCount: { gte: maxAttempts },
+          rtoCost: null
+        }
+      ]
     },
     include: {
       order: true,
+      courier: true,
       events: {
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 10
       }
     }
   });
@@ -50,29 +60,108 @@ async function evaluate(companyId) {
 
   for (const shipment of candidateShipments) {
     if (isAutoRto) {
-      // AUTO_RTO: Change status to RETURNED + record AUTO_RTO event
+      // 1. Determine RTO return leg cost according to policy (SHIP-W11.1 / SHP-30)
+      let rtoCostToApply = null;
+      let priceSource = 'NONE';
+
+      if (policy.rtoChargeReturnLeg) {
+        if (policy.rtoReturnLegPrice !== null && policy.rtoReturnLegPrice !== undefined && !isNaN(Number(policy.rtoReturnLegPrice))) {
+          rtoCostToApply = Number(policy.rtoReturnLegPrice);
+          priceSource = 'POLICY_FIXED';
+        } else {
+          try {
+            const { resolveShippingQuoteForGovernorate } = require('../../controller/shippingZoneController');
+            const zoneQuote = await resolveShippingQuoteForGovernorate(companyId, shipment.destinationGovernorate);
+            if (zoneQuote && zoneQuote.price) {
+              rtoCostToApply = Number(zoneQuote.price);
+              priceSource = 'ZONE_RETURN_LEG';
+            }
+          } catch (zErr) {
+            console.warn('[RTO-SERVICE] Zone quote fallback warning:', zErr.message);
+          }
+        }
+      }
+
+      // Idempotence: if shipment already has rtoCost set, keep it (never double)
+      const finalRtoCost = shipment.rtoCost !== null && shipment.rtoCost !== undefined
+        ? Number(shipment.rtoCost)
+        : rtoCostToApply;
+
+      const currentCost = Number(shipment.cost || 0);
+      let courierCost = shipment.courierCost !== null && shipment.courierCost !== undefined
+        ? Number(shipment.courierCost)
+        : 0;
+
+      if (shipment.courierCost === null || shipment.courierCost === undefined) {
+        try {
+          const profitService = require('./profitService');
+          const computed = await profitService.computeCourierCost(shipment, shipment.courier);
+          courierCost = computed.courierCost;
+        } catch (cErr) {
+          console.warn('[RTO-SERVICE] Courier cost compute notice:', cErr.message);
+        }
+      }
+
+      const effectiveRtoCost = finalRtoCost !== null ? Number(finalRtoCost) : 0;
+      const marginAmount = Math.round((currentCost - courierCost - effectiveRtoCost) * 100) / 100;
+
+      // AUTO_RTO: Change status to RETURNED + persist rtoCost & recalculated margin
       await prisma.$transaction(async (tx) => {
         await tx.shipment.update({
           where: { id: shipment.id },
           data: {
-            status: 'RETURNED'
+            status: 'RETURNED',
+            rtoCost: finalRtoCost,
+            courierCost,
+            marginAmount
           }
         });
 
-        await recordShipmentEvent(tx, {
-          companyId,
-          shipmentId: shipment.id,
-          fromStatus: shipment.status,
-          toStatus: 'RETURNED',
-          reasonCode: 'AUTO_RTO',
-          notes: `تحويل تلقائي إلى مرتجع (AUTO_RTO) لتجاوز الحد الأقصى للمحاولات (${shipment.attemptCount}/${maxAttempts})`,
-          actorType: 'SYSTEM',
-          metadata: {
-            autoRto: true,
-            attemptCount: shipment.attemptCount,
-            maxAttempts
+        // Record AUTO_RTO event if fromStatus is not already RETURNED
+        if (shipment.status !== 'RETURNED') {
+          await recordShipmentEvent(tx, {
+            companyId,
+            shipmentId: shipment.id,
+            fromStatus: shipment.status,
+            toStatus: 'RETURNED',
+            reasonCode: 'AUTO_RTO',
+            notes: `تحويل تلقائي إلى مرتجع (AUTO_RTO) لتجاوز الحد الأقصى للمحاولات (${shipment.attemptCount}/${maxAttempts})`,
+            actorType: 'SYSTEM',
+            metadata: {
+              autoRto: true,
+              attemptCount: shipment.attemptCount,
+              maxAttempts
+            }
+          });
+        }
+
+        // Record RTO_COST_APPLIED event if cost applied and not already recorded (no duplicates)
+        if (effectiveRtoCost > 0) {
+          const existingRtoEvent = await tx.shipmentEvent.findFirst({
+            where: {
+              shipmentId: shipment.id,
+              reasonCode: 'RTO_COST_APPLIED'
+            }
+          });
+
+          if (!existingRtoEvent) {
+            await recordShipmentEvent(tx, {
+              companyId,
+              shipmentId: shipment.id,
+              fromStatus: shipment.status,
+              toStatus: 'RETURNED',
+              reasonCode: 'RTO_COST_APPLIED',
+              notes: `تطبيق تكلفة رحلة العودة (RTO): ${effectiveRtoCost} ج.م`,
+              actorType: 'SYSTEM',
+              metadata: {
+                rtoCost: effectiveRtoCost,
+                priceSource,
+                marginAmount,
+                courierCost
+              }
+            });
           }
-        });
+        }
 
         // Optional: Create ReturnRequest if order and customer exist
         if (shipment.orderId && shipment.order?.customerId) {
@@ -104,7 +193,9 @@ async function evaluate(companyId) {
         action: 'AUTO_RTO',
         previousStatus: shipment.status,
         newStatus: 'RETURNED',
-        attemptCount: shipment.attemptCount
+        attemptCount: shipment.attemptCount,
+        rtoCost: finalRtoCost,
+        marginAmount
       });
     } else {
       // REVIEW mode: Do not change status, tag with NEEDS_RTO_REVIEW event if not already tagged
