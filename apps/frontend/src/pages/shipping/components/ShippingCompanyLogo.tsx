@@ -5,6 +5,8 @@ export interface ShippingCompanyLogoProps {
     name?: string;
     providerKey?: string;
     slug?: string;
+    logo?: string | null;
+    logoUrl?: string | null;
     settings?: string | null | Record<string, any>;
   } | null;
   size?: number;
@@ -15,7 +17,15 @@ export interface ShippingCompanyLogoProps {
 const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string | null => {
   if (!company) return null;
 
-  // 1. Explicit custom logo from settings
+  // 1. Direct logo or logoUrl from company object
+  if (company.logoUrl && typeof company.logoUrl === 'string' && company.logoUrl.trim()) {
+    return company.logoUrl.trim();
+  }
+  if (company.logo && typeof company.logo === 'string' && company.logo.trim()) {
+    return company.logo.trim();
+  }
+
+  // 2. Explicit custom logo from settings
   let parsedSettings: Record<string, any> = {};
   if (company.settings) {
     if (typeof company.settings === 'string') {
@@ -30,8 +40,11 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   if (parsedSettings.logoUrl && typeof parsedSettings.logoUrl === 'string' && parsedSettings.logoUrl.trim()) {
     return parsedSettings.logoUrl.trim();
   }
+  if (parsedSettings.logo && typeof parsedSettings.logo === 'string' && parsedSettings.logo.trim()) {
+    return parsedSettings.logo.trim();
+  }
 
-  // 2. Built-in provider logos
+  // 3. Built-in provider logos
   const key = String(company.providerKey || '').trim().toUpperCase();
   const slug = String(company.slug || '').trim().toLowerCase();
   const name = String(company.name || '').trim().toLowerCase();
@@ -45,13 +58,13 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   if (key === 'BOSTA' || key === 'BOSTA_DEMO' || slug.includes('bosta') || name.includes('bosta') || name.includes('بوستا')) {
     return '/brands/bosta.svg';
   }
-  if (key === 'QP_EXPRESS' || slug.includes('qp') || name.includes('qp') || name.includes('كيو بي')) {
+  if (key === 'QP_EXPRESS' || key === 'QP' || slug.includes('qp') || name.includes('qp') || name.includes('كيو بي')) {
     return '/brands/qp_express.svg';
   }
-  if (key === 'MYLERZ_DEMO' || slug.includes('mylerz') || name.includes('mylerz') || name.includes('مايلرز')) {
+  if (key === 'MYLERZ' || key === 'MYLERZ_DEMO' || slug.includes('mylerz') || name.includes('mylerz') || name.includes('مايلرز')) {
     return '/brands/mylerz.svg';
   }
-  if (key === 'ARAMEX_DEMO' || slug.includes('aramex') || name.includes('aramex') || name.includes('أرامكس')) {
+  if (key === 'ARAMEX' || key === 'ARAMEX_DEMO' || slug.includes('aramex') || name.includes('aramex') || name.includes('أرامكس')) {
     return '/brands/aramex.svg';
   }
 
@@ -91,7 +104,7 @@ export const ShippingCompanyLogo: React.FC<ShippingCompanyLogoProps> = ({
     return (
       <div
         data-testid="shipping-company-logo-fallback"
-        className={`rounded-lg border border-border/80 bg-muted/60 text-foreground flex items-center justify-center font-bold font-mono shrink-0 select-none ${className}`}
+        className={`rounded-xl border border-border/80 bg-muted/60 text-foreground flex items-center justify-center font-bold font-mono shrink-0 select-none shadow-2xs ${className}`}
         style={{ width: size, height: size, fontSize: Math.max(11, Math.floor(size * 0.35)) }}
         title={companyName}
         aria-label={altText}
@@ -102,17 +115,21 @@ export const ShippingCompanyLogo: React.FC<ShippingCompanyLogoProps> = ({
   }
 
   return (
-    <img
-      data-testid="shipping-company-logo"
-      src={logoSrc}
-      alt={altText}
-      width={size}
-      height={size}
-      className={`rounded-lg object-contain shrink-0 border border-border/60 bg-background/50 ${className}`}
+    <div
+      className={`relative rounded-xl border border-border/70 dark:border-border/60 bg-white shadow-2xs flex items-center justify-center p-1 shrink-0 overflow-hidden ${className}`}
       style={{ width: size, height: size }}
-      onError={() => setHasError(true)}
-      loading="lazy"
-    />
+    >
+      <img
+        data-testid="shipping-company-logo"
+        src={logoSrc}
+        alt={altText}
+        width={size}
+        height={size}
+        className="w-full h-full object-contain select-none"
+        onError={() => setHasError(true)}
+        loading="lazy"
+      />
+    </div>
   );
 };
 

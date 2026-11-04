@@ -42,8 +42,8 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
             <div className="space-y-3">
               {/* Top Row: Name, Slug & Active Switch */}
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <ShippingCompanyLogo company={company} size={36} />
+                <div className="flex items-center gap-3">
+                  <ShippingCompanyLogo company={company} size={40} />
                   <div>
                     <h3 className="text-sm font-bold text-foreground">
                       {company.name}
