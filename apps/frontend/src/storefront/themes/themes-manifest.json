@@ -1,0 +1,2420 @@
+[
+  {
+    "id": "modern-minimal",
+    "name": "Modern Minimal",
+    "description": "بوتيك أحذية حريمي هادئ يوازن بين إبراز المقاسات، وضوح المقارنة، ومسارات شراء أسرع للسنيكرز والكعب والصنادل.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 10%",
+      "40 18% 95%",
+      "32 34% 89%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "airlume-ai",
+    "name": "Airlume Travel",
+    "description": "واجهة سفر حديثة مع Hero عائم وبطاقات مزايا غير منتظمة لعرض تجربة حجز أكثر وضوحًا.",
+    "category": "services",
+    "categoryMeta": {
+      "primary": {
+        "id": "services",
+        "label": "خدمات"
+      },
+      "secondary": {
+        "id": "travel-services",
+        "label": "سفر وحجوزات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "227 95% 60%",
+      "218 100% 69%",
+      "191 100% 70%"
+    ],
+    "previewImage": "/assets/themes/airlume-ai/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "allure",
+    "name": "Allure (ألورا)",
+    "description": "نسخة من ثيم Allure / Allura (ألورا) (Shopify): أناقة تلتقي بالبساطة، عرض بصري قوي وعلامة تجارية فاخرة. يدعم mega menu، تصفية بالألوان (swatch filters)، quick buy، سلة منزلقة، دليل مقاسات، lookbook، عدّاد نقص المخزون، عدّ تنازلي، تنبيهات عودة المخزون، cross-sell/بُعِد-معًا، ومراجعات العملاء.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "fashion-store",
+        "label": "متجر أزياء"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 9% 8%",
+      "36 30% 94%",
+      "22 42% 38%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 13,
+      "shopSections": 6,
+      "checkoutSections": 2,
+      "pdpSections": 13,
+      "cartSections": 2,
+      "totalSections": 36
+    }
+  },
+  {
+    "id": "anjella-boutique",
+    "name": "أنجيلا بوتيك",
+    "description": "قالب بوتيك أزياء وعبايات محتشمة بتصميم أنيق وبسيط، يعتمد على نقاء المساحات البيضاء، صور كولكشن راقية، وأزرار شراء واضحة وسريعة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "بوتيك أزياء وعبايات محتشمة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 10%",
+      "340 30% 97%",
+      "345 60% 60%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 19
+    }
+  },
+  {
+    "id": "atelier-nova",
+    "name": "Atelier Nova",
+    "description": "بوتيك نسائي أقرب إلى غاليري هادئ: دفعات صغيرة، قطع منسقة، ومسارات شراء تحافظ على الإيقاع بدل الرفوف العامة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-fashion",
+        "label": "ملابس نسائية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "18 10% 15%",
+      "32 25% 92%",
+      "20 32% 52%"
+    ],
+    "previewImage": "/assets/themes/atelier-nova/preview.png",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 4,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "aura-chic",
+    "name": "Aura Chic",
+    "description": "قالب إكسسوارات أنثوي يركز على الحقائب والقطع اليومية والهدايا الخفيفة داخل تجربة بوتيك ناعمة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "accessories",
+        "label": "إكسسوارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "340 40% 50%",
+      "340 20% 96%",
+      "340 20% 96%"
+    ],
+    "previewImage": "/assets/themes/aura-chic/hero.png",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 3,
+      "checkoutSections": 2,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "baladi-market-eg",
+    "name": "بلدي ماركت",
+    "description": "متجر مصري مباشر بدون صفحة رئيسية — الزائر يدخل على المنتجات من أول ثانية مع ألوان مصرية دافئة ورسائل بيع محلية تشجع الحسم السريع.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "direct-market",
+        "label": "متجر مباشر بدون رئيسية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "18 78% 46%",
+      "40 45% 94%",
+      "165 55% 40%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&q=80&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 18
+    }
+  },
+  {
+    "id": "bloom-studio",
+    "name": "Bloom Studio",
+    "description": "ثيم ربيعي طازج لمحلات الورد والهدايا مع تصنيف حسب المناسبة وتوصيل في نفس اليوم.",
+    "category": "gifts",
+    "categoryMeta": {
+      "primary": {
+        "id": "gifts",
+        "label": "ورد وهدايا"
+      },
+      "secondary": {
+        "id": "florist",
+        "label": "ورد وتغليف"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "340 70% 60%",
+      "145 40% 93%",
+      "145 55% 42%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?auto=format&fit=crop&w=1400&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 19
+    }
+  },
+  {
+    "id": "bold-fashion",
+    "name": "Bold Fashion",
+    "description": "واجهة أزياء جريئة تبرز العروض السريعة والمنتجات الرائجة بإيقاع بصري أعلى ورسائل شراء أوضح.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "fashion-store",
+        "label": "متجر أزياء"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "345 82% 46%",
+      "340 33% 96%",
+      "28 92% 55%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 5,
+      "checkoutSections": 2,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 18
+    }
+  },
+  {
+    "id": "butcher-counter-eg",
+    "name": "Premium Butcher Shop",
+    "description": "قالب جزارة Premium فاخر بتقطيعات حسب الطلب، وزن مؤكد قبل التجهيز، وتوصيل مبرد يحافظ على الطزاجة.",
+    "category": "food",
+    "categoryMeta": {
+      "primary": {
+        "id": "food",
+        "label": "مطاعم وأغذية"
+      },
+      "secondary": {
+        "id": "butcher-shop",
+        "label": "جزارة Premium ولحوم Black Label"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "354 72% 34%",
+      "26 16% 12%",
+      "38 44% 58%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1777799095908-978e9f70a872?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 19
+    }
+  },
+  {
+    "id": "butcher-shop-eg",
+    "name": "الجزار اللي يأكلك",
+    "description": "ثيم جزارة مصري يبيع اللحوم الطازجة بوضوح: ألوان حمراء دافئة، صور لحم طازج، وقطع مختارة جاهزة للطلب السريع.",
+    "category": "food",
+    "categoryMeta": {
+      "primary": {
+        "id": "food",
+        "label": "مطاعم وأغذية"
+      },
+      "secondary": {
+        "id": "meat-shop",
+        "label": "جزارة ولحوم"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 70% 45%",
+      "30 20% 96%",
+      "35 50% 50%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 1,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "cafe-demo",
+    "name": "Müt Coffee",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "25 20% 45%",
+      "35 30% 95%",
+      "25 40% 50%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=2000",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 2,
+      "checkoutSections": 2,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 13
+    }
+  },
+  {
+    "id": "cairo-stride",
+    "name": "Cairo Stride",
+    "description": "قالب أحذية رجالية جاهز للبيع من أول يوم: المقاس واضح، العروض قريبة، والعميل يحسم بسرعة من غير لف كتير.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-shoes",
+        "label": "أحذية رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 26% 16%",
+      "35 30% 93%",
+      "31 86% 50%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "closet-os",
+    "name": "Closet OS",
+    "description": "قالب خزانة أسبوعية يبيع بروتين لبس جاهز: قمصان، طبقات خفيفة، وكابسولات يومية تقلل الحيرة وتشجع التكرار.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "capsule-wardrobe",
+        "label": "خزانة أسبوعية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "169 18% 18%",
+      "42 28% 90%",
+      "149 28% 42%"
+    ],
+    "previewImage": "/assets/themes/closet-os/preview.jpg",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 7,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "couture-atelier-eg",
+    "name": "Couture Atelier EG",
+    "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة (Shop The Look) والسرد القصصي البانورامي والتسوق البصري التفاعلي.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "luxury-atelier",
+        "label": "دار أزياء وأتيليه فاخر"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 16% 12%",
+      "36 24% 93%",
+      "26 42% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "crafted",
+    "name": "Crafted",
+    "description": "ثيم دافئ بألوان أرضية لمنصات الحرف اليدوية مع قصص الحرفيين وقطع محدودة الإنتاج.",
+    "category": "handmade",
+    "categoryMeta": {
+      "primary": {
+        "id": "handmade",
+        "label": "حرف يدوية"
+      },
+      "secondary": {
+        "id": "artisan-crafts",
+        "label": "صناعات يدوية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "15 55% 52%",
+      "35 50% 94%",
+      "85 30% 40%"
+    ],
+    "previewImage": "/assets/themes/aura-chic/artisan.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "creative-portfolio",
+    "name": "Creative Studio & Portfolio",
+    "description": "قالب بورتفوليو واستوديو إبداعي متكامل للمصممين، الوكالات، المستقلين، والشركات الخدمية: عرض مشاريع احترافي، مقارنة قبل وبعد، شبكة خدمات، وطلب تسعير مباشر بدون تعقيدات المتاجر التقليدية.",
+    "category": "creative",
+    "categoryMeta": {
+      "primary": {
+        "id": "creative",
+        "label": "إبداعي وبورتفوليو"
+      },
+      "secondary": {
+        "id": "portfolio-showcase",
+        "label": "معرض أعمال وخدمات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "258 90% 66%",
+      "240 6% 14%",
+      "165 82% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 10,
+      "shopSections": 6,
+      "checkoutSections": 3,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "cutline-club",
+    "name": "Cutline Club",
+    "description": "قالب streetwear حضري يبيع بالدروب والأطقم الجاهزة والطبقات العملية، مع قرار أسرع للوك الكامل.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "ready-to-wear",
+        "label": "ملابس جاهزة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 16% 14%",
+      "32 22% 90%",
+      "14 66% 54%"
+    ],
+    "previewImage": "/assets/themes/cutline-club/preview.jpg",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "dental-lab-elite",
+    "name": "Dental Lab Elite — معمل أسنان رقمي فاخر",
+    "description": "Dental Lab Elite — قالب بريميوم فائق التطور لمعامل ومختبرات الأسنان الرقمية: سرد تفاعلي ثلاثي الأبعاد 3D لمراحل CAD/CAM، ومحاكي درجات الألوان VITA، وسلايدر قبل وبعد، ومهيأ لتصدر بحث جوجل والظهور المحلي لجذب عيادات وأطباء الأسنان.",
+    "category": "medical",
+    "categoryMeta": {
+      "primary": {
+        "id": "medical",
+        "label": "طبي وصحي"
+      },
+      "secondary": {
+        "id": "dental-lab",
+        "label": "معمل ومختبر أسنان رقمي 3D"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "192 95% 48%",
+      "217 33% 14%",
+      "168 84% 52%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1200",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 4,
+      "cartSections": 3,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "district-market",
+    "name": "ديستركت ماركت",
+    "description": "قالب متجر عام عربي بإيقاع أسرع وترتيب أوضح للأقسام والعروض والمنتجات الأكثر حركة داخل المتجر.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "15 78% 50%",
+      "15 8% 96%",
+      "195 59% 40%"
+    ],
+    "previewImage": "/assets/themes/district-market/hero-scene.webp",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "electronics-demo",
+    "name": "TECHZONE",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "188 86% 53%",
+      "222 47% 11%",
+      "270 70% 60%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=2070",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 2,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "elegant-luxe",
+    "name": "Elegant Luxe",
+    "description": "دار أزياء فاخرة بطابع صالون تحريري: تشكيلات أوضح، دفتر إلهام قابل للتسوّق، وخدمة ما بعد الطلب لا تقل رقيًا عن العرض.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "luxury-fashion",
+        "label": "أزياء فاخرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "339 20% 16%",
+      "34 34% 93%",
+      "24 58% 60%"
+    ],
+    "previewImage": "/assets/themes/elegant-luxe/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 5,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "elessi-carry-lane",
+    "name": "ممر الحقائب",
+    "description": "قالب حقائب وإكسسوارات مستوحى من روح Elessi الغنية، لكن مع merchandising أوضح ومسار أسرع بين الحقائب اليومية والسفر والهدايا.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "bags-accessories",
+        "label": "حقائب وإكسسوارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "22 14% 13%",
+      "210 24% 95%",
+      "33 52% 54%"
+    ],
+    "previewImage": "/assets/themes/elessi-carry-lane/tote-cutout.png",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-chrono-gallery",
+    "name": "معرض الساعات",
+    "description": "واجهة ساعات وإضافات رجالية تستخدم merchandising كثيف وقوائم أوضح للحسم والمقارنة والهدايا السريعة.",
+    "category": "luxury",
+    "categoryMeta": {
+      "primary": {
+        "id": "luxury",
+        "label": "فخامة"
+      },
+      "secondary": {
+        "id": "watches-accessories",
+        "label": "ساعات وإكسسوارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "213 19% 17%",
+      "36 36% 90%",
+      "30 70% 56%"
+    ],
+    "previewImage": "/assets/themes/elessi-chrono-gallery/hero-watch-closeup.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-garage-fit",
+    "name": "جراج فيت",
+    "description": "قالب قطع غيار وسيارات يحول روح Elessi إلى شريط مواصفات أوضح وبنية بيع أقرب للمقارنة والشراء العملي.",
+    "category": "automotive",
+    "categoryMeta": {
+      "primary": {
+        "id": "automotive",
+        "label": "سيارات"
+      },
+      "secondary": {
+        "id": "car-parts",
+        "label": "قطع غيار وسيارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "6 30% 18%",
+      "38 34% 89%",
+      "18 88% 54%"
+    ],
+    "previewImage": "/assets/themes/elessi-garage-fit/engine-bay.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-gem-atelier",
+    "name": "أتيليه المجوهرات",
+    "description": "بوتيك مجوهرات وهدايا يلتقط ثراء Elessi في العرض، لكن يقدمه داخل لغة أكثر رقيًا لقطع التوقيع والهدايا المناسبة.",
+    "category": "luxury",
+    "categoryMeta": {
+      "primary": {
+        "id": "luxury",
+        "label": "فخامة"
+      },
+      "secondary": {
+        "id": "jewelry-gifts",
+        "label": "مجوهرات وهدايا"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "348 18% 18%",
+      "34 42% 91%",
+      "39 72% 58%"
+    ],
+    "previewImage": "/assets/themes/elessi-gem-atelier/jewelry-box-assortment.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-glow-routine",
+    "name": "روتين متوهج",
+    "description": "قالب beauty وعناية يعيد استخدام روح Elessi في الروتينات والمجموعات والهدايا بدل مجرد عرض منتجات عشوائي.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "جمال وعناية"
+      },
+      "secondary": {
+        "id": "skincare-cosmetics",
+        "label": "عناية وبشرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "332 34% 19%",
+      "340 48% 95%",
+      "332 72% 59%"
+    ],
+    "previewImage": "/assets/themes/elessi-glow-routine/flatlay-b.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-harvest-fold",
+    "name": "حصاد مرتب",
+    "description": "قالب منتجات عضوية وطلبات منزلية يترجم روح Elessi إلى صناديق خضار وفاكهة وبانتري وروتين شراء أسري أخف وأوضح.",
+    "category": "grocery",
+    "categoryMeta": {
+      "primary": {
+        "id": "grocery",
+        "label": "بقالة"
+      },
+      "secondary": {
+        "id": "organic-food",
+        "label": "منتجات عضوية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "112 28% 19%",
+      "49 56% 92%",
+      "24 83% 56%"
+    ],
+    "previewImage": "/assets/themes/elessi-harvest-fold/hero-market.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-pedal-lab",
+    "name": "مختبر الدراجات",
+    "description": "واجهة دراجات وملحقات تستخدم كثافة Elessi في الأقسام والاختيارات، مع toolbar أوضح للمواصفات والصيانة والترقيات.",
+    "category": "sports",
+    "categoryMeta": {
+      "primary": {
+        "id": "sports",
+        "label": "رياضة وفيتنس"
+      },
+      "secondary": {
+        "id": "bikes-outdoor",
+        "label": "دراجات وملحقات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "205 36% 17%",
+      "38 54% 92%",
+      "24 88% 56%"
+    ],
+    "previewImage": "/assets/themes/elessi-pedal-lab/hero-city-stage.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-signal-deck",
+    "name": "لوحة الإشارات",
+    "description": "واجهة أجهزة وملحقات عمل تستفيد من منطق Elessi في discovery والبيع، مع spec surfaces أوضح للأجهزة والإكسسوارات المكتبية.",
+    "category": "electronics",
+    "categoryMeta": {
+      "primary": {
+        "id": "electronics",
+        "label": "إلكترونيات"
+      },
+      "secondary": {
+        "id": "gadgets-workstations",
+        "label": "أجهزة وملحقات عمل"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "215 25% 16%",
+      "41 44% 90%",
+      "34 84% 55%"
+    ],
+    "previewImage": "/assets/themes/pc-hub-eg/hero-photo.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-sprout-room",
+    "name": "غرفة النباتات",
+    "description": "واجهة نباتات وديكور مستوحاة من Elessi، تجمع بين أقسام غنية واختيار أخف للهدايا المنزلية والأصص والنباتات اليومية.",
+    "category": "plants-garden",
+    "categoryMeta": {
+      "primary": {
+        "id": "plants-garden",
+        "label": "نباتات وزراعة"
+      },
+      "secondary": {
+        "id": "home-garden",
+        "label": "نباتات وديكور"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 28% 19%",
+      "154 28% 92%",
+      "90 62% 41%"
+    ],
+    "previewImage": "/assets/themes/elessi-sprout-room/hero-aloe-stage.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "elessi-tail-supply",
+    "name": "ركن الحيوانات",
+    "description": "متجر مستلزمات حيوانات غني بالاكتشاف والتصنيفات، يعيد ترتيب كثافة Elessi لخدمة الأكل واللعب والعناية والروتين اليومي.",
+    "category": "pets",
+    "categoryMeta": {
+      "primary": {
+        "id": "pets",
+        "label": "حيوانات أليفة"
+      },
+      "secondary": {
+        "id": "pet-store",
+        "label": "مستلزمات حيوانات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "152 28% 22%",
+      "42 42% 91%",
+      "24 86% 58%"
+    ],
+    "previewImage": "/assets/themes/elessi-tail-supply/play-dog.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "fakhama-elite",
+    "name": "Fakhama Elite",
+    "description": "واجهة أحذية نسائية فاخرة تركز على الحرفية والخامات الراقية ورسائل الثقة قبل الشراء.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "luxury-fashion",
+        "label": "أزياء فاخرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "354 86% 45%",
+      "210 10% 23%",
+      "45 100% 50%"
+    ],
+    "previewImage": "/fakhama_hero_luxury_heels_1774501228599.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "fastly-eg",
+    "name": "Fastly",
+    "description": "قالب عروض عربي سريع: بانرات مباشرة، بطاقات أقسام مرتبطة بالعروض، وشبكة منتجات واضحة تدفع للحسم السريع.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "offers-store",
+        "label": "متجر عروض مباشر"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 7%",
+      "0 0% 97%",
+      "0 76% 49%"
+    ],
+    "previewImage": "/assets/themes/fastly-eg/preview.png",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 1,
+      "checkoutSections": 3,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 13
+    }
+  },
+  {
+    "id": "fitting-room-studio",
+    "name": "Fitting Room Studio",
+    "description": "Mobile-first fashion template with fitting-app energy: quick discovery, soft imagery, and a native-style bag/checkout card with a dark CTA.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "Fashion"
+      },
+      "secondary": {
+        "id": "mobile-fashion",
+        "label": "Mobile-first fashion store"
+      }
+    },
+    "direction": "ltr",
+    "previewColors": [
+      "24 6% 17%",
+      "28 38% 93%",
+      "168 30% 69%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 1,
+      "totalSections": 17
+    }
+  },
+  {
+    "id": "fresh-cart",
+    "name": "Fresh Cart",
+    "description": "قالب سوبرماركت أونلاين يسرّع الطلبات اليومية: أقسام مفهومة، باقات جاهزة، وعروض تتحرك بسرعة.",
+    "category": "grocery",
+    "categoryMeta": {
+      "primary": {
+        "id": "grocery",
+        "label": "بقالة"
+      },
+      "secondary": {
+        "id": "online-supermarket",
+        "label": "سوبرماركت أونلاين"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "145 65% 42%",
+      "25 85% 95%",
+      "25 90% 55%"
+    ],
+    "previewImage": "/assets/themes/elessi-harvest-fold/hero-market.jpg",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "furniture-demo",
+    "name": "LUXURE",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "35 77% 37%",
+      "0 0% 10%",
+      "35 77% 37%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=2000",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 2,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "hayah-modest-eg",
+    "name": "حياة",
+    "description": "قالب أزياء محتشمة يبيع باللوك الجاهز: طبقات متناسقة، مقاسات أوضح، وقطع تكمل بعض فترفع قرار الشراء أسرع.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "أزياء محتشمة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "28 21% 18%",
+      "38 35% 92%",
+      "26 33% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 5,
+      "checkoutSections": 5,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 23
+    }
+  },
+  {
+    "id": "ink-paper",
+    "name": "Ink & Paper",
+    "description": "ثيم كلاسيكي بطابع أدبي لمتاجر الكتب والقرطاسية مع ترشيحات قراءة وعرض قائمة مميز.",
+    "category": "books",
+    "categoryMeta": {
+      "primary": {
+        "id": "books",
+        "label": "كتب وقرطاسية"
+      },
+      "secondary": {
+        "id": "bookstore",
+        "label": "مكتبة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "220 55% 25%",
+      "38 35% 94%",
+      "25 60% 45%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1400&q=80",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "iron-forge",
+    "name": "Iron Forge",
+    "description": "قالب رياضي جريء يبيع القوة والتحفيز: أجهزة، ملابس، ومكملات بعروض تدفع العميل يكمل التجهيزة.",
+    "category": "sports",
+    "categoryMeta": {
+      "primary": {
+        "id": "sports",
+        "label": "رياضة وفيتنس"
+      },
+      "secondary": {
+        "id": "fitness-gear",
+        "label": "معدات رياضية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "65 100% 50%",
+      "0 0% 14%",
+      "0 85% 55%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1400&q=80",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "khemet-fashion-eg",
+    "name": "KHEMET CLOSET",
+    "description": "نسخة ملابس حريمي من عائلة KHEMET: لوك بوك أولًا، فئات حسب الإطلالة، تقييمات بصور من العميلات على الرئيسية، وPDP بعدّاد مبيعات وتوصيل متوقع وتبديل مقاس — هوية تحريرية أخضر ودهبي.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-fashion",
+        "label": "ملابس حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "151 34% 16%",
+      "32 38% 92%",
+      "41 45% 63%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "khemet-general-eg",
+    "name": "KHEMET MARKET",
+    "description": "نسخة متجر عام من عائلة KHEMET: مسارات تسوق سريعة من أول شاشة (وصل جديد، عروض الأسبوع، الأكثر مبيعًا)، عروض واضحة بمدة مصرّحة، وثقة ظاهرة — من غير زحمة كروت.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "متاجر عامة"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام متنوع"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "151 34% 16%",
+      "32 38% 92%",
+      "41 45% 63%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "khemet-luxe-eg",
+    "name": "KHEMET LUXE",
+    "description": "بوتيك أحذية حريمي فاخر للسوق المصري بطابع تحريري واضح: صور أكبر، قصة قاهرة يدوية، ومسارات شراء أنيقة بدون زحمة كروت.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 9%",
+      "220 14% 96%",
+      "220 14% 18%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "khemet-luxe-v2",
+    "name": "KHEMET LUXE — Editorial Premium",
+    "description": "نسخة بريميم 2026 من KHEMET LUXE: دليل إيجاد الحذاء المناسب، إثبات اجتماعي حي (عدد مبيعات + توصيل متوقع)، تكملات إطلالة (look-builder + bought-together)، back-in-stock و pre-order للكبسولات المحدودة، هيرو بفيديو، لوكبوك، تيك جريد، نوايا تسوق، وجورنال قصة الحرفة. أهداف الصفحة تحويل بدل ثقة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي بريميم"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "151 28% 18%",
+      "40 10% 94%",
+      "41 30% 58%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 12,
+      "cartSections": 2,
+      "totalSections": 28
+    }
+  },
+  {
+    "id": "kids-play",
+    "name": "Kids Play",
+    "description": "قالب ألعاب أطفال يسهّل على الأهل الشراء: حسب السن، حسب نوع اللعب، وعروض واضحة على الهدايا والنشاطات.",
+    "category": "kids",
+    "categoryMeta": {
+      "primary": {
+        "id": "kids",
+        "label": "أطفال"
+      },
+      "secondary": {
+        "id": "toys",
+        "label": "ألعاب أطفال"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "195 80% 50%",
+      "45 100% 50%",
+      "340 80% 60%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=1200",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 3,
+      "checkoutSections": 4,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "layali-edit-eg",
+    "name": "ليالي إيديت",
+    "description": "قالب مناسبات يختصر الحيرة: ابدئي من نوع المناسبة وشوفي لوكات جاهزة بعروض وإكسسوارات تكمل الطلب.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "occasion-eveningwear",
+        "label": "سهرة ومناسبات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "349 26% 16%",
+      "29 36% 92%",
+      "12 78% 58%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 5,
+      "checkoutSections": 5,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 23
+    }
+  },
+  {
+    "id": "legacy-default-old",
+    "name": "defalut-theme-old",
+    "description": "نسخة كلاسيكية مستلهمة من متجر EasyOrders القديم: هيدر أبيض مباشر، سلايدر صور كبير، وتصنيفات دائرية تقود الزائر إلى ساعات وإكسسوارات بشكل أسرع.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "watches-accessories",
+        "label": "ساعات وإكسسوارات"
+      }
+    },
+    "direction": "ltr",
+    "previewColors": [
+      "0 0% 7%",
+      "0 0% 96%",
+      "42 92% 68%"
+    ],
+    "previewImage": "/assets/themes/legacy-default-old/preview.jpg",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "look-atelier-eg",
+    "name": "أتيليه",
+    "description": "قالب ملابس حريمي للسوق المصري بيعتمد بيع اللوك الكامل بدل القطعة الواحدة: هيرو بيعرض إطلالات جاهزة، وصفحة منتج بتجمّع قطع اللوك جنب بعضها، وخصم يزيد مع عدد القطع.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-fashion",
+        "label": "ملابس حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "250 42% 16%",
+      "255 24% 93%",
+      "262 84% 63%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 27
+    }
+  },
+  {
+    "id": "max-care-go",
+    "name": "Max Care Go",
+    "description": "قالب صيدلية موبايل-أول للطلبات السريعة: رفع روشتة، إعادة طلب، وعروض يومية تشجع العميل يكمل الطلب.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "medical-fast",
+        "label": "صيدلية سريعة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "173 80% 40%",
+      "194 96% 96%",
+      "160 84% 39%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=1200&q=80",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 3,
+      "checkoutSections": 2,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "men-shoes-eg",
+    "name": "خطوة",
+    "description": "قالب أحذية رجالي جاهز للتطبيق فورًا: موديلات واضحة، دليل مقاس ظاهر، ورسائل ثقة تشجع الشراء من أول زيارة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-shoes",
+        "label": "أحذية رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "214 28% 13%",
+      "214 14% 91%",
+      "18 95% 52%"
+    ],
+    "previewImage": "/assets/themes/men-shoes-eg/preview.png",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 4,
+      "checkoutSections": 4,
+      "pdpSections": 11,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "mens-grooming-pro",
+    "name": "Mens Grooming Pro",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "ltr",
+    "previewColors": [
+      "212 29% 13%",
+      "0 0% 97%",
+      "212 29% 13%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 12,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "menswear-prime",
+    "name": "Menswear Prime",
+    "description": "قالب مخصص للملابس الرجالية الكلاسيكية يركز على الثقة والقصات الرسمية وتجربة شراء أكثر فخامة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-clothing",
+        "label": "ملابس رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "215 15% 15%",
+      "210 20% 96%",
+      "40 70% 45%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=2000&auto=format&fit=crop",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "mystic-desert",
+    "name": "Mystic Desert",
+    "description": "واجهة دافئة مستوحاة من الصحراء مناسبة للأزياء التراثية والقطع ذات الهوية الشرقية الواضحة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "heritage-fashion",
+        "label": "أزياء تراثية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "30 80% 40%",
+      "35 20% 90%",
+      "20 70% 50%"
+    ],
+    "previewImage": "/products/mystic/hero.png",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 19
+    }
+  },
+  {
+    "id": "nile-bistro",
+    "name": "Nile Bistro",
+    "description": "قالب مطعم مصري يفتح النفس ويقفل الطلب: منيو واضح، كومبوهات جاهزة، وعروض توصيل تشجع الإضافة للسلة.",
+    "category": "food",
+    "categoryMeta": {
+      "primary": {
+        "id": "food",
+        "label": "مطاعم وأغذية"
+      },
+      "secondary": {
+        "id": "restaurants",
+        "label": "مطاعم"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "10 58% 18%",
+      "35 72% 94%",
+      "16 88% 52%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "nile-elegance-eg",
+    "name": "Nile Elegance",
+    "description": "قالب أزياء فاخرة بروح مصرية معاصرة: ألوان دافئة مستوحاة من النيل والذهب، تشكيلات واضحة، ومسار شراء يبث الثقة والأناقة للجمهور المصري.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "luxury-fashion",
+        "label": "أزياء فاخرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "28 22% 12%",
+      "36 38% 92%",
+      "42 72% 52%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 5,
+      "pdpSections": 6,
+      "cartSections": 3,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "nova-mobile",
+    "name": "Nova Mobile",
+    "description": "قالب موبايلات وإكسسوارات جاهز للسوق المصري: مواصفات واضحة، تقسيط، وضمان ورسائل بيع تقرّب القرار.",
+    "category": "electronics",
+    "categoryMeta": {
+      "primary": {
+        "id": "electronics",
+        "label": "إلكترونيات"
+      },
+      "secondary": {
+        "id": "mobile-store",
+        "label": "موبايلات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "230 75% 55%",
+      "240 10% 10%",
+      "190 90% 50%"
+    ],
+    "previewImage": "/images/storefront-previews/nova-mobile.png",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 3,
+      "checkoutSections": 4,
+      "pdpSections": 5,
+      "cartSections": 3,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "opulence",
+    "name": "Opulence",
+    "description": "ثيم فائق الفخامة بالأسود والذهبي لمتاجر المجوهرات والساعات مع شهادات أصالة.",
+    "category": "luxury",
+    "categoryMeta": {
+      "primary": {
+        "id": "luxury",
+        "label": "فخامة"
+      },
+      "secondary": {
+        "id": "jewelry-watches",
+        "label": "مجوهرات وساعات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "42 75% 55%",
+      "0 0% 8%",
+      "42 60% 45%"
+    ],
+    "previewImage": "/assets/themes/elessi-gem-atelier/jewelry-box-assortment.jpg",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "pawsome",
+    "name": "Pawsome",
+    "description": "ثيم مبهج ودافئ لمتاجر الحيوانات الأليفة، بألوان مرحة وتصنيف سهل حسب نوع الحيوان.",
+    "category": "pets",
+    "categoryMeta": {
+      "primary": {
+        "id": "pets",
+        "label": "حيوانات أليفة"
+      },
+      "secondary": {
+        "id": "pet-store",
+        "label": "مستلزمات حيوانات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "42 85% 55%",
+      "160 45% 92%",
+      "160 50% 45%"
+    ],
+    "previewImage": "/assets/themes/elessi-tail-supply/play-dog.jpg",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 23
+    }
+  },
+  {
+    "id": "pc-hub-eg",
+    "name": "PC HUB",
+    "description": "قالب كمبيوتر وإلكترونيات مصري جاهز للبيع: السعر والمواصفات والضمان ظاهرين، مع عروض وتقسيط يقرّبوا قرار الشراء.",
+    "category": "electronics",
+    "categoryMeta": {
+      "primary": {
+        "id": "electronics",
+        "label": "إلكترونيات"
+      },
+      "secondary": {
+        "id": "computer-store",
+        "label": "كمبيوتر ولابتوب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "47 100% 54%",
+      "217 26% 17%",
+      "7 84% 60%"
+    ],
+    "previewImage": "/assets/themes/pc-hub-eg/hero-photo.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 4,
+      "checkoutSections": 4,
+      "pdpSections": 9,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "perfume-eg",
+    "name": "أثر",
+    "description": "قالب برفنات مصري يوازن بين الإحساس الراقي ووضوح البيع: صور حقيقية، أحجام واضحة، ثقة في الأصالة، ومسارات هدايا وعائلات عطرية أسهل.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "جمال وعناية"
+      },
+      "secondary": {
+        "id": "perfume-store",
+        "label": "متجر برفنات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "313 28% 16%",
+      "36 38% 92%",
+      "41 66% 58%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 3,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 19
+    }
+  },
+  {
+    "id": "pharmacy-demo",
+    "name": "Pharmacy Demo",
+    "description": "قالب صيدلية هادئ للأسرة والاحتياجات اليومية، يركز على الوضوح والبدائل والدعم قبل تأكيد الطلب.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "pharmacy-care",
+        "label": "صيدلية وعناية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "173 80% 40%",
+      "194 96% 96%",
+      "160 84% 39%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=1200&q=80",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 3,
+      "checkoutSections": 2,
+      "pdpSections": 3,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "prime-butcher-luxe",
+    "name": "Prime Butcher Luxe",
+    "description": "ثيم عصري فاخر لمحلات الجزارة الراقية، يتميز بألوان داكنة ولمسات ذهبية توحي بالجودة والفخامة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 7%",
+      "0 0% 12%",
+      "45 40% 55%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1800&q=80",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "redline-auto",
+    "name": "Red Line Auto",
+    "description": "Red Line Auto — قالب مخصص وفائق التحويل لستائر وإكسسوارات السيارات: تفصيل بالمللي، عزل حراري 98%، معاينة وتجربة قبل الدفع وشراء مباشر سريع.",
+    "category": "automotive",
+    "categoryMeta": {
+      "primary": {
+        "id": "automotive",
+        "label": "سيارات"
+      },
+      "secondary": {
+        "id": "car-accessories",
+        "label": "ستائر وإكسسوارات سيارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 84% 50%",
+      "222 47% 11%",
+      "0 84% 50%"
+    ],
+    "previewImage": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 3,
+      "checkoutSections": 3,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "restaurant-demo",
+    "name": "BiteRush",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "7 86% 52%",
+      "33 100% 95%",
+      "27 100% 53%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 3,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "rihla-resort-eg",
+    "name": "رحلة ريزورت",
+    "description": "قالب سفر ومصايف يبيع من سيناريو الرحلة: البحر والخروجة وعشا الغروب، مع كبسولات جاهزة للحقيبة والطلب السريع.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "resort-travelwear",
+        "label": "ملابس سفر ومصايف"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "174 32% 20%",
+      "38 45% 92%",
+      "18 75% 60%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 5,
+      "checkoutSections": 5,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "rose-boutique-eg",
+    "name": "روزا",
+    "description": "بوتيك حريمي ناعم لكن بيّاع: قطع متنسقة، عروض خفيفة، وكلام يركز على الطلب والحسم مش مجرد شكل هادي.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-fashion",
+        "label": "بوتيك حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "18 16% 14%",
+      "20 35% 95%",
+      "341 45% 72%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 3,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "shop-orbit",
+    "name": "Shop Orbit",
+    "description": "قالب متجر عربي عام يسهّل الوصول للمنتج بسرعة: بحث أوضح، تصفية مرتبة، وعروض جانبية تدعم القرار الشرائي.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "multi-category",
+        "label": "متجر متعدد الأقسام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "226 100% 58%",
+      "210 38% 96%",
+      "171 78% 40%"
+    ],
+    "previewImage": "/assets/themes/district-market/hero-scene.webp",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "skill-lab",
+    "name": "Skill Lab",
+    "description": "قالب كورسات ومنتجات رقمية يبيع المسارات الجاهزة والشهادات والعروض من أول شاشة وبأسلوب واضح ومباشر.",
+    "category": "digital",
+    "categoryMeta": {
+      "primary": {
+        "id": "digital",
+        "label": "رقمي وإبداعي"
+      },
+      "secondary": {
+        "id": "courses-digital",
+        "label": "كورسات ومنتجات رقمية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "265 65% 58%",
+      "230 18% 14%",
+      "185 60% 50%"
+    ],
+    "previewImage": "/assets/themes/pc-hub-eg/workbook-14-air.jpg",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
+    "id": "smart-bazaar",
+    "name": "Smart Bazaar",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "213 88% 45%",
+      "210 55% 96%",
+      "34 95% 54%"
+    ],
+    "previewImage": "/assets/themes/smart-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 7,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "soft-graceful",
+    "name": "Graceful",
+    "description": "Soft Graceful — قالب أزياء تحريري للعلامات العصرية بلمسة MaxP: مجموعات منسّقة، لوكات موسمية، اكتشاف ذكي بالـ Hotspot، سلّة منزلقة وQuick View، بألوان الرصيف الأصلي وأدوات Graceful.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "curated-fashion",
+        "label": "أزياء منسقة ومواسم"
+      }
+    },
+    "direction": "ltr",
+    "previewColors": [
+      "0 0% 9%",
+      "0 0% 96%",
+      "11 73% 57%"
+    ],
+    "previewImage": "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
+    "pageStats": {
+      "homeSections": 17,
+      "shopSections": 3,
+      "checkoutSections": 5,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 32
+    }
+  },
+  {
+    "id": "solea-femme",
+    "name": "Solea Femme",
+    "description": "قالب أحذية حريمي يجمع بين الإحساس الراقي، وضوح المقاسات، والعروض السريعة للمكتب والمساء.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 20% 14%",
+      "40 46% 94%",
+      "39 55% 68%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "style-store-eg",
+    "name": "Style Store EG",
+    "description": "قالب ساعات وشنط وسنيكرز يبيع من القطعة المكملة: إكسسوارات يومية، هدايا جاهزة، ورف أوضح من المتجر العام.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "watches-accessories",
+        "label": "ساعات وإكسسوارات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "221 17% 16%",
+      "34 30% 93%",
+      "28 63% 53%"
+    ],
+    "previewImage": "/assets/themes/style-store-eg/hero-banner.jpg",
+    "pageStats": {
+      "homeSections": 5,
+      "shopSections": 2,
+      "checkoutSections": 4,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "turbo-parts",
+    "name": "Turbo Parts",
+    "description": "قالب قطع غيار يختصر القرار: بحث بالموديل، باقات صيانة، وضمان واضح يطمن العميل قبل الشراء.",
+    "category": "automotive",
+    "categoryMeta": {
+      "primary": {
+        "id": "automotive",
+        "label": "سيارات"
+      },
+      "secondary": {
+        "id": "car-parts",
+        "label": "قطع غيار"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 80% 48%",
+      "210 12% 16%",
+      "210 8% 70%"
+    ],
+    "previewImage": "/assets/themes/elessi-garage-fit/engine-bay.jpg",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 4,
+      "checkoutSections": 2,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "vanguard-premium",
+    "name": "Vanguard Premium",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "premium-brand",
+        "label": "براند فاخر"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "220 20% 10%",
+      "220 10% 96%",
+      "220 10% 96%"
+    ],
+    "previewImage": "/assets/themes/style-store-eg/hero-banner.jpg",
+    "pageStats": {
+      "homeSections": 3,
+      "shopSections": 2,
+      "checkoutSections": 2,
+      "pdpSections": 5,
+      "cartSections": 2,
+      "totalSections": 14
+    }
+  },
+  {
+    "id": "vela-fashion-eg",
+    "name": "Vela Fashion",
+    "description": "قالب أزياء LTR بنَفَس تحريري: صور موسمية، أقسام واضحة، شبكة منتجات quick view، وفوتر غني بالمعلومات وروابط الدعم.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "fashion-store",
+        "label": "متجر أزياء تحريري"
+      }
+    },
+    "direction": "ltr",
+    "previewColors": [
+      "0 0% 10%",
+      "22 33% 97%",
+      "137 86% 38%"
+    ],
+    "previewImage": "/assets/themes/vela-fashion-eg/preview.png",
+    "pageStats": {
+      "homeSections": 10,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "velvet-glow",
+    "name": "Velvet Glow",
+    "description": "قالب جمال وعناية بإحساس فاخر يبيع الروتينات والهدايا الجاهزة بلغة أنعم وقرار شراء أسرع.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "جمال وعناية"
+      },
+      "secondary": {
+        "id": "skincare-cosmetics",
+        "label": "مستحضرات تجميل"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "342 56% 47%",
+      "25 46% 95%",
+      "28 82% 63%"
+    ],
+    "previewImage": "/assets/themes/elessi-glow-routine/flatlay-b.jpg",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 3,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "women-fashion-eg",
+    "name": "إطلالة",
+    "description": "قالب حريمي بيّاع من أول شاشة: لوكات جاهزة، عروض كمية، وطلب سريع يخلي العميلة تحسم من غير تردد.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-fashion",
+        "label": "ملابس وأحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "326 31% 21%",
+      "332 42% 94%",
+      "340 78% 62%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
+    "pageStats": {
+      "homeSections": 4,
+      "shopSections": 4,
+      "checkoutSections": 4,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "zen-organic",
+    "name": "Zen Organic",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "natural-products",
+        "label": "منتجات طبيعية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "143 25% 27%",
+      "34 32% 58%",
+      "86 18% 46%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=1400",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 23
+    }
+  }
+]

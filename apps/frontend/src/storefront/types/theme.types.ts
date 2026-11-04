@@ -105,7 +105,7 @@ export interface StorefrontPageConfig {
   pageGoal?: StorefrontPageGoal;
   compositionPolicy?: StorefrontPageCompositionPolicy;
   settings?: Record<string, unknown>;
-
+  isSystemFallback?: boolean;
 }
 
 export interface StorefrontThemeTokens {

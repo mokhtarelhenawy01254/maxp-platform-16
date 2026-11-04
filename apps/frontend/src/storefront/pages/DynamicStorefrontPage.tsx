@@ -80,9 +80,14 @@ const DynamicStorefrontPage: React.FC = () => {
     localizedPageConfig && Array.isArray(localizedPageConfig.sections) && localizedPageConfig.sections.length > 0
   );
 
-  // If page exists in designTokens/theme with sections, render via PageComposer directly.
-  // Otherwise fall back to DB page content (rich-text).
-  const shouldFetchDbPage = !hasSections && resolvedPageKey !== "home" && resolvedPageKey !== "shop";
+  const isSystemFallback = Boolean(
+    (localizedPageConfig as any)?.isSystemFallback || (pageConfig as any)?.isSystemFallback
+  );
+
+  // If page exists in designTokens/theme with sections and is NOT a system fallback, render via PageComposer directly.
+  // Otherwise fall back to DB page content (rich-text) or check for merchant custom page.
+  const shouldFetchDbPage =
+    (!hasSections || isSystemFallback) && resolvedPageKey !== "home" && resolvedPageKey !== "shop";
   const { page: dbPage, loading: dbLoading } = useStorePage(
     shouldFetchDbPage ? pageSlug : undefined,
     shouldFetchDbPage ? settings?.company?.id : undefined,
@@ -118,7 +123,12 @@ const DynamicStorefrontPage: React.FC = () => {
     const currentSeo = (localizedPageConfig as any)?.seo || (pageConfig as any)?.seo;
 
     // 1. Title
-    if (currentSeo?.title?.trim()) {
+    if (isSystemFallback && dbPage) {
+      const pageTitle =
+        dbPage.metaTitle?.trim() ||
+        (dbPage.title ? `${dbPage.title} | ${storeName}` : storeName);
+      document.title = pageTitle;
+    } else if (currentSeo?.title?.trim()) {
       const customTitle = currentSeo.title.trim();
       document.title =
         storeName && !customTitle.includes(storeName)
@@ -140,9 +150,11 @@ const DynamicStorefrontPage: React.FC = () => {
 
     // 2. Meta Description
     const metaDesc =
-      currentSeo?.description?.trim() ||
-      dbPage?.metaDescription?.trim() ||
-      dbPage?.content?.replace(/<[^>]*>/g, "").slice(0, 160).trim();
+      (isSystemFallback && dbPage
+        ? (dbPage.metaDescription?.trim() || dbPage.content?.replace(/<[^>]*>/g, "").slice(0, 160).trim())
+        : (currentSeo?.description?.trim() ||
+           dbPage?.metaDescription?.trim() ||
+           dbPage?.content?.replace(/<[^>]*>/g, "").slice(0, 160).trim()));
     if (metaDesc) {
       let descEl = document.querySelector<HTMLMetaElement>('meta[name="description"]');
       if (!descEl) {
@@ -230,7 +242,7 @@ const DynamicStorefrontPage: React.FC = () => {
         }
       }
     };
-  }, [dbPage, settings, theme, hasSections, localizedPageConfig, pageConfig, pageSlug]);
+  }, [dbPage, settings, theme, hasSections, localizedPageConfig, pageConfig, pageSlug, isSystemFallback]);
 
   const isDraft =
     (localizedPageConfig as any)?.status === "draft" ||
@@ -246,7 +258,7 @@ const DynamicStorefrontPage: React.FC = () => {
     </div>
   ) : null;
 
-  if (hasSections && localizedPageConfig) {
+  if (hasSections && localizedPageConfig && !isSystemFallback) {
     return (
       <div dir={direction} data-storefront-locale={locale} className="w-full">
         {draftPreviewBadge}

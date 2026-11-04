@@ -50,7 +50,7 @@ describe("Storefront dynamic pages 404 & Link references", () => {
       );
     }).not.toThrow();
 
-    expect(screen.getByText("404")).toBeTruthy();
+    expect(screen.getByText(/404/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /العودة للرئيسية|Back to Home/ })).toBeTruthy();
   });
 
@@ -70,7 +70,7 @@ describe("Storefront dynamic pages 404 & Link references", () => {
       );
     }).not.toThrow();
 
-    expect(screen.getByText("404")).toBeTruthy();
+    expect(screen.getByText(/404/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /العودة للرئيسية|Back to Home/ })).toBeTruthy();
   });
 });

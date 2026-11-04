@@ -33,6 +33,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "validate:themes": "tsx src/storefront/scripts/validate-themes.ts",
+    "validate:theme-file": "tsx src/storefront/scripts/validate-theme-file.ts",
+    "generate:themes-manifest": "tsx src/storefront/scripts/generate-themes-manifest.ts",
     "audit:storefront-centering": "tsx src/storefront/scripts/audit-storefront-centering.ts",
     "audit:storefront-centering:core": "tsx src/storefront/scripts/audit-storefront-centering.ts --core",
     "audit:storefront-themes": "tsx src/storefront/scripts/audit-storefront-themes.ts",

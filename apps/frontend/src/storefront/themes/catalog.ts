@@ -4,6 +4,36 @@ import {
   getStorefrontThemePresetIds,
   STOREFRONT_THEME_PRESETS,
 } from "./index";
+import themesManifestRaw from "./themes-manifest.json";
+
+export interface StorefrontThemeManifestItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  categoryMeta?: StorefrontThemeCategoryMeta;
+  direction?: "rtl" | "ltr";
+  previewColors: string[];
+  previewImage?: string;
+  pageStats: {
+    homeSections: number;
+    shopSections: number;
+    checkoutSections: number;
+    pdpSections: number;
+    cartSections: number;
+    totalSections: number;
+  };
+}
+
+const THEMES_MANIFEST: StorefrontThemeManifestItem[] = Array.isArray(
+  themesManifestRaw,
+)
+  ? (themesManifestRaw as unknown as StorefrontThemeManifestItem[])
+  : [];
+
+const THEMES_MANIFEST_MAP = new Map<string, StorefrontThemeManifestItem>(
+  THEMES_MANIFEST.map((item) => [item.id, item]),
+);
 
 export interface StorefrontThemeCatalogItem {
   id: string;
@@ -91,7 +121,7 @@ const DEFAULT_STOREFRONT_THEME_CATEGORY = createThemeCategoryMeta(
   "متجر عام",
 );
 
-const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
+export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
   string,
   StorefrontThemeCategoryMeta
 > = {
@@ -142,6 +172,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "أزياء",
     "womens-fashion",
     "ملابس نسائية",
+  ),
+  "couture-atelier-eg": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "luxury-atelier",
+    "دار أزياء وأتيليه فاخر",
   ),
   "aura-chic": createThemeCategoryMeta(
     "fashion",
@@ -512,7 +548,7 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
   ),
 };
 
-const getStorefrontThemeCategoryMeta = (
+export const getStorefrontThemeCategoryMeta = (
   themeId: string,
 ): StorefrontThemeCategoryMeta =>
   STOREFRONT_THEME_CATEGORY_PRESETS[themeId] ||
@@ -537,6 +573,8 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "دار أزياء فاخرة بطابع صالون تحريري: تشكيلات أوضح، دفتر إلهام قابل للتسوّق، وخدمة ما بعد الطلب لا تقل رقيًا عن العرض.",
   "atelier-nova":
     "بوتيك نسائي أقرب إلى غاليري هادئ: دفعات صغيرة، قطع منسقة، ومسارات شراء تحافظ على الإيقاع بدل الرفوف العامة.",
+  "couture-atelier-eg":
+    "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة (Shop The Look) والسرد القصصي البانورامي والتسوق البصري التفاعلي.",
   "aura-chic":
     "قالب إكسسوارات أنثوي يركز على الحقائب والقطع اليومية والهدايا الخفيفة داخل تجربة بوتيك ناعمة.",
   "solea-femme":
@@ -651,11 +689,13 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "ثيم جزارة مصري يبيع اللحوم الطازجة بوضوح: ألوان حمراء دافئة، صور لحم طازج، وقطع مختارة جاهزة للطلب السريع.",
 };
 
-const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
+export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "creative-portfolio":
     "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=1600",
   "atelier-nova":
     "/assets/themes/atelier-nova/preview.png",
+  "couture-atelier-eg":
+    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80",
   "elegant-luxe":
     "/assets/themes/elegant-luxe/preview.png",
   "butcher-counter-eg":
@@ -673,6 +713,7 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "shop-orbit": "/assets/themes/district-market/hero-scene.webp",
   "closet-os": "/assets/themes/closet-os/preview.jpg",
   "cutline-club": "/assets/themes/cutline-club/preview.jpg",
+  "smart-bazaar": "/assets/themes/smart-bazaar/preview.png",
   "hayah-modest-eg": "/assets/themes/hayah-modest-eg/preview.svg",
   "anjella-boutique": "/assets/themes/anjella-boutique/preview.svg",
   "rihla-resort-eg": "/assets/themes/rihla-resort-eg/preview.svg",
@@ -869,9 +910,9 @@ const collectThemePreviewCandidates = (
   });
 };
 
-const resolveStorefrontThemePreviewImage = (
+export const resolveStorefrontThemePreviewImage = (
   themeId: string,
-  theme:
+  theme?:
     | {
         preview?: { imageUrl?: unknown } | null;
         pages?: Record<string, { sections?: unknown[] } | undefined>;
@@ -936,10 +977,86 @@ const DEFAULT_STOREFRONT_THEME_CATALOG_CATEGORY: StorefrontThemeCategoryMeta = {
   },
 };
 
+const buildStorefrontThemeCatalogItemFromManifest = (
+  manifestItem: StorefrontThemeManifestItem,
+  currentThemeId = DEFAULT_STOREFRONT_THEME_ID,
+): StorefrontThemeCatalogItem => {
+  const isCurrentTheme = currentThemeId === manifestItem.id;
+  const isDefaultTheme = manifestItem.id === DEFAULT_STOREFRONT_THEME_ID;
+
+  return {
+    id: manifestItem.id,
+    themeId: manifestItem.id,
+    slug: manifestItem.id,
+    appId: null,
+    name: manifestItem.name,
+    description:
+      manifestItem.description ||
+      STOREFRONT_THEME_DESCRIPTIONS[manifestItem.id] ||
+      "Preset رسمي للـ storefront.",
+    category:
+      manifestItem.categoryMeta ||
+      getStorefrontThemeCategoryMeta(manifestItem.id),
+    pricingModel: "FREE",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    currency: "EGP",
+    isActive: true,
+    isPublic: true,
+    isFeatured: isDefaultTheme,
+    isDefaultTheme,
+    isOwned: isCurrentTheme,
+    isCurrentTheme,
+    canSelect: isCurrentTheme,
+    canActivate: !isCurrentTheme,
+    canPurchase: false,
+    requiresPurchase: false,
+    requiresActivation: !isCurrentTheme,
+    trialDays: 0,
+    installationId: null,
+    installationStatus: isCurrentTheme ? "ACTIVE" : null,
+    activePricingModel: isCurrentTheme ? "FREE" : null,
+    trialEndsAt: null,
+    validUntil: null,
+    nextBillingAt: null,
+    preview: {
+      colors: manifestItem.previewColors || [],
+      imageUrl:
+        manifestItem.previewImage ||
+        STOREFRONT_THEME_PREVIEW_IMAGES[manifestItem.id] ||
+        "",
+    },
+    pageStats: manifestItem.pageStats || {
+      homeSections: 0,
+      shopSections: 0,
+      checkoutSections: 0,
+      pdpSections: 0,
+      cartSections: 0,
+      totalSections: 0,
+    },
+    usageStats: {
+      installations: 0,
+      activeInstallations: 0,
+      purchases: 0,
+      currentCompanies: 0,
+      installCount: 0,
+    },
+    features: {},
+  };
+};
+
 const buildStorefrontThemePresetCatalogItem = (
   themeId: string,
   currentThemeId = DEFAULT_STOREFRONT_THEME_ID,
 ): StorefrontThemeCatalogItem | null => {
+  const manifestItem = THEMES_MANIFEST_MAP.get(themeId);
+  if (manifestItem) {
+    return buildStorefrontThemeCatalogItemFromManifest(
+      manifestItem,
+      currentThemeId,
+    );
+  }
+
   if (!STOREFRONT_THEME_PRESETS[themeId]) {
     return null;
   }
@@ -1079,12 +1196,41 @@ const resolveStorefrontThemeCatalogDefaults = (
 
 export const buildStorefrontThemePresetCatalog = (
   currentThemeId = DEFAULT_STOREFRONT_THEME_ID,
-): StorefrontThemeCatalogItem[] =>
-  getStorefrontThemePresetIds()
+): StorefrontThemeCatalogItem[] => {
+  const items: StorefrontThemeCatalogItem[] = [];
+
+  if (THEMES_MANIFEST.length > 0) {
+    items.push(
+      ...THEMES_MANIFEST.map((manifestItem) =>
+        buildStorefrontThemeCatalogItemFromManifest(manifestItem, currentThemeId),
+      ),
+    );
+  }
+
+  // Also include any presets dynamically registered or added to STOREFRONT_THEME_PRESETS
+  const existingIds = new Set(items.map((item) => item.id));
+  for (const themeId of getStorefrontThemePresetIds()) {
+    if (!existingIds.has(themeId)) {
+      const item = buildStorefrontThemePresetCatalogItem(
+        themeId,
+        currentThemeId,
+      );
+      if (item) {
+        items.push(item);
+      }
+    }
+  }
+
+  if (items.length > 0) {
+    return items;
+  }
+
+  return getStorefrontThemePresetIds()
     .map((themeId) =>
       buildStorefrontThemePresetCatalogItem(themeId, currentThemeId),
     )
     .filter((item): item is StorefrontThemeCatalogItem => Boolean(item));
+};
 
 const toSafeNumber = (value: unknown, fallback = 0): number => {
   const parsed = Number(value);
