@@ -70,21 +70,25 @@ jobs:
           if [ -n "$BASE" ]; then
             FILES=$(git diff --name-only "$BASE" HEAD -- 'apps/frontend/src/storefront/themes/*.json' ':(exclude)apps/frontend/src/storefront/themes/themes-manifest.json' | tr '\n' ' ')
           else
-            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | grep -v 'themes-manifest.json' | tr '\n' ' ')
-          fi
-          if [ -z "$FILES" ]; then
-            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | grep -v 'themes-manifest.json' | tr '\n' ' ')
+            FILES=""
           fi
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
-          echo "changed theme files: $FILES"
+          if [ -z "$FILES" ]; then
+            echo "No theme file changed in this push — theme gates have nothing to check."
+          else
+            echo "changed theme files: $FILES"
+          fi
 
       - name: Schema gate (ajv)
+        if: steps.changed.outputs.files != ''
         run: node scripts/validate-theme-schema.mjs ${{ steps.changed.outputs.files }}
 
       - name: Section gate (manifest + ComponentRegistry)
+        if: steps.changed.outputs.files != ''
         run: apps/frontend/node_modules/.bin/tsx scripts/validate-theme-sections.ts ${{ steps.changed.outputs.files }}
 
       - name: Performance & hygiene budget
+        if: steps.changed.outputs.files != ''
         run: node scripts/check-storefront-theme-budget.mjs ${{ steps.changed.outputs.files }}
 
       - name: No direct JSON import in themes/index.ts
