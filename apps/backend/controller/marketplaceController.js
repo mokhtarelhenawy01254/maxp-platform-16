@@ -5,6 +5,7 @@ const path = require('path');
 const { marketplaceCatalogService } = require('../services/catalog/marketplaceCatalogService');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
+const { buildBundleAvailability, describeBundleAvailability } = require('../services/bundleAvailability');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require('../utils/getDefaultAgentTemplate');
 const { getCandidateAppSlugs, isCompanyAppInstallationValid } = require('../middleware/checkAppAccess');
@@ -2047,9 +2048,15 @@ exports.getBundleDetails = async (req, res) => {
       });
 
       if (!bundleResult) {
-        return res.status(404).json({
+        // حارس الباقات (Task 621f2800): نفس الحالة المفهومة على مسار الكاتالوج
+        const verdict = describeBundleAvailability(
+          buildBundleAvailability({ bundles: [], referencedSlugs: [slug] })
+        );
+        return res.status(verdict.statusCode).json({
           success: false,
-          message: 'Bundle not found'
+          code: verdict.code,
+          message: verdict.message,
+          missing: verdict.missing,
         });
       }
 
@@ -2184,9 +2191,15 @@ exports.getBundleDetails = async (req, res) => {
     });
 
     if (!bundle) {
-      return res.status(404).json({
+      // حارس الباقات (Task 621f2800): حالة مفهومة بدل 404 أعمى/500 لما الباقة اتشالت من المنصة
+      const verdict = describeBundleAvailability(
+        buildBundleAvailability({ bundles: [], referencedSlugs: [slug] })
+      );
+      return res.status(verdict.statusCode).json({
         success: false,
-        message: 'Bundle not found'
+        code: verdict.code,
+        message: verdict.message,
+        missing: verdict.missing,
       });
     }
 
@@ -2243,9 +2256,15 @@ exports.subscribeToBundle = async (req, res) => {
     const bundle = bundleResolution.bundle;
 
     if (!bundle) {
-      return res.status(404).json({
+      // حارس الباقات (Task 621f2800): حالة مفهومة بدل 404 أعمى/500 لما الباقة اتشالت من المنصة
+      const verdict = describeBundleAvailability(
+        buildBundleAvailability({ bundles: [], referencedSlugs: [slug] })
+      );
+      return res.status(verdict.statusCode).json({
         success: false,
-        message: 'Bundle not found'
+        code: verdict.code,
+        message: verdict.message,
+        missing: verdict.missing,
       });
     }
 
