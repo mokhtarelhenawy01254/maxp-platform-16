@@ -6,6 +6,8 @@
  */
 
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { normalizeGovernorateName } = require('../utils/orderLocationNormalizer');
+const { parseCourierGovernorates } = require('./shipping/autoAssignService');
 
 function round2(num) {
   const n = Number(num);
@@ -640,8 +642,205 @@ async function getByCourierReport(companyId, { from, to } = {}) {
   };
 }
 
+
+/**
+ * 5. Courier Coverage by Governorate Report (SHIP-W12)
+ * لكل محافظة: شحنات مفتوحة · مناديب نشطين · نسبة التغطية · أقدم شحنة بلا مندوب
+ * Scoped strictly to companyId. Zero N+1 queries.
+ */
+async function getCoverageReport(companyId, { from, to, governorate } = {}) {
+  const prisma = getSharedPrismaClient();
+
+  // 1. Fetch active couriers for this company
+  const couriers = await prisma.courier.findMany({
+    where: {
+      companyId,
+      isActive: true,
+      status: { not: 'OFF_DUTY' },
+    },
+    select: {
+      id: true,
+      name: true,
+      governorates: true,
+      status: true,
+      isActive: true,
+    },
+  });
+
+  // Map couriers to normalized governorates
+  const couriersByGov = new Map();
+  for (const courier of couriers) {
+    const zones = parseCourierGovernorates(courier.governorates);
+    for (const zone of zones) {
+      if (!couriersByGov.has(zone)) {
+        couriersByGov.set(zone, new Set());
+      }
+      couriersByGov.get(zone).add(courier.id);
+    }
+  }
+
+  // 2. Fetch open shipments for this company
+  const TERMINAL_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED', 'RETURNED', 'CANCELLED'];
+  const dateFilter = buildDateFilter(from, to);
+  const whereShipments = {
+    companyId,
+    status: { notIn: TERMINAL_STATUSES },
+    ...dateFilter,
+  };
+
+  const shipments = await prisma.shipment.findMany({
+    where: whereShipments,
+    select: {
+      id: true,
+      courierId: true,
+      status: true,
+      createdAt: true,
+      destinationGovernorate: true,
+      destinationCity: true,
+      destinationAddress: true,
+      order: {
+        select: {
+          governorate: true,
+          city: true,
+          shippingAddress: true,
+          orderNumber: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  // 3. Aggregate metrics per governorate
+  const govStats = new Map();
+
+  const getOrCreateGov = (name) => {
+    if (!govStats.has(name)) {
+      govStats.set(name, {
+        governorate: name,
+        openShipments: 0,
+        assignedShipments: 0,
+        unassignedShipments: 0,
+        oldestUnassignedAt: null,
+        oldestUnassignedShipmentId: null,
+        oldestUnassignedOrderNumber: null,
+      });
+    }
+    return govStats.get(name);
+  };
+
+  for (const s of shipments) {
+    const rawGov = s.destinationGovernorate || s.order?.governorate;
+    const rawCity = s.destinationCity || s.order?.city;
+    const rawAddr = s.destinationAddress || s.order?.shippingAddress;
+    const normGov = normalizeGovernorateName(rawGov, rawCity, rawAddr) || 'غير محددة';
+
+    const entry = getOrCreateGov(normGov);
+    entry.openShipments += 1;
+
+    if (s.courierId) {
+      entry.assignedShipments += 1;
+    } else {
+      entry.unassignedShipments += 1;
+      if (!entry.oldestUnassignedAt || s.createdAt < entry.oldestUnassignedAt) {
+        entry.oldestUnassignedAt = s.createdAt;
+        entry.oldestUnassignedShipmentId = s.id;
+        entry.oldestUnassignedOrderNumber = s.order?.orderNumber || null;
+      }
+    }
+  }
+
+  // Ensure any governorate with active couriers is also represented
+  for (const govName of couriersByGov.keys()) {
+    getOrCreateGov(govName);
+  }
+
+  const now = Date.now();
+  let rows = Array.from(govStats.values()).map((entry) => {
+    const activeCouriersCount = couriersByGov.get(entry.governorate)?.size || 0;
+
+    let coverageRate = 0;
+    if (activeCouriersCount === 0) {
+      coverageRate = 0;
+    } else if (entry.openShipments === 0) {
+      coverageRate = 100;
+    } else {
+      coverageRate = round1((entry.assignedShipments / entry.openShipments) * 100);
+    }
+
+    let oldestUnassignedShipment = null;
+    if (entry.oldestUnassignedAt) {
+      const diffMs = now - new Date(entry.oldestUnassignedAt).getTime();
+      const ageHours = round1(Math.max(0, diffMs / (1000 * 60 * 60)));
+      const ageDays = round1(ageHours / 24);
+      oldestUnassignedShipment = {
+        shipmentId: entry.oldestUnassignedShipmentId,
+        orderNumber: entry.oldestUnassignedOrderNumber,
+        createdAt: entry.oldestUnassignedAt,
+        ageHours,
+        ageDays,
+      };
+    }
+
+    return {
+      governorate: entry.governorate,
+      openShipments: entry.openShipments,
+      assignedShipments: entry.assignedShipments,
+      unassignedShipments: entry.unassignedShipments,
+      activeCouriers: activeCouriersCount,
+      coverageRate,
+      isCovered: activeCouriersCount > 0,
+      oldestUnassignedShipment,
+    };
+  });
+
+  if (governorate) {
+    const normFilter = normalizeGovernorateName(governorate);
+    if (normFilter) {
+      rows = rows.filter((r) => r.governorate === normFilter);
+    }
+  }
+
+  rows.sort((a, b) => {
+    if (b.unassignedShipments !== a.unassignedShipments) {
+      return b.unassignedShipments - a.unassignedShipments;
+    }
+    return b.openShipments - a.openShipments;
+  });
+
+  const totalOpenShipments = rows.reduce((sum, r) => sum + r.openShipments, 0);
+  const totalAssignedShipments = rows.reduce((sum, r) => sum + r.assignedShipments, 0);
+  const totalUnassignedShipments = rows.reduce((sum, r) => sum + r.unassignedShipments, 0);
+  const uniqueActiveCourierIds = new Set();
+  couriers.forEach((c) => uniqueActiveCourierIds.add(c.id));
+
+  const summary = {
+    totalGovernorates: rows.length,
+    coveredGovernorates: rows.filter((r) => r.activeCouriers > 0).length,
+    uncoveredGovernorates: rows.filter((r) => r.activeCouriers === 0).length,
+    totalOpenShipments,
+    totalAssignedShipments,
+    totalUnassignedShipments,
+    totalActiveCouriers: uniqueActiveCourierIds.size,
+    overallCoverageRate:
+      totalOpenShipments > 0
+        ? round1((totalAssignedShipments / totalOpenShipments) * 100)
+        : uniqueActiveCourierIds.size > 0
+        ? 100
+        : 0,
+  };
+
+  return {
+    summary,
+    rows,
+    data: rows,
+    range: { from: from || null, to: to || null },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 module.exports = {
   getSummaryReport,
+  getCoverageReport,
   getByGovernorateReport,
   getByClientReport,
   getByCourierReport,

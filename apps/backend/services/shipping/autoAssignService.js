@@ -12,6 +12,18 @@ const { getPolicy } = require('./policyService');
 const TERMINAL_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED', 'RETURNED', 'CANCELLED'];
 const OPEN_LOAD_STATUSES = ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PENDING', 'ASSIGNED'];
 
+// Cache for recent suggestion results per company to correlate suggest -> apply
+const recentSuggestCache = new Map();
+
+function normalizeFailureReason(reason) {
+  if (!reason) return 'NO_COURIER_COVERAGE';
+  if (reason === 'NO_COURIER_IN_ZONE' || reason === 'NO_COURIER_COVERAGE') return 'NO_COURIER_COVERAGE';
+  if (reason === 'ALL_AT_CAPACITY' || reason === 'CAPACITY_EXCEEDED') return 'CAPACITY_EXCEEDED';
+  if (reason === 'ZONE_NOT_SERVED') return 'ZONE_NOT_SERVED';
+  if (reason === 'INVALID_STATUS') return 'INVALID_STATUS';
+  return reason;
+}
+
 /**
  * Parses courier governorates field (JSON array, comma-separated, or single string)
  * and normalizes all names to canonical Egyptian governorates.
@@ -357,7 +369,31 @@ async function suggest({
     });
   }
 
-  return { assignments, unassigned };
+  recentSuggestCache.set(companyId, {
+    timestamp: Date.now(),
+    assignments,
+    unassigned,
+    shipmentIds: shipments.map((s) => s.id),
+  });
+
+  const failed = unassigned.map((u) => ({
+    shipmentId: u.shipmentId,
+    orderNumber: u.orderNumber || null,
+    destinationGovernorate: u.destinationGovernorate || null,
+    reason: normalizeFailureReason(u.reason),
+    status: u.status,
+    details: u.details,
+  }));
+
+  return {
+    assignments,
+    unassigned,
+    failed,
+    assignedCount: assignments.length,
+    failedCount: unassigned.length,
+    totalSuggested: assignments.length,
+    totalUnassigned: unassigned.length,
+  };
 }
 
 /**
@@ -369,38 +405,120 @@ async function suggest({
  * @param {string} [params.userId]
  * @returns {Promise<Object>}
  */
-async function apply({ companyId, assignments = [], userId = null }) {
+async function apply({
+  companyId,
+  assignments = [],
+  unassigned = [],
+  failed = [],
+  shipmentIds,
+  userId = null,
+}) {
   if (!companyId) {
     const err = new Error('معرف الشركة مطلوب');
     err.statusCode = 400;
     throw err;
   }
 
-  if (!Array.isArray(assignments) || assignments.length === 0) {
+  const explicitFailed = [];
+  const candidateAssignments = [];
+
+  // 1. Gather explicitly provided failed/unassigned
+  const inputFailed = [...(unassigned || []), ...(failed || [])];
+  for (const item of inputFailed) {
+    if (item && item.shipmentId) {
+      explicitFailed.push({
+        shipmentId: item.shipmentId,
+        orderNumber: item.orderNumber || null,
+        destinationGovernorate: item.destinationGovernorate || null,
+        reason: normalizeFailureReason(item.reason),
+      });
+    }
+  }
+
+  // 2. Separate assignments with courierId from unassigned ones
+  for (const item of assignments) {
+    if (!item.courierId) {
+      explicitFailed.push({
+        shipmentId: item.shipmentId,
+        orderNumber: item.orderNumber || null,
+        destinationGovernorate: item.destinationGovernorate || null,
+        reason: normalizeFailureReason(item.reason),
+      });
+    } else {
+      candidateAssignments.push(item);
+    }
+  }
+
+  // 3. If shipmentIds passed, find any that are not in candidateAssignments or explicitFailed
+  if (Array.isArray(shipmentIds) && shipmentIds.length > 0) {
+    const candidateIds = new Set(candidateAssignments.map((a) => a.shipmentId));
+    const failedIds = new Set(explicitFailed.map((f) => f.shipmentId));
+    for (const id of shipmentIds) {
+      if (!candidateIds.has(id) && !failedIds.has(id)) {
+        explicitFailed.push({
+          shipmentId: id,
+          reason: 'NO_COURIER_COVERAGE',
+        });
+      }
+    }
+  }
+
+  // 4. Recover unassigned shipments from recentSuggestCache if caller only passed candidateAssignments
+  const cached = recentSuggestCache.get(companyId);
+  if (
+    explicitFailed.length === 0 &&
+    cached &&
+    Date.now() - cached.timestamp < 15 * 60 * 1000
+  ) {
+    const candidateIds = new Set(candidateAssignments.map((a) => a.shipmentId));
+    const isSubsetOfCache = candidateAssignments.every((a) => cached.shipmentIds.includes(a.shipmentId));
+    if (isSubsetOfCache && Array.isArray(cached.unassigned) && cached.unassigned.length > 0) {
+      for (const u of cached.unassigned) {
+        if (!candidateIds.has(u.shipmentId)) {
+          explicitFailed.push({
+            shipmentId: u.shipmentId,
+            orderNumber: u.orderNumber || null,
+            destinationGovernorate: u.destinationGovernorate || null,
+            reason: normalizeFailureReason(u.reason),
+          });
+        }
+      }
+    }
+  }
+
+  if (candidateAssignments.length === 0) {
+    const seen = new Set();
+    const dedupedFailed = explicitFailed.filter((f) => {
+      if (seen.has(f.shipmentId)) return false;
+      seen.add(f.shipmentId);
+      return true;
+    });
+
     return {
       success: true,
       assignedCount: 0,
-      failedCount: 0,
+      failedCount: dedupedFailed.length,
       applied: [],
-      unassigned: [],
+      failed: dedupedFailed,
+      unassigned: dedupedFailed,
     };
   }
 
   const prisma = getSharedPrismaClient();
 
-  const shipmentIds = Array.from(
-    new Set(assignments.map((a) => a.shipmentId).filter(Boolean))
+  const candidateShipmentIds = Array.from(
+    new Set(candidateAssignments.map((a) => a.shipmentId).filter(Boolean))
   );
-  const courierIds = Array.from(
-    new Set(assignments.map((a) => a.courierId).filter(Boolean))
+  const candidateCourierIds = Array.from(
+    new Set(candidateAssignments.map((a) => a.courierId).filter(Boolean))
   );
 
   // Multi-tenant check: Couriers
   const couriers = await prisma.courier.findMany({
-    where: { id: { in: courierIds } },
+    where: { id: { in: candidateCourierIds } },
   });
   if (
-    couriers.length !== courierIds.length ||
+    couriers.length !== candidateCourierIds.length ||
     couriers.some((c) => c.companyId !== companyId)
   ) {
     const err = new Error('واحد أو أكثر من المناديب غير موجود أو لا يتبع هذه الشركة');
@@ -412,7 +530,7 @@ async function apply({ companyId, assignments = [], userId = null }) {
 
   // Multi-tenant check: Shipments
   const shipments = await prisma.shipment.findMany({
-    where: { id: { in: shipmentIds } },
+    where: { id: { in: candidateShipmentIds } },
     include: {
       order: {
         select: {
@@ -424,7 +542,7 @@ async function apply({ companyId, assignments = [], userId = null }) {
     },
   });
   if (
-    shipments.length !== shipmentIds.length ||
+    shipments.length !== candidateShipmentIds.length ||
     shipments.some((s) => s.companyId !== companyId)
   ) {
     const err = new Error('واحد أو أكثر من الشحنات غير موجود أو لا يتبع هذه الشركة');
@@ -435,13 +553,13 @@ async function apply({ companyId, assignments = [], userId = null }) {
   const shipmentMap = new Map(shipments.map((s) => [s.id, s]));
 
   const validAssignments = [];
-  const unassigned = [];
 
-  for (const item of assignments) {
+  for (const item of candidateAssignments) {
     const s = shipmentMap.get(item.shipmentId);
     if (!s || TERMINAL_STATUSES.includes(s.status)) {
-      unassigned.push({
+      explicitFailed.push({
         shipmentId: item.shipmentId,
+        orderNumber: s?.order?.orderNumber || null,
         reason: 'INVALID_STATUS',
         status: s ? s.status : 'UNKNOWN',
       });
@@ -552,12 +670,24 @@ async function apply({ companyId, assignments = [], userId = null }) {
     }
   });
 
+  // Filter out any shipment that was successfully applied from failed list
+  const appliedIds = new Set(applied.map((a) => a.shipmentId));
+  const seenFailed = new Set();
+  const finalFailed = [];
+  for (const f of explicitFailed) {
+    if (!appliedIds.has(f.shipmentId) && !seenFailed.has(f.shipmentId)) {
+      seenFailed.add(f.shipmentId);
+      finalFailed.push(f);
+    }
+  }
+
   return {
     success: true,
     assignedCount: applied.length,
-    failedCount: unassigned.length,
+    failedCount: finalFailed.length,
     applied,
-    unassigned,
+    failed: finalFailed,
+    unassigned: finalFailed,
   };
 }
 
@@ -603,17 +733,18 @@ async function autoAssign({
       shipmentId: a.shipmentId,
       courierId: a.courierId,
     })),
+    unassigned: suggestUnassigned,
     userId,
   });
-
-  const allUnassigned = [...suggestUnassigned, ...(applyResult.unassigned || [])];
 
   return {
     success: true,
     assignedCount: applyResult.assignedCount,
-    failedCount: allUnassigned.length,
+    failedCount: applyResult.failedCount,
     assignments: applyResult.applied,
-    unassigned: allUnassigned,
+    applied: applyResult.applied,
+    failed: applyResult.failed,
+    unassigned: applyResult.failed,
   };
 }
 

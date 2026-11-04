@@ -140,6 +140,11 @@ export const AutoAssignPage: React.FC = () => {
     }
   };
 
+  const handleRetryAfterCourier = async () => {
+    await fetchCouriers();
+    await handleSuggest();
+  };
+
   const handleApply = async () => {
     const payloadAssignments = assignments
       .map((item) => ({
@@ -162,14 +167,26 @@ export const AutoAssignPage: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ assignments: payloadAssignments }),
+        body: JSON.stringify({
+          assignments: payloadAssignments,
+          unassigned,
+          failed: unassigned,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'فشل تطبيق التوزيع');
+      if (!res.ok) throw new Error(data.message || data.error || 'فشل تطبيق التوزيع');
 
       setHasApplied(true);
+      if (Array.isArray(data.failed)) {
+        setUnassigned(data.failed);
+      } else if (Array.isArray(data.unassigned)) {
+        setUnassigned(data.unassigned);
+      }
+      const totalCount = (data.assignedCount || 0) + (data.failedCount || 0);
       setStatusMessage({
-        text: `تم إسناد ${data.assignedCount} شحنة بنجاح إلى رحلات DRAFT للمناديب!`,
+        text: data.failedCount > 0
+          ? `تم الإسناد: ${data.assignedCount} مُسندة، و${data.failedCount} لم يتم إسنادها (من إجمالي ${totalCount})`
+          : `تم إسناد ${data.assignedCount} شحنة بنجاح إلى رحلات DRAFT للمناديب!`,
         type: 'success',
       });
       fetchCouriers();
@@ -225,15 +242,19 @@ export const AutoAssignPage: React.FC = () => {
 
   const getReasonLabel = (reason?: string) => {
     switch (reason) {
+      case 'NO_COURIER_COVERAGE':
       case 'NO_COURIER_IN_ZONE':
         return 'لا يوجد مندوب يغطي المحافظة';
+      case 'CAPACITY_EXCEEDED':
       case 'ALL_AT_CAPACITY':
         return 'المناديب وصلوا للحد الأقصى اليومي';
+      case 'ZONE_NOT_SERVED':
+        return 'المنطقة غير مخدومة / تعذر تحديد المحافظة';
       case 'INVALID_STATUS':
         return 'شحنة منتهية/مسلّمة/ملغاة';
       case 'MATCH_ZONE':
       default:
-        return 'تطابق النطاق الجغرافي';
+        return reason || 'تطابق النطاق الجغرافي';
     }
   };
 
@@ -447,14 +468,25 @@ export const AutoAssignPage: React.FC = () => {
       {/* Unassigned / Failed Shipments */}
       {unassigned.length > 0 && (
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="p-3 sm:px-4 py-2.5 bg-rose-50/40 dark:bg-rose-950/20 border-b border-border flex items-center justify-between">
+          <div className="p-3 sm:px-4 py-2.5 bg-rose-50/40 dark:bg-rose-950/20 border-b border-border flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs sm:text-sm font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
               <AlertCircle className="h-4 w-4" />
-              شحنات تعذر إسنادها ({unassigned.length})
+              لم يتم الإسناد ({unassigned.length})
             </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300">
-              فشل
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRetryAfterCourier}
+                disabled={loadingSuggest || loadingApply || loadingAuto}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shadow-xs disabled:opacity-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                إعادة المحاولة بعد إضافة مندوب
+              </button>
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300">
+                فشل
+              </span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

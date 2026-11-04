@@ -151,4 +151,24 @@ describe('AutoAssignPage (SHIP-W8)', () => {
       expect(screen.getByText(/تم التوزيع والتطبيق الفوري بنجاح/)).toBeInTheDocument();
     });
   });
+
+  it('displays unassigned list with reasons and triggers retry after adding courier (SHIP-W12)', async () => {
+    render(<AutoAssignPage />);
+    fireEvent.click(screen.getByText('اقترح التوزيع'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/لم يتم الإسناد/)).toBeInTheDocument();
+      expect(screen.getByText('إعادة المحاولة بعد إضافة مندوب')).toBeInTheDocument();
+    });
+
+    const retryBtn = screen.getByText('إعادة المحاولة بعد إضافة مندوب');
+    fireEvent.click(retryBtn);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/shipping-assign/couriers'),
+        expect.anything()
+      );
+    });
+  });
 });

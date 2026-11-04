@@ -69,6 +69,24 @@ async function getCourier(req, res) {
   }
 }
 
+const KNOWN_COURIER_FIELDS = new Set([
+  'name',
+  'phone',
+  'nationalId',
+  'vehicleType',
+  'plateNumber',
+  'governorate',
+  'governorates',
+  'commissionType',
+  'commissionAmount',
+  'isActive',
+  'status',
+  'notes',
+  'userId',
+  'pin',
+  'pinHash'
+]);
+
 /**
  * POST /api/v1/couriers
  */
@@ -79,25 +97,42 @@ async function createCourier(req, res) {
       return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     }
 
-    const { name, phone, nationalId, vehicleType, plateNumber, governorates, commissionType, commissionAmount, notes } = req.body || {};
+    const rawBody = req.body || {};
+    const unknownFields = Object.keys(rawBody).filter((k) => !KNOWN_COURIER_FIELDS.has(k));
+    if (unknownFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'حقول غير معروفة في جسم الطلب: ' + unknownFields.join(', '),
+        unknownFields,
+        code: 'UNKNOWN_FIELDS'
+      });
+    }
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, message: 'اسم المندوب مطلوب' });
+    // Resolve governorate (alias) vs governorates (governorates wins if both provided)
+    let resolvedGovernorates = undefined;
+    if (rawBody.governorates !== undefined) {
+      resolvedGovernorates = rawBody.governorates;
+    } else if (rawBody.governorate !== undefined) {
+      resolvedGovernorates = Array.isArray(rawBody.governorate) ? rawBody.governorate : [rawBody.governorate];
     }
-    if (!phone || !phone.trim()) {
-      return res.status(400).json({ success: false, message: 'رقم هاتف المندوب مطلوب' });
-    }
+
+    // Allow default name and phone for minimal payloads e.g. { governorate: 'الدقهلية' }
+    const name = rawBody.name?.trim() || (resolvedGovernorates ? ('مندوب ' + (Array.isArray(resolvedGovernorates) ? resolvedGovernorates.join(' - ') : resolvedGovernorates)) : 'مندوب جديد');
+    const phone = rawBody.phone?.trim() || ('01' + Math.floor(100000000 + Math.random() * 900000000));
 
     const courier = await courierService.createCourier(companyId, {
       name,
       phone,
-      nationalId,
-      vehicleType,
-      plateNumber,
-      governorates,
-      commissionType,
-      commissionAmount,
-      notes
+      nationalId: rawBody.nationalId,
+      vehicleType: rawBody.vehicleType,
+      plateNumber: rawBody.plateNumber,
+      governorates: resolvedGovernorates,
+      commissionType: rawBody.commissionType,
+      commissionAmount: rawBody.commissionAmount,
+      isActive: rawBody.isActive,
+      status: rawBody.status,
+      notes: rawBody.notes,
+      userId: rawBody.userId
     });
 
     res.status(201).json({ success: true, data: courier });
@@ -117,7 +152,26 @@ async function updateCourier(req, res) {
       return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
     }
 
-    await courierService.updateCourier(companyId, req.params.id, req.body || {});
+    const rawBody = req.body || {};
+    const unknownFields = Object.keys(rawBody).filter((k) => !KNOWN_COURIER_FIELDS.has(k));
+    if (unknownFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'حقول غير معروفة في جسم الطلب: ' + unknownFields.join(', '),
+        unknownFields,
+        code: 'UNKNOWN_FIELDS'
+      });
+    }
+
+    const updatePayload = { ...rawBody };
+    if (rawBody.governorates !== undefined) {
+      updatePayload.governorates = rawBody.governorates;
+    } else if (rawBody.governorate !== undefined) {
+      updatePayload.governorates = Array.isArray(rawBody.governorate) ? rawBody.governorate : [rawBody.governorate];
+    }
+    delete updatePayload.governorate;
+
+    await courierService.updateCourier(companyId, req.params.id, updatePayload);
     res.json({ success: true, message: 'تم تحديث بيانات المندوب بنجاح' });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in updateCourier:', error);

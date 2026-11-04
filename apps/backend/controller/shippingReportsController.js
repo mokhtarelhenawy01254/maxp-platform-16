@@ -148,8 +148,29 @@ async function recalcProfit(req, res) {
   }
 }
 
+
+async function getCoverageReport(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to, governorate } = req.query;
+    const report = await shippingReportsService.getCoverageReport(companyId, { from, to, governorate });
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('❌ [SHIPPING-REPORTS] Error in getCoverageReport:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'تعذر جلب تقرير تغطية المناديب',
+    });
+  }
+}
+
 module.exports = {
   getSummary,
+  getCoverageReport,
   getByGovernorate,
   getByClient,
   getByCourier,

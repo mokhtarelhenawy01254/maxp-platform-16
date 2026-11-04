@@ -100,6 +100,9 @@ router.post('/suggest', async (req, res) => {
       success: true,
       assignments: result.assignments,
       unassigned: result.unassigned,
+      failed: result.failed || result.unassigned,
+      assignedCount: result.assignedCount ?? result.assignments.length,
+      failedCount: result.failedCount ?? result.unassigned.length,
       totalSuggested: result.assignments.length,
       totalUnassigned: result.unassigned.length,
     });
@@ -121,9 +124,9 @@ router.post('/apply', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const userId = req.user.id || req.user.userId || null;
-    const { assignments } = req.body || {};
+    const { assignments, unassigned, failed, shipmentIds } = req.body || {};
 
-    if (!assignments || !Array.isArray(assignments)) {
+    if (!assignments && !shipmentIds && !unassigned && !failed) {
       return res.status(400).json({
         success: false,
         message: 'قائمة التعيينات (assignments) مطلوبة',
@@ -133,7 +136,10 @@ router.post('/apply', async (req, res) => {
 
     const result = await autoAssignService.apply({
       companyId,
-      assignments,
+      assignments: Array.isArray(assignments) ? assignments : [],
+      unassigned: Array.isArray(unassigned) ? unassigned : [],
+      failed: Array.isArray(failed) ? failed : [],
+      shipmentIds: Array.isArray(shipmentIds) ? shipmentIds : undefined,
       userId,
     });
 

@@ -27,6 +27,35 @@ const normalizeAmount = (value) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+function formatCourier(courier) {
+  if (!courier) return null;
+  let parsedGovernorates = null;
+  if (courier.governorates) {
+    if (Array.isArray(courier.governorates)) {
+      parsedGovernorates = courier.governorates;
+    } else if (typeof courier.governorates === 'string') {
+      const trimmed = courier.governorates.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            parsedGovernorates = parsed;
+          }
+        } catch (_) {}
+      }
+      if (!parsedGovernorates) {
+        parsedGovernorates = trimmed.split(/[,،]+/).map((g) => g.trim()).filter(Boolean);
+      }
+    }
+  }
+
+  return {
+    ...courier,
+    governorates: parsedGovernorates,
+    commissionAmount: normalizeAmount(courier.commissionAmount)
+  };
+}
+
 /**
  * List couriers with live performance metrics and pending custody
  */
@@ -134,7 +163,7 @@ async function listCouriers(companyId, { search, status, isActive, restrictToCou
     const successRate = totalFinished > 0 ? Math.round((deliveredCount / totalFinished) * 100) : 100;
 
     return {
-      ...courier,
+      ...formatCourier(courier),
       commissionAmount: normalizeAmount(courier.commissionAmount),
       activeShipmentsCount,
       expectedCashInTransit,
@@ -171,10 +200,7 @@ async function getCourierById(companyId, courierId) {
 
   if (!courier) return null;
 
-  return {
-    ...courier,
-    commissionAmount: normalizeAmount(courier.commissionAmount)
-  };
+  return formatCourier(courier);
 }
 
 /**
@@ -183,7 +209,27 @@ async function getCourierById(companyId, courierId) {
 async function createCourier(companyId, data) {
   const prisma = getSharedPrismaClient();
 
-  return prisma.courier.create({
+  let resolvedGovernorates = data.governorates;
+  if (resolvedGovernorates === undefined && data.governorate !== undefined) {
+    resolvedGovernorates = Array.isArray(data.governorate) ? data.governorate : [data.governorate];
+  }
+
+  let storedGovernorates = null;
+  if (resolvedGovernorates !== undefined && resolvedGovernorates !== null) {
+    if (typeof resolvedGovernorates === 'object') {
+      storedGovernorates = JSON.stringify(resolvedGovernorates);
+    } else if (typeof resolvedGovernorates === 'string') {
+      const trimmed = resolvedGovernorates.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        storedGovernorates = trimmed;
+      } else {
+        const list = trimmed.split(/[,،]+/).map((g) => g.trim()).filter(Boolean);
+        storedGovernorates = JSON.stringify(list);
+      }
+    }
+  }
+
+  const created = await prisma.courier.create({
     data: {
       companyId,
       name: data.name?.trim(),
@@ -191,7 +237,7 @@ async function createCourier(companyId, data) {
       nationalId: data.nationalId?.trim() || null,
       vehicleType: data.vehicleType || 'MOTORCYCLE',
       plateNumber: data.plateNumber?.trim() || null,
-      governorates: typeof data.governorates === 'object' ? JSON.stringify(data.governorates) : (data.governorates || null),
+      governorates: storedGovernorates,
       commissionType: data.commissionType || 'FIXED_PER_ORDER',
       commissionAmount: normalizeAmount(data.commissionAmount),
       isActive: data.isActive !== false,
@@ -200,6 +246,8 @@ async function createCourier(companyId, data) {
       userId: data.userId || null
     }
   });
+
+  return formatCourier(created);
 }
 
 /**
@@ -214,9 +262,27 @@ async function updateCourier(companyId, courierId, data) {
   if (data.nationalId !== undefined) updateData.nationalId = data.nationalId?.trim() || null;
   if (data.vehicleType !== undefined) updateData.vehicleType = data.vehicleType;
   if (data.plateNumber !== undefined) updateData.plateNumber = data.plateNumber?.trim() || null;
-  if (data.governorates !== undefined) {
-    updateData.governorates = typeof data.governorates === 'object' ? JSON.stringify(data.governorates) : data.governorates;
+
+  let resolvedGovernorates = data.governorates;
+  if (resolvedGovernorates === undefined && data.governorate !== undefined) {
+    resolvedGovernorates = Array.isArray(data.governorate) ? data.governorate : [data.governorate];
   }
+  if (resolvedGovernorates !== undefined) {
+    if (resolvedGovernorates === null) {
+      updateData.governorates = null;
+    } else if (typeof resolvedGovernorates === 'object') {
+      updateData.governorates = JSON.stringify(resolvedGovernorates);
+    } else if (typeof resolvedGovernorates === 'string') {
+      const trimmed = resolvedGovernorates.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        updateData.governorates = trimmed;
+      } else {
+        const list = trimmed.split(/[,،]+/).map((g) => g.trim()).filter(Boolean);
+        updateData.governorates = JSON.stringify(list);
+      }
+    }
+  }
+
   if (data.commissionType !== undefined) updateData.commissionType = data.commissionType;
   if (data.commissionAmount !== undefined) updateData.commissionAmount = normalizeAmount(data.commissionAmount);
   if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);

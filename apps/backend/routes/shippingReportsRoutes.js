@@ -27,6 +27,7 @@ const authMiddleware = [
 ];
 
 router.get('/summary', ...authMiddleware, shippingReportsController.getSummary);
+router.get('/coverage', ...authMiddleware, shippingReportsController.getCoverageReport);
 router.get('/by-governorate', ...authMiddleware, shippingReportsController.getByGovernorate);
 router.get('/by-client', ...authMiddleware, shippingReportsController.getByClient);
 router.get('/by-courier', ...authMiddleware, shippingReportsController.getByCourier);
