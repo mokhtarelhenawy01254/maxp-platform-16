@@ -2927,66 +2927,54 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
 // قفل تزامن للطلبات غير المكتملة أثناء التحويل لمنع التكرار
 const activeIncompleteCartConversions = new Set();
 
-// تحويل طلب غير مكتمل إلى طلب حقيقي
-router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
-  let conversionKey = null;
+/**
+ * 🔄 الدالة المركزية لتحويل سلة غير مكتملة إلى طلب حقيقي بقائمة "قيد الانتظار"
+ */
+async function convertSingleIncompleteCart({
+  companyId,
+  cartId,
+  user,
+  forceConvert = false,
+  cart = null,
+  overrideBody = {},
+}) {
+  const conversionKey = `${companyId}:${cartId}`;
+  if (activeIncompleteCartConversions.has(conversionKey)) {
+    return {
+      success: false,
+      code: 'CONVERSION_IN_PROGRESS',
+      message: 'جاري تحويل هذا الطلب بالفعل، يرجى الانتظار...'
+    };
+  }
+  activeIncompleteCartConversions.add(conversionKey);
+
   try {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
-    }
-
-    const merchant = isMerchantUser(req.user)
-      ? await requireMerchantAccountForUser(req.user)
-      : null;
-    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
-    if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
-    }
-
-    const cartId = (req.params.cartId || '').toString().trim();
-    if (!cartId) {
-      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
-    }
-
-    conversionKey = `${companyId}:${cartId}`;
-    if (activeIncompleteCartConversions.has(conversionKey)) {
-      return res.status(409).json({
-        success: false,
-        code: 'CONVERSION_IN_PROGRESS',
-        message: 'جاري تحويل هذا الطلب بالفعل، يرجى الانتظار...'
-      });
-    }
-    activeIncompleteCartConversions.add(conversionKey);
-
     // 🛡️ فحص عدم تكرار التحويل (Idempotency) في حال تم تحويل السلة مسبقاً
     const alreadyConverted = await getSharedPrismaClient().cartConversionLog.findFirst({
       where: { companyId, cartId }
     });
     if (alreadyConverted) {
-      return res.status(409).json({
+      return {
         success: false,
         code: 'CART_ALREADY_CONVERTED',
         message: 'تم تحويل هذه السلة إلى طلب بالفعل مسبقاً',
         orderNumber: alreadyConverted.orderNumber,
         orderId: alreadyConverted.orderId
-      });
+      };
     }
-
-    // 🚧 تحويل السلة غير المكتملة لطلب محظور أثناء وجود تعليق فوترة
-    if (await companyHasActiveBillingHold(companyId)) {
-      return res.status(402).json({
-        success: false,
-        code: 'BILLING_HOLD',
-        message: 'لا يمكن تحويل الطلب لأن المتجر معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً.'
-      });
-    }
-
-    const cart = await getSharedPrismaClient().guestCart.findFirst({
-      where: { companyId, cartId }
-    });
 
     if (!cart) {
-      return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
+      cart = await getSharedPrismaClient().guestCart.findFirst({
+        where: { companyId, cartId }
+      });
+    }
+
+    if (!cart) {
+      return {
+        success: false,
+        code: 'CART_NOT_FOUND',
+        message: 'السلة غير موجودة'
+      };
     }
 
     let checkoutData = {};
@@ -3015,11 +3003,14 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const notes = checkoutData.notes || '';
 
     if (!guestPhone) {
-      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتحويل الطلب' });
+      return {
+        success: false,
+        code: 'MISSING_PHONE',
+        message: 'رقم الهاتف مطلوب لتحويل الطلب'
+      };
     }
 
     // 🛡️ فحص ما إذا كان العميل لديه طلب مسجل بالفعل خلال آخر 48 ساعة لمنع تكرار الأوردرات والشحنات
-    const forceConvert = req.body?.force === true || req.body?.force === 'true' || req.query?.force === 'true';
     if (!forceConvert && guestPhone) {
       const cleanPhone = String(guestPhone)
         .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
@@ -3047,7 +3038,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         });
 
         if (existingOrder) {
-          return res.status(409).json({
+          return {
             success: false,
             code: 'EXISTING_CUSTOMER_ORDER',
             message: `تنبيه: هذا العميل لديه طلب مسجل بالفعل برقم (${existingOrder.orderNumber}) بحالة [${existingOrder.status}] بتاريخ ${new Date(existingOrder.createdAt).toLocaleDateString('ar-EG')}. هل تريد المتابعة وإنشاء طلب مكرر؟`,
@@ -3058,26 +3049,25 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
               total: existingOrder.total,
               createdAt: existingOrder.createdAt
             }
-          });
+          };
         }
       }
     }
 
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
-
     const cartAttribution = extractAttributionFromCheckoutData(checkoutData);
 
-    const couponCode = req.body?.couponCode || checkoutData.couponCode || checkoutData.coupon?.code || cart.couponCode || undefined;
-    const discountAmount = req.body?.discountAmount !== undefined
-      ? Number(req.body.discountAmount)
+    const couponCode = overrideBody?.couponCode || checkoutData.couponCode || checkoutData.coupon?.code || cart.couponCode || undefined;
+    const discountAmount = overrideBody?.discountAmount !== undefined
+      ? Number(overrideBody.discountAmount)
       : (checkoutData.discountAmount !== undefined
         ? Number(checkoutData.discountAmount)
         : (cart.discountAmount !== undefined ? Number(cart.discountAmount) : undefined));
-    const appliedDiscount = req.body?.appliedDiscount || checkoutData.appliedDiscount || undefined;
-    const bundleItems = req.body?.bundleItems || checkoutData.bundleItems || cart.bundleItems || undefined;
+    const appliedDiscount = overrideBody?.appliedDiscount || checkoutData.appliedDiscount || undefined;
+    const bundleItems = overrideBody?.bundleItems || checkoutData.bundleItems || cart.bundleItems || undefined;
 
-    const resolvedItems = (Array.isArray(req.body?.items) && req.body.items.length > 0)
-      ? req.body.items
+    const resolvedItems = (Array.isArray(overrideBody?.items) && overrideBody.items.length > 0)
+      ? overrideBody.items
       : items;
 
     const orderPayload = {
@@ -3117,12 +3107,9 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
-      // سجل أثر التحويل قبل حذف الـ GuestCart (بيتم الحذف جوه الـ internal API)
-      // محاولة + إعادة محاولة واحدة — لو فشلت الاتنين نرجّع تحذير صريح في الرد
-      // عشان التحويل مايختفيش من التقارير بصمت (الأوردر اتعمل لكن الـ log ضايع)
       let conversionLogError = null;
       try {
-        const employee = req.user || {};
+        const employee = user || {};
         await getSharedPrismaClient().cartConversionLog.create({
           data: {
             cartId,
@@ -3139,7 +3126,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       } catch (logError) {
         console.warn('⚠️ [ORDERS] Conversion log failed, retrying once:', logError.message);
         try {
-          const employee = req.user || {};
+          const employee = user || {};
           await getSharedPrismaClient().cartConversionLog.create({
             data: {
               cartId,
@@ -3159,26 +3146,397 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         }
       }
 
+      return {
+        success: true,
+        data: result.data,
+        orderNumber: result.data?.orderNumber,
+        orderId: result.data?.id,
+        cartId,
+        total,
+        customerName: guestName,
+        customerPhone: guestPhone,
+        ...(conversionLogError ? { conversionLogFailed: true, conversionLogError } : {}),
+      };
+    }
+
+    return {
+      success: false,
+      code: 'CREATE_FAILED',
+      message: result?.message || 'فشل إنشاء الطلب'
+    };
+  } catch (error) {
+    const detail = error.response?.data?.message || error.response?.data?.error || error.message;
+    return {
+      success: false,
+      code: 'CREATE_ERROR',
+      message: detail || 'خطأ أثناء إنشاء الطلب'
+    };
+  } finally {
+    activeIncompleteCartConversions.delete(conversionKey);
+  }
+}
+
+// 📊 ملخص السلال غير المكتملة الجاهزة للتحويل إلى قيد الانتظار
+router.get('/incomplete/convert-summary', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+    }
+
+    const now = new Date();
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+    const validPhoneClause = { AND: [phoneKeyClause, { NOT: emptyPhoneClause }] };
+
+    let convertedCartIds = [];
+    try {
+      const convertedLogs = await getSharedPrismaClient().cartConversionLog.findMany({
+        where: { companyId },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      convertedCartIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
+    } catch (_e) {}
+
+    const notConvertedClause = convertedCartIds.length > 0 ? { cartId: { notIn: convertedCartIds } } : {};
+
+    const [total, readyToConvert, activeReady, lostReady, noPhoneCount] = await Promise.all([
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause, ...validPhoneClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause, ...validPhoneClause, ...activeClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause, ...validPhoneClause, ...lostClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: {
+          companyId,
+          ...notConvertedClause,
+          OR: [{ NOT: phoneKeyClause }, emptyPhoneClause]
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        readyToConvert,
+        activeReady,
+        lostReady,
+        noPhoneCount,
+        lostAfterHours
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting incomplete convert summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب ملخص تحويل الطلبات غير المكتملة',
+      error: error.message
+    });
+  }
+});
+
+// ⚡ تحويل جماعي للسلال غير المكتملة إلى طلبات حقيقية بقائمة "قيد الانتظار"
+router.post('/incomplete/bulk-convert', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    if (await companyHasActiveBillingHold(companyId)) {
+      return res.status(402).json({
+        success: false,
+        code: 'BILLING_HOLD',
+        message: 'لا يمكن تحويل الطلبات لأن المتجر معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً.'
+      });
+    }
+
+    const forceConvert = req.body?.force === true || req.body?.force === 'true';
+    const scope = (req.body?.scope || 'all').toString().toLowerCase();
+    const limit = Math.min(parseInt(req.body?.limit, 10) || 100, 200);
+    const requestedCartIds = Array.isArray(req.body?.cartIds) && req.body.cartIds.length > 0
+      ? req.body.cartIds.map(String).filter(Boolean)
+      : null;
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+    }
+
+    const now = new Date();
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+    const validPhoneClause = { AND: [phoneKeyClause, { NOT: emptyPhoneClause }] };
+
+    let convertedCartIds = [];
+    try {
+      const convertedLogs = await getSharedPrismaClient().cartConversionLog.findMany({
+        where: { companyId },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      convertedCartIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
+    } catch (_e) {}
+
+    const whereConditions = [
+      { companyId },
+      validPhoneClause
+    ];
+
+    if (convertedCartIds.length > 0) {
+      whereConditions.push({ cartId: { notIn: convertedCartIds } });
+    }
+
+    if (requestedCartIds && requestedCartIds.length > 0) {
+      whereConditions.push({ cartId: { in: requestedCartIds } });
+    } else {
+      if (scope === 'active') {
+        whereConditions.push(activeClause);
+      } else if (scope === 'lost') {
+        whereConditions.push(lostClause);
+      }
+    }
+
+    const cartsToConvert = await getSharedPrismaClient().guestCart.findMany({
+      where: { AND: whereConditions },
+      orderBy: [{ total: 'desc' }, { checkoutUpdatedAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit
+    });
+
+    if (cartsToConvert.length === 0) {
+      return res.json({
+        success: true,
+        message: 'لا توجد طلبات غير مكتملة جاهزة للتحويل',
+        data: {
+          totalEligible: 0,
+          convertedCount: 0,
+          skippedDuplicatesCount: 0,
+          failedCount: 0,
+          orders: [],
+          skipped: [],
+          errors: []
+        }
+      });
+    }
+
+    const convertedOrders = [];
+    const skippedDuplicates = [];
+    const failedErrors = [];
+
+    for (const cart of cartsToConvert) {
+      try {
+        const result = await convertSingleIncompleteCart({
+          companyId,
+          cartId: cart.cartId,
+          user: req.user,
+          forceConvert,
+          cart
+        });
+
+        if (result.success) {
+          convertedOrders.push({
+            cartId: cart.cartId,
+            orderId: result.orderId,
+            orderNumber: result.orderNumber,
+            total: result.total,
+            customerName: result.customerName,
+            customerPhone: result.customerPhone
+          });
+        } else if (result.code === 'EXISTING_CUSTOMER_ORDER') {
+          skippedDuplicates.push({
+            cartId: cart.cartId,
+            message: result.message,
+            existingOrder: result.existingOrder
+          });
+        } else if (result.code !== 'CART_ALREADY_CONVERTED') {
+          failedErrors.push({
+            cartId: cart.cartId,
+            message: result.message || 'فشل التحويل'
+          });
+        }
+      } catch (err) {
+        failedErrors.push({
+          cartId: cart.cartId,
+          message: err.message || 'خطأ غير متوقع أثناء التحويل'
+        });
+      }
+    }
+
+    const message = convertedOrders.length > 0
+      ? `تم تحويل ${convertedOrders.length} طلب بنجاح إلى حالة قيد الانتظار`
+      : (skippedDuplicates.length > 0
+        ? `تم تخطي ${skippedDuplicates.length} طلب لوجود طلبات مسجلة لنفس العملاء. يمكنك تفعيل خيار "فرض التحويل" لتحويلها.`
+        : 'لم يتم تحويل أي طلبات');
+
+    return res.json({
+      success: true,
+      message,
+      data: {
+        totalEligible: cartsToConvert.length,
+        convertedCount: convertedOrders.length,
+        skippedDuplicatesCount: skippedDuplicates.length,
+        failedCount: failedErrors.length,
+        orders: convertedOrders,
+        skipped: skippedDuplicates,
+        errors: failedErrors
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error during bulk incomplete conversion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ أثناء تحويل الطلبات غير المكتملة',
+      error: error.message
+    });
+  }
+});
+
+// تحويل طلب غير مكتمل فردي إلى طلب حقيقي
+router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    if (await companyHasActiveBillingHold(companyId)) {
+      return res.status(402).json({
+        success: false,
+        code: 'BILLING_HOLD',
+        message: 'لا يمكن تحويل الطلب لأن المتجر معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً.'
+      });
+    }
+
+    const forceConvert = req.body?.force === true || req.body?.force === 'true' || req.query?.force === 'true';
+    const result = await convertSingleIncompleteCart({
+      companyId,
+      cartId,
+      user: req.user,
+      forceConvert,
+      overrideBody: req.body
+    });
+
+    if (result.success) {
       return res.json({
         success: true,
         message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
         data: result.data,
-        ...(conversionLogError ? { conversionLogFailed: true, conversionLogError } : {}),
+        orderNumber: result.orderNumber,
+        orderId: result.orderId,
+        ...(result.conversionLogFailed ? { conversionLogFailed: true, conversionLogError: result.conversionLogError } : {})
       });
     }
 
-    throw new Error(result?.message || 'فشل إنشاء الطلب');
+    if (result.code === 'CONVERSION_IN_PROGRESS') {
+      return res.status(409).json(result);
+    }
+    if (result.code === 'CART_ALREADY_CONVERTED') {
+      return res.status(409).json(result);
+    }
+    if (result.code === 'EXISTING_CUSTOMER_ORDER') {
+      return res.status(409).json(result);
+    }
+    if (result.code === 'MISSING_PHONE') {
+      return res.status(400).json(result);
+    }
+    if (result.code === 'CART_NOT_FOUND') {
+      return res.status(404).json(result);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: result.message || 'خطأ في تحويل الطلب غير المكتمل'
+    });
   } catch (error) {
     console.error('❌ Error converting incomplete order:', error.message);
     const detail = error.response?.data?.message || error.response?.data?.error || error.message;
     return res.status(500).json({
       success: false,
-      message: detail || 'خطأ في تحويل الطلب غير المكتمل',
+      message: detail || 'خطأ في تحويل الطلب غير المكتمل'
     });
-  } finally {
-    if (conversionKey) {
-      activeIncompleteCartConversions.delete(conversionKey);
-    }
   }
 });
 
@@ -5436,6 +5794,31 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             orderPayload: { ...order, ...updatedRegularOrder },
             status: statusUpper
           });
+        });
+
+        // 🚚 Turbo Auto-Create shipment if status entered READY_TO_SHIP / PACKAGED or mapped to CONFIRMED
+        setImmediate(async () => {
+          try {
+            const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
+            const isReady = readyStatusCodes.includes(statusUpper);
+            const isConfirm = mappedStatus === 'CONFIRMED' || statusUpper === 'CONFIRMED';
+            if (isReady || isConfirm) {
+              const targetStage = isReady ? 'ON_READY' : 'ON_CONFIRM';
+              const carrier = await getSharedPrismaClient().shippingCompany.findFirst({
+                where: { companyId, providerKey: 'TURBO', isActive: true },
+                select: { settings: true }
+              });
+              const { shouldCreateShipmentNow } = require('../services/shippingProviderService');
+              if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+                const orderService = require('../services/orderService');
+                orderService.autoCreateTurboShipmentForOrder(order.id, companyId, { stage: targetStage }).catch(err => {
+                  console.warn(`[SIMPLE-STATUS-PREP] Turbo auto-create failed for ${order.id}:`, err.message);
+                });
+              }
+            }
+          } catch (prepTurboErr) {
+            console.warn('[SIMPLE-STATUS-PREP] Turbo auto-create require failed:', prepTurboErr.message);
+          }
         });
 
         // 🧾 Auto Invoice Generation (background)

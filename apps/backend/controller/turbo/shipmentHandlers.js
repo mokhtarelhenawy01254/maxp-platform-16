@@ -90,6 +90,28 @@ const createShipment = async (req, res) => {
     const baseTurboMetadata = result.data && typeof result.data === 'object' ? { ...result.data } : (result.data ? { result: result.data } : {});
     if (previousTurboShipment) { baseTurboMetadata.previousTurboShipment = previousTurboShipment; baseTurboMetadata.replacedExistingTurboShipment = true; }
     const updateData = { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: Object.keys(baseTurboMetadata).length > 0 ? serializeTurboMetadata(order.turboMetadata, baseTurboMetadata) : serializeTurboMetadata(order.turboMetadata, {}) };
+
+    let orderMeta = {};
+    try {
+      orderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+    } catch (_) { orderMeta = {}; }
+
+    if (orderMeta.preparationStatus || orderMeta.preparationHold || order.status === 'ON_HOLD_PREP') {
+      orderMeta.preparationStatus = 'READY_TO_SHIP';
+      orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
+      if (orderMeta.preparationHold) {
+        orderMeta.preparationHold = {
+          ...orderMeta.preparationHold,
+          state: 'released',
+          releasedAt: new Date().toISOString(),
+          releasedBy: req.user?.name || req.user?.email || 'TURBO_DISPATCH'
+        };
+      }
+      updateData.metadata = JSON.stringify(orderMeta);
+    }
+    if (order.status === 'ON_HOLD_PREP' || order.status === 'PROCESSING') {
+      updateData.status = 'READY_TO_SHIP';
+    }
     if (order.tableType === 'GuestOrder') {
       await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
       if (order.orderNumber) {
@@ -161,7 +183,7 @@ const createShipment = async (req, res) => {
 const bulkCreateShipments = async (req, res) => {
   try {
     const { orderIds } = req.body;
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.companyId || req.headers?.['x-company-id'];
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) return res.status(400).json({ success: false, error: 'يرجى تحديد طلب واحد على الأقل لإرساله لتربو' });
     const prisma = getSharedPrismaClient();
@@ -304,6 +326,30 @@ const bulkCreateShipments = async (req, res) => {
           turboLabelUrl: result.labelUrl,
           turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data)
         };
+
+        let orderMeta = {};
+        try {
+          orderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+        } catch (_) {}
+
+        if (orderMeta.preparationStatus || orderMeta.preparationHold || order.status === 'ON_HOLD_PREP') {
+          const nextPrepStatus = automationStatus || 'READY_TO_SHIP';
+          orderMeta.preparationStatus = nextPrepStatus;
+          orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
+          if (orderMeta.preparationHold) {
+            orderMeta.preparationHold = {
+              ...orderMeta.preparationHold,
+              state: 'released',
+              releasedAt: new Date().toISOString(),
+              releasedBy: req.user?.name || req.user?.email || 'TURBO_BULK_DISPATCH'
+            };
+          }
+          updateData.metadata = JSON.stringify(orderMeta);
+        }
+
+        if (!automationStatus && (order.status === 'ON_HOLD_PREP' || order.status === 'PROCESSING')) {
+          updateData.status = 'READY_TO_SHIP';
+        }
 
         if (order.orderNumber) {
           await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
@@ -469,6 +515,30 @@ const bulkCreateShipments = async (req, res) => {
           turboLabelUrl: result.labelUrl,
           turboMetadata: serializeTurboMetadata(guest.turboMetadata, result.data)
         };
+
+        let guestMeta = {};
+        try {
+          guestMeta = typeof guest.metadata === 'string' ? JSON.parse(guest.metadata || '{}') : (guest.metadata || {});
+        } catch (_) {}
+
+        if (guestMeta.preparationStatus || guestMeta.preparationHold || guest.status === 'ON_HOLD_PREP') {
+          const nextPrepStatus = automationStatus || 'READY_TO_SHIP';
+          guestMeta.preparationStatus = nextPrepStatus;
+          guestMeta.preparationStatusUpdatedAt = new Date().toISOString();
+          if (guestMeta.preparationHold) {
+            guestMeta.preparationHold = {
+              ...guestMeta.preparationHold,
+              state: 'released',
+              releasedAt: new Date().toISOString(),
+              releasedBy: req.user?.name || req.user?.email || 'TURBO_BULK_DISPATCH'
+            };
+          }
+          updateData.metadata = JSON.stringify(guestMeta);
+        }
+
+        if (!automationStatus && (guest.status === 'ON_HOLD_PREP' || guest.status === 'PROCESSING')) {
+          updateData.status = 'READY_TO_SHIP';
+        }
 
         await safeQuery(() => prisma.guestOrder.updateMany({
           where: guest.orderNumber ? { orderNumber: guest.orderNumber, companyId } : { id: guest.id, companyId },

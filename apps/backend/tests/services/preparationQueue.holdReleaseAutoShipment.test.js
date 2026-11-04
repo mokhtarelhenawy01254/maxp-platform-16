@@ -9,6 +9,11 @@ const mockSharedPrisma = {
   },
   orderStatusConfig: {
     findFirst: jest.fn().mockResolvedValue(null)
+  },
+  shippingCompany: {
+    findFirst: jest.fn().mockResolvedValue({
+      settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_CONFIRM' })
+    })
   }
 };
 
@@ -70,7 +75,7 @@ describe('preparationQueueService -> Auto Shipment on Hold Release', () => {
     await new Promise(resolve => setImmediate(resolve));
 
     expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledTimes(1);
-    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_held_1', companyId);
+    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_held_1', companyId, { stage: 'ON_CONFIRM' });
   });
 
   test('1b. Releases ON_HOLD_PREP directly to PREPARING with isOverride=true -> triggers autoCreateTurboShipmentForOrder', async () => {
@@ -104,7 +109,7 @@ describe('preparationQueueService -> Auto Shipment on Hold Release', () => {
     await new Promise(resolve => setImmediate(resolve));
 
     expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledTimes(1);
-    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_held_override', companyId);
+    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_held_override', companyId, { stage: 'ON_CONFIRM' });
   });
 
   test('2. Releases STOCK_SHORTAGE to PREPARING without existing tracking code -> triggers autoCreateTurboShipmentForOrder', async () => {
@@ -137,7 +142,7 @@ describe('preparationQueueService -> Auto Shipment on Hold Release', () => {
     await new Promise(resolve => setImmediate(resolve));
 
     expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledTimes(1);
-    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_shortage_1', companyId);
+    expect(mockAutoCreateTurboShipmentForOrder).toHaveBeenCalledWith('ord_shortage_1', companyId, { stage: 'ON_CONFIRM' });
   });
 
   test('3. Releases ON_HOLD_PREP but order ALREADY has tracking code -> does NOT call autoCreateTurboShipmentForOrder', async () => {

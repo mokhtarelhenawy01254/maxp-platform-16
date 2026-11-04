@@ -6,11 +6,26 @@ import {
   Clock,
   Save,
   Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  ShoppingCart,
-  Layers,
+  ShoppingBag,
+  RotateCw,
 } from "lucide-react";
+import ConvertIncompleteOrdersModal, {
+  ConvertSummary,
+} from "./components/ConvertIncompleteOrdersModal";
+
+interface OrderSettingsApiResponse {
+  success: boolean;
+  data?: {
+    incompleteOrderLostAfterHours?: string | number;
+    showIncompleteCartsInOrders?: boolean;
+    [key: string]: any;
+  };
+}
+
+interface ConvertSummaryApiResponse {
+  success: boolean;
+  data?: ConvertSummary;
+}
 
 const MIN_HOURS = 1;
 const MAX_HOURS = 720;
@@ -21,17 +36,23 @@ export default function IncompleteOrdersSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // حالة تحويل الطلبات غير المكتملة إلى قيد الانتظار
+  const [summary, setSummary] = useState<ConvertSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+
   useEffect(() => {
     fetchSettings();
+    fetchSummary();
   }, []);
 
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/order-settings");
-      if (response.data?.success) {
+      const response = await apiClient.get<OrderSettingsApiResponse>("/order-settings");
+      if (response.data?.success && response.data?.data) {
         const value = parseInt(
-          response.data.data?.incompleteOrderLostAfterHours,
+          String(response.data.data.incompleteOrderLostAfterHours),
           10
         );
         if (!Number.isNaN(value) && value >= MIN_HOURS && value <= MAX_HOURS) {
@@ -40,7 +61,7 @@ export default function IncompleteOrdersSettings() {
           setHours(24);
         }
         setShowIncompleteInOrders(
-          Boolean(response.data.data?.showIncompleteCartsInOrders)
+          Boolean(response.data.data.showIncompleteCartsInOrders)
         );
       }
     } catch (error) {
@@ -48,6 +69,22 @@ export default function IncompleteOrdersSettings() {
       tToast.error("IncompleteOrdersSettings.error_fetch_53e5");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      const response = await apiClient.get<ConvertSummaryApiResponse>(
+        "/orders-new/incomplete/convert-summary"
+      );
+      if (response.data?.success && response.data?.data) {
+        setSummary(response.data.data);
+      }
+    } catch (error) {
+      console.warn("Error fetching incomplete orders summary:", error);
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
@@ -59,7 +96,7 @@ export default function IncompleteOrdersSettings() {
 
     try {
       setSaving(true);
-      const response = await apiClient.put("/order-settings", {
+      const response = await apiClient.put<OrderSettingsApiResponse>("/order-settings", {
         incompleteOrderLostAfterHours: hours,
         showIncompleteCartsInOrders: showIncompleteInOrders,
       });
@@ -67,6 +104,7 @@ export default function IncompleteOrdersSettings() {
       if (response.data?.success) {
         tToast.success("IncompleteOrdersSettings.success_save_8fed");
         fetchSettings();
+        fetchSummary();
       }
     } catch (error) {
       console.error("Error saving incomplete order settings:", error);
@@ -85,6 +123,8 @@ export default function IncompleteOrdersSettings() {
     );
   }
 
+  const readyToConvertCount = summary?.readyToConvert ?? 0;
+
   return (
     <div className="space-y-4 text-foreground select-none" dir="rtl">
       {/* Telemetry Ribbon */}
@@ -97,6 +137,10 @@ export default function IncompleteOrdersSettings() {
           <span className="text-border">|</span>
           <span className="text-muted-foreground font-mono text-[11px]">
             TIMEOUT: {hours}H
+          </span>
+          <span className="text-border">|</span>
+          <span className="text-muted-foreground font-mono text-[11px] tabular-nums">
+            جاهز للتحويل: {readyToConvertCount}
           </span>
         </div>
         <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground text-xs">
@@ -157,7 +201,7 @@ export default function IncompleteOrdersSettings() {
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border/70 bg-muted/15 p-3.5">
             <div>
               <p className="text-xs font-semibold text-foreground">
-                دمج وعرض السلال غير المكتملة في جدول الطلبات الرئيسي
+                دمج وععرض السلال غير المكتملة في جدول الطلبات الرئيسي
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 تظهر السلال المتروكة جنباً إلى جنب مع الطلبات المكتملة لسهولة الفلترة وتعيينها لفريق خدمة العملاء
@@ -172,6 +216,87 @@ export default function IncompleteOrdersSettings() {
               />
               <div className="h-5 w-9 rounded-full bg-muted border border-border/80 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-muted-foreground after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:bg-primary-foreground" />
             </label>
+          </div>
+
+          {/* ⚡ تحويل الطلبات غير المكتملة إلى تابة قيد الانتظار */}
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-4 space-y-3.5 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400">
+                  <ShoppingBag className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs sm:text-sm font-bold text-foreground">
+                      تحويل الطلبات غير المكتملة إلى تابة «قيد الانتظار»
+                    </h3>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      تسميع فوري بالجدول
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                    تحويل السلال المتروكة المتوفر بها رقم هاتف العميل إلى طلبات فعلية رسمية بحالة «قيد الانتظار» PENDING لتسمع وتظهر مباشرة داخل تابة قيد الانتظار بجدول الطلبات الرئيسي لمتابعتها وتأكيدها.
+                  </p>
+                </div>
+              </div>
+
+              {/* العداد اللحظي */}
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-background border border-border/70 text-foreground tabular-nums shadow-2xs">
+                  <span
+                    className={`inline-block w-2.5 h-2.5 rounded-full ${
+                      readyToConvertCount > 0
+                        ? "bg-emerald-500 animate-pulse"
+                        : "bg-muted-foreground/40"
+                    }`}
+                  />
+                  {summaryLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span>{readyToConvertCount} طلب متاح للتحويل</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* تفاصيل وتفعيل التحويل */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-emerald-500/20 text-xs">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground font-mono text-[11px] tabular-nums">
+                <span>نشطة: <strong className="text-foreground">{summary?.activeReady ?? 0}</strong></span>
+                <span className="text-border">|</span>
+                <span>مفقودة: <strong className="text-foreground">{summary?.lostReady ?? 0}</strong></span>
+                {(summary?.noPhoneCount ?? 0) > 0 && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span
+                      className="text-amber-500/90 font-medium"
+                      title="السلال التي لا تحتوي على رقم هاتف لا يمكن تحويلها لطلب رسمي"
+                    >
+                      بدون هاتف: {summary?.noPhoneCount ?? 0}
+                    </span>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={fetchSummary}
+                  disabled={summaryLoading}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="تحديث البيانات"
+                >
+                  <RotateCw className={`h-3 w-3 ${summaryLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowConvertModal(true)}
+                disabled={summaryLoading || readyToConvertCount === 0}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-semibold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <ShoppingBag className="h-3.5 w-3.5" />
+                <span>تحويل الطلبات إلى قيد الانتظار</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -196,6 +321,16 @@ export default function IncompleteOrdersSettings() {
           </button>
         </div>
       </div>
+
+      {/* نافذة التحويل المنبثقة */}
+      <ConvertIncompleteOrdersModal
+        isOpen={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        summary={summary}
+        onConversionSuccess={() => {
+          fetchSummary();
+        }}
+      />
     </div>
   );
 }

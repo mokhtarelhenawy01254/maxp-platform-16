@@ -807,6 +807,22 @@ class OrderService {
         } catch (webhookErr) {
           console.warn('⚠️ [ORDER-SERVICE] Failed to trigger order webhook:', webhookErr.message);
         }
+
+        // 🚚 Turbo Auto-Create shipment if trigger is ON_ORDER
+        try {
+          const { shouldCreateShipmentNow } = require('./shippingProviderService');
+          const turboCarrier = await this.getPrisma().shippingCompany.findFirst({
+            where: { companyId, providerKey: 'TURBO', isActive: true },
+            select: { settings: true, providerKey: true, integrationMode: true }
+          });
+          if (shouldCreateShipmentNow(turboCarrier?.settings, 'ON_ORDER')) {
+            this.autoCreateTurboShipmentForOrder(order.id, companyId, { stage: 'ON_ORDER' }).catch(turboErr => {
+              console.warn('⚠️ [TURBO-AUTO-CONV] Failed to auto-create shipment on conversation order creation:', turboErr.message);
+            });
+          }
+        } catch (carrierErr) {
+          console.warn('⚠️ [TURBO-AUTO-CONV] Carrier check error:', carrierErr.message);
+        }
       }
 
       // Trigger auto-distribution immediately
@@ -2528,11 +2544,31 @@ class OrderService {
           }
 
           // 🚚 Turbo Integration: Auto-create shipment via unified method
-          if (isConfirmingOrder) {
+          const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
+          const isReadyToShip = readyStatusCodes.includes(normalizedStatus);
+
+          if (isConfirmingOrder || isReadyToShip) {
             try {
-              await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId, { stage: 'ON_CONFIRM' });
+              const targetStage = isReadyToShip ? 'ON_READY' : 'ON_CONFIRM';
+              await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId, { stage: targetStage });
             } catch (turboAutoErr) {
               console.error(`❌ [TURBO-AUTO-BG] Error in updateOrderStatus for ${orderNumber}:`, turboAutoErr.message);
+            }
+          } else {
+            // Also check if this is a custom status mapping to CONFIRMED or READY_TO_SHIP
+            try {
+              const prisma = this.getPrisma();
+              const customStatusConfig = await prisma.orderStatusConfig.findFirst({
+                where: { companyId: order.companyId, code: status, statusType: 'order', isActive: true }
+              });
+              const mapped = String(customStatusConfig?.mapsToSystem || '').trim().toUpperCase();
+              if (mapped === 'CONFIRMED') {
+                await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId, { stage: 'ON_CONFIRM' });
+              } else if (readyStatusCodes.includes(mapped)) {
+                await this.autoCreateTurboShipmentForOrder(updatedOrder || order.id, order.companyId, { stage: 'ON_READY' });
+              }
+            } catch (customMapErr) {
+              console.warn('⚠️ [TURBO-AUTO] Custom status mapping check error:', customMapErr.message);
             }
           }
 
@@ -2994,12 +3030,18 @@ class OrderService {
 
       await (async () => {
         try {
+          const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
+          const isGuestConfirm = status === 'CONFIRMED';
+          const isGuestReady = readyStatusCodes.includes(status);
+
+          if (isGuestConfirm || isGuestReady) {
+            const targetStage = isGuestReady ? 'ON_READY' : 'ON_CONFIRM';
+            this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId, { stage: targetStage }).catch(turboGuestErr => {
+              console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in updateGuestOrderStatus for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
+            });
+          }
+
           if (status === 'CONFIRMED' || status === 'PROCESSING') {
-            if (status === 'CONFIRMED') {
-              this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId).catch(turboGuestErr => {
-                console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in updateGuestOrderStatus for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
-              });
-            }
             internalSyncService.pushOrderToProvider(updatedGuestOrder.id, companyId).catch(err => {
               console.error(`❌ [INTERNAL-SYNC] Failed to push guest order ${updatedGuestOrder.id} to provider:`, err.message);
             });
@@ -3747,6 +3789,15 @@ class OrderService {
       }
 
       if (!turboEnabled) return { skipped: true, reason: 'TURBO_NOT_ENABLED' };
+
+      // Check shipmentCreateTrigger against requested stage
+      if (options.stage && !options.force) {
+        const { shouldCreateShipmentNow } = require('./shippingProviderService');
+        if (!shouldCreateShipmentNow(turboCarrier?.settings, options.stage)) {
+          console.log(`ℹ️ [TURBO-AUTO-GUEST] Shipment creation skipped: trigger mismatch for stage ${options.stage}`);
+          return { skipped: true, reason: 'TRIGGER_STAGE_MISMATCH', stage: options.stage };
+        }
+      }
 
       if (!turboAutoCreate && !options.force) {
         console.log(`ℹ️ [TURBO-AUTO-GUEST] Auto-creation disabled for guest order ${guest.orderNumber}`);

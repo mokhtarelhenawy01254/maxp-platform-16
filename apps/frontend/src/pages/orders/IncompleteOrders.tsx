@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getDirection } from "../../i18n";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
@@ -17,6 +17,11 @@ import IncompleteOrdersPagination from "./incomplete/IncompleteOrdersPagination"
 import { IncompleteOrdersModals } from "./incomplete/IncompleteOrdersModals";
 import { useIncompleteOrdersData } from "./incomplete/useIncompleteOrdersData";
 import { useIncompleteOrdersActions } from "./incomplete/useIncompleteOrdersActions";
+import {
+  ConvertIncompleteOrdersModal,
+  ConvertSummary,
+} from "../settings/components/ConvertIncompleteOrdersModal";
+import { apiClient } from "../../services/apiClient";
 
 export const IncompleteOrders: React.FC = () => {
   const { user } = useAuth();
@@ -130,6 +135,23 @@ export const IncompleteOrders: React.FC = () => {
     handleRetry,
   });
 
+  const [showBulkConvertModal, setShowBulkConvertModal] = useState(false);
+  const [convertSummary, setConvertSummary] = useState<ConvertSummary | null>(null);
+
+  const handleOpenBulkConvert = async () => {
+    setShowBulkConvertModal(true);
+    try {
+      const res = await apiClient.get<{ success: boolean; data: ConvertSummary }>(
+        "/orders-new/incomplete/convert-summary"
+      );
+      if (res.data?.success && res.data?.data) {
+        setConvertSummary(res.data.data);
+      }
+    } catch (_err) {
+      // fallback to stats
+    }
+  };
+
   return (
     <div className="space-y-4" dir={getDirection()}>
       {/* Top Header */}
@@ -137,6 +159,7 @@ export const IncompleteOrders: React.FC = () => {
         exporting={exporting}
         loading={loading}
         onExport={handleExport}
+        onOpenBulkConvert={handleOpenBulkConvert}
       />
 
       {/* Telemetry Strip - Linear Single Chassis */}
@@ -232,6 +255,24 @@ export const IncompleteOrders: React.FC = () => {
               prev.filter((o) => o.cartId !== selectedCancelOrder.cartId)
             );
           }
+          handleRetry();
+        }}
+      />
+
+      <ConvertIncompleteOrdersModal
+        isOpen={showBulkConvertModal}
+        onClose={() => setShowBulkConvertModal(false)}
+        summary={
+          convertSummary || {
+            total: stats.total,
+            readyToConvert: stats.active + stats.lost,
+            activeReady: stats.active,
+            lostReady: stats.lost,
+            noPhoneCount: 0,
+            lostAfterHours: 24,
+          }
+        }
+        onConversionSuccess={() => {
           handleRetry();
         }}
       />

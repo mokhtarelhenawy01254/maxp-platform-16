@@ -38,6 +38,10 @@ jest.mock('../../services/orderService', () => ({
   checkDuplicateActiveTurboShipment: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock('../../utils/turbo/shipmentValidator', () => ({
+  validateOrderForTurbo: jest.fn(() => ({ isValid: true })),
+}));
+
 const turboController = require('../../controller/turboController');
 
 function createMockResponse() {
@@ -71,8 +75,10 @@ describe('turboController.bulkCreateShipments', () => {
         companyId: 'company-1',
         turboShipmentId: null,
         status: 'CONFIRMED',
-        customer: { firstName: 'Ahmed', phone: '01011111111' },
-        orderItems: [],
+        customer: { firstName: 'Ahmed Mohamed', phone: '01011111111' },
+        customerAddress: 'شارع الهرم الجيزة',
+        governorate: 'الجيزة',
+        orderItems: [{ productName: 'منتج تجريبي', quantity: 1, price: 100, total: 100 }],
         turboMetadata: null,
       },
     ]);
@@ -87,8 +93,8 @@ describe('turboController.bulkCreateShipments', () => {
         status: 'PENDING',
         guestName: 'Mona Guest',
         guestPhone: '01022222222',
-        shippingAddress: JSON.stringify({ city: 'Cairo', address: 'Street 1' }),
-        items: JSON.stringify([]),
+        shippingAddress: JSON.stringify({ city: 'القاهرة', address: 'شارع التحرير الدقي' }),
+        items: JSON.stringify([{ name: 'منتج تجريبي', quantity: 1, price: 100, total: 100 }]),
         turboMetadata: null,
       },
     ]);

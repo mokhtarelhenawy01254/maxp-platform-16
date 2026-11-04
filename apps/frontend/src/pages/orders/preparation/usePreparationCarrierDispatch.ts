@@ -47,22 +47,9 @@ export function usePreparationCarrierDispatch({
       return;
     }
 
-    const onHoldSelected =
-      selectedOrders.some((orderNumber) => {
-        const o = getOrderByNumber(orderNumber);
-        return o?.stage === "ON_HOLD_PREP" || o?.normalizedStatus === "ON_HOLD_PREP";
-      }) || activeStage === "ON_HOLD_PREP";
-
-    if (onHoldSelected) {
-      const confirmed = window.confirm(
-        "⚠️ تنبيه: لقد حددت طلبات معلقة لوجود مشكلة (ON_HOLD_PREP).\n\nهل أنت متأكد من رغبتك في إرسالها لشركة الشحن واستخراج بوالص شحن رسمية لها الآن؟",
-      );
-      if (!confirmed) return;
-    }
-
     await fetchActiveCarriers();
     setShowDispatchModal(true);
-  }, [activeStage, fetchActiveCarriers, getOrderByNumber, selectedOrders, t]);
+  }, [fetchActiveCarriers, selectedOrders, t]);
 
   const handleDispatchToCarrier = useCallback(
     async (carrier: ActiveCarrier) => {

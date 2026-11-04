@@ -9,7 +9,7 @@ import { exportIncompleteOrdersCsv } from "./exportIncompleteOrdersCsv";
 export interface UseIncompleteOrdersActionsProps {
   orders: IncompleteOrder[];
   setOrders: React.Dispatch<React.SetStateAction<IncompleteOrder[]>>;
-  buildParams: (overrides?: Record<string, string | number>) => URLSearchParams;
+  buildParams: any;
   handleRetry: () => void;
 }
 

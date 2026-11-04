@@ -269,7 +269,7 @@ router.get('/debug/search/:code', verifyToken.authenticateToken, async (req, res
     
     const apiKey = company.turboApiKey;
     const clientCode = company.turboMainClientCode || 37321;
-    const backofficeUrl = 'https://backoffice.turbo-eg.com/external-api';
+    const backofficeUrl = 'https://platform.turbo.info/external-api';
     const platformUrl = 'https://platform.turbo.info/external-api';
     const results = {};
 
@@ -319,7 +319,7 @@ router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res
     const to = new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0];
 
     // 1. Get current active orders from Turbo API
-    const getstatus = await axios.post('https://backoffice.turbo-eg.com/external-api/get-status', { authentication_key: apiKey, main_client_code: clientCode, from, to }, { timeout: 20000 });
+    const getstatus = await axios.post('https://platform.turbo.info/external-api/get-status', { authentication_key: apiKey, main_client_code: clientCode, from, to }, { timeout: 20000 });
     const activeInTurbo = new Set((getstatus.data?.data || []).map(s => String(s.code)));
     const activeDistribution = {};
     (getstatus.data?.data || []).forEach(s => { const k = `${s.status_code}(${s.status})`; activeDistribution[k] = (activeDistribution[k]||0)+1; });

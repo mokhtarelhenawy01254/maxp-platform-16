@@ -177,13 +177,21 @@ const shouldCreateShipmentNow = (settings, stage) => {
   const normalizedStage = String(stage).trim().toUpperCase();
 
   if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_ORDER) {
-    return ['ON_ORDER', 'ORDER_CREATED', 'CREATED'].includes(normalizedStage);
+    return ['ON_ORDER', 'ORDER_CREATED', 'CREATED', 'NEW'].includes(normalizedStage);
   }
   if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_CONFIRM) {
     return ['ON_CONFIRM', 'CONFIRMED', 'ORDER_CONFIRMED'].includes(normalizedStage);
   }
   if (trigger === SHIPMENT_CREATE_TRIGGERS.ON_READY) {
-    return ['ON_READY', 'READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING'].includes(normalizedStage);
+    return [
+      'ON_READY',
+      'READY',
+      'READY_TO_SHIP',
+      'READY_FOR_SHIPPING',
+      'READY_FOR_PICKUP',
+      'PACKAGED',
+      'PACKED',
+    ].includes(normalizedStage);
   }
 
   return trigger === normalizedStage;

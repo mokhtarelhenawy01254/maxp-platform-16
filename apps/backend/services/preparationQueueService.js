@@ -255,18 +255,19 @@ const updatePreparationOrderStatus = async ({
     const hasNoShipment = !order.turboTrackingNumber && !order.turboShipmentId;
     const isHoldReleaseTransition = wasHoldStage && isNewStageNotHold && hasNoShipment;
 
-    const isReadyTransition = ['READY', 'READY_TO_SHIP'].includes(normalizedStatus) || ['READY', 'READY_TO_SHIP'].includes(mappedStatus);
+    const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
+    const isReadyTransition = readyStatusCodes.includes(normalizedStatus) || readyStatusCodes.includes(mappedStatus);
 
     if (isConfirmedTransition || isHoldReleaseTransition || isReadyTransition) {
       setImmediate(async () => {
         try {
           const targetStage = isReadyTransition ? 'ON_READY' : 'ON_CONFIRM';
-          const carrier = await prisma.shippingCompany.findFirst({
+          const carrier = prisma?.shippingCompany ? await prisma.shippingCompany.findFirst({
             where: { companyId, providerKey: 'TURBO', isActive: true },
             select: { settings: true }
-          });
+          }) : null;
           const { shouldCreateShipmentNow } = require('./shippingProviderService');
-          if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+          if (!carrier || shouldCreateShipmentNow(carrier?.settings, targetStage)) {
             const orderService = require('./orderService');
             orderService.autoCreateTurboShipmentForOrder(updatedOrder.id, companyId, { stage: targetStage }).catch(err => {
               console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for ${updatedOrder.id}:`, err.message);
@@ -354,7 +355,9 @@ const updatePreparationOrderStatus = async ({
       }
     });
 
-    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED or released from hold stages
+    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED, released from hold, or READY_TO_SHIP
+    const readyStatusCodesGuest = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
+    const isGuestReadyTransition = readyStatusCodesGuest.includes(normalizedStatus);
     const isGuestConfirmedTransition = (normalizedStatus === 'CONFIRMED');
     const wasGuestHoldStage = PREPARATION_HOLD_STAGES.has(previousPreparationStatus) ||
       previousPreparationStatus === 'ON_HOLD_PREP' ||
@@ -363,13 +366,21 @@ const updatePreparationOrderStatus = async ({
     const hasGuestNoShipment = !guestOrder.turboTrackingNumber && !guestOrder.turboShipmentId;
     const isGuestHoldReleaseTransition = wasGuestHoldStage && isGuestNewStageNotHold && hasGuestNoShipment;
 
-    if (isGuestConfirmedTransition || isGuestHoldReleaseTransition) {
-      setImmediate(() => {
+    if (isGuestConfirmedTransition || isGuestHoldReleaseTransition || isGuestReadyTransition) {
+      setImmediate(async () => {
         try {
-          const orderService = require('./orderService');
-          orderService.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder.id, companyId).catch(err => {
-            console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for guest ${updatedGuestOrder.id}:`, err.message);
-          });
+          const targetStage = isGuestReadyTransition ? 'ON_READY' : 'ON_CONFIRM';
+          const carrier = prisma?.shippingCompany ? await prisma.shippingCompany.findFirst({
+            where: { companyId, providerKey: 'TURBO', isActive: true },
+            select: { settings: true }
+          }) : null;
+          const { shouldCreateShipmentNow } = require('./shippingProviderService');
+          if (!carrier || shouldCreateShipmentNow(carrier?.settings, targetStage)) {
+            const orderService = require('./orderService');
+            orderService.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder.id, companyId, { stage: targetStage }).catch(err => {
+              console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for guest ${updatedGuestOrder.id}:`, err.message);
+            });
+          }
         } catch (prepTurboErr) {
           console.warn('[PREPARATION-QUEUE] Turbo auto-create require failed for guest:', prepTurboErr.message);
         }

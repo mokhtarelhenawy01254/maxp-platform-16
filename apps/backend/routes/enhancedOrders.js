@@ -1255,15 +1255,16 @@ router.patch('/:id/status', async (req, res) => {
     }
 
     // 🚚 إنشاء شحنة تربو تلقائياً وفق توقيت الإعدادات (ON_CONFIRM أو ON_READY)
+    const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING', 'READY_FOR_PICKUP', 'PACKAGED', 'PACKED'];
     const upperStatus = String(status || '').trim().toUpperCase();
-    if (upperStatus === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(upperStatus)) {
+    if (upperStatus === 'CONFIRMED' || readyStatusCodes.includes(upperStatus)) {
       try {
         const carrier = await enhancedOrderService.getPrisma().shippingCompany.findFirst({
           where: { companyId, providerKey: 'TURBO', isActive: true },
           select: { settings: true }
         });
         const { shouldCreateShipmentNow } = require('../services/shippingProviderService');
-        const targetStage = upperStatus === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+        const targetStage = readyStatusCodes.includes(upperStatus) ? 'ON_READY' : 'ON_CONFIRM';
 
         if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
           const orderService = require('../services/orderService');

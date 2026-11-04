@@ -2634,6 +2634,23 @@ router.post('/', async (req, res) => {
           } catch (webhookErr) {
             console.warn('⚠️ [GUEST-ORDER] Failed to trigger order webhook:', webhookErr.message);
           }
+
+          // 🚚 Turbo Auto-Create shipment if trigger is ON_ORDER
+          try {
+            const { shouldCreateShipmentNow } = require('../services/shippingProviderService');
+            const turboCarrier = await prisma.shippingCompany.findFirst({
+              where: { companyId: company.id, providerKey: 'TURBO', isActive: true },
+              select: { settings: true, providerKey: true, integrationMode: true }
+            });
+            if (shouldCreateShipmentNow(turboCarrier?.settings, 'ON_ORDER')) {
+              const orderService = require('../services/orderService');
+              orderService.autoCreateTurboShipmentForOrder(createdOrder.id, company.id, { stage: 'ON_ORDER' }).catch(turboErr => {
+                console.warn('⚠️ [TURBO-AUTO-STOREFRONT] Failed to auto-create shipment on order creation:', turboErr.message);
+              });
+            }
+          } catch (carrierErr) {
+            console.warn('⚠️ [TURBO-AUTO-STOREFRONT] Carrier check error:', carrierErr.message);
+          }
         } else {
           console.warn('⚠️ [GUEST-ORDER] Skipping external sync because dropshipping routing failed');
         }

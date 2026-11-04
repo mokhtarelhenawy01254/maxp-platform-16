@@ -7,6 +7,15 @@ const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
+const READY_STATUS_CODES = Object.freeze([
+    'READY',
+    'READY_TO_SHIP',
+    'READY_FOR_SHIPPING',
+    'READY_FOR_PICKUP',
+    'PACKAGED',
+    'PACKED'
+]);
+
 class OrderWorkflowService {
     constructor() {
         // Shared prisma client
@@ -376,14 +385,18 @@ class OrderWorkflowService {
             }
 
             const nextStatusCode = String(nextStatusDef.code || '').trim().toUpperCase();
-            if (nextStatusCode === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(nextStatusCode)) {
+            const nextStatusMapped = String(nextStatusDef.mapsToSystem || '').trim().toUpperCase();
+            const isConfirmedWf = nextStatusCode === 'CONFIRMED' || nextStatusMapped === 'CONFIRMED';
+            const isReadyWf = READY_STATUS_CODES.includes(nextStatusCode) || READY_STATUS_CODES.includes(nextStatusMapped);
+
+            if (isConfirmedWf || isReadyWf) {
                 try {
                     const carrier = await this.prisma.shippingCompany.findFirst({
                         where: { companyId, providerKey: 'TURBO', isActive: true },
                         select: { settings: true }
                     });
                     const { shouldCreateShipmentNow } = require('./shippingProviderService');
-                    const targetStage = nextStatusCode === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+                    const targetStage = isReadyWf ? 'ON_READY' : 'ON_CONFIRM';
                     if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
                         const orderService = require('./orderService');
                         orderService.autoCreateTurboShipmentForOrder(order.id, companyId, { stage: targetStage }).catch(err => {
@@ -540,14 +553,18 @@ class OrderWorkflowService {
 
             // 🚚 Turbo Auto-Create shipment on approval according to trigger (ON_CONFIRM or ON_READY)
             const targetStatusCode = String(request.toStatus?.code || apprStored || '').trim().toUpperCase();
-            if (targetStatusCode === 'CONFIRMED' || ['READY', 'READY_TO_SHIP'].includes(targetStatusCode)) {
+            const targetStatusMapped = String(request.toStatus?.mapsToSystem || '').trim().toUpperCase();
+            const isConfirmedApproval = targetStatusCode === 'CONFIRMED' || targetStatusMapped === 'CONFIRMED';
+            const isReadyApproval = readyStatusCodes.includes(targetStatusCode) || readyStatusCodes.includes(targetStatusMapped);
+
+            if (isConfirmedApproval || isReadyApproval) {
                 try {
                     const carrier = await this.prisma.shippingCompany.findFirst({
                         where: { companyId, providerKey: 'TURBO', isActive: true },
                         select: { settings: true }
                     });
                     const { shouldCreateShipmentNow } = require('./shippingProviderService');
-                    const targetStage = targetStatusCode === 'CONFIRMED' ? 'ON_CONFIRM' : 'ON_READY';
+                    const targetStage = isReadyApproval ? 'ON_READY' : 'ON_CONFIRM';
                     if (shouldCreateShipmentNow(carrier?.settings, targetStage)) {
                         const orderService = require('./orderService');
                         orderService.autoCreateTurboShipmentForOrder(request.orderId, companyId, { stage: targetStage }).catch(err => {

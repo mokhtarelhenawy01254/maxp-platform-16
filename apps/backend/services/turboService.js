@@ -26,7 +26,7 @@ class TurboService {
     // Backward compatibility for tests that spy on these
     this.apiKey = apiKey;
     this.companyId = companyId;
-    this.baseUrl = process.env.TURBO_API_URL || 'https://backoffice.turbo-eg.com/external-api';
+    this.baseUrl = process.env.TURBO_API_URL || 'https://platform.turbo.info/external-api';
     this.timeout = 30000;
   }
 

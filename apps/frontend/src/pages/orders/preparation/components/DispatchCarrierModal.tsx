@@ -86,6 +86,10 @@ export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
               اختر شركة الشحن التي ترغب في توجيه وإصدار بوالص الـ ({ordersCount}) طلب المحددة من خلالها:
             </p>
 
+            <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-2.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+              <span>سيتم إصدار بوالص الشحن وتحديث حالة الطلبات تلقائياً إلى جاهز للشحن.</span>
+            </div>
+
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {carriers.map((carrier) => {
                 const isSelected = carrier.id === selectedCarrierId;

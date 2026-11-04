@@ -471,6 +471,84 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
         })
       );
     });
+    test('15. Stage mismatch: skips when trigger is ON_READY and requested stage is ON_CONFIRM', async () => {
+      mockPrisma.shippingCompany.findFirst.mockResolvedValueOnce({
+        providerKey: 'TURBO',
+        apiKey: 'turbo_key_123',
+        settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_READY' })
+      });
+
+      const order = {
+        id: 'ord_stage_1',
+        orderNumber: 'ORD-STAGE-1',
+        companyId: 'comp_1',
+        customer: { firstName: 'علي', lastName: 'محمد' },
+        customerPhone: '01012345678',
+        governorate: 'القاهرة',
+        total: 500,
+        shipping: 50,
+        orderItems: [{ product: { name: 'حذاء' }, quantity: 1, price: 450 }],
+        company: { id: 'comp_1', turboEnabled: true, turboAutoCreate: true, turboApiKey: 'turbo_key_123' }
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1', { stage: 'ON_CONFIRM' });
+
+      expect(result.skipped).toBe(true);
+      expect(result.reason).toBe('TRIGGER_STAGE_MISMATCH');
+      expect(result.stage).toBe('ON_CONFIRM');
+    });
+
+    test('16. Stage match: creates shipment when trigger is ON_READY and requested stage is ON_READY', async () => {
+      mockPrisma.shippingCompany.findFirst.mockResolvedValueOnce({
+        providerKey: 'TURBO',
+        apiKey: 'turbo_key_123',
+        settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_READY' })
+      });
+
+      const order = {
+        id: 'ord_stage_2',
+        orderNumber: 'ORD-STAGE-2',
+        companyId: 'comp_1',
+        customer: { firstName: 'علي', lastName: 'محمد' },
+        customerPhone: '01012345678',
+        governorate: 'القاهرة',
+        total: 500,
+        shipping: 50,
+        orderItems: [{ product: { name: 'حذاء' }, quantity: 1, price: 450 }],
+        company: { id: 'comp_1', turboEnabled: true, turboAutoCreate: true, turboApiKey: 'turbo_key_123' }
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1', { stage: 'ON_READY' });
+
+      expect(result.success).toBe(true);
+      expect(result.shipmentId).toBe('TURBO-SHP-001');
+    });
+
+    test('17. Stage match: creates shipment when trigger is ON_ORDER and requested stage is ON_ORDER', async () => {
+      mockPrisma.shippingCompany.findFirst.mockResolvedValueOnce({
+        providerKey: 'TURBO',
+        apiKey: 'turbo_key_123',
+        settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_ORDER' })
+      });
+
+      const order = {
+        id: 'ord_stage_3',
+        orderNumber: 'ORD-STAGE-3',
+        companyId: 'comp_1',
+        customer: { firstName: 'علي', lastName: 'محمد' },
+        customerPhone: '01012345678',
+        governorate: 'القاهرة',
+        total: 500,
+        shipping: 50,
+        orderItems: [{ product: { name: 'حذاء' }, quantity: 1, price: 450 }],
+        company: { id: 'comp_1', turboEnabled: true, turboAutoCreate: true, turboApiKey: 'turbo_key_123' }
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1', { stage: 'ON_ORDER' });
+
+      expect(result.success).toBe(true);
+      expect(result.shipmentId).toBe('TURBO-SHP-001');
+    });
   });
 
   describe('autoCreateTurboShipmentForGuestOrder', () => {
@@ -513,6 +591,59 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
           })
         })
       );
+    });
+
+    test('18. Guest order: skips when trigger is ON_READY and requested stage is ON_CONFIRM', async () => {
+      mockPrisma.shippingCompany.findFirst.mockResolvedValueOnce({
+        providerKey: 'TURBO',
+        apiKey: 'turbo_key_123',
+        settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_READY' })
+      });
+
+      const guestOrder = {
+        id: 'guest_stage_1',
+        orderNumber: 'ORD-GUEST-STAGE-1',
+        companyId: 'comp_1',
+        guestName: 'أحمد علي',
+        guestPhone: '01012345678',
+        governorate: 'الجيزة',
+        total: 250,
+        shippingCost: 50,
+        items: JSON.stringify([{ id: 'p1', name: 'تيشيرت', quantity: 1, price: 200 }]),
+        turboShipmentId: null
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForGuestOrder(guestOrder, 'comp_1', { stage: 'ON_CONFIRM' });
+
+      expect(result.skipped).toBe(true);
+      expect(result.reason).toBe('TRIGGER_STAGE_MISMATCH');
+      expect(result.stage).toBe('ON_CONFIRM');
+    });
+
+    test('19. Guest order: creates shipment when trigger is ON_READY and requested stage is ON_READY', async () => {
+      mockPrisma.shippingCompany.findFirst.mockResolvedValueOnce({
+        providerKey: 'TURBO',
+        apiKey: 'turbo_key_123',
+        settings: JSON.stringify({ autoCreateShipments: true, shipmentCreateTrigger: 'ON_READY' })
+      });
+
+      const guestOrder = {
+        id: 'guest_stage_2',
+        orderNumber: 'ORD-GUEST-STAGE-2',
+        companyId: 'comp_1',
+        guestName: 'أحمد علي',
+        guestPhone: '01012345678',
+        governorate: 'الجيزة',
+        total: 250,
+        shippingCost: 50,
+        items: JSON.stringify([{ id: 'p1', name: 'تيشيرت', quantity: 1, price: 200 }]),
+        turboShipmentId: null
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForGuestOrder(guestOrder, 'comp_1', { stage: 'ON_READY' });
+
+      expect(result.success).toBe(true);
+      expect(result.shipmentId).toBe('TURBO-SHP-001');
     });
   });
 });

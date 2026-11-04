@@ -11,9 +11,9 @@ class TurboApiClient {
   constructor(apiKey = null, companyId = null) {
     this.apiKey = apiKey;
     this.companyId = companyId;
-    this.baseUrl = process.env.TURBO_API_URL || 'https://backoffice.turbo-eg.com/external-api';
-    // 2026 hardening: fail fast in 5s instead of hanging client requests for 30s
-    this.timeout = 5000;
+    this.baseUrl = process.env.TURBO_API_URL || 'https://platform.turbo.info/external-api';
+    // 2026 hardening: 20s timeout to allow Turbo external API adequate processing time
+    this.timeout = 20000;
   }
 
   async getApiKey() {
