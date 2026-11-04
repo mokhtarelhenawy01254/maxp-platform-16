@@ -1,0 +1,323 @@
+{
+  "id": "couture-atelier-eg",
+  "name": "Couture Atelier EG",
+  "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة (Shop The Look) والسرد القصصي البانورامي والتسوق البصري التفاعلي.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "24 16% 12%",
+      "primaryForeground": "36 24% 97%",
+      "secondary": "36 24% 93%",
+      "secondaryForeground": "24 16% 12%",
+      "accent": "26 42% 48%",
+      "accentForeground": "36 24% 97%",
+      "background": "36 30% 98%",
+      "foreground": "24 16% 14%",
+      "muted": "36 15% 90%",
+      "mutedForeground": "24 10% 40%",
+      "border": "36 15% 85%",
+      "card": "0 0% 100%",
+      "cardForeground": "24 16% 14%",
+      "ring": "26 42% 48%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"IBM Plex Sans Arabic\", serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.375rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 20px 48px -28px rgba(36, 24, 16, 0.12)",
+      "hoverShadow": "0 28px 60px -24px rgba(36, 24, 16, 0.18)",
+      "badgeRadius": "999px",
+      "buttonRadius": "0.375rem",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Couture Atelier EG",
+    "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة والسرد القصصي البانورامي."
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80",
+    "colors": [
+      "24 16% 12%",
+      "36 24% 93%",
+      "26 42% 48%"
+    ]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "كوتور أتيليه مصر",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "المجموعات الحصرية",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "تواصلي معنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة والسرد القصصي والتسوق التفاعلي في مصر.",
+    "copyrightText": "© 2026 كوتور أتيليه مصر. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "التسوق والتشكيلات",
+        "links": [
+          {
+            "label": "كل القطع",
+            "to": "/shop"
+          },
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "التخفيضات",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "الشروط والأحكام",
+            "to": "/terms"
+          },
+          {
+            "label": "سياسة الخصوصية",
+            "to": "/privacy"
+          }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "كوتور أتيليه مصر · أزياء راقية وتفصيل حصري",
+            "title": "حرفية تحريرية\nتليق بذوقك الرفيع",
+            "subtitle": "مجموعات أزياء مصممة بحرفية متقنة في مصر، تجمع بين السرد القصصي البانورامي، واختيار اللوك الكامل بلمسة راقية وتفاصيل استثنائية.",
+            "ctaText": "استكشفي التشكيلة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "المجموعات",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "مجموعات الأتيليه المختارة",
+            "subtitle": "تشكيلات موسمية مصممة لأصحاب الذوق المتميز"
+          }
+        },
+        {
+          "type": "shop-the-look",
+          "settings": {
+            "title": "تنسيقات اللوك الكامل",
+            "subtitle": "إطلالات منسقة بعناية لطلب كافة قطع الإطلالة في خطوة واحدة"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "title": "أحدث إبداعات الموسم",
+            "subtitle": "قطع حصرية محدودة الإصدار"
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "settings": {
+            "title": "امتيازات الشراء من الأتيليه",
+            "subtitle": "شحن سريع لكافة محافظات مصر وضمان استبدال ومعاينة مريحة"
+          }
+        },
+        {
+          "type": "reviews",
+          "settings": {
+            "title": "تجارب عميلاتنا الراقيات",
+            "subtitle": "آراء وتجارب موثقة مع خامات وتفصيل كوتور أتيليه"
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "انضمي إلى نادي الأتيليه الخاص",
+            "subtitle": "كوني أول من يتعرف على المجموعات الجديدة والعروض الحصرية"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "text": "شحن مجاني على الطلبات المؤكدة داخل القاهرة والجيزة · إمكانية المعاينة عند الاستلام"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "showSearch": true,
+            "showSort": true
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "showCategories": true,
+            "showPriceFilter": true
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "title": "كل المعروضات",
+            "subtitle": "تصفحي قطع الأتيليه المصنفة بعناية"
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "عروض الأتيليه الحصرية",
+            "subtitle": "اشتركي لتصلكِ أحدث الخصومات والتنبيهات الخاصة"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "checkout-form",
+          "settings": {
+            "title": "بيانات التوصيل والاستلام",
+            "subtitle": "يرجى كتابة الاسم ورقم الهاتف والعنوان بدقة"
+          }
+        },
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "القطع المحددة في طلبك"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الفاتورة والشحن"
+          }
+        },
+        {
+          "type": "payment",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "الدفع عند الاستلام مع إمكانية المعاينة قبل الدفع"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "settings": {
+            "enableZoom": true
+          }
+        },
+        {
+          "type": "product-info",
+          "settings": {
+            "showSku": true,
+            "showStockBadge": true
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "settings": {
+            "title": "عروض الكميات المتعددة"
+          }
+        },
+        {
+          "type": "size-guide",
+          "settings": {
+            "title": "دليل المقاسات الدقيق"
+          }
+        },
+        {
+          "type": "bought-together",
+          "settings": {
+            "title": "يكتمل هذا المظهر مع"
+          }
+        },
+        {
+          "type": "reviews",
+          "settings": {
+            "title": "تقييمات وتجارب المشترين"
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "حقيبة التسوق الخاصة بك"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "إجمالي الطلب"
+          }
+        }
+      ]
+    }
+  }
+}

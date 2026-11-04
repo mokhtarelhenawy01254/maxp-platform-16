@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { STOREFRONT_SECTION_COMPONENT_MAP } from '../engine/sectionComponentMap';
+import { ComponentRegistry as STOREFRONT_SECTION_COMPONENT_MAP } from '../engine/ComponentRegistry';
 import {
   isStorefrontSectionKnown,
   isStorefrontSectionVariantAllowed,
