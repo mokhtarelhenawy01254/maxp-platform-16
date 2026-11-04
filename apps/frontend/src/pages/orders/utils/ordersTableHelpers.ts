@@ -5,8 +5,6 @@ export const ORDER_TABLE_COLUMNS = [
   "orderNumber",
   "customer",
   "customerRating",
-  "creator",
-  "assignedTo",
   "amount",
   "status",
   "payment",
