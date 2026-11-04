@@ -298,7 +298,6 @@
         },
         {
           "type": "featured-products",
-          "variant": "center",
           "settings": {
             "title": "الأكثر طلبًا",
             "limit": 8
