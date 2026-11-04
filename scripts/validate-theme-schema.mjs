@@ -54,6 +54,12 @@ for (const file of targets) {
     continue;
   }
 
+  if (Array.isArray(data)) {
+    // themes-manifest.json lives in the same folder but is the catalog manifest, not a theme.
+    results.push({ file: name, ok: true, skipped: 'manifest' });
+    continue;
+  }
+
   const ok = validate(data);
   results.push({
     file: name,
@@ -72,7 +78,7 @@ if (asJson) {
 } else {
   for (const result of results) {
     if (result.ok) {
-      console.log(`PASS ${result.file}`);
+      console.log(result.skipped ? `SKIP ${result.file} (${result.skipped})` : `PASS ${result.file}`);
       continue;
     }
     console.log(`FAIL ${result.file}`);

@@ -87,6 +87,11 @@ for (const file of targets) {
     continue;
   }
 
+  if (Array.isArray(theme)) {
+    results.push({ file: name, ok: true, skipped: 'manifest' });
+    continue;
+  }
+
   const gzipKb = zlib.gzipSync(raw, { level: 9 }).length / 1024;
   if (gzipKb > BUDGETS.gzipKb) {
     errors.push(`gzip ${gzipKb.toFixed(2)}KB > ${BUDGETS.gzipKb}KB budget`);
@@ -134,7 +139,7 @@ if (asJson) {
 } else {
   for (const result of results) {
     if (result.ok) {
-      console.log(`PASS ${result.file} · ${result.gzipKb}KB gzip · ${result.pages} pages · ${result.sections} sections`);
+      console.log(result.skipped ? `SKIP ${result.file} (${result.skipped})` : `PASS ${result.file} · ${result.gzipKb}KB gzip · ${result.pages} pages · ${result.sections} sections`);
       continue;
     }
     console.log(`FAIL ${result.file}`);

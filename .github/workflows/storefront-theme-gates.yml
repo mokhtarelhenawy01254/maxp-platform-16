@@ -8,6 +8,7 @@ on:
   push:
     paths:
       - 'apps/frontend/src/storefront/themes/**.json'
+      - '!apps/frontend/src/storefront/themes/themes-manifest.json'
       - 'scripts/validate-theme-sections.ts'
       - 'scripts/validate-theme-schema.mjs'
       - 'scripts/check-storefront-theme-budget.mjs'
@@ -16,6 +17,7 @@ on:
   pull_request:
     paths:
       - 'apps/frontend/src/storefront/themes/**.json'
+      - '!apps/frontend/src/storefront/themes/themes-manifest.json'
       - 'scripts/validate-theme-sections.ts'
       - 'scripts/validate-theme-schema.mjs'
       - 'scripts/check-storefront-theme-budget.mjs'
@@ -66,12 +68,12 @@ jobs:
             BASE="$(git rev-parse HEAD^ 2>/dev/null || echo '')"
           fi
           if [ -n "$BASE" ]; then
-            FILES=$(git diff --name-only "$BASE" HEAD -- 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+            FILES=$(git diff --name-only "$BASE" HEAD -- 'apps/frontend/src/storefront/themes/*.json' ':(exclude)apps/frontend/src/storefront/themes/themes-manifest.json' | tr '\n' ' ')
           else
-            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | grep -v 'themes-manifest.json' | tr '\n' ' ')
           fi
           if [ -z "$FILES" ]; then
-            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | grep -v 'themes-manifest.json' | tr '\n' ' ')
           fi
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
           echo "changed theme files: $FILES"
