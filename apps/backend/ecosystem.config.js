@@ -21,7 +21,7 @@ module.exports = {
             max_restarts: 20,
             restart_delay: 2000,
             exp_backoff_restart_delay: 500,
-            kill_timeout: 20000,
+            kill_timeout: 30000,
             wait_ready: true,
             listen_timeout: 60000,
             env: {
@@ -50,7 +50,7 @@ module.exports = {
             max_restarts: 20,
             restart_delay: 2000,
             exp_backoff_restart_delay: 500,
-            kill_timeout: 20000,
+            kill_timeout: 30000,
             env: {
                 NODE_ENV: 'development'
             },

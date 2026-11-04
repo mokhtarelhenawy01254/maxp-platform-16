@@ -640,6 +640,7 @@ jobs:
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
           CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
           BACKEND_DEPS_CHANGED: ${{ needs.build.outputs.backend-deps-changed }}
           PRISMA_CHANGED: ${{ needs.build.outputs.prisma-changed }}
@@ -653,7 +654,7 @@ jobs:
           debug: false
           timeout: 40m
           command_timeout: 35m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED,BACKEND_DEPS_CHANGED,PRISMA_CHANGED,AI_CHANGED,FE_NEEDED
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,DEPLOY_SECRET,CATALOG_CHANGED,BACKEND_DEPS_CHANGED,PRISMA_CHANGED,AI_CHANGED,FE_NEEDED
           script: |
             set -e
             sudo -n true || {

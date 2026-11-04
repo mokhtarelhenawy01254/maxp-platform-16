@@ -177,12 +177,33 @@ async function resumeWorkflow({ companyId, threadId, draftId, approved, reason, 
 }
 
 /**
- * Check health of maxp-ai-service.
+ * Check health of maxp-ai-service with retry & backoff.
+ * Non-fatal: returns false on transient connection failure instead of throwing.
+ *
+ * @param {Object} [options]
+ * @param {number} [options.retries=2]
+ * @param {number} [options.backoffMs=1000]
+ * @param {number} [options.timeoutMs=3000]
+ * @returns {Promise<boolean>}
  */
-async function healthCheck() {
+async function healthCheck({ retries = 2, backoffMs = 1000, timeoutMs = 3000 } = {}) {
   const url = new URL('/health', getAiServiceUrl());
-  const response = await fetch(url.toString());
-  return response.ok;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (response.ok) {
+        return true;
+      }
+    } catch (_) {
+      // transient connection failure, will retry if attempts remain
+    }
+    if (attempt < retries) {
+      await new Promise((resolve) => setTimeout(resolve, backoffMs * (attempt + 1)));
+    }
+  }
+  return false;
 }
 
 /**

@@ -343,12 +343,26 @@ if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
         --name maxp-ai-service --interpreter none \
         --cwd /var/www/ai-service
     fi
-    sleep 4
+    sleep 2
     if "$PM2_BIN" list | grep "maxp-ai-service" | grep -q "online"; then
-      echo "✅ maxp-ai-service is running"
+      echo "✅ maxp-ai-service process is online in PM2"
     else
       echo "⚠️ maxp-ai-service may not be running — check logs"
       "$PM2_BIN" logs maxp-ai-service --lines 20 --nostream || true
+    fi
+
+    echo "⏳ Waiting for maxp-ai-service health endpoint on http://127.0.0.1:8000/health..."
+    AI_HEALTHY=false
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+      if curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://127.0.0.1:8000/health | grep -q "200"; then
+        AI_HEALTHY=true
+        echo "✅ maxp-ai-service is healthy on port 8000 (attempt $i)"
+        break
+      fi
+      sleep 1
+    done
+    if [ "$AI_HEALTHY" != "true" ]; then
+      echo "⚠️ maxp-ai-service did not return 200 within 15s — proceeding with non-fatal fallback (backend will retry)"
     fi
     "$PM2_BIN" save || true
   fi
@@ -846,6 +860,38 @@ if [ -n "$PM2_BIN" ]; then
   INITIAL_RESTARTS="${INITIAL_RESTARTS:-0}"
   echo "ℹ️ Baseline maxp-backend restart count before reload: $INITIAL_RESTARTS"
 
+  # 🔑 Preflight: Ensure DEPLOY_SECRET is present in /var/www/backend2/.env
+  echo "🔑 Verifying DEPLOY_SECRET in backend environment..."
+  PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"
+  if [ -z "$PURGE_SECRET" ]; then
+    if [ -n "$DEPLOY_SECRET" ]; then
+      echo "🔑 Syncing DEPLOY_SECRET from deployment environment to .env..."
+      PURGE_SECRET="$DEPLOY_SECRET"
+    else
+      echo "🔑 Auto-generating secure random DEPLOY_SECRET for .env..."
+      PURGE_SECRET="$(openssl rand -hex 32 2>/dev/null || node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
+    fi
+    if grep -q '^DEPLOY_SECRET=' /var/www/backend2/.env; then
+      sudo sed -i "s|^DEPLOY_SECRET=.*|DEPLOY_SECRET=${PURGE_SECRET}|" /var/www/backend2/.env
+    else
+      echo "DEPLOY_SECRET=${PURGE_SECRET}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+    if [ -f "/tmp/backend_env_backup.env" ]; then
+      if grep -q '^DEPLOY_SECRET=' /tmp/backend_env_backup.env; then
+        sudo sed -i "s|^DEPLOY_SECRET=.*|DEPLOY_SECRET=${PURGE_SECRET}|" /tmp/backend_env_backup.env
+      else
+        echo "DEPLOY_SECRET=${PURGE_SECRET}" | sudo tee -a /tmp/backend_env_backup.env >/dev/null
+      fi
+    fi
+  fi
+
+  VERIFIED_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"
+  if [ -z "$VERIFIED_SECRET" ]; then
+    echo "❌ [FATAL] DEPLOY_SECRET preflight check failed: DEPLOY_SECRET is missing or empty in .env"
+    exit 1
+  fi
+  echo "✅ DEPLOY_SECRET verified in backend .env (length: ${#VERIFIED_SECRET})"
+
   # 🧪 Pre-Flight Server Load Check before PM2 touches the new code
   echo "🧪 Verifying server.js dry-run load on production before PM2 reload..."
   if ! NODE_ENV=production timeout 30 node -e "require('./server.js'); console.log('✅ server.js pre-flight require passed'); process.exit(0);"; then
@@ -853,9 +899,9 @@ if [ -n "$PM2_BIN" ]; then
     exit 1
   fi
 
-  echo "🚀 Reloading ecosystem with zero-downtime (cluster instances = 2)..."
-  NODE_ENV=production "$PM2_BIN" reload ecosystem.config.js --env production --update-env || \
-  NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env || true
+  echo "🚀 Reloading ecosystem with zero-downtime rolling reload (cluster instances = 2, --wait-ready)..."
+  NODE_ENV=production "$PM2_BIN" reload ecosystem.config.js --env production --update-env --wait-ready || \
+  NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production --update-env --wait-ready || true
   "$PM2_BIN" save
 
   sleep 3
@@ -876,7 +922,7 @@ if [ -n "$PM2_BIN" ]; then
     exit 1
   fi
 
-  echo "🩺 Verifying backend health & PM2 stability after zero-downtime reload (5 consecutive 200s within 60s)..."
+  echo "🩺 Verifying backend health & PM2 stability after zero-downtime reload (5 consecutive 200s within 90s)..."
   HEALTH_PORT=""
   for env_file in /var/www/backend2/.env.production /var/www/backend2/.env; do
     CANDIDATE_PORT="$(read_env_port "$env_file" || true)"
@@ -899,7 +945,7 @@ if [ -n "$PM2_BIN" ]; then
 
   ACTIVE_HEALTH_PORT=""
   HEALTH_START_TIME=$(date +%s)
-  HEALTH_TIMEOUT_SECONDS=60
+  HEALTH_TIMEOUT_SECONDS=90
   CONSECUTIVE_SUCCESSES=0
   TARGET_CONSECUTIVE_SUCCESSES=5
   GATE_PASSED=false
@@ -932,18 +978,21 @@ if [ -n "$PM2_BIN" ]; then
       echo "🚨 [FATAL] maxp-backend crash-loop detected! Restarts increased by $RESTART_DELTA (max allowed: $MAX_ALLOWED_RESTARTS) within ${ELAPSED}s."
       echo "📋 PM2 error logs (last 50 lines):"
       "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
+      on_deploy_error $LINENO
       exit 1
     fi
 
-    # Probe HTTP health endpoint
+    # Probe HTTP health endpoint (probes both /health and /api/v1/health)
     HEALTH_HTTP_CODE="000"
     for port in $HEALTH_PORT_CANDIDATES; do
-      CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:$port/api/v1/health" || echo "000")
-      if [ "$CODE" = "200" ]; then
-        HEALTH_HTTP_CODE="200"
-        ACTIVE_HEALTH_PORT="$port"
-        break
-      fi
+      for health_path in "health" "api/v1/health"; do
+        CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:$port/$health_path" || echo "000")
+        if [ "$CODE" = "200" ]; then
+          HEALTH_HTTP_CODE="200"
+          ACTIVE_HEALTH_PORT="$port"
+          break 2
+        fi
+      done
     done
 
     if [ "$HEALTH_HTTP_CODE" = "200" ]; then
@@ -967,22 +1016,25 @@ if [ -n "$PM2_BIN" ]; then
     echo "🔎 Tried ports:$HEALTH_PORT_CANDIDATES"
     ss -ltnp | grep -E '3007|3008' || true
     "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
+    on_deploy_error $LINENO
     exit 1
   fi
 
   echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
 
   echo "🧹 Purging in-memory HTML caches on the running backend..."
-  PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)"
+  PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"
   if [ -n "$PURGE_SECRET" ]; then
     PURGE_RESP="$(curl -sS --max-time 10 -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/internal/purge-cache" 2>&1 || true)"
     if printf '%s' "$PURGE_RESP" | grep -q '"ok":true\|"ok": true'; then
-      echo "✅ HTML caches purged successfully"
+      echo "✅ HTML caches purged successfully (HTTP 200)"
     else
       echo "⚠️ Cache purge response: ${PURGE_RESP:-no response}"
     fi
   else
-    echo "ℹ️ DEPLOY_SECRET not found in .env — skipping internal cache purge"
+    echo "❌ [FATAL] DEPLOY_SECRET missing when purging cache"
+    on_deploy_error $LINENO
+    exit 1
   fi
 
   echo "🧩 Verifying marketplace full catalog API after reload..."

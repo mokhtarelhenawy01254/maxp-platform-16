@@ -508,6 +508,55 @@ const app = express();
 const server = http.createServer(app);
 app.set("trust proxy", true);
 
+// 🔌 In-Flight Request & Connection Tracking for Zero-Downtime Rolling Shutdown
+const activeSockets = new Set();
+server.on("connection", (socket) => {
+  activeSockets.add(socket);
+  socket.on("close", () => {
+    activeSockets.delete(socket);
+  });
+});
+
+let inFlightRequests = 0;
+let isShuttingDown = false;
+
+// Intercept WebSocket upgrade requests during graceful shutdown
+server.on("upgrade", (req, socket) => {
+  if (isShuttingDown) {
+    try {
+      socket.write("HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n");
+      socket.destroy();
+    } catch (_) {}
+  }
+});
+
+// Track in-flight HTTP requests and reject new traffic during shutdown
+app.use((req, res, next) => {
+  if (isShuttingDown) {
+    res.setHeader("Connection", "close");
+    // Allow health checks to report shutdown status, reject other traffic with 503 for fast upstream failover
+    if (req.path !== "/health" && req.path !== "/api/v1/health") {
+      return res.status(503).json({
+        error: "Server is restarting",
+        code: "SERVER_SHUTTING_DOWN",
+        retryAfter: 2,
+      });
+    }
+  }
+
+  inFlightRequests++;
+  let decremented = false;
+  const decrement = () => {
+    if (!decremented) {
+      decremented = true;
+      inFlightRequests = Math.max(0, inFlightRequests - 1);
+    }
+  };
+  res.on("finish", decrement);
+  res.on("close", decrement);
+  next();
+});
+
 // 🩹 Self-Healing Middleware for Malformed Concatenated URLs
 // Catches accidental client-side origin/path concatenations like /https://domain.com/path or /http://domain.com
 // and issues a permanent 301 redirect to the clean intended destination.
@@ -772,6 +821,7 @@ app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/turbo", turboWebhookRoutes);
 app.use("/api/v1/shipments", turboWebhookRoutes);
 app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
+app.use("/health", healthRoute);
 app.use("/api/v1/health", healthRoute);
 app.use("/api/v1/app/version", appVersionRoutes);
 app.use("/api/v1/version", (req, res) => {
@@ -1852,24 +1902,23 @@ try {
 }
 
 
-// AI Provider Health Check — delegated to Python ai-service
+// AI Provider Health Check — delegated to Python ai-service (non-fatal, auto-retry with backoff)
 try {
   const { healthCheck } = require("./services/aiSdkClient");
-  healthCheck().then(
+  healthCheck({ retries: 3, backoffMs: 1500, timeoutMs: 3000 }).then(
     (ok) => {
       if (ok) {
         console.log("✅ [PROVIDER-HEALTH] Python ai-service health check passed");
       } else {
-        console.warn("⚠️ [PROVIDER-HEALTH] Python ai-service health check returned non-OK");
+        console.log("ℹ️ [PROVIDER-HEALTH] Python ai-service not reachable at startup — AI operations will fallback gracefully");
       }
     },
-    (err) => console.error("❌ [PROVIDER-HEALTH] Python ai-service health check failed:", err?.message)
+    (err) => {
+      console.log("ℹ️ [PROVIDER-HEALTH] Python ai-service status pending:", err?.message);
+    }
   );
 } catch (error) {
-  console.error(
-    "❌ [PROVIDER-HEALTH] Failed to start provider health check:",
-    error,
-  );
+  console.log("ℹ️ [PROVIDER-HEALTH] Provider health check skipped:", error?.message);
 }
 
 app.get(
@@ -2131,61 +2180,102 @@ function startMemoryMonitor() {
 }
 
 // Graceful shutdown — drain in-flight HTTP connections and clean up resources before exit
-let isShuttingDown = false;
 async function shutdownGracefully(signal) {
-  if (isShuttingDown) return;
+  if (isShuttingDown && app.get("isShuttingDown")) return;
   isShuttingDown = true;
+  app.set("isShuttingDown", true);
   console.log(`\n🛑 [SERVER] Received ${signal}, starting graceful HTTP draining & shutdown...`);
 
-  // Hard timeout safeguard (matches PM2 kill_timeout with margin)
+  // Drain duration from env (default 25000ms), safeguard matches PM2 kill_timeout (30s)
+  const drainTimeoutMs = parseInt(process.env.SHUTDOWN_DRAIN_MS, 10) || 25000;
+  const hardTimeoutMs = drainTimeoutMs + 4000;
+
+  // Hard timeout safeguard in case a stubborn resource blocks event loop
   const forceExitTimeout = setTimeout(() => {
-    console.error('⚠️ [SERVER] Forced shutdown: in-flight drain exceeded 18s timeout');
+    console.error(`⚠️ [SERVER] Forced shutdown: in-flight drain exceeded ${hardTimeoutMs / 1000}s safeguard`);
+    for (const socket of activeSockets) {
+      try { socket.destroy(); } catch (_) {}
+    }
     process.exit(1);
-  }, 18000);
-  if (typeof forceExitTimeout.unref === 'function') {
+  }, hardTimeoutMs);
+  if (typeof forceExitTimeout.unref === "function") {
     forceExitTimeout.unref();
   }
 
-  // 1. Stop receiving new HTTP requests and wait for in-flight requests (e.g. AI turns) to drain
-  const closeHttpServer = () => new Promise((resolve) => {
-    if (server && typeof server.close === 'function') {
-      server.close((err) => {
-        if (err) {
-          console.warn('⚠️ [SERVER] Error closing HTTP server:', err.message);
-        } else {
-          console.log('✅ [SERVER] HTTP server closed, all in-flight requests drained cleanly');
-        }
-        resolve();
-      });
-    } else {
-      resolve();
-    }
-  });
-
+  // 1. Stop receiving new HTTP connections immediately
   try {
-    await closeHttpServer();
-  } catch (httpErr) {
-    console.warn('⚠️ [SERVER] HTTP drain warning:', httpErr.message);
+    if (server && typeof server.close === "function") {
+      server.close((err) => {
+        if (err && err.code !== "ERR_SERVER_NOT_RUNNING") {
+          console.warn("⚠️ [SERVER] Error closing HTTP server listener:", err.message);
+        } else {
+          console.log("✅ [SERVER] HTTP server stopped accepting new connections");
+        }
+      });
+    }
+    if (typeof server.closeIdleConnections === "function") {
+      server.closeIdleConnections();
+    }
+  } catch (err) {
+    console.warn("⚠️ [SERVER] Error closing HTTP server:", err.message);
   }
 
-  // 2. Disconnect WhatsApp sessions cleanly
+  // 2. Disconnect Socket.IO clients gracefully so they reconnect to the peer worker
+  try {
+    const socketService = require("./services/socketService");
+    if (typeof socketService.close === "function") {
+      socketService.close();
+      console.log("✅ [SERVER] Socket.IO server closed and clients disconnected cleanly");
+    }
+  } catch (err) {
+    console.warn("⚠️ [SERVER] Error closing Socket.IO:", err.message);
+  }
+
+  // 3. Drain in-flight requests
+  console.log(`⏳ [SERVER] Draining in-flight requests (current: ${inFlightRequests}, timeout: ${drainTimeoutMs}ms)...`);
+  const drainStart = Date.now();
+  while (inFlightRequests > 0 && (Date.now() - drainStart) < drainTimeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  if (inFlightRequests > 0) {
+    console.warn(`⚠️ [SERVER] Drain timeout reached with ${inFlightRequests} in-flight requests remaining`);
+  } else {
+    console.log("✅ [SERVER] All in-flight requests drained cleanly");
+  }
+
+  // 4. Forcefully close any lingering idle/stuck sockets
+  for (const socket of activeSockets) {
+    try { socket.destroy(); } catch (_) {}
+  }
+  activeSockets.clear();
+
+  // 5. Disconnect WhatsApp sessions cleanly
   try {
     const WhatsAppManager = require("./services/whatsapp/WhatsAppManager");
     const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
     if (sessionCount > 0) {
       console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
-      if (typeof WhatsAppManager.flushAllAuthStates === 'function') {
+      if (typeof WhatsAppManager.flushAllAuthStates === "function") {
         await WhatsAppManager.flushAllAuthStates();
       }
       await WhatsAppManager.disconnectAllSessions();
-      console.log('✅ [SERVER] All WhatsApp sessions disconnected');
+      console.log("✅ [SERVER] All WhatsApp sessions disconnected");
     }
   } catch (err) {
-    console.error('⚠️ [SERVER] Error during WhatsApp shutdown:', err.message);
+    console.error("⚠️ [SERVER] Error during WhatsApp shutdown:", err.message);
   }
 
+  // 6. Disconnect database client cleanly
+  try {
+    const { getSharedPrismaClient } = require("./services/sharedDatabase");
+    const prisma = getSharedPrismaClient();
+    if (prisma && typeof prisma.$disconnect === "function") {
+      await prisma.$disconnect().catch(() => {});
+    }
+  } catch (_) {}
+
   clearTimeout(forceExitTimeout);
-  console.log('✅ [SERVER] Graceful shutdown complete');
+  console.log("✅ [SERVER] Graceful shutdown complete");
   process.exit(0);
 }
 

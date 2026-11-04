@@ -4,6 +4,14 @@ const { getSharedPrismaClient, healthCheck: dbHealthCheck, checkModelIntegrity }
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 router.get("/", async (req, res) => {
+  if (req.app?.get("isShuttingDown")) {
+    return res.status(503).json({
+      status: "SHUTTING_DOWN",
+      message: "Server worker is draining in-flight connections",
+      uptime: process.uptime(),
+    });
+  }
+
   const healthCheck = {
     status: "OK",
     timestamp: new Date().toISOString(),

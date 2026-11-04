@@ -1088,6 +1088,44 @@ class SocketService {
 
     return this.securityLogCleanupInterval;
   }
+
+  /**
+   * Graceful shutdown of Socket.IO server:
+   * Disconnects all connected clients cleanly so they immediately auto-reconnect
+   * to another live cluster worker, then closes the IO server and Redis clients.
+   */
+  close() {
+    try {
+      if (this.io) {
+        // Disconnect all sockets cleanly (close frame code 1000) so frontend reconnects
+        if (typeof this.io.disconnectSockets === 'function') {
+          this.io.disconnectSockets(true);
+        }
+        if (typeof this.io.close === 'function') {
+          this.io.close();
+        }
+        this.io = null;
+      }
+    } catch (e) {
+      console.warn('⚠️ [SOCKET] Error closing Socket.IO:', e.message);
+    }
+
+    try {
+      if (this.pubClient) {
+        this.pubClient.disconnect();
+        this.pubClient = null;
+      }
+      if (this.subClient) {
+        this.subClient.disconnect();
+        this.subClient = null;
+      }
+    } catch (_) {}
+
+    if (this.securityLogCleanupInterval) {
+      clearInterval(this.securityLogCleanupInterval);
+      this.securityLogCleanupInterval = null;
+    }
+  }
 }
 
 // إنشاء instance واحد

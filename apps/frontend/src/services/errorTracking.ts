@@ -44,6 +44,12 @@ class ErrorTrackingService {
   private isProduction = import.meta.env.PROD;
   private isDevelopment = import.meta.env.DEV;
   private isInternalLogging = false;
+  // 🛡️ Deduplication map: same error within 60s is sent only once
+  private recentErrorTimestamps = new Map<string, number>();
+  // 🛡️ Outbound beacon throttling & backoff
+  private lastBeaconTime = 0;
+  private minBeaconIntervalMs = 2000;
+  private backoffUntil = 0;
 
   /**
    * تسجيل خطأ جديد
@@ -245,10 +251,53 @@ class ErrorTrackingService {
   }
 
   /**
-   * إرسال الخطأ للـ Backend
+   * إرسال الخطأ للـ Backend مع حماية من الفيضان (Dedupe 60s + Throttling + sendBeacon)
    */
   private async sendToBackend(errorLog: ErrorLog): Promise<void> {
+    const now = Date.now();
+
+    // 1. Backoff guard: if server returned 5xx/network error recently, don't spam
+    if (now < this.backoffUntil) {
+      return;
+    }
+
+    // 2. Deduplication guard: same error within 60s is sent only once
+    const fingerprint = `${errorLog.category}:${errorLog.message}:${errorLog.chunkName || ""}`;
+    const lastSent = this.recentErrorTimestamps.get(fingerprint);
+    if (lastSent && now - lastSent < 60000) {
+      return; // Skip duplicate within 60s window
+    }
+    this.recentErrorTimestamps.set(fingerprint, now);
+
+    // Prune stale timestamps to prevent memory leaks
+    if (this.recentErrorTimestamps.size > 200) {
+      for (const [key, ts] of this.recentErrorTimestamps.entries()) {
+        if (now - ts > 60000) {
+          this.recentErrorTimestamps.delete(key);
+        }
+      }
+    }
+
+    // 3. Outbound rate throttle (minimum 2s between beacons)
+    if (now - this.lastBeaconTime < this.minBeaconIntervalMs) {
+      return;
+    }
+    this.lastBeaconTime = now;
+
     try {
+      const payload = JSON.stringify(errorLog);
+
+      // Prefer navigator.sendBeacon when available to avoid open TCP keep-alive sockets
+      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+        try {
+          const blob = new Blob([payload], { type: "application/json" });
+          const queued = navigator.sendBeacon("/api/v1/errors/log", blob);
+          if (queued) return;
+        } catch (_) {
+          // fallback to fetch if sendBeacon fails
+        }
+      }
+
       const accessToken = tokenManager.getAccessToken();
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -261,15 +310,17 @@ class ErrorTrackingService {
       const response = await fetch("/api/v1/errors/log", {
         method: "POST",
         headers,
-        body: JSON.stringify(errorLog),
+        body: payload,
+        keepalive: true,
       });
 
-      if (!response.ok) {
-        this.safeError("Failed to send error to backend", { status: response.status });
+      // If backend returns 5xx (server restarting/reloading), back off for 30s
+      if (response.status >= 500) {
+        this.backoffUntil = Date.now() + 30000;
       }
-    } catch (err) {
-      // Silently fail - don't create infinite loop
-      this.safeError("Error sending error log:", err);
+    } catch (_) {
+      // Silently fail and backoff for 30s on network error
+      this.backoffUntil = Date.now() + 30000;
     }
   }
 
