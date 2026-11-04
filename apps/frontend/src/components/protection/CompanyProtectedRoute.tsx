@@ -19,7 +19,15 @@ const CompanyProtectedRoute: React.FC<CompanyProtectedRouteProps> = ({
   allowSuperAdmin = true,
   fallback,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background/95 p-4 text-foreground" dir="rtl">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
   const { companyId, canAccessCompany } = useCompany();
 
   // Check authentication first
@@ -122,7 +130,15 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   allowedRoles,
   fallback,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background/95 p-4 text-foreground" dir="rtl">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return (
@@ -166,7 +182,15 @@ export const PermissionProtectedRoute: React.FC<PermissionProtectedRouteProps> =
   requiredPermissions,
   fallbackRedirect,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background/95 p-4 text-foreground" dir="rtl">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return (

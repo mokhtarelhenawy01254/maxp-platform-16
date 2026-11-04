@@ -66,6 +66,11 @@ const ROLE_SYNONYMS: Record<string, string> = {
   "AFFILIATE": "AFFILIATE",
   "مسوق": "AFFILIATE",
   "افيليت": "AFFILIATE",
+
+  // Shipping Client
+  "SHIPPING_CLIENT": "SHIPPING_CLIENT",
+  "عميل شحن": "SHIPPING_CLIENT",
+  "عميل": "SHIPPING_CLIENT",
 };
 
 export const normalizeRole = (role?: string | null): string => {
@@ -114,6 +119,8 @@ const PREFIX_ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
   { prefix: "/super-admin", roles: [SUPER_ADMIN_ROLE] },
   { prefix: "/affiliates", roles: ["AFFILIATE"] },
   { prefix: "/merchant-portal", roles: ["MERCHANT"] },
+  { prefix: "/client-portal/shipping", roles: ["SHIPPING_CLIENT", SUPER_ADMIN_ROLE] },
+  { prefix: "/shipping-ops", roles: ["COMPANY_ADMIN", "OWNER", "MANAGER", "AGENT", "EMPLOYEE", SUPER_ADMIN_ROLE] },
 ];
 
 export const isCompanyRole = (role?: string | null): boolean => {
@@ -123,7 +130,8 @@ export const isCompanyRole = (role?: string | null): boolean => {
     normalized === SUPER_ADMIN_ROLE ||
     normalized === "MERCHANT" ||
     normalized === "AFFILIATE" ||
-    normalized === "CUSTOMER"
+    normalized === "CUSTOMER" ||
+    normalized === "SHIPPING_CLIENT"
   ) {
     return false;
   }

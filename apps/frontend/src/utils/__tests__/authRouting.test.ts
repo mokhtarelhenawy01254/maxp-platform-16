@@ -5,6 +5,7 @@ import {
   isAllowedPostAuthPath,
   getLastPath,
 } from "../postAuthRouting";
+import { isPathAllowedForUser } from "../routeAccess";
 
 const installMemoryStorage = () => {
   const store = new Map<string, string>();
@@ -77,6 +78,10 @@ describe("getPostAuthDestination", () => {
   it("falls back to localStorage maxp-default-page when settings missing", () => {
     localStorage.setItem("maxp-default-page", "/whatsapp/routing");
     expect(getPostAuthDestination({ role: "AGENT" })).toBe("/whatsapp/routing");
+  });
+
+  it("returns /client-portal/shipping for SHIPPING_CLIENT role (SHIP-W13)", () => {
+    expect(getPostAuthDestination({ role: "SHIPPING_CLIENT" })).toBe("/client-portal/shipping");
   });
 
   it("returns /merchant-portal for MERCHANT role", () => {
@@ -160,6 +165,13 @@ describe("resolvePostAuthDestination precedence", () => {
     expect(getLastPathForTest(other)).toBeNull();
   });
 
+  it("shipping client never resumes a path outside its portal surface (SHIP-W13)", () => {
+    const client = companyUser({ role: "SHIPPING_CLIENT" });
+    saveLastPath(client, "/shipping-ops");
+    expect(getLastPath(client)).toBeNull();
+    expect(resolvePostAuthDestination(client)).toBe("/client-portal/shipping");
+  });
+
   it("merchant never resumes a path outside its portal surface", () => {
     const merchant = companyUser({ role: "MERCHANT" });
     saveLastPath(merchant, "/orders/workspace");
@@ -224,3 +236,27 @@ describe("isAllowedPostAuthPath", () => {
 // Small helper so the private key format is not asserted inside the test body.
 const getLastPathForTest = (user: { id: string; companyId: string }) =>
   localStorage.getItem(`maxp_lastPath:${user.id}:${user.companyId}`);
+
+describe("SHIP-W13 isPathAllowedForUser route gating", () => {
+  it("allows SHIPPING_CLIENT to access /client-portal/shipping and its subpaths", () => {
+    expect(isPathAllowedForUser("/client-portal/shipping", { role: "SHIPPING_CLIENT" })).toBe(true);
+    expect(isPathAllowedForUser("/client-portal/shipping/shipments", { role: "SHIPPING_CLIENT" })).toBe(true);
+  });
+
+  it("blocks SHIPPING_CLIENT from opening /shipping-ops", () => {
+    expect(isPathAllowedForUser("/shipping-ops", { role: "SHIPPING_CLIENT" })).toBe(false);
+    expect(isPathAllowedForUser("/shipping-ops/manifests", { role: "SHIPPING_CLIENT" })).toBe(false);
+  });
+
+  it("allows company roles to open /shipping-ops but blocks client portal", () => {
+    expect(isPathAllowedForUser("/shipping-ops", { role: "OWNER" })).toBe(true);
+    expect(isPathAllowedForUser("/shipping-ops", { role: "COMPANY_ADMIN" })).toBe(true);
+    expect(isPathAllowedForUser("/shipping-ops", { role: "AGENT" })).toBe(true);
+    expect(isPathAllowedForUser("/client-portal/shipping", { role: "OWNER" })).toBe(false);
+  });
+
+  it("allows SUPER_ADMIN to access both surfaces", () => {
+    expect(isPathAllowedForUser("/client-portal/shipping", { role: "SUPER_ADMIN" })).toBe(true);
+    expect(isPathAllowedForUser("/shipping-ops", { role: "SUPER_ADMIN" })).toBe(true);
+  });
+});

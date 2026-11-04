@@ -469,6 +469,7 @@ const authenticateToken = async (req, res, next) => {
           lastName: true,
           email: true,
           role: true,
+          merchantId: true,
           companyId: true,
           isActive: true
         }
@@ -495,13 +496,15 @@ const authenticateToken = async (req, res, next) => {
     let effectiveCompanyId = companyId || user.companyId || null;
     let effectiveRole = user.role || decoded.role;
 
-    if (user.role === 'SUPER_ADMIN' && !effectiveCompanyId) {
+    if (user.role === 'SHIPPING_CLIENT') {
+      effectiveRole = 'SHIPPING_CLIENT';
+    } else if (user.role === 'SUPER_ADMIN' && !effectiveCompanyId) {
       // Fallback for SUPER_ADMIN when no header is supplied (desktop clients, internal services).
       // Points to the platform company (max-p) — the super admin's single bound company.
       effectiveCompanyId = process.env.PLATFORM_COMPANY_ID || 'cmopgxu3a07i4jujj6f1oh32h';
     }
 
-    if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'SHIPPING_CLIENT' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {
       const membership = await executeWithRetry(async () =>
         prisma.userCompany.findUnique({
           where: {
@@ -624,6 +627,7 @@ const authenticateToken = async (req, res, next) => {
       lastName: user.lastName,
       email: user.email,
       role: effectiveRole,
+      merchantId: user.merchantId || decoded.merchantId || null,
       companyId: effectiveCompanyId,
       userPermissions,
       deviceType,

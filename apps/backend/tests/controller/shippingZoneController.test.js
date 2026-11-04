@@ -189,6 +189,73 @@ describe("shippingZoneController", () => {
     expect(res.payload.data.pricingTiers).toEqual([{ minWeight: 0, maxWeight: 5, price: 60 }]);
   });
 
+  test("createShippingZone accepts deliveryTime as a number and coerces it to string for Prisma (SHIP-W13)", async () => {
+    mockPrisma.shippingZone.create.mockImplementation(async ({ data }) => ({
+      id: "zone-num-1",
+      name: "الجيزة",
+      governorates: "[\"الجيزة\"]",
+      price: 50,
+      pricingType: "flat",
+      deliveryTime: data.deliveryTime,
+      deliveryTimeType: "custom",
+      isActive: true,
+      companyId: "company-1"
+    }));
+    mockPrisma.shippingZone.findFirst.mockResolvedValue({
+      id: "zone-num-1",
+      name: "الجيزة",
+      governorates: "[\"الجيزة\"]",
+      price: 50,
+      pricingType: "flat",
+      deliveryTime: "2",
+      deliveryTimeType: "custom",
+      isActive: true,
+      companyId: "company-1",
+      governorateMappings: []
+    });
+
+    const req = {
+      user: { companyId: "company-1" },
+      body: {
+        name: "الجيزة",
+        governorateIds: ["giza"],
+        governorates: ["الجيزة"],
+        pricingType: "flat",
+        price: 50,
+        deliveryTime: 2, // numeric value
+        deliveryTimeType: "days",
+        isActive: true
+      }
+    };
+    const res = createResponseMock();
+
+    await shippingZoneController.createShippingZone(req, res);
+
+    expect(res.statusCode).toBe(201);
+    const prismaPayload = mockPrisma.shippingZone.create.mock.calls[0][0].data;
+    expect(typeof prismaPayload.deliveryTime).toBe("string");
+    expect(prismaPayload.deliveryTime).toBe("2");
+  });
+
+  test("createShippingZone returns 400 when deliveryTime is missing or empty (SHIP-W13)", async () => {
+    const req = {
+      user: { companyId: "company-1" },
+      body: {
+        name: "الجيزة",
+        governorates: ["الجيزة"],
+        pricingType: "flat",
+        price: 50,
+        deliveryTime: "" // empty value
+      }
+    };
+    const res = createResponseMock();
+
+    await shippingZoneController.createShippingZone(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.error.code).toBe("VALIDATION_ERROR");
+  });
+
   test("getShippingZones returns normalized arrays and canonical governorate ids for the frontend", async () => {
     mockPrisma.shippingZone.findMany.mockResolvedValue([
       {

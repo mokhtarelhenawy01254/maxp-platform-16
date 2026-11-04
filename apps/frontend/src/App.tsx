@@ -7486,6 +7486,14 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                {/* Shipping Operations (Internal Logistics) - Protected from SHIPPING_CLIENT (SHIP-W13) */}
+                <Route
+                  element={
+                    <RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT', 'EMPLOYEE', 'ADMIN']}>
+                      <Outlet />
+                    </RoleProtectedRoute>
+                  }
+                >
                 <Route
                   path="/shipping-ops"
                   element={
@@ -7606,6 +7614,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                </Route>
                 <Route
                   path="/agent-reports"
                   element={
@@ -7647,6 +7656,10 @@ const AppContent = () => {
                   path="/track/:waybill"
                   element={<ShipmentTrackingPage />}
                 />
+
+                {/* Shipping Client Portal Direct & Alias Routes (SHIP-W13) */}
+                <Route path="/shipping-client" element={<Navigate to="/client-portal/shipping" replace />} />
+                <Route path="/shipping-client/*" element={<Navigate to="/client-portal/shipping" replace />} />
 
                 {/* Shipping Client Portal (SHIP-W2C: Standalone Self-Service Shell) */}
                 <Route
@@ -9561,6 +9574,15 @@ const AuthenticatedFallbackRedirect: React.FC = () => {
   if (user?.role === "SUPER_ADMIN") {
     return <Navigate to="/super-admin/dashboard" replace />;
   }
+  if (user?.role === "SHIPPING_CLIENT") {
+    return <Navigate to="/client-portal/shipping" replace />;
+  }
+  if (user?.role === "MERCHANT") {
+    return <Navigate to="/merchant-portal" replace />;
+  }
+  if (user?.role === "AFFILIATE") {
+    return <Navigate to="/affiliates/dashboard" replace />;
+  }
   return <Navigate to="/apps" replace />;
 };
 
@@ -9571,6 +9593,12 @@ const RedirectToApps: React.FC = () => {
   React.useEffect(() => {
     if (user?.role === "SUPER_ADMIN") {
       navigate("/super-admin/dashboard", { replace: true });
+    } else if (user?.role === "SHIPPING_CLIENT") {
+      navigate("/client-portal/shipping", { replace: true });
+    } else if (user?.role === "MERCHANT") {
+      navigate("/merchant-portal", { replace: true });
+    } else if (user?.role === "AFFILIATE") {
+      navigate("/affiliates/dashboard", { replace: true });
     } else {
       navigate("/apps", { replace: true });
     }

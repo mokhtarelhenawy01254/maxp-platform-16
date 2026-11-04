@@ -230,6 +230,17 @@ const getUserPermissions = async (userId, companyId) => {
     return [];
   }
 
+  // Fast-path: dedicated client / external portal roles are not internal company staff members
+  try {
+    const userRoleRecord = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, companyId: true },
+    });
+    if (userRoleRecord?.role === 'SHIPPING_CLIENT') {
+      return ['client-portal.view', 'shipping-client.access'];
+    }
+  } catch {}
+
   const userCompany = await prisma.userCompany.findUnique({
     where: { userId_companyId: { userId, companyId } },
     include: {
@@ -250,6 +261,9 @@ const getUserPermissions = async (userId, companyId) => {
         select: { id: true, role: true, companyId: true },
       });
       if (user && user.companyId === companyId) {
+        if (user.role === 'SHIPPING_CLIENT') {
+          return ['client-portal.view', 'shipping-client.access'];
+        }
         const roleKey = user.role === 'OWNER' ? 'OWNER' : (user.role || 'AGENT');
         const dbRole = await prisma.role.findFirst({
           where: { key: roleKey, isBuiltIn: true, OR: [{ companyId: '__system__' }, { companyId: null }] },

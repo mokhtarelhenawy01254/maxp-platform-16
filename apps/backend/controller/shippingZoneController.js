@@ -1387,7 +1387,7 @@ const buildShippingZonePayload = async ({ name, governorateIds, governorates, pr
       pricingType,
       price: toNumberOrDefault(price, 0),
       pricingTiers: finalPricingTiers,
-      deliveryTime,
+      deliveryTime: deliveryTime !== undefined && deliveryTime !== null ? String(deliveryTime).trim() : '',
       deliveryTimeType: deliveryTimeType || 'custom',
       freeShippingThreshold: toNullableNumber(freeShippingThreshold),
       isActive: isActive !== undefined ? isActive : true,
@@ -1456,12 +1456,13 @@ const createShippingZone = async (req, res) => {
       });
     }
 
-    if (!deliveryTime) {
+    const normalizedDeliveryTime = deliveryTime !== undefined && deliveryTime !== null ? String(deliveryTime).trim() : '';
+    if (!normalizedDeliveryTime) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'يرجى إدخال مدة التوصيل'
+          message: 'يرجى إدخال مدة التوصيل بشكل صحيح'
         }
       });
     }
@@ -1473,7 +1474,7 @@ const createShippingZone = async (req, res) => {
       pricingType: finalPricingType,
       price,
       pricingTiers,
-      deliveryTime,
+      deliveryTime: normalizedDeliveryTime,
       deliveryTimeType,
       freeShippingThreshold,
       isActive,
@@ -1595,14 +1596,19 @@ const updateShippingZone = async (req, res) => {
       });
     }
 
-    if (deliveryTime !== undefined && !deliveryTime) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'يرجى إدخال مدة التوصيل'
-        }
-      });
+    let nextDeliveryTime = existingZone.deliveryTime;
+    if (deliveryTime !== undefined) {
+      const normalized = deliveryTime !== null ? String(deliveryTime).trim() : '';
+      if (!normalized) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'يرجى إدخال مدة التوصيل بشكل صحيح'
+          }
+        });
+      }
+      nextDeliveryTime = normalized;
     }
 
     const nextName = name !== undefined ? name : existingZone.name;
@@ -1611,7 +1617,6 @@ const updateShippingZone = async (req, res) => {
     const nextPricingType = pricingType !== undefined ? pricingType : finalPricingType;
     const nextPrice = price !== undefined ? price : existingZone.price;
     const nextPricingTiers = pricingTiers !== undefined ? pricingTiers : parseZonePricingTiers(existingZone.pricingTiers, 'updateShippingZone.existingPricingTiers');
-    const nextDeliveryTime = deliveryTime !== undefined ? deliveryTime : existingZone.deliveryTime;
     const nextDeliveryTimeType = deliveryTimeType !== undefined ? deliveryTimeType : existingZone.deliveryTimeType;
     const nextFreeShippingThreshold = freeShippingThreshold !== undefined ? freeShippingThreshold : existingZone.freeShippingThreshold;
     const nextIsActive = isActive !== undefined ? isActive : existingZone.isActive;

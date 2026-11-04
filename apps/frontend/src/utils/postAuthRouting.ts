@@ -124,6 +124,9 @@ export const saveLastPath = (
   if (isSystemUserRole(user?.role) && !pathname.startsWith("/super-admin/")) {
     return;
   }
+  if (user?.role === "SHIPPING_CLIENT" && !pathname.startsWith("/client-portal/shipping")) {
+    return;
+  }
   try {
     localStorage.setItem(getLastPathKey(user), pathname);
   } catch {
@@ -151,11 +154,14 @@ const isResumePathAllowed = (
   }
   if (!isPathAllowedForUser(path, user)) return false;
 
-  // Merchant / affiliate shells must stay inside their allowed surface.
+  // Merchant / affiliate / shipping client shells must stay inside their allowed surface.
   if (user?.role === "MERCHANT" && !isMerchantPrivatePathAllowed(path)) {
     return false;
   }
   if (user?.role === "AFFILIATE" && !isAffiliatePrivatePathAllowed(path)) {
+    return false;
+  }
+  if (user?.role === "SHIPPING_CLIENT" && !path.startsWith("/client-portal/shipping")) {
     return false;
   }
   return true;

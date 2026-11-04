@@ -193,6 +193,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearStoredAuth = useCallback(() => {
     tokenManager.clearTokens();
+    try {
+      queryClient.clear();
+    } catch (_) {}
     localStorage.removeItem('user');
     localStorage.removeItem('dentalRole');
     sessionStorage.removeItem('dentalRole');
@@ -741,16 +744,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Always clear storage and user state
       bumpAuthStateVersion();
       tokenManager.clearTokens();
-      localStorage.removeItem('user');
-      localStorage.removeItem('superAuth');
-      localStorage.removeItem('superUser');
-      localStorage.removeItem('dentalRole');
-      sessionStorage.removeItem('dentalRole');
-      localStorage.removeItem('maxp-default-page');
       try {
         queryClient.clear();
       } catch (qcError) {
         console.warn('⚠️ [AuthProvider] Failed to clear queryClient cache on logout:', qcError);
+      }
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        const visualTheme = localStorage.getItem('maxp-visual-theme');
+        localStorage.clear();
+        sessionStorage.clear();
+        if (savedTheme) localStorage.setItem('theme', savedTheme);
+        if (visualTheme) localStorage.setItem('maxp-visual-theme', visualTheme);
+      } catch (storageErr) {
+        console.warn('⚠️ [AuthProvider] Failed to clear localStorage on logout:', storageErr);
       }
       setUser(null);
 

@@ -884,6 +884,7 @@ const login = async (req, res) => {
           password: true,
           firstName: true,
           lastName: true,
+          merchantId: true,
           role: true,
           companyId: true,
           isActive: true,
@@ -1079,6 +1080,7 @@ const login = async (req, res) => {
         userId: user.id,
         email: user.email,
         role: user.role,
+        merchantId: user.merchantId || null,
         companyId: user.companyId
       },
       getJwtSecret(),
@@ -1089,6 +1091,7 @@ const login = async (req, res) => {
       {
         userId: user.id,
         role: user.role,
+        merchantId: user.merchantId || null,
         companyId: user.companyId
       },
       getJwtRefreshSecret(),
@@ -1175,6 +1178,9 @@ const login = async (req, res) => {
 
     // Helper to find role in a specific company
     const findRoleInCompany = (cid) => {
+      if (user.role === 'SHIPPING_CLIENT' || user.role === 'SUPER_ADMIN') {
+        return user.role;
+      }
       const assoc = user.userCompanies?.find(uc => uc.companyId === cid);
       return assoc?.roleRef?.key || (assoc ? assoc.role : user.role);
     };
@@ -1201,7 +1207,7 @@ const login = async (req, res) => {
         isDefault: true,
         isCurrent: true // Current company on login
       });
-      if (user.role !== 'SUPER_ADMIN') {
+      if (user.role !== 'SUPER_ADMIN' && user.role !== 'SHIPPING_CLIENT') {
         currentActiveRole = roleInPrimary;
       }
     }
@@ -1295,6 +1301,7 @@ const login = async (req, res) => {
         user: {
           ...userWithoutSensitive,
           role: currentActiveRole,
+          merchantId: user.merchantId || null,
           permissions,
           company: currentCompany,
           affiliate: affiliateProfile,
@@ -1493,10 +1500,13 @@ const me = async (req, res) => {
 
     // Build companies list for the response
     const companiesMap = new Map();
-    let currentActiveRole = decoded.role || user.role;
+    let currentActiveRole = user.role || decoded.role;
 
     // Helper to find role in a specific company (prefer custom roleRef.key)
     const findRoleInCompany = (cid) => {
+      if (user.role === 'SHIPPING_CLIENT' || user.role === 'SUPER_ADMIN') {
+        return user.role;
+      }
       const assoc = user.userCompanies.find(uc => uc.companyId === cid);
       return assoc?.roleRef?.key || (assoc ? assoc.role : user.role);
     };
@@ -1531,7 +1541,7 @@ const me = async (req, res) => {
       });
 
       // If this is the currently active company, ensure we use its role (unless user is global SUPER_ADMIN)
-      if (user.role !== 'SUPER_ADMIN' && user.companyId === decoded.companyId) {
+      if (user.role !== 'SUPER_ADMIN' && user.role !== 'SHIPPING_CLIENT' && user.companyId === decoded.companyId) {
         currentActiveRole = roleInPrimary;
       }
     }
@@ -1561,7 +1571,7 @@ const me = async (req, res) => {
         }
 
         // If this secondary company is the current one, update active role (unless user is global SUPER_ADMIN)
-        if (user.role !== 'SUPER_ADMIN' && uc.companyId === decoded.companyId) {
+        if (user.role !== 'SUPER_ADMIN' && user.role !== 'SHIPPING_CLIENT' && uc.companyId === decoded.companyId) {
           currentActiveRole = uc.roleRef?.key || uc.role;
         }
       }
@@ -1608,6 +1618,7 @@ const me = async (req, res) => {
         ...userWithoutSensitive,
         companyId: decoded.companyId || user.companyId, // âœ¦ Use active company ID from token
         role: currentActiveRole, // âœ¦ Override with context-aware role
+        merchantId: user.merchantId || null,
         permissions,
         affiliate: affiliateProfile,
         company: currentCompany, // âœ¦ Return the currently selected company
@@ -1691,7 +1702,8 @@ const refresh = async (req, res) => {
       {
         userId: user.id,
         email: user.email,
-        role: decoded.role || user.role,
+        role: user.role,
+        merchantId: user.merchantId || decoded.merchantId || null,
         companyId: decoded.companyId || user.companyId
       },
       getJwtSecret(),
@@ -1701,7 +1713,8 @@ const refresh = async (req, res) => {
     const newRefreshToken = jwt.sign(
       {
         userId: user.id,
-        role: decoded.role || user.role,
+        role: user.role,
+        merchantId: user.merchantId || decoded.merchantId || null,
         companyId: decoded.companyId || user.companyId
       },
       getJwtRefreshSecret(),
