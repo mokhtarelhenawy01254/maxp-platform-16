@@ -7651,6 +7651,12 @@ async function getMyCompaniesOrders(req, res) {
         }
       }
 
+      // Trash exclusion — matches the company orders page (getAllOrders excludes TRASH);
+      // without it the shared-workspace counts and rows disagree with company B's page.
+      if (!statusQuery || statusQuery.toUpperCase() !== "TRASH") {
+        filterWhere.status = { not: "TRASH" };
+      }
+
       // 5. Calculate per-company totals across ALL active viewable companies (including 0 counts)
       const totalsByCompany = await Promise.all(
         allViewableCompanyIds.map(async (cId) => {
@@ -7696,7 +7702,9 @@ async function getMyCompaniesOrders(req, res) {
       const queryWhere = {
         ...filterWhere,
         companyId: { in: targetViewableCompanyIds },
-        ...keysetWhere,
+        // Keyset OR must be ANDed with the filter OR, otherwise a cursor page drops the
+        // status filter (two sibling OR keys would overwrite each other).
+        ...(keysetWhere.OR ? { AND: [...(filterWhere.AND || []), { OR: keysetWhere.OR }] } : {}),
       };
 
       const rows = targetViewableCompanyIds.length > 0
