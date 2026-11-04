@@ -533,3 +533,8 @@ apps/frontend/public/**/*.exe
 apps/frontend/public/**/*.apk
 apps/frontend/public/**/*.blockmap
 
+
+# P0 SEC-1 — secrets must never be tracked (repo is public)
+apps/ai-service/.env.production
+**/.env.production
+apps/backend/login.json
