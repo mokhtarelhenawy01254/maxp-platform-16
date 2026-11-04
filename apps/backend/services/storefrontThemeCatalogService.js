@@ -114,7 +114,7 @@ const resolveThemePresetsDirectory = async ({
   for (const directory of candidates) {
     try {
       const files = (await fs.readdir(directory))
-        .filter((fileName) => fileName.endsWith('.json'))
+        .filter((fileName) => fileName.endsWith('.json') && fileName !== 'themes-manifest.json')
         .sort();
 
       if (files.length > 0) {
@@ -382,6 +382,39 @@ class StorefrontThemeCatalogService {
     }
   }
 
+  _ingestThemeFile(parsed, fileName = '') {
+    if (fileName === 'themes-manifest.json') {
+      return null;
+    }
+    if (!parsed?.id || Array.isArray(parsed)) {
+      return null;
+    }
+    const themeId = normalizeText(parsed.id, fileName.replace(/\.json$/i, ''));
+    const colors = isRecord(parsed?.tokens?.colors) ? parsed.tokens.colors : {};
+
+    return {
+      id: themeId,
+      slug: themeId,
+      name: normalizeText(parsed?.name, themeId),
+      description: normalizeText(
+        parsed?.description || DEFAULT_THEME_DESCRIPTIONS[themeId],
+        'قالب storefront رسمي قابل للتفعيل من لوحة المتجر.',
+      ),
+      preview: {
+        imageUrl: normalizeText(
+          parsed?.preview?.imageUrl || parsed?.blueprint?.metadata?.previewImage || parsed?.thumbnailUrl,
+          '',
+        ),
+        colors: [
+          colors.primary || '',
+          colors.secondary || '',
+          colors.accent || '',
+        ].filter(Boolean),
+      },
+      pageStats: buildPageStats(parsed),
+    };
+  }
+
   async loadPresetManifests({ forceReload = false } = {}) {
     const isCacheFresh =
       this._presetCache &&
@@ -393,39 +426,22 @@ class StorefrontThemeCatalogService {
 
     const { directory: themePresetsDir, files } =
       await resolveThemePresetsDirectory();
-    const manifests = await Promise.all(
+    const parsedManifests = await Promise.all(
       files
+        .filter((fileName) => fileName !== 'themes-manifest.json')
         .sort()
         .map(async (fileName) => {
           const absolutePath = path.join(themePresetsDir, fileName);
-          const raw = await fs.readFile(absolutePath, 'utf8');
-          const parsed = JSON.parse(raw);
-          const themeId = normalizeText(parsed?.id, fileName.replace(/\.json$/i, ''));
-          const colors = isRecord(parsed?.tokens?.colors) ? parsed.tokens.colors : {};
-
-          return {
-            id: themeId,
-            slug: themeId,
-            name: normalizeText(parsed?.name, themeId),
-            description: normalizeText(
-              parsed?.description || DEFAULT_THEME_DESCRIPTIONS[themeId],
-              'قالب storefront رسمي قابل للتفعيل من لوحة المتجر.',
-            ),
-            preview: {
-              imageUrl: normalizeText(
-                parsed?.preview?.imageUrl || parsed?.blueprint?.metadata?.previewImage || parsed?.thumbnailUrl,
-                '',
-              ),
-              colors: [
-                colors.primary || '',
-                colors.secondary || '',
-                colors.accent || '',
-              ].filter(Boolean),
-            },
-            pageStats: buildPageStats(parsed),
-          };
+          try {
+            const raw = await fs.readFile(absolutePath, 'utf8');
+            const parsed = JSON.parse(raw);
+            return this._ingestThemeFile(parsed, fileName);
+          } catch {
+            return null;
+          }
         }),
     );
+    const manifests = parsedManifests.filter(Boolean);
 
     this._presetCache = manifests;
     this._presetCacheAt = Date.now();

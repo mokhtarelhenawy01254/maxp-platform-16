@@ -304,4 +304,107 @@ describe("Studio Manifest-Driven Content Inspector & Dynamic Array Repeater", ()
       expect(onUpdateField).toHaveBeenCalledWith("customHandleColor", "#00ffaa");
     });
   });
+
+  describe("5. Package C: String Array & Advanced Item Keys in Repeater Control", () => {
+    it("detects string[] and renders text inputs without object corruption", () => {
+      const onUpdateField = vi.fn();
+
+      render(
+        <StudioArrayRepeaterControl
+          arrayKey="tags"
+          items={["عرض خاص", "توصيل مجاني"]}
+          onUpdateField={onUpdateField}
+        />
+      );
+
+      // Verify clean input without object stringification
+      const input0 = screen.getByTestId("input-tags-0") as HTMLInputElement;
+      expect(input0.value).toBe("عرض خاص");
+
+      fireEvent.change(input0, { target: { value: "عرض الصيف" } });
+      expect(onUpdateField).toHaveBeenCalledWith("tags", ["عرض الصيف", "توصيل مجاني"]);
+
+      // Verify adding item appends empty string
+      const addBtn = screen.getByTestId("btn-add-tags");
+      fireEvent.click(addBtn);
+      expect(onUpdateField).toHaveBeenCalledWith("tags", ["عرض خاص", "توصيل مجاني", ""]);
+    });
+
+    it("supports hotspot keys (x, y, productId) in repeater control", () => {
+      const onUpdateField = vi.fn();
+
+      render(
+        <StudioArrayRepeaterControl
+          arrayKey="hotspots"
+          items={[{ title: "نقطة 1", x: 20, y: 40, productId: "prod-99" }]}
+          onUpdateField={onUpdateField}
+        />
+      );
+
+      // Expand first hotspot
+      const expandBtn = screen.getByTestId("btn-toggle-expand-hotspots-0");
+      fireEvent.click(expandBtn);
+
+      const xInput = screen.getByTestId("input-hotspots-0-x") as HTMLInputElement;
+      expect(Number(xInput.value)).toBe(20);
+      fireEvent.change(xInput, { target: { value: "35" } });
+      expect(onUpdateField).toHaveBeenCalledWith("hotspots", [
+        { title: "نقطة 1", x: 35, y: 40, productId: "prod-99" },
+      ]);
+
+      const prodInput = screen.getByTestId("input-hotspots-0-productId") as HTMLInputElement;
+      expect(prodInput.value).toBe("prod-99");
+      fireEvent.change(prodInput, { target: { value: "prod-100" } });
+      expect(onUpdateField).toHaveBeenCalledWith("hotspots", [
+        { title: "نقطة 1", x: 20, y: 40, productId: "prod-100" },
+      ]);
+    });
+
+    it("supports tier keys (quantity, discount) in repeater control", () => {
+      const onUpdateField = vi.fn();
+
+      render(
+        <StudioArrayRepeaterControl
+          arrayKey="tiers"
+          items={[{ title: "حزمة", quantity: 2, discount: "15%" }]}
+          onUpdateField={onUpdateField}
+        />
+      );
+
+      const expandBtn = screen.getByTestId("btn-toggle-expand-tiers-0");
+      fireEvent.click(expandBtn);
+
+      const qtyInput = screen.getByTestId("input-tiers-0-quantity") as HTMLInputElement;
+      expect(Number(qtyInput.value)).toBe(2);
+      fireEvent.change(qtyInput, { target: { value: "3" } });
+      expect(onUpdateField).toHaveBeenCalledWith("tiers", [
+        { title: "حزمة", quantity: 3, discount: "15%" },
+      ]);
+    });
+
+    it("supports review keys (author, quote) in repeater control", () => {
+      const onUpdateField = vi.fn();
+
+      render(
+        <StudioArrayRepeaterControl
+          arrayKey="reviews"
+          items={[{ name: "سارة", author: "سارة", quote: "منتج رائع جداً!" }]}
+          onUpdateField={onUpdateField}
+        />
+      );
+
+      const expandBtn = screen.getByTestId("btn-toggle-expand-reviews-0");
+      fireEvent.click(expandBtn);
+
+      const authorInput = screen.getByTestId("input-reviews-0-author") as HTMLInputElement;
+      expect(authorInput.value).toBe("سارة");
+      fireEvent.change(authorInput, { target: { value: "سارة أحمد" } });
+      expect(onUpdateField).toHaveBeenCalled();
+
+      const quoteInput = screen.getByTestId("input-reviews-0-quote") as HTMLTextAreaElement;
+      expect(quoteInput.value).toBe("منتج رائع جداً!");
+      fireEvent.change(quoteInput, { target: { value: "منتج استثنائي!" } });
+      expect(onUpdateField).toHaveBeenCalled();
+    });
+  });
 });

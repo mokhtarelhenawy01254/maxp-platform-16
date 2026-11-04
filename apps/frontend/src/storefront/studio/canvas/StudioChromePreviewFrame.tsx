@@ -1,6 +1,7 @@
 import React from "react";
 import StorefrontHeader from "../../components/header/StorefrontHeader";
 import StorefrontFooter from "../../components/footer/StorefrontFooter";
+import { StudioErrorBoundary } from "../StudioErrorBoundary";
 
 export interface StudioChromePreviewFrameProps {
   showChrome?: boolean;
@@ -40,7 +41,15 @@ export const StudioChromePreviewFrame: React.FC<StudioChromePreviewFrameProps> =
         title="انقر لتعديل الترويسة والقوائم (Header)"
       >
         <div className="pointer-events-none select-none">
-          <StorefrontHeader isMinimal={false} />
+          <StudioErrorBoundary
+            fallback={
+              <div className="p-3 text-xs text-muted-foreground border-b text-center select-none">
+                ترويسة المتجر (Header)
+              </div>
+            }
+          >
+            <StorefrontHeader isMinimal={false} />
+          </StudioErrorBoundary>
         </div>
         <div className="absolute top-1 start-2 z-40 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs opacity-0 hover:opacity-100 transition-opacity">
           ترويسة المتجر (Header)
@@ -65,7 +74,15 @@ export const StudioChromePreviewFrame: React.FC<StudioChromePreviewFrameProps> =
         title="انقر لتعديل التذييل وروابط الفوتر (Footer)"
       >
         <div className="pointer-events-none select-none">
-          <StorefrontFooter isMinimal={false} />
+          <StudioErrorBoundary
+            fallback={
+              <div className="p-3 text-xs text-muted-foreground border-t text-center select-none">
+                تذييل المتجر (Footer)
+              </div>
+            }
+          >
+            <StorefrontFooter isMinimal={false} />
+          </StudioErrorBoundary>
         </div>
         <div className="absolute top-1 start-2 z-40 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs opacity-0 hover:opacity-100 transition-opacity">
           تذييل المتجر (Footer)

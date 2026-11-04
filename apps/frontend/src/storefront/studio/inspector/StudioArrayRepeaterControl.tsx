@@ -22,14 +22,42 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
   const isFaq = kl.includes("question") || kl.includes("faq");
   const isReview = kl.includes("review") || kl.includes("testimonial");
   const isFeature = kl.includes("feature");
+  const isHotspot = kl.includes("hotspot") || kl.includes("point");
+  const isTier = kl.includes("tier") || kl.includes("bundle");
 
-  const displayLabel = label || (isFaq ? "الأسئلة الشائعة" : isReview ? "آراء العملاء" : isFeature ? "المزايا والمواصفات" : kl.includes("tab") ? "التبويبات" : "العناصر الفرعية");
+  const isStringArray =
+    items.length > 0
+      ? typeof items[0] === "string"
+      : kl.includes("tag") || kl.includes("bullet") || kl.includes("string");
+
+  const displayLabel =
+    label ||
+    (isFaq
+      ? "الأسئلة الشائعة"
+      : isReview
+      ? "آراء العملاء"
+      : isFeature
+      ? "المزايا والمواصفات"
+      : isHotspot
+      ? "نقاط التفاعل على الصورة (Hotspots)"
+      : isTier
+      ? "باقات وكميات الشراء (Tiers)"
+      : kl.includes("tab")
+      ? "التبويبات"
+      : "العناصر الفرعية");
 
   const handleAddItem = () => {
+    if (isStringArray) {
+      onUpdateField(arrayKey, [...items, ""]);
+      return;
+    }
+
     let newItem: Record<string, any>;
     if (isFaq) newItem = { question: "سؤال جديد؟", answer: "الإجابة التوضيحية..." };
-    else if (isReview) newItem = { name: "اسم العميل", rating: 5, comment: "تجربة ممتازة وخدمة سريعة!" };
+    else if (isReview) newItem = { name: "اسم العميل", author: "اسم العميل", rating: 5, comment: "تجربة ممتازة وخدمة سريعة!", quote: "تجربة ممتازة وخدمة سريعة!" };
     else if (isFeature) newItem = { title: "ميزة جديدة", description: "تفاصيل الميزة...", icon: "✨" };
+    else if (isHotspot) newItem = { title: "نقطة جديدة", x: 50, y: 50, productId: "" };
+    else if (isTier) newItem = { quantity: items.length + 1, discount: 10, label: `حزمة ${items.length + 1}` };
     else newItem = { title: `عنصر جديد ${items.length + 1}`, description: "وصف توضيحي...", icon: "✨", url: "/shop" };
     const next = [...items, newItem];
     onUpdateField(arrayKey, next);
@@ -59,6 +87,11 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
     onUpdateField(arrayKey, next);
   };
 
+  const handleUpdateStringItem = (index: number, val: string) => {
+    const next = items.map((it, idx) => (idx === index ? val : it));
+    onUpdateField(arrayKey, next);
+  };
+
   return (
     <div className="space-y-2 pt-2.5 border-t border-[#ececee]" data-testid={`array-repeater-${arrayKey}`}>
       <div className="flex items-center justify-between">
@@ -78,12 +111,59 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
         <div className="rounded-lg border border-dashed border-[#ececee] p-2.5 text-center text-[10.5px] text-[#8a8f96]">
           لا توجد عناصر حالياً. اضغط &quot;إضافة عنصر&quot; للبدء.
         </div>
+      ) : isStringArray ? (
+        /* Clean string array list without object corruption */
+        <div className="space-y-1.5 max-h-80 overflow-y-auto [scrollbar-width:thin]">
+          {items.map((strVal, idx) => (
+            <div key={idx} data-testid={`repeater-item-${arrayKey}-${idx}`} className="flex items-center gap-1.5 p-1.5 rounded-lg border border-[#ececee] bg-[#f6f7f8]">
+              <span className="font-mono text-[9px] text-[#8a8f96] shrink-0">#{idx + 1}</span>
+              <input
+                type="text"
+                data-testid={`input-${arrayKey}-${idx}`}
+                value={typeof strVal === "string" ? strVal : ""}
+                onChange={(e) => handleUpdateStringItem(idx, e.target.value)}
+                placeholder="أدخل النص..."
+                className="flex-1 rounded border border-[#ececee] bg-white px-2 py-1 text-[11px] text-[#17181c] outline-none focus:border-[#2b6cf6]"
+              />
+              {(kl.includes("image") || kl.includes("photo") || kl.includes("url")) && (
+                <button
+                  type="button"
+                  data-testid={`btn-img-picker-${arrayKey}-${idx}`}
+                  onClick={() => onOpenImagePicker?.(`${arrayKey}.${idx}`)}
+                  className="p-1 rounded text-[#2b6cf6] hover:bg-white"
+                  title="مكتبة الصور"
+                >
+                  <PhotoIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button type="button" data-testid={`btn-move-up-${arrayKey}-${idx}`} onClick={() => handleMoveItem(idx, "up")} disabled={idx === 0} className="p-1 text-[#8a8f96] hover:text-[#17181c] disabled:opacity-30" title="تحريك لأعلى">
+                  <ChevronUpIcon className="h-3 w-3" />
+                </button>
+                <button type="button" data-testid={`btn-move-down-${arrayKey}-${idx}`} onClick={() => handleMoveItem(idx, "down")} disabled={idx === items.length - 1} className="p-1 text-[#8a8f96] hover:text-[#17181c] disabled:opacity-30" title="تحريك لأسفل">
+                  <ChevronDownIcon className="h-3 w-3" />
+                </button>
+                <button type="button" data-testid={`btn-delete-${arrayKey}-${idx}`} onClick={() => handleDeleteItem(idx)} className="p-1 text-red-500 hover:bg-red-50 rounded" title="حذف العنصر">
+                  <TrashIcon className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
+        /* Object items repeater */
         <div className="space-y-1.5 max-h-80 overflow-y-auto [scrollbar-width:thin]">
           {items.map((item, idx) => {
             const isExpanded = expandedIdx === idx;
-            const titleProp = isFaq ? "question" : isReview ? "name" : "title";
-            const summaryTitle = item[titleProp] || item.title || item.question || item.name || item.label || `عنصر ${idx + 1}`;
+            const titleProp = isFaq ? "question" : isReview ? "name" : isHotspot ? "title" : "title";
+            const summaryTitle =
+              item[titleProp] ||
+              item.title ||
+              item.question ||
+              item.name ||
+              item.author ||
+              item.label ||
+              `عنصر ${idx + 1}`;
             const descProp = isFaq ? "answer" : isReview ? "comment" : item.subtitle !== undefined ? "subtitle" : "description";
 
             return (
@@ -116,6 +196,7 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
 
                 {isExpanded && (
                   <div className="p-2.5 pt-1 space-y-2 border-t border-[#ececee] bg-white">
+                    {/* Title / Question / Name */}
                     <div className="space-y-0.5">
                       <label className="block text-[9.5px] font-bold text-[#6f747b]">{isFaq ? "السؤال" : isReview ? "اسم العميل" : "العنوان الرئيسي"}</label>
                       <input
@@ -127,17 +208,120 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
                         className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
                       />
                     </div>
-                    <div className="space-y-0.5">
-                      <label className="block text-[9.5px] font-bold text-[#6f747b]">{isFaq ? "الإجابة" : isReview ? "التقييم / التعليق" : "الوصف التوضيحي"}</label>
-                      <textarea
-                        rows={2}
-                        data-testid={`input-${arrayKey}-${idx}-${descProp}`}
-                        value={item[descProp] ?? item.description ?? ""}
-                        onChange={(e) => handleUpdateItemProp(idx, descProp, e.target.value)}
-                        placeholder="أدخل التفاصيل..."
-                        className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-                      />
-                    </div>
+
+                    {/* Description / Answer / Comment */}
+                    {!isHotspot && (
+                      <div className="space-y-0.5">
+                        <label className="block text-[9.5px] font-bold text-[#6f747b]">{isFaq ? "الإجابة" : isReview ? "التقييم / التعليق" : "الوصف التوضيحي"}</label>
+                        <textarea
+                          rows={2}
+                          data-testid={`input-${arrayKey}-${idx}-${descProp}`}
+                          value={item[descProp] ?? item.description ?? ""}
+                          onChange={(e) => handleUpdateItemProp(idx, descProp, e.target.value)}
+                          placeholder="أدخل التفاصيل..."
+                          className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {/* Author & Quote fields for reviews/testimonials */}
+                    {(isReview || item.author !== undefined || item.quote !== undefined) && (
+                      <>
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">الكاتب (Author)</label>
+                          <input
+                            type="text"
+                            data-testid={`input-${arrayKey}-${idx}-author`}
+                            value={item.author ?? item.name ?? ""}
+                            onChange={(e) => handleUpdateItemProp(idx, "author", e.target.value)}
+                            placeholder="اسم الكاتب..."
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">الاقتباس (Quote)</label>
+                          <textarea
+                            rows={2}
+                            data-testid={`input-${arrayKey}-${idx}-quote`}
+                            value={item.quote ?? item.comment ?? ""}
+                            onChange={(e) => handleUpdateItemProp(idx, "quote", e.target.value)}
+                            placeholder="نص الاقتباس..."
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Hotspot coordinates and product link */}
+                    {(isHotspot || item.x !== undefined || item.y !== undefined || item.productId !== undefined) && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">الموضع الأفقي X (%)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            data-testid={`input-${arrayKey}-${idx}-x`}
+                            value={item.x ?? 50}
+                            onChange={(e) => handleUpdateItemProp(idx, "x", Number(e.target.value))}
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] font-mono outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">الموضع الرأسي Y (%)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            data-testid={`input-${arrayKey}-${idx}-y`}
+                            value={item.y ?? 50}
+                            onChange={(e) => handleUpdateItemProp(idx, "y", Number(e.target.value))}
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] font-mono outline-none"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">معرّف المنتج (Product ID)</label>
+                          <input
+                            type="text"
+                            data-testid={`input-${arrayKey}-${idx}-productId`}
+                            value={item.productId ?? ""}
+                            onChange={(e) => handleUpdateItemProp(idx, "productId", e.target.value)}
+                            placeholder="product-123"
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quantity and Discount for Tiers/Bundles */}
+                    {(isTier || item.quantity !== undefined || item.discount !== undefined) && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">الكمية (Quantity)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            data-testid={`input-${arrayKey}-${idx}-quantity`}
+                            value={item.quantity ?? 1}
+                            onChange={(e) => handleUpdateItemProp(idx, "quantity", Number(e.target.value))}
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] font-mono outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="block text-[9.5px] font-bold text-[#6f747b]">نسبة الخصم (Discount)</label>
+                          <input
+                            type="text"
+                            data-testid={`input-${arrayKey}-${idx}-discount`}
+                            value={item.discount ?? ""}
+                            onChange={(e) => handleUpdateItemProp(idx, "discount", e.target.value)}
+                            placeholder="10%"
+                            className="w-full rounded border border-[#ececee] bg-[#f6f7f8] px-2 py-1 text-[11px] font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rating */}
                     {(isReview || item.rating !== undefined) && (
                       <div className="space-y-0.5">
                         <label className="block text-[9.5px] font-bold text-[#6f747b]">التقييم (النجوم)</label>
@@ -151,6 +335,8 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
                         </select>
                       </div>
                     )}
+
+                    {/* Icon */}
                     {(isFeature || item.icon !== undefined) && (
                       <div className="space-y-0.5">
                         <label className="block text-[9.5px] font-bold text-[#6f747b]">الأيقونة أو الرمز</label>
@@ -164,6 +350,8 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
                         />
                       </div>
                     )}
+
+                    {/* Image */}
                     {(item.image !== undefined || item.photo !== undefined || !isFaq) && (
                       <div className="space-y-1">
                         <label className="block text-[9.5px] font-bold text-[#6f747b]">الصورة</label>
@@ -195,6 +383,8 @@ export const StudioArrayRepeaterControl: React.FC<StudioArrayRepeaterControlProp
                         />
                       </div>
                     )}
+
+                    {/* Link */}
                     {(item.url !== undefined || item.link !== undefined || (!isFaq && !isReview)) && (
                       <div className="space-y-0.5">
                         <label className="block text-[9.5px] font-bold text-[#6f747b]">رابط التحويل</label>

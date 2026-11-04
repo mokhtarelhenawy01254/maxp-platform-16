@@ -4316,8 +4316,6 @@ export const resolveStorefrontSectionCategory = (
 export const isStorefrontSectionKnown = (sectionType: string): boolean =>
   sectionType === "container" ||
   sectionType === "loop" ||
-  // The component map is derived FROM this manifest, so checking it here was circular
-  // (manifest -> map -> manifest) and broke the CLI validator under tsx.
   Boolean(getStorefrontSectionManifest(sectionType));
 
 export const getStorefrontSectionVariantValues = (

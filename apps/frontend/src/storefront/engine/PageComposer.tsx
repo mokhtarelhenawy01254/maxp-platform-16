@@ -16,7 +16,7 @@ import {
 import {
   getStorefrontSectionComponentKey,
   STOREFRONT_CONVERSION_SECTION_IDS,
-} from '../sections/manifest';
+} from './sectionComponentMap';
 import { buildStorefrontPath } from '../utils/paths';
 import { sanitizeStorefrontSectionConfig } from '../utils/runtimeBrandText';
 import { evaluateDisplayConditions } from '../studio/utils/displayConditions';

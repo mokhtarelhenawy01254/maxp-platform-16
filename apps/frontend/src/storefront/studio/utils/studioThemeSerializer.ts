@@ -23,7 +23,7 @@ export const MANDATORY_THEME_ROOT_KEYS = [
   "id", "name", "direction", "tokens", "header", "footer", "pages",
 ] as const;
 
-export const MANDATORY_PAGE_KEYS = ["home", "shop", "pdp", "cart", "checkout"] as const;
+export const MANDATORY_PAGE_KEYS = ["home", "shop", "pdp", "cart"] as const;
 
 export const DEFAULT_SEMANTIC_COLORS = {
   primary: "215 28% 17%", primaryForeground: "0 0% 100%",
@@ -46,6 +46,20 @@ export interface ExportFullStorefrontThemeOptions {
   pageOverrides?: Record<string, any>;
   global?: Record<string, any>;
   seo?: Record<string, any>;
+  previewTheme?: StorefrontTheme;
+  activeTheme?: StorefrontTheme;
+  description?: string;
+  preview?: { imageUrl?: string; colors?: string[] };
+}
+
+export function sanitizeThemeId(rawId: string): string {
+  const cleaned = (rawId || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^[^a-z0-9]+/, "")
+    .replace(/-+$/, "")
+    .replace(/-+/g, "-");
+  return cleaned && /^[a-z0-9][a-z0-9-]*$/.test(cleaned) ? cleaned : "custom-theme";
 }
 
 const cleanSection = (sec: unknown): string | StorefrontSectionConfig => {
@@ -75,31 +89,44 @@ export function createBlankStorefrontTheme(
   themeName: string,
   direction: "rtl" | "ltr" = "rtl"
 ): StorefrontTheme {
-  const safeId = (themeId || "custom-theme").toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  const safeId = sanitizeThemeId(themeId || "custom-theme");
   const safeName = themeName || themeId || "Custom Theme";
 
   const defaultPageSections: Record<string, string[]> = {
     home: ["promo-strip", "hero-banner", "featured-products"],
-    shop: ["category-strip", "product-grid"],
+    shop: ["shop-command-bar", "product-grid"],
     pdp: ["product-info", "features-bar"],
     cart: ["cart-items"],
-    checkout: ["checkout-form"],
+    checkout: ["checkout-form", "payment"],
     "thank-you": ["order-confirmation"],
     collections: ["featured-collections"],
     sale: ["promo-strip", "product-grid"],
-    registration: ["account-portal"],
+    registration: ["member-registration"],
   };
 
   const pages: Record<string, StorefrontPageConfig> = {};
-  STANDARD_THEME_PAGES.forEach((pk) => {
-    const types = defaultPageSections[pk] || ["info-content"];
+  Object.entries(defaultPageSections).forEach(([pk, types]) => {
     pages[pk] = { sections: types.map((t) => ({ type: t })) };
   });
 
   return {
     id: safeId,
     name: safeName,
+    description: `قالب متجر ${safeName} لتجربة تسوق سريعة وموثوقة.`,
     direction,
+    preview: {
+      imageUrl: "/assets/themes/modern-minimal/preview.svg",
+      colors: [
+        DEFAULT_SEMANTIC_COLORS.primary,
+        DEFAULT_SEMANTIC_COLORS.secondary,
+        DEFAULT_SEMANTIC_COLORS.accent,
+        DEFAULT_SEMANTIC_COLORS.background,
+      ],
+    },
+    seo: {
+      titleTemplate: `%s | ${safeName}`,
+      description: `متجر ${safeName} لتجربة تسوق متكاملة وسريعة.`,
+    },
     tokens: {
       colors: { ...DEFAULT_SEMANTIC_COLORS },
       typography: { headingFont: "Cairo", bodyFont: "Tajawal", baseSize: "16px", direction },
@@ -107,10 +134,14 @@ export function createBlankStorefrontTheme(
       productCard: { borderRadius: "0.75rem", buttonRadius: "0.5rem", surfaceOpacity: "1" },
     },
     header: {
-      brandName: safeName, showSearch: true, showCart: true,
+      brandName: safeName,
+      showSearch: true,
+      showCart: true,
       navigation: [
-        { label: "الرئيسية", to: "/" }, { label: "المتجر", to: "/shop" },
-        { label: "التصنيفات", to: "/collections" }, { label: "العروض", to: "/sale" },
+        { label: "الرئيسية", to: "/" },
+        { label: "المتجر", to: "/shop" },
+        { label: "التصنيفات", to: "/collections" },
+        { label: "العروض", to: "/sale" },
       ],
     },
     footer: {
@@ -118,19 +149,38 @@ export function createBlankStorefrontTheme(
       copyrightText: `© ${new Date().getFullYear()} ${safeName}`,
       socialLinks: {},
       navigation: [
-        { title: "التسوق", links: [{ label: "كل المنتجات", to: "/shop" }, { label: "العروض", to: "/sale" }] },
-        { title: "الدعم", links: [{ label: "الشحن والتوصيل", to: "/shipping" }, { label: "الاستبدال والاسترجاع", to: "/returns" }] },
+        {
+          title: "التسوق",
+          links: [
+            { label: "كل المنتجات", to: "/shop" },
+            { label: "العروض", to: "/sale" },
+          ],
+        },
+        {
+          title: "الدعم",
+          links: [
+            { label: "الشحن والتوصيل", to: "/shipping" },
+            { label: "الاستبدال والاسترجاع", to: "/returns" },
+          ],
+        },
       ],
-      legalLinks: [{ label: "سياسة الخصوصية", to: "/privacy" }, { label: "الشروط والأحكام", to: "/terms" }],
+      legalLinks: [
+        { label: "سياسة الخصوصية", to: "/privacy" },
+        { label: "الشروط والأحكام", to: "/terms" },
+      ],
     },
     pages: pages as any,
   };
 }
 
 export function exportFullStorefrontTheme(options: ExportFullStorefrontThemeOptions): StorefrontTheme {
-  const targetId = options.themeId || DEFAULT_STOREFRONT_THEME_ID;
+  const rawTargetId = options.themeId || DEFAULT_STOREFRONT_THEME_ID;
+  const targetId = sanitizeThemeId(rawTargetId);
   const basePreset: StorefrontTheme =
     STOREFRONT_THEME_PRESETS[targetId] ||
+    STOREFRONT_THEME_PRESETS[rawTargetId] ||
+    options.previewTheme ||
+    options.activeTheme ||
     createBlankStorefrontTheme(targetId, options.themeName || targetId, options.direction || "rtl");
 
   const direction = options.direction || options.tokens?.typography?.direction || basePreset.direction || "rtl";
@@ -172,42 +222,112 @@ export function exportFullStorefrontTheme(options: ExportFullStorefrontThemeOpti
 
   // 3. Header & Footer
   const finalHeader = {
-    ...(basePreset.header || {}), ...(options.header || {}),
+    ...(basePreset.header || {}),
+    ...(options.header || {}),
     brandName: options.header?.brandName || basePreset.header?.brandName || name,
   };
   const finalFooter = {
-    ...(basePreset.footer || {}), ...(options.footer || {}),
+    ...(basePreset.footer || {}),
+    ...(options.footer || {}),
     copyrightText: options.footer?.copyrightText || basePreset.footer?.copyrightText || `© ${new Date().getFullYear()} ${name}`,
   };
 
-  // 4. Consolidate all 14+ pages with pageOverrides
+  // 4. Consolidate only authored pages (plus core 4 mandatory pages)
+  // Do NOT force omitted/unauthored system pages into pageSourceKeys!
   const pageSourceKeys = new Set<string>([
-    ...STANDARD_THEME_PAGES,
+    ...MANDATORY_PAGE_KEYS,
     ...Object.keys(basePreset.pages || {}),
     ...Object.keys(options.pages || {}),
     ...Object.keys(options.pageOverrides || {}),
   ]);
 
+  const defaultMandatorySections: Record<string, string[]> = {
+    home: ["promo-strip", "hero-banner", "featured-products"],
+    shop: ["shop-command-bar", "product-grid"],
+    pdp: ["product-info", "features-bar"],
+    cart: ["cart-items"],
+  };
+
   const finalPages: Record<string, StorefrontPageConfig> = {};
   pageSourceKeys.forEach((pageKey) => {
-    const sourcePage = options.pageOverrides?.[pageKey] || options.pages?.[pageKey] || basePreset.pages?.[pageKey];
+    const isMandatory = (MANDATORY_PAGE_KEYS as readonly string[]).includes(pageKey);
+    const sourcePage =
+      options.pageOverrides?.[pageKey] ||
+      options.pages?.[pageKey] ||
+      basePreset.pages?.[pageKey];
+
     if (!sourcePage) {
-      finalPages[pageKey] = { sections: [{ type: "info-content" }] };
+      if (isMandatory) {
+        const fallback = defaultMandatorySections[pageKey] || ["product-grid"];
+        finalPages[pageKey] = { sections: fallback.map((t) => ({ type: t })) };
+      }
       return;
     }
+
     const rawSections = Array.isArray(sourcePage.sections) ? sourcePage.sections : [];
-    const cleaned = rawSections.map(cleanSection);
+    const cleaned = rawSections
+      .map(cleanSection)
+      .filter((s) => Boolean(s && (typeof s === "string" || (s as StorefrontSectionConfig).type)));
+
+    // Do NOT inject fake info-content for unauthored/omitted pages:
+    if (cleaned.length === 0) {
+      if (isMandatory) {
+        const fallback = defaultMandatorySections[pageKey] || ["product-grid"];
+        finalPages[pageKey] = {
+          sections: fallback.map((t) => ({ type: t })),
+          ...(sourcePage.layoutHint ? { layoutHint: sourcePage.layoutHint } : {}),
+          ...(sourcePage.pageGoal ? { pageGoal: sourcePage.pageGoal } : {}),
+        };
+      }
+      return;
+    }
+
+    // If non-mandatory and only section is a bare { type: "info-content" } placeholder without config/settings/variant:
+    if (
+      !isMandatory &&
+      cleaned.length === 1 &&
+      (typeof cleaned[0] === "string"
+        ? cleaned[0] === "info-content"
+        : cleaned[0].type === "info-content" &&
+          !cleaned[0].variant &&
+          (!cleaned[0].settings || Object.keys(cleaned[0].settings).length === 0))
+    ) {
+      // Omit unauthored system/legal page fallback placeholder
+      return;
+    }
+
     finalPages[pageKey] = {
-      sections: cleaned.length > 0 ? cleaned : [{ type: "info-content" }],
+      sections: cleaned,
       ...(sourcePage.layoutHint ? { layoutHint: sourcePage.layoutHint } : {}),
       ...(sourcePage.pageGoal ? { pageGoal: sourcePage.pageGoal } : {}),
     };
   });
 
   return {
-    id: targetId, name, direction, tokens: finalTokens,
-    header: finalHeader as any, footer: finalFooter as any, pages: finalPages as any,
-    ...(options.seo || basePreset.seo ? { seo: options.seo || basePreset.seo } : {}),
+    id: targetId,
+    name,
+    description:
+      options.description ||
+      basePreset.description ||
+      `قالب ${name} لتجربة تسوق متكاملة وسريعة.`,
+    direction,
+    tokens: finalTokens,
+    header: finalHeader as any,
+    footer: finalFooter as any,
+    pages: finalPages as any,
+    preview: options.preview || basePreset.preview || {
+      imageUrl: "/assets/themes/modern-minimal/preview.svg",
+      colors: [
+        finalColors.primary,
+        finalColors.secondary,
+        finalColors.accent,
+        finalColors.background,
+      ],
+    },
+    seo: options.seo || basePreset.seo || {
+      titleTemplate: `%s | ${name}`,
+      description: `متجر ${name} لتجربة تسوق متكاملة وسريعة.`,
+    },
   };
 }
 
@@ -225,6 +345,10 @@ export function validateFullStorefrontThemeJSON(json: unknown): {
   MANDATORY_THEME_ROOT_KEYS.forEach((key) => {
     if (!(key in raw)) errors.push(`الحقل الرئيسي الإلزامي مفقود: "${key}"`);
   });
+
+  if (raw.id && !/^[a-z0-9][a-z0-9-]*$/.test(String(raw.id))) {
+    errors.push(`معرف القالب "id" غير صالح: "${raw.id}". يجب أن يبدأ بحرف أو رقم ويحتوي فقط على أحرف صغيرة وأرقام وشرطات.`);
+  }
 
   if (raw.direction !== "ltr" && raw.direction !== "rtl") {
     errors.push(`الاتجاه يجب أن يكون إما "ltr" أو "rtl"، القيمة المستلمة: "${raw.direction}"`);

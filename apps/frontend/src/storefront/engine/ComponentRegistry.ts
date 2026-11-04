@@ -1,5 +1,5 @@
 import React from 'react';
-import { STOREFRONT_SECTION_MANIFEST } from '../sections/manifest';
+import { STOREFRONT_SECTION_COMPONENT_MAP } from './sectionComponentMap';
 
 // ALL sections are now lazy-loaded for optimal code splitting.
 // Previously HeroBanner (99KB), PromoStrip, ShopCommandBar were eager — this
@@ -109,6 +109,14 @@ const CouponElement = React.lazy(() => import('../sections/elements/CouponElemen
 
 // Loop Section (Ticket LOOP-1)
 const StorefrontLoopSection = React.lazy(() => import('../sections/StorefrontLoopSection'));
+
+// Container pass-through element for tree composition
+const ContainerElement: React.FC<{ children?: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
+  children,
+  className,
+  style,
+  ...props
+}) => React.createElement('div', { className, style, ...props }, children);
 
 const PlaceholderSection: React.FC<{ section?: any; settings?: any }> = ({ section, settings }) =>
   React.createElement(
@@ -245,6 +253,9 @@ const baseComponentRegistry: Record<
 
   // Loop Section (Ticket LOOP-1)
   loop: StorefrontLoopSection,
+
+  // Container element (Tree composition)
+  container: ContainerElement,
 };
 
 /**
@@ -255,9 +266,9 @@ const baseComponentRegistry: Record<
 export const ComponentRegistry: Record<
   string,
   React.ComponentType<any>
-> = Object.entries(STOREFRONT_SECTION_MANIFEST).reduce(
-  (registry, [sectionId, sectionConfig]) => {
-    const sectionComponent = baseComponentRegistry[sectionConfig.component];
+> = Object.entries(STOREFRONT_SECTION_COMPONENT_MAP).reduce(
+  (registry, [sectionId, componentName]) => {
+    const sectionComponent = baseComponentRegistry[componentName];
     if (sectionComponent) {
       registry[sectionId] = sectionComponent;
     }

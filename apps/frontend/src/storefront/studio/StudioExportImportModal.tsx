@@ -91,6 +91,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
       pages: theme?.pages,
       pageOverrides: designTokens?.pageOverrides,
       global: designTokens?.global,
+      previewTheme: theme,
     });
   }, [theme, designTokens]);
 
@@ -125,7 +126,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
     const blank = createBlankStorefrontTheme("custom-studio-theme", "ثيم مخصص جديد", "rtl");
     if (onApplyThemeImport) {
       onApplyThemeImport(blank);
-      toast.success("تم تجهيز قالب جديد فارغ بـ 14 صفحة بنجاح ✨");
+      toast.success("تم تجهيز قالب جديد فارغ ومطابق للمعايير بنجاح ✨");
       onClose();
     }
   };

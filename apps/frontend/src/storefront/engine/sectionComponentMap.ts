@@ -1,25 +1,144 @@
-import { STOREFRONT_SECTION_MANIFEST } from '../sections/manifest';
-
 /**
- * Section id -> component key, resolved from the section manifest.
+ * Section id -> component key, statically defined.
  *
- * The CLI validator (`scripts/validate-theme-file.ts`) must be able to run without booting
- * React, so it reads this pure map instead of importing `ComponentRegistry` (which pulls every
- * section component and their UI kit). The manifest is the single source of truth for the
- * component key, and the registry is built from it in `engine/ComponentRegistry.ts`.
+ * All 110 known storefront sections are defined here statically without importing
+ * the heavy `STOREFRONT_SECTION_MANIFEST` (which contains 4,370+ lines of Studio form metadata).
  *
- * For the stricter check — "the component key actually resolves to a React component" — run
- * `npx tsx scripts/validate-theme-sections.ts <theme.json>`, which imports the real registry.
+ * This breaks circular dependencies between manifest and engine, and prevents
+ * leaking Studio form fields/labels into public storefront page bundles.
  */
-export const STOREFRONT_SECTION_COMPONENT_MAP: Record<string, string> = Object.fromEntries(
-  Object.entries(STOREFRONT_SECTION_MANIFEST).map(([sectionId, sectionConfig]) => [
-    sectionId,
-    String((sectionConfig as { component?: string }).component || sectionId),
-  ]),
-);
+
+export const STOREFRONT_SECTION_COMPONENT_MAP: Readonly<Record<string, string>> = Object.freeze({
+  container: 'container',
+  loop: 'loop',
+  heading: 'heading',
+  text: 'text',
+  image: 'image',
+  button: 'button',
+  icon: 'icon',
+  divider: 'divider',
+  spacer: 'spacer',
+  video: 'video',
+  marquee: 'marquee',
+  lottie: 'lottie',
+  'whatsapp-cta': 'whatsapp-cta',
+  'payment-methods': 'payment-methods',
+  'shipping-partners': 'shipping-partners',
+  'cod-badge': 'cod-badge',
+  'product-price': 'product-price',
+  'product-rating': 'product-rating',
+  'product-stock': 'product-stock',
+  'add-to-cart': 'add-to-cart',
+  'product-options': 'product-options',
+  wishlist: 'wishlist',
+  compare: 'compare',
+  'cart-items-element': 'cart-items-element',
+  'cart-totals': 'cart-totals',
+  'checkout-button': 'checkout-button',
+  coupon: 'coupon',
+  'look-mosaic': 'look-mosaic',
+  'look-planner': 'look-planner',
+  'look-progress': 'look-progress',
+  'promo-strip': 'promo-strip',
+  'hero-banner': 'hero-banner',
+  'featured-collections': 'featured-collections',
+  'featured-products': 'product-grid',
+  'shoe-fit-finder': 'shoe-fit-finder',
+  'lookbook-showcase': 'lookbook-showcase',
+  newsletter: 'newsletter',
+  'tiktok-feed': 'tiktok-feed',
+  'hero-sidebar': 'hero-sidebar',
+  'tech-grid': 'tech-grid',
+  'story-parallax': 'story-parallax',
+  'filters-sidebar': 'filters-sidebar',
+  'shop-command-bar': 'shop-command-bar',
+  'shop-promo-rail': 'shop-promo-rail',
+  'product-grid': 'product-grid',
+  'product-gallery': 'product-gallery',
+  'product-info': 'product-info',
+  'pdp-checkout': 'pdp-checkout',
+  'conversion-stack': 'conversion-stack',
+  countdown: 'conversion-stack',
+  'low-stock': 'conversion-stack',
+  'delivery-proof': 'conversion-stack',
+  'viewer-counter': 'conversion-stack',
+  'sold-counter': 'conversion-stack',
+  'purchase-fomo': 'conversion-stack',
+  'pre-order': 'conversion-stack',
+  'back-in-stock': 'conversion-stack',
+  'trusted-badges': 'conversion-stack',
+  'bulk-savings': 'conversion-stack',
+  'quantity-offers': 'quantity-offers',
+  'size-guide': 'size-guide',
+  'bought-together': 'bought-together',
+  reviews: 'reviews',
+  'related-products': 'related-products',
+  'cart-items': 'cart-items',
+  'order-summary': 'order-summary',
+  'checkout-form': 'checkout-form',
+  payment: 'payment',
+  'order-confirmation': 'order-confirmation',
+  'services-grid': 'services-grid',
+  'features-bar': 'features-bar',
+  'shopping-intents': 'shopping-intents',
+  'offer-bento': 'offer-bento',
+  'journal-strip': 'journal-strip',
+  'info-content': 'info-content',
+  'member-registration': 'member-registration',
+  'shop-hero': 'hero-banner',
+  'shop-featured-collection': 'product-grid',
+  'shop-product-grid': 'product-grid',
+  'affiliate-disclosure': 'affiliate-disclosure',
+  'affiliate-top-picks': 'affiliate-top-picks',
+  'article-grid': 'article-grid',
+  'affiliate-quiz': 'affiliate-quiz',
+  'affiliate-faq': 'affiliate-faq',
+  'affiliate-toc': 'affiliate-toc',
+  'affiliate-pro-tip': 'affiliate-pro-tip',
+  'affiliate-sources': 'affiliate-sources',
+  'affiliate-breadcrumbs': 'affiliate-breadcrumbs',
+  'affiliate-article-seo': 'affiliate-article-seo',
+  'image-hotspot': 'image-hotspot',
+  'before-after': 'before-after',
+  'combined-listing': 'combined-listing',
+  'hover-cards': 'hover-cards',
+  'countdown-banner': 'countdown',
+  'collection-tab': 'collection-tab',
+  'background-video': 'background-video',
+  'scrolling-cards': 'scrolling-cards',
+  'social-gallery': 'social-gallery',
+  richtext: 'richtext',
+  'featured-product': 'featured-product',
+  'review-circle': 'review-circle',
+  'shop-the-look': 'shop-the-look',
+  'dental-3d-showcase': 'dental-3d-showcase',
+  'dental-sample-kit': 'dental-sample-kit',
+  'car-model-matcher': 'car-model-matcher',
+  'automotive-bento': 'automotive-bento',
+  'cookie-consent': 'cookie-consent',
+  'privacy-policy': 'privacy-policy',
+  'terms-of-use': 'terms-of-use',
+  'marketing-consent': 'marketing-consent',
+});
+
+export const STOREFRONT_CONVERSION_SECTION_IDS = new Set<string>([
+  'conversion-stack',
+  'countdown',
+  'low-stock',
+  'delivery-proof',
+  'quantity-offers',
+  'viewer-counter',
+  'sold-counter',
+  'purchase-fomo',
+  'pre-order',
+  'back-in-stock',
+  'trusted-badges',
+  'bulk-savings',
+  'bought-together',
+]);
 
 export const isStorefrontSectionRegistered = (sectionId: string): boolean =>
   Boolean(sectionId && STOREFRONT_SECTION_COMPONENT_MAP[sectionId]);
 
-export const getStorefrontSectionComponentKey = (sectionId: string): string | null =>
-  STOREFRONT_SECTION_COMPONENT_MAP[sectionId] || null;
+export const getStorefrontSectionComponentKey = (sectionId: string): string =>
+  STOREFRONT_SECTION_COMPONENT_MAP[sectionId] || sectionId;

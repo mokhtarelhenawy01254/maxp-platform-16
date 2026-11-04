@@ -12,7 +12,8 @@ export interface StudioManifestFieldsRendererProps {
   childrenUnderTitle?: React.ReactNode;
 }
 
-const isImageField = (key: string, label?: string): boolean => {
+const isImageField = (key: string, label?: string, type?: string): boolean => {
+  if (type === "textarea") return false;
   const s = `${key} ${label || ""}`.toLowerCase();
   return /image|photo|poster|banner|thumbnail|logo|صورة|خلفية/.test(s);
 };
@@ -41,7 +42,14 @@ export const StudioManifestFieldsRenderer: React.FC<StudioManifestFieldsRenderer
     );
 
   const fields = entry?.fields || [];
-  const visible = fields.filter((f) => !excludeKeys.includes((f as any).name || f.key));
+  const visible = fields.filter((f) => {
+    const key = (f as any).name || f.key;
+    if (excludeKeys.includes(key)) return false;
+    if ((f as any).type === "array") return false;
+    const val = settings[key];
+    if (Array.isArray(val)) return false;
+    return true;
+  });
   if (visible.length === 0) return null;
 
   const sorted = [...visible].sort((a, b) => {
@@ -58,7 +66,7 @@ export const StudioManifestFieldsRenderer: React.FC<StudioManifestFieldsRenderer
   const renderField = (field: StorefrontSectionFieldDefinition) => {
     const name = (field as any).name || field.key;
     const val = settings[name];
-    const isImage = isImageField(name, field.label);
+    const isImage = isImageField(name, field.label, field.type);
     const isColor = field.type === ("color" as any) || name.toLowerCase().includes("color");
 
     if (isImage) {

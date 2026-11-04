@@ -83,6 +83,15 @@ const StorefrontVisualEditorPage: React.FC = () => {
   const savedThemeIdRef = useRef(savedThemeId);
   savedThemeIdRef.current = savedThemeId;
 
+  const latestTokensRef = useRef<Record<string, unknown>>(
+    (storefrontSettings?.designTokens as Record<string, unknown>) || {}
+  );
+  useEffect(() => {
+    if (storefrontSettings?.designTokens) {
+      latestTokensRef.current = storefrontSettings.designTokens as Record<string, unknown>;
+    }
+  }, [storefrontSettings?.designTokens]);
+
   const loadSettings = useCallback(async (options?: { silent?: boolean }) => {
     if (isInitializingRef.current) return;
     
@@ -149,7 +158,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   ]);
 
   const performSave = useCallback(
-    async (options?: { silent?: boolean; baseRevision?: number }) => {
+    async (options?: { silent?: boolean; baseRevision?: number; overrideTokens?: Record<string, unknown> }) => {
       if (isSavingRef.current) {
         needsResaveRef.current = true;
         return;
@@ -159,8 +168,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
       if (!currentSettings) return;
 
       const currentThemeId = activeThemeIdRef.current;
+      const baseTokens = options?.overrideTokens || latestTokensRef.current || currentSettings.designTokens || {};
       const tokensToSave = {
-        ...(currentSettings.designTokens || {}),
+        ...baseTokens,
         themeId: currentThemeId,
       };
 
@@ -241,7 +251,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   );
 
   const flushSave = useCallback(
-    async (options?: { silent?: boolean }) => {
+    async (options?: { silent?: boolean; baseRevision?: number; overrideTokens?: Record<string, unknown> }) => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
         autosaveTimerRef.current = null;
@@ -308,7 +318,8 @@ const StorefrontVisualEditorPage: React.FC = () => {
     };
   }, [hasPendingChanges]);
 
-  const handleSave = (options?: { baseRevision?: number }) => flushSave({ silent: false, ...options });
+  const handleSave = (options?: { baseRevision?: number; overrideTokens?: Record<string, unknown> }) =>
+    flushSave({ silent: false, ...options });
 
   const handleBack = async () => {
     if (hasPendingChanges || autosaveTimerRef.current !== null) {
@@ -385,7 +396,19 @@ const StorefrontVisualEditorPage: React.FC = () => {
       onBack={handleBack}
       onOpenPreview={handleOpenPreview}
       onReload={loadSettings}
+      onThemeIdChange={(newThemeId) => {
+        setSelectedThemeId(newThemeId);
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("theme", newThemeId);
+            return next;
+          },
+          { replace: true }
+        );
+      }}
       onChange={(nextDesignTokens) => {
+        latestTokensRef.current = nextDesignTokens;
         const nextThemeId =
           typeof nextDesignTokens?.themeId === "string"
             ? nextDesignTokens.themeId.trim()

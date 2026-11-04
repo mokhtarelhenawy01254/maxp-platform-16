@@ -123,6 +123,7 @@ interface StorefrontStudioShellProps {
   onBack: () => void;
   onOpenPreview: () => void;
   onChange: (nextTokens: Record<string, unknown>) => void;
+  onThemeIdChange?: (themeId: string) => void;
   companyId?: string;
   onReload?: () => Promise<void> | void;
   user?: StudioUser | null;
@@ -136,6 +137,7 @@ interface StorefrontStudioShellProps {
 export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   themeId, designTokens: externalDesignTokens, storeName = "متجري",
   hasPendingChanges, saving, previewUrl, onSave, onDiscard, onBack, onOpenPreview, onChange,
+  onThemeIdChange,
   companyId: propCompanyId,
   onReload,
   user: propUser,
@@ -1252,16 +1254,18 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         typography: importedTheme.tokens?.typography,
         shape: importedTheme.tokens?.shape,
         productCard: importedTheme.tokens?.productCard,
-        header: importedTheme.header,
-        footer: importedTheme.footer,
+        header: importedTheme.chrome?.header || importedTheme.header,
+        footer: importedTheme.chrome?.footer || importedTheme.footer,
+        direction: importedTheme.tokens?.direction || importedTheme.direction || "rtl",
         pages: importedTheme.pages,
         pageOverrides: importedTheme.pages,
       };
       handleDesignTokensChange(nextTokens);
+      onThemeIdChange?.(importedTheme.id);
       onSave();
-      toast.success(`تم استيراد وتطبيق قالب «${importedTheme.name}» بنجاح ✨`);
+      toast.success(`تم استيراد وتطبيق قالب «${importedTheme.name || importedTheme.id}» بنجاح ✨`);
     },
-    [currentDesignTokens, handleDesignTokensChange, onSave]
+    [currentDesignTokens, handleDesignTokensChange, onSave, onThemeIdChange]
   );
 
   const handlePublishWithTracking = useCallback(async () => {
@@ -1786,10 +1790,26 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           )}
 
           {/* Center Live Stage */}
-          <StudioCanvasStage deviceMode={deviceMode} zoomLevel={zoomLevel}>
-            <StorefrontThemeProvider
-              initialTheme={previewTheme as unknown as StorefrontThemeInput}
-              activePageKey={activePageKey}
+          <StorefrontThemeProvider
+            asFragment
+            initialTheme={previewTheme as unknown as StorefrontThemeInput}
+            activePageKey={activePageKey}
+          >
+            <StudioCanvasStage
+              deviceMode={deviceMode}
+              zoomLevel={zoomLevel}
+              direction={(previewTheme?.tokens as any)?.direction || "rtl"}
+              showChrome={true}
+              onSelectHeader={() => {
+                setActiveLeftRailTab("header-footer");
+                setSelectedElement(null);
+              }}
+              onSelectFooter={() => {
+                setActiveLeftRailTab("header-footer");
+                setSelectedElement(null);
+              }}
+              isHeaderSelected={activeLeftRailTab === "header-footer"}
+              isFooterSelected={activeLeftRailTab === "header-footer"}
             >
               <div
                 className="relative min-h-[800px] bg-background"
@@ -2077,8 +2097,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                 onOpenPanel={() => setIsCommentsPanelOpen(true)}
                 onAddComment={handleAddStudioComment}
               />
-            </StorefrontThemeProvider>
-          </StudioCanvasStage>
+            </StudioCanvasStage>
+          </StorefrontThemeProvider>
 
           {/* CMT-1 — بانل كل التعليقات (مفتوح/محلول) */}
           <StudioCommentsPanel
@@ -2277,21 +2297,82 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onSelectImage={(url) => {
           if (imagePickerTargetField === "ogImage") {
             handleUpdatePageSettings({ seo: { ogImage: url } });
-          } else if (imagePickerTargetField === "panelImage") {
-            handleUpdateSectionField("panelImage", url, deviceMode);
+          } else if (imagePickerTargetField && imagePickerTargetField.includes(".")) {
+            // Nested dot path (e.g. items.0.image, cards.1.src, hotspots.0.image)
+            const parts = imagePickerTargetField.split(".");
+            const rootKey = parts[0];
+            const currentRoot = selectedSectionConfig?.settings?.[rootKey] ?? (selectedSectionConfig as any)?.[rootKey];
+
+            if (Array.isArray(currentRoot)) {
+              const nextArray = currentRoot.map((item: any, idx: number) => {
+                if (idx !== parseInt(parts[1], 10)) return item;
+                if (typeof item === "string" && parts.length === 2) {
+                  return url;
+                }
+                const subProp = parts.slice(2).join(".") || "image";
+                return typeof item === "object" && item !== null
+                  ? { ...item, [subProp]: url }
+                  : { image: url };
+              });
+              handleUpdateSectionField(rootKey, nextArray, deviceMode);
+            } else if (typeof currentRoot === "object" && currentRoot !== null) {
+              const subProp = parts.slice(1).join(".");
+              const nextObj = { ...currentRoot, [subProp]: url };
+              handleUpdateSectionField(rootKey, nextObj, deviceMode);
+            } else {
+              handleUpdateSectionField(imagePickerTargetField, url, deviceMode);
+            }
+          } else if (
+            imagePickerTargetField &&
+            imagePickerTargetField !== "image" &&
+            imagePickerTargetField !== "backgroundImage"
+          ) {
+            // Specific field (e.g. beforeImage, afterImage, poster, src, fallbackImage, panelImage)
+            handleUpdateSectionField(imagePickerTargetField, url, deviceMode);
           } else {
+            // Generic fallback
             handleUpdateSectionField("image", url, deviceMode);
             handleUpdateSectionField("backgroundImage", url, deviceMode);
           }
           setShowImagePickerModal(false);
         }}
-        selectedUrl={
-          imagePickerTargetField === "ogImage"
-            ? (activePageConfig?.seo?.ogImage || "")
-            : imagePickerTargetField === "panelImage"
-            ? (selectedSectionConfig?.settings?.panelImage || selectedSectionConfig?.panelImage || "")
-            : (selectedSectionConfig?.image || selectedSectionConfig?.backgroundImage || "")
-        }
+        selectedUrl={(() => {
+          if (imagePickerTargetField === "ogImage") {
+            return activePageConfig?.seo?.ogImage || "";
+          }
+          if (imagePickerTargetField && imagePickerTargetField.includes(".")) {
+            const parts = imagePickerTargetField.split(".");
+            const root = selectedSectionConfig?.settings?.[parts[0]] ?? (selectedSectionConfig as any)?.[parts[0]];
+            if (Array.isArray(root)) {
+              const idx = parseInt(parts[1], 10);
+              const item = root[idx];
+              if (typeof item === "string") return item;
+              if (item && typeof item === "object") {
+                const subProp = parts.slice(2).join(".") || "image";
+                return item[subProp] || "";
+              }
+            }
+            return "";
+          }
+          if (
+            imagePickerTargetField &&
+            imagePickerTargetField !== "image" &&
+            imagePickerTargetField !== "backgroundImage"
+          ) {
+            return (
+              selectedSectionConfig?.settings?.[imagePickerTargetField] ||
+              (selectedSectionConfig as any)?.[imagePickerTargetField] ||
+              ""
+            );
+          }
+          return (
+            selectedSectionConfig?.settings?.image ||
+            selectedSectionConfig?.image ||
+            selectedSectionConfig?.settings?.backgroundImage ||
+            selectedSectionConfig?.backgroundImage ||
+            ""
+          );
+        })()}
       />
 
       <StudioPageSettingsPanel

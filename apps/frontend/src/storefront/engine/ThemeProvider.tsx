@@ -216,7 +216,8 @@ export const StorefrontThemeProvider: React.FC<{
   scoped?: boolean,
   blockUntilResolved?: boolean,
   activePageKey?: string,
-}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false, activePageKey: propActivePageKey }) => {
+  asFragment?: boolean,
+}> = ({ children, initialTheme, scoped = true, blockUntilResolved = false, activePageKey: propActivePageKey, asFragment = false }) => {
   const resolveCurrentPageKey = React.useCallback(() => {
     if (propActivePageKey) return propActivePageKey;
     if (typeof window !== 'undefined' && window.location?.pathname) {
@@ -456,6 +457,14 @@ export const StorefrontThemeProvider: React.FC<{
     return <StorefrontSkeleton />;
   }
 
+  if (asFragment) {
+    return (
+      <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
+        {children}
+      </ThemeContext.Provider>
+    );
+  }
+
   return (
     <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
       <div 
@@ -479,8 +488,19 @@ export const StorefrontThemeProvider: React.FC<{
 
 export const useStorefrontTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useStorefrontTheme must be used within a StorefrontThemeProvider');
+  if (!context || !context.theme) {
+    return {
+      theme: {
+        id: "modern-minimal",
+        name: "Modern Minimal",
+        tokens: {},
+        chrome: {},
+        pages: {},
+      } as any,
+      setTheme: () => {},
+      activePageKey: "home",
+      pageStyleVars: {},
+    };
   }
   return context;
 };

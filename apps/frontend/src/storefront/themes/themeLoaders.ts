@@ -1,5 +1,5 @@
 import type { StorefrontTheme } from "../types/theme.types";
-import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefrontThemeId } from "./index";
+import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefrontThemeId, STOREFRONT_THEME_PRESETS } from "./index";
 
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
@@ -89,7 +89,17 @@ export const loadStorefrontThemeAsync = async (
   const loader = DYNAMIC_THEME_REGISTRY[canonicalId] || DYNAMIC_THEME_REGISTRY[normalizedId];
   if (loader) {
     try {
-      await loader();
+      const mod = await loader();
+      const rawTheme = ((mod as any)?.default || mod) as StorefrontTheme;
+      if (rawTheme && (rawTheme.tokens || rawTheme.pages)) {
+        STOREFRONT_THEME_PRESETS[canonicalId] = rawTheme;
+        STOREFRONT_THEME_PRESETS[normalizedId] = rawTheme;
+        THEME_CACHE.set(canonicalId, rawTheme);
+        if (normalizedId !== canonicalId) {
+          THEME_CACHE.set(normalizedId, rawTheme);
+        }
+        return rawTheme;
+      }
     } catch (err) {
       console.warn(`[ThemeLoader] Dynamic load failed for ${canonicalId}, falling back to preset`, err);
     }

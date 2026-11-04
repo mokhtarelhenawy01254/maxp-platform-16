@@ -2,25 +2,50 @@ import React, { useState } from "react";
 import type { StudioDeviceMode, StudioZoomLevel } from "./StudioTypes";
 import { StudioCanvasRuler } from "./StudioCanvasRuler";
 import { StudioIframePortal } from "./canvas/StudioIframePortal";
+import { StudioChromePreviewFrame } from "./canvas/StudioChromePreviewFrame";
 
-interface StudioCanvasStageProps {
+export interface StudioCanvasStageProps {
   deviceMode: StudioDeviceMode;
   zoomLevel?: StudioZoomLevel;
+  direction?: "rtl" | "ltr";
+  showChrome?: boolean;
+  onSelectHeader?: () => void;
+  onSelectFooter?: () => void;
+  isHeaderSelected?: boolean;
+  isFooterSelected?: boolean;
   children: React.ReactNode;
 }
 
 export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
   deviceMode,
   zoomLevel = 1,
+  direction = "rtl",
+  showChrome = false,
+  onSelectHeader,
+  onSelectFooter,
+  isHeaderSelected = false,
+  isFooterSelected = false,
   children,
 }) => {
   const [scrollLeft, setScrollLeft] = useState(0);
 
   const getViewportMaxWidth = () => {
-    if (deviceMode === "mobile") return "max-w-[375px]";
+    if (deviceMode === "mobile") return "max-w-[420px]";
     if (deviceMode === "tablet") return "max-w-[768px]";
     return "max-w-[1200px]";
   };
+
+  const wrappedContent = (
+    <StudioChromePreviewFrame
+      showChrome={showChrome}
+      onSelectHeader={onSelectHeader}
+      onSelectFooter={onSelectFooter}
+      isHeaderSelected={isHeaderSelected}
+      isFooterSelected={isFooterSelected}
+    >
+      {children}
+    </StudioChromePreviewFrame>
+  );
 
   return (
     <div className="relative flex flex-1 flex-col min-w-0 bg-[#e9ebf0] overflow-hidden select-none">
@@ -56,8 +81,8 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
 
                 {/* Mobile Viewport Container - Single scroller, no inner overflow-y-auto */}
                 <div className="w-full overflow-hidden bg-background pt-6 pb-6 @container">
-                  <StudioIframePortal deviceMode="mobile" zoomLevel={zoomLevel}>
-                    {children}
+                  <StudioIframePortal deviceMode="mobile" zoomLevel={zoomLevel} direction={direction}>
+                    {wrappedContent}
                   </StudioIframePortal>
                 </div>
 
@@ -70,8 +95,8 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
               /* Tablet Viewport - Single scroller, no inner overflow-y-auto */
               <div className="relative mx-auto overflow-hidden rounded-[1.75rem] border-[8px] border-[#101114] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/5">
                 <div className="w-full overflow-hidden bg-background">
-                  <StudioIframePortal deviceMode="tablet" zoomLevel={zoomLevel}>
-                    {children}
+                  <StudioIframePortal deviceMode="tablet" zoomLevel={zoomLevel} direction={direction}>
+                    {wrappedContent}
                   </StudioIframePortal>
                 </div>
               </div>
@@ -85,8 +110,8 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
                 }}
                 className="studio-canvas-desktop-frame relative mx-auto w-full rounded-xl border border-[#d6dae2] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.05)]"
               >
-                <StudioIframePortal deviceMode="desktop" zoomLevel={zoomLevel}>
-                  {children}
+                <StudioIframePortal deviceMode="desktop" zoomLevel={zoomLevel} direction={direction}>
+                  {wrappedContent}
                 </StudioIframePortal>
               </div>
             )}

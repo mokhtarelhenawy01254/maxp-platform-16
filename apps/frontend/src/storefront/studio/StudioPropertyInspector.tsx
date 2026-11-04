@@ -524,7 +524,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                     )}
                     <button
                       type="button"
-                      onClick={onOpenImagePicker}
+                      onClick={() => onOpenImagePicker?.("image")}
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#ececee] bg-[#f6f7f8] py-2 text-[11px] font-semibold text-[#17181c] hover:bg-[#ececee] transition-colors"
                     >
                       <PhotoIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />

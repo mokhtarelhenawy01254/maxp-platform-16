@@ -16,7 +16,7 @@ export {
   PAGE_STYLE_DENSITY_GAPS,
   PAGE_STYLE_PRESETS,
 } from './themeResolverCore';
-import { resolveStorefrontThemeId, getStorefrontThemePreset, normalizeStorefrontThemeCommercePages } from '../themes';
+import { resolveStorefrontThemeId, normalizeStorefrontThemeCommercePages } from '../themes/themeNormalization';
 
 const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {
   [DEFAULT_STOREFRONT_THEME_ID]: () =>
@@ -126,15 +126,6 @@ export const resolveRuntimeStorefrontTheme = async (
     }
   } catch {
     // Ignore secondary fallback errors
-  }
-
-  try {
-    const staticBase = getStorefrontThemePreset(presetId);
-    if (staticBase) {
-      return resolveStorefrontThemeFromPreset(input, staticBase, { presetId, normalizeTheme: normalizeStorefrontThemeCommercePages });
-    }
-  } catch {
-    // Ignore static fallback errors
   }
 
   return resolveStorefrontThemeFromPreset(

@@ -8,6 +8,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, renderHook, act, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 import { generateResponsiveSectionRules } from "../studio/StudioResponsiveAIGenerator";
 import { StudioCanvasRuler } from "../studio/StudioCanvasRuler";
@@ -468,10 +470,60 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
         </StudioCanvasStage>
       );
 
-      const mobileFrame = container.querySelector(".max-w-\\[375px\\] > div") as HTMLElement;
+      const mobileFrame = container.querySelector(".max-w-\\[420px\\] > div") as HTMLElement;
       expect(mobileFrame).toBeDefined();
       expect(mobileFrame.className).toContain("border-[#101114]");
       expect(screen.getByTestId("mobile-child")).toBeDefined();
+    });
+
+    it("renders live header and footer frames when showChrome is true and forwards callbacks", () => {
+      const onSelectHeader = vi.fn();
+      const onSelectFooter = vi.fn();
+      const testQueryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+
+      render(
+        <QueryClientProvider client={testQueryClient}>
+          <MemoryRouter>
+            <StudioCanvasStage
+              deviceMode="desktop"
+              zoomLevel={1}
+              showChrome={true}
+              onSelectHeader={onSelectHeader}
+              onSelectFooter={onSelectFooter}
+            >
+              <div data-testid="page-sections">أقسام المتجر</div>
+            </StudioCanvasStage>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      const headerFrame = screen.getByTestId("studio-live-header-frame");
+      expect(headerFrame).toBeDefined();
+      fireEvent.click(headerFrame);
+      expect(onSelectHeader).toHaveBeenCalledTimes(1);
+
+      const footerFrame = screen.getByTestId("studio-live-footer-frame");
+      expect(footerFrame).toBeDefined();
+      fireEvent.click(footerFrame);
+      expect(onSelectFooter).toHaveBeenCalledTimes(1);
+    });
+
+    it("forwards direction to iframe portal fallback setting dir and lang", () => {
+      render(
+        <StudioCanvasStage
+          deviceMode="desktop"
+          zoomLevel={1}
+          direction="ltr"
+        >
+          <div data-testid="ltr-content">LTR Content</div>
+        </StudioCanvasStage>
+      );
+
+      const iframeFallback = screen.getByTestId("studio-iframe-fallback");
+      expect(iframeFallback.getAttribute("dir")).toBe("ltr");
+      expect(iframeFallback.getAttribute("lang")).toBe("en");
     });
   });
 

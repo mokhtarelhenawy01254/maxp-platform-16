@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import {
   STOREFRONT_THEME_PRESETS,
 } from "../themes/index";
+import { loadStorefrontThemeAsync } from "../themes/themeLoaders";
+import type { StorefrontTheme } from "../types/theme.types";
 import {
   buildStorefrontThemePresetCatalog,
   type StorefrontThemeCatalogItem,
@@ -64,21 +66,41 @@ interface ThemeDetails {
   homeSections: string[];
 }
 
-const getThemeDetails = (themeId: string): ThemeDetails => {
-  const preset = STOREFRONT_THEME_PRESETS[themeId];
+const getThemeDetails = (
+  themeId: string,
+  resolvedPreset?: StorefrontTheme | null,
+  catalogItem?: StorefrontThemeCatalogItem | null
+): ThemeDetails => {
+  const preset = resolvedPreset || STOREFRONT_THEME_PRESETS[themeId];
+  let primary = preset?.tokens?.colors?.primary;
+  let accent = preset?.tokens?.colors?.accent;
+  let background = preset?.tokens?.colors?.background;
+  let card = preset?.tokens?.colors?.card;
+  let foreground = preset?.tokens?.colors?.foreground;
+
+  // Fallback to catalog item preview colors if preset tokens not loaded yet
+  if ((!primary || !accent) && catalogItem?.preview?.colors && catalogItem.preview.colors.length > 0) {
+    const rawColors = catalogItem.preview.colors;
+    primary = primary || (rawColors[0]?.includes("%") ? `hsl(${rawColors[0]})` : rawColors[0]);
+    accent = accent || (rawColors[2]?.includes("%") ? `hsl(${rawColors[2]})` : rawColors[1] || primary);
+    background = background || (rawColors[1]?.includes("%") ? `hsl(${rawColors[1]})` : rawColors[1]);
+  }
+
   const colors = {
-    primary: preset?.tokens?.colors?.primary || "#111827",
-    accent: preset?.tokens?.colors?.accent || "#2b6cf6",
-    background: preset?.tokens?.colors?.background || "#ffffff",
-    card: preset?.tokens?.colors?.card || "#f9fafb",
-    foreground: preset?.tokens?.colors?.foreground || "#111827",
+    primary: primary || "#111827",
+    accent: accent || "#2b6cf6",
+    background: background || "#ffffff",
+    card: card || "#f9fafb",
+    foreground: foreground || "#111827",
   };
   const font =
     preset?.tokens?.typography?.headingFont ||
     preset?.tokens?.typography?.fontFamily ||
     preset?.tokens?.typography?.bodyFont ||
     "Cairo";
-  const pagesCount = preset?.pages ? Object.keys(preset.pages).length : 5;
+  const pagesCount = preset?.pages
+    ? Object.keys(preset.pages).length
+    : 5;
   const rawSections = (preset?.pages?.home?.sections || []) as Array<
     string | { type: string }
   >;
@@ -136,12 +158,35 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
   const [themes, setThemes] = useState<StorefrontThemeCatalogItem[]>(() =>
     buildStorefrontThemePresetCatalog(currentThemeId)
   );
+  const [resolvedDynamicThemes, setResolvedDynamicThemes] = useState<Record<string, StorefrontTheme>>({});
 
   useEffect(() => {
     setAppliedThemeId(currentThemeId);
   }, [currentThemeId]);
 
   const effectiveCurrentThemeId = appliedThemeId || currentThemeId;
+
+  // Resolve dynamic / tpl-* themes when opened or previewed
+  useEffect(() => {
+    if (!previewThemeItem) return;
+    const targetThemeId = previewThemeItem.themeId;
+    if (STOREFRONT_THEME_PRESETS[targetThemeId] || resolvedDynamicThemes[targetThemeId]) return;
+
+    let isMounted = true;
+    loadStorefrontThemeAsync(targetThemeId)
+      .then((theme) => {
+        if (isMounted && theme) {
+          setResolvedDynamicThemes((prev) => ({ ...prev, [targetThemeId]: theme }));
+        }
+      })
+      .catch((err) => {
+        console.warn(`[StudioThemeGallery] Failed to load dynamic theme ${targetThemeId}`, err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [previewThemeItem, resolvedDynamicThemes]);
 
   // Try fetching dynamic catalog from backend API if available, keep fallback
   useEffect(() => {
@@ -195,8 +240,12 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
 
   const previewDetails = useMemo(() => {
     if (!previewThemeItem) return null;
-    return getThemeDetails(previewThemeItem.themeId);
-  }, [previewThemeItem]);
+    return getThemeDetails(
+      previewThemeItem.themeId,
+      resolvedDynamicThemes[previewThemeItem.themeId],
+      previewThemeItem
+    );
+  }, [previewThemeItem, resolvedDynamicThemes]);
 
   const handleConfirmApply = async () => {
     if (!confirmThemeItem || isApplying) return;
@@ -216,15 +265,37 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
       return;
     }
 
+    // For dynamic / tpl-* templates, resolve their actual JSON so active state passes cleanly
+    let activePreset =
+      STOREFRONT_THEME_PRESETS[targetThemeId] ||
+      resolvedDynamicThemes[targetThemeId];
+
+    if (!activePreset) {
+      try {
+        activePreset = await loadStorefrontThemeAsync(targetThemeId);
+        if (activePreset) {
+          setResolvedDynamicThemes((prev) => ({ ...prev, [targetThemeId]: activePreset }));
+        }
+      } catch (err) {
+        console.warn(`[StudioThemeGallery] Could not resolve dynamic theme ${targetThemeId}`, err);
+      }
+    }
+
     // Strictly preserve merchant customizations, optionally clearing pageOverrides
     const nextTokens: Record<string, unknown> = {
       ...designTokens,
       themeId: targetThemeId,
-      pages: resetPageOverrides ? {} : (designTokens?.pages ?? {}),
+      ...(activePreset?.tokens?.colors ? { colors: activePreset.tokens.colors } : {}),
+      ...(activePreset?.tokens?.typography ? { typography: activePreset.tokens.typography } : {}),
+      ...(activePreset?.tokens?.shape ? { shape: activePreset.tokens.shape } : {}),
+      ...(activePreset?.tokens?.productCard ? { productCard: activePreset.tokens.productCard } : {}),
+      ...(activePreset?.header ? { header: activePreset.header } : {}),
+      ...(activePreset?.footer ? { footer: activePreset.footer } : {}),
+      pages: resetPageOverrides ? (activePreset?.pages ?? {}) : (designTokens?.pages ?? activePreset?.pages ?? {}),
       pageOverrides: resetPageOverrides ? {} : (designTokens?.pageOverrides ?? {}),
       pageStyles: resetPageOverrides ? {} : (designTokens?.pageStyles ?? {}),
       global: designTokens?.global ?? {},
-      typography: designTokens?.typography ?? {},
+      typography: designTokens?.typography ?? activePreset?.tokens?.typography ?? {},
       i18n: designTokens?.i18n ?? {},
     };
 
@@ -404,7 +475,7 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
           filteredThemes.map((theme) => {
             const isCurrent = theme.themeId === effectiveCurrentThemeId;
             const isUnavail = isThemeUnavailable(theme, effectiveCurrentThemeId);
-            const details = getThemeDetails(theme.themeId);
+            const details = getThemeDetails(theme.themeId, resolvedDynamicThemes[theme.themeId], theme);
             return (
               <div
                 key={theme.themeId}

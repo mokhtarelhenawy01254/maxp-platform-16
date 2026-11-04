@@ -41,10 +41,27 @@ export const StudioIframePortal: React.FC<StudioIframePortalProps> = ({
     // Copy head style elements from host to iframe
     const syncHeadStyles = () => {
       if (!doc.head) return;
+
+      // Sync font link specifically if present
+      const hostFonts = document.getElementById("storefront-theme-fonts") as HTMLLinkElement | null;
+      if (hostFonts) {
+        let iframeFonts = doc.getElementById("storefront-theme-fonts") as HTMLLinkElement | null;
+        if (!iframeFonts) {
+          iframeFonts = doc.createElement("link");
+          iframeFonts.id = "storefront-theme-fonts";
+          iframeFonts.rel = "stylesheet";
+          doc.head.appendChild(iframeFonts);
+        }
+        if (iframeFonts.href !== hostFonts.href) {
+          iframeFonts.href = hostFonts.href;
+        }
+      }
+
       const hostStyles = document.querySelectorAll(
         'style, link[rel="stylesheet"], link[rel="preconnect"]'
       );
       hostStyles.forEach((node) => {
+        if (node.id === "storefront-theme-fonts") return;
         // Prevent duplicate injection
         const key =
           node.tagName === "STYLE"
@@ -80,11 +97,88 @@ export const StudioIframePortal: React.FC<StudioIframePortalProps> = ({
       }
     };
 
-    syncHeadStyles();
+    // Copy theme CSS variables onto iframe documentElement and engine root
+    const syncThemeVariables = () => {
+      if (!doc?.documentElement) return;
+      const hostRoot = document.documentElement;
+      const hostComputed = getComputedStyle(hostRoot);
+      const targetElement = (doc.getElementById("storefront-engine-root") || doc.documentElement) as HTMLElement;
 
-    // Listen to dynamically injected styles in host head
-    const observer = new MutationObserver(syncHeadStyles);
-    observer.observe(document.head, { childList: true, subtree: true });
+      const coreVars = [
+        "--primary",
+        "--primary-foreground",
+        "--background",
+        "--foreground",
+        "--card",
+        "--card-foreground",
+        "--muted",
+        "--muted-foreground",
+        "--border",
+        "--radius",
+        "--font-sans",
+        "--font-heading",
+        "--store-accent",
+        "--store-radius",
+        "--store-font-family",
+      ];
+
+      coreVars.forEach((v) => {
+        const val = hostRoot.style.getPropertyValue(v) || hostComputed.getPropertyValue(v);
+        if (val) {
+          targetElement.style.setProperty(v, val.trim());
+          doc.documentElement.style.setProperty(v, val.trim());
+        }
+      });
+
+      // Copy --sf-* and --store-* variables
+      for (let i = 0; i < hostRoot.style.length; i++) {
+        const prop = hostRoot.style[i];
+        if (prop.startsWith("--sf-") || prop.startsWith("--store-")) {
+          const val = hostRoot.style.getPropertyValue(prop);
+          if (val) {
+            targetElement.style.setProperty(prop, val.trim());
+            doc.documentElement.style.setProperty(prop, val.trim());
+          }
+        }
+      }
+
+      // Check if host has an element with id="storefront-engine-root"
+      const hostEngineRoot = document.getElementById("storefront-engine-root");
+      if (hostEngineRoot) {
+        const engineComputed = getComputedStyle(hostEngineRoot);
+        for (let i = 0; i < hostEngineRoot.style.length; i++) {
+          const prop = hostEngineRoot.style[i];
+          if (prop.startsWith("--")) {
+            const val = hostEngineRoot.style.getPropertyValue(prop);
+            if (val) {
+              targetElement.style.setProperty(prop, val.trim());
+              doc.documentElement.style.setProperty(prop, val.trim());
+            }
+          }
+        }
+        coreVars.forEach((v) => {
+          const val = hostEngineRoot.style.getPropertyValue(v) || engineComputed.getPropertyValue(v);
+          if (val) {
+            targetElement.style.setProperty(v, val.trim());
+            doc.documentElement.style.setProperty(v, val.trim());
+          }
+        });
+      }
+    };
+
+    syncHeadStyles();
+    syncThemeVariables();
+
+    // Listen to dynamically injected styles and font changes in host head
+    const observer = new MutationObserver(() => {
+      syncHeadStyles();
+      syncThemeVariables();
+    });
+    observer.observe(document.head, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+    });
 
     // Ensure body mount container exists
     let container = doc.getElementById("studio-iframe-mount");
@@ -110,9 +204,47 @@ export const StudioIframePortal: React.FC<StudioIframePortalProps> = ({
       resizeObserver.observe(doc.body);
     }
 
+    // Keyboard bridge: in iframe.contentWindow, forward keydown events to parent window
+    const contentWin = iframe.contentWindow;
+    const handleIframeKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      const isEditingText =
+        tagName === "input" ||
+        tagName === "textarea" ||
+        target?.isContentEditable;
+
+      // Don't intercept typing in inputs unless Escape
+      if (isEditingText && e.key !== "Escape") {
+        return;
+      }
+
+      // Forward shortcut to parent window
+      const forwardedEvent = new KeyboardEvent("keydown", {
+        key: e.key,
+        code: e.code,
+        keyCode: e.keyCode,
+        which: e.which,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(forwardedEvent);
+    };
+
+    if (contentWin) {
+      contentWin.addEventListener("keydown", handleIframeKeyDown);
+    }
+
     return () => {
       observer.disconnect();
       resizeObserver.disconnect();
+      if (contentWin) {
+        contentWin.removeEventListener("keydown", handleIframeKeyDown);
+      }
     };
   }, [direction, isJsdom]);
 
@@ -123,6 +255,7 @@ export const StudioIframePortal: React.FC<StudioIframePortalProps> = ({
         data-testid="studio-iframe-fallback"
         className={`w-full min-h-screen bg-background ${className}`}
         dir={direction}
+        lang={direction === "rtl" ? "ar" : "en"}
       >
         {children}
       </div>
@@ -153,7 +286,6 @@ export const StudioIframePortal: React.FC<StudioIframePortalProps> = ({
           height: `${iframeHeight}px`,
           minHeight: "750px",
           width: "100%",
-          zoom: zoomLevel !== 1 ? zoomLevel : undefined,
         }}
       />
       {mountNode && createPortal(children, mountNode)}

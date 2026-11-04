@@ -14,8 +14,10 @@ import {
   createBlankStorefrontTheme,
   STANDARD_THEME_PAGES,
   MANDATORY_THEME_ROOT_KEYS,
+  MANDATORY_PAGE_KEYS,
 } from "../studio/utils/studioThemeSerializer";
 import { validateThemeObject } from "../scripts/validate-theme-file";
+import { isStorefrontSectionKnown } from "../sections/manifest";
 import { StudioExportImportModal } from "../studio/StudioExportImportModal";
 
 describe("Phase 4: Full HSL Color Tokens & Theme Styling", () => {
@@ -70,18 +72,63 @@ describe("Phase 4: Full HSL Color Tokens & Theme Styling", () => {
 });
 
 describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", () => {
-  it("4. createBlankStorefrontTheme initializes a valid 14-page theme with semantic tokens", () => {
-    const blank = createBlankStorefrontTheme("custom-brand", "براند المستقبل", "rtl");
+  it("4. createBlankStorefrontTheme initializes a valid theme conforming to official schema and section manifests", () => {
+    // Check ID sanitization (strips leading hyphens/underscores, enforces ^[a-z0-9][a-z0-9-]*$)
+    const blank = createBlankStorefrontTheme("_Custom-Brand_2026!", "براند المستقبل", "rtl");
 
-    expect(blank.id).toBe("custom-brand");
+    expect(blank.id).toBe("custom-brand-2026");
+    expect(/^[a-z0-9][a-z0-9-]*$/.test(blank.id)).toBe(true);
     expect(blank.name).toBe("براند المستقبل");
     expect(blank.direction).toBe("rtl");
 
-    // All 14 standard pages present
-    STANDARD_THEME_PAGES.forEach((pageKey) => {
+    // Required schema metadata: description, preview, and seo
+    expect(blank.description).toBeDefined();
+    expect(typeof blank.description).toBe("string");
+    expect(blank.preview).toBeDefined();
+    expect(blank.preview.imageUrl).toBeDefined();
+    expect(Array.isArray(blank.preview.colors)).toBe(true);
+    expect(blank.preview.colors.length).toBeGreaterThanOrEqual(3);
+    expect(blank.seo).toBeDefined();
+    expect(blank.seo.titleTemplate).toContain("براند المستقبل");
+    expect(blank.seo.description).toBeDefined();
+
+    // 4 Core mandatory commercial pages MUST be present
+    MANDATORY_PAGE_KEYS.forEach((pageKey) => {
       expect(blank.pages[pageKey]).toBeDefined();
       expect(blank.pages[pageKey]?.sections.length).toBeGreaterThan(0);
     });
+
+    // Section validation: category-strip and account-portal are gone!
+    // shop must use valid registered "shop-command-bar"
+    const shopSectionTypes = blank.pages.shop?.sections.map((s: any) => s.type || s);
+    expect(shopSectionTypes).toContain("shop-command-bar");
+    expect(shopSectionTypes).not.toContain("category-strip");
+
+    // checkout must include both checkout-form and payment
+    const checkoutSectionTypes = blank.pages.checkout?.sections.map((s: any) => s.type || s);
+    expect(checkoutSectionTypes).toContain("checkout-form");
+    expect(checkoutSectionTypes).toContain("payment");
+
+    // registration must use "member-registration"
+    const registrationSectionTypes = blank.pages.registration?.sections.map((s: any) => s.type || s);
+    expect(registrationSectionTypes).toContain("member-registration");
+    expect(registrationSectionTypes).not.toContain("account-portal");
+
+    // Verify every section in every page of blank theme is known in the registry
+    Object.entries(blank.pages).forEach(([pageKey, pageConfig]) => {
+      pageConfig?.sections.forEach((sec: any) => {
+        const type = typeof sec === "string" ? sec : sec.type;
+        expect(isStorefrontSectionKnown(type)).toBe(true);
+      });
+    });
+
+    // Omit unauthored system pages so that runtime can supply rich tone-aware fallbacks
+    expect(blank.pages.shipping).toBeUndefined();
+    expect(blank.pages.returns).toBeUndefined();
+    expect(blank.pages.privacy).toBeUndefined();
+    expect(blank.pages.terms).toBeUndefined();
+    expect(blank.pages.contact).toBeUndefined();
+    expect(blank.pages["size-guide"]).toBeUndefined();
 
     // All 14 semantic color tokens present
     const colors = blank.tokens.colors;
@@ -105,15 +152,17 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
     expect(validation.valid).toBe(true);
     expect(validation.errors).toHaveLength(0);
 
-    // Passes official validateThemeObject schema check
+    // Passes official validateThemeObject schema and section check
     const officialReport = validateThemeObject(blank as any);
     expect(officialReport.schemaCheck.passed).toBe(true);
     expect(officialReport.schemaCheck.errors).toHaveLength(0);
+    expect(officialReport.sectionCheck.passed).toBe(true);
+    expect(officialReport.sectionCheck.errors).toHaveLength(0);
   });
 
-  it("5. exportFullStorefrontTheme consolidates 14+ pages, merges pageOverrides, and cleans section config", () => {
+  it("5. exportFullStorefrontTheme consolidates authored pages, merges pageOverrides, and omits unauthored system pages", () => {
     const exported = exportFullStorefrontTheme({
-      themeId: "cairo-stride",
+      themeId: "-cairo-stride-custom_",
       themeName: "Cairo Stride Custom",
       direction: "rtl",
       tokens: {
@@ -143,7 +192,8 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
       },
     });
 
-    expect(exported.id).toBe("cairo-stride");
+    expect(exported.id).toBe("cairo-stride-custom");
+    expect(/^[a-z0-9][a-z0-9-]*$/.test(exported.id)).toBe(true);
     expect(exported.name).toBe("Cairo Stride Custom");
 
     // Colors must be canonical HSL triplets
@@ -164,13 +214,11 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
     // Custom page included
     expect(exported.pages.customPromoPage).toBeDefined();
 
-    // Standard pages preserved
+    // Core 4 mandatory pages preserved
+    expect(exported.pages.home).toBeDefined();
     expect(exported.pages.shop).toBeDefined();
     expect(exported.pages.pdp).toBeDefined();
     expect(exported.pages.cart).toBeDefined();
-    expect(exported.pages.checkout).toBeDefined();
-    expect(exported.pages["thank-you"]).toBeDefined();
-    expect(exported.pages.collections).toBeDefined();
 
     // Validate theme against schema
     const validation = validateFullStorefrontThemeJSON(exported);
@@ -181,9 +229,57 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
     const officialReport = validateThemeObject(exported as any);
     expect(officialReport.schemaCheck.passed).toBe(true);
     expect(officialReport.schemaCheck.errors).toHaveLength(0);
+    expect(officialReport.sectionCheck.passed).toBe(true);
+    expect(officialReport.sectionCheck.errors).toHaveLength(0);
+
+    // Dynamic / tpl-* theme export: omits unauthored system pages without injecting fake info-content
+    const dynamicThemeExport = exportFullStorefrontTheme({
+      themeId: "tpl-001-bulk-commerce-women-fashion",
+      themeName: "نسوة جملة",
+      direction: "rtl",
+      previewTheme: {
+        id: "tpl-001-bulk-commerce-women-fashion",
+        name: "نسوة جملة",
+        direction: "rtl",
+        tokens: {
+          colors: { ...exported.tokens.colors },
+          typography: exported.tokens.typography,
+          shape: exported.tokens.shape,
+        },
+        header: exported.header,
+        footer: exported.footer,
+        pages: {
+          home: { sections: [{ type: "hero-banner" }] },
+          shop: { sections: [{ type: "product-grid" }] },
+          pdp: { sections: [{ type: "product-info" }] },
+          cart: { sections: [{ type: "cart-items" }] },
+        },
+      } as any,
+    });
+
+    // Mandatory 4 pages present
+    expect(dynamicThemeExport.pages.home).toBeDefined();
+    expect(dynamicThemeExport.pages.shop).toBeDefined();
+    expect(dynamicThemeExport.pages.pdp).toBeDefined();
+    expect(dynamicThemeExport.pages.cart).toBeDefined();
+
+    // Unauthored system pages MUST be omitted (NO fake info-content injection!)
+    expect(dynamicThemeExport.pages.checkout).toBeUndefined();
+    expect(dynamicThemeExport.pages["thank-you"]).toBeUndefined();
+    expect(dynamicThemeExport.pages.shipping).toBeUndefined();
+    expect(dynamicThemeExport.pages.returns).toBeUndefined();
+    expect(dynamicThemeExport.pages.privacy).toBeUndefined();
+    expect(dynamicThemeExport.pages.terms).toBeUndefined();
+
+    const dynamicValidation = validateFullStorefrontThemeJSON(dynamicThemeExport);
+    expect(dynamicValidation.valid).toBe(true);
+    expect(dynamicValidation.errors).toHaveLength(0);
   });
 
-  it("6. validateFullStorefrontThemeJSON rejects invalid schema and missing keys", () => {
+  it("6. validateFullStorefrontThemeJSON validates official 4 mandatory pages and rejects invalid schema", () => {
+    // Exactly 4 mandatory page keys: home, shop, pdp, cart
+    expect(MANDATORY_PAGE_KEYS).toEqual(["home", "shop", "pdp", "cart"]);
+
     // Non-object
     expect(validateFullStorefrontThemeJSON(null).valid).toBe(false);
     expect(validateFullStorefrontThemeJSON("string").valid).toBe(false);
@@ -196,6 +292,24 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
         expect(missingKeysRes.errors.some((err) => err.includes(key))).toBe(true);
       }
     });
+
+    // Invalid id format (starts with hyphen or underscore)
+    const invalidIdRes = validateFullStorefrontThemeJSON({
+      id: "-invalid-id",
+      name: "Test",
+      direction: "rtl",
+      tokens: { colors: { primary: "1 1% 1%", secondary: "1 1% 1%", accent: "1 1% 1%", background: "1 1% 1%", foreground: "1 1% 1%" } },
+      header: {},
+      footer: {},
+      pages: {
+        home: { sections: [] },
+        shop: { sections: [] },
+        pdp: { sections: [] },
+        cart: { sections: [] },
+      },
+    });
+    expect(invalidIdRes.valid).toBe(false);
+    expect(invalidIdRes.errors.some((err) => err.includes("id"))).toBe(true);
 
     // Invalid direction
     const invalidDirRes = validateFullStorefrontThemeJSON({
@@ -210,10 +324,10 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
     expect(invalidDirRes.valid).toBe(false);
     expect(invalidDirRes.errors.some((err) => err.includes("الاتجاه"))).toBe(true);
 
-    // Missing mandatory pages
-    const missingPagesRes = validateFullStorefrontThemeJSON({
-      id: "test",
-      name: "Test",
+    // Valid 4-page theme without checkout passes!
+    const valid4PageTheme = {
+      id: "valid-four-pages",
+      name: "Test Theme",
       direction: "rtl",
       tokens: {
         colors: {
@@ -226,10 +340,22 @@ describe("Phase 5: Full StorefrontTheme JSON Export/Import & Theme Authoring", (
       },
       header: {},
       footer: {},
-      pages: { home: { sections: [] } },
+      pages: {
+        home: { sections: [] },
+        shop: { sections: [] },
+        pdp: { sections: [] },
+        cart: { sections: [] },
+      },
+    };
+    expect(validateFullStorefrontThemeJSON(valid4PageTheme).valid).toBe(true);
+
+    // Missing mandatory pages (missing cart)
+    const missingPagesRes = validateFullStorefrontThemeJSON({
+      ...valid4PageTheme,
+      pages: { home: { sections: [] }, shop: { sections: [] }, pdp: { sections: [] } },
     });
     expect(missingPagesRes.valid).toBe(false);
-    expect(missingPagesRes.errors.some((err) => err.includes("shop"))).toBe(true);
+    expect(missingPagesRes.errors.some((err) => err.includes("cart"))).toBe(true);
   });
 
   it("7. StudioExportImportModal supports Full Theme export, validation and blank theme creation", () => {

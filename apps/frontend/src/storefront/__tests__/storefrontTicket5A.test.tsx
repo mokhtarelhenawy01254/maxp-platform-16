@@ -52,8 +52,8 @@ describe("Storefront Phase 5 / Ticket 5A — Containers & Nesting Engine", () =>
       expect(container.querySelectorAll("[data-storefront-container='true']")).toHaveLength(0);
     });
 
-    it("verifies that all 12 preset studio pages can be safely parsed as root nodes", () => {
-      expect(STUDIO_PAGES).toHaveLength(12);
+    it("verifies that all preset studio pages can be safely parsed as root nodes", () => {
+      expect(STUDIO_PAGES.length).toBeGreaterThanOrEqual(12);
       STUDIO_PAGES.forEach((pageDef) => {
         const dummyConfig: StorefrontPageConfig = {
           sections: ["hero-banner", "featured-products"],

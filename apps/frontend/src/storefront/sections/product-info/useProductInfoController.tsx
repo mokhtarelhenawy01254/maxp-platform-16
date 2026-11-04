@@ -17,7 +17,7 @@ import { isKhemetLuxeTheme as isKhemetLuxeThemeId } from '../../utils/navigation
 import { getVariantAttributes } from '../../utils/variants';
 import { useStorefrontTheme } from '../../engine/ThemeProvider';
 import { useStorefrontFacebookTracking } from '../../hooks/useStorefrontFacebookTracking';
-import { getStorefrontSectionComponentKey } from '../../sections/manifest';
+import { getStorefrontSectionComponentKey } from '../../engine/sectionComponentMap';
 import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
