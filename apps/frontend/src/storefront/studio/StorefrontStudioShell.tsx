@@ -1801,15 +1801,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
               direction={(previewTheme?.tokens as any)?.direction || "rtl"}
               showChrome={true}
               onSelectHeader={() => {
-                setActiveLeftRailTab("header-footer");
+                setLeftRailTab("header-footer");
                 setSelectedElement(null);
               }}
               onSelectFooter={() => {
-                setActiveLeftRailTab("header-footer");
+                setLeftRailTab("header-footer");
                 setSelectedElement(null);
               }}
-              isHeaderSelected={activeLeftRailTab === "header-footer"}
-              isFooterSelected={activeLeftRailTab === "header-footer"}
+              isHeaderSelected={leftRailTab === "header-footer"}
+              isFooterSelected={leftRailTab === "header-footer"}
             >
               <div
                 className="relative min-h-[800px] bg-background"
