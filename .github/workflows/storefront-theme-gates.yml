@@ -14,6 +14,12 @@ on:
       - 'scripts/check-storefront-theme-budget.mjs'
       - 'schemas/theme.schema.json'
       - '.github/workflows/storefront-theme-gates.yml'
+  workflow_dispatch:
+    inputs:
+      theme_files:
+        description: 'Space-separated theme JSON paths to check (empty = all changed theme files)'
+        required: false
+        default: ''
   pull_request:
     paths:
       - 'apps/frontend/src/storefront/themes/**.json'
@@ -63,6 +69,11 @@ jobs:
         id: changed
         shell: bash
         run: |
+          if [ -n "${{ github.event.inputs.theme_files }}" ]; then
+            echo "files=${{ github.event.inputs.theme_files }}" >> "$GITHUB_OUTPUT"
+            echo "explicit theme files: ${{ github.event.inputs.theme_files }}"
+            exit 0
+          fi
           BASE="${{ github.event.before }}"
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             BASE="$(git rev-parse HEAD^ 2>/dev/null || echo '')"
@@ -102,4 +113,4 @@ jobs:
 
       - name: Storefront theme validation suite
         working-directory: ./apps/frontend
-        run: node node_modules/vitest/vitest.mjs run src/storefront/__tests__/themeValidation.test.ts --environment jsdom
+        run: node node_modules/vitest/vitest.mjs run --config scripts/vitest.storefront.config.ts src/storefront/__tests__/themeValidation.test.ts
