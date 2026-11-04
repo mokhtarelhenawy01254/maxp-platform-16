@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://maxp.online/schemas/theme.schema.json",
+  "title": "MaxP Storefront Theme",
+  "description": "Strict shape of a storefront theme preset. Mirrors validateStorefrontTheme: 14 colour tokens, 3 typography tokens, 2 shape tokens, and the commercial pages every template owns (home/shop/pdp/cart). System pages (checkout, thank-you, registration, policies) are optional because the storefront shell renders them with defaults.",
+  "type": "object",
+  "required": ["id", "name", "tokens", "pages"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "direction": { "type": "string", "enum": ["ltr", "rtl"] },
+    "tokens": {
+      "type": "object",
+      "required": ["colors", "typography", "shape"],
+      "properties": {
+        "colors": {
+          "type": "object",
+          "required": [
+            "primary",
+            "primaryForeground",
+            "secondary",
+            "secondaryForeground",
+            "accent",
+            "accentForeground",
+            "background",
+            "foreground",
+            "muted",
+            "mutedForeground",
+            "border",
+            "card",
+            "cardForeground",
+            "ring"
+          ],
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(primary|primaryForeground|secondary|secondaryForeground|accent|accentForeground|background|foreground|muted|mutedForeground|border|card|cardForeground|ring)$": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "required": ["headingFont", "bodyFont", "baseSize"],
+          "properties": {
+            "headingFont": { "type": "string", "minLength": 1 },
+            "bodyFont": { "type": "string", "minLength": 1 },
+            "baseSize": { "type": "string", "minLength": 1 },
+            "direction": { "type": "string", "enum": ["ltr", "rtl"] }
+          },
+          "additionalProperties": true
+        },
+        "shape": {
+          "type": "object",
+          "required": ["borderRadius", "buttonRadius"],
+          "properties": {
+            "borderRadius": { "type": "string", "minLength": 1 },
+            "buttonRadius": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "pages": {
+      "type": "object",
+      "required": ["home", "shop", "pdp", "cart"],
+      "properties": {
+        "home": { "$ref": "#/definitions/page" },
+        "shop": { "$ref": "#/definitions/page" },
+        "pdp": { "$ref": "#/definitions/page" },
+        "cart": { "$ref": "#/definitions/page" }
+      },
+      "patternProperties": {
+        "^[a-zA-Z0-9][a-zA-Z0-9/_-]*$": { "$ref": "#/definitions/page" }
+      },
+      "additionalProperties": false
+    },
+    "header": { "type": "object" },
+    "footer": { "type": "object" },
+    "seo": { "type": "object" },
+    "preview": {
+      "type": "object",
+      "properties": {
+        "colors": { "type": "array", "items": { "type": "string" }, "maxItems": 8 },
+        "imageUrl": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "sectionEntry": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "variant": { "type": "string", "minLength": 1 },
+            "settings": { "type": "object" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "page": {
+      "type": "object",
+      "required": ["sections"],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/sectionEntry" }
+        },
+        "layoutHint": {
+          "type": "string",
+          "enum": ["stack", "sidebar-left", "sidebar-right", "product-detail", "commerce-3col"]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

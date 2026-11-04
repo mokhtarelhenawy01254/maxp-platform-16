@@ -40,12 +40,15 @@ const SHAPE_KEYS: Array<keyof StorefrontThemeShape> = [
   'buttonRadius',
 ];
 
+// Pages every commercial template MUST own. System pages (checkout, thank-you,
+// registration, policies) are owned by the storefront shell — StorefrontRoutes falls
+// back to a default section list when a theme omits them — so a template is not
+// forced to ship an empty checkout page. Task 120-day01.
 const REQUIRED_PAGE_KEYS: Array<keyof StorefrontTheme['pages']> = [
   'home',
   'shop',
   'pdp',
   'cart',
-  'checkout',
 ];
 
 const PAGE_LAYOUT_HINTS: readonly StorefrontPageLayout[] = [

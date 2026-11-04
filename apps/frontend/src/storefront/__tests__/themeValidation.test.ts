@@ -79,6 +79,26 @@ describe("validateStorefrontTheme", () => {
     );
   });
 
+  it("accepts a commercial template that omits the system checkout page", () => {
+    // Task 120-day01: checkout is a system page rendered by the shell fallback,
+    // so a 6-page commercial template must pass validation without it.
+    const theme = buildValidTheme();
+    const pages = theme.pages as Record<string, unknown>;
+    delete pages.checkout;
+
+    expect(validateStorefrontTheme(theme)).toEqual([]);
+  });
+
+  it("still requires the commercial pages (home/shop/pdp/cart)", () => {
+    const theme = buildValidTheme();
+    const pages = theme.pages as Record<string, unknown>;
+    delete pages.cart;
+
+    expect(validateStorefrontTheme(theme)).toContain(
+      'Theme page "cart" must define at least one section.',
+    );
+  });
+
   it("validates anjella-boutique theme preset successfully without errors", () => {
     const anjellaTheme = STOREFRONT_THEME_PRESETS["anjella-boutique"];
     expect(anjellaTheme).toBeDefined();

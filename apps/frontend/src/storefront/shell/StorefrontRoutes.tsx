@@ -449,12 +449,19 @@ export const StorefrontRoutes: React.FC<StorefrontRoutesProps> = ({
     </div>
   ) : null;
 
+  // System checkout: a commercial template owns home/shop/pdp/cart/collections/contact and
+  // must NOT ship a checkout page, so the shell supplies the default checkout sections when
+  // the theme omits them (same pattern as thank-you / registration). Task 120-day01.
+  const checkoutPageConfig = theme.pages.checkout || {
+    sections: ['checkout-form', 'payment'],
+  };
+
   const checkoutPageElement = (
     <div key={`checkout:${routePageKey}`} className="w-full flex flex-col">
       {khemetCheckoutProgress}
       <PageComposer
-        pageConfig={theme.pages.checkout}
-        layout={resolveStorefrontPageLayout(theme.pages.checkout, 'sidebar-right')}
+        pageConfig={checkoutPageConfig}
+        layout={resolveStorefrontPageLayout(checkoutPageConfig, 'sidebar-right')}
         prioritizeSidebarOnMobile={isKhemetLuxe}
         runtimeText={runtimeText}
         renderSectionFrame={StorefrontSectionFrame}
