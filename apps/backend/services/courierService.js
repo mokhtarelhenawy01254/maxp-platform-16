@@ -703,28 +703,61 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
 
   const isDelivered = DELIVERED_STATUSES.includes(normalizedStatus) || normalizedStatus === 'PARTIALLY_DELIVERED';
 
-  // 🔑 OTP delivery proof: when the fleet setting requires it and this parcel was
-  // dispatched with a code, only the customer's code can mark it DELIVERED.
-  // Brute-force guard: 5 wrong attempts lock the parcel until a manager resends.
-  if (isDelivered && shipment.otpHash) {
+  // 🔑 OTP delivery proof (SHIP-W11 / SHP-21/22)
+  if (isDelivered) {
     const otpRequired = await isDeliveryOtpRequired(companyId);
     if (otpRequired) {
+      const providedOtp = String(otp || '').trim();
+      if (!providedOtp) {
+        throw serviceError('كود الاستلام مطلوب لإتمام التسليم', 400, 'OTP_REQUIRED');
+      }
+
+      // 5 wrong attempts guard & 30-min auto unlock
+      const currentAttempts = shipment.otpAttempts || 0;
+      if (currentAttempts >= 5) {
+        const now = new Date();
+        if (shipment.otpLockedUntil && new Date(shipment.otpLockedUntil) <= now) {
+          // 30 min passed -> auto unlock
+          await prisma.shipment.update({
+            where: { id: shipmentId },
+            data: { otpAttempts: 0, otpLockedUntil: null }
+          });
+          shipment.otpAttempts = 0;
+          shipment.otpLockedUntil = null;
+        } else {
+          throw serviceError('تم قفل إدخال الكود لتجاوز 5 محاولات خاطئة (OTP_LOCKED)', 429, 'OTP_LOCKED');
+        }
+      }
+
       const otpExpired = shipment.otpExpiresAt && new Date(shipment.otpExpiresAt) < new Date();
       if (otpExpired) {
-        throw serviceError('انتهت صلاحية كود الاستلام — أعد إسناد الطرد لتوليد كود جديد', 409);
+        throw serviceError('انتهت صلاحية كود الاستلام — اطلب من المدير إعادة إرسال كود جديد', 409, 'OTP_EXPIRED');
       }
-      if ((shipment.otpAttempts || 0) >= 5) {
-        throw serviceError('تم تجاوز عدد المحاولات المسموح بها — اطلب من المدير إعادة إرسال كود جديد', 429);
-      }
-      const providedOtp = String(otp || '').trim();
-      if (!providedOtp || !bcrypt.compareSync(providedOtp, shipment.otpHash)) {
+
+      const isMatch = Boolean(shipment.otpHash && bcrypt.compareSync(providedOtp, shipment.otpHash));
+      if (!isMatch) {
+        const newAttempts = (shipment.otpAttempts || 0) + 1;
+        const isNowLocked = newAttempts >= 5;
+        const lockUntil = isNowLocked ? new Date(Date.now() + 30 * 60 * 1000) : null;
+
         await prisma.shipment.update({
           where: { id: shipmentId },
-          data: { otpAttempts: { increment: 1 } }
+          data: {
+            otpAttempts: newAttempts,
+            ...(lockUntil ? { otpLockedUntil: lockUntil } : {})
+          }
         });
-        const attemptsLeft = Math.max(0, 5 - ((shipment.otpAttempts || 0) + 1));
-        throw serviceError(`كود الاستلام غير صحيح — اطلبه من العميل (باقي ${attemptsLeft} محاولة)`, 403);
+
+        if (isNowLocked) {
+          throw serviceError('تم قفل إدخال الكود لتجاوز 5 محاولات خاطئة (OTP_LOCKED)', 429, 'OTP_LOCKED');
+        }
+
+        const attemptsLeft = Math.max(0, 5 - newAttempts);
+        throw serviceError(`كود الاستلام غير صحيح (OTP_INVALID) — متبقي ${attemptsLeft} محاولة`, 400, 'OTP_INVALID');
       }
+
+      updateData.otpAttempts = 0;
+      updateData.otpLockedUntil = null;
     }
   }
 
@@ -742,6 +775,22 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     const priorCollected = normalizeAmount(shipment.collectedAmount);
     // Never silently erase cash already collected — it stays on the shipment for reconciliation
     updateData.collectedAmount = priorCollected > 0 ? priorCollected : 0;
+
+    if (normalizedStatus === 'RETURNED') {
+      try {
+        const policyService = require('./shipping/policyService');
+        const policy = await policyService.getPolicy(companyId, prisma);
+        if (policy?.rtoChargeReturnLeg) {
+          const rtoPrice = Number(policy.rtoReturnLegPrice !== null && policy.rtoReturnLegPrice !== undefined ? policy.rtoReturnLegPrice : 0);
+          updateData.rtoCost = rtoPrice;
+          const currentCost = Number(shipment.cost || 0);
+          const courierCost = Number(shipment.courierCost || 0);
+          updateData.marginAmount = Math.round((currentCost - rtoPrice - courierCost) * 100) / 100;
+        }
+      } catch (rtoErr) {
+        console.warn('⚠️ [COURIER-SERVICE] Error applying RTO cost on return:', rtoErr.message);
+      }
+    }
 
     if (normalizedStatus === 'FAILED') {
       const cleanReason = String(failureReasonCode || '').trim();
@@ -1290,6 +1339,13 @@ async function isCourierPinRequired(companyId, courierId) {
 async function isDeliveryOtpRequired(companyId) {
   try {
     const prisma = getSharedPrismaClient();
+    const policy = await prisma.shippingPolicySettings.findUnique({
+      where: { companyId },
+      select: { requireDeliveryOtp: true }
+    });
+    if (policy && policy.requireDeliveryOtp !== null && policy.requireDeliveryOtp !== undefined) {
+      if (Boolean(policy.requireDeliveryOtp)) return true;
+    }
     const fleetApp = await prisma.companyApp.findFirst({
       where: { companyId, app: { slug: 'internal-courier-fleet' } },
       select: { settings: true }
@@ -1617,7 +1673,8 @@ async function resendShipmentOtp(companyId, { shipmentId, userId }) {
     data: {
       otpHash: bcrypt.hashSync(otp, 10),
       otpExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      otpAttempts: 0
+      otpAttempts: 0,
+      otpLockedUntil: null
     }
   });
 

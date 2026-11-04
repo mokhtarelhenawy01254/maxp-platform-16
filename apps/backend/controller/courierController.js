@@ -264,7 +264,7 @@ async function updateShipmentStatus(req, res) {
     res.json({ success: true, data: updatedShipment });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in updateShipmentStatus:', error);
-    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تحديث حالة الشحنة' });
+    res.status(error.statusCode || 500).json({ success: false, code: error.code || 'UPDATE_ERROR', message: error.message || 'تعذر تحديث حالة الشحنة' });
   }
 }
 

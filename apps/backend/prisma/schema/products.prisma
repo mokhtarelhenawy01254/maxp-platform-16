@@ -765,6 +765,7 @@ model Shipment {
   otpExpiresAt           DateTime?
   /// Wrong-code attempts against the delivery OTP — locked after 5, reset on resend/success
   otpAttempts            Int             @default(0)
+  otpLockedUntil         DateTime?
   recipientName          String?
   recipientPhone         String?
   recipientPhone2        String?
@@ -802,6 +803,8 @@ model Shipment {
   courierCost            Decimal?         @db.Decimal(10, 2)
   costSource             String?
   marginAmount           Decimal?         @db.Decimal(10, 2)
+  rtoCost                Decimal?         @db.Decimal(10, 2)
+  clientReference        String?
   barcode                String?
   lastBranchAt           DateTime?
   branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -809,6 +812,7 @@ model Shipment {
   settlementLine         ShippingSettlementLine?
 
   @@unique([companyId, barcode])
+  @@unique([companyId, merchantId, clientReference])
   @@index([companyId])
   @@index([orderId])
   @@index([merchantId])

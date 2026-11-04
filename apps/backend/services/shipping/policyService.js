@@ -28,6 +28,9 @@ const DEFAULT_POLICY_SETTINGS = {
   currency: 'EGP',
   invoiceVatPercent: 0,
   maxShipmentsPerCourierPerDay: 60,
+  requireDeliveryOtp: false,
+  rtoChargeReturnLeg: false,
+  rtoReturnLegPrice: null,
 };
 
 /**
@@ -200,6 +203,9 @@ const ALLOWED_POLICY_KEYS = [
   'maxWeightKg',
   'maxCodAmount',
   'invoiceVatPercent',
+  'requireDeliveryOtp',
+  'rtoChargeReturnLeg',
+  'rtoReturnLegPrice',
 ];
 
 /**
@@ -269,6 +275,15 @@ async function updatePolicy(companyId, payload = {}, customPrisma = null) {
   }
   if (payload.maxCodAmount !== undefined) {
     sanitized.maxCodAmount = payload.maxCodAmount !== null ? parseFloat(payload.maxCodAmount) : null;
+  }
+  if (payload.requireDeliveryOtp !== undefined) {
+    sanitized.requireDeliveryOtp = Boolean(payload.requireDeliveryOtp);
+  }
+  if (payload.rtoChargeReturnLeg !== undefined) {
+    sanitized.rtoChargeReturnLeg = Boolean(payload.rtoChargeReturnLeg);
+  }
+  if (payload.rtoReturnLegPrice !== undefined) {
+    sanitized.rtoReturnLegPrice = payload.rtoReturnLegPrice !== null && payload.rtoReturnLegPrice !== '' ? parseFloat(payload.rtoReturnLegPrice) : null;
   }
   if (payload.invoiceVatPercent !== undefined) {
     sanitized.invoiceVatPercent = Math.max(0, parseFloat(payload.invoiceVatPercent) || 0);

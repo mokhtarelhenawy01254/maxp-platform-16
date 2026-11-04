@@ -314,7 +314,26 @@ async function createShipment(req, res) {
       isFragile,
       allowOpenPackage,
       notes,
+      clientReference,
+      reference,
     } = req.body;
+
+    const rawRef = clientReference || reference;
+    const trimmedRef = rawRef ? String(rawRef).trim() : null;
+    if (trimmedRef) {
+      const existingByRef = await prisma.shipment.findFirst({
+        where: { companyId, merchantId, clientReference: trimmedRef },
+        select: { id: true, trackingNumber: true, clientReference: true }
+      });
+      if (existingByRef) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_CLIENT_REFERENCE',
+          message: `تم تسجيل شحنة مسبقاً بنفس المرجع (${trimmedRef}) برقم تتبع ${existingByRef.trackingNumber || existingByRef.id}`,
+          trackingNumber: existingByRef.trackingNumber || existingByRef.id,
+        });
+      }
+    }
 
     const name = String(recipientName || '').trim();
     const phone = String(recipientPhone || '').trim();
@@ -358,6 +377,7 @@ async function createShipment(req, res) {
         declaredValue: declaredValue ? Number(declaredValue) : null,
         contentDescription: contentDescription ? String(contentDescription).trim() : null,
         isFragile: Boolean(isFragile),
+        clientReference: trimmedRef || null,
         allowOpenPackage: allowOpenPackage !== false,
         clientRateCardId: quote.rateCardId || null,
         cost: quote.price,
@@ -464,7 +484,26 @@ async function createPickup(req, res) {
       governorate,
       expectedParcels,
       notes,
+      clientReference,
+      reference,
     } = req.body;
+
+    const rawRef = clientReference || reference;
+    const trimmedRef = rawRef ? String(rawRef).trim() : null;
+    if (trimmedRef) {
+      const existingByRef = await prisma.shipment.findFirst({
+        where: { companyId, merchantId, clientReference: trimmedRef },
+        select: { id: true, trackingNumber: true, clientReference: true }
+      });
+      if (existingByRef) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_CLIENT_REFERENCE',
+          message: `تم تسجيل شحنة مسبقاً بنفس المرجع (${trimmedRef}) برقم تتبع ${existingByRef.trackingNumber || existingByRef.id}`,
+          trackingNumber: existingByRef.trackingNumber || existingByRef.id,
+        });
+      }
+    }
 
     const cName = String(contactName || req.merchant?.name || '').trim();
     const cPhone = String(contactPhone || req.merchant?.phone || '').trim();

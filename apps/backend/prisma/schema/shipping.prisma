@@ -123,6 +123,9 @@ model ShippingPolicySettings {
   proofOfDelivery       String   @default("OTP,PIN")
   requirePinOnShareLink Boolean  @default(true)
   requireCourierPinOnLink Boolean @default(true)
+  requireDeliveryOtp    Boolean  @default(false)
+  rtoChargeReturnLeg    Boolean  @default(false)
+  rtoReturnLegPrice     Decimal? @db.Decimal(10, 2)
   publicTrackingMode    String   @default("WAYBILL") // WAYBILL | PHONE | OFF
   publicTrackingMask    Boolean  @default(true)
   clientPortalEnabled   Boolean  @default(true)

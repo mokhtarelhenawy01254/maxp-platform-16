@@ -461,7 +461,47 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
-    const { orderId, shippingCompanyId, trackingNumber, manualDeliveryNotes } = req.body;
+    const { orderId, shippingCompanyId, trackingNumber, manualDeliveryNotes, clientReference, reference } = req.body;
+    const rawRef = clientReference || reference;
+    const trimmedRef = rawRef ? String(rawRef).trim() : null;
+
+    if (trimmedRef) {
+      const existingByRef = await prisma.shipment.findFirst({
+        where: {
+          companyId,
+          merchantId: req.body.merchantId || null,
+          clientReference: trimmedRef,
+        },
+        select: { id: true, trackingNumber: true, clientReference: true },
+      });
+      if (existingByRef) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_CLIENT_REFERENCE',
+          message: `تم تسجيل شحنة مسبقاً بنفس مرجع العميل (${trimmedRef}) برقم تتبع ${existingByRef.trackingNumber || existingByRef.id}`,
+          trackingNumber: existingByRef.trackingNumber || existingByRef.id,
+        });
+      }
+    }
+
+    if (orderId) {
+      const existingActiveOrderShipment = await prisma.shipment.findFirst({
+        where: {
+          companyId,
+          orderId,
+          status: { notIn: ['CANCELLED'] },
+        },
+        select: { id: true, trackingNumber: true, orderId: true },
+      });
+      if (existingActiveOrderShipment) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_ORDER_SHIPMENT',
+          message: `الطلب مربوط بالفعل بشحنة نشطة برقم تتبع ${existingActiveOrderShipment.trackingNumber || existingActiveOrderShipment.id}`,
+          trackingNumber: existingActiveOrderShipment.trackingNumber || existingActiveOrderShipment.id,
+        });
+      }
+    }
 
     if (!orderId) {
       const {
@@ -548,6 +588,7 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
           contentDescription: contentDescription ? String(contentDescription).trim() : null,
           isFragile: Boolean(isFragile),
           allowOpenPackage: allowOpenPackage !== false,
+          clientReference: trimmedRef || null,
           clientRateCardId: rateCardId,
           merchantId: merchantId || null,
           shippingCompanyId: shippingCompany?.id || null,
@@ -612,6 +653,7 @@ router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, a
           orderId: order.id,
           shippingCompanyId: shippingCompany?.id || null,
           carrierType: shippingCompany?.providerKey || 'MANUAL',
+          clientReference: trimmedRef || null,
           status: 'PENDING',
           trackingNumber: trackingNumber || null,
           destinationGovernorate: order.governorate || null,

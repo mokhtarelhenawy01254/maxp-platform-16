@@ -166,7 +166,10 @@ async function recalcForPeriod({ companyId, from, to, forceAll = false }) {
 
   const where = {
     companyId,
-    status: { in: ['DELIVERED', 'PARTIALLY_DELIVERED'] },
+    OR: [
+      { status: { in: ['DELIVERED', 'PARTIALLY_DELIVERED'] } },
+      { status: 'RETURNED', rtoCost: { not: null } },
+    ],
   };
 
   if (!forceAll) {
@@ -204,7 +207,10 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
 
   const where = {
     companyId,
-    status: { in: ['DELIVERED', 'PARTIALLY_DELIVERED'] },
+    OR: [
+      { status: { in: ['DELIVERED', 'PARTIALLY_DELIVERED'] } },
+      { status: 'RETURNED', rtoCost: { not: null } },
+    ],
   };
 
   const dateFilter = buildDateFilter(from, to);
@@ -240,6 +246,7 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
         shipments: 0,
         revenue: 0,
         courierCost: 0,
+        rtoCostTotal: 0,
         margin: 0,
       });
     }
@@ -248,22 +255,24 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
     item.shipments += 1;
 
     const rev = Number(s.cost || 0);
+    const rCost = s.rtoCost !== null && s.rtoCost !== undefined ? Number(s.rtoCost) : 0;
     let cCost = s.courierCost !== null && s.courierCost !== undefined
       ? Number(s.courierCost)
       : 0;
     let mAmount = s.marginAmount !== null && s.marginAmount !== undefined
       ? Number(s.marginAmount)
-      : round2(rev - cCost);
+      : round2(rev - cCost - rCost);
 
     // If courierCost was never applied, compute dynamically
     if (s.courierCost === null || s.courierCost === undefined) {
       const computed = await computeCourierCost(s, s.courier);
       cCost = computed.courierCost;
-      mAmount = computed.marginAmount;
+      mAmount = round2(rev - cCost - rCost);
     }
 
     item.revenue = round2(item.revenue + rev);
     item.courierCost = round2(item.courierCost + cCost);
+    item.rtoCostTotal = round2(item.rtoCostTotal + rCost);
     item.margin = round2(item.margin + mAmount);
   }
 
@@ -274,6 +283,7 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
       shipments: r.shipments,
       revenue: round2(r.revenue),
       courierCost: round2(r.courierCost),
+      rtoCostTotal: round2(r.rtoCostTotal),
       margin: round2(r.margin),
       marginPct
     };
@@ -283,12 +293,14 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
   let totalShipments = 0;
   let totalRevenue = 0;
   let totalCourierCost = 0;
+  let totalRtoCost = 0;
   let totalMargin = 0;
 
   for (const row of rows) {
     totalShipments += row.shipments;
     totalRevenue = round2(totalRevenue + row.revenue);
     totalCourierCost = round2(totalCourierCost + row.courierCost);
+    totalRtoCost = round2(totalRtoCost + (row.rtoCostTotal || 0));
     totalMargin = round2(totalMargin + row.margin);
   }
 
@@ -303,6 +315,7 @@ async function getProfitReport({ companyId, from, to, groupBy = 'client' }) {
       shipments: totalShipments,
       revenue: totalRevenue,
       courierCost: totalCourierCost,
+      rtoCostTotal: totalRtoCost,
       margin: totalMargin,
       marginPct: totalMarginPct
     },

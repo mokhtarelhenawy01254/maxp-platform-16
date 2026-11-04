@@ -82,6 +82,7 @@ function formatShipment(shipment) {
     courierCost: raw.courierCost !== null && raw.courierCost !== undefined ? Number(raw.courierCost) : null,
     costSource: raw.costSource || null,
     marginAmount: raw.marginAmount !== null && raw.marginAmount !== undefined ? Number(raw.marginAmount) : null,
+    rtoCost: raw.rtoCost !== null && raw.rtoCost !== undefined ? Number(raw.rtoCost) : null,
   };
 }
 
@@ -172,7 +173,52 @@ async function createStandaloneShipment(req, res) {
       merchantId,
       notes,
       manualDeliveryNotes,
+      clientReference,
+      reference,
+      orderId,
     } = req.body;
+
+    // Deduplication check: clientReference (SHP-09)
+    const rawRef = clientReference || reference;
+    const trimmedRef = rawRef ? String(rawRef).trim() : null;
+    if (trimmedRef) {
+      const existingByRef = await prisma.shipment.findFirst({
+        where: {
+          companyId,
+          merchantId: merchantId || null,
+          clientReference: trimmedRef,
+        },
+        select: { id: true, trackingNumber: true, clientReference: true }
+      });
+      if (existingByRef) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_CLIENT_REFERENCE',
+          message: `تم تسجيل شحنة مسبقاً بنفس مرجع العميل (${trimmedRef}) برقم تتبع ${existingByRef.trackingNumber || existingByRef.id}`,
+          trackingNumber: existingByRef.trackingNumber || existingByRef.id,
+        });
+      }
+    }
+
+    // Deduplication check: orderId active shipment (SHP-09)
+    if (orderId) {
+      const existingByOrder = await prisma.shipment.findFirst({
+        where: {
+          companyId,
+          orderId,
+          status: { notIn: ['CANCELLED'] }
+        },
+        select: { id: true, trackingNumber: true, orderId: true }
+      });
+      if (existingByOrder) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_ORDER_SHIPMENT',
+          message: `الطلب مربوط بالفعل بشحنة نشطة برقم تتبع ${existingByOrder.trackingNumber || existingByOrder.id}`,
+          trackingNumber: existingByOrder.trackingNumber || existingByOrder.id,
+        });
+      }
+    }
 
     // Validate mandatory fields
     const name = (recipientName || '').trim();
@@ -242,6 +288,7 @@ async function createStandaloneShipment(req, res) {
         contentDescription: contentDescription ? String(contentDescription).trim() : null,
         isFragile: Boolean(isFragile),
         allowOpenPackage: allowOpenPackage !== false,
+        clientReference: trimmedRef || null,
         clientRateCardId: quote.rateCardId || null,
         cost: quote.price,
         currency: quote.currency || 'EGP',
@@ -1052,6 +1099,42 @@ async function updateShipmentStatus(req, res) {
       } catch (profitErr) {
         console.warn('⚠️ [SHIPPING_PORTAL] Profit apply notice:', profitErr.message);
       }
+    } else if (normalizedStatus === 'RETURNED') {
+      try {
+        const policyService = require('../services/shipping/policyService');
+        const policy = await policyService.getPolicy(companyId, prisma);
+        if (policy?.rtoChargeReturnLeg) {
+          const rtoPrice = Number(policy.rtoReturnLegPrice !== null && policy.rtoReturnLegPrice !== undefined ? policy.rtoReturnLegPrice : 0);
+          const currentCost = Number(updated.cost || 0);
+          const courierCost = Number(updated.courierCost || 0);
+          const marginAmount = Math.round((currentCost - rtoPrice - courierCost) * 100) / 100;
+
+          finalShipment = await prisma.shipment.update({
+            where: { id },
+            data: {
+              rtoCost: rtoPrice,
+              marginAmount
+            }
+          });
+
+          await recordShipmentEvent(prisma, {
+            companyId,
+            shipmentId: id,
+            fromStatus: shipment.status,
+            toStatus: 'RETURNED',
+            reasonCode: 'RTO_COST_APPLIED',
+            notes: `تطبيق تكلفة رحلة العودة (RTO): ${rtoPrice} ج.م`,
+            actorType: 'SYSTEM',
+            metadata: {
+              rtoCost: rtoPrice,
+              marginAmount,
+              courierCost
+            }
+          });
+        }
+      } catch (rtoErr) {
+        console.warn('⚠️ [SHIPPING_PORTAL] RTO cost apply notice:', rtoErr.message);
+      }
     }
 
     return res.json({ success: true, data: formatShipment(finalShipment) });
@@ -1139,20 +1222,6 @@ async function runRtoMaintenance(req, res) {
   }
 }
 
-module.exports = {
-
-  getShippingQuote,
-  createStandaloneShipment,
-  getShipments,
-  getShipmentById,
-  cancelShipment,
-  getRateCards,
-  createRateCard,
-  updateRateCard,
-  deleteRateCard,
-  getDashboardStats,
-  getMerchants,
-}
 
 /**
  * POST /api/v1/shipping-portal/pickups
@@ -1965,6 +2034,195 @@ async function receiveShipmentAtHub(req, res) {
   }
 }
 
+
+/**
+ * POST /api/v1/shipping-portal/shipments/bulk (SHIP-W11 / SHP-07)
+ * Imports up to 500 parcels via CSV/XLSX or JSON array.
+ * Each row is processed independently: failure in one row never drops the batch.
+ */
+async function bulkImportShipments(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    let rawRows = [];
+    if (req.file && req.file.buffer) {
+      const XLSX = require('xlsx');
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = wb.SheetNames[0];
+      const sheet = wb.Sheets[sheetName];
+      rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    } else if (Array.isArray(req.body?.rows)) {
+      rawRows = req.body.rows;
+    } else if (Array.isArray(req.body)) {
+      rawRows = req.body;
+    } else if (typeof req.body?.csv === 'string') {
+      const XLSX = require('xlsx');
+      const wb = XLSX.read(req.body.csv, { type: 'string' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    } else {
+      return res.status(400).json({
+        success: false,
+        code: 'NO_DATA',
+        message: 'يرجى إرسال ملف (file) أو مصفوفة صفوف (rows)'
+      });
+    }
+
+    if (rawRows.length > 500) {
+      return res.status(400).json({
+        success: false,
+        code: 'MAX_ROWS_EXCEEDED',
+        message: 'تجاوز الحد الأقصى المسموح به (500 صف)'
+      });
+    }
+
+    const defaultMerchantId = req.body?.merchantId || req.shippingClientId || null;
+    let createdCount = 0;
+    const failed = [];
+    const seenRefsInBatch = new Set();
+
+    for (let i = 0; i < rawRows.length; i++) {
+      const rowNum = i + 1;
+      const row = rawRows[i] || {};
+
+      const name = String(row.recipientName || row['اسم المستلم'] || row.name || '').trim();
+      const phone = String(row.recipientPhone || row['رقم الهاتف'] || row['الهاتف'] || row.phone || '').trim();
+      const rawGov = String(row.governorate || row.destinationGovernorate || row['المحافظة'] || '').trim();
+      const addr = String(row.address || row.destinationAddress || row['العنوان'] || '').trim();
+      const rawWeight = row.weightKg !== undefined && row.weightKg !== '' ? row.weightKg : (row.weight !== undefined && row.weight !== '' ? row.weight : row['الوزن']);
+      const rawCod = row.codAmount !== undefined && row.codAmount !== '' ? row.codAmount : (row.cod !== undefined && row.cod !== '' ? row.cod : row['مبلغ التحصيل']);
+      const rawRef = row.clientReference !== undefined && row.clientReference !== '' ? row.clientReference : (row.reference !== undefined && row.reference !== '' ? row.reference : row['مرجع العميل']);
+      const trimmedRef = rawRef ? String(rawRef).trim() : null;
+      const notes = String(row.notes || row['ملاحظات'] || '').trim();
+      const merchantId = row.merchantId || defaultMerchantId;
+
+      // 1. Phone validation (SHP-07 requirement: PHONE_REQUIRED)
+      if (!phone) {
+        failed.push({ row: rowNum, reason: 'PHONE_REQUIRED', message: 'رقم هاتف المستلم مطلوب' });
+        continue;
+      }
+
+      // 2. Weight validation (> 0)
+      const weightNum = rawWeight !== undefined && rawWeight !== null && rawWeight !== '' ? Number(rawWeight) : 1;
+      if (isNaN(weightNum) || weightNum <= 0) {
+        failed.push({ row: rowNum, reason: 'INVALID_WEIGHT', message: 'الوزن يجب أن يكون رقماً أكبر من صفر' });
+        continue;
+      }
+
+      // 3. COD validation (>= 0)
+      const codNum = rawCod !== undefined && rawCod !== null && rawCod !== '' ? Number(rawCod) : 0;
+      if (isNaN(codNum) || codNum < 0) {
+        failed.push({ row: rowNum, reason: 'INVALID_COD', message: 'مبلغ التحصيل لا يمكن أن يكون سالباً' });
+        continue;
+      }
+
+      // 4. Duplicate clientReference check (SHP-07 / SHP-09 requirement: DUPLICATE)
+      if (trimmedRef) {
+        if (seenRefsInBatch.has(trimmedRef)) {
+          failed.push({ row: rowNum, reason: 'DUPLICATE', clientReference: trimmedRef, message: 'مرجع العميل مكرر في نفس الملف' });
+          continue;
+        }
+        const existing = await prisma.shipment.findFirst({
+          where: {
+            companyId,
+            merchantId: merchantId || null,
+            clientReference: trimmedRef
+          },
+          select: { id: true, trackingNumber: true }
+        });
+        if (existing) {
+          failed.push({
+            row: rowNum,
+            reason: 'DUPLICATE',
+            clientReference: trimmedRef,
+            trackingNumber: existing.trackingNumber || existing.id,
+            message: 'مرجع العميل مكرر ومسجل مسبقاً'
+          });
+          continue;
+        }
+      }
+
+      // 5. Governorate & quoting check (SHP-07 requirement: GOVERNORATE_NOT_SERVED)
+      let quote;
+      try {
+        quote = await quotePrice({
+          companyId,
+          merchantId: merchantId || null,
+          governorate: rawGov,
+          weightKg: weightNum,
+          codAmount: codNum,
+          prisma
+        });
+      } catch (quoteErr) {
+        failed.push({
+          row: rowNum,
+          reason: 'GOVERNORATE_NOT_SERVED',
+          governorate: rawGov,
+          message: quoteErr.message || 'المحافظة غير مخدومة'
+        });
+        continue;
+      }
+
+      // All validations passed -> create standalone parcel
+      try {
+        const trackingNumber = generateTrackingNumber();
+        const createdShipment = await prisma.shipment.create({
+          data: {
+            companyId,
+            merchantId: merchantId || null,
+            recipientName: name || 'عميل',
+            recipientPhone: phone,
+            destinationGovernorate: quote.governorate,
+            destinationAddress: addr || quote.governorate,
+            weight: quote.breakdown?.actualWeightKg ? Number(quote.breakdown.actualWeightKg) : weightNum,
+            codAmount: codNum > 0 ? codNum : null,
+            collectedAmount: null,
+            cost: quote.price,
+            currency: quote.currency || 'EGP',
+            clientRateCardId: quote.rateCardId || null,
+            clientReference: trimmedRef,
+            trackingNumber,
+            status: 'PENDING',
+            source: 'BULK_IMPORT',
+            carrierType: 'MANUAL',
+            metadata: notes ? JSON.stringify({ notes, pricingSource: quote.source }) : JSON.stringify({ pricingSource: quote.source })
+          }
+        });
+
+        await recordShipmentEvent(prisma, {
+          companyId,
+          shipmentId: createdShipment.id,
+          fromStatus: null,
+          toStatus: 'PENDING',
+          reasonCode: 'CREATED',
+          notes: 'إنشاء الشحنة عبر الاستيراد المجمع',
+          actorType: req.user?.role === 'SHIPPING_CLIENT' ? 'CLIENT' : 'ADMIN',
+          actorId: req.user?.id || null,
+          actorName: req.user?.name || null
+        });
+
+        if (trimmedRef) {
+          seenRefsInBatch.add(trimmedRef);
+        }
+        createdCount++;
+      } catch (createErr) {
+        failed.push({ row: rowNum, reason: 'CREATE_FAILED', message: createErr.message });
+      }
+    }
+
+    return res.json({
+      success: true,
+      created: createdCount,
+      failed,
+      total: rawRows.length
+    });
+  } catch (error) {
+    console.error('❌ [SHIPPING_PORTAL] bulkImportShipments error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'فشل استيراد الشحنات' });
+  }
+}
+
 module.exports = {
   getShippingQuote,
   createStandaloneShipment,
@@ -2000,4 +2258,5 @@ module.exports = {
   updateShipmentStatus,
   reattemptShipment,
   runRtoMaintenance,
+  bulkImportShipments,
 };

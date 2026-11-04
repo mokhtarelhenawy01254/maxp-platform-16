@@ -7,6 +7,8 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const checkAppAccess = require('../middleware/checkAppAccess');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const shippingPortalController = require('../controller/shippingPortalController');
 
 /**
@@ -47,6 +49,21 @@ router.post('/quote', ...portalAuth, shippingPortalController.getShippingQuote);
 
 // Standalone parcel creation
 router.post('/shipments', ...portalAuth, shippingPortalController.createStandaloneShipment);
+
+// Bulk parcel import (SHIP-W11 / SHP-07)
+router.post(
+  '/shipments/bulk',
+  ...portalAuth,
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ success: false, code: 'UPLOAD_ERROR', message: err.message });
+      }
+      next();
+    });
+  },
+  shippingPortalController.bulkImportShipments
+);
 
 // Shipment list and details
 router.get('/shipments', ...portalAuth, shippingPortalController.getShipments);
