@@ -78,9 +78,12 @@ async function main() {
   report.landingReferences.missing = referenced.filter((slug) => !existing.has(slug));
   report.landingReferences.orphaned = report.bundles.slugs.filter((slug) => !referenced.includes(slug));
 
-  // 2) الاشتراكات
+  // 2) الاشتراكات — الحالة NULL بتظهر صريحة بدل ما تتوه في التجميع
   const subs = await prisma.$queryRawUnsafe(
-    'SELECT status, COUNT(*)::int AS count FROM "platform_subscriptions" GROUP BY status'
+    `SELECT COALESCE("status"::text, 'NULL') AS status, COUNT(*)::int AS count
+     FROM "platform_subscriptions"
+     GROUP BY 1
+     ORDER BY 1`
   ).catch(() => []);
 
   report.subscriptions.byStatus = subs.reduce((acc, row) => {
@@ -88,6 +91,14 @@ async function main() {
     report.subscriptions.total += Number(row.count) || 0;
     return acc;
   }, {});
+
+  const rawSubTotal = await prisma.$queryRawUnsafe(
+    'SELECT COUNT(*)::int AS total FROM "platform_subscriptions"'
+  ).catch(() => []);
+
+  const totalRows = Array.isArray(rawSubTotal) && rawSubTotal[0] ? Number(rawSubTotal[0].total) || 0 : 0;
+  report.subscriptions.rowsInTable = totalRows;
+  report.subscriptions.unaccounted = totalRows - report.subscriptions.total;
 
   // 3) صفحات الهبوط المرجعية (العمود مش مضمون في كل البيئات)
   const pageColumns = await prisma.$queryRawUnsafe(
@@ -134,6 +145,9 @@ async function main() {
     console.log(`  🧹 يتيمة: ${report.landingReferences.orphaned.join(', ')}`);
   }
   console.log(`الاشتراكات: ${report.subscriptions.total} — ${JSON.stringify(report.subscriptions.byStatus)}`);
+  if (report.subscriptions.rowsInTable !== undefined) {
+    console.log(`صفوف الجدول: ${report.subscriptions.rowsInTable} · غير محسوب: ${report.subscriptions.unaccounted}`);
+  }
   console.log(`صفحات الهبوط: ${report.landingPages.total} (بها bundle_slug: ${report.landingPages.withBundleSlug})`);
   console.log('مفيش أي كتابة أو حذف في السكربت ده.');
 }
