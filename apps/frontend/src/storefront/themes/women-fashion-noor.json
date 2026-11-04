@@ -273,9 +273,8 @@
           "variant": "sale-signal",
           "settings": {
             "badge": "خصم 60%",
-            "message": "على بعض المنتجات — الكمية محدودة",
-            "saleLabel": "آخر كمية",
-            "shippingLabel": "دفع عند الاستلام"
+            "message": "تخفيضات كبيرة تصل إلى 60% على بعض المنتجات",
+            "saleLabel": "عرض حالي"
           }
         },
         {
@@ -286,9 +285,7 @@
             "title": "فساتين تبدأ من 299 جنيه",
             "subtitle": "خامات مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
             "ctaText": "اطلبي الآن",
-            "ctaLink": "/shop",
-            "secondaryCtaText": "شوفي العروض",
-            "secondaryCtaLink": "/sale"
+            "ctaLink": "/shop"
           }
         },
         {
@@ -300,35 +297,23 @@
           }
         },
         {
-          "type": "countdown-banner",
-          "variant": "layered",
+          "type": "featured-products",
+          "variant": "center",
           "settings": {
-            "title": "العرض بينتهي خلال"
+            "title": "الأكثر طلبًا",
+            "limit": 8
           }
         },
         {
-          "type": "featured-products",
+          "type": "featured-product",
           "settings": {
-            "title": "الأكثر طلبًا"
+            "title": "بنطلون جبردين بظهر مبطن",
+            "badge": "خصم 60%"
           }
         },
         {
           "type": "features-bar",
           "variant": "delivery-clarity"
-        },
-        {
-          "type": "reviews",
-          "variant": "voice-notes",
-          "settings": {
-            "title": "عميلاتنا بيقولوا إيه"
-          }
-        },
-        {
-          "type": "social-gallery",
-          "variant": "grid",
-          "settings": {
-            "title": "صور من الأوردرات"
-          }
         }
       ]
     },
