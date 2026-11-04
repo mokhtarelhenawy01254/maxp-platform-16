@@ -27,7 +27,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
   onAddSection,
 }) => {
   const [activeTab, setActiveTab] = useState<"standard" | "apps">("standard");
-  const [selectedCategory, setSelectedCategory] = useState<string>("hero");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAppId, setSelectedAppId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -45,16 +45,19 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
   const availableSections = useMemo(() => {
     return Object.entries(STOREFRONT_SECTION_MANIFEST)
       .filter(([_, manifest]) => !(manifest as any).legacy)
-      .map(([type, manifest]) => ({
-        id: type,
-        type,
-        label: getStorefrontSectionLabel(type),
-        note: ((manifest as any).note as string) || "قسم جاهز وقابل للتخصيص الكامل.",
-        icon: ((manifest as any).icon as string) || "📦",
-        is2026: false,
-        badge: undefined as string | undefined,
-        initialSettings: undefined as Record<string, unknown> | undefined,
-      }));
+      .map(([type, manifest]) => {
+        const entry = manifest as any;
+        return {
+          id: type,
+          type,
+          label: getStorefrontSectionLabel(type),
+          note: (entry.note as string) || "قسم جاهز وقابل للتخصيص الكامل.",
+          icon: (entry.icon as string) || "📦",
+          is2026: false,
+          badge: undefined as string | undefined,
+          initialSettings: undefined as Record<string, unknown> | undefined,
+        };
+      });
   }, []);
 
   const totalAppSectionsCount = useMemo(() => {
@@ -84,8 +87,6 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
     }
 
     // activeTab === "standard"
-    const activeCategoryDef = STUDIO_SECTION_CATEGORIES.find((c) => c.id === selectedCategory);
-
     if (query) {
       const standardMatches = availableSections.filter(
         (item) =>
@@ -110,6 +111,12 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
 
       return [...standardMatches, ...appMatches];
     }
+
+    if (selectedCategory === "all") {
+      return availableSections;
+    }
+
+    const activeCategoryDef = STUDIO_SECTION_CATEGORIES.find((c) => c.id === selectedCategory);
 
     return availableSections.filter((item) => {
       if (!activeCategoryDef) return true;
@@ -211,6 +218,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
                   <button
                     key={category.id}
                     type="button"
+                    data-testid={`category-btn-${category.id}`}
                     onClick={() => {
                       setSelectedCategory(category.id);
                       setSearchQuery("");

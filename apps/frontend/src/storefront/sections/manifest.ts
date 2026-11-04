@@ -1,3 +1,6 @@
+import { STOREFRONT_SECTION_COMPONENT_MAP } from "../engine/sectionComponentMap";
+import type { StudioSectionCategoryId } from "../studio/StudioTypes";
+
 export type StorefrontSectionFieldInputType =
   | "text"
   | "textarea"
@@ -33,6 +36,8 @@ export interface StorefrontSectionManifestEntry {
   variants?: readonly StorefrontSectionVariantDefinition[];
   fields?: readonly StorefrontSectionFieldDefinition[];
   legacy?: boolean;
+  category?: StudioSectionCategoryId;
+  icon?: string;
 }
 
 export const STOREFRONT_PRODUCT_GRID_VARIANTS = [
@@ -3925,6 +3930,23 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "/contact" },
     ],
   },
+  "dental-sample-kit": {
+    label: "طقم عينات الأسنان (Dental Sample Kit)",
+    component: "dental-sample-kit",
+    icon: "🦷",
+    category: "specialized",
+    note: "طلب كيت عينات مجاني لعيادات الأسنان مع نماذج زيركون خماسي الطبقات 5Y-PSZ وعدسات إيماكس.",
+    pages: ["home", "shop", "pdp", "about", "contact"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+      { value: "compact", label: "مضغوط" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "خدمة مخصصة لعيادات وأطباء الأسنان" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "طلب كيت عينات مجاني للعيادة" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+    ],
+  },
   "car-model-matcher": {
     label: "مطابقة موديل السيارة (Car Model Matcher)",
     component: "car-model-matcher",
@@ -4129,6 +4151,7 @@ const STOREFRONT_SECTION_VARIANT_ALIASES = {
     legacy: "product-grid",
   },
   "dental-3d-showcase": {},
+  "dental-sample-kit": {},
 } as const satisfies Partial<Record<StorefrontSectionId, Record<string, string>>>;
 
 const normalizeVariantValue = (variant: string): string =>
@@ -4145,8 +4168,157 @@ export const getStorefrontSectionLabel = (sectionType: string): string =>
 export const getStorefrontSectionComponentKey = (sectionType: string): string =>
   getStorefrontSectionManifest(sectionType)?.component || sectionType;
 
+const SECTION_CATEGORY_LOOKUP: Record<string, StudioSectionCategoryId> = {
+  // hero
+  "hero-banner": "hero",
+  "hero-sidebar": "hero",
+  "hover-cards": "hero",
+  "background-video": "hero",
+  "shop-hero": "hero",
+
+  // products
+  "featured-products": "products",
+  "product-grid": "products",
+  "featured-product": "products",
+  "combined-listing": "products",
+  "collection-tab": "products",
+  "scrolling-cards": "products",
+  "shop-featured-collection": "products",
+  "shop-product-grid": "products",
+  "shop-the-look": "products",
+  "look-mosaic": "products",
+  "look-planner": "products",
+  "look-progress": "products",
+
+  // promotions
+  "countdown-banner": "promotions",
+  "promo-strip": "promotions",
+  "offer-bento": "promotions",
+  "quantity-offers": "promotions",
+  "bulk-savings": "promotions",
+  "shop-promo-rail": "promotions",
+  countdown: "promotions",
+  "low-stock": "promotions",
+  "viewer-counter": "promotions",
+  "sold-counter": "promotions",
+  "purchase-fomo": "promotions",
+  "pre-order": "promotions",
+  "back-in-stock": "promotions",
+
+  // trust
+  "trusted-badges": "trust",
+  "features-bar": "trust",
+  "review-circle": "trust",
+  "delivery-proof": "trust",
+  "services-grid": "trust",
+  reviews: "trust",
+
+  // content
+  richtext: "content",
+  "info-content": "content",
+  "story-parallax": "content",
+  "lookbook-showcase": "content",
+  "tiktok-feed": "content",
+  "social-gallery": "content",
+  "before-after": "content",
+  "image-hotspot": "content",
+  "article-grid": "content",
+
+  // navigation
+  "featured-collections": "navigation",
+  "shopping-intents": "navigation",
+  "journal-strip": "navigation",
+  "filters-sidebar": "navigation",
+  "shop-command-bar": "navigation",
+  newsletter: "navigation",
+
+  // pdp
+  "product-info": "pdp",
+  "product-gallery": "pdp",
+  "pdp-checkout": "pdp",
+  "size-guide": "pdp",
+  "bought-together": "pdp",
+  "conversion-stack": "pdp",
+  "dental-3d-showcase": "pdp",
+  "related-products": "pdp",
+  "product-price": "pdp",
+  "product-rating": "pdp",
+  "product-stock": "pdp",
+  "add-to-cart": "pdp",
+  "product-options": "pdp",
+  wishlist: "pdp",
+  compare: "pdp",
+
+  // checkout
+  "cart-items": "checkout",
+  "order-summary": "checkout",
+  "checkout-form": "checkout",
+  payment: "checkout",
+  "order-confirmation": "checkout",
+  "cart-items-element": "checkout",
+  "cart-totals": "checkout",
+  "checkout-button": "checkout",
+  coupon: "checkout",
+
+  // elements
+  container: "elements",
+  loop: "elements",
+  heading: "elements",
+  text: "elements",
+  image: "elements",
+  button: "elements",
+  icon: "elements",
+  divider: "elements",
+  spacer: "elements",
+  video: "elements",
+  marquee: "elements",
+  lottie: "elements",
+  "whatsapp-cta": "elements",
+  "payment-methods": "elements",
+  "shipping-partners": "elements",
+  "cod-badge": "elements",
+
+  // specialized
+  "car-model-matcher": "specialized",
+  "automotive-bento": "specialized",
+  "shoe-fit-finder": "specialized",
+  "tech-grid": "specialized",
+  "affiliate-disclosure": "specialized",
+  "affiliate-top-picks": "specialized",
+  "affiliate-quiz": "specialized",
+  "affiliate-faq": "specialized",
+  "affiliate-toc": "specialized",
+  "affiliate-pro-tip": "specialized",
+  "affiliate-sources": "specialized",
+  "affiliate-breadcrumbs": "specialized",
+  "affiliate-article-seo": "specialized",
+  "cookie-consent": "specialized",
+  "privacy-policy": "specialized",
+  "terms-of-use": "specialized",
+  "marketing-consent": "specialized",
+  "member-registration": "specialized",
+  "dental-sample-kit": "specialized",
+};
+
+export const resolveStorefrontSectionCategory = (
+  type: string,
+  entry?: StorefrontSectionManifestEntry,
+): StudioSectionCategoryId => {
+  if (entry?.category) {
+    return entry.category;
+  }
+  const manifestEntry = entry || getStorefrontSectionManifest(type);
+  if (manifestEntry?.category) {
+    return manifestEntry.category;
+  }
+  return SECTION_CATEGORY_LOOKUP[type] || "specialized";
+};
+
 export const isStorefrontSectionKnown = (sectionType: string): boolean =>
-  sectionType === "container" || sectionType === "loop" || Boolean(getStorefrontSectionManifest(sectionType));
+  sectionType === "container" ||
+  sectionType === "loop" ||
+  Boolean(getStorefrontSectionManifest(sectionType)) ||
+  Boolean(STOREFRONT_SECTION_COMPONENT_MAP[sectionType]);
 
 export const getStorefrontSectionVariantValues = (
   sectionType: string,

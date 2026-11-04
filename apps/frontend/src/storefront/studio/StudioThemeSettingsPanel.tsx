@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
+import { hslTripletToHex, hexToHslTriplet } from "./utils/hslColorBridge";
+import { StudioThemeTokensEditor } from "./tokens/StudioThemeTokensEditor";
 import { ARABIC_FONT_DEFINITIONS } from "../utils/arabicTypography";
 import {
   ShoppingBagIcon,
@@ -9,6 +11,9 @@ import {
   RocketLaunchIcon,
   PlusIcon,
   TrashIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SwatchIcon,
 } from "@heroicons/react/24/outline";
 
 interface StudioThemeSettingsPanelProps {
@@ -68,6 +73,11 @@ export const StudioThemeSettingsPanel: React.FC<StudioThemeSettingsPanelProps> =
   ];
 
   const isLandingMode = Boolean(designTokens?.landingPageMode);
+  const [showAdvancedTokens, setShowAdvancedTokens] = useState(false);
+  const rawPrimary = colors.primary || "#0f172a";
+  const primaryHex = hslTripletToHex(rawPrimary);
+  const rawAccent = colors.accent || "#3b82f6";
+  const accentHex = hslTripletToHex(rawAccent);
 
   const handleUpdateMenuLink = (index: number, field: "label" | "url", val: string) => {
     const nextMenu = [...menuLinks];
@@ -170,20 +180,38 @@ export const StudioThemeSettingsPanel: React.FC<StudioThemeSettingsPanelProps> =
         </div>
       </div>
 
-      {/* 3. Global Colors */}
+      {/* 3. Global Colors & 14 HSL Tokens Editor */}
       <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
-        <h3 className="font-black text-foreground">ألوان الهوية المتجرية</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-black text-foreground flex items-center gap-1.5">
+            <SwatchIcon className="h-4 w-4 text-primary" />
+            <span>ألوان الهوية المتجرية ورموز HSL (14 لون)</span>
+          </h3>
+          <button
+            type="button"
+            data-testid="toggle-advanced-tokens-btn"
+            onClick={() => setShowAdvancedTokens((prev) => !prev)}
+            className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+          >
+            <span>{showAdvancedTokens ? "إخفاء التفاصيل" : "الرموز الكاملة (14)"}</span>
+            {showAdvancedTokens ? (
+              <ChevronUpIcon className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDownIcon className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-[11px] font-medium text-muted-foreground">اللون الرئيسي</label>
             <div className="flex items-center gap-2">
               <input
                 type="color"
-                value={colors.primary}
-                onChange={(e) => updateTokens({ colors: { ...colors, primary: e.target.value } })}
+                value={primaryHex}
+                onChange={(e) => updateTokens({ colors: { ...colors, primary: hexToHslTriplet(e.target.value) } })}
                 className="h-8 w-8 cursor-pointer rounded-lg border border-border bg-transparent p-0"
               />
-              <span className="font-mono text-[11px] text-foreground">{colors.primary}</span>
+              <span className="font-mono text-[11px] text-foreground truncate max-w-[80px]">{rawPrimary}</span>
             </div>
           </div>
           <div>
@@ -191,14 +219,23 @@ export const StudioThemeSettingsPanel: React.FC<StudioThemeSettingsPanelProps> =
             <div className="flex items-center gap-2">
               <input
                 type="color"
-                value={colors.accent}
-                onChange={(e) => updateTokens({ colors: { ...colors, accent: e.target.value } })}
+                value={accentHex}
+                onChange={(e) => updateTokens({ colors: { ...colors, accent: hexToHslTriplet(e.target.value) } })}
                 className="h-8 w-8 cursor-pointer rounded-lg border border-border bg-transparent p-0"
               />
-              <span className="font-mono text-[11px] text-foreground">{colors.accent}</span>
+              <span className="font-mono text-[11px] text-foreground truncate max-w-[80px]">{rawAccent}</span>
             </div>
           </div>
         </div>
+
+        {showAdvancedTokens && (
+          <div className="pt-3 border-t border-border/60">
+            <StudioThemeTokensEditor
+              tokens={designTokens}
+              onChangeTokens={(next) => updateTokens(next)}
+            />
+          </div>
+        )}
       </div>
 
       {/* 4. Global Typography */}
@@ -364,8 +401,8 @@ export const StudioThemeSettingsPanel: React.FC<StudioThemeSettingsPanelProps> =
             })}
           </div>
         </div>
-      </div>
-
+      </div>
+
       {/* 5. Header Navigation Links */}
       <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
         <div className="flex items-center justify-between">

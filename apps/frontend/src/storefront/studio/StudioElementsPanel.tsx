@@ -22,6 +22,7 @@ import {
   ShoppingCartIcon,
   CreditCardIcon,
   CalculatorIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
 import type { SavedStudioSection } from "./StudioTypes";
@@ -77,6 +78,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
     { id: "product-options", label: "خيارات المنتج", type: "product-options", icon: Squares2X2Icon },
     { id: "wishlist", label: "المفضلة", type: "wishlist", icon: BookmarkIcon },
     { id: "compare", label: "المقارنة", type: "compare", icon: ArrowPathIcon },
+    { id: "cod-badge", label: "الدفع عند الاستلام", type: "cod-badge", icon: ShieldCheckIcon },
   ];
 
   const cartElements = [
@@ -84,6 +86,8 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
     { id: "cart-totals", label: "إجمالي السلة", type: "cart-totals", icon: CalculatorIcon },
     { id: "checkout-button", label: "زر إتمام الطلب", type: "checkout-button", icon: CreditCardIcon },
     { id: "coupon", label: "كود الخصم", type: "coupon", icon: TagIcon },
+    { id: "payment-methods", label: "طرق الدفع", type: "payment-methods", icon: CreditCardIcon },
+    { id: "shipping-partners", label: "شركات الشحن", type: "shipping-partners", icon: TruckIcon },
   ];
 
   const quickElements = [
@@ -100,6 +104,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
     { id: "video", label: "فيديو", type: "video", icon: PlayCircleIcon },
     { id: "marquee", label: "شريط متحرك", type: "marquee", icon: ArrowPathIcon },
     { id: "lottie", label: "أنيميشن Lottie", type: "lottie", icon: SparklesIcon },
+    { id: "whatsapp-cta", label: "واتساب مباشر", type: "whatsapp-cta", icon: ChatBubbleBottomCenterTextIcon },
   ];
 
   const presets = [

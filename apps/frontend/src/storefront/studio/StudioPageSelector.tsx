@@ -18,6 +18,9 @@ import {
   TrashIcon,
   DocumentDuplicateIcon,
   PencilSquareIcon,
+  PhoneIcon,
+  UserIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_PAGES, type StudioPageDefinition } from "./StudioTypes";
 import { useStudioBridge } from "./hooks/useStorefrontStudioState";
@@ -46,6 +49,9 @@ const PAGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   shipping: TruckIcon,
   privacy: ShieldCheckIcon,
   terms: DocumentTextIcon,
+  returns: ArrowPathIcon,
+  contact: PhoneIcon,
+  registration: UserIcon,
 };
 
 export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({

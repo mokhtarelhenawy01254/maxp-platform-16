@@ -1,7 +1,11 @@
 import React from "react";
-import { PhotoIcon, LinkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PhotoIcon, LinkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { STOREFRONT_SECTION_MANIFEST } from "../../sections/manifest";
 import { StudioDynamicTokenPicker } from "./StudioDynamicTokenPicker";
 import { StudioDisplayConditionsControl } from "./StudioDisplayConditionsControl";
+import { StudioManifestFieldsRenderer } from "./StudioManifestFieldsRenderer";
+import { StudioArrayRepeaterControl } from "./StudioArrayRepeaterControl";
+import { StudioHeroPanelGroup } from "./StudioHeroPanelGroup";
 
 export const HERO_PANEL_VARIANTS = new Set([
   "drop-board",
@@ -51,6 +55,16 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
   onUpdateField,
   onOpenImagePicker,
 }) => {
+  const manifestEntry =
+    STOREFRONT_SECTION_MANIFEST[sectionType] ||
+    STOREFRONT_SECTION_MANIFEST[sectionType?.toLowerCase?.()] ||
+    Object.values(STOREFRONT_SECTION_MANIFEST).find(
+      (entry) => entry.component?.toLowerCase() === sectionType?.toLowerCase?.()
+    );
+
+  const hasManifestFields = Boolean(manifestEntry?.fields && manifestEntry.fields.length > 0);
+
+  // Fallback field values
   const title = settings.title ?? settings.heading ?? "";
   const subtitle = settings.subtitle ?? settings.description ?? settings.subheading ?? "";
   const eyebrow = settings.eyebrow ?? settings.badge ?? settings.tagline ?? "";
@@ -59,14 +73,6 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
   const secondaryCtaText = settings.secondaryCtaText ?? "";
   const secondaryCtaLink = settings.secondaryCtaLink ?? "";
   const currentImage = settings.image ?? settings.backgroundImage ?? settings.heroImage ?? "";
-
-  const panelEyebrow = settings.panelEyebrow ?? "";
-  const panelTitle = settings.panelTitle ?? "";
-  const panelSubtitle = settings.panelSubtitle ?? "";
-  const panelNote = settings.panelNote ?? "";
-  const panelMetricLabel = settings.panelMetricLabel ?? "";
-  const panelMetricValue = settings.panelMetricValue ?? "";
-  const panelImage = settings.panelImage ?? "";
 
   const isHero =
     sectionType === "hero-banner" ||
@@ -89,400 +95,294 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
 
   const showPanelSection = isHero || hasPanelValues;
 
-  const itemsKey = Array.isArray(settings.features)
-    ? "features"
-    : Array.isArray(settings.questions)
-    ? "questions"
-    : Array.isArray(settings.reviews)
-    ? "reviews"
-    : Array.isArray(settings.items)
-    ? "items"
-    : "items";
+  // Detect active repeater array keys
+  const arrayKeysInSettings = Object.keys(settings).filter(
+    (k) => Array.isArray(settings[k]) && k !== "displayConditions" && k !== "visibilityConditions"
+  );
+  const repeaterKeys = [...arrayKeysInSettings];
 
-  const items: any[] = Array.isArray(settings[itemsKey]) ? settings[itemsKey] : [];
+  if (repeaterKeys.length === 0) {
+    const st = (sectionType || "").toLowerCase();
+    if (st.includes("faq") || st.includes("accord")) {
+      repeaterKeys.push("questions");
+    } else if (st.includes("feature")) {
+      repeaterKeys.push("items");
+    } else if (st.includes("review") || st.includes("testimonial")) {
+      repeaterKeys.push("reviews");
+    } else if (st.includes("tab")) {
+      repeaterKeys.push("tabs");
+    }
+  }
 
-  const handleUpdateItem = (index: number, field: string, val: any) => {
-    const next = [...items];
-    next[index] = { ...(next[index] || {}), [field]: val };
-    onUpdateField(itemsKey, next);
-  };
+  // Unregistered / extra primitive keys for clean fallback
+  const systemKeys = new Set([
+    "id",
+    "type",
+    "variant",
+    "heroVariant",
+    "displayConditions",
+    "visibilityConditions",
+    "customClasses",
+    "animation",
+    "layout",
+    "responsive",
+    "_id",
+    "customCss",
+    "title",
+    "heading",
+    "subtitle",
+    "description",
+    "subheading",
+    "eyebrow",
+    "badge",
+    "tagline",
+    "ctaText",
+    "primaryButtonText",
+    "buttonText",
+    "ctaLink",
+    "primaryButtonUrl",
+    "buttonUrl",
+    "secondaryCtaText",
+    "secondaryCtaLink",
+    "image",
+    "backgroundImage",
+    "heroImage",
+    "panelEyebrow",
+    "panelTitle",
+    "panelSubtitle",
+    "panelNote",
+    "panelMetricLabel",
+    "panelMetricValue",
+    "panelImage",
+    ...repeaterKeys,
+    ...(manifestEntry?.fields?.map((f: any) => f.name || f.key) || []),
+  ]);
 
-  const handleAddItem = () => {
-    const newItem = {
-      title: "عنصر جديد",
-      subtitle: "وصف توضيحي...",
-      icon: "✨",
-      question: "سؤال جديد؟",
-      answer: "الإجابة التوضيحية...",
-      name: "اسم العميل",
-      rating: 5,
-      comment: "تجربة رائعة!",
-    };
-    const next = [...items, newItem];
-    onUpdateField(itemsKey, next);
-  };
-
-  const handleDeleteItem = (index: number) => {
-    const next = items.filter((_, idx) => idx !== index);
-    onUpdateField(itemsKey, next);
-  };
+  const extraKeys = Object.keys(settings).filter(
+    (k) =>
+      !systemKeys.has(k) &&
+      typeof settings[k] !== "object" &&
+      typeof settings[k] !== "function"
+  );
 
   return (
     <div className="space-y-3 select-none text-[11.5px] text-[#17181c]">
-      {/* 1. Main Heading */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <label className="block text-[10px] font-bold text-[#6f747b]">العنوان الرئيسي</label>
-          <StudioDynamicTokenPicker
-            currentValue={title}
-            onSelectToken={(token) => {
-              onUpdateField("title", token);
-              onUpdateField("heading", token);
-            }}
-          />
-        </div>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            onUpdateField("title", e.target.value);
-            onUpdateField("heading", e.target.value);
-          }}
-          placeholder="أدخل عنوان القسم…"
-          className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
+      {/* 1. Manifest-Driven Fields or Standard Fallback */}
+      {hasManifestFields ? (
+        <StudioManifestFieldsRenderer
+          sectionType={sectionType}
+          settings={settings}
+          onUpdateField={onUpdateField}
+          onOpenImagePicker={onOpenImagePicker}
+          excludeKeys={repeaterKeys}
         />
-        {Boolean(settings.panelTitle && String(settings.panelTitle).trim()) && (
-          <p className="text-[10px] text-amber-600 font-medium pt-0.5" data-testid="panel-title-hint">
-            قالبك بيستخدم عنوان البطاقة — عدّله من مجموعة بطاقة الهيرو أدناه
-          </p>
-        )}
-      </div>
-
-      {/* 2. Subtitle / Description */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <label className="block text-[10px] font-bold text-[#6f747b]">الوصف التوضيحي</label>
-          <StudioDynamicTokenPicker
-            currentValue={subtitle}
-            onSelectToken={(token) => {
-              onUpdateField("subtitle", token);
-              onUpdateField("description", token);
-            }}
-          />
-        </div>
-        <textarea
-          rows={2}
-          value={subtitle}
-          onChange={(e) => {
-            onUpdateField("subtitle", e.target.value);
-            onUpdateField("description", e.target.value);
-          }}
-          placeholder="أدخل تفاصيل ومحتوى إضافي…"
-          className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-        />
-      </div>
-
-      {/* 3. Eyebrow Badge */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <label className="block text-[10px] font-bold text-[#6f747b]">الشارة العلوية (Badge)</label>
-          <StudioDynamicTokenPicker
-            currentValue={eyebrow}
-            onSelectToken={(token) => {
-              onUpdateField("eyebrow", token);
-              onUpdateField("badge", token);
-            }}
-          />
-        </div>
-        <input
-          type="text"
-          value={eyebrow}
-          onChange={(e) => {
-            onUpdateField("eyebrow", e.target.value);
-            onUpdateField("badge", e.target.value);
-          }}
-          placeholder="مثال: خصم حصري • وصل حديثاً"
-          className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-        />
-      </div>
-
-      {/* 4. Action Button (CTA) */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="block text-[10px] font-bold text-[#6f747b]">نص الزر</label>
-            <StudioDynamicTokenPicker
-              currentValue={ctaText}
-              onSelectToken={(token) => onUpdateField("ctaText", token)}
-            />
-          </div>
-          <input
-            type="text"
-            value={ctaText}
-            onChange={(e) => onUpdateField("ctaText", e.target.value)}
-            placeholder="تسوق الآن"
-            className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-          />
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="block text-[10px] font-bold text-[#6f747b]">رابط الزر</label>
-            <StudioDynamicTokenPicker
-              currentValue={ctaLink}
-              onSelectToken={(token) => onUpdateField("ctaLink", token)}
-            />
-          </div>
-          <div className="flex items-center rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 text-[#8a8f96] focus-within:border-[#2b6cf6] focus-within:bg-white">
-            <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
-            <input
-              type="text"
-              dir="ltr"
-              value={ctaLink}
-              onChange={(e) => onUpdateField("ctaLink", e.target.value)}
-              placeholder="/shop"
-              className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none font-mono"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 4b. Secondary Action Button (Hero) */}
-      {(isHero || Boolean(settings.secondaryCtaText || settings.secondaryCtaLink)) && (
-        <div className="grid grid-cols-2 gap-2">
+      ) : (
+        <div className="space-y-3">
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">نص الزر الثانوي</label>
-            <input
-              type="text"
-              value={secondaryCtaText}
-              onChange={(e) => onUpdateField("secondaryCtaText", e.target.value)}
-              placeholder="اكتشف المزيد"
-              className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">رابط الزر الثانوي</label>
-            <div className="flex items-center rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 text-[#8a8f96] focus-within:border-[#2b6cf6] focus-within:bg-white">
-              <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
-              <input
-                type="text"
-                dir="ltr"
-                value={secondaryCtaLink}
-                onChange={(e) => onUpdateField("secondaryCtaLink", e.target.value)}
-                placeholder="/collections"
-                className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none font-mono"
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold text-[#6f747b]">العنوان الرئيسي</label>
+              <StudioDynamicTokenPicker
+                currentValue={title}
+                onSelectToken={(t) => {
+                  onUpdateField("title", t);
+                  onUpdateField("heading", t);
+                }}
               />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Image Selector */}
-      <div className="space-y-1.5 pt-1">
-        <label className="block text-[10px] font-bold text-[#6f747b]">الصورة أو الخلفية</label>
-        <div className="flex items-center gap-2">
-          {currentImage ? (
-            <img
-              src={currentImage}
-              alt="معاينة"
-              className="h-10 w-14 shrink-0 rounded-md border border-[#ececee] object-cover"
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => {
+                onUpdateField("title", e.target.value);
+                onUpdateField("heading", e.target.value);
+              }}
+              placeholder="أدخل عنوان القسم…"
+              className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
             />
-          ) : (
-            <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-dashed border-[#ececee] bg-[#f6f7f8] text-[#8a8f96]">
-              <PhotoIcon className="h-4 w-4" />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => onOpenImagePicker?.("image")}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#ececee] bg-[#f6f7f8] py-2 text-[11px] font-semibold text-[#17181c] hover:bg-[#ececee] transition-colors"
-          >
-            <PhotoIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
-            <span>اختيار من مكتبة الصور</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 5b. Hero Panel Group */}
-      {showPanelSection && (
-        <div className="space-y-3 pt-3 border-t border-[#ececee]" data-testid="hero-panel-group">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[#17181c]">بطاقة الهيرو (Panel)</span>
-            {isPanelVariant ? (
-              <span className="text-[9.5px] font-semibold text-[#2b6cf6] bg-[#2b6cf6]/10 px-1.5 py-0.5 rounded">
-                قالب نشط
-              </span>
-            ) : (
-              <span className="text-[9.5px] text-[#8a8f96]">
-                تظهر في بعض قوالب الهيرو
-              </span>
+            {Boolean(settings.panelTitle && String(settings.panelTitle).trim()) && (
+              <p className="text-[10px] text-amber-600 font-medium pt-0.5" data-testid="panel-title-hint">
+                قالبك بيستخدم عنوان البطاقة — عدّله من مجموعة بطاقة الهيرو أدناه
+              </p>
             )}
           </div>
 
-          {/* Panel Eyebrow */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">شارة البطاقة (Panel Eyebrow)</label>
-            <input
-              type="text"
-              data-testid="input-panel-eyebrow"
-              value={panelEyebrow}
-              onChange={(e) => onUpdateField("panelEyebrow", e.target.value)}
-              placeholder="مثال: مختارات الموسم • جديد"
-              className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-            />
-          </div>
-
-          {/* Panel Title */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">عنوان البطاقة (Panel Title)</label>
-            <input
-              type="text"
-              data-testid="input-panel-title"
-              value={panelTitle}
-              onChange={(e) => onUpdateField("panelTitle", e.target.value)}
-              placeholder="أدخل عنوان بطاقة الهيرو…"
-              className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
-            />
-          </div>
-
-          {/* Panel Subtitle / Description */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">وصف البطاقة (Panel Subtitle)</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold text-[#6f747b]">الوصف التوضيحي</label>
+              <StudioDynamicTokenPicker
+                currentValue={subtitle}
+                onSelectToken={(t) => {
+                  onUpdateField("subtitle", t);
+                  onUpdateField("description", t);
+                }}
+              />
+            </div>
             <textarea
               rows={2}
-              data-testid="input-panel-subtitle"
-              value={panelSubtitle}
-              onChange={(e) => onUpdateField("panelSubtitle", e.target.value)}
-              placeholder="أدخل تفاصيل ومحتوى البطاقة…"
+              value={subtitle}
+              onChange={(e) => {
+                onUpdateField("subtitle", e.target.value);
+                onUpdateField("description", e.target.value);
+              }}
+              placeholder="أدخل تفاصيل ومحتوى إضافي…"
               className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
             />
           </div>
 
-          {/* Panel Note */}
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">ملاحظة إضافية (Panel Note)</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold text-[#6f747b]">الشارة العلوية (Badge)</label>
+              <StudioDynamicTokenPicker
+                currentValue={eyebrow}
+                onSelectToken={(t) => {
+                  onUpdateField("eyebrow", t);
+                  onUpdateField("badge", t);
+                }}
+              />
+            </div>
             <input
               type="text"
-              data-testid="input-panel-note"
-              value={panelNote}
-              onChange={(e) => onUpdateField("panelNote", e.target.value)}
-              placeholder="مثال: شحن سريع داخل مصر + استبدال مجاني"
+              value={eyebrow}
+              onChange={(e) => {
+                onUpdateField("eyebrow", e.target.value);
+                onUpdateField("badge", e.target.value);
+              }}
+              placeholder="مثال: خصم حصري • وصل حديثاً"
               className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2.5 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
             />
           </div>
 
-          {/* Panel Metric: Label & Value */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-[#6f747b]">عنوان الإحصائية (Metric Label)</label>
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-bold text-[#6f747b]">نص الزر</label>
+                <StudioDynamicTokenPicker currentValue={ctaText} onSelectToken={(t) => onUpdateField("ctaText", t)} />
+              </div>
               <input
                 type="text"
-                data-testid="input-panel-metric-label"
-                value={panelMetricLabel}
-                onChange={(e) => onUpdateField("panelMetricLabel", e.target.value)}
-                placeholder="الأكثر طلباً"
+                value={ctaText}
+                onChange={(e) => onUpdateField("ctaText", e.target.value)}
+                placeholder="تسوق الآن"
                 className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-[#6f747b]">قيمة الإحصائية (Metric Value)</label>
-              <input
-                type="text"
-                data-testid="input-panel-metric-value"
-                value={panelMetricValue}
-                onChange={(e) => onUpdateField("panelMetricValue", e.target.value)}
-                placeholder="+24% أو 10+"
-                className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white font-mono"
-              />
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-bold text-[#6f747b]">رابط الزر</label>
+                <StudioDynamicTokenPicker currentValue={ctaLink} onSelectToken={(t) => onUpdateField("ctaLink", t)} />
+              </div>
+              <div className="flex items-center rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 text-[#8a8f96] focus-within:border-[#2b6cf6] focus-within:bg-white">
+                <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={ctaLink}
+                  onChange={(e) => onUpdateField("ctaLink", e.target.value)}
+                  placeholder="/shop"
+                  className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none font-mono"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Panel Image */}
-          <div className="space-y-1.5 pt-1">
-            <label className="block text-[10px] font-bold text-[#6f747b]">صورة البطاقة (Panel Image)</label>
-            <div className="flex items-center gap-2">
-              {panelImage ? (
-                <img
-                  src={panelImage}
-                  alt="معاينة بطاقة الهيرو"
-                  className="h-10 w-14 shrink-0 rounded-md border border-[#ececee] object-cover"
+          {(isHero || Boolean(settings.secondaryCtaText || settings.secondaryCtaLink)) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#6f747b]">نص الزر الثانوي</label>
+                <input
+                  type="text"
+                  value={secondaryCtaText}
+                  onChange={(e) => onUpdateField("secondaryCtaText", e.target.value)}
+                  placeholder="اكتشف المزيد"
+                  className="w-full rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 py-1.5 text-[11.5px] text-[#17181c] outline-none focus:border-[#2b6cf6] focus:bg-white"
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#6f747b]">رابط الزر الثانوي</label>
+                <div className="flex items-center rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 text-[#8a8f96] focus-within:border-[#2b6cf6] focus-within:bg-white">
+                  <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={secondaryCtaLink}
+                    onChange={(e) => onUpdateField("secondaryCtaLink", e.target.value)}
+                    placeholder="/collections"
+                    className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5 pt-1">
+            <label className="block text-[10px] font-bold text-[#6f747b]">الصورة أو الخلفية</label>
+            <div className="flex items-center gap-2">
+              {currentImage ? (
+                <img src={currentImage} alt="معاينة" className="h-10 w-14 shrink-0 rounded-md border border-[#ececee] object-cover" />
               ) : (
                 <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-dashed border-[#ececee] bg-[#f6f7f8] text-[#8a8f96]">
                   <PhotoIcon className="h-4 w-4" />
                 </div>
               )}
-              <div className="flex-1 space-y-1">
-                <button
-                  type="button"
-                  data-testid="btn-panel-image-picker"
-                  onClick={() => onOpenImagePicker?.("panelImage")}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#ececee] bg-[#f6f7f8] py-1.5 text-[11px] font-semibold text-[#17181c] hover:bg-[#ececee] transition-colors"
-                >
-                  <PhotoIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
-                  <span>اختيار من مكتبة الصور</span>
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center rounded-lg border border-[#ececee] bg-[#f6f7f8] px-2 text-[#8a8f96] focus-within:border-[#2b6cf6] focus-within:bg-white">
-              <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
-              <input
-                type="text"
-                dir="ltr"
-                data-testid="input-panel-image-url"
-                value={panelImage}
-                onChange={(e) => onUpdateField("panelImage", e.target.value)}
-                placeholder="رابط مباشر للصورة (URL)..."
-                className="w-full bg-transparent py-1.5 text-[11px] text-[#17181c] outline-none font-mono"
-              />
+              <button
+                type="button"
+                onClick={() => onOpenImagePicker?.("image")}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#ececee] bg-[#f6f7f8] py-2 text-[11px] font-semibold text-[#17181c] hover:bg-[#ececee] transition-colors"
+              >
+                <PhotoIcon className="h-3.5 w-3.5 text-[#2b6cf6]" />
+                <span>اختيار من مكتبة الصور</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 6. Repeatable Sub-Items (Features, FAQ, Reviews) */}
-      {items.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-[#ececee]">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#6f747b]">
-              العناصر الفرعية ({items.length})
-            </span>
-            <button
-              type="button"
-              onClick={handleAddItem}
-              className="flex items-center gap-1 text-[10.5px] font-semibold text-[#2b6cf6] hover:underline"
-            >
-              <PlusIcon className="h-3 w-3" />
-              <span>إضافة عنصر</span>
-            </button>
-          </div>
+      {/* 2. Hero Panel Group */}
+      {showPanelSection && (
+        <StudioHeroPanelGroup
+          settings={settings}
+          isPanelVariant={isPanelVariant}
+          onUpdateField={onUpdateField}
+          onOpenImagePicker={onOpenImagePicker}
+        />
+      )}
 
-          <div className="space-y-1.5 max-h-36 overflow-y-auto [scrollbar-width:thin]">
-            {items.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2"
-              >
+      {/* 3. Array Repeaters */}
+      {repeaterKeys.map((key) => (
+        <StudioArrayRepeaterControl
+          key={key}
+          arrayKey={key}
+          items={Array.isArray(settings[key]) ? settings[key] : []}
+          onUpdateField={onUpdateField}
+          onOpenImagePicker={onOpenImagePicker}
+        />
+      ))}
+
+      {/* 4. Additional / Unregistered Settings */}
+      {extraKeys.length > 0 && (
+        <details className="group rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2" data-testid="extra-settings-drawer">
+          <summary className="flex cursor-pointer items-center justify-between text-[10.5px] font-bold text-[#6f747b] outline-none">
+            <span>إعدادات إضافية ({extraKeys.length})</span>
+            <ChevronDownIcon className="h-3.5 w-3.5 text-[#8a8f96] transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-2 pt-2 border-t border-[#ececee]">
+            {extraKeys.map((k) => (
+              <div key={k} className="space-y-1">
+                <label className="block text-[9.5px] font-semibold text-[#6f747b]">{k}</label>
                 <input
                   type="text"
-                  value={item.title || item.question || item.name || `عنصر ${idx + 1}`}
-                  onChange={(e) => handleUpdateItem(idx, "title", e.target.value)}
-                  className="w-full bg-transparent text-[11px] font-medium text-[#17181c] outline-none"
+                  data-testid={`input-extra-${k}`}
+                  value={String(settings[k] ?? "")}
+                  onChange={(e) => onUpdateField(k, e.target.value)}
+                  className="w-full rounded border border-[#ececee] bg-white px-2 py-1 text-[11px] outline-none focus:border-[#2b6cf6]"
                 />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteItem(idx)}
-                  className="rounded p-1 text-red-500 hover:bg-red-50"
-                  title="حذف العنصر"
-                >
-                  <TrashIcon className="h-3 w-3" />
-                </button>
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
-      {/* 7. Display Conditions (Ticket DYN-1) */}
+      {/* 5. Display Conditions */}
       <StudioDisplayConditionsControl
         conditions={settings.displayConditions ?? settings.visibilityConditions}
         onChangeConditions={(val) => onUpdateField("displayConditions", val)}

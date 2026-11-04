@@ -4,7 +4,7 @@
 // zustand `persist` needs the in-memory localStorage polyfill.
 import "./setup/storefrontTestSetup";
 import React from "react";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, renderHook, act, within } from "@testing-library/react";
@@ -24,7 +24,11 @@ import { resolveStorefrontTheme } from "../engine/themeResolver";
 // STUDIO-REG-1: assertions track the CURRENT studio surface (waves A/B added
 // components/templates/themes/header-footer/compliance/variables tools, the
 // animation/i18n/analytics inspector tabs and the breakpoint editor).
-const STUDIO_CSS_PATH = resolve(process.cwd(), "src/storefront/studio/storefront-studio.css");
+const STUDIO_CSS_PATH = existsSync(resolve(process.cwd(), "src/storefront/studio/storefront-studio.css"))
+  ? resolve(process.cwd(), "src/storefront/studio/storefront-studio.css")
+  : existsSync(resolve(process.cwd(), "apps/frontend/src/storefront/studio/storefront-studio.css"))
+    ? resolve(process.cwd(), "apps/frontend/src/storefront/studio/storefront-studio.css")
+    : resolve(__dirname, "../studio/storefront-studio.css");
 
 describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
   describe("StudioResponsiveAIGenerator", () => {
@@ -139,8 +143,8 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       ]) {
         expect(screen.getByText(label)).toBeDefined();
       }
-      // 13 quick elements + 7 commerce + 4 cart + 5 presets are all draggable.
-      expect(document.querySelectorAll("[data-studio-draggable]").length).toBe(13 + 7 + 4 + 5);
+      // 13 quick elements + 9 commerce + 6 cart + 5 presets are all draggable.
+      expect(document.querySelectorAll("[data-studio-draggable]").length).toBe(13 + 9 + 6 + 5);
 
       // Dynamic commerce + cart groups (COMM-1 / CHECKOUT-1).
       expect(screen.getByText("عناصر المنتج والتجارة (ديناميكي)")).toBeDefined();

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { StudioDeviceMode, StudioZoomLevel } from "./StudioTypes";
 import { StudioCanvasRuler } from "./StudioCanvasRuler";
+import { StudioIframePortal } from "./canvas/StudioIframePortal";
 
 interface StudioCanvasStageProps {
   deviceMode: StudioDeviceMode;
@@ -55,7 +56,9 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
 
                 {/* Mobile Viewport Container - Single scroller, no inner overflow-y-auto */}
                 <div className="w-full overflow-hidden bg-background pt-6 pb-6 @container">
-                  {children}
+                  <StudioIframePortal deviceMode="mobile" zoomLevel={zoomLevel}>
+                    {children}
+                  </StudioIframePortal>
                 </div>
 
                 {/* Bottom Home Indicator */}
@@ -67,7 +70,9 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
               /* Tablet Viewport - Single scroller, no inner overflow-y-auto */
               <div className="relative mx-auto overflow-hidden rounded-[1.75rem] border-[8px] border-[#101114] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/5">
                 <div className="w-full overflow-hidden bg-background">
-                  {children}
+                  <StudioIframePortal deviceMode="tablet" zoomLevel={zoomLevel}>
+                    {children}
+                  </StudioIframePortal>
                 </div>
               </div>
             ) : (
@@ -80,7 +85,9 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
                 }}
                 className="studio-canvas-desktop-frame relative mx-auto w-full rounded-xl border border-[#d6dae2] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.05)]"
               >
-                {children}
+                <StudioIframePortal deviceMode="desktop" zoomLevel={zoomLevel}>
+                  {children}
+                </StudioIframePortal>
               </div>
             )}
           </div>

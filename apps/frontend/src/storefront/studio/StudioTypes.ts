@@ -404,16 +404,31 @@ export const STUDIO_PAGES: StudioPageDefinition[] = [
   { id: "cart", label: "السلة", icon: "🛒", description: "عربة التسوق، الهدايا، والشحن المجاني" },
   { id: "checkout", label: "إتمام الطلب", icon: "💳", description: "صفحة الدفع، بيانات الشحن، والتأكيد" },
   { id: "thank-you", label: "تم الطلب", icon: "✅", description: "تأكيد الطلب ورقم المتابعة والملخص" },
-  { id: "sale", label: "العروض", icon: "🏷️", description: "عروض التخفيضات والخصومات والباقات الخاصة" },
   { id: "collections", label: "المجموعات", icon: "🗂️", description: "كتالوج التشكيلات والمجموعات المميزة" },
-  { id: "size-guide", label: "دليل المقاسات", icon: "📐", description: "جدول المقاسات وإرشادات اختيار القياس المناسب" },
+  { id: "sale", label: "العروض", icon: "🏷️", description: "عروض التخفيضات والخصومات والباقات الخاصة" },
   { id: "shipping", label: "الشحن والتوصيل", icon: "🚚", description: "سياسة ومواعيد وتكاليف التوصيل" },
+  { id: "returns", label: "سياسة الاستبدال والاسترجاع", icon: "🔄", description: "شروط وإجراءات طلب الاسترجاع والاستبدال" },
+  { id: "contact", label: "تواصل معنا", icon: "📞", description: "معلومات وبيانات التواصل وساعات العمل" },
   { id: "privacy", label: "الخصوصية", icon: "🔒", description: "سياسة حماية البيانات وخصوصية العملاء" },
   { id: "terms", label: "الشروط والأحكام", icon: "📜", description: "شروط الاستخدام وأحكام الشراء والإرجاع" },
+  { id: "registration", label: "تسجيل حساب", icon: "👤", description: "صفحة إنشاء حساب عميل جديد والتسجيل" },
 ];
 
+export type StudioSectionCategoryId =
+  | "all"
+  | "hero"
+  | "products"
+  | "promotions"
+  | "trust"
+  | "content"
+  | "navigation"
+  | "pdp"
+  | "checkout"
+  | "elements"
+  | "specialized";
+
 export interface StudioSectionCategory {
-  id: string;
+  id: StudioSectionCategoryId;
   title: string;
   icon: string;
   description: string;
@@ -422,11 +437,18 @@ export interface StudioSectionCategory {
 
 export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
   {
+    id: "all",
+    title: "جميع الأقسام",
+    icon: "⚡",
+    description: "استعراض كافة الأقسام والمكونات الجاهزة في المنصة",
+    types: [],
+  },
+  {
     id: "hero",
     title: "البنرات والواجهات الرئيسية",
     icon: "✨",
     description: "بنرات متحركة، صور عريضة، وفيديوهات تقديمية",
-    types: ["hero-banner", "hero-sidebar", "hover-cards", "background-video"],
+    types: ["hero-banner", "hero-sidebar", "hover-cards", "background-video", "shop-hero"],
   },
   {
     id: "products",
@@ -440,6 +462,12 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
       "combined-listing",
       "collection-tab",
       "scrolling-cards",
+      "shop-featured-collection",
+      "shop-product-grid",
+      "shop-the-look",
+      "look-mosaic",
+      "look-planner",
+      "look-progress",
     ],
   },
   {
@@ -454,6 +482,13 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
       "quantity-offers",
       "bulk-savings",
       "shop-promo-rail",
+      "countdown",
+      "low-stock",
+      "viewer-counter",
+      "sold-counter",
+      "purchase-fomo",
+      "pre-order",
+      "back-in-stock",
     ],
   },
   {
@@ -499,6 +534,98 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
       "filters-sidebar",
       "shop-command-bar",
       "newsletter",
+    ],
+  },
+  {
+    id: "pdp",
+    title: "صفحات وتفاصيل المنتجات",
+    icon: "📦",
+    description: "تفاصيل المنتجات، معارض الصور، شراء بنقرة واحدة وحزم العينات",
+    types: [
+      "product-info",
+      "product-gallery",
+      "pdp-checkout",
+      "size-guide",
+      "bought-together",
+      "conversion-stack",
+      "dental-3d-showcase",
+      "dental-sample-kit",
+      "related-products",
+      "product-price",
+      "product-rating",
+      "product-stock",
+      "add-to-cart",
+      "product-options",
+      "wishlist",
+      "compare",
+    ],
+  },
+  {
+    id: "checkout",
+    title: "السلة والدفع وإنهاء الطلب",
+    icon: "💳",
+    description: "بنود السلة، حاسبة الإجمالي، شريط الكوبونات ونماذج الدفع السريع",
+    types: [
+      "cart-items",
+      "order-summary",
+      "checkout-form",
+      "payment",
+      "order-confirmation",
+      "cart-items-element",
+      "cart-totals",
+      "checkout-button",
+      "coupon",
+    ],
+  },
+  {
+    id: "elements",
+    title: "العناصر والوحدات التأسيسية",
+    icon: "🧱",
+    description: "الحاويات، الحلقات، الأزرار، النصوص، والفواصل وتكاملات مصر",
+    types: [
+      "container",
+      "loop",
+      "heading",
+      "text",
+      "image",
+      "button",
+      "icon",
+      "divider",
+      "spacer",
+      "video",
+      "marquee",
+      "lottie",
+      "whatsapp-cta",
+      "payment-methods",
+      "shipping-partners",
+      "cod-badge",
+    ],
+  },
+  {
+    id: "specialized",
+    title: "القطاعات المخصصة والأفلييت",
+    icon: "🎯",
+    description: "مطابقة الموديلات، كيت الأسنان، التوافق القانوني وأدوات التسويق بالعمولة",
+    types: [
+      "car-model-matcher",
+      "automotive-bento",
+      "shoe-fit-finder",
+      "tech-grid",
+      "affiliate-disclosure",
+      "affiliate-top-picks",
+      "affiliate-quiz",
+      "affiliate-faq",
+      "affiliate-toc",
+      "affiliate-pro-tip",
+      "affiliate-sources",
+      "affiliate-breadcrumbs",
+      "affiliate-article-seo",
+      "cookie-consent",
+      "privacy-policy",
+      "terms-of-use",
+      "marketing-consent",
+      "member-registration",
+      "dental-sample-kit",
     ],
   },
 ];

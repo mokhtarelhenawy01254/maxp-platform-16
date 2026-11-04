@@ -1,3 +1,6 @@
+import { resolveStorefrontSectionCategory } from "../sections/manifest";
+import type { StudioSectionCategoryId } from "./StudioTypes";
+
 /**
  * StudioSectionThumbnails.ts
  * High-fidelity SVG visual layout diagrams for Storefront Studio Library elements.
@@ -326,6 +329,326 @@ export const STUDIO_SECTION_THUMBNAILS: Record<string, string> = {
       </g>
     </svg>
   `),
+
+  // 12. Egypt: WhatsApp CTA (واتساب مباشر)
+  "whatsapp-cta": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#14261c" stroke="#22c55e" stroke-width="1.2"/>
+      <circle cx="38" cy="40" r="15" fill="#22c55e"/>
+      <path d="M33 44 L35 38 A6 6 0 1 1 45 40 L45 44 Z" fill="#ffffff"/>
+      <rect x="62" y="28" width="80" height="8" rx="4" fill="#ffffff"/>
+      <rect x="62" y="42" width="130" height="6" rx="3" fill="#86efac"/>
+    </svg>
+  `),
+
+  // 13. Egypt: COD Badge (الدفع عند الاستلام)
+  "cod-badge": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#241e14" stroke="#f59e0b" stroke-width="1.2"/>
+      <circle cx="38" cy="40" r="15" fill="#f59e0b" fill-opacity="0.2" stroke="#f59e0b" stroke-width="1.5"/>
+      <path d="M38 31 L45 35 V42 C45 46 38 50 38 50 C38 50 31 46 31 42 V35 Z" fill="#fbbf24"/>
+      <rect x="62" y="28" width="90" height="8" rx="4" fill="#ffffff"/>
+      <rect x="62" y="42" width="120" height="6" rx="3" fill="#fcd34d"/>
+    </svg>
+  `),
+
+  // 14. Egypt: Shipping Partners (شركات الشحن)
+  "shipping-partners": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#141d28" stroke="#0ea5e9" stroke-width="1.2"/>
+      <rect x="22" y="24" width="28" height="32" rx="4" fill="#0284c7"/>
+      <rect x="58" y="26" width="48" height="28" rx="5" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+      <rect x="112" y="26" width="48" height="28" rx="5" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+      <rect x="166" y="26" width="48" height="28" rx="5" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+    </svg>
+  `),
+
+  // 15. Egypt: Payment Methods (طرق الدفع)
+  "payment-methods": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#1f182b" stroke="#a855f7" stroke-width="1.2"/>
+      <rect x="22" y="26" width="36" height="28" rx="4" fill="#7c3aed"/>
+      <rect x="66" y="26" width="44" height="28" rx="4" fill="#242138" stroke="#c084fc" stroke-width="1"/>
+      <rect x="116" y="26" width="44" height="28" rx="4" fill="#242138" stroke="#c084fc" stroke-width="1"/>
+      <rect x="166" y="26" width="44" height="28" rx="4" fill="#242138" stroke="#c084fc" stroke-width="1"/>
+    </svg>
+  `),
+
+  // 16. Dental: Sample Kit (طقم عينات الأسنان)
+  "dental-sample-kit": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#040711"/>
+      <rect x="12" y="10" width="216" height="60" rx="8" fill="#081824" stroke="#06b6d4" stroke-width="1.2"/>
+      <circle cx="38" cy="40" r="16" fill="#06b6d4" fill-opacity="0.2"/>
+      <path d="M38 28 C34 28 32 32 32 36 C32 44 35 50 38 52 C41 50 44 44 44 36 C44 32 42 28 38 28 Z" fill="#22d3ee"/>
+      <rect x="64" y="24" width="105" height="8" rx="4" fill="#ffffff"/>
+      <rect x="64" y="38" width="140" height="5" rx="2.5" fill="#67e8f9"/>
+      <rect x="64" y="48" width="60" height="13" rx="4" fill="#0891b2"/>
+    </svg>
+  `),
+
+  // 17. Dental: 3D Showcase (معاينة ثلاثية الأبعاد)
+  "dental-3d-showcase": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#040711"/>
+      <rect x="12" y="10" width="216" height="60" rx="8" fill="#081622" stroke="#14b8a6" stroke-width="1.2"/>
+      <ellipse cx="170" cy="40" rx="30" ry="16" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <circle cx="170" cy="40" r="12" fill="#0f766e"/>
+      <rect x="24" y="22" width="90" height="8" rx="4" fill="#ffffff"/>
+      <rect x="24" y="36" width="115" height="5" rx="2.5" fill="#99f6e4"/>
+      <rect x="24" y="47" width="65" height="13" rx="4" fill="#0d9488"/>
+    </svg>
+  `),
+
+  // 18. Automotive: Car Model Matcher (مطابقة موديل السيارة)
+  "car-model-matcher": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="12" width="216" height="56" rx="8" fill="#1b2230" stroke="#3b82f6" stroke-width="1.2"/>
+      <rect x="24" y="22" width="120" height="16" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <rect x="30" y="27" width="60" height="6" rx="2" fill="#94a3b8"/>
+      <rect x="150" y="22" width="66" height="16" rx="4" fill="#2563eb"/>
+      <rect x="24" y="46" width="110" height="8" rx="3" fill="#22c55e" fill-opacity="0.3"/>
+    </svg>
+  `),
+
+  // 19. Automotive: Bento (مواصفات هندسية بينتو)
+  "automotive-bento": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="12" width="65" height="56" rx="6" fill="#1e222b" stroke="#333a46" stroke-width="1"/>
+      <rect x="85" y="12" width="70" height="56" rx="6" fill="#1e222b" stroke="#333a46" stroke-width="1"/>
+      <rect x="161" y="12" width="65" height="56" rx="6" fill="#1e222b" stroke="#333a46" stroke-width="1"/>
+    </svg>
+  `),
+
+  // 20. Fashion: Shoe Fit Finder (محدد مقاس الأحذية)
+  "shoe-fit-finder": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="12" width="216" height="56" rx="8" fill="#1f232b" stroke="#f97316" stroke-width="1.2"/>
+      <rect x="24" y="24" width="75" height="8" rx="4" fill="#ffffff"/>
+      <rect x="24" y="40" width="30" height="16" rx="4" fill="#ea580c"/>
+      <rect x="60" y="40" width="30" height="16" rx="4" fill="#2a2e39"/>
+      <rect x="96" y="40" width="30" height="16" rx="4" fill="#2a2e39"/>
+      <rect x="132" y="40" width="30" height="16" rx="4" fill="#2a2e39"/>
+    </svg>
+  `),
+
+  // 21. Fashion: Shop The Look (تسوق الإطلالة)
+  "shop-the-look": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="10" width="100" height="60" rx="6" fill="#252934"/>
+      <circle cx="50" cy="30" r="5" fill="#f43f5e"/>
+      <circle cx="70" cy="50" r="5" fill="#f43f5e"/>
+      <rect x="124" y="18" width="90" height="8" rx="3" fill="#ffffff"/>
+      <rect x="124" y="32" width="70" height="5" rx="2.5" fill="#94a3b8"/>
+      <rect x="124" y="45" width="50" height="14" rx="4" fill="#e11d48"/>
+    </svg>
+  `),
+
+  // 22. Look Mosaic / Planner / Progress
+  "look-mosaic": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="12" width="48" height="56" rx="5" fill="#222630"/>
+      <rect x="68" y="12" width="48" height="26" rx="5" fill="#222630"/>
+      <rect x="68" y="42" width="48" height="26" rx="5" fill="#222630"/>
+      <rect x="124" y="12" width="102" height="56" rx="6" fill="#1b202a" stroke="#333948" stroke-width="1"/>
+    </svg>
+  `),
+  "look-planner": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="12" width="60" height="56" rx="6" fill="#222733"/>
+      <rect x="80" y="12" width="60" height="56" rx="6" fill="#222733"/>
+      <rect x="146" y="12" width="80" height="56" rx="6" fill="#1c212c" stroke="#3b82f6" stroke-width="1"/>
+    </svg>
+  `),
+  "look-progress": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="16" y="24" width="208" height="12" rx="6" fill="#222631"/>
+      <rect x="16" y="24" width="130" height="12" rx="6" fill="#ec4899"/>
+      <circle cx="146" cy="30" r="10" fill="#f43f5e" stroke="#ffffff" stroke-width="2"/>
+      <rect x="16" y="46" width="100" height="8" rx="4" fill="#ffffff"/>
+    </svg>
+  `),
+
+  // 23. Combined Listing (قائمة مجمعة)
+  "combined-listing": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="14" width="70" height="52" rx="6" fill="#242933"/>
+      <rect x="92" y="18" width="80" height="8" rx="3" fill="#ffffff"/>
+      <rect x="92" y="32" width="50" height="6" rx="2.5" fill="#10b981"/>
+      <rect x="92" y="46" width="130" height="12" rx="3" fill="#3b82f6" fill-opacity="0.3"/>
+    </svg>
+  `),
+
+  // 24. Cart Items / Cart Items Element (بنود السلة)
+  "cart-items": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="12" width="212" height="26" rx="5" fill="#20242e"/>
+      <rect x="22" y="18" width="16" height="14" rx="3" fill="#3b82f6"/>
+      <rect x="44" y="21" width="70" height="6" rx="2" fill="#ffffff"/>
+      <rect x="180" y="21" width="36" height="6" rx="2" fill="#10b981"/>
+      <rect x="14" y="42" width="212" height="26" rx="5" fill="#20242e"/>
+      <rect x="22" y="48" width="16" height="14" rx="3" fill="#3b82f6"/>
+      <rect x="44" y="51" width="85" height="6" rx="2" fill="#ffffff"/>
+      <rect x="180" y="51" width="36" height="6" rx="2" fill="#10b981"/>
+    </svg>
+  `),
+  "cart-items-element": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="12" width="212" height="26" rx="5" fill="#20242e"/>
+      <rect x="22" y="18" width="16" height="14" rx="3" fill="#3b82f6"/>
+      <rect x="44" y="21" width="70" height="6" rx="2" fill="#ffffff"/>
+      <rect x="180" y="21" width="36" height="6" rx="2" fill="#10b981"/>
+      <rect x="14" y="42" width="212" height="26" rx="5" fill="#20242e"/>
+      <rect x="22" y="48" width="16" height="14" rx="3" fill="#3b82f6"/>
+      <rect x="44" y="51" width="85" height="6" rx="2" fill="#ffffff"/>
+      <rect x="180" y="51" width="36" height="6" rx="2" fill="#10b981"/>
+    </svg>
+  `),
+
+  // 25. Cart Totals & Checkout Button (إجمالي السلة وزر الطلب)
+  "cart-totals": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="14" width="212" height="52" rx="6" fill="#1c212b" stroke="#333a48" stroke-width="1"/>
+      <rect x="24" y="22" width="80" height="6" rx="2" fill="#94a3b8"/>
+      <rect x="170" y="22" width="46" height="6" rx="2" fill="#ffffff"/>
+      <rect x="24" y="38" width="192" height="18" rx="4" fill="#2563eb"/>
+    </svg>
+  `),
+  "checkout-button": encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="20" y="20" width="200" height="40" rx="8" fill="#2563eb"/>
+      <circle cx="50" cy="40" r="6" fill="#ffffff"/>
+      <rect x="68" y="36" width="110" height="8" rx="4" fill="#ffffff"/>
+    </svg>
+  `),
+
+  // 26. Coupon (كوبون الخصم)
+  coupon: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="18" width="140" height="44" rx="6" fill="#1c202a" stroke="#475569" stroke-width="1" stroke-dasharray="4 2"/>
+      <rect x="26" y="36" width="80" height="8" rx="3" fill="#cbd5e1"/>
+      <rect x="160" y="18" width="66" height="44" rx="6" fill="#059669"/>
+      <rect x="175" y="36" width="36" height="8" rx="3" fill="#ffffff"/>
+    </svg>
+  `),
+};
+
+// Category-based semantic SVG thumbnail generator
+const CATEGORY_THUMBNAILS: Record<StudioSectionCategoryId, string> = {
+  all: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#16181d"/>
+      <rect x="14" y="12" width="65" height="56" rx="6" fill="#222733" stroke="#333a46" stroke-width="1"/>
+      <rect x="87" y="12" width="65" height="56" rx="6" fill="#222733" stroke="#333a46" stroke-width="1"/>
+      <rect x="160" y="12" width="65" height="56" rx="6" fill="#222733" stroke="#333a46" stroke-width="1"/>
+    </svg>
+  `),
+  hero: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#16181d"/>
+      <rect x="14" y="16" width="30" height="6" rx="3" fill="#3b82f6"/>
+      <rect x="14" y="28" width="95" height="10" rx="4" fill="#ffffff"/>
+      <rect x="14" y="44" width="70" height="5" rx="2.5" fill="#94a3b8"/>
+      <rect x="14" y="55" width="45" height="13" rx="3.5" fill="#2563eb"/>
+      <rect x="126" y="10" width="100" height="60" rx="6" fill="#222733" stroke="#333a48" stroke-width="1"/>
+    </svg>
+  `),
+  products: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#17191e"/>
+      <rect x="12" y="12" width="66" height="56" rx="6" fill="#222631" stroke="#333946" stroke-width="1"/>
+      <rect x="87" y="12" width="66" height="56" rx="6" fill="#222631" stroke="#333946" stroke-width="1"/>
+      <rect x="162" y="12" width="66" height="56" rx="6" fill="#222631" stroke="#333946" stroke-width="1"/>
+    </svg>
+  `),
+  promotions: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#251616" stroke="#ef4444" stroke-width="1.2"/>
+      <circle cx="36" cy="40" r="14" fill="#ef4444"/>
+      <rect x="60" y="26" width="90" height="8" rx="4" fill="#ffffff"/>
+      <rect x="60" y="42" width="120" height="6" rx="3" fill="#fca5a5"/>
+    </svg>
+  `),
+  trust: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="14" width="216" height="52" rx="8" fill="#14221c" stroke="#10b981" stroke-width="1.2"/>
+      <circle cx="36" cy="40" r="14" fill="#10b981"/>
+      <rect x="60" y="28" width="90" height="8" rx="4" fill="#ffffff"/>
+      <rect x="60" y="44" width="130" height="6" rx="3" fill="#6ee7b7"/>
+    </svg>
+  `),
+  content: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#181a20"/>
+      <rect x="16" y="16" width="36" height="6" rx="3" fill="#3b82f6"/>
+      <rect x="16" y="28" width="120" height="9" rx="4" fill="#ffffff"/>
+      <rect x="16" y="44" width="180" height="5" rx="2.5" fill="#94a3b8"/>
+      <rect x="16" y="55" width="140" height="5" rx="2.5" fill="#64748b"/>
+    </svg>
+  `),
+  navigation: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="24" width="46" height="32" rx="6" fill="#202530" stroke="#333a48" stroke-width="1"/>
+      <rect x="68" y="24" width="46" height="32" rx="6" fill="#202530" stroke="#333a48" stroke-width="1"/>
+      <rect x="122" y="24" width="46" height="32" rx="6" fill="#202530" stroke="#333a48" stroke-width="1"/>
+      <rect x="176" y="24" width="46" height="32" rx="6" fill="#202530" stroke="#333a48" stroke-width="1"/>
+    </svg>
+  `),
+  pdp: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#16181d"/>
+      <rect x="14" y="10" width="60" height="60" rx="6" fill="#242833"/>
+      <rect x="86" y="18" width="90" height="8" rx="4" fill="#ffffff"/>
+      <rect x="86" y="32" width="50" height="6" rx="3" fill="#10b981"/>
+      <rect x="86" y="46" width="110" height="16" rx="4" fill="#2563eb"/>
+    </svg>
+  `),
+  checkout: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="14" width="212" height="52" rx="6" fill="#1c212b" stroke="#333a48" stroke-width="1"/>
+      <rect x="24" y="22" width="70" height="6" rx="2" fill="#94a3b8"/>
+      <rect x="160" y="22" width="50" height="6" rx="2" fill="#ffffff"/>
+      <rect x="24" y="38" width="192" height="18" rx="4" fill="#10b981"/>
+    </svg>
+  `),
+  elements: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="14" y="14" width="212" height="52" rx="6" fill="#1e222b" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 2"/>
+      <rect x="30" y="26" width="80" height="8" rx="4" fill="#60a5fa"/>
+      <rect x="30" y="42" width="120" height="6" rx="3" fill="#94a3b8"/>
+    </svg>
+  `),
+  specialized: encodeSvg(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+      <rect width="240" height="80" rx="8" fill="#15171c"/>
+      <rect x="12" y="12" width="216" height="56" rx="8" fill="#1e222b" stroke="#8b5cf6" stroke-width="1.2"/>
+      <circle cx="36" cy="40" r="14" fill="#8b5cf6" fill-opacity="0.3"/>
+      <rect x="62" y="26" width="95" height="8" rx="4" fill="#ffffff"/>
+      <rect x="62" y="42" width="125" height="6" rx="3" fill="#c4b5fd"/>
+    </svg>
+  `),
 };
 
 // Fallback generic section thumbnail
@@ -340,5 +663,9 @@ const DEFAULT_FALLBACK_THUMBNAIL = encodeSvg(`
 `);
 
 export function getStudioSectionThumbnail(typeOrId: string): string {
-  return STUDIO_SECTION_THUMBNAILS[typeOrId] || DEFAULT_FALLBACK_THUMBNAIL;
+  if (STUDIO_SECTION_THUMBNAILS[typeOrId]) {
+    return STUDIO_SECTION_THUMBNAILS[typeOrId];
+  }
+  const category = resolveStorefrontSectionCategory(typeOrId);
+  return CATEGORY_THUMBNAILS[category] || DEFAULT_FALLBACK_THUMBNAIL;
 }

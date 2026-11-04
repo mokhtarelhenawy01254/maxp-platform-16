@@ -9,7 +9,11 @@ import {
 } from "@heroicons/react/24/outline";
 
 export interface StorefrontGlobalHeaderConfig {
+  variant?: string;
   logoText?: string;
+  logoUrl?: string;
+  transparentOnHome?: boolean;
+  tagline?: string;
   sticky?: boolean;
   showSearch?: boolean;
   announcement?: {
@@ -40,6 +44,8 @@ export interface StorefrontGlobalFooterSocial {
 }
 
 export interface StorefrontGlobalFooterConfig {
+  variant?: string;
+  description?: string;
   columns: StorefrontGlobalFooterColumn[];
   social: StorefrontGlobalFooterSocial[];
   copyright?: string;
@@ -296,6 +302,29 @@ export const StudioHeaderFooterPanel: React.FC<StudioHeaderFooterPanelProps> = (
       <div className="flex-1 overflow-y-auto p-3.5 space-y-4 text-xs [scrollbar-width:thin]">
         {activeTab === "header" ? (
           <>
+            {/* Header Variant */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#cfd3db]">
+                شكل الترويسة (Header Variant)
+              </label>
+              <select
+                data-testid="hf-header-variant"
+                value={header.variant || "default"}
+                onChange={(e) => updateHeader({ variant: e.target.value })}
+                className="w-full rounded-lg border border-[#34373e] bg-[#16171a] px-3 py-2 text-xs text-white focus:border-[#2b6cf6] focus:outline-none cursor-pointer"
+              >
+                <option value="default">افتراضي قياسي (Default)</option>
+                <option value="floating-dark">عائم داكن فاخر (Floating Dark)</option>
+                <option value="editorial-soft">تحريري ناعم (Editorial Soft)</option>
+                <option value="utility-frame">إطار تقني عملي (Utility Frame)</option>
+                <option value="retail-direct">تجاري مباشر وسريع (Retail Direct)</option>
+                <option value="fashion-retail">بوتيك أزياء (Fashion Retail)</option>
+                <option value="digital-command">لوحة رقمية متقدمة (Digital Command)</option>
+                <option value="butcher-atelier">أتيليه تخصصي (Butcher Atelier)</option>
+                <option value="vela-fashion">فيلا فاشون الراقي (Vela Fashion)</option>
+              </select>
+            </div>
+
             {/* Logo Text */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-[#cfd3db]">
@@ -311,7 +340,23 @@ export const StudioHeaderFooterPanel: React.FC<StudioHeaderFooterPanelProps> = (
               />
             </div>
 
-            {/* Sticky & Search Toggles */}
+            {/* Logo Image URL */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#cfd3db]">
+                رابط صورة الشعار (logoUrl)
+              </label>
+              <input
+                data-testid="hf-logo-url"
+                type="text"
+                dir="ltr"
+                value={header.logoUrl || ""}
+                onChange={(e) => updateHeader({ logoUrl: e.target.value })}
+                placeholder="https://... أو /logo.png"
+                className="w-full rounded-lg border border-[#34373e] bg-[#16171a] px-3 py-2 text-xs text-white placeholder-[#686d76] focus:border-[#2b6cf6] focus:outline-none font-mono"
+              />
+            </div>
+
+            {/* Sticky, Search & Transparent Toggles */}
             <div className="rounded-xl border border-[#2c2f35] bg-[#1a1b1f] p-3 space-y-2.5">
               <label className="flex items-center justify-between cursor-pointer">
                 <span className="text-[11.5px] font-semibold text-[#cfd3db]">
@@ -335,6 +380,19 @@ export const StudioHeaderFooterPanel: React.FC<StudioHeaderFooterPanelProps> = (
                   type="checkbox"
                   checked={header.showSearch !== false}
                   onChange={(e) => updateHeader({ showSearch: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-600 accent-[#2b6cf6]"
+                />
+              </label>
+              <div className="h-px bg-[#26282e]" />
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-[11.5px] font-semibold text-[#cfd3db]">
+                  شفاف فوق بنر الرئيسية (transparentOnHome)
+                </span>
+                <input
+                  data-testid="hf-transparent-home"
+                  type="checkbox"
+                  checked={header.transparentOnHome === true}
+                  onChange={(e) => updateHeader({ transparentOnHome: e.target.checked })}
                   className="h-4 w-4 rounded border-gray-600 accent-[#2b6cf6]"
                 />
               </label>
@@ -512,6 +570,45 @@ export const StudioHeaderFooterPanel: React.FC<StudioHeaderFooterPanelProps> = (
           </>
         ) : (
           <>
+            {/* Footer Variant */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#cfd3db]">
+                شكل التذييل (Footer Variant)
+              </label>
+              <select
+                data-testid="hf-footer-variant"
+                value={footer.variant || "default"}
+                onChange={(e) => updateFooter({ variant: e.target.value })}
+                className="w-full rounded-lg border border-[#34373e] bg-[#16171a] px-3 py-2 text-xs text-white focus:border-[#2b6cf6] focus:outline-none cursor-pointer"
+              >
+                <option value="default">افتراضي (Default)</option>
+                <option value="standard">قياسي بأعمدة (Standard)</option>
+                <option value="editorial-soft">تحريري ناعم (Editorial Soft)</option>
+                <option value="signature-panel">لوحة التوقيع الفاخرة (Signature Panel)</option>
+                <option value="retail-direct">تجاري مباشر (Retail Direct)</option>
+                <option value="fashion-retail">بوتيك أزياء (Fashion Retail)</option>
+                <option value="digital-command">لوحة رقمية متقدمة (Digital Command)</option>
+                <option value="butcher-atelier">أتيليه تخصصي (Butcher Atelier)</option>
+                <option value="vela-fashion">فيلا فاشون (Vela Fashion)</option>
+                <option value="automotive-chassis">شاسيه ديناميكي (Automotive Chassis)</option>
+              </select>
+            </div>
+
+            {/* Footer Description */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#cfd3db]">
+                نبذة المتجر في الفوتر (description)
+              </label>
+              <textarea
+                data-testid="hf-footer-description"
+                value={footer.description || ""}
+                onChange={(e) => updateFooter({ description: e.target.value })}
+                placeholder="نبذة عن المتجر وأنشطته وخدمة العملاء..."
+                rows={2}
+                className="w-full rounded-lg border border-[#34373e] bg-[#16171a] px-3 py-2 text-xs text-white placeholder-[#686d76] focus:border-[#2b6cf6] focus:outline-none"
+              />
+            </div>
+
             {/* Footer Columns (Max 4) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">

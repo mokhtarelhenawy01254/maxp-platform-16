@@ -6,6 +6,7 @@ import {
   ClipboardDocumentIcon,
   CheckIcon,
   ExclamationTriangleIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
   STUDIO_PAGE_EXPORT_VERSION,
@@ -18,6 +19,12 @@ import {
   type StudioExportedPageData,
   type StudioPageDiff,
 } from "./utils/studioPageExportImport";
+import {
+  exportFullStorefrontTheme,
+  validateFullStorefrontThemeJSON,
+  createBlankStorefrontTheme,
+} from "./utils/studioThemeSerializer";
+import type { StorefrontTheme } from "../types/theme.types";
 import type { PageStyleScope } from "./StudioTypes";
 import { toast } from "sonner";
 
@@ -29,7 +36,9 @@ export interface StudioExportImportModalProps {
   currentStyles?: PageStyleScope;
   designTokens?: Record<string, any>;
   theme?: Record<string, any>;
+  initialScope?: "theme" | "page";
   onApplyImport: (imported: StudioExportedPageData) => void;
+  onApplyThemeImport?: (importedTheme: StorefrontTheme) => void;
 }
 
 export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = ({
@@ -40,16 +49,20 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
   currentStyles,
   designTokens,
   theme,
+  initialScope = "page",
   onApplyImport,
+  onApplyThemeImport,
 }) => {
+  const [modalScope, setModalScope] = useState<"theme" | "page">(initialScope);
   const [activeTab, setActiveTab] = useState<"export" | "import">("export");
   const [importJsonText, setImportJsonText] = useState("");
   const [copied, setCopied] = useState(false);
   const [previewDiff, setPreviewDiff] = useState<StudioPageDiff | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [validatedTheme, setValidatedTheme] = useState<StorefrontTheme | null>(null);
 
-  // Generate exported data
-  const exportedData = useMemo(() => {
+  // Single Page Export data
+  const exportedPageData = useMemo(() => {
     return exportPage(activePageKey, {
       sections: currentSections,
       styles: currentStyles,
@@ -58,7 +71,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
     });
   }, [activePageKey, currentSections, currentStyles, designTokens, theme]);
 
-  const exportedJsonString = useMemo(() => {
+  const exportedPageJsonString = useMemo(() => {
     return exportPageAsJSON(activePageKey, {
       sections: currentSections,
       styles: currentStyles,
@@ -67,20 +80,54 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
     });
   }, [activePageKey, currentSections, currentStyles, designTokens, theme]);
 
+  // Full Theme Export data
+  const exportedThemeData = useMemo(() => {
+    return exportFullStorefrontTheme({
+      themeId: theme?.id || designTokens?.themeId || "custom-theme",
+      themeName: theme?.name || "Custom Theme",
+      tokens: designTokens,
+      header: theme?.header,
+      footer: theme?.footer,
+      pages: theme?.pages,
+      pageOverrides: designTokens?.pageOverrides,
+      global: designTokens?.global,
+    });
+  }, [theme, designTokens]);
+
+  const exportedThemeJsonString = useMemo(() => {
+    return JSON.stringify(exportedThemeData, null, 2);
+  }, [exportedThemeData]);
+
   if (!isOpen) return null;
+
+  const activeJsonString = modalScope === "theme" ? exportedThemeJsonString : exportedPageJsonString;
 
   const handleCopy = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(exportedJsonString);
+      navigator.clipboard.writeText(activeJsonString);
       setCopied(true);
-      toast.success("تم نسخ JSON الصفحة إلى الحافظة");
+      toast.success(modalScope === "theme" ? "تم نسخ JSON الثيم الكامل إلى الحافظة" : "تم نسخ JSON الصفحة إلى الحافظة");
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleDownload = () => {
-    downloadJSON(`page-${activePageKey}-export.json`, exportedData);
-    toast.success("تم تنزيل ملف التصدير بنجاح");
+    if (modalScope === "theme") {
+      downloadJSON(`theme-${exportedThemeData.id}.json`, exportedThemeData);
+      toast.success("تم تنزيل ملف الثيم (.json) بنجاح ✨");
+    } else {
+      downloadJSON(`page-${activePageKey}-export.json`, exportedPageData);
+      toast.success("تم تنزيل ملف تصدير الصفحة بنجاح");
+    }
+  };
+
+  const handleCreateBlankTheme = () => {
+    const blank = createBlankStorefrontTheme("custom-studio-theme", "ثيم مخصص جديد", "rtl");
+    if (onApplyThemeImport) {
+      onApplyThemeImport(blank);
+      toast.success("تم تجهيز قالب جديد فارغ بـ 14 صفحة بنجاح ✨");
+      onClose();
+    }
   };
 
   const handleValidateImportText = (text: string) => {
@@ -88,19 +135,36 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
     if (!text.trim()) {
       setPreviewDiff(null);
       setValidationError(null);
+      setValidatedTheme(null);
       return;
     }
 
-    const validation = validatePageJSON(text);
-    if (!validation.isValid || !validation.data) {
-      setValidationError(validation.error || "صيغة الملف غير صالحة");
-      setPreviewDiff(null);
-      return;
+    if (modalScope === "theme") {
+      try {
+        const parsed = JSON.parse(text);
+        const res = validateFullStorefrontThemeJSON(parsed);
+        if (!res.valid || !res.theme) {
+          setValidationError(res.errors.join(" — "));
+          setValidatedTheme(null);
+        } else {
+          setValidationError(null);
+          setValidatedTheme(res.theme);
+        }
+      } catch {
+        setValidationError("صيغة الملف غير صالحة (JSON Syntax Error)");
+        setValidatedTheme(null);
+      }
+    } else {
+      const validation = validatePageJSON(text);
+      if (!validation.isValid || !validation.data) {
+        setValidationError(validation.error || "صيغة الملف غير صالحة");
+        setPreviewDiff(null);
+        return;
+      }
+      setValidationError(null);
+      const diff = computePageDiff(currentSections, currentStyles, validation.data);
+      setPreviewDiff(diff);
     }
-
-    setValidationError(null);
-    const diff = computePageDiff(currentSections, currentStyles, validation.data);
-    setPreviewDiff(diff);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,22 +182,29 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
   const handleConfirmImport = () => {
     if (!importJsonText.trim()) return;
 
-    const res = importPage(importJsonText, {
-      pageKey: activePageKey,
-      currentSections,
-      currentStyles,
-      confirm: true,
-      onApply: (data) => {
-        onApplyImport(data);
-      },
-    });
-
-    if (res.success && res.applied) {
-      toast.success(`تم استيراد محتوى صفحة "${activePageKey}" بنجاح ✨`);
+    if (modalScope === "theme") {
+      if (!validatedTheme || !onApplyThemeImport) return;
+      onApplyThemeImport(validatedTheme);
+      toast.success(`تم استيراد وتطبيق قالب «${validatedTheme.name}» بنجاح ✨`);
       onClose();
     } else {
-      toast.error(res.error || "فشل استيراد الصفحة");
-      setValidationError(res.error || "فشل الاستيراد");
+      const res = importPage(importJsonText, {
+        pageKey: activePageKey,
+        currentSections,
+        currentStyles,
+        confirm: true,
+        onApply: (data) => {
+          onApplyImport(data);
+        },
+      });
+
+      if (res.success && res.applied) {
+        toast.success(`تم استيراد محتوى صفحة "${activePageKey}" بنجاح ✨`);
+        onClose();
+      } else {
+        toast.error(res.error || "فشل استيراد الصفحة");
+        setValidationError(res.error || "فشل الاستيراد");
+      }
     }
   };
 
@@ -145,7 +216,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
     >
       <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] rounded-2xl border border-[#2b2d35] bg-[#18191e] text-[#e8eaee] shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#2b2d35] px-5 py-4 bg-[#141519]">
+        <div className="flex items-center justify-between border-b border-[#2b2d35] px-5 py-3.5 bg-[#141519]">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2b6cf6]/20 text-[#60a5fa]">
               {activeTab === "export" ? (
@@ -155,9 +226,11 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
               )}
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">تصدير واستيراد صفحات المتجر</h2>
+              <h2 className="text-sm font-bold text-white">تصدير واستيراد قوالب وصفحات المتجر</h2>
               <p className="text-xs text-[#9ba0a8]">
-                الصفحة الحالية: <span className="font-semibold text-white">{activePageKey}</span> ({currentSections.length} أقسام)
+                {modalScope === "theme"
+                  ? `قالب المتجر الكامل (${Object.keys(exportedThemeData.pages).length} صفحة)`
+                  : `الصفحة الحالية: ${activePageKey} (${currentSections.length} أقسام)`}
               </p>
             </div>
           </div>
@@ -172,6 +245,56 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
           </button>
         </div>
 
+        {/* Mode Switcher Pill */}
+        <div className="flex items-center justify-between px-5 py-2.5 bg-[#17181d] border-b border-[#24262d]">
+          <div className="flex items-center gap-1.5 bg-[#101114] p-1 rounded-xl border border-[#282a32]">
+            <button
+              type="button"
+              data-testid="mode-switch-theme"
+              onClick={() => {
+                setModalScope("theme");
+                setValidationError(null);
+                setImportJsonText("");
+              }}
+              className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                modalScope === "theme"
+                  ? "bg-[#2b6cf6] text-white shadow-xs"
+                  : "text-[#9ba0a8] hover:text-white"
+              }`}
+            >
+              قالب كامل (StorefrontTheme JSON — 14 صفحة)
+            </button>
+            <button
+              type="button"
+              data-testid="mode-switch-page"
+              onClick={() => {
+                setModalScope("page");
+                setValidationError(null);
+                setImportJsonText("");
+              }}
+              className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                modalScope === "page"
+                  ? "bg-[#2b6cf6] text-white shadow-xs"
+                  : "text-[#9ba0a8] hover:text-white"
+              }`}
+            >
+              صفحة مفردة ({activePageKey})
+            </button>
+          </div>
+
+          {modalScope === "theme" && onApplyThemeImport && (
+            <button
+              type="button"
+              data-testid="create-blank-theme-btn"
+              onClick={handleCreateBlankTheme}
+              className="flex items-center gap-1 text-[10.5px] font-bold text-[#60a5fa] hover:text-white transition-colors"
+            >
+              <SparklesIcon className="h-3.5 w-3.5" />
+              <span>قالب جديد من الصفر</span>
+            </button>
+          )}
+        </div>
+
         {/* Tab switchers */}
         <div className="flex border-b border-[#2b2d35] bg-[#1a1b21] px-5 pt-2">
           <button
@@ -184,7 +307,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
                 : "border-transparent text-[#9ba0a8] hover:text-white"
             }`}
           >
-            تصدير الصفحة (Export)
+            {modalScope === "theme" ? "تصدير القالب الكامل (Export Theme)" : "تصدير الصفحة (Export Page)"}
           </button>
           <button
             type="button"
@@ -196,7 +319,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
                 : "border-transparent text-[#9ba0a8] hover:text-white"
             }`}
           >
-            استيراد قالب (Import)
+            {modalScope === "theme" ? "استيراد قالب كامل (Import Theme)" : "استيراد صفحة (Import Page)"}
           </button>
         </div>
 
@@ -206,7 +329,9 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#9ba0a8]">
-                  معاينة كود JSON للتصدير (يتضمن الأقسام + الستايلات + رقم الإصدار v1.0)
+                  {modalScope === "theme"
+                    ? "معاينة كود JSON لقالب المتجر (14 صفحة + رموز HSL + الهيدر والفوتر)"
+                    : `معاينة كود JSON لصفحة ${activePageKey} (الأقسام + الستايلات + v${STUDIO_PAGE_EXPORT_VERSION})`}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -245,7 +370,7 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
                   className="max-h-72 overflow-y-auto text-[11px] font-mono text-[#60a5fa] whitespace-pre-wrap break-all"
                   dir="ltr"
                 >
-                  {exportedJsonString}
+                  {activeJsonString}
                 </pre>
               </div>
             </div>
@@ -253,7 +378,9 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-white">
-                  قم برفع ملف JSON أو لصق الكود:
+                  {modalScope === "theme"
+                    ? "قم برفع ملف قالب JSON كامل أو لصق الكود:"
+                    : "قم برفع ملف صفحة JSON أو لصق الكود:"}
                 </label>
                 <input
                   type="file"
@@ -269,7 +396,11 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
                   data-testid="import-json-textarea"
                   value={importJsonText}
                   onChange={(e) => handleValidateImportText(e.target.value)}
-                  placeholder='الصق محتوى JSON هنا (يجب أن يحتوي على "version": "1.0" و "sections": [...])'
+                  placeholder={
+                    modalScope === "theme"
+                      ? 'الصق كود StorefrontTheme هنا (يجب أن يحتوي على "id", "tokens", "header", "footer", "pages")'
+                      : 'الصق محتوى JSON هنا (يجب أن يحتوي على "version": "1.0" و "sections": [...])'
+                  }
                   className="w-full h-36 rounded-xl border border-[#2b2d35] bg-[#121316] p-3 text-xs font-mono text-white placeholder-[#6b7280] focus:border-[#2b6cf6] focus:outline-none"
                   dir="ltr"
                 />
@@ -286,8 +417,36 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
                 </div>
               )}
 
-              {/* Diff Preview Banner */}
-              {previewDiff && (
+              {/* Theme Validated Preview Banner */}
+              {modalScope === "theme" && validatedTheme && (
+                <div
+                  data-testid="theme-import-preview"
+                  className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3.5 space-y-2 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-400">قالب متجر صالح للتطبيق:</span>
+                    <span className="text-[11px] text-[#9ba0a8] font-mono">{validatedTheme.id}</span>
+                  </div>
+                  <p className="text-white font-medium">{validatedTheme.name}</p>
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] text-[#c3c7cd]">
+                    <div className="rounded-lg bg-[#141519] p-2 border border-[#282a32]">
+                      <span className="text-[#9ba0a8]">عدد الصفحات:</span>{" "}
+                      <b className="text-white">{Object.keys(validatedTheme.pages).length}</b>
+                    </div>
+                    <div className="rounded-lg bg-[#141519] p-2 border border-[#282a32]">
+                      <span className="text-[#9ba0a8]">الاتجاه:</span>{" "}
+                      <b className="text-white uppercase">{validatedTheme.direction}</b>
+                    </div>
+                    <div className="rounded-lg bg-[#141519] p-2 border border-[#282a32]">
+                      <span className="text-[#9ba0a8]">الخط الأساسي:</span>{" "}
+                      <b className="text-emerald-400">{validatedTheme.tokens.typography.headingFont}</b>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Diff Preview Banner for Page Mode */}
+              {modalScope === "page" && previewDiff && (
                 <div
                   data-testid="import-diff-preview"
                   className="rounded-xl border border-[#2b6cf6]/30 bg-[#1e2330] p-3.5 space-y-2 text-xs"
@@ -329,11 +488,14 @@ export const StudioExportImportModal: React.FC<StudioExportImportModalProps> = (
               type="button"
               data-testid="confirm-import-btn"
               onClick={handleConfirmImport}
-              disabled={!previewDiff || Boolean(validationError)}
+              disabled={
+                Boolean(validationError) ||
+                (modalScope === "theme" ? !validatedTheme : !previewDiff)
+              }
               className="flex items-center gap-1.5 rounded-lg bg-[#2b6cf6] px-4 py-2 text-xs font-bold text-white hover:bg-[#1d5ce6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
             >
               <CheckIcon className="h-4 w-4" />
-              <span>تأكيد الاستيراد والتطبيق</span>
+              <span>{modalScope === "theme" ? "تأكيد استيراد وتطبيق الثيم" : "تأكيد الاستيراد والتطبيق"}</span>
             </button>
           )}
         </div>

@@ -57,7 +57,8 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 
 const StorefrontVisualEditorPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [storefrontSettings, setStorefrontSettings] = useState<StorefrontSettings | null>(null);
@@ -113,9 +114,10 @@ const StorefrontVisualEditorPage: React.FC = () => {
 
   const queryThemeId = searchParams.get("theme")?.trim();
   const activeStorefrontThemeId =
-    queryThemeId && STOREFRONT_THEME_PRESETS[queryThemeId]
+    selectedThemeId ||
+    (queryThemeId && STOREFRONT_THEME_PRESETS[queryThemeId]
       ? queryThemeId
-      : resolveStorefrontThemeId(storefrontSettings);
+      : resolveStorefrontThemeId(storefrontSettings));
   activeThemeIdRef.current = activeStorefrontThemeId;
 
   const currentTokensSignature = JSON.stringify(storefrontSettings?.designTokens || {});
@@ -147,7 +149,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   ]);
 
   const performSave = useCallback(
-    async (options?: { silent?: boolean }) => {
+    async (options?: { silent?: boolean; baseRevision?: number }) => {
       if (isSavingRef.current) {
         needsResaveRef.current = true;
         return;
@@ -175,10 +177,17 @@ const StorefrontVisualEditorPage: React.FC = () => {
       needsResaveRef.current = false;
 
       try {
-        await storefrontSettingsService.updateSettings({
+        const baseRev = options?.baseRevision ?? (currentSettings as any)?.baseRevision;
+        const payload: any = {
           themeId: currentThemeId,
           designTokens: tokensToSave,
-        });
+        };
+        if (typeof baseRev === "number") {
+          payload.baseRevision = baseRev;
+        }
+
+        const res = await storefrontSettingsService.updateSettings(payload);
+        const savedSettings = res.data;
 
         savedThemeIdRef.current = currentThemeId;
         savedTokensSignatureRef.current = payloadSignature;
@@ -190,11 +199,20 @@ const StorefrontVisualEditorPage: React.FC = () => {
           cur
             ? {
                 ...cur,
+                ...(savedSettings || {}),
                 themeId: currentThemeId,
                 designTokens: tokensToSave,
               }
             : cur,
         );
+
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          if (next.get("theme") !== currentThemeId) {
+            next.set("theme", currentThemeId);
+          }
+          return next;
+        }, { replace: true });
 
         if (!options?.silent) {
           toast.success("تم حفظ تعديلات المتجر بنجاح ✨");
@@ -290,7 +308,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
     };
   }, [hasPendingChanges]);
 
-  const handleSave = () => flushSave({ silent: false });
+  const handleSave = (options?: { baseRevision?: number }) => flushSave({ silent: false, ...options });
 
   const handleBack = async () => {
     if (hasPendingChanges || autosaveTimerRef.current !== null) {
@@ -360,6 +378,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       storeName={storefrontSettings?.storeName || "متجري"}
       hasPendingChanges={hasPendingChanges}
       saving={saving}
+      baseRevision={(storefrontSettings as any)?.baseRevision}
       previewUrl={storefrontPreviewUrl || undefined}
       onSave={handleSave}
       onDiscard={handleDiscard}
@@ -367,10 +386,26 @@ const StorefrontVisualEditorPage: React.FC = () => {
       onOpenPreview={handleOpenPreview}
       onReload={loadSettings}
       onChange={(nextDesignTokens) => {
+        const nextThemeId =
+          typeof nextDesignTokens?.themeId === "string"
+            ? nextDesignTokens.themeId.trim()
+            : "";
+        if (nextThemeId && nextThemeId !== activeStorefrontThemeId) {
+          setSelectedThemeId(nextThemeId);
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.set("theme", nextThemeId);
+              return next;
+            },
+            { replace: true }
+          );
+        }
         setStorefrontSettings((cur) => {
           const next = cur
             ? {
                 ...cur,
+                themeId: nextThemeId || cur.themeId,
                 designTokens: nextDesignTokens,
               }
             : cur;

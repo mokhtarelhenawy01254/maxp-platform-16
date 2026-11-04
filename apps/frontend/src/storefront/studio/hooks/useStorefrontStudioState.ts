@@ -957,30 +957,66 @@ export function useStorefrontStudioState(props: UseStorefrontStudioStateProps & 
     [currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
   );
 
-  const handleAddSection = (sectionType: string, insertAtIndex?: number) => {
+  const handleAddSection = (
+    sectionType: string,
+    initialSettingsOrIndex?: Record<string, unknown> | number,
+    insertAtIndexOrContainerKey?: number | string
+  ) => {
     if (!isStorefrontSectionKnown(sectionType)) {
       toast.error(`نوع القسم "${sectionType}" غير مدعوم في المتجر`);
       return;
     }
 
+    const isInitialSettingsObject =
+      typeof initialSettingsOrIndex === "object" && initialSettingsOrIndex !== null;
+    const initialSettings = isInitialSettingsObject
+      ? (initialSettingsOrIndex as Record<string, unknown>)
+      : undefined;
+
+    const actualInsertIndex =
+      typeof initialSettingsOrIndex === "number"
+        ? initialSettingsOrIndex
+        : typeof insertAtIndexOrContainerKey === "number"
+          ? insertAtIndexOrContainerKey
+          : undefined;
+
+    const targetContainerKey =
+      typeof insertAtIndexOrContainerKey === "string"
+        ? insertAtIndexOrContainerKey
+        : undefined;
+
     const newKey = `${sectionType}-${Date.now()}`;
     const starterSettings = STUDIO_STARTER_SETTINGS[sectionType] || {};
     const baseSections = activeSections;
 
-    const newSection = {
+    const mergedSettings = {
+      ...starterSettings,
+      ...(initialSettings || {}),
+    };
+
+    const newSection: any = {
       type: sectionType,
       key: newKey,
-      settings: { ...starterSettings },
+      settings: mergedSettings,
+      config: initialSettings ? { ...(initialSettings || {}) } : undefined,
     };
 
     let nextSections: any[];
-    if (
-      typeof insertAtIndex === "number" &&
-      insertAtIndex >= 0 &&
-      insertAtIndex <= baseSections.length
+    if (targetContainerKey) {
+      nextSections = baseSections.map((sec: any) => {
+        if (sec.key === targetContainerKey) {
+          const children = Array.isArray(sec.children) ? [...sec.children, newSection] : [newSection];
+          return { ...sec, children };
+        }
+        return sec;
+      });
+    } else if (
+      typeof actualInsertIndex === "number" &&
+      actualInsertIndex >= 0 &&
+      actualInsertIndex <= baseSections.length
     ) {
       nextSections = [...baseSections];
-      nextSections.splice(insertAtIndex, 0, newSection);
+      nextSections.splice(actualInsertIndex, 0, newSection);
     } else {
       nextSections = [...baseSections, newSection];
     }

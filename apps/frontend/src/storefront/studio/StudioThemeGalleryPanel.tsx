@@ -113,9 +113,6 @@ const isThemeUnavailable = (
   if (theme.canActivate === false && theme.canSelect === false && !theme.isOwned) {
     return true;
   }
-  if (theme.themeId === "modern-minimal") {
-    return true;
-  }
   return false;
 };
 
@@ -134,6 +131,7 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
   const [appliedThemeId, setAppliedThemeId] = useState<string>(currentThemeId);
   const [isApplying, setIsApplying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resetPageOverrides, setResetPageOverrides] = useState(false);
 
   const [themes, setThemes] = useState<StorefrontThemeCatalogItem[]>(() =>
     buildStorefrontThemePresetCatalog(currentThemeId)
@@ -218,13 +216,13 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
       return;
     }
 
-    // Strictly preserve merchant customizations
+    // Strictly preserve merchant customizations, optionally clearing pageOverrides
     const nextTokens: Record<string, unknown> = {
       ...designTokens,
       themeId: targetThemeId,
-      pages: designTokens?.pages ?? {},
-      pageOverrides: designTokens?.pageOverrides ?? {},
-      pageStyles: designTokens?.pageStyles ?? {},
+      pages: resetPageOverrides ? {} : (designTokens?.pages ?? {}),
+      pageOverrides: resetPageOverrides ? {} : (designTokens?.pageOverrides ?? {}),
+      pageStyles: resetPageOverrides ? {} : (designTokens?.pageStyles ?? {}),
       global: designTokens?.global ?? {},
       typography: designTokens?.typography ?? {},
       i18n: designTokens?.i18n ?? {},
@@ -747,9 +745,23 @@ export const StudioThemeGalleryPanel: React.FC<StudioThemeGalleryPanelProps> = (
               <p className="font-semibold text-[#fef08a]">
                 «هيتم تغيير شكل المتجر — التعديلات الحالية محفوظة كإصدار في السجل»
               </p>
-              <p className="text-[11px] text-[#9ba0a8]">
-                سيتم الحفاظ على صفحاتك وصفحات التخصيص والأنماط وإعدادات الخطوط والترجمات بالكامل دون أي مسح.
-              </p>
+              <label className="flex items-start gap-2 pt-2 border-t border-white/10 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  data-testid="reset-page-overrides-checkbox"
+                  checked={resetPageOverrides}
+                  onChange={(e) => setResetPageOverrides(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-[#4b5563] bg-[#111827] text-[#2b6cf6] focus:ring-0 cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <span className="font-bold text-white text-[11px] block">
+                    إعادة ضبط صفحات القالب السابق (تفريغ pageOverrides)
+                  </span>
+                  <span className="text-[10px] text-[#9ba0a8] block">
+                    تفريغ الأقسام المعدلة سابقاً حتى تظهر أقسام وتخطيط الثيم الجديد بالكامل دون حجب.
+                  </span>
+                </div>
+              </label>
             </div>
 
             {/* Server Error Message Alert (Zero silent failure) */}

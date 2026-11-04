@@ -81,17 +81,15 @@ import { StudioViewerBanner } from "./StudioViewerBanner";
 import { StudioConflictPanel } from "./StudioConflictPanel";
 import { toast } from "sonner";
 import {
-  ChevronUpIcon,
-  ChevronDownIcon,
-  DocumentDuplicateIcon,
-  ClipboardDocumentIcon,
-  ClipboardDocumentCheckIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockClosedIcon,
-  LockOpenIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+  StudioContextMenu,
+  type StudioContextMenuState,
+  type StudioContextMenuProps,
+} from "./StudioContextMenu";
+export {
+  StudioContextMenu,
+  type StudioContextMenuState,
+  type StudioContextMenuProps,
+} from "./StudioContextMenu";
 import "./storefront-studio.css";
 
 import {
@@ -112,238 +110,6 @@ import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import { useStorefrontStudioState, getSectionKey } from "./hooks/useStorefrontStudioState";
 import { getStudioSectionThumbnail } from "./StudioSectionThumbnails";
-
-export interface StudioContextMenuState {
-  x: number;
-  y: number;
-  sectionKey: string;
-  index: number;
-  parentKey?: string;
-  totalSections: number;
-  isHidden: boolean;
-  isLocked: boolean;
-  label: string;
-}
-
-export interface StudioContextMenuProps {
-  state: StudioContextMenuState;
-  hasClipboard: boolean;
-  onClose: () => void;
-  onDuplicate: () => void;
-  onCopy: () => void;
-  onPasteAfter: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onToggleVisibility: () => void;
-  onToggleLock: () => void;
-  onDelete: () => void;
-}
-
-export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
-  state,
-  hasClipboard,
-  onClose,
-  onDuplicate,
-  onCopy,
-  onPasteAfter,
-  onMoveUp,
-  onMoveDown,
-  onToggleVisibility,
-  onToggleLock,
-  onDelete,
-}) => {
-  const { x, y, index, totalSections, isHidden, isLocked, label } = state;
-
-  const menuWidth = 210;
-  const menuHeight = 310;
-  const clampedX =
-    typeof window !== "undefined"
-      ? Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8))
-      : x;
-  const clampedY =
-    typeof window !== "undefined"
-      ? Math.max(8, Math.min(y, window.innerHeight - menuHeight - 8))
-      : y;
-
-  return (
-    <>
-      {/* Invisible backdrop to dismiss on outside click */}
-      <div
-        data-studio-context-backdrop="true"
-        className="fixed inset-0 z-[999] bg-transparent"
-        onClick={onClose}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-      />
-
-      {/* Context Menu Popup */}
-      <div
-        data-testid="studio-context-menu"
-        data-studio-context-menu="true"
-        dir="rtl"
-        style={{ top: clampedY, left: clampedX }}
-        className="fixed z-[1000] w-[210px] rounded-xl border border-[#33363c] bg-[#1a1c22]/98 p-1.5 text-[#e8eaee] shadow-2xl backdrop-blur-md select-none ring-1 ring-black/40 text-xs"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header with section name */}
-        <div className="px-2.5 py-1.5 mb-1 border-b border-[#2d3139] flex items-center justify-between text-[11px] font-bold text-[#9ba0a8]">
-          <span className="truncate max-w-[140px] text-white">{label}</span>
-          <span className="text-[10px] font-mono text-[#60a5fa]">#{index + 1}</span>
-        </div>
-
-        {/* 1. تكرار */}
-        <button
-          type="button"
-          data-studio-context-menu-item="duplicate"
-          onClick={() => {
-            onDuplicate();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <DocumentDuplicateIcon className="h-4 w-4 text-[#8fa4c8]" />
-            <span>تكرار</span>
-          </div>
-        </button>
-
-        {/* 2. نسخ */}
-        <button
-          type="button"
-          data-studio-context-menu-item="copy"
-          onClick={() => {
-            onCopy();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <ClipboardDocumentIcon className="h-4 w-4 text-[#8fa4c8]" />
-            <span>نسخ</span>
-          </div>
-          <kbd className="rounded bg-[#282b33] px-1.5 py-0.5 text-[9px] font-mono text-[#8a8f96]">Ctrl+C</kbd>
-        </button>
-
-        {/* 3. لصق بعد */}
-        <button
-          type="button"
-          data-studio-context-menu-item="paste"
-          disabled={!hasClipboard}
-          onClick={() => {
-            if (!hasClipboard) return;
-            onPasteAfter();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-2">
-            <ClipboardDocumentCheckIcon className="h-4 w-4 text-[#8fa4c8]" />
-            <span>لصق بعد</span>
-          </div>
-          <kbd className="rounded bg-[#282b33] px-1.5 py-0.5 text-[9px] font-mono text-[#8a8f96]">Ctrl+V</kbd>
-        </button>
-
-        <div className="my-1 border-t border-[#2d3139]" />
-
-        {/* 4. تحريك لأعلى */}
-        <button
-          type="button"
-          data-studio-context-menu-item="move-up"
-          disabled={index === 0 || isLocked}
-          onClick={() => {
-            onMoveUp();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-2">
-            <ChevronUpIcon className="h-4 w-4 text-[#8fa4c8]" />
-            <span>تحريك لأعلى</span>
-          </div>
-        </button>
-
-        {/* 5. تحريك لأسفل */}
-        <button
-          type="button"
-          data-studio-context-menu-item="move-down"
-          disabled={index === totalSections - 1 || isLocked}
-          onClick={() => {
-            onMoveDown();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-2">
-            <ChevronDownIcon className="h-4 w-4 text-[#8fa4c8]" />
-            <span>تحريك لأسفل</span>
-          </div>
-        </button>
-
-        <div className="my-1 border-t border-[#2d3139]" />
-
-        {/* 6. إخفاء / إظهار */}
-        <button
-          type="button"
-          data-studio-context-menu-item="toggle-visibility"
-          onClick={() => {
-            onToggleVisibility();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            {isHidden ? (
-              <EyeIcon className="h-4 w-4 text-emerald-400" />
-            ) : (
-              <EyeSlashIcon className="h-4 w-4 text-amber-400" />
-            )}
-            <span>{isHidden ? "إظهار في المتجر" : "إخفاء من المتجر"}</span>
-          </div>
-        </button>
-
-        {/* 7. قفل / فك قفل */}
-        <button
-          type="button"
-          data-studio-context-menu-item="toggle-lock"
-          onClick={() => {
-            onToggleLock();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right hover:bg-[#2b303a] hover:text-white transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            {isLocked ? (
-              <LockOpenIcon className="h-4 w-4 text-emerald-400" />
-            ) : (
-              <LockClosedIcon className="h-4 w-4 text-amber-400" />
-            )}
-            <span>{isLocked ? "فك قفل القسم" : "قفل القسم"}</span>
-          </div>
-        </button>
-
-        <div className="my-1 border-t border-[#2d3139]" />
-
-        {/* 8. حذف */}
-        <button
-          type="button"
-          data-studio-context-menu-item="delete"
-          onClick={() => {
-            onDelete();
-            onClose();
-          }}
-          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <TrashIcon className="h-4 w-4 text-red-400" />
-            <span>حذف القسم</span>
-          </div>
-        </button>
-      </div>
-    </>
-  );
-};
 
 interface StorefrontStudioShellProps {
   themeId: string;
@@ -1477,6 +1243,27 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     [currentDesignTokens, handleDesignTokensChange, onSave]
   );
 
+  const handleApplyImportedTheme = useCallback(
+    (importedTheme: any) => {
+      const nextTokens: Record<string, unknown> = {
+        ...currentDesignTokens,
+        themeId: importedTheme.id,
+        colors: importedTheme.tokens?.colors,
+        typography: importedTheme.tokens?.typography,
+        shape: importedTheme.tokens?.shape,
+        productCard: importedTheme.tokens?.productCard,
+        header: importedTheme.header,
+        footer: importedTheme.footer,
+        pages: importedTheme.pages,
+        pageOverrides: importedTheme.pages,
+      };
+      handleDesignTokensChange(nextTokens);
+      onSave();
+      toast.success(`تم استيراد وتطبيق قالب «${importedTheme.name}» بنجاح ✨`);
+    },
+    [currentDesignTokens, handleDesignTokensChange, onSave]
+  );
+
   const handlePublishWithTracking = useCallback(async () => {
     if (!canPublish || !canEdit) {
       toast.error("ليس لديك صلاحية النشر");
@@ -2557,6 +2344,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onApplyImport={(data) => {
           importPage(data, true);
         }}
+        onApplyThemeImport={handleApplyImportedTheme}
       />
 
       {/* Right-click Context Menu */}

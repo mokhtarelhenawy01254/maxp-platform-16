@@ -14,7 +14,7 @@ import { STOREFRONT_SECTION_MANIFEST } from '../sections/manifest';
 export const STOREFRONT_SECTION_COMPONENT_MAP: Record<string, string> = Object.fromEntries(
   Object.entries(STOREFRONT_SECTION_MANIFEST).map(([sectionId, sectionConfig]) => [
     sectionId,
-    String((sectionConfig as { component?: string }).component || ''),
+    String((sectionConfig as { component?: string }).component || sectionId),
   ]),
 );
 
