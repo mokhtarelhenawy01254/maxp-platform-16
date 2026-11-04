@@ -1,0 +1,99 @@
+name: Storefront Theme Gates
+
+# Every template that lands in apps/frontend/src/storefront/themes must pass the same three
+# gates the task briefs demand (task 120-day01). Runs on pushes and PRs that touch themes,
+# the gates themselves, or the schema — not on every unrelated commit.
+
+on:
+  push:
+    paths:
+      - 'apps/frontend/src/storefront/themes/**.json'
+      - 'scripts/validate-theme-sections.ts'
+      - 'scripts/validate-theme-schema.mjs'
+      - 'scripts/check-storefront-theme-budget.mjs'
+      - 'schemas/theme.schema.json'
+      - '.github/workflows/storefront-theme-gates.yml'
+  pull_request:
+    paths:
+      - 'apps/frontend/src/storefront/themes/**.json'
+      - 'scripts/validate-theme-sections.ts'
+      - 'scripts/validate-theme-schema.mjs'
+      - 'scripts/check-storefront-theme-budget.mjs'
+      - 'schemas/theme.schema.json'
+
+concurrency:
+  group: storefront-theme-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Theme schema · sections · budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache frontend node_modules
+        id: cache-frontend
+        uses: actions/cache@v4
+        with:
+          path: apps/frontend/node_modules
+          key: ${{ runner.os }}-fe-theme-gates-${{ hashFiles('apps/frontend/package-lock.json') }}
+
+      - name: Install frontend dependencies
+        working-directory: ./apps/frontend
+        run: |
+          if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/tsx ]; then
+            npm ci --prefer-offline --fetch-retries=6 --fetch-retry-maxtimeout=180000 --fetch-timeout=300000
+          fi
+        env:
+          HUSKY: '0'
+
+      - name: Resolve changed theme files
+        id: changed
+        shell: bash
+        run: |
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            BASE="$(git rev-parse HEAD^ 2>/dev/null || echo '')"
+          fi
+          if [ -n "$BASE" ]; then
+            FILES=$(git diff --name-only "$BASE" HEAD -- 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+          else
+            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+          fi
+          if [ -z "$FILES" ]; then
+            FILES=$(git ls-files 'apps/frontend/src/storefront/themes/*.json' | tr '\n' ' ')
+          fi
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "changed theme files: $FILES"
+
+      - name: Schema gate (ajv)
+        run: node scripts/validate-theme-schema.mjs ${{ steps.changed.outputs.files }}
+
+      - name: Section gate (manifest + ComponentRegistry)
+        run: apps/frontend/node_modules/.bin/tsx scripts/validate-theme-sections.ts ${{ steps.changed.outputs.files }}
+
+      - name: Performance & hygiene budget
+        run: node scripts/check-storefront-theme-budget.mjs ${{ steps.changed.outputs.files }}
+
+      - name: No direct JSON import in themes/index.ts
+        shell: bash
+        run: |
+          if git grep -nE "from ['\"]\./tpl-[a-z0-9-]+\.json['\"]" -- apps/frontend/src/storefront/themes/index.ts; then
+            echo "❌ themes/index.ts must not import template JSON directly — register it in themeLoaders.ts (lazy)."
+            exit 1
+          fi
+          echo "✅ no direct template import in themes/index.ts"
+
+      - name: Storefront theme validation suite
+        working-directory: ./apps/frontend
+        run: node node_modules/vitest/vitest.mjs run src/storefront/__tests__/themeValidation.test.ts --environment jsdom

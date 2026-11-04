@@ -12,7 +12,6 @@ import restaurantDemoData from "./restaurant-demo.json";
 import elegantLuxeData from "./elegant-luxe.json";
 import vanguardPremiumData from "./vanguard-premium.json";
 import atelierNovaData from "./atelier-nova.json";
-import coutureAtelierEgData from "./couture-atelier-eg.json";
 import auraChicData from "./aura-chic.json";
 import soleaFemmeData from "./solea-femme.json";
 import zenOrganicData from "./zen-organic.json";
@@ -675,7 +674,6 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "elegant-luxe": asStorefrontTheme(elegantLuxeData),
   "vanguard-premium": asStorefrontTheme(vanguardPremiumData),
   "atelier-nova": asStorefrontTheme(atelierNovaData),
-  "couture-atelier-eg": asStorefrontTheme(coutureAtelierEgData),
   "aura-chic": asStorefrontTheme(auraChicData),
   "solea-femme": asStorefrontTheme(soleaFemmeData),
   "zen-organic": asStorefrontTheme(zenOrganicData),

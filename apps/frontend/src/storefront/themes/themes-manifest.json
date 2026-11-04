@@ -434,37 +434,6 @@
     }
   },
   {
-    "id": "couture-atelier-eg",
-    "name": "Couture Atelier EG",
-    "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة (Shop The Look) والسرد القصصي البانورامي والتسوق البصري التفاعلي.",
-    "category": "fashion",
-    "categoryMeta": {
-      "primary": {
-        "id": "fashion",
-        "label": "أزياء"
-      },
-      "secondary": {
-        "id": "luxury-atelier",
-        "label": "دار أزياء وأتيليه فاخر"
-      }
-    },
-    "direction": "rtl",
-    "previewColors": [
-      "24 16% 12%",
-      "36 24% 93%",
-      "26 42% 48%"
-    ],
-    "previewImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80",
-    "pageStats": {
-      "homeSections": 7,
-      "shopSections": 5,
-      "checkoutSections": 4,
-      "pdpSections": 6,
-      "cartSections": 2,
-      "totalSections": 24
-    }
-  },
-  {
     "id": "crafted",
     "name": "Crafted",
     "description": "ثيم دافئ بألوان أرضية لمنصات الحرف اليدوية مع قصص الحرفيين وقطع محدودة الإنتاج.",
@@ -2229,6 +2198,130 @@
       "pdpSections": 7,
       "cartSections": 2,
       "totalSections": 20
+    }
+  },
+  {
+    "id": "tpl-001-bulk-commerce-women-fashion",
+    "name": "نسوة — أزياء حريمي جملة (B2B)",
+    "description": "قالب جملة وتجار: أسعار كمية متدرجة، كتالوج مقاسات، وشراء سريع بالـSKU — مبني على نمط قوالب B2B لا على تصميمها.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "222 32% 18%",
+      "30 18% 93%",
+      "32 62% 48%"
+    ],
+    "previewImage": "",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 8,
+      "cartSections": 3,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "tpl-002-marketplace-multi-women-fashion",
+    "name": "قمر ماركت — أزياء حريمي متعدد البائعين",
+    "description": "قالب ماركت متعدد البائعات: ميجا منيو أقسام، عدّاد عرض، فلاتر سريعة، وكروت منتج كثيفة — نمط WooCommerce الحديث.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "18 60% 42%",
+      "34 40% 94%",
+      "198 55% 40%"
+    ],
+    "previewImage": "",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 6,
+      "checkoutSections": 0,
+      "pdpSections": 9,
+      "cartSections": 3,
+      "totalSections": 27
+    }
+  },
+  {
+    "id": "tpl-003-local-market-women-fashion",
+    "name": "حنان — أزياء حريمي سوق محلي",
+    "description": "قالب سوق محلي بسيط: شرايط ضمان الدفع عند الاستلام، أقسام بكبسولات، عروض كومبو، وتقييمات — موجه لمتاجر COD في مصر.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "340 55% 62%",
+      "340 40% 96%",
+      "152 38% 40%"
+    ],
+    "previewImage": "",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 8,
+      "cartSections": 3,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "tpl-004-original-women-fashion",
+    "name": "ميزون نسوة — أزياء حريمي (Bento أصلي)",
+    "description": "قالب أصلي بنمط Bento Grid: شبكة كروت غير متساوية، بلانر دولاب، وستوري تحريري — ١٠٠٪ من مكوّنات النهاردة بدون أي مكوّن جديد.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "158 18% 16%",
+      "44 50% 92%",
+      "8 65% 55%"
+    ],
+    "previewImage": "",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 24
     }
   },
   {

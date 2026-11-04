@@ -26,12 +26,14 @@ export const MANDATORY_ROOT_KEYS = [
   'pages',
 ] as const;
 
+// Commercial pages every template owns. `checkout` is deliberately NOT here: it is a system
+// page rendered by the storefront shell (StorefrontRoutes falls back to checkout-form + payment
+// when the theme omits it), so a 6-page template can pass without shipping an empty checkout.
 export const MANDATORY_PAGE_KEYS = [
   'home',
   'shop',
   'pdp',
   'cart',
-  'checkout',
 ] as const;
 
 export const MANDATORY_COLOR_TOKENS = [
