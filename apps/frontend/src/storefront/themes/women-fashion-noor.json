@@ -1,117 +1,111 @@
 {
-  "id": "women-fashion-original",
-  "name": "Maison Wardrobe — أزياء حريمي",
-  "description": "قالب أزياء حريمي أصلي: مخطّط دولاب، لوكات، وتجربة تنسيق كاملة.",
+  "id": "women-fashion-noor",
+  "name": "Noor — أزياء حريمي",
+  "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "25 20% 16%",
-      "primaryForeground": "40 30% 96%",
-      "secondary": "150 15% 88%",
-      "secondaryForeground": "25 20% 16%",
-      "accent": "150 25% 38%",
+      "primary": "168 55% 30%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "168 40% 95%",
+      "secondaryForeground": "168 55% 22%",
+      "accent": "32 95% 52%",
       "accentForeground": "0 0% 100%",
-      "background": "40 30% 96%",
-      "foreground": "25 20% 16%",
-      "muted": "40 18% 92%",
-      "mutedForeground": "25 10% 40%",
-      "border": "40 15% 85%",
-      "card": "40 40% 99%",
-      "cardForeground": "25 20% 16%",
-      "ring": "150 25% 38%"
+      "background": "0 0% 100%",
+      "foreground": "200 20% 12%",
+      "muted": "200 15% 95%",
+      "mutedForeground": "200 10% 42%",
+      "border": "200 14% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "200 20% 12%",
+      "ring": "32 95% 52%"
     },
     "typography": {
-      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "headingFont": "\"Cairo\", sans-serif",
       "bodyFont": "\"Tajawal\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "1rem",
-      "buttonRadius": "0.5rem"
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.75rem"
     },
     "productCard": {
-      "borderRadius": "1rem",
-      "boxShadow": "none",
-      "hoverShadow": "0 20px 40px -28px hsl(25 20% 16% / .45)"
-    },
-    "layout": {
-      "contentAlign": "start"
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 2px 8px hsl(200 20% 12% / .08)",
+      "hoverShadow": "0 12px 28px -16px hsl(200 20% 12% / .3)"
     }
   },
   "seo": {
-    "titleTemplate": "%s | Maison Wardrobe",
-    "description": "قالب أزياء حريمي أصلي: مخطّط دولاب، لوكات، وتجربة تنسيق كاملة."
+    "titleTemplate": "%s | Noor",
+    "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة."
   },
   "preview": {
     "colors": [
-      "25 20% 16%",
-      "150 25% 38%",
-      "40 30% 96%"
+      "168 55% 30%",
+      "32 95% 52%",
+      "0 0% 100%"
     ]
   },
   "header": {
-    "variant": "floating-dark",
-    "brandName": "MAISON",
+    "variant": "utility-frame",
+    "brandName": "NOOR",
     "showSearch": true,
     "showCart": true,
-    "announcementText": "كل أسبوع 3 لوكات جديدة جاهزة للتنسيق",
-    "announcementLinkText": "شوفي اللوكات",
-    "announcementLinkTo": "/collections",
+    "announcementText": "الدفع عند الاستلام + شحن مجاني فوق 999 جنيه",
+    "announcementLinkText": "اطلبي دلوقتي",
+    "announcementLinkTo": "/shop",
     "navigation": [
       {
-        "label": "الدولاب",
-        "to": "/shop"
-      },
-      {
-        "label": "لوكات",
-        "to": "/collections"
+        "label": "العروض",
+        "to": "/sale"
       },
       {
         "label": "فساتين",
         "to": "/shop?category=dresses"
       },
       {
-        "label": "العروض",
-        "to": "/sale"
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "تواصلي",
+        "to": "/contact"
       }
     ]
   },
   "footer": {
-    "variant": "signature-panel",
-    "description": "MAISON — دولابك مبني على لوكات جاهزة، مش على قطع منفصلة.",
-    "copyrightText": "© 2026 MAISON",
+    "variant": "utility-frame",
+    "description": "NOOR — أزياء حريمي بأسعار المصنع، دفع عند الاستلام، واستبدال خلال 14 يوم.",
+    "copyrightText": "© 2026 NOOR",
     "socialLinks": {
-      "instagram": "https://instagram.com",
-      "tiktok": "https://tiktok.com",
-      "pinterest": "https://pinterest.com"
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
     },
     "navigation": [
       {
-        "title": "الدولاب",
+        "title": "روابط سريعة",
         "links": [
           {
-            "label": "لوكات",
-            "to": "/collections"
-          },
-          {
-            "label": "الجديد",
-            "to": "/shop"
-          }
-        ]
-      },
-      {
-        "title": "المساعدة",
-        "links": [
-          {
-            "label": "الشحن",
-            "to": "/shipping"
+            "label": "العروض",
+            "to": "/sale"
           },
           {
             "label": "الاستبدال",
             "to": "/returns"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
           }
         ]
+      }
+    ],
+    "contactRows": [
+      {
+        "label": "واتساب",
+        "value": "0100 000 0000",
+        "href": "https://wa.me/201000000000"
       }
     ]
   },
@@ -121,7 +115,7 @@
       "sections": [
         {
           "type": "cart-items",
-          "variant": "wardrobe-cart",
+          "variant": "standard",
           "settings": {
             "title": "سلة الطلب",
             "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
@@ -131,7 +125,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "fitting-room-summary",
+          "variant": "highlighted",
           "settings": {
             "title": "ملخص الطلب",
             "checkoutButtonText": "كمّلي الطلب"
@@ -152,7 +146,7 @@
         },
         {
           "type": "checkout-form",
-          "variant": "fitting-room-checkout",
+          "variant": "compact",
           "settings": {
             "contactTitle": "بياناتك",
             "shippingTitle": "عنوان التوصيل"
@@ -160,7 +154,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "fitting-room-summary",
+          "variant": "highlighted",
           "settings": {
             "title": "الإجمالي",
             "checkoutButtonText": "تأكيد الطلب"
@@ -199,7 +193,7 @@
       "sections": [
         {
           "type": "collection-tab",
-          "variant": "pills"
+          "variant": "standard"
         },
         {
           "type": "product-grid"
@@ -210,7 +204,7 @@
       "sections": [
         {
           "type": "order-confirmation",
-          "variant": "boutique-aftercare"
+          "variant": "soft-thanks"
         }
       ]
     },
@@ -272,93 +266,81 @@
       ]
     },
     "home": {
-      "pageGoal": "discovery",
+      "pageGoal": "conversion",
       "sections": [
         {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "خصم 60%",
+            "message": "على بعض المنتجات — الكمية محدودة",
+            "saleLabel": "آخر كمية",
+            "shippingLabel": "دفع عند الاستلام"
+          }
+        },
+        {
           "type": "hero-banner",
-          "variant": "wardrobe-planner",
+          "variant": "centered",
           "settings": {
-            "eyebrow": "دولاب كامل",
-            "title": "اختاري المناسبة… وإحنا نكمّل اللوك",
-            "subtitle": "3 لوكات جاهزة كل أسبوع، بقطع تكمّل بعضها.",
-            "ctaText": "ابدئي اللوك",
-            "ctaLink": "/collections",
-            "backgroundImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
-            "panelImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800"
-          }
-        },
-        {
-          "type": "look-planner",
-          "variant": "stepper",
-          "settings": {
-            "title": "خطة اللوك",
-            "subtitle": "مناسبة → قطع → مقاس"
-          }
-        },
-        {
-          "type": "look-mosaic",
-          "variant": "masonry",
-          "settings": {
-            "title": "لوكات الأسبوع"
+            "eyebrow": "عروض حصرية",
+            "title": "فساتين تبدأ من 299 جنيه",
+            "subtitle": "خامات مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
+            "ctaText": "اطلبي الآن",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوفي العروض",
+            "secondaryCtaLink": "/sale"
           }
         },
         {
           "type": "featured-collections",
-          "variant": "gallery-columns",
+          "variant": "catalog-pills",
           "settings": {
-            "title": "أقسام الدولاب"
+            "title": "فئات المنتجات",
+            "subtitle": "استعرضي كل فئة"
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "layered",
+          "settings": {
+            "title": "العرض بينتهي خلال"
           }
         },
         {
           "type": "featured-products",
           "settings": {
-            "title": "قطع أساسية"
-          }
-        },
-        {
-          "type": "lookbook-showcase",
-          "variant": "standard",
-          "settings": {
-            "title": "ستايلينج كامل"
-          }
-        },
-        {
-          "type": "offer-bento",
-          "variant": "boutique-duo",
-          "settings": {
-            "title": "باكدج اللوك"
-          }
-        },
-        {
-          "type": "reviews",
-          "variant": "editorial",
-          "settings": {
-            "title": "تجارب حقيقية"
+            "title": "الأكثر طلبًا"
           }
         },
         {
           "type": "features-bar",
-          "variant": "store-advantages-pastel"
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "عميلاتنا بيقولوا إيه"
+          }
+        },
+        {
+          "type": "social-gallery",
+          "variant": "grid",
+          "settings": {
+            "title": "صور من الأوردرات"
+          }
         }
       ]
     },
     "shop": {
-      "layoutHint": "sidebar-left",
-      "pageGoal": "discovery",
+      "pageGoal": "conversion",
       "sections": [
         {
           "type": "shop-command-bar",
-          "variant": "boutique-discovery"
-        },
-        {
-          "type": "filters-sidebar"
+          "variant": "menu-quick-order"
         },
         {
           "type": "product-grid"
-        },
-        {
-          "type": "shop-promo-rail",
-          "variant": "stylist-rail"
         }
       ]
     },
@@ -368,15 +350,11 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "masonry"
+          "variant": "standard"
         },
         {
           "type": "product-info",
-          "variant": "boutique-ledger"
-        },
-        {
-          "type": "look-progress",
-          "variant": "ladder"
+          "variant": "standard"
         },
         {
           "type": "quantity-offers"
@@ -385,16 +363,18 @@
           "type": "pdp-checkout"
         },
         {
-          "type": "bought-together",
-          "variant": "complete-look"
+          "type": "trusted-badges"
         },
         {
           "type": "reviews",
-          "variant": "editorial"
+          "variant": "standard"
+        },
+        {
+          "type": "low-stock"
         },
         {
           "type": "related-products",
-          "variant": "closet-pairings"
+          "variant": "standard"
         }
       ]
     }

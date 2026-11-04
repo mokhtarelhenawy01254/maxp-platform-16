@@ -4,10 +4,10 @@ import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefron
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
 export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
-  "women-fashion-shopify": () => import("./women-fashion-shopify.json"),
-  "women-fashion-wp": () => import("./women-fashion-wp.json"),
-  "women-fashion-easyorders": () => import("./women-fashion-easyorders.json"),
-  "women-fashion-original": () => import("./women-fashion-original.json"),
+  "women-fashion-lumiere": () => import("./women-fashion-lumiere.json"),
+  "women-fashion-bazaar": () => import("./women-fashion-bazaar.json"),
+  "women-fashion-noor": () => import("./women-fashion-noor.json"),
+  "women-fashion-maison": () => import("./women-fashion-maison.json"),
   "modern-minimal": () => import("./modern-minimal.json"),
   "bold-fashion": () => import("./bold-fashion.json"),
   "elegant-luxe": () => import("./elegant-luxe.json"),

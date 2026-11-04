@@ -1,9 +1,9 @@
 import modernMinimalData from "./modern-minimal.json";
 import boldFashionData from "./bold-fashion.json";
-import womenFashionShopifyData from "./women-fashion-shopify.json";
-import womenFashionWpData from "./women-fashion-wp.json";
-import womenFashionEasyordersData from "./women-fashion-easyorders.json";
-import womenFashionOriginalData from "./women-fashion-original.json";
+import womenFashionLumiereData from "./women-fashion-lumiere.json";
+import womenFashionBazaarData from "./women-fashion-bazaar.json";
+import womenFashionNoorData from "./women-fashion-noor.json";
+import womenFashionMaisonData from "./women-fashion-maison.json";
 // PREVIEW-1 — marketplace demo themes that merchants preview from the gallery.
 // They ship as JSON presets in this folder but were never in
 // `STOREFRONT_THEME_PRESETS`, so `getStorefrontThemePreset()` fell back to the
@@ -673,10 +673,10 @@ const styleStoreEgData = createAliasPreset(legacyDefaultOldData, {
 });
 
 export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
-  "women-fashion-shopify": asStorefrontTheme(womenFashionShopifyData),
-  "women-fashion-wp": asStorefrontTheme(womenFashionWpData),
-  "women-fashion-easyorders": asStorefrontTheme(womenFashionEasyordersData),
-  "women-fashion-original": asStorefrontTheme(womenFashionOriginalData),
+  "women-fashion-lumiere": asStorefrontTheme(womenFashionLumiereData),
+  "women-fashion-bazaar": asStorefrontTheme(womenFashionBazaarData),
+  "women-fashion-noor": asStorefrontTheme(womenFashionNoorData),
+  "women-fashion-maison": asStorefrontTheme(womenFashionMaisonData),
   "modern-minimal": asStorefrontTheme(modernMinimalData),
   "bold-fashion": asStorefrontTheme(boldFashionData),
   "elegant-luxe": asStorefrontTheme(elegantLuxeData),

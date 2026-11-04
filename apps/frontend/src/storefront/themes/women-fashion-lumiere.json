@@ -1,64 +1,68 @@
 {
-  "id": "women-fashion-wp",
-  "name": "Bazaar — أزياء حريمي",
-  "description": "قالب أزياء حريمي كثيف للبيع السريع: شريط عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر.",
+  "id": "women-fashion-lumiere",
+  "name": "Lumière — أزياء حريمي",
+  "description": "قالب أزياء حريمي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك بستايل ستوري بورد.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "350 70% 42%",
-      "primaryForeground": "0 0% 100%",
-      "secondary": "350 60% 96%",
-      "secondaryForeground": "350 70% 30%",
-      "accent": "350 70% 42%",
+      "primary": "330 25% 15%",
+      "primaryForeground": "36 40% 98%",
+      "secondary": "30 25% 92%",
+      "secondaryForeground": "330 25% 15%",
+      "accent": "12 45% 55%",
       "accentForeground": "0 0% 100%",
-      "background": "0 0% 100%",
-      "foreground": "220 15% 12%",
-      "muted": "220 14% 95%",
-      "mutedForeground": "220 9% 40%",
-      "border": "220 13% 88%",
+      "background": "36 33% 97%",
+      "foreground": "330 25% 15%",
+      "muted": "30 20% 93%",
+      "mutedForeground": "330 10% 40%",
+      "border": "30 15% 86%",
       "card": "0 0% 100%",
-      "cardForeground": "220 15% 12%",
-      "ring": "350 70% 42%"
+      "cardForeground": "330 25% 15%",
+      "ring": "12 45% 55%"
     },
     "typography": {
-      "headingFont": "\"Cairo\", sans-serif",
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
       "bodyFont": "\"Tajawal\", sans-serif",
-      "baseSize": "15px",
+      "baseSize": "16px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "0.5rem",
-      "buttonRadius": "0.375rem"
+      "borderRadius": "0.15rem",
+      "buttonRadius": "999px"
     },
     "productCard": {
-      "borderRadius": "0.5rem",
-      "boxShadow": "0 1px 2px hsl(220 15% 12% / .06)",
-      "hoverShadow": "0 10px 24px -12px hsl(220 15% 12% / .25)"
+      "borderRadius": "0.15rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -24px hsl(330 25% 15% / .35)"
+    },
+    "layout": {
+      "contentAlign": "center"
     }
   },
   "seo": {
-    "titleTemplate": "%s | Bazaar",
-    "description": "قالب أزياء حريمي كثيف للبيع السريع: شريط عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر."
+    "titleTemplate": "%s | Lumière",
+    "description": "قالب أزياء حريمي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك بستايل ستوري بورد."
   },
   "preview": {
     "colors": [
-      "350 70% 42%",
-      "220 15% 12%",
-      "0 0% 100%"
+      "330 25% 15%",
+      "12 45% 55%",
+      "36 33% 97%"
     ]
   },
   "header": {
-    "variant": "fashion-retail",
-    "brandName": "BAZAAR",
+    "variant": "editorial-soft",
+    "brandName": "LUMIÈRE",
+    "transparentOnHome": true,
     "showSearch": true,
     "showCart": true,
-    "announcementText": "خصم 30% على تشكيلة الشتاء — لفترة محدودة",
-    "announcementLinkText": "تسوقي العروض",
-    "announcementLinkTo": "/sale",
+    "announcementText": "شحن مجاني للأوردرات فوق 1500 جنيه",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/shipping",
     "navigation": [
       {
-        "label": "الرئيسية",
-        "to": "/"
+        "label": "الجديد",
+        "to": "/shop?sort=new"
       },
       {
         "label": "فساتين",
@@ -69,51 +73,35 @@
         "to": "/shop?category=sets"
       },
       {
-        "label": "عبايات",
-        "to": "/shop?category=abayas"
+        "label": "لوك بوك",
+        "to": "/collections"
       },
       {
         "label": "العروض",
         "to": "/sale"
       }
-    ],
-    "megaMenu": {
-      "triggerLabel": "الأقسام",
-      "ctaText": "شوفي كل حاجة",
-      "ctaLink": "/shop",
-      "tabs": [
-        {
-          "label": "فساتين",
-          "title": "فساتين يومية ومناسبات",
-          "link": "/shop?category=dresses"
-        },
-        {
-          "label": "أطقم",
-          "title": "أطقم جاهزة",
-          "link": "/shop?category=sets"
-        }
-      ]
-    }
+    ]
   },
   "footer": {
-    "variant": "fashion-retail",
-    "description": "BAZAAR — كل الترند في مكان واحد، أسعار واضحة وشحن لكل المحافظات.",
-    "copyrightText": "© 2026 Bazaar",
+    "variant": "editorial-soft",
+    "description": "LUMIÈRE — أزياء حريمي بإحساس تحريري، قطع محدودة وتجربة شراء هادية.",
+    "copyrightText": "© 2026 LUMIÈRE",
     "socialLinks": {
       "instagram": "https://instagram.com",
-      "facebook": "https://facebook.com"
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
     },
     "navigation": [
       {
-        "title": "تسوقي",
+        "title": "المتجر",
         "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
           {
             "label": "فساتين",
             "to": "/shop?category=dresses"
-          },
-          {
-            "label": "أطقم",
-            "to": "/shop?category=sets"
           },
           {
             "label": "العروض",
@@ -122,21 +110,31 @@
         ]
       },
       {
-        "title": "خدمة العملاء",
+        "title": "المساعدة",
         "links": [
           {
             "label": "الشحن",
             "to": "/shipping"
           },
           {
-            "label": "الاسترجاع",
+            "label": "الاستبدال",
             "to": "/returns"
           },
           {
-            "label": "اتصلي بينا",
+            "label": "تواصلي",
             "to": "/contact"
           }
         ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
       }
     ]
   },
@@ -146,7 +144,7 @@
       "sections": [
         {
           "type": "cart-items",
-          "variant": "market-basket",
+          "variant": "editorial",
           "settings": {
             "title": "سلة الطلب",
             "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
@@ -156,7 +154,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "market-summary",
+          "variant": "boutique-summary",
           "settings": {
             "title": "ملخص الطلب",
             "checkoutButtonText": "كمّلي الطلب"
@@ -177,7 +175,7 @@
         },
         {
           "type": "checkout-form",
-          "variant": "market-checkout",
+          "variant": "soft-flow",
           "settings": {
             "contactTitle": "بياناتك",
             "shippingTitle": "عنوان التوصيل"
@@ -185,7 +183,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "market-summary",
+          "variant": "boutique-summary",
           "settings": {
             "title": "الإجمالي",
             "checkoutButtonText": "تأكيد الطلب"
@@ -224,7 +222,7 @@
       "sections": [
         {
           "type": "collection-tab",
-          "variant": "standard"
+          "variant": "pills"
         },
         {
           "type": "product-grid"
@@ -235,7 +233,7 @@
       "sections": [
         {
           "type": "order-confirmation",
-          "variant": "market-aftercare"
+          "variant": "boutique-aftercare"
         }
       ]
     },
@@ -297,66 +295,64 @@
       ]
     },
     "home": {
-      "pageGoal": "conversion",
+      "pageGoal": "discovery",
       "sections": [
         {
           "type": "promo-strip",
-          "variant": "sale-signal",
+          "variant": "benefit-ribbon",
           "settings": {
-            "badge": "خصم 30%",
-            "message": "على تشكيلة الشتاء — لحد آخر الكمية",
-            "saleLabel": "العرض ساري",
-            "shippingLabel": "شحن 24-72 ساعة"
+            "badge": "الموسم",
+            "message": "تشكيلة محدودة — قطعة واحدة من كل مقاس",
+            "saleLabel": "خصم حتى 25%",
+            "shippingLabel": "شحن 48 ساعة"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "retail-direct-banner",
+          "variant": "fashion-billboard",
           "settings": {
-            "eyebrow": "تشكيلة الشتاء",
-            "title": "كل الترند… بسعر يناسبك",
-            "subtitle": "فساتين وأطقم وعبايات بأسعار واضحة وشحن لكل المحافظات.",
-            "ctaText": "تسوقي العروض",
-            "ctaLink": "/sale"
+            "eyebrow": "خريف 2026",
+            "title": "هدوء… وتفصيلة تفرق",
+            "subtitle": "تشكيلة كبسولة بخطوط نضيفة وأقمشة تلمس الجسم صح.",
+            "ctaText": "شوفي التشكيلة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "لوك بوك",
+            "secondaryCtaLink": "/collections"
           }
         },
         {
           "type": "featured-collections",
-          "variant": "retail-category-tiles",
+          "variant": "editorial-categories",
           "settings": {
-            "title": "تسوقي بالقسم"
-          }
-        },
-        {
-          "type": "countdown-banner",
-          "variant": "inline",
-          "settings": {
-            "title": "العرض بينتهي خلال"
+            "title": "اختاري منين",
+            "subtitle": "ثلاث عوالم: يومي، مناسبات، وأساسيات"
           }
         },
         {
           "type": "featured-products",
           "settings": {
-            "title": "الأكثر مبيعًا"
+            "title": "قطع الموسم",
+            "subtitle": "مختارة بعناية"
           }
         },
         {
-          "type": "offer-bento",
-          "variant": "combo-deals",
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
           "settings": {
-            "title": "عروض الكومبو"
+            "title": "اللوك بوك",
+            "subtitle": "تنسيقات كاملة بالقطع"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العميلات"
           }
         },
         {
           "type": "features-bar",
-          "variant": "service-clarity"
-        },
-        {
-          "type": "social-gallery",
-          "variant": "marquee",
-          "settings": {
-            "title": "من عميلاتنا"
-          }
+          "variant": "trust-strip"
         }
       ]
     },
@@ -365,8 +361,15 @@
       "pageGoal": "discovery",
       "sections": [
         {
+          "type": "shop-hero",
+          "settings": {
+            "title": "المتجر",
+            "subtitle": "كل القطع في مكان واحد"
+          }
+        },
+        {
           "type": "shop-command-bar",
-          "variant": "marketplace-dense"
+          "variant": "minimal-toolbar"
         },
         {
           "type": "filters-sidebar"
@@ -376,7 +379,7 @@
         },
         {
           "type": "shop-promo-rail",
-          "variant": "campaign-rail"
+          "variant": "stylist-rail"
         }
       ]
     },
@@ -386,32 +389,32 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "grid"
+          "variant": "atelier-editorial-stage"
         },
         {
           "type": "product-info",
-          "variant": "accordion"
-        },
-        {
-          "type": "quantity-offers"
+          "variant": "atelier-buybox"
         },
         {
           "type": "pdp-checkout"
         },
         {
-          "type": "bulk-savings"
+          "type": "quantity-offers"
+        },
+        {
+          "type": "trusted-badges"
         },
         {
           "type": "reviews",
-          "variant": "compact"
+          "variant": "editorial"
         },
         {
           "type": "bought-together",
-          "variant": "complete-look"
+          "variant": "editorial"
         },
         {
           "type": "related-products",
-          "variant": "compact"
+          "variant": "editorial"
         }
       ]
     }

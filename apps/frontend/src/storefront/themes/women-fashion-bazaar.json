@@ -1,64 +1,64 @@
 {
-  "id": "women-fashion-easyorders",
-  "name": "Noor — أزياء حريمي",
-  "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة.",
+  "id": "women-fashion-bazaar",
+  "name": "Bazaar — أزياء حريمي",
+  "description": "قالب أزياء حريمي كثيف للبيع السريع: شريط عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "168 55% 30%",
+      "primary": "350 70% 42%",
       "primaryForeground": "0 0% 100%",
-      "secondary": "168 40% 95%",
-      "secondaryForeground": "168 55% 22%",
-      "accent": "32 95% 52%",
+      "secondary": "350 60% 96%",
+      "secondaryForeground": "350 70% 30%",
+      "accent": "350 70% 42%",
       "accentForeground": "0 0% 100%",
       "background": "0 0% 100%",
-      "foreground": "200 20% 12%",
-      "muted": "200 15% 95%",
-      "mutedForeground": "200 10% 42%",
-      "border": "200 14% 88%",
+      "foreground": "220 15% 12%",
+      "muted": "220 14% 95%",
+      "mutedForeground": "220 9% 40%",
+      "border": "220 13% 88%",
       "card": "0 0% 100%",
-      "cardForeground": "200 20% 12%",
-      "ring": "32 95% 52%"
+      "cardForeground": "220 15% 12%",
+      "ring": "350 70% 42%"
     },
     "typography": {
       "headingFont": "\"Cairo\", sans-serif",
       "bodyFont": "\"Tajawal\", sans-serif",
-      "baseSize": "16px",
+      "baseSize": "15px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "0.75rem",
-      "buttonRadius": "0.75rem"
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.375rem"
     },
     "productCard": {
-      "borderRadius": "0.75rem",
-      "boxShadow": "0 2px 8px hsl(200 20% 12% / .08)",
-      "hoverShadow": "0 12px 28px -16px hsl(200 20% 12% / .3)"
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 1px 2px hsl(220 15% 12% / .06)",
+      "hoverShadow": "0 10px 24px -12px hsl(220 15% 12% / .25)"
     }
   },
   "seo": {
-    "titleTemplate": "%s | Noor",
-    "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة."
+    "titleTemplate": "%s | Bazaar",
+    "description": "قالب أزياء حريمي كثيف للبيع السريع: شريط عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر."
   },
   "preview": {
     "colors": [
-      "168 55% 30%",
-      "32 95% 52%",
+      "350 70% 42%",
+      "220 15% 12%",
       "0 0% 100%"
     ]
   },
   "header": {
-    "variant": "utility-frame",
-    "brandName": "NOOR",
+    "variant": "fashion-retail",
+    "brandName": "BAZAAR",
     "showSearch": true,
     "showCart": true,
-    "announcementText": "الدفع عند الاستلام + شحن مجاني فوق 999 جنيه",
-    "announcementLinkText": "اطلبي دلوقتي",
-    "announcementLinkTo": "/shop",
+    "announcementText": "خصم 30% على تشكيلة الشتاء — لفترة محدودة",
+    "announcementLinkText": "تسوقي العروض",
+    "announcementLinkTo": "/sale",
     "navigation": [
       {
-        "label": "العروض",
-        "to": "/sale"
+        "label": "الرئيسية",
+        "to": "/"
       },
       {
         "label": "فساتين",
@@ -69,43 +69,74 @@
         "to": "/shop?category=sets"
       },
       {
-        "label": "تواصلي",
-        "to": "/contact"
+        "label": "عبايات",
+        "to": "/shop?category=abayas"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
       }
-    ]
+    ],
+    "megaMenu": {
+      "triggerLabel": "الأقسام",
+      "ctaText": "شوفي كل حاجة",
+      "ctaLink": "/shop",
+      "tabs": [
+        {
+          "label": "فساتين",
+          "title": "فساتين يومية ومناسبات",
+          "link": "/shop?category=dresses"
+        },
+        {
+          "label": "أطقم",
+          "title": "أطقم جاهزة",
+          "link": "/shop?category=sets"
+        }
+      ]
+    }
   },
   "footer": {
-    "variant": "utility-frame",
-    "description": "NOOR — أزياء حريمي بأسعار المصنع، دفع عند الاستلام، واستبدال خلال 14 يوم.",
-    "copyrightText": "© 2026 NOOR",
+    "variant": "fashion-retail",
+    "description": "BAZAAR — كل الترند في مكان واحد، أسعار واضحة وشحن لكل المحافظات.",
+    "copyrightText": "© 2026 Bazaar",
     "socialLinks": {
-      "facebook": "https://facebook.com",
-      "whatsapp": "https://wa.me/201000000000"
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
     },
     "navigation": [
       {
-        "title": "روابط سريعة",
+        "title": "تسوقي",
         "links": [
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "أطقم",
+            "to": "/shop?category=sets"
+          },
           {
             "label": "العروض",
             "to": "/sale"
-          },
-          {
-            "label": "الاستبدال",
-            "to": "/returns"
-          },
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
           {
             "label": "الشحن",
             "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصلي بينا",
+            "to": "/contact"
           }
         ]
-      }
-    ],
-    "contactRows": [
-      {
-        "label": "واتساب",
-        "value": "0100 000 0000",
-        "href": "https://wa.me/201000000000"
       }
     ]
   },
@@ -115,7 +146,7 @@
       "sections": [
         {
           "type": "cart-items",
-          "variant": "standard",
+          "variant": "market-basket",
           "settings": {
             "title": "سلة الطلب",
             "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
@@ -125,7 +156,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "highlighted",
+          "variant": "market-summary",
           "settings": {
             "title": "ملخص الطلب",
             "checkoutButtonText": "كمّلي الطلب"
@@ -146,7 +177,7 @@
         },
         {
           "type": "checkout-form",
-          "variant": "compact",
+          "variant": "market-checkout",
           "settings": {
             "contactTitle": "بياناتك",
             "shippingTitle": "عنوان التوصيل"
@@ -154,7 +185,7 @@
         },
         {
           "type": "order-summary",
-          "variant": "highlighted",
+          "variant": "market-summary",
           "settings": {
             "title": "الإجمالي",
             "checkoutButtonText": "تأكيد الطلب"
@@ -204,7 +235,7 @@
       "sections": [
         {
           "type": "order-confirmation",
-          "variant": "soft-thanks"
+          "variant": "market-aftercare"
         }
       ]
     },
@@ -272,36 +303,33 @@
           "type": "promo-strip",
           "variant": "sale-signal",
           "settings": {
-            "badge": "خصم 60%",
-            "message": "على بعض المنتجات — الكمية محدودة",
-            "saleLabel": "آخر كمية",
-            "shippingLabel": "دفع عند الاستلام"
+            "badge": "خصم 30%",
+            "message": "على تشكيلة الشتاء — لحد آخر الكمية",
+            "saleLabel": "العرض ساري",
+            "shippingLabel": "شحن 24-72 ساعة"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "centered",
+          "variant": "retail-direct-banner",
           "settings": {
-            "eyebrow": "عروض حصرية",
-            "title": "فساتين تبدأ من 299 جنيه",
-            "subtitle": "خامات مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
-            "ctaText": "اطلبي الآن",
-            "ctaLink": "/shop",
-            "secondaryCtaText": "شوفي العروض",
-            "secondaryCtaLink": "/sale"
+            "eyebrow": "تشكيلة الشتاء",
+            "title": "كل الترند… بسعر يناسبك",
+            "subtitle": "فساتين وأطقم وعبايات بأسعار واضحة وشحن لكل المحافظات.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/sale"
           }
         },
         {
           "type": "featured-collections",
-          "variant": "catalog-pills",
+          "variant": "retail-category-tiles",
           "settings": {
-            "title": "فئات المنتجات",
-            "subtitle": "استعرضي كل فئة"
+            "title": "تسوقي بالقسم"
           }
         },
         {
           "type": "countdown-banner",
-          "variant": "layered",
+          "variant": "inline",
           "settings": {
             "title": "العرض بينتهي خلال"
           }
@@ -309,38 +337,46 @@
         {
           "type": "featured-products",
           "settings": {
-            "title": "الأكثر طلبًا"
+            "title": "الأكثر مبيعًا"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "title": "عروض الكومبو"
           }
         },
         {
           "type": "features-bar",
-          "variant": "delivery-clarity"
-        },
-        {
-          "type": "reviews",
-          "variant": "voice-notes",
-          "settings": {
-            "title": "عميلاتنا بيقولوا إيه"
-          }
+          "variant": "service-clarity"
         },
         {
           "type": "social-gallery",
-          "variant": "grid",
+          "variant": "marquee",
           "settings": {
-            "title": "صور من الأوردرات"
+            "title": "من عميلاتنا"
           }
         }
       ]
     },
     "shop": {
-      "pageGoal": "conversion",
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
       "sections": [
         {
           "type": "shop-command-bar",
-          "variant": "menu-quick-order"
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
         },
         {
           "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
         }
       ]
     },
@@ -350,11 +386,11 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "standard"
+          "variant": "grid"
         },
         {
           "type": "product-info",
-          "variant": "standard"
+          "variant": "accordion"
         },
         {
           "type": "quantity-offers"
@@ -363,18 +399,19 @@
           "type": "pdp-checkout"
         },
         {
-          "type": "trusted-badges"
+          "type": "bulk-savings"
         },
         {
           "type": "reviews",
-          "variant": "standard"
+          "variant": "compact"
         },
         {
-          "type": "low-stock"
+          "type": "bought-together",
+          "variant": "complete-look"
         },
         {
           "type": "related-products",
-          "variant": "standard"
+          "variant": "compact"
         }
       ]
     }
