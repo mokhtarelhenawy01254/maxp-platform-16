@@ -19,7 +19,8 @@
  * - SYSTEM_ERROR: أخطاء تقنية حرجة بالسيرفر
  */
 
-const { getSharedPrismaClient } = require('./sharedDatabase');
+const sharedDatabase = require('./sharedDatabase');
+const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 const socketService = require('./socketService');
 const { sendBrowserPushToCompany } = require('./browserPushService');
 const telegramAlertService = require('./telegramAlertService');
@@ -946,6 +947,35 @@ class SystemIncidentAlertService {
         const prisma = getSharedPrismaClient();
         const targetUrl = url || DEFAULT_URLS[incidentType] || '/notification-settings';
         const prefTypeId = PREFERENCE_TYPE_MAPPING[incidentType] || 'system_incident';
+
+        // فحص الـ Cooldown الدائم في قاعدة البيانات لحماية المستخدم من التكرار عند إعادة تشغيل السيرفر (Server Restart / Deploy)
+        if (!force && prisma?.notification?.findFirst) {
+            try {
+                const cooldownMs = cooldownMinutes * 60 * 1000;
+                const cutoff = new Date(Date.now() - cooldownMs);
+                const recentNotification = await prisma.notification.findFirst({
+                    where: {
+                        companyId,
+                        type: prefTypeId,
+                        createdAt: { gte: cutoff }
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    select: { id: true, createdAt: true, data: true }
+                });
+
+                if (recentNotification) {
+                    const recentEntityId = recentNotification.data?.entityId;
+                    if (!entityId || !recentEntityId || recentEntityId === entityId) {
+                        const key = `${companyId}:${incidentType}:${entityId || 'general'}`;
+                        this.cooldowns.set(key, new Date(recentNotification.createdAt).getTime());
+                        console.log(`⏳ [SYSTEM-INCIDENT] Suppressed by persistent DB cooldown (${incidentType} on company ${companyId})`);
+                        return { sent: false, reason: 'in_persistent_cooldown' };
+                    }
+                }
+            } catch (dbCooldownErr) {
+                // تجاوز خطأ فحص القاعدة بهدوء للاعتماد على الكاش المحلي
+            }
+        }
 
         let companyName = '';
         try {

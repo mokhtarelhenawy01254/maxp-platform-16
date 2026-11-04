@@ -146,7 +146,7 @@ async function removeDeviceToken({ userId, token }) {
 /**
  * إرسال إشعار لمجموعة من أجهزة FCM
  */
-async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null }) {
+async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null, tag = null }) {
   if (!tokens || !tokens.length) return { successCount: 0, failureCount: 0 };
 
   const fbAdmin = initFirebase();
@@ -158,6 +158,11 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
   const stringData = {};
   for (const [key, val] of Object.entries(data)) {
     stringData[key] = typeof val === "string" ? val : JSON.stringify(val);
+  }
+
+  const resolvedTag = tag || data.tag || undefined;
+  if (resolvedTag && !stringData.tag) {
+    stringData.tag = String(resolvedTag);
   }
 
   const hasValidImageUrl =
@@ -186,12 +191,14 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
     data: stringData,
     android: {
       priority: "high",
+      collapseKey: resolvedTag,
       notification: {
         sound: "default",
         channelId: resolvedChannelId,
         defaultVibrateTimings: true,
         defaultSound: true,
         priority: "max",
+        tag: resolvedTag,
       },
     },
   };
@@ -235,7 +242,7 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
 /**
  * إرسال إشعار لمستخدم معين (على جميع أجهزته النشطة)
  */
-async function sendPushToUser({ companyId, userId, title, body, data = {}, url = null, imageUrl = null }) {
+async function sendPushToUser({ companyId, userId, title, body, data = {}, url = null, imageUrl = null, tag = null }) {
   if (!userId) return null;
 
   try {
@@ -275,6 +282,7 @@ async function sendPushToUser({ companyId, userId, title, body, data = {}, url =
         body,
         data: payloadData,
         imageUrl,
+        tag: tag || data.tag || undefined,
       });
     }
 

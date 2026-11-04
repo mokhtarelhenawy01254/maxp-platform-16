@@ -277,8 +277,12 @@ const sendNotificationToSubscription = async (record, payload) => {
         tokens: [token],
         title: payload.title,
         body: payload.body,
-        data: payload.data || {},
+        data: {
+          ...(payload.data || {}),
+          tag: payload.tag
+        },
         imageUrl: validImageUrl,
+        tag: payload.tag
       });
 
       if (fcmResult.successCount > 0) {

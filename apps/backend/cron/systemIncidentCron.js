@@ -70,6 +70,26 @@ async function scanOrderSilence(prisma, now = new Date()) {
 
             // لو مر أكثر من SILENCE_THRESHOLD_HOURS ساعات في أوقات العمل بدون أي أوردر
             if (hoursSinceLastOrder >= SILENCE_THRESHOLD_HOURS) {
+                // فحص عدم تكرار التنبيه لنفس ركود الأوردرات ونفس آخر طلب خلال 24 ساعة
+                const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+                const existingRecentAlert = await prisma.notification.findFirst({
+                    where: {
+                        companyId,
+                        type: 'order_sync_stoppage',
+                        createdAt: { gte: oneDayAgo }
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    select: { id: true, data: true, createdAt: true }
+                }).catch(() => null);
+
+                if (existingRecentAlert) {
+                    const prevOrderNumber = existingRecentAlert.data?.metadata?.lastOrderNumber || existingRecentAlert.data?.lastOrderNumber;
+                    // إذا كان التنبيه السابق لنفس الأوردر الأخير ولم تمر 24 ساعة، نتخطى التنبيه تماماً لمنع الإزعاج
+                    if (!prevOrderNumber || String(prevOrderNumber) === String(latestOrder.orderNumber)) {
+                        continue;
+                    }
+                }
+
                 const roundedHours = Math.round(hoursSinceLastOrder);
 
                 const result = await systemIncidentAlertService.dispatchIncident({
@@ -80,9 +100,10 @@ async function scanOrderSilence(prisma, now = new Date()) {
                     severity: systemIncidentAlertService.SEVERITIES.WARNING,
                     entityId: companyId,
                     url: '/orders',
-                    cooldownMinutes: 180, // تكرار كل 3 ساعات فقط للركود
+                    cooldownMinutes: 1440, // تكرار كل 24 ساعة كحد أقصى لنفس الركود لمنع الإزعاج
                     metadata: {
                         lastOrderNumber: latestOrder.orderNumber,
+                        lastOrderId: latestOrder.id,
                         hoursSinceLastOrder: roundedHours,
                         weeklyOrdersCount: companyGroup._count.id
                     }
