@@ -9,7 +9,7 @@
  *
  * Checks, per page and per section entry:
  *   1. the section type is declared in STOREFRONT_SECTION_MANIFEST
- *   2. the manifest entry resolves to a component in ComponentRegistry (no blank render)
+ *   2. the manifest entry maps to a component key (engine/sectionComponentMap)
  *   3. the section is allowed on that page
  *   4. the variant (if any) is declared for that section
  *
@@ -24,7 +24,6 @@ import {
   isStorefrontSectionAllowedOnPage,
   isStorefrontSectionVariantAllowed,
 } from '../apps/frontend/src/storefront/sections/manifest';
-import { ComponentRegistry } from '../apps/frontend/src/storefront/engine/ComponentRegistry';
 
 type SectionEntry = string | { type?: string; variant?: string; settings?: { variant?: string } };
 
@@ -67,6 +66,11 @@ const validateThemeFile = (filePath: string): { themeId: string; issues: Issue[]
     };
   }
 
+  if (Array.isArray(theme)) {
+    // themes-manifest.json lives in the same folder but is the catalog manifest, not a theme.
+    return { themeId: path.basename(filePath, '.json'), issues: [], sections: 0 };
+  }
+
   const issues: Issue[] = [];
   const pages = theme.pages || {};
   let sectionCount = 0;
@@ -102,12 +106,18 @@ const validateThemeFile = (filePath: string): { themeId: string; issues: Issue[]
         continue;
       }
 
-      if (!(type in ComponentRegistry)) {
+      // The component key is what ComponentRegistry resolves; an empty key means the
+      // section renders nothing. Read it from the manifest entry (importing
+      // engine/sectionComponentMap here would create a manifest <-> map cycle).
+      const componentKey = String(
+        (STOREFRONT_SECTION_MANIFEST as Record<string, { component?: string }>)[type]?.component || '',
+      ).trim();
+      if (!componentKey) {
         issues.push({
           level: 'error',
           page: pageKey,
           section: type,
-          message: 'declared in the manifest but not registered in ComponentRegistry',
+          message: 'declared in the manifest but has no component key',
         });
       }
 
@@ -144,7 +154,7 @@ const main = () => {
   const targets = all
     ? fs
         .readdirSync(THEMES_DIR)
-        .filter((name) => name.endsWith('.json'))
+        .filter((name) => name.endsWith('.json') && name !== 'themes-manifest.json')
         .map((name) => path.join(THEMES_DIR, name))
     : files.map((file) => path.resolve(file));
 

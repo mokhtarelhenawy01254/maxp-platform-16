@@ -1,4 +1,3 @@
-import { STOREFRONT_SECTION_COMPONENT_MAP } from "../engine/sectionComponentMap";
 import type { StudioSectionCategoryId } from "../studio/StudioTypes";
 
 export type StorefrontSectionFieldInputType =
@@ -4317,8 +4316,9 @@ export const resolveStorefrontSectionCategory = (
 export const isStorefrontSectionKnown = (sectionType: string): boolean =>
   sectionType === "container" ||
   sectionType === "loop" ||
-  Boolean(getStorefrontSectionManifest(sectionType)) ||
-  Boolean(STOREFRONT_SECTION_COMPONENT_MAP[sectionType]);
+  // The component map is derived FROM this manifest, so checking it here was circular
+  // (manifest -> map -> manifest) and broke the CLI validator under tsx.
+  Boolean(getStorefrontSectionManifest(sectionType));
 
 export const getStorefrontSectionVariantValues = (
   sectionType: string,
