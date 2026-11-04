@@ -1,0 +1,422 @@
+{
+  "id": "women-fashion-shopify",
+  "name": "Lumière — أزياء حريمي",
+  "description": "قالب أزياء حريمي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك بستايل ستوري بورد.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "330 25% 15%",
+      "primaryForeground": "36 40% 98%",
+      "secondary": "30 25% 92%",
+      "secondaryForeground": "330 25% 15%",
+      "accent": "12 45% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "36 33% 97%",
+      "foreground": "330 25% 15%",
+      "muted": "30 20% 93%",
+      "mutedForeground": "330 10% 40%",
+      "border": "30 15% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "330 25% 15%",
+      "ring": "12 45% 55%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.15rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.15rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -24px hsl(330 25% 15% / .35)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Lumière",
+    "description": "قالب أزياء حريمي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك بستايل ستوري بورد."
+  },
+  "preview": {
+    "colors": [
+      "330 25% 15%",
+      "12 45% 55%",
+      "36 33% 97%"
+    ]
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "LUMIÈRE",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن مجاني للأوردرات فوق 1500 جنيه",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "LUMIÈRE — أزياء حريمي بإحساس تحريري، قطع محدودة وتجربة شراء هادية.",
+    "copyrightText": "© 2026 LUMIÈRE",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصلي",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "soft-flow",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "boutique-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "الموسم",
+            "message": "تشكيلة محدودة — قطعة واحدة من كل مقاس",
+            "saleLabel": "خصم حتى 25%",
+            "shippingLabel": "شحن 48 ساعة"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "خريف 2026",
+            "title": "هدوء… وتفصيلة تفرق",
+            "subtitle": "تشكيلة كبسولة بخطوط نضيفة وأقمشة تلمس الجسم صح.",
+            "ctaText": "شوفي التشكيلة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "لوك بوك",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "اختاري منين",
+            "subtitle": "ثلاث عوالم: يومي، مناسبات، وأساسيات"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "قطع الموسم",
+            "subtitle": "مختارة بعناية"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
+          "settings": {
+            "title": "اللوك بوك",
+            "subtitle": "تنسيقات كاملة بالقطع"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "المتجر",
+            "subtitle": "كل القطع في مكان واحد"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "atelier-buybox"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "editorial"
+        }
+      ]
+    }
+  }
+}

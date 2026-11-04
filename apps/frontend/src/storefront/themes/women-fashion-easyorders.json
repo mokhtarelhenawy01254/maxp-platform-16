@@ -1,0 +1,382 @@
+{
+  "id": "women-fashion-easyorders",
+  "name": "Noor — أزياء حريمي",
+  "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "168 55% 30%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "168 40% 95%",
+      "secondaryForeground": "168 55% 22%",
+      "accent": "32 95% 52%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "200 20% 12%",
+      "muted": "200 15% 95%",
+      "mutedForeground": "200 10% 42%",
+      "border": "200 14% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "200 20% 12%",
+      "ring": "32 95% 52%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.75rem"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 2px 8px hsl(200 20% 12% / .08)",
+      "hoverShadow": "0 12px 28px -16px hsl(200 20% 12% / .3)"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Noor",
+    "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة."
+  },
+  "preview": {
+    "colors": [
+      "168 55% 30%",
+      "32 95% 52%",
+      "0 0% 100%"
+    ]
+  },
+  "header": {
+    "variant": "utility-frame",
+    "brandName": "NOOR",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "الدفع عند الاستلام + شحن مجاني فوق 999 جنيه",
+    "announcementLinkText": "اطلبي دلوقتي",
+    "announcementLinkTo": "/shop",
+    "navigation": [
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "تواصلي",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "utility-frame",
+    "description": "NOOR — أزياء حريمي بأسعار المصنع، دفع عند الاستلام، واستبدال خلال 14 يوم.",
+    "copyrightText": "© 2026 NOOR",
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "روابط سريعة",
+        "links": [
+          {
+            "label": "العروض",
+            "to": "/sale"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          }
+        ]
+      }
+    ],
+    "contactRows": [
+      {
+        "label": "واتساب",
+        "value": "0100 000 0000",
+        "href": "https://wa.me/201000000000"
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "compact",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "standard"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "خصم 60%",
+            "message": "على بعض المنتجات — الكمية محدودة",
+            "saleLabel": "آخر كمية",
+            "shippingLabel": "دفع عند الاستلام"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض حصرية",
+            "title": "فساتين تبدأ من 299 جنيه",
+            "subtitle": "خامات مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
+            "ctaText": "اطلبي الآن",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوفي العروض",
+            "secondaryCtaLink": "/sale"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "title": "فئات المنتجات",
+            "subtitle": "استعرضي كل فئة"
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "layered",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر طلبًا"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "عميلاتنا بيقولوا إيه"
+          }
+        },
+        {
+          "type": "social-gallery",
+          "variant": "grid",
+          "settings": {
+            "title": "صور من الأوردرات"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "standard"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "low-stock"
+        },
+        {
+          "type": "related-products",
+          "variant": "standard"
+        }
+      ]
+    }
+  }
+}

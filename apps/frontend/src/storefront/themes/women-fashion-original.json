@@ -1,0 +1,402 @@
+{
+  "id": "women-fashion-original",
+  "name": "Maison Wardrobe — أزياء حريمي",
+  "description": "قالب أزياء حريمي أصلي: مخطّط دولاب، لوكات، وتجربة تنسيق كاملة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "25 20% 16%",
+      "primaryForeground": "40 30% 96%",
+      "secondary": "150 15% 88%",
+      "secondaryForeground": "25 20% 16%",
+      "accent": "150 25% 38%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 30% 96%",
+      "foreground": "25 20% 16%",
+      "muted": "40 18% 92%",
+      "mutedForeground": "25 10% 40%",
+      "border": "40 15% 85%",
+      "card": "40 40% 99%",
+      "cardForeground": "25 20% 16%",
+      "ring": "150 25% 38%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 20px 40px -28px hsl(25 20% 16% / .45)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Maison Wardrobe",
+    "description": "قالب أزياء حريمي أصلي: مخطّط دولاب، لوكات، وتجربة تنسيق كاملة."
+  },
+  "preview": {
+    "colors": [
+      "25 20% 16%",
+      "150 25% 38%",
+      "40 30% 96%"
+    ]
+  },
+  "header": {
+    "variant": "floating-dark",
+    "brandName": "MAISON",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "كل أسبوع 3 لوكات جديدة جاهزة للتنسيق",
+    "announcementLinkText": "شوفي اللوكات",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الدولاب",
+        "to": "/shop"
+      },
+      {
+        "label": "لوكات",
+        "to": "/collections"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "MAISON — دولابك مبني على لوكات جاهزة، مش على قطع منفصلة.",
+    "copyrightText": "© 2026 MAISON",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com",
+      "pinterest": "https://pinterest.com"
+    },
+    "navigation": [
+      {
+        "title": "الدولاب",
+        "links": [
+          {
+            "label": "لوكات",
+            "to": "/collections"
+          },
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "fitting-room-checkout",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "boutique-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "wardrobe-planner",
+          "settings": {
+            "eyebrow": "دولاب كامل",
+            "title": "اختاري المناسبة… وإحنا نكمّل اللوك",
+            "subtitle": "3 لوكات جاهزة كل أسبوع، بقطع تكمّل بعضها.",
+            "ctaText": "ابدئي اللوك",
+            "ctaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+            "panelImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "خطة اللوك",
+            "subtitle": "مناسبة → قطع → مقاس"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "masonry",
+          "settings": {
+            "title": "لوكات الأسبوع"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "أقسام الدولاب"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "قطع أساسية"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "title": "ستايلينج كامل"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo",
+          "settings": {
+            "title": "باكدج اللوك"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "تجارب حقيقية"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "store-advantages-pastel"
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "boutique-discovery"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "boutique-ledger"
+        },
+        {
+          "type": "look-progress",
+          "variant": "ladder"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "closet-pairings"
+        }
+      ]
+    }
+  }
+}
