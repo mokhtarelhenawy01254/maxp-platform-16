@@ -1,0 +1,357 @@
+{
+  "id": "tpl-001-bulk-commerce-women-fashion",
+  "name": "نسوة — أزياء حريمي جملة (B2B)",
+  "description": "قالب جملة وتجار: أسعار كمية متدرجة، كتالوج مقاسات، وشراء سريع بالـSKU — مبني على نمط قوالب B2B لا على تصميمها.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "222 32% 18%",
+      "primaryForeground": "40 30% 97%",
+      "secondary": "30 18% 93%",
+      "secondaryForeground": "222 32% 18%",
+      "accent": "32 62% 48%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 26% 98%",
+      "foreground": "222 30% 14%",
+      "muted": "35 18% 94%",
+      "mutedForeground": "222 10% 42%",
+      "border": "34 14% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "222 30% 14%",
+      "ring": "32 62% 48%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.25rem",
+      "buttonRadius": "0.25rem"
+    },
+    "productCard": {
+      "borderRadius": "0.25rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 14px 30px -22px hsl(222 32% 18% / .45)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | NISWAH",
+    "description": "أزياء حريمي بالجملة — أسعار كمية متدرجة وكتالوج مقاسات."
+  },
+  "preview": {
+    "colors": [
+      "222 32% 18%",
+      "32 62% 48%",
+      "40 26% 98%"
+    ]
+  },
+  "header": {
+    "variant": "utility-frame",
+    "announcementText": "أقل كمية ٦ قطع · خصم الكمية لحد ٣٥٪",
+    "announcementLinkText": "الأسعار المتدرجة",
+    "announcementLinkTo": "/shop",
+    "brandName": "NISWAH",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/shop?sort=discount"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "utility-frame",
+    "description": "NISWAH — أزياء حريمي.",
+    "copyrightText": "© 2026 NISWAH",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "اللوك بوك",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/contact"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/contact"
+          },
+          {
+            "label": "تواصلي",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/contact"
+      },
+      {
+        "label": "الشروط",
+        "to": "/contact"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "جملة",
+            "message": "خصم الكمية من ٦ قطع",
+            "saleLabel": "حتى ٣٥٪",
+            "shippingLabel": "شحن لكل المحافظات"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "خريف ٢٠٢٦ · جملة",
+            "title": "اشتري بالكمية… السعر بيتظبط",
+            "subtitle": "أسعار متدرجة لأصحاب البوتيكات والتجار — أقل كمية ٦ قطع لكل موديل.",
+            "ctaText": "افتحي كتالوج الجملة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوفي الأسعار المتدرجة",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "أقسام الجملة",
+            "subtitle": "فساتين · أطقم · أساسيات · عبايات"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "bundle-matrix",
+          "settings": {
+            "title": "أسعار الكمية",
+            "subtitle": "٦ قطع · ١٢ قطعة · ٢٤ قطعة"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر طلبًا من التجار",
+            "subtitle": "مقاسات كاملة ومخزون ثابت"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "bento",
+          "settings": {
+            "title": "تنسيقات من نفس الخامة",
+            "subtitle": "اقطعي التشكيلة من صورة واحدة"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تجار بيشتروا مننا"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "كتالوج الموسم على الإيميل"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "كتالوج الجملة",
+            "subtitle": "فلترة بالمقاس واللون والكمية"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order",
+          "settings": {
+            "title": "طلب سريع بالكود"
+          }
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "specs-grid"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "bulk-savings",
+          "settings": {
+            "title": "وفّري مع الكمية"
+          }
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "continueShoppingText": "كمّلي الكتالوج"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        },
+        {
+          "type": "trusted-badges"
+        }
+      ]
+    },
+    "collections": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "featured-product",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards"
+        }
+      ]
+    },
+    "contact": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي مع فريق الجملة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "اطلبي كتالوج الجملة"
+          }
+        }
+      ]
+    }
+  }
+}

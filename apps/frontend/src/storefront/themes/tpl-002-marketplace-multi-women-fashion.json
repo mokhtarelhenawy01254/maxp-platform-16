@@ -1,0 +1,354 @@
+{
+  "id": "tpl-002-marketplace-multi-women-fashion",
+  "name": "قمر ماركت — أزياء حريمي متعدد البائعين",
+  "description": "قالب ماركت متعدد البائعات: ميجا منيو أقسام، عدّاد عرض، فلاتر سريعة، وكروت منتج كثيفة — نمط WooCommerce الحديث.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "18 60% 42%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "34 40% 94%",
+      "secondaryForeground": "20 30% 18%",
+      "accent": "198 55% 40%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "20 18% 14%",
+      "muted": "30 25% 96%",
+      "mutedForeground": "20 8% 45%",
+      "border": "25 18% 89%",
+      "card": "0 0% 100%",
+      "cardForeground": "20 18% 14%",
+      "ring": "18 60% 42%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "14px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.4rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 1px 2px hsl(20 18% 14% / .06)",
+      "hoverShadow": "0 18px 36px -24px hsl(18 60% 42% / .5)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | QAMAR MARKET",
+    "description": "ماركت أزياء حريمي متعدد البائعات — عروض يومية وتوصيل سريع."
+  },
+  "preview": {
+    "colors": [
+      "18 60% 42%",
+      "198 55% 40%",
+      "0 0% 100%"
+    ]
+  },
+  "header": {
+    "variant": "retail-direct",
+    "announcementText": "٣ بائعات موثّقات · توصيل ٤٨ ساعة",
+    "announcementLinkText": "كل العروض",
+    "announcementLinkTo": "/shop?sort=discount",
+    "brandName": "QAMAR MARKET",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/shop?sort=discount"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "retail-direct",
+    "description": "QAMAR MARKET — أزياء حريمي.",
+    "copyrightText": "© 2026 QAMAR MARKET",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "اللوك بوك",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/contact"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/contact"
+          },
+          {
+            "label": "تواصلي",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/contact"
+      },
+      {
+        "label": "الشروط",
+        "to": "/contact"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "standard",
+          "settings": {
+            "message": "عروض اليوم لحد آخر الكمية",
+            "saleLabel": "حتى ٤٠٪",
+            "shippingLabel": "شحن مجاني فوق ٩٩٩ ج"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "retail-direct-banner",
+          "settings": {
+            "eyebrow": "ماركت",
+            "title": "كل البائعات في مكان واحد",
+            "subtitle": "قارني السعر والمقاس والبائع قبل ما تشتري.",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "تسوّقي بالقسم",
+            "subtitle": "فساتين · أطقم · ملابس بيت · عبايات"
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "layered",
+          "settings": {
+            "title": "عرض اليوم بينتهي خلال"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "offer-bento",
+          "variant": "daily-picks",
+          "settings": {
+            "title": "مختارات اليوم"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "grid",
+          "settings": {
+            "title": "من عميلاتنا"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "عروض الماركت على الواتساب"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "كل المنتجات",
+            "subtitle": "فلترة بالسعر والمقاس والبائع"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-featured-collection",
+          "settings": {
+            "title": "عروض مختارة"
+          }
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "countdown"
+        },
+        {
+          "type": "low-stock"
+        },
+        {
+          "type": "size-guide",
+          "variant": "quick"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "related-products",
+          "variant": "standard"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "market-basket",
+          "settings": {
+            "title": "سلة السوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        },
+        {
+          "type": "trusted-badges"
+        }
+      ]
+    },
+    "collections": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "كوليكشنات الموسم"
+          }
+        },
+        {
+          "type": "services-grid",
+          "variant": "mixed-highlight"
+        }
+      ]
+    },
+    "contact": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "خدمة العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        },
+        {
+          "type": "article-grid",
+          "settings": {
+            "title": "أسئلة شائعة"
+          }
+        }
+      ]
+    }
+  }
+}

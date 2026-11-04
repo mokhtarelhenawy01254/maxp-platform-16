@@ -1,0 +1,343 @@
+{
+  "id": "tpl-004-original-women-fashion",
+  "name": "ميزون نسوة — أزياء حريمي (Bento أصلي)",
+  "description": "قالب أصلي بنمط Bento Grid: شبكة كروت غير متساوية، بلانر دولاب، وستوري تحريري — ١٠٠٪ من مكوّنات النهاردة بدون أي مكوّن جديد.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "158 18% 16%",
+      "primaryForeground": "40 30% 96%",
+      "secondary": "44 50% 92%",
+      "secondaryForeground": "158 18% 16%",
+      "accent": "8 65% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 24% 97%",
+      "foreground": "158 18% 12%",
+      "muted": "44 24% 92%",
+      "mutedForeground": "158 8% 42%",
+      "border": "44 18% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "158 18% 12%",
+      "ring": "8 65% 55%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 22px 44px -28px hsl(158 18% 16% / .5)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | MAISON NISWAH",
+    "description": "أزياء حريمي بنمط Bento — تنسيقات جاهزة وقطع محدودة."
+  },
+  "preview": {
+    "colors": [
+      "158 18% 16%",
+      "8 65% 55%",
+      "40 24% 97%"
+    ]
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "announcementText": "قطع محدودة · تغليف هدايا",
+    "announcementLinkText": "اللوك بوك",
+    "announcementLinkTo": "/collections",
+    "brandName": "MAISON NISWAH",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/shop?sort=discount"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "MAISON NISWAH — أزياء حريمي.",
+    "copyrightText": "© 2026 MAISON NISWAH",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "اللوك بوك",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/contact"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/contact"
+          },
+          {
+            "label": "تواصلي",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/contact"
+      },
+      {
+        "label": "الشروط",
+        "to": "/contact"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "cinematic-plinth",
+          "settings": {
+            "eyebrow": "موسم ٢٠٢٦",
+            "title": "دولابك… لوحة",
+            "subtitle": "قطع قليلة، تنسيقات كتير: كل كارت في الصفحة قطعة تقدر تلبسها ٣ طرق.",
+            "ctaText": "ابدئي من البلانر",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "اللوك بوك",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "chips",
+          "settings": {
+            "title": "خططي دولابك",
+            "subtitle": "مناسبة · يومي · سفر · عمل"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "٣ عوالم",
+            "subtitle": "صباح · مساء · أساسيات"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "bento",
+          "settings": {
+            "title": "شبكة اللوك",
+            "subtitle": "كروت غير متساوية — صورة كبيرة + تفاصيل"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "offer-bento",
+          "variant": "editorial-columns",
+          "settings": {
+            "title": "عروض مختارة",
+            "subtitle": "٣ أعمدة تحريرية"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "رسالة الموسم"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "المتجر",
+            "subtitle": "كل القطع في شبكة واحدة"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "boutique-discovery"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "size-guide",
+          "variant": "compact"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "editorial"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "دولابك"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "standard"
+        },
+        {
+          "type": "featured-product",
+          "variant": "spotlight"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards"
+        }
+      ]
+    },
+    "contact": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "استشارة ستايل"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "رسالة الموسم"
+          }
+        }
+      ]
+    }
+  }
+}

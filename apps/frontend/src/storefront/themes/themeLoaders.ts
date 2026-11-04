@@ -62,6 +62,12 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "anjella-boutique": () => import("./anjella-boutique.json"),
   "dental-lab-elite": () => import("./dental-lab-elite.json"),
   "redline-auto": () => import("./redline-auto.json"),
+  // 120-template plan — day 01/30 (أزياء حريمي). Dynamic only: no import in index.ts,
+  // so the merchant bundle does not pay for these presets unless the store selects them.
+  "tpl-001-bulk-commerce-women-fashion": () => import("./tpl-001-bulk-commerce-women-fashion.json"),
+  "tpl-002-marketplace-multi-women-fashion": () => import("./tpl-002-marketplace-multi-women-fashion.json"),
+  "tpl-003-local-market-women-fashion": () => import("./tpl-003-local-market-women-fashion.json"),
+  "tpl-004-original-women-fashion": () => import("./tpl-004-original-women-fashion.json"),
 };
 
 const THEME_CACHE = new Map<string, StorefrontTheme>();

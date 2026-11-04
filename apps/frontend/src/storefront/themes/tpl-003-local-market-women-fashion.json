@@ -1,0 +1,355 @@
+{
+  "id": "tpl-003-local-market-women-fashion",
+  "name": "حنان — أزياء حريمي سوق محلي",
+  "description": "قالب سوق محلي بسيط: شرايط ضمان الدفع عند الاستلام، أقسام بكبسولات، عروض كومبو، وتقييمات — موجه لمتاجر COD في مصر.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "340 55% 62%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "340 40% 96%",
+      "secondaryForeground": "340 30% 20%",
+      "accent": "152 38% 40%",
+      "accentForeground": "0 0% 100%",
+      "background": "36 40% 98%",
+      "foreground": "340 25% 16%",
+      "muted": "340 20% 95%",
+      "mutedForeground": "340 10% 45%",
+      "border": "340 20% 89%",
+      "card": "0 0% 100%",
+      "cardForeground": "340 25% 16%",
+      "ring": "340 55% 62%"
+    },
+    "typography": {
+      "headingFont": "\"Tajawal\", sans-serif",
+      "bodyFont": "\"Cairo\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 2px 10px hsl(340 25% 16% / .05)",
+      "hoverShadow": "0 20px 40px -26px hsl(340 55% 62% / .55)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | HANAN",
+    "description": "أزياء حريمي بأسعار السوق المحلي — دفع عند الاستلام وتوصيل لكل المحافظات."
+  },
+  "preview": {
+    "colors": [
+      "340 55% 62%",
+      "152 38% 40%",
+      "36 40% 98%"
+    ]
+  },
+  "header": {
+    "variant": "default",
+    "announcementText": "دفع عند الاستلام · توصيل ٢-٤ أيام",
+    "announcementLinkText": "اعرفي الشروط",
+    "announcementLinkTo": "/contact",
+    "brandName": "HANAN",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/shop?sort=discount"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "default",
+    "description": "HANAN — أزياء حريمي.",
+    "copyrightText": "© 2026 HANAN",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "اللوك بوك",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/contact"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/contact"
+          },
+          {
+            "label": "تواصلي",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/contact"
+      },
+      {
+        "label": "الشروط",
+        "to": "/contact"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "ضمان",
+            "message": "استبدال خلال ١٤ يوم",
+            "saleLabel": "خصم حتى ٣٠٪",
+            "shippingLabel": "دفع عند الاستلام"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "soft-showcase",
+          "settings": {
+            "eyebrow": "تشكيلة الأسبوع",
+            "title": "لبس حلو… وسعر أرحم",
+            "subtitle": "قطع يومية بأسعار السوق، ومقاسات من S لـ XXL.",
+            "ctaText": "شوفي التشكيلة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "الأكثر مبيعًا",
+            "secondaryCtaLink": "/shop?sort=best"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "title": "اختاري القسم",
+            "subtitle": "فساتين · بلوزات · أطقم · عبايات"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر مبيعًا",
+            "subtitle": "بيتكرر طلبه كل أسبوع"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "title": "كومبو التوفير",
+            "subtitle": "٢ قطع · ٣ قطع · طقم كامل"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "title": "صور من عميلاتنا"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "standard",
+          "settings": {
+            "title": "تقييمات حقيقية"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "عروض واتساب"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "فلترة سهلة بالمقاس والسعر"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "soft-sort-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "standard"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "related-products",
+          "variant": "standard"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "أكملي الطلب"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "message": "الدفع عند الاستلام متاح",
+            "saleLabel": "ضمان ١٤ يوم",
+            "shippingLabel": "٢-٤ أيام"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "featured-product",
+          "variant": "split"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards"
+        }
+      ]
+    },
+    "contact": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلّمينا على واتساب"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "standard",
+          "settings": {
+            "title": "اشتركي في عروض الواتساب"
+          }
+        }
+      ]
+    }
+  }
+}
