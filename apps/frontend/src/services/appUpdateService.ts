@@ -333,22 +333,104 @@ export function clearUpdateSnooze(): void {
 }
 
 /**
+ * Resolves the optimal download URL for Android APK.
+ * In Capacitor Android WebView, any request to maxp.online is locked inside the WebView
+ * by Capacitor's allowNavigation rules, where WebView silently drops binary downloads without a listener.
+ * Routing through maxp-ai.pro (same server, SSL verified) breaks out of the WebView
+ * and triggers Android's native ACTION_VIEW intent to open the default system browser / Download Manager.
+ */
+export function getAndroidDownloadUrl(targetUrl?: string): string {
+  const defaultUrl = 'https://maxp.online/download/maxp.apk';
+  const defaultExternalUrl = 'https://maxp-ai.pro/download/maxp.apk';
+
+  if (!targetUrl || typeof targetUrl !== 'string') {
+    return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+  }
+
+  const trimmed = targetUrl.trim();
+  if (!trimmed) {
+    return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+  }
+
+  // Prevent dangerous or non-web schemes
+  if (/^(javascript|data|file|blob):/i.test(trimmed)) {
+    return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+  }
+
+  // Handle relative URLs
+  if (trimmed.startsWith('/')) {
+    return isAndroidAppEnvironment()
+      ? `https://maxp-ai.pro${trimmed}`
+      : `https://maxp.online${trimmed}`;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+    }
+
+    // Whitelist allowed domains for APK updates
+    const allowedHosts = ['maxp.online', 'maxp-ai.pro', 'www.maxp-ai.pro', 'www.maxp.online'];
+    const isAllowed = allowedHosts.some(
+      (h) => parsed.hostname === h || parsed.hostname.endsWith('.' + h)
+    );
+    if (!isAllowed) {
+      return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+    }
+
+    if (isAndroidAppEnvironment() && parsed.hostname.endsWith('maxp.online')) {
+      parsed.hostname = 'maxp-ai.pro';
+    }
+
+    return parsed.toString();
+  } catch {
+    return isAndroidAppEnvironment() ? defaultExternalUrl : defaultUrl;
+  }
+}
+
+/**
  * Opens the APK download URL or redirects the Android system to initiate download.
  */
 export function openUpdateDownload(targetUrl?: string): void {
-  const url = targetUrl || 'https://maxp.online/download/maxp.apk';
+  const url = getAndroidDownloadUrl(targetUrl);
+  const fallbackUrl = targetUrl || 'https://maxp.online/download/maxp.apk';
   const win = window as any;
 
-  // 1. If in Capacitor, open via system browser/download manager
-  if (typeof win !== 'undefined' && win.Capacitor?.isNativePlatform?.()) {
+  // 1. If custom native plugin has openExternalUrl (available in updated APK builds)
+  if (typeof win !== 'undefined' && win.Capacitor?.Plugins?.MaxPTelephony?.openExternalUrl) {
     try {
-      // '_system' directs Android to open the default browser or Android Download Manager
-      win.open(url, '_system');
+      win.Capacitor.Plugins.MaxPTelephony.openExternalUrl({ url });
       return;
-    } catch {}
+    } catch (e) {
+      console.warn('⚠️ [APP-UPDATE] MaxPTelephony.openExternalUrl failed:', e);
+    }
   }
 
-  // 2. Fallback: create temporary download link
+  // 2. If Capacitor Browser plugin is available
+  if (typeof win !== 'undefined' && win.Capacitor?.Plugins?.Browser?.open) {
+    try {
+      win.Capacitor.Plugins.Browser.open({ url });
+      return;
+    } catch (e) {
+      console.warn('⚠️ [APP-UPDATE] Browser.open failed:', e);
+    }
+  }
+
+  // 3. For Capacitor Android:
+  // Since `url` is on maxp-ai.pro, navigating via window.location.href triggers
+  // Capacitor Bridge's `launchIntent` which invokes `startActivity(Intent.ACTION_VIEW, url)`.
+  // This opens Chrome/System browser and starts the APK download immediately.
+  if (typeof win !== 'undefined' && win.Capacitor?.isNativePlatform?.()) {
+    try {
+      window.location.href = url;
+      return;
+    } catch (e) {
+      console.warn('⚠️ [APP-UPDATE] window.location.href failed:', e);
+    }
+  }
+
+  // 4. Standard Web / Desktop fallback: create temporary anchor and click
   try {
     const link = document.createElement('a');
     link.href = url;
@@ -359,7 +441,7 @@ export function openUpdateDownload(targetUrl?: string): void {
     link.click();
     document.body.removeChild(link);
   } catch {
-    window.location.href = url;
+    window.location.href = fallbackUrl;
   }
 }
 

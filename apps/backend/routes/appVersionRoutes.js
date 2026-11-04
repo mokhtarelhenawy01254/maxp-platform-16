@@ -7,6 +7,7 @@ const path = require('path');
 
 // Candidate paths for maxp.apk on production or local disk
 const APK_CANDIDATE_PATHS = [
+  '/var/www/maxp-downloads/maxp.apk',
   '/var/www/frontend2/dist/download/maxp.apk',
   '/var/www/frontend2/dist/downloads/maxp.apk',
   path.join(__dirname, '../../frontend/public/download/maxp.apk'),

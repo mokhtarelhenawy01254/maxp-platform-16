@@ -8,6 +8,7 @@ import {
   updateUrls,
   getCurrentAppVersion,
   checkAppUpdate,
+  getAndroidDownloadUrl,
   UpdateCheckResult,
   AppVersionInfo,
 } from '../appUpdateService';
@@ -98,12 +99,24 @@ describe('appUpdateService', () => {
     });
   });
 
+  describe('getAndroidDownloadUrl', () => {
+    it('returns raw URL when in standard web environment', () => {
+      const url = getAndroidDownloadUrl('https://maxp.online/download/maxp.apk');
+      expect(url).toBe('https://maxp.online/download/maxp.apk');
+    });
+
+    it('returns default fallback when no targetUrl is provided', () => {
+      const url = getAndroidDownloadUrl();
+      expect(url).toBe('https://maxp.online/download/maxp.apk');
+    });
+  });
+
   describe('getCurrentAppVersion & checkAppUpdate edge cases', () => {
     it('returns known: false when Capacitor App plugin is not available in web without debug flag', async () => {
       const current = await getCurrentAppVersion();
       expect(current.known).toBe(false);
-      expect(current.version).toBe('1.2.0');
-      expect(current.build).toBe(12);
+      expect(current.version).toBe('1.2.1');
+      expect(current.build).toBe(13);
     });
 
     it('returns fail-open APP_VERSION_UNKNOWN when current version is unknown', async () => {

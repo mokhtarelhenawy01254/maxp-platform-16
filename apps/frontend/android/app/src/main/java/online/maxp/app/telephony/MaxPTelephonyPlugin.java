@@ -384,6 +384,32 @@ public class MaxPTelephonyPlugin extends Plugin {
         intent.putExtra("extra_asus_dial_use_dualsim", true);
     }
 
+    @PluginMethod
+    public void openExternalUrl(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || url.trim().isEmpty()) {
+            call.reject("URL is required");
+            return;
+        }
+        try {
+            Uri uri = Uri.parse(url.trim());
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+                call.reject("Invalid URL scheme. Only HTTP and HTTPS are permitted.");
+                return;
+            }
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to open external URL: " + e.getMessage());
+        }
+    }
+
     private Uri buildPhoneUri(String phone) {
         if (phone == null || phone.trim().isEmpty()) {
             return Uri.parse("tel:");

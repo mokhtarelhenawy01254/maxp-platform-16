@@ -8,12 +8,16 @@ import {
   X,
   ArrowLeft,
   ArrowRight,
+  ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   checkAppUpdate,
   shouldShowUpdateModal,
   snoozeUpdate,
   openUpdateDownload,
+  getAndroidDownloadUrl,
   exitAndroidApp,
   isAndroidAppEnvironment,
   UpdateCheckResult,
@@ -35,6 +39,8 @@ export const AndroidAppUpdateModal: React.FC<AndroidAppUpdateModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [updateData, setUpdateData] = useState<UpdateCheckResult | null>(null);
 
   const performCheck = useCallback(async (manual = false) => {
@@ -100,15 +106,10 @@ export const AndroidAppUpdateModal: React.FC<AndroidAppUpdateModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, updateData?.isMandatory]);
 
-  // Focus trap and accessibility inert for background elements when modal is open
+  // Focus trap for keyboard navigation when modal is open
   useEffect(() => {
     if (!isOpen) return;
     const modalRoot = document.getElementById('android-update-modal-root');
-    const root = document.getElementById('root');
-    const siblings = Array.from(root?.children || []).filter(
-      (el) => el.id !== 'android-update-modal-root'
-    );
-    siblings.forEach((el) => (el as HTMLElement).setAttribute('inert', ''));
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
@@ -143,7 +144,6 @@ export const AndroidAppUpdateModal: React.FC<AndroidAppUpdateModalProps> = ({
 
     window.addEventListener('keydown', onKey, true);
     return () => {
-      siblings.forEach((el) => (el as HTMLElement).removeAttribute('inert'));
       window.removeEventListener('keydown', onKey, true);
     };
   }, [isOpen]);
@@ -155,13 +155,45 @@ export const AndroidAppUpdateModal: React.FC<AndroidAppUpdateModalProps> = ({
   const { versionInfo, isMandatory, currentVersion } = updateData;
   const latestVersion = versionInfo.latestVersion;
   const isEnforced = isMandatory;
+  const resolvedApkUrl = getAndroidDownloadUrl(versionInfo.directApkUrl || versionInfo.downloadUrl);
 
   const handleDownload = () => {
     setDownloading(true);
+    setDownloadStarted(true);
     openUpdateDownload(versionInfo.directApkUrl || versionInfo.downloadUrl);
     setTimeout(() => {
       setDownloading(false);
     }, 4000);
+  };
+
+  const handleCopyLink = async () => {
+    let success = false;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(resolvedApkUrl);
+        success = true;
+      }
+    } catch {}
+
+    if (!success && typeof document !== 'undefined') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = resolvedApkUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch {}
+    }
+
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   const handleSnooze = () => {
@@ -302,11 +334,49 @@ export const AndroidAppUpdateModal: React.FC<AndroidAppUpdateModalProps> = ({
           )}
 
           {/* Installation Helper Notice */}
-          <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-2 text-xs text-primary">
-            <Download className="size-4 text-primary shrink-0 mt-0.5" />
-            <p className="leading-relaxed">
-              عند الضغط على التحديث، سيتم تحميل ملف <code className="text-foreground font-mono bg-muted px-1 py-0.5 rounded text-[11px]">MaxP.apk</code> مباشرة. افتح الملف واضغط على <strong className="text-foreground">"تثبيت"</strong> لإكمال التحديث في ثوانٍ.
-            </p>
+          <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl flex flex-col gap-2 text-xs text-primary">
+            <div className="flex items-start gap-2">
+              <Download className="size-4 text-primary shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                عند الضغط على التحديث، سيتم توجيه هاتفك لتحميل ملف <code className="text-foreground font-mono bg-muted px-1 py-0.5 rounded text-[11px]">MaxP.apk</code> مباشرة عبر المتصفح. افتح الملف واضغط على <strong className="text-foreground">"تثبيت"</strong> لإكمال التحديث.
+              </p>
+            </div>
+
+            {downloadStarted && (
+              <div className="pt-2 border-t border-primary/20 flex flex-col gap-1.5 text-[11px] animate-in fade-in duration-200">
+                <span className="font-medium text-foreground">
+                  إذا لم يبدأ التحميل في هاتفك تلقائياً:
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={resolvedApkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-2xs"
+                  >
+                    <span>فتح رابط التحميل في المتصفح</span>
+                    <ExternalLink className="size-3" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted text-foreground font-medium hover:bg-muted/80 transition-colors border border-border/60 cursor-pointer"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="size-3 text-emerald-600" />
+                        <span>تم نسخ الرابط بنجاح ✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-3" />
+                        <span>نسخ الرابط</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {versionInfo.fileSizeFormatted && (
