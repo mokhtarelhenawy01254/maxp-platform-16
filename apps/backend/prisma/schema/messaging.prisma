@@ -98,7 +98,7 @@ model Message {
   content        String
   attachments    String?
   metadata       String?
-  deliveryStatus String?      @default("PENDING")
+  deliveryStatus String?
   failureReason  String?
   isFromCustomer Boolean      @default(true)
   isRead         Boolean      @default(false)
@@ -112,7 +112,6 @@ model Message {
   @@index([conversationId])
   @@index([conversationId, createdAt])
   @@index([createdAt])
-  @@index([deliveryStatus, createdAt])
   @@index([isFromCustomer])
   @@index([senderId])
   @@map("messages")
