@@ -4,6 +4,10 @@ import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefron
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
 export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
+  "menswear-lumiere": () => import("./menswear-lumiere.json"),
+  "menswear-bazaar": () => import("./menswear-bazaar.json"),
+  "menswear-noor": () => import("./menswear-noor.json"),
+  "menswear-maison": () => import("./menswear-maison.json"),
   "women-fashion-lumiere": () => import("./women-fashion-lumiere.json"),
   "women-fashion-bazaar": () => import("./women-fashion-bazaar.json"),
   "women-fashion-noor": () => import("./women-fashion-noor.json"),

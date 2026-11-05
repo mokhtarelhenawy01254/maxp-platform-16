@@ -1,6 +1,10 @@
 import modernMinimalData from "./modern-minimal.json";
 import boldFashionData from "./bold-fashion.json";
 import womenFashionLumiereData from "./women-fashion-lumiere.json";
+import menswearLumiereData from "./menswear-lumiere.json";
+import menswearBazaarData from "./menswear-bazaar.json";
+import menswearNoorData from "./menswear-noor.json";
+import menswearMaisonData from "./menswear-maison.json";
 import womenFashionBazaarData from "./women-fashion-bazaar.json";
 import womenFashionNoorData from "./women-fashion-noor.json";
 import womenFashionMaisonData from "./women-fashion-maison.json";
@@ -673,6 +677,10 @@ const styleStoreEgData = createAliasPreset(legacyDefaultOldData, {
 });
 
 export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
+  "menswear-lumiere": asStorefrontTheme(menswearLumiereData),
+  "menswear-bazaar": asStorefrontTheme(menswearBazaarData),
+  "menswear-noor": asStorefrontTheme(menswearNoorData),
+  "menswear-maison": asStorefrontTheme(menswearMaisonData),
   "women-fashion-lumiere": asStorefrontTheme(womenFashionLumiereData),
   "women-fashion-bazaar": asStorefrontTheme(womenFashionBazaarData),
   "women-fashion-noor": asStorefrontTheme(womenFashionNoorData),
