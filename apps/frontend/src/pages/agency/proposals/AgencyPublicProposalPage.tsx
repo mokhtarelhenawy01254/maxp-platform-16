@@ -216,7 +216,10 @@ export default function AgencyPublicProposalPage() {
         {/* 2. The whole plan — one tab per part */}
         <ProposalTabsSection tabs={proposal.tabs} />
 
-        {/* 3. Legacy blocks kept for proposals that have no tabs yet */}
+        {/* 3. Dedicated Telemetry & Real-Time Intelligence Suite */}
+        <ProposalAnalyticsSection telemetry={proposal.telemetry} />
+
+        {/* 4. Legacy blocks kept for proposals that have no tabs yet */}
         {!proposal.tabs?.length && (
           <>
             <ProposalAuditSection auditItems={proposal.auditItems} />
@@ -238,7 +241,6 @@ export default function AgencyPublicProposalPage() {
               agentOrg={proposal.agentOrg}
               toolGroups={proposal.toolGroups}
             />
-            <ProposalAnalyticsSection telemetry={proposal.telemetry} />
             {proposal.showCalculator !== false && (
               <ProposalFunnelCalculator config={proposal.funnelConfig} currency={proposal.currency} />
             )}
