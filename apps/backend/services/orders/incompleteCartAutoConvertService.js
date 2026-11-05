@@ -282,7 +282,6 @@ async function autoConvertCompanyIncompleteCarts(companyId, { limit = 50, user =
 
   const whereConditions = [
     { companyId },
-    { status: { notIn: ['DISMISSED', 'CONVERTED'] } },
     {
       cartContactLog: {
         none: { dismissed: true }
