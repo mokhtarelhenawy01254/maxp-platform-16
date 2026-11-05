@@ -1,5 +1,6 @@
 import React from "react";
 import { AgencyPerformanceModal } from "./AgencyPerformanceModal";
+import { AgencyProposalsTab } from "./proposals/AgencyProposalsTab";
 import {
   AgencyApprovalDialog,
   AgencyApprovalsTab,
@@ -48,6 +49,8 @@ export default function AgencyDashboard() {
           onOpenNewClient={c.handleOpenNewClient}
         />
       )}
+
+      {c.activeTab === "proposals" && <AgencyProposalsTab />}
 
       {c.activeTab === "clients" && (
         <AgencyClientsTab

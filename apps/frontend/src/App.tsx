@@ -701,6 +701,9 @@ const AgencyDashboard = React.lazy(
 const AgencyClientPortal = React.lazy(
   () => import("./pages/agency/AgencyClientPortal"),
 );
+const AgencyPublicProposalPage = React.lazy(
+  () => import("./pages/agency/proposals/AgencyPublicProposalPage"),
+);
 const FactoryPortalPage = React.lazy(
   () => import("./pages/manufacturing/portal/FactoryPortalPage"),
 );
@@ -2394,6 +2397,22 @@ const AppContent = () => {
               element={
                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                   <AgencyClientPortal />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/agency/proposal/:slugOrToken"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <AgencyPublicProposalPage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/proposal/:slugOrToken"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <AgencyPublicProposalPage />
                 </React.Suspense>
               }
             />

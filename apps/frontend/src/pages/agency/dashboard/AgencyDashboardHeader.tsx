@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   CheckCircle2,
+  FileText,
   Plus,
   Receipt,
   RefreshCw,
@@ -19,6 +20,7 @@ interface AgencyDashboardHeaderProps {
   clientsCount: number;
   approvalsCount: number;
   unpaidInvoicesCount: number;
+  proposalsCount?: number;
   onRefresh: () => void;
   onOpenNewClient: () => void;
   onTabChange: (tab: string) => void;
@@ -122,6 +124,18 @@ export const AgencyDashboardHeader: React.FC<AgencyDashboardHeaderProps> = ({
             >
               <BarChart3 className="size-4" />
               <span>نظرة عامة</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange("proposals")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "proposals"
+                  ? "bg-primary text-primary-foreground shadow-xs shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
+              }`}
+            >
+              <FileText className="size-4" />
+              <span>عروض وخطط النمو</span>
             </button>
             <button
               type="button"

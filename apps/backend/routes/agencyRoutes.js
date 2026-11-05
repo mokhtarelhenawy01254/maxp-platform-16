@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const agencyController = require('../controller/agencyController');
+const agencyProposalController = require('../controller/agencyProposalController');
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 
 // Meta CSV upload (in-memory only — لا كتابة على الديسك، والملف يُقرأ كنص)
 const csvUpload = multer({
@@ -16,6 +18,10 @@ router.get('/public/approval/:token', agencyController.getPublicApproval);
 router.post('/public/approval/:token', agencyController.respondPublicApproval);
 router.get('/public-approval/:token', agencyController.getPublicApproval);
 router.post('/public-approval/:token', agencyController.respondPublicApproval);
+
+// Public interactive growth proposal & pitch deck (no authentication needed)
+router.get('/public/proposal/:slugOrToken', extractSubdomainMiddleware, agencyProposalController.getPublicProposal);
+router.post('/public/proposal/:slugOrToken/accept', extractSubdomainMiddleware, agencyProposalController.acceptPublicProposal);
 
 // Authenticated Agency Hub routes
 const agencyAuth = [verifyToken.authenticateToken, checkAppAccess('marketing-agency-pro')];
@@ -58,5 +64,13 @@ router.get('/approvals', agencyAuth, agencyController.getApprovals);
 router.post('/approvals', agencyAuth, agencyController.createApproval);
 router.put('/approvals/:approvalId', agencyAuth, agencyController.updateApproval);
 router.delete('/approvals/:approvalId', agencyAuth, agencyController.deleteApproval);
+
+// Interactive Growth Proposals & Pitch Decks
+router.get('/proposals', agencyAuth, agencyProposalController.getProposals);
+router.post('/proposals', agencyAuth, agencyProposalController.createProposal);
+router.post('/proposals/seed-codetreps', agencyAuth, agencyProposalController.generateCodeTrepsProposal);
+router.get('/proposals/:proposalId', agencyAuth, agencyProposalController.getProposal);
+router.put('/proposals/:proposalId', agencyAuth, agencyProposalController.updateProposal);
+router.delete('/proposals/:proposalId', agencyAuth, agencyProposalController.deleteProposal);
 
 module.exports = router;

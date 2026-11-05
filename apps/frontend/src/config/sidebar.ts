@@ -1260,6 +1260,7 @@ export const getSidebarConfig = (
             icon: Briefcase,
             items: [
                 { to: '/agency', icon: BarChart3, label: isEn ? 'Agency Dashboard' : t('sidebar.agencyOverview', { defaultValue: 'لوحة التحكم' }) },
+                { to: '/agency?tab=proposals', icon: FileText, label: isEn ? 'Growth Proposals' : t('sidebar.agencyProposals', { defaultValue: 'عروض وخطط النمو' }) },
                 { to: '/agency?tab=clients', icon: Users, label: isEn ? 'Clients & Pricing' : t('sidebar.agencyClients', { defaultValue: 'العملاء والأسعار' }) },
                 { to: '/agency?tab=invoices', icon: Receipt, label: isEn ? 'Invoices & Profit' : t('sidebar.agencyInvoices', { defaultValue: 'الفواتير والأرباح' }) },
                 { to: '/agency?tab=approvals', icon: ClipboardCheck, label: isEn ? 'Content Approvals' : t('sidebar.agencyApprovals', { defaultValue: 'موافقات المحتوى' }) },
