@@ -1541,6 +1541,18 @@ try {
   );
 }
 
+// Start Missing Punches Daily Cron Service (task 1e422c5a)
+try {
+  const missingPunchesDailyCron = require("./cron/missingPunchesDailyCron");
+  missingPunchesDailyCron.start();
+  console.log("✅ [MISSING-PUNCHES-CRON] Daily missing-punches check started");
+} catch (error) {
+  console.error(
+    "❌ [MISSING-PUNCHES-CRON] Failed to start missing-punches cron:",
+    error,
+  );
+}
+
 // Start Automated Payroll Calculation and Attendance Deduction Cron Service
 try {
   const payrollAutoCalculationCron = require("./cron/payrollAutoCalculationCron");
