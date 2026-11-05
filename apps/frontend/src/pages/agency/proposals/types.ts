@@ -39,10 +39,68 @@ export interface ProposalTimelinePhase {
 /** A concrete stream of work: what we do, exactly what is delivered, and the result. */
 export interface ProposalWorkstream {
   id: string;
+  /** Ordinal shown in the editorial layout (01, 02…). */
+  number?: string;
+  category?: string;
   title: string;
-  summary: string;
+  /** Short body copy used by the editorial layout. */
+  description?: string;
+  summary?: string;
   deliverables: string[];
+  tools?: string[];
   outcome?: string;
+}
+
+/** One row of the monthly commitment ladder (new vs active students). */
+export interface ProposalTargetRow {
+  month: string;
+  newStudents: number;
+  activeStudents: number;
+  media: number;
+  revenue: number;
+}
+
+export interface ProposalTargetEngine {
+  name: string;
+  detail: string;
+  perMonth: number;
+}
+
+export interface ProposalTargets {
+  headline: string;
+  subline?: string;
+  note?: string;
+  rows: ProposalTargetRow[];
+  engines?: ProposalTargetEngine[];
+}
+
+/** A paid or organic acquisition channel and its slice of the media budget. */
+export interface ProposalChannel {
+  name: string;
+  role: string;
+  share: number;
+  budget: number;
+  kpi: string;
+}
+
+export interface ProposalContentPlan {
+  pillars: string[];
+  monthly: { label: string; value: string }[];
+  production?: string;
+}
+
+/** An automated agent: what it does step by step, and what it replaces. */
+export interface ProposalAgent {
+  name: string;
+  job: string;
+  steps: string[];
+  kpi?: string;
+}
+
+export interface ProposalTool {
+  name: string;
+  purpose: string;
+  owner?: string;
 }
 
 export interface ProposalPackage {
@@ -61,6 +119,8 @@ export interface AgencyProposal {
   slug: string;
   clientName: string;
   clientBrand?: string;
+  /** Client mark shown on the cover plate (falls back to the client name in type). */
+  clientLogo?: string;
   contactPerson?: string;
   phone?: string;
   email?: string;
@@ -88,6 +148,16 @@ export interface AgencyProposal {
   workstreams?: ProposalWorkstream[];
   /** What the client must provide for the plan to run on time. */
   clientNeeds?: string[];
+  /** Target ladder, channels, content plan, agents and tooling — the operating plan. */
+  targets?: ProposalTargets;
+  channels?: ProposalChannel[];
+  contentPlan?: ProposalContentPlan;
+  agents?: ProposalAgent[];
+  tools?: ProposalTool[];
+  /** The ROI simulator is opt-in: only meaningful once real CPC/CPL data exists. */
+  showCalculator?: boolean;
+  /** One line next to the packages: total outlay, validity, what is not included. */
+  commercialNote?: string;
   funnelConfig: ProposalFunnelConfig;
   timeline: ProposalTimelinePhase[];
   packages: ProposalPackage[];
@@ -98,6 +168,7 @@ export interface PublicProposalData {
   agencyInfo: {
     name: string;
     logo?: string | null;
+    phone?: string | null;
     subdomain?: string;
     customDomain?: string | null;
   };

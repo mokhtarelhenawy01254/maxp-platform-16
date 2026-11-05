@@ -29,10 +29,21 @@ export const Lead: React.FC<{ children: React.ReactNode; muted?: boolean }> = ({
   <p className={`mt-5 text-lg sm:text-xl leading-9 max-w-2xl text-pretty ${muted ? "opacity-75" : ""}`}>{children}</p>
 );
 
-/** Square gold marker used for list items instead of icons. */
-export const Marker: React.FC<{ dark?: boolean }> = ({ dark }) => (
-  <span aria-hidden="true" className={`mt-3 size-1.5 shrink-0 ${dark ? "bg-black" : "bg-[#FFD368]"}`} />
-);
+/** Gold eyebrow marker: a square plus an optional uppercase label. */
+export const Marker: React.FC<{ dark?: boolean; children?: React.ReactNode }> = ({ dark, children }) => {
+  const square = <span aria-hidden="true" className={`size-1.5 shrink-0 ${dark ? "bg-black" : "bg-[#FFD368]"}`} />;
+  if (!children) return <span aria-hidden="true" className={`mt-3 size-1.5 shrink-0 ${dark ? "bg-black" : "bg-[#FFD368]"}`} />;
+  return (
+    <div
+      className={`flex items-center gap-2 text-[11px] font-bold tracking-[0.16em] uppercase ${
+        dark ? "text-black/70" : "text-[#FFD368]"
+      }`}
+    >
+      {square}
+      <span>{children}</span>
+    </div>
+  );
+};
 
 export const stripParens = (text: string) => text.replace(/\s*\([^)]*\)/g, "").trim();
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { ProposalAuditItem } from "../types";
 import { Band, SectionTitle, Lead, Marker, stripParens } from "./ProposalUi";
 
@@ -19,8 +19,8 @@ export const ProposalAuditSection: React.FC<ProposalAuditSectionProps> = ({ audi
             أين تتسرب الميزانية الإعلانية وأولياء الأمور قبل حجز المقابلة؟
           </SectionTitle>
           <Lead>
-            فحص تفصيلي للمنظومة الحالية في فرع فؤاد بالإسكندرية، كشف عن ٣ فجوات رئيسية تتسبب في هدر أكثر من ٤٠٪ من
-            الميزانيات التسويقية بسبب بطء الرد وغياب التتبع السحابي.
+            فحص تفصيلي للمنظومة الحالية في فرع فؤاد بالإسكندرية، كشف عن {auditItems.length} فجوات تتسبب في
+            ضياع أولياء أمور بعد ما دفعوا تمن الإعلان اللي جابهم.
           </Lead>
         </div>
         <div className="text-right shrink-0">

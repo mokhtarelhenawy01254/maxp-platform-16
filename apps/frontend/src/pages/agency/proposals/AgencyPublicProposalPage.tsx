@@ -1,17 +1,28 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2, MessageCircle, Share2, Sparkles } from "lucide-react";
-import { Button } from "../../../components/ui/button";
+import { AlertCircle, CheckCircle2, MessageCircle, Share2 } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
-import { AgencyProposal, ProposalPackage, PublicProposalData } from "./types";
+import { ProposalPackage, PublicProposalData } from "./types";
 import { ProposalHero } from "./components/ProposalHero";
+import { ProposalBrandBar } from "./components/ProposalBrandBar";
 import { ProposalAuditSection } from "./components/ProposalAuditSection";
+import { ProposalTargetsSection } from "./components/ProposalTargetsSection";
+import { ProposalChannelsSection } from "./components/ProposalChannelsSection";
 import { ProposalFunnelCalculator } from "./components/ProposalFunnelCalculator";
 import { ProposalSolutionSection } from "./components/ProposalSolutionSection";
+import { ProposalAgentsSection } from "./components/ProposalAgentsSection";
 import { ProposalTimelineSection } from "./components/ProposalTimelineSection";
 import { ProposalPackagesSection } from "./components/ProposalPackagesSection";
 import { ProposalAcceptModal } from "./components/ProposalAcceptModal";
+
+/** wa.me number from a stored phone: digits only, Egypt prefix, never a doubled 20. */
+const toWaNumber = (raw?: string | null) => {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("20")) return digits;
+  return `20${digits.replace(/^0+/, "")}`;
+};
 
 export default function AgencyPublicProposalPage() {
   const { slugOrToken } = useParams<{ slugOrToken: string }>();
@@ -154,6 +165,15 @@ export default function AgencyPublicProposalPage() {
             <button onClick={() => scrollTo("audit")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
               التشخيص
             </button>
+            <button onClick={() => scrollTo("targets")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
+              التارجت
+            </button>
+            <button onClick={() => scrollTo("channels")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
+              القنوات
+            </button>
+            <button onClick={() => scrollTo("agents")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
+              الذكاء الاصطناعي
+            </button>
             <button onClick={() => scrollTo("workstreams")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
               محاور العمل
             </button>
@@ -179,9 +199,9 @@ export default function AgencyPublicProposalPage() {
               <span className="hidden sm:inline">مشاركة</span>
             </button>
 
-            {agencyInfo?.phone && (
+            {toWaNumber(agencyInfo?.phone) && (
               <a
-                href={`https://wa.me/20${agencyInfo.phone.replace(/^0+/, "")}?text=${encodeURIComponent(
+                href={`https://wa.me/${toWaNumber(agencyInfo?.phone)}?text=${encodeURIComponent(
                   `أهلاً بك، بخصوص خطة نمو وتشغيل ${proposal.clientName}.`
                 )}`}
                 target="_blank"
@@ -206,27 +226,44 @@ export default function AgencyPublicProposalPage() {
 
       {/* Main Single-Surface Continuous Narrative */}
       <main className="divide-y divide-white/5">
+        {/* 0. Co-brand plate — client mark first */}
+        <ProposalBrandBar proposal={proposal} agencyName={agencyInfo?.name || "H2M Growth Agency"} />
+
         {/* 1. Hero Band */}
         <ProposalHero
           proposal={proposal}
           agencyName={agencyInfo?.name || "H2M Growth Agency"}
-          subdomain={agencyInfo?.subdomain || "h2m"}
         />
 
         {/* 2. Operational Audit & Leaky Bucket */}
         <ProposalAuditSection auditItems={proposal.auditItems} />
 
-        {/* 3. Scope of Work & Tangible Deliverables */}
+        {/* 3. Commitment ladder — 400 children, month by month */}
+        <ProposalTargetsSection targets={proposal.targets} currency={proposal.currency} />
+
+        {/* 4. Channels, media allocation and the content engine */}
+        <ProposalChannelsSection
+          channels={proposal.channels}
+          contentPlan={proposal.contentPlan}
+          currency={proposal.currency}
+        />
+
+        {/* 5. Scope of Work & Tangible Deliverables */}
         <ProposalSolutionSection
           workstreams={proposal.workstreams}
           modules={proposal.solutionModules}
         />
 
-        {/* 4. Interactive ROI Funnel Simulator */}
-        <ProposalFunnelCalculator
-          config={proposal.funnelConfig}
-          currency={proposal.currency}
-        />
+        {/* 6. AI agents and the tooling that runs them */}
+        <ProposalAgentsSection agents={proposal.agents} tools={proposal.tools} />
+
+        {/* 7. ROI simulator — opt-in, only once real CPC/CPL data exists */}
+        {proposal.showCalculator !== false && (
+          <ProposalFunnelCalculator
+            config={proposal.funnelConfig}
+            currency={proposal.currency}
+          />
+        )}
 
         {/* 5. 14-Day Timeline with Concrete Handover */}
         <ProposalTimelineSection timeline={proposal.timeline} />
@@ -240,7 +277,15 @@ export default function AgencyPublicProposalPage() {
           onSelectPackage={handleSelectPackage}
         />
 
-        {/* 7. Executive Dealroom Footer */}
+        {proposal.commercialNote && (
+          <div className="bg-[#0a0a0a] px-5 sm:px-10 lg:px-16 py-8">
+            <p className="max-w-6xl mx-auto text-sm text-white/70 leading-relaxed border-r-2 border-[#FFD368] pr-4">
+              {proposal.commercialNote}
+            </p>
+          </div>
+        )}
+
+        {/* 8. Executive Dealroom Footer */}
         <footer className="bg-[#050505] py-12 px-4 text-center border-t border-white/10">
           <div className="max-w-4xl mx-auto space-y-3">
             <div className="font-mono text-xs font-bold text-[#FFD368] tracking-widest uppercase">

@@ -34,7 +34,7 @@ export const ProposalSolutionSection: React.FC<ProposalSolutionSectionProps> = (
   if (items.length === 0) return null;
 
   return (
-    <Band tone="black" id="workstreams">
+    <Band tone="graphite" id="workstreams">
       <div className="space-y-4 max-w-3xl pb-10 border-b border-white/10">
         <Marker>خطة العمل والتسليمات التنفيذية</Marker>
         <SectionTitle>

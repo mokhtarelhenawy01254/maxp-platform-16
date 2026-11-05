@@ -48,6 +48,7 @@ function createCodeTrepsTemplate(companyId) {
         slug: 'codetreps-growth-os',
         clientName: 'CodeTreps (كود تريبس)',
         clientBrand: 'CodeTreps Kids Academy',
+        clientLogo: '/brand/codetreps-logo.png',
         contactPerson: 'م. باسم فخري & م. فراس السويركي',
         phone: '01507766462',
         email: 'info@codetreps.com',
@@ -190,7 +191,226 @@ function createCodeTrepsTemplate(companyId) {
             }
         ],
 
-        // Interactive Funnel Parameters
+        // Scope of work — real deliverables per stream (no generic filler)
+        workstreams: [
+            {
+                id: 'ws_1',
+                number: '01',
+                category: 'البنية الرقمية',
+                title: 'موقع بيبيع — مش بروشور',
+                description: 'إغلاق كل الصفحات المعطلة وبناء المسار الرقمي الكامل: برامج، أسعار، حجز تقييم، وخريطة المقر.',
+                deliverables: [
+                    'إصلاح صفحات What We Offer وFAQ وCourses (كلها 404 حالياً)',
+                    'صفحة لكل مسار: Coding / Business / Presentation مع منهج كل مستوى',
+                    'صفحة أسعار ومواعيد واضحة + نموذج حجز تقييم مربوط بالواتساب',
+                    'بروفايل Google Business كامل بالصور والمواعيد وحملة مراجعات',
+                    'تركيب Meta CAPI وPixel وTikTok Pixel وقاعدة قياس واحدة'
+                ],
+                tools: ['MaxP Pages', 'Meta CAPI', 'Google Business Profile', 'Search Console'],
+                outcome: 'ولي أمر يقدر يفهم البرنامج ويحجز في أقل من دقيقتين من الموبايل، وكل حجز متسجل ومتتبع.'
+            },
+            {
+                id: 'ws_2',
+                number: '02',
+                category: 'الاستقطاب المدفوع',
+                title: 'إدارة الحملات على ميتا وتيك توك وجوجل',
+                description: 'ثلاث منصات بثلاث وظائف مختلفة: ميتا تجيب الطلب، تيك توك تجيب الانتشار والثقة، وجوجل يقفل اللي بيدوّر بنية.',
+                deliverables: [
+                    '٤ حملات ميتا: استهداف آباء 30–45، ريتارجتنج، Lookalike من قايمة الأهل، واختبار أنجلز',
+                    'حملة تيك توك Spark Ads على محتوى الأكاديمية الحقيقي',
+                    'حملة جوجل بحث بكلمات النية + تحسين Maps',
+                    '٦ أنجلز إعلانية مكتوبة ومختبرة شهرياً',
+                    'لوحة تقارير أسبوعية: تكلفة الليد، الحضور، الاشتراك، والتكلفة لكل طالب'
+                ],
+                tools: ['Meta Ads Manager', 'TikTok Ads', 'Google Ads', 'MaxP Reports'],
+                outcome: 'ميزانية 15,000 ج.م بتتحول لمسار مقاس: كل جنيه معروف جاب كام ليد وكام اشتراك.'
+            },
+            {
+                id: 'ws_3',
+                number: '03',
+                category: 'المحتوى والإنتاج',
+                title: 'محرك محتوى بيصور مرة ويشتغل على كل قناة',
+                description: 'مش بوستات متفرقة. نظام إنتاج شهري ثابت: يوم تصوير، بنك هوكس، وقوالب جاهزة، وكل مقطع بيتحول 3 صيغ.',
+                deliverables: [
+                    'يوم تصوير شهري داخل الأكاديمية (ساعتين → 20 مقطع)',
+                    '12 ريل + 8 بوستات + 20 ستوري + 1 Pitch Day شهرياً',
+                    'بنك هوكس عربي جاهز و٦ نسخ إعلانية لكل أنجل',
+                    'إقرارات موافقة أهل مكتوبة لاستخدام صور الأطفال',
+                    'قوالب Canva موحدة للهوية على كل المنشورات'
+                ],
+                tools: ['Canva', 'Higgsfield', 'ChatGPT', 'CapCut'],
+                outcome: 'الأكاديمية بتظهر كل يوم بحاجة جديدة من غير ما الفريق يتوقف عن الشغل.'
+            },
+            {
+                id: 'ws_4',
+                number: '04',
+                category: 'وكلاء الذكاء الاصطناعي',
+                title: 'وكلاء واتساب من أول رسالة لحد التجديد',
+                description: 'المسار كله مؤتمت: استقبال، تأكيد حضور، متابعة، تجديد، وتقارير أهل — بنظام مبيعات بيرد في ثواني.',
+                deliverables: [
+                    'وكيل استقبال: 3 أسئلة + حجز موعد + رمز حجز رسمي',
+                    'وكيل تأكيد حضور: تذكير 24 ساعة و2 ساعة + زر تأكيد + لوكيشن',
+                    'وكيل متابعة وتجديد قبل نهاية المستوى بـ10 أيام',
+                    'تقارير أسبوعية للأهل عن حضور وغياب ومشروع الطفل',
+                    'ربط كل ده بمنصة MaxP كسجل رسمي للحجوزات والاشتراكات'
+                ],
+                tools: ['MaxP Automation', 'WhatsApp Cloud API', 'MaxP Parent Portal'],
+                outcome: 'الاستقبال بيتفرغ للطفل، والمبيعات بتشتغل 24 ساعة، وولي الأمر بيحس إن فيه نظام.'
+            },
+            {
+                id: 'ws_5',
+                number: '05',
+                category: 'التشغيل والاحتفاظ',
+                title: 'تشغيل الأكاديمية على نظام واحد',
+                description: 'الفواتير والمدفوعات وحضور الفريق ومتابعة الأرباح في مكان واحد — بدل دفاتر وواتساب وExcel.',
+                deliverables: [
+                    'فواتير آلية وسندات قبض + بوابات دفع (انستاباي / فيزا / ميزة)',
+                    'بوابة أولياء أمور بالاسم واللوجو لتقارير الطفل',
+                    'حضور ومواعيد الفريق ومهام أسبوعية بـKPI لكل دور',
+                    'لوحة أرباح شهرية وتجديدات (MRR) ومتابعة المتأخرات',
+                    'تدريب الفريق: 4 جلسات (استقبال / بيع / عرض / تقارير) + سكربتات جاهزة'
+                ],
+                tools: ['MaxP OS', 'MaxP Inbox', 'MaxP HR', 'MaxP Billing'],
+                outcome: 'الإدارة بتشوف الأرقام في شاشة واحدة، ومفيش فلوس أو حجز بيضيع في الطريق.'
+            }
+        ],
+
+        // The commitment ladder — replaces the fabricated ROI simulator
+        showCalculator: false,
+        targets: {
+            headline: '400 طفل مشترك شهرياً — خطة 10 شهور بالأرقام',
+            subline: 'الرقم اللي الأكاديمية عايزة توصله مش بيتحقق بحملة واحدة. دي خريطة الطريق: كل شهر عدد الطلاب الجدد، وإجمالي المشتركين، والميزانية، والإيراد المتوقع — بثبات 92% شهرياً (تسريب 8%).',
+            note: 'الأرقام مبنية على 3 محركات استقطاب متوازية، وبمتوسط اشتراك 1,000 ج.م للطالب شهرياً. تُعاد معايرة الخطة بعد أول 30 يوم تشغيل بأرقام CPL الحقيقية — مش بأرقام افتراضية.',
+            rows: [
+                { month: 'الشهر 1', newStudents: 22, activeStudents: 22, media: 15000, revenue: 22000 },
+                { month: 'الشهر 2', newStudents: 35, activeStudents: 55, media: 15000, revenue: 55000 },
+                { month: 'الشهر 3', newStudents: 45, activeStudents: 96, media: 15000, revenue: 96000 },
+                { month: 'الشهر 4', newStudents: 55, activeStudents: 143, media: 15000, revenue: 143000 },
+                { month: 'الشهر 5', newStudents: 60, activeStudents: 192, media: 15000, revenue: 192000 },
+                { month: 'الشهر 6', newStudents: 60, activeStudents: 237, media: 15000, revenue: 237000 },
+                { month: 'الشهر 7', newStudents: 65, activeStudents: 283, media: 15000, revenue: 283000 },
+                { month: 'الشهر 8', newStudents: 65, activeStudents: 325, media: 15000, revenue: 325000 },
+                { month: 'الشهر 9', newStudents: 70, activeStudents: 369, media: 15000, revenue: 369000 },
+                { month: 'الشهر 10', newStudents: 70, activeStudents: 409, media: 15000, revenue: 409000 }
+            ],
+            engines: [
+                { name: 'إعلانات مدفوعة', detail: 'ميتا + تيك توك + جوجل بإدارة كاملة وربط CAPI لتتبع كل حجز', perMonth: 22 },
+                { name: 'شراكات المدارس', detail: 'ورشتين شهرياً داخل مدارس الإسكندرية (Riada / Schutz / Sakr / ALS) + ليلة أولياء أمور', perMonth: 24 },
+                { name: 'برنامج الإحالة', detail: 'أسبوع مجاني للطرفين + تحويل جمهور 79 ألف متابع لقايمة واتساب', perMonth: 14 }
+            ]
+        },
+
+        // Channel plan and content engine
+        channels: [
+            {
+                name: 'ميتا (فيسبوك + إنستجرام)',
+                role: 'المحرك الأساسي للطلب: استهداف آباء وأمهات 30–45 في الإسكندرية، وريتارجتنج لكل من شاف فيديو أو دخل الموقع.',
+                share: 60,
+                budget: 9000,
+                kpi: 'تكلفة ليد أقل من 120 ج.م، وتحويل 30% من حضور التقييم لاشتراك'
+            },
+            {
+                name: 'تيك توك',
+                role: 'أرخص وصول وأعلى انتشار: مشاريع الأطفال وPitch Day، وبيغذي الثقة قبل أي إعلان.',
+                share: 17,
+                budget: 2500,
+                kpi: 'تكلفة ليد أقل من 100 ج.م و3 محتويات جديدة أسبوعياً'
+            },
+            {
+                name: 'جوجل (بحث + Maps)',
+                role: 'نية شراء مباشرة: اللي بيدوّر «كورس برمجة أطفال الإسكندرية» أو «أكاديمية قريبة مني». غير مستغل حالياً نهائياً.',
+                share: 13,
+                budget: 2000,
+                kpi: 'تكلفة ليد أقل من 150 ج.م + 20 مكالمة شهرياً من Maps'
+            },
+            {
+                name: 'واتساب + الإحالات',
+                role: 'تحويل جمهور 79 ألف متابع لقايمة واتساب، وبرنامج إحالة بمكافأة للطرفين.',
+                share: 10,
+                budget: 1500,
+                kpi: '14 طالب شهرياً من الإحالة بتكلفة أقل من 100 ج.م للطالب'
+            }
+        ],
+
+        contentPlan: {
+            pillars: [
+                'ابنك بيصنع — مشروع طفل حقيقي كل أسبوع (لعبة، موقع، روبوت)',
+                'مهارات المستقبل — ليه البرمجة والبيزنس والإلقاء من سن 7',
+                'جوه الأكاديمية — المدربين والثقافة والقصص اليومية',
+                'صوت الأهل — شهادات حقيقية ونتائج مقاسة',
+                'الفعاليات — Pitch Day والمسابقات وشراكات المدارس'
+            ],
+            monthly: [
+                { label: 'ريلز', value: '12' },
+                { label: 'بوستات', value: '8' },
+                { label: 'ستوري', value: '20' },
+                { label: 'Pitch Day', value: '1' },
+                { label: 'صفحات موقع', value: '4' },
+                { label: 'يوم تصوير', value: '1' }
+            ],
+            production: 'يوم تصوير واحد شهرياً (ساعتين) يطلع 20 مقطع، وكل مقطع بيتقطع 3 صيغ: ريل + ستوري + كرياتيف إعلان. 70٪ تصوير حقيقي و30٪ AI للـB-roll — لأن الأهل بيصدقوا الطفل الحقيقي مش المولّد.'
+        },
+
+        agents: [
+            {
+                name: 'وكيل استقبال أولياء الأمور',
+                job: 'بيستقبل أول رسالة من الإعلان، بيسأل 3 أسئلة، وبيحجز موعد التقييم فوراً برمز حجز رسمي — بدل ما حد يرد على المكالمات.',
+                steps: [
+                    '٣ أسئلة: سن الطفل، المسار المهتم بيه، وأقرب موعد مناسب',
+                    'عرض المواعيد المتاحة في فرع فؤاد',
+                    'تأكيد الحجز ورمز رسمي + إضافة للتقويم',
+                    'تسجيل الليد في MaxP ونقله للمبيعات'
+                ],
+                kpi: 'رد أقل من 30 ثانية، وصفر ليد بيضيع بعد ساعات العمل'
+            },
+            {
+                name: 'وكيل تأكيد الحضور',
+                job: 'بيقلل الغياب: تذكير قبل الموعد بـ24 ساعة وساعتين، ومعاه لوكيشن المقر وفيديو تعريفي وزر تأكيد.',
+                steps: [
+                    'تذكير 24 ساعة قبل الموعد مع اللوكيشن',
+                    'تذكير ساعتين مع زر «هحضر» / «محتاج أعيد الجدولة»',
+                    'تصعيد للموظف لو مفيش رد قبل الموعد بساعة',
+                    'تسجيل نتيجة الحضور في ملف الطالب'
+                ],
+                kpi: 'رفع نسبة الحضور من 60% إلى 85% خلال أول 60 يوم'
+            },
+            {
+                name: 'وكيل المتابعة والتجديد',
+                job: 'بيشتغل على الاحتفاظ: قبل نهاية المستوى بـ10 أيام يفتح مسار التجديد بتقرير إنجاز الطفل.',
+                steps: [
+                    'تجميع حضور وغياب ومشروع الطفل من MaxP',
+                    'إرسال تقرير الإنجاز لولي الأمر قبل نهاية المستوى',
+                    'عرض المستوى التالي والمواعيد المتاحة',
+                    'تنبيه الفريق لأي ولي أمر بيوقف رد'
+                ],
+                kpi: 'رفع التجديد بين المستويات إلى 70%+'
+            },
+            {
+                name: 'وكيل التقارير والقياس',
+                job: 'بيحوّل كل الأرقام لصورة واحدة أسبوعية: تكلفة الليد، الحضور، الاشتراكات، والتكلفة لكل طالب على كل قناة.',
+                steps: [
+                    'سحب بيانات الحملات والواتساب والحجوزات',
+                    'حساب CPL وCAC ونسبة الحضور لكل قناة',
+                    'توليد تقرير أسبوعي للإدارة وتقرير شهري للمالك',
+                    'اقتراح إعادة توزيع الميزانية على أساس الأداء'
+                ],
+                kpi: 'قرار ميزانية كل أسبوع بأرقام، مش بانطباع'
+            }
+        ],
+
+        tools: [
+            { name: 'MaxP OS', purpose: 'الحجوزات، الاشتراكات، الفواتير، بوابة الأهل، وتقارير الأرباح', owner: 'مشمول' },
+            { name: 'WhatsApp Cloud API', purpose: 'الوكلاء ورسايل التأكيد والتذكير', owner: 'مشمول' },
+            { name: 'Meta CAPI + Pixel', purpose: 'تتبع الحجوزات ومنع فقدان بيانات الحملات', owner: 'مشمول' },
+            { name: 'Google Business Profile', purpose: 'الظهور في خرائط جوجل والمكالمات المحلية', owner: 'مشمول' },
+            { name: 'Canva', purpose: 'قوالب الهوية والبوستات والكروت', owner: 'مشمول' },
+            { name: 'Higgsfield', purpose: 'B-roll وأنيميشن للفيديوهات (مش بديل عن التصوير الحقيقي)', owner: 'مشمول' },
+            { name: 'ChatGPT', purpose: 'سكربتات، هوكس، نسخ إعلانية، وردود الأهل', owner: 'مشمول' },
+            { name: 'CapCut', purpose: 'مونتاج الريلز والـReels السريعة', owner: 'مشمول' }
+        ],
+
+        commercialNote: 'إجمالي الشهر الأول: 27,500 ج.م — 12,500 اشتراك المنصة والإدارة + 15,000 ميزانية إعلانات مدفوعة تُدفع للمنصات. العرض ساري 14 يوماً من تاريخ الإرسال. غير مشمول: إنتاج تصوير خارجي وأي طباعة. التنبيه قبل أي تجديد بـ30 يوماً، ويمكن الإلغاء بإخطار 30 يوماً.',
+
         funnelConfig: {
             defaultBudget: 15000,
             minBudget: 5000,
@@ -284,6 +504,38 @@ function createCodeTrepsTemplate(companyId) {
             }
         ]
     };
+}
+
+// Operational blocks added after the first deal rooms were already stored:
+// merge them in on read so a live proposal picks up a template upgrade
+// without a manual re-save (never overwrites an existing value).
+const OPERATIONAL_FIELDS = [
+    'workstreams',
+    'targets',
+    'channels',
+    'contentPlan',
+    'agents',
+    'tools',
+    'commercialNote',
+    'clientLogo'
+];
+
+function backfillProposalPlan(proposal) {
+    if (!proposal || proposal.slug !== 'codetreps-growth-os') return proposal;
+    const template = createCodeTrepsTemplate(proposal.id || 'h2m-agency');
+    const patch = {};
+    let changed = false;
+    for (const field of OPERATIONAL_FIELDS) {
+        if (proposal[field] === undefined && template[field] !== undefined) {
+            patch[field] = template[field];
+            changed = true;
+        }
+    }
+    if (proposal.showCalculator === undefined && template.showCalculator !== undefined) {
+        patch.showCalculator = template.showCalculator;
+        changed = true;
+    }
+    return changed ? { ...proposal, ...patch } : proposal;
 }
 
 module.exports = {
@@ -533,7 +785,7 @@ module.exports = {
                             ],
                             isActive: true,
                         },
-                        select: { id: true, name: true, logo: true, slug: true, settings: true, customDomain: true },
+                        select: { id: true, name: true, logo: true, phone: true, slug: true, settings: true, customDomain: true },
                     });
                 } catch (e) {
                     console.warn('⚠️ [AGENCY PROPOSAL] DB find company by subdomain failed:', e.message);
@@ -563,6 +815,7 @@ module.exports = {
                     agencyInfo = {
                         name: matchedCompany.name || 'H2M Media Agency',
                         logo: matchedCompany.logo || null,
+                        phone: matchedCompany.phone || null,
                         subdomain: compSub,
                         customDomain: null,
                     };
@@ -579,7 +832,7 @@ module.exports = {
                                 contains: slugOrToken,
                             },
                         },
-                        select: { id: true, name: true, logo: true, slug: true, settings: true, customDomain: true },
+                        select: { id: true, name: true, logo: true, phone: true, slug: true, settings: true, customDomain: true },
                         take: 5,
                     });
                 } catch (dbErr) {
@@ -599,6 +852,7 @@ module.exports = {
                         agencyInfo = {
                             name: comp.name || 'H2M Media Agency',
                             logo: comp.logo || null,
+                            phone: comp.phone || null,
                             subdomain: compSub,
                             customDomain: null,
                         };
@@ -621,6 +875,8 @@ module.exports = {
             if (!foundProposal) {
                 return res.status(404).json({ success: false, message: 'رابط الخطة غير موجود أو منتهي الصلاحية' });
             }
+
+            foundProposal = backfillProposalPlan(foundProposal);
 
             // Track view count asynchronously if matched in DB
             if (matchedCompany && foundProposal && prisma) {
