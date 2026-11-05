@@ -8,6 +8,7 @@ import { ProposalHero } from "./components/ProposalHero";
 import { ProposalBrandBar } from "./components/ProposalBrandBar";
 import { ProposalAuditSection } from "./components/ProposalAuditSection";
 import { ProposalTargetsSection } from "./components/ProposalTargetsSection";
+import { ProposalTabsSection } from "./components/ProposalTabsSection";
 import { ProposalGrowthSection } from "./components/ProposalGrowthSection";
 import { ProposalChannelsSection } from "./components/ProposalChannelsSection";
 import { ProposalFunnelCalculator } from "./components/ProposalFunnelCalculator";
@@ -65,6 +66,13 @@ export default function AgencyPublicProposalPage() {
     setAcceptModalOpen(true);
   };
 
+  /** Accept CTA without a price sheet on the page: opens the modal on the recommended plan. */
+  const openAccept = () => {
+    const preferred = data?.proposal?.packages?.find((p) => p.isPopular) || data?.proposal?.packages?.[0] || null;
+    setSelectedPackage(preferred);
+    setAcceptModalOpen(true);
+  };
+
   const handleConfirmAccept = async (payload: {
     packageId: string;
     contactName: string;
@@ -101,11 +109,6 @@ export default function AgencyPublicProposalPage() {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success("تم نسخ رابط الخطة إلى الحافظة!");
-  };
-
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (loading) {
@@ -161,37 +164,6 @@ export default function AgencyPublicProposalPage() {
             )}
           </div>
 
-          {/* Quick Nav Anchors (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 text-xs text-white/60 font-medium">
-            <button onClick={() => scrollTo("audit")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              التشخيص
-            </button>
-            <button onClick={() => scrollTo("targets")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              التارجت
-            </button>
-            <button onClick={() => scrollTo("growth")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              خطة النمو
-            </button>
-            <button onClick={() => scrollTo("channels")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              القنوات
-            </button>
-            <button onClick={() => scrollTo("agents")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              الذكاء الاصطناعي
-            </button>
-            <button onClick={() => scrollTo("workstreams")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              محاور العمل
-            </button>
-            <button onClick={() => scrollTo("calculator")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              محاكاة العائد
-            </button>
-            <button onClick={() => scrollTo("timeline")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              الجدول الزمني
-            </button>
-            <button onClick={() => scrollTo("packages")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
-              الباقات
-            </button>
-          </nav>
-
           {/* Right Action Buttons */}
           <div className="flex items-center gap-2">
             <button
@@ -218,11 +190,11 @@ export default function AgencyPublicProposalPage() {
             )}
 
             <button
-              onClick={() => scrollTo("packages")}
+              onClick={openAccept}
               className="h-8 px-3 rounded-lg font-black text-xs bg-gradient-to-r from-[#FFD368] to-[#D99518] text-black hover:opacity-95 shadow-md shadow-[#FFD368]/15 flex items-center gap-1.5 transition-all"
             >
               <CheckCircle2 className="size-3.5" />
-              <span>{isAccepted ? "تفاصيل الباقة" : "اعتماد الخطة"}</span>
+              <span>{isAccepted ? "معتمدة" : "اعتماد الخطة"}</span>
             </button>
           </div>
         </div>
@@ -237,66 +209,69 @@ export default function AgencyPublicProposalPage() {
         <ProposalHero
           proposal={proposal}
           agencyName={agencyInfo?.name || "H2M Growth Agency"}
+          onAccept={openAccept}
         />
 
-        {/* 2. Operational Audit & Leaky Bucket */}
-        <ProposalAuditSection auditItems={proposal.auditItems} />
+        {/* 2. The whole plan — one tab per part */}
+        <ProposalTabsSection tabs={proposal.tabs} />
 
-        {/* 3. Commitment ladder — 400 children, month by month */}
-        <ProposalTargetsSection targets={proposal.targets} currency={proposal.currency} />
-
-        {/* 4. Growth stages and the renewal ladder */}
-        <ProposalGrowthSection phases={proposal.growthPhases} retention={proposal.retention} />
-
-        {/* 5. Channels, media allocation and the content engine */}
-        <ProposalChannelsSection
-          channels={proposal.channels}
-          contentPlan={proposal.contentPlan}
-          contentWeeks={proposal.contentWeeks}
-          currency={proposal.currency}
-        />
-
-        {/* 5. Scope of Work & Tangible Deliverables */}
-        <ProposalSolutionSection
-          workstreams={proposal.workstreams}
-          modules={proposal.solutionModules}
-        />
-
-        {/* 6. AI agents and the tooling that runs them */}
-        <ProposalAgentsSection
-          agents={proposal.agents}
-          tools={proposal.tools}
-          agentOrg={proposal.agentOrg}
-          toolGroups={proposal.toolGroups}
-        />
-
-        {/* 7. ROI simulator — opt-in, only once real CPC/CPL data exists */}
-        {proposal.showCalculator !== false && (
-          <ProposalFunnelCalculator
-            config={proposal.funnelConfig}
-            currency={proposal.currency}
-          />
+        {/* 3. Legacy blocks kept for proposals that have no tabs yet */}
+        {!proposal.tabs?.length && (
+          <>
+            <ProposalAuditSection auditItems={proposal.auditItems} />
+            <ProposalTargetsSection targets={proposal.targets} currency={proposal.currency} />
+            <ProposalGrowthSection phases={proposal.growthPhases} retention={proposal.retention} />
+            <ProposalChannelsSection
+              channels={proposal.channels}
+              contentPlan={proposal.contentPlan}
+              contentWeeks={proposal.contentWeeks}
+              currency={proposal.currency}
+            />
+            <ProposalSolutionSection
+              workstreams={proposal.workstreams}
+              modules={proposal.solutionModules}
+            />
+            <ProposalAgentsSection
+              agents={proposal.agents}
+              tools={proposal.tools}
+              agentOrg={proposal.agentOrg}
+              toolGroups={proposal.toolGroups}
+            />
+            {proposal.showCalculator !== false && (
+              <ProposalFunnelCalculator config={proposal.funnelConfig} currency={proposal.currency} />
+            )}
+            <ProposalTimelineSection timeline={proposal.timeline} />
+            <ProposalPackagesSection
+              packages={proposal.packages}
+              currency={proposal.currency}
+              isAccepted={isAccepted}
+              acceptedPackageId={proposal.acceptedPackageId}
+              onSelectPackage={handleSelectPackage}
+            />
+          </>
         )}
 
-        {/* 5. 14-Day Timeline with Concrete Handover */}
-        <ProposalTimelineSection timeline={proposal.timeline} />
-
-        {/* 6. Investment Packages */}
-        <ProposalPackagesSection
-          packages={proposal.packages}
-          currency={proposal.currency}
-          isAccepted={isAccepted}
-          acceptedPackageId={proposal.acceptedPackageId}
-          onSelectPackage={handleSelectPackage}
-        />
-
-        {proposal.commercialNote && (
-          <div className="bg-[#0a0a0a] px-5 sm:px-10 lg:px-16 py-8">
-            <p className="max-w-6xl mx-auto text-sm text-white/70 leading-relaxed border-r-2 border-[#FFD368] pr-4">
-              {proposal.commercialNote}
-            </p>
+        {/* 4. Closing CTA — the accept flow stays, the price sheet does not */}
+        <div className="bg-[#0a0a0a] px-5 sm:px-10 lg:px-16 py-14">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="text-lg sm:text-2xl font-black text-white leading-snug">
+                {isAccepted ? "الخطة معتمدة — نبدأ التنفيذ" : "جاهزين نبدأ من أول أسبوع"}
+              </div>
+              <p className="text-sm text-white/55 leading-relaxed max-w-xl">
+                أول خطوة عملية: إصلاح الموقع وتشغيل صفحة الحجز ووكيل الواتساب — قبل أي صرف على إعلانات.
+              </p>
+            </div>
+            {!isAccepted && (
+              <button
+                onClick={openAccept}
+                className="shrink-0 h-12 px-8 bg-[#FFD368] text-black font-black text-sm active:scale-[0.98] transition-transform"
+              >
+                اعتماد الخطة
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* 8. Executive Dealroom Footer */}
         <footer className="bg-[#050505] py-12 px-4 text-center border-t border-white/10">

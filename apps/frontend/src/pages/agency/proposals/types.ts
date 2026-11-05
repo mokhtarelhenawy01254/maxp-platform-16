@@ -51,6 +51,24 @@ export interface ProposalWorkstream {
   outcome?: string;
 }
 
+/** A block inside a deal-room tab. */
+export type ProposalTabBlock =
+  | { type: "text"; text: string }
+  | { type: "note"; text: string }
+  | { type: "bullets"; title?: string; items: string[]; ordered?: boolean }
+  | { type: "numbers"; items: { value: string; label: string }[] }
+  | { type: "table"; columns: string[]; rows: string[][] };
+
+/** One tab of the proposal: a part of the plan on its own. */
+export interface ProposalTab {
+  id: string;
+  label: string;
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  blocks: ProposalTabBlock[];
+}
+
 /** One row of the monthly commitment ladder (new vs active students). */
 export interface ProposalTargetRow {
   month: string;
@@ -192,6 +210,8 @@ export interface AgencyProposal {
   workstreams?: ProposalWorkstream[];
   /** What the client must provide for the plan to run on time. */
   clientNeeds?: string[];
+  /** The whole plan as tabs — one part per tab, mobile-first. */
+  tabs?: ProposalTab[];
   /** Target ladder, channels, content plan, agents and tooling — the operating plan. */
   targets?: ProposalTargets;
   channels?: ProposalChannel[];
