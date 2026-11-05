@@ -2763,167 +2763,6 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
   }
 });
 
-// تفاصيل طلب غير مكتمل واحد
-router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'غير مصرح - يجب تسجيل الدخول'
-      });
-    }
-
-    const merchant = isMerchantUser(req.user)
-      ? await requireMerchantAccountForUser(req.user)
-      : null;
-    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
-    if (!companyId) {
-      return res.status(403).json({
-        success: false,
-        message: 'غير مصرح - معرف الشركة مطلوب'
-      });
-    }
-
-    const featureAccess = await getOrderDetailFeatureAccess(companyId);
-    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
-
-    // 🚧 تفاصيل السلة غير المكتملة تُقنّع بيانات العميل فيها عند وجود تعليق فوترة (billing hold)
-    const includeHeld = req.query.includeHeld === 'true';
-    const isBillingHold = !includeHeld && await companyHasActiveBillingHold(companyId);
-
-    const cartId = (req.params.cartId || '').toString().trim();
-    if (!cartId) {
-      return res.status(400).json({
-        success: false,
-        message: 'معرف السلة مطلوب'
-      });
-    }
-
-    let lostAfterHours = 24;
-    try {
-      const settings = await orderService.getOrderSettings(companyId);
-      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
-      if (!Number.isNaN(parsed) && parsed > 0) {
-        lostAfterHours = parsed;
-      }
-    } catch (settingsError) {
-      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
-    }
-
-    const now = new Date();
-    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
-
-    const cart = await getSharedPrismaClient().guestCart.findFirst({
-      where: {
-        companyId,
-        cartId
-      }
-    });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'الطلب غير موجود'
-      });
-    }
-
-    let items = [];
-    try {
-      items = cart.items
-        ? (typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items)
-        : [];
-    } catch (e) {
-      items = [];
-    }
-
-    let checkoutData = {};
-    try {
-      checkoutData = cart.checkoutData
-        ? (typeof cart.checkoutData === 'string' ? JSON.parse(cart.checkoutData) : cart.checkoutData)
-        : {};
-    } catch (e) {
-      checkoutData = {};
-    }
-
-    const total = typeof cart.total === 'string'
-      ? parseFloat(cart.total) || 0
-      : Number(cart.total || 0);
-
-    const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
-    const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
-
-    const cartAttribution = hideCartAttribution
-      ? null
-      : extractAttributionFromCheckoutData(checkoutData);
-
-    const rawCheckoutData =
-      hideCartAttribution && checkoutData && typeof checkoutData === 'object'
-        ? stripAttributionFromCheckoutData(checkoutData)
-        : checkoutData;
-
-    const safeCheckoutData = isBillingHold
-      ? maskCheckoutData(rawCheckoutData)
-      : rawCheckoutData;
-
-    const cartSessionDetails = checkoutData?.sessionDetails || (cartAttribution ? {
-      trafficSource: {
-        source: cartAttribution.source || 'direct',
-        medium: cartAttribution.medium,
-        campaignName: cartAttribution.campaignName,
-        campaignId: cartAttribution.campaignId,
-        adSetId: cartAttribution.adSetId,
-        adId: cartAttribution.adId,
-        referrer: cartAttribution.referrer,
-        landingPath: cartAttribution.landingPath,
-      },
-      ip: null,
-      pagesVisited: cartAttribution.landingPath ? [{ path: cartAttribution.landingPath, title: 'صفحة الهبوط', timestamp: cart.createdAt }] : [],
-      durationSeconds: cart.checkoutStartedAt && cart.checkoutUpdatedAt ? Math.max(0, Math.round((new Date(cart.checkoutUpdatedAt) - new Date(cart.checkoutStartedAt)) / 1000)) : 0,
-      sessionCount: 1,
-      firstSeenAt: cart.checkoutStartedAt || cart.createdAt,
-    } : null);
-
-    const customerPhone = checkoutData?.phone || checkoutData?.guestPhone || checkoutData?.mobileNumber || '';
-    const customerEmail = checkoutData?.email || checkoutData?.guestEmail || '';
-    const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
-      phone: customerPhone,
-      email: customerEmail,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        cartId: cart.cartId,
-        items,
-        itemsCount: Array.isArray(items) ? items.length : 0,
-        total,
-        checkoutData: safeCheckoutData,
-        ...(cartAttribution ? { attribution: cartAttribution } : {}),
-        sessionDetails: cartSessionDetails,
-        firstOrderInfo,
-        checkoutStartedAt: cart.checkoutStartedAt,
-        checkoutUpdatedAt: cart.checkoutUpdatedAt,
-        updatedAt: cart.updatedAt,
-        expiresAt: cart.expiresAt,
-        status: isLost ? 'lost' : 'incomplete',
-        ...(isBillingHold ? { billingHold: true } : {}),
-        abandonReason: detectAbandonReason(
-          { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
-          { lostAfterHours },
-        ),
-      },
-      ...(isBillingHold ? { billingHold: true } : {})
-    });
-  } catch (error) {
-    console.error('❌ Error fetching incomplete order details:', error);
-    res.status(500).json({
-      success: false,
-      message: 'خطأ في جلب تفاصيل الطلب غير المكتمل',
-      error: error.message
-    });
-  }
-});
-
 // قفل تزامن للطلبات غير المكتملة أثناء التحويل لمنع التكرار
 const activeIncompleteCartConversions = new Set();
 
@@ -3457,6 +3296,167 @@ router.post('/incomplete/bulk-convert', verifyToken.authenticateToken, async (re
     res.status(500).json({
       success: false,
       message: 'خطأ أثناء تحويل الطلبات غير المكتملة',
+      error: error.message
+    });
+  }
+});
+
+// تفاصيل طلب غير مكتمل واحد
+router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'غير مصرح - يجب تسجيل الدخول'
+      });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح - معرف الشركة مطلوب'
+      });
+    }
+
+    const featureAccess = await getOrderDetailFeatureAccess(companyId);
+    const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
+
+    // 🚧 تفاصيل السلة غير المكتملة تُقنّع بيانات العميل فيها عند وجود تعليق فوترة (billing hold)
+    const includeHeld = req.query.includeHeld === 'true';
+    const isBillingHold = !includeHeld && await companyHasActiveBillingHold(companyId);
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف السلة مطلوب'
+      });
+    }
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] Failed to load incomplete order settings:', settingsError.message);
+    }
+
+    const now = new Date();
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+
+    const cart = await getSharedPrismaClient().guestCart.findFirst({
+      where: {
+        companyId,
+        cartId
+      }
+    });
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود'
+      });
+    }
+
+    let items = [];
+    try {
+      items = cart.items
+        ? (typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items)
+        : [];
+    } catch (e) {
+      items = [];
+    }
+
+    let checkoutData = {};
+    try {
+      checkoutData = cart.checkoutData
+        ? (typeof cart.checkoutData === 'string' ? JSON.parse(cart.checkoutData) : cart.checkoutData)
+        : {};
+    } catch (e) {
+      checkoutData = {};
+    }
+
+    const total = typeof cart.total === 'string'
+      ? parseFloat(cart.total) || 0
+      : Number(cart.total || 0);
+
+    const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt;
+    const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
+
+    const cartAttribution = hideCartAttribution
+      ? null
+      : extractAttributionFromCheckoutData(checkoutData);
+
+    const rawCheckoutData =
+      hideCartAttribution && checkoutData && typeof checkoutData === 'object'
+        ? stripAttributionFromCheckoutData(checkoutData)
+        : checkoutData;
+
+    const safeCheckoutData = isBillingHold
+      ? maskCheckoutData(rawCheckoutData)
+      : rawCheckoutData;
+
+    const cartSessionDetails = checkoutData?.sessionDetails || (cartAttribution ? {
+      trafficSource: {
+        source: cartAttribution.source || 'direct',
+        medium: cartAttribution.medium,
+        campaignName: cartAttribution.campaignName,
+        campaignId: cartAttribution.campaignId,
+        adSetId: cartAttribution.adSetId,
+        adId: cartAttribution.adId,
+        referrer: cartAttribution.referrer,
+        landingPath: cartAttribution.landingPath,
+      },
+      ip: null,
+      pagesVisited: cartAttribution.landingPath ? [{ path: cartAttribution.landingPath, title: 'صفحة الهبوط', timestamp: cart.createdAt }] : [],
+      durationSeconds: cart.checkoutStartedAt && cart.checkoutUpdatedAt ? Math.max(0, Math.round((new Date(cart.checkoutUpdatedAt) - new Date(cart.checkoutStartedAt)) / 1000)) : 0,
+      sessionCount: 1,
+      firstSeenAt: cart.checkoutStartedAt || cart.createdAt,
+    } : null);
+
+    const customerPhone = checkoutData?.phone || checkoutData?.guestPhone || checkoutData?.mobileNumber || '';
+    const customerEmail = checkoutData?.email || checkoutData?.guestEmail || '';
+    const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
+      phone: customerPhone,
+      email: customerEmail,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        cartId: cart.cartId,
+        items,
+        itemsCount: Array.isArray(items) ? items.length : 0,
+        total,
+        checkoutData: safeCheckoutData,
+        ...(cartAttribution ? { attribution: cartAttribution } : {}),
+        sessionDetails: cartSessionDetails,
+        firstOrderInfo,
+        checkoutStartedAt: cart.checkoutStartedAt,
+        checkoutUpdatedAt: cart.checkoutUpdatedAt,
+        updatedAt: cart.updatedAt,
+        expiresAt: cart.expiresAt,
+        status: isLost ? 'lost' : 'incomplete',
+        ...(isBillingHold ? { billingHold: true } : {}),
+        abandonReason: detectAbandonReason(
+          { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
+          { lostAfterHours },
+        ),
+      },
+      ...(isBillingHold ? { billingHold: true } : {})
+    });
+  } catch (error) {
+    console.error('❌ Error fetching incomplete order details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب تفاصيل الطلب غير المكتمل',
       error: error.message
     });
   }
