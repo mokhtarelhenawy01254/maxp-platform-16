@@ -130,6 +130,7 @@ function isMetaWindowError(metaError) {
   return (
     code === 'RECIPIENT_CANNOT_SEND' ||
     code === 'TEMPLATE_NOT_APPROVED' ||
+    code === 'META_TEMPLATE_NOT_FOUND' ||
     code === 131047 ||
     code === '131047' ||
     code === 131026 ||

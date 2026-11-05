@@ -90,25 +90,31 @@ async function main() {
       orderBy: { updatedAt: 'desc' },
     });
     if (existing) {
-      if (!existing.metaTemplateName || existing.metaTemplateStatus !== 'APPROVED') {
+      if (!existing.metaTemplateName || existing.metaTemplateStatus !== 'APPROVED' || !existing.metaTemplateLanguage) {
         await prisma.whatsAppNotificationTemplate.update({
           where: { id: existing.id },
-          data: { metaTemplateName: t.name, metaTemplateStatus: 'APPROVED', channel: existing.channel || 'AUTO' },
+          data: {
+            metaTemplateName: t.name,
+            metaTemplateStatus: 'APPROVED',
+            metaTemplateLanguage: t.language || 'ar',
+            channel: existing.channel || 'AUTO'
+          },
         });
         linked++;
-        log.push(`LINKED ${eventType} -> ${t.name}`);
+        log.push(`LINKED ${eventType} -> ${t.name} (lang=${t.language || 'ar'})`);
       } else { skipped++; }
     } else {
       await prisma.whatsAppNotificationTemplate.create({
         data: {
           companyId: COMPANY_ID, eventType, channel: 'AUTO',
           metaTemplateName: t.name, metaTemplateStatus: 'APPROVED',
+          metaTemplateLanguage: t.language || 'ar',
           language: t.language || 'ar', content: '', isActive: true,
           variables: JSON.stringify([]),
         },
       });
       created++;
-      log.push(`CREATED ${eventType} -> ${t.name}`);
+      log.push(`CREATED ${eventType} -> ${t.name} (lang=${t.language || 'ar'})`);
     }
   }
   log.push(`DONE linked=${linked} created=${created} skipped=${skipped}`);

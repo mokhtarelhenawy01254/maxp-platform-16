@@ -1952,9 +1952,18 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
         return savedMessage;
     } catch (error) {
-        // 🔍 DIAG (2026-08-26): اطبع response ميتا الكامل عشان نشوف السبب الحقيقي للرفض
-        console.error('❌ Error sending template message:', error?.message);
-        console.error('❌ [META-RAW]', JSON.stringify(error?.response?.data || error?.originalError?.response?.data || error?.details || error));
+        // 🔍 DIAG: فحص إذا كان الخطأ متعلق بترجمة القالب أو عدم وجوده في ميتا
+        const isExpectedConfigError =
+            error &&
+            (String(error?.message || '').includes('does not exist in the translation') ||
+             error?.code === 132000 ||
+             error?.code === '132000');
+        if (isExpectedConfigError) {
+            console.warn(`⚠️ [WhatsAppMessageHandler] Template send rejected by Meta (${error?.message}). Passing to caller for language resolution/fallback.`);
+        } else {
+            console.error('❌ Error sending template message:', error?.message);
+            console.error('❌ [META-RAW]', JSON.stringify(error?.response?.data || error?.originalError?.response?.data || error?.details || error));
+        }
         throw error;
     }
 }

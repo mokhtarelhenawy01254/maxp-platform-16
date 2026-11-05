@@ -2724,19 +2724,18 @@ router.post('/', async (req, res) => {
       console.log('✅ [WHATSAPP] Notification result:', result);
 
       if (!result.success) {
-        console.error('❌ [WHATSAPP] Notification failed:', result.reason);
         if (result.reason === 'disabled') {
-          console.error('⚠️ [WHATSAPP] WhatsApp notifications are disabled in settings. Check:');
-          console.error('   1. orderNotificationsEnabled must be true');
-          console.error('   2. orderCreatedEnabled must be true');
+          console.log('ℹ️ [WHATSAPP] WhatsApp notifications are disabled in settings (orderNotificationsEnabled/orderCreatedEnabled false)');
         } else if (result.reason === 'no_phone') {
-          console.error('⚠️ [WHATSAPP] No customer phone number provided');
+          console.log('ℹ️ [WHATSAPP] No customer phone number provided for notification');
         } else if (result.reason === 'no_session') {
-          console.error('⚠️ [WHATSAPP] No WhatsApp session available');
+          console.warn('⚠️ [WHATSAPP] No WhatsApp session configured/available for company:', createdOrder?.companyId || order.companyId);
         } else if (result.reason === 'session_not_connected') {
-          console.error('⚠️ [WHATSAPP] WhatsApp session is not connected');
+          console.warn('⚠️ [WHATSAPP] WhatsApp session is not connected for company:', createdOrder?.companyId || order.companyId);
         } else if (result.reason === 'no_template') {
-          console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
+          console.warn('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
+        } else {
+          console.error('❌ [WHATSAPP] Notification failed:', result.reason);
         }
       } else {
         console.log('✅ [WHATSAPP] Order notification sent successfully for:', order.orderNumber);

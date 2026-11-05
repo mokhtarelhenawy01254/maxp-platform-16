@@ -25,17 +25,21 @@ const processImage = async (inputPath, outputDir, options = {}) => {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const p = sharp(inputPath)
+        const isSameFile = path.resolve(inputPath) === path.resolve(outputPath);
+
+        // Read input into buffer to eliminate file lock handles and prevent "Cannot use same file for input and output"
+        const inputBuffer = await fs.promises.readFile(inputPath);
+        const p = sharp(inputBuffer)
             .resize(width, null, {
                 withoutEnlargement: true,
                 fit: 'inside'
             })
             .webp({ quality });
         const info = await p.toFile(outputPath);
-        p.destroy();
+        if (typeof p.destroy === 'function') p.destroy();
 
-        // Delete original if not requested to keep
-        if (!keepOriginal && inputPath !== outputPath) {
+        // Delete original if not requested to keep and input is a different file
+        if (!keepOriginal && !isSameFile) {
             try {
                 fs.unlinkSync(inputPath);
             } catch (err) {

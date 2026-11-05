@@ -1933,6 +1933,7 @@ async function sendNotification(options) {
       }
 
       if (canSendViaMetaTemplate) {
+        let metaComponents = null;
         try {
           console.log(`☁️ [META-CLOUD] Sending via approved Meta template "${metaTemplateName}" (status=${metaTemplateStatus}) for event ${eventType}`);
 
@@ -2016,12 +2017,12 @@ async function sendNotification(options) {
             return comps;
           };
 
-          let components = await buildComponents(true);
+          metaComponents = await buildComponents(true);
 
           result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
             name: metaTemplateName,
             language: safeTemplate?.metaTemplateLanguage || 'ar',
-            components
+            components: metaComponents
           }, {
             templateBody: content,
             senderId: null
@@ -2062,72 +2063,149 @@ async function sendNotification(options) {
               throw retryErr;
             }
           } else {
+            const isTranslationMissing =
+              metaError &&
+              (String(
+                metaError?.details ||
+                metaError?.response?.data?.error?.error_data?.details ||
+                metaError?.message ||
+                metaError?.response?.data?.error?.message ||
+                ''
+              ).includes('does not exist in the translation') ||
+              metaError?.code === 132000 ||
+              metaError?.code === '132000');
+
+            if (isTranslationMissing) {
+              console.warn(`⚠️ [META-CLOUD] Meta reported translation missing for "${metaTemplateName}". Inspecting Meta WABA template list for session ${sessionId}...`);
+              let matchedMetaTmpl = null;
+              try {
+                const MetaCloudProvider = require('./providers/MetaCloudProvider');
+                const allMetaTemplates = await MetaCloudProvider.listTemplates(sessionId, { forceRefresh: true });
+                matchedMetaTmpl = Array.isArray(allMetaTemplates) ? allMetaTemplates.find(t => t.name === metaTemplateName) : null;
+              } catch (listErr) {
+                console.warn(`⚠️ [META-CLOUD] Could not list Meta templates for translation check: ${listErr.message}`);
+              }
+
+              const currentLang = safeTemplate?.metaTemplateLanguage || 'ar';
+              if (matchedMetaTmpl && matchedMetaTmpl.language && matchedMetaTmpl.language !== currentLang && String(matchedMetaTmpl.status).toUpperCase() === 'APPROVED') {
+                console.log(`🔄 [META-CLOUD] Template "${metaTemplateName}" found in Meta with language "${matchedMetaTmpl.language}" (current was "${currentLang}"). Retrying...`);
+                try {
+                  result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
+                    name: metaTemplateName,
+                    language: matchedMetaTmpl.language,
+                    components: metaComponents
+                  }, {
+                    templateBody: content,
+                    senderId: null
+                  });
+                  if (result) {
+                    usedMessageType = 'TEMPLATE';
+                    console.log(`✅ [META-CLOUD] Retry with Meta language "${matchedMetaTmpl.language}" succeeded.`);
+                    if (safeTemplate?.id) {
+                      safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.update({
+                        where: { id: safeTemplate.id },
+                        data: { metaTemplateLanguage: matchedMetaTmpl.language }
+                      })).catch(() => {});
+                    }
+                  }
+                } catch (langRetryErr) {
+                  console.error(`❌ [META-CLOUD] Retry with language "${matchedMetaTmpl.language}" also failed:`, langRetryErr.message);
+                  result = null;
+                }
+              }
+
+              if (!result) {
+                if (!matchedMetaTmpl || String(matchedMetaTmpl.status).toUpperCase() !== 'APPROVED') {
+                  console.warn(`🚨 [META-CLOUD] Template "${metaTemplateName}" is NOT found or NOT approved in Meta WABA. Marking status as NOT_FOUND in DB.`);
+                  if (safeTemplate?.id) {
+                    await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.update({
+                      where: { id: safeTemplate.id },
+                      data: { metaTemplateStatus: 'NOT_FOUND' }
+                    }));
+                  }
+                }
+                NotificationSendGuard.openFailureWindow({
+                  companyId,
+                  eventType,
+                  templateId: safeTemplate?.id || null,
+                  errorCode: 'META_TEMPLATE_NOT_APPROVED',
+                });
+                metaError.code = 'META_TEMPLATE_NOT_FOUND';
+              }
+            }
+
             // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
-            // 🔍 DIAG (2026-08-26): اطبع تفاصيل خطأ ميتا الكاملة عشان نعرف السبب الحقيقي
-            console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
-            console.error(`❌ [META-CLOUD] metaError details =>`, JSON.stringify({
-              code: metaError?.code,
-              reason: metaError?.reason,
-              apiMessage: metaError?.apiMessage,
-              details: metaError?.details,
-              httpStatus: metaError?.httpStatus,
-              raw: metaError?.originalError?.response?.data || metaError?.originalError?.message
-            }));
-            lastMetaTemplateError = metaError;
+            if (!result) {
+              if (isTranslationMissing) {
+                console.warn(`⚠️ [META-CLOUD] Approved template "${metaTemplateName}" failed (translation missing or template not found on Meta WABA).`);
+              } else {
+                console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+                console.error(`❌ [META-CLOUD] metaError details =>`, JSON.stringify({
+                  code: metaError?.code,
+                  reason: metaError?.reason,
+                  apiMessage: metaError?.apiMessage,
+                  details: metaError?.details,
+                  httpStatus: metaError?.httpStatus,
+                  raw: metaError?.originalError?.response?.data || metaError?.originalError?.message
+                }));
+              }
+              lastMetaTemplateError = metaError;
+            }
 
             // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
             // لو الخطأ بسبب نافذة 24 ساعة أو قالب غير معتمد، دوّر على Baileys session
             // تانية في الشركة وابعت منها نص حر بدل فشل صامت. البتتم مرة واحدة (مفيش loop).
-            const isWindowError = isMetaWindowError(metaError);
+            if (!result) {
+              const isWindowError = isMetaWindowError(metaError);
 
-            if (isWindowError && sessionProvider === 'META_CLOUD') {
-              console.log(`🔄 [FALLBACK] Meta rejected (24h window / template issue). Searching for a Baileys session...`);
-              const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
-              if (baileysSession) {
-                console.log(`✅ [FALLBACK] Found Baileys session ${baileysSession.sessionId}. Retrying send as free-text.`);
-                try {
-                  result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
-                  console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
-                  if (result) usedMessageType = 'TEXT';
-                } catch (fallbackErr) {
-                  console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
+              if (isWindowError && sessionProvider === 'META_CLOUD') {
+                console.log(`🔄 [FALLBACK] Meta rejected (24h window / template issue). Searching for a Baileys session...`);
+                const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+                if (baileysSession) {
+                  console.log(`✅ [FALLBACK] Found Baileys session ${baileysSession.sessionId}. Retrying send as free-text.`);
+                  try {
+                    result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                    console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
+                    if (result) usedMessageType = 'TEXT';
+                  } catch (fallbackErr) {
+                    console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
+                    result = null;
+                  }
+                } else {
+                  // 🚨 PRODUCTION-FIX: لا يوجد Baileys متصل.
+                  // لو كان القالب المعتمد متاحاً (canSendViaMetaTemplate)، ممنوع النزول
+                  // لـ BUTTONS/TEXT عبر نفس جلسة META_CLOUD — free-form مرفوض خارج
+                  // نافذة 24 ساعة وسيفشل حتماً بنفس الخطأ (131047) ويضلل الـ failureReason.
+                  // الأصح: نوقف هنا ونُسجّل فشل القالب الحقيقي.
+                  if (canSendViaMetaTemplate) {
+                    console.warn(`⚠️ [FALLBACK] No connected Baileys session for company ${companyId}. ` +
+                      `Approved template "${metaTemplateName}" failed (${metaError?.code || metaError?.message}) ` +
+                      `and free-text via META_CLOUD is impossible outside 24h window. Failing notification.`);
+                    blockFreeTextMetaFallback = true;
+                    result = null;
+                    metaError.code = metaError.code || (isWindowError ? 131047 : null);
+                    throw metaError;
+                  }
+                  console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
                   result = null;
                 }
               } else {
-                // 🚨 PRODUCTION-FIX: لا يوجد Baileys متصل.
-                // لو كان القالب المعتمد متاحاً (canSendViaMetaTemplate)، ممنوع النزول
-                // لـ BUTTONS/TEXT عبر نفس جلسة META_CLOUD — free-form مرفوض خارج
-                // نافذة 24 ساعة وسيفشل حتماً بنفس الخطأ (131047) ويضلل الـ failureReason.
-                // الأصح: نوقف هنا ونُسجّل فشل القالب الحقيقي.
+                // 🚨 PRODUCTION-FIX: فشل القالب المعتمد بخطأ غير نافذة (network/params/undeliverable...).
+                // بما أن canSendViaMetaTemplate كان متاحاً والجلسة META_CLOUD، النزول لـ BUTTONS/TEXT
+                // عبر نفس جلسة الميتا خارج نافذة 24 ساعة سيفشل حتماً (free-form مرفوض) ويضلل الـ failureReason.
+                // الأصح: نمنع مسار النص الحر ونُسجّل فشل القالب الحقيقي.
                 if (canSendViaMetaTemplate) {
-                  console.warn(`⚠️ [FALLBACK] No connected Baileys session for company ${companyId}. ` +
-                    `Approved template "${metaTemplateName}" failed (${metaError?.code || metaError?.message}) ` +
-                    `and free-text via META_CLOUD is impossible outside 24h window. Failing notification.`);
+                  console.error(`☁️ [META-CLOUD] Approved template "${metaTemplateName}" failed with non-window error ` +
+                    `(${metaError?.code || metaError?.message}). Blocking free-text meta fallback.`);
                   blockFreeTextMetaFallback = true;
                   result = null;
-                  metaError.code = metaError.code || (isWindowError ? 131047 : null);
                   throw metaError;
                 }
-                console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
+                console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
                 result = null;
               }
-            } else {
-              // 🚨 PRODUCTION-FIX: فشل القالب المعتمد بخطأ غير نافذة (network/params/undeliverable...).
-              // بما أن canSendViaMetaTemplate كان متاحاً والجلسة META_CLOUD، النزول لـ BUTTONS/TEXT
-              // عبر نفس جلسة الميتا خارج نافذة 24 ساعة سيفشل حتماً (free-form مرفوض) ويضلل الـ failureReason.
-              // الأصح: نمنع مسار النص الحر ونُسجّل فشل القالب الحقيقي.
-              if (canSendViaMetaTemplate) {
-                console.error(`☁️ [META-CLOUD] Approved template "${metaTemplateName}" failed with non-window error ` +
-                  `(${metaError?.code || metaError?.message}). Blocking free-text meta fallback.`);
-                blockFreeTextMetaFallback = true;
-                result = null;
-                throw metaError;
-              }
-              console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
-              result = null;
             }
-          }
-        }
+          }        }
         // إذا نجح الإرسال (result موجود) نتخطى مسار الإرسال العادي بالأسفل (شرط !result)
       }
 
@@ -2349,8 +2427,12 @@ async function sendNotification(options) {
       return { success: true, notificationId: notificationLog?.id || null, messageId: result?.messageId || result?.key?.id || null };
 
     } catch (sendError) {
-      console.error(`❌ [WHATSAPP-DEBUG] Failed to send message:`, sendError.message);
-      console.error(`❌ [WHATSAPP-DEBUG] Error stack:`, sendError.stack);
+      if (sendError.code === 'META_TEMPLATE_NOT_APPROVED' || sendError.code === 'META_TEMPLATE_NOT_FOUND' || String(sendError?.message || '').includes('does not exist in the translation')) {
+        console.warn(`⚠️ [WHATSAPP-DEBUG] Notification suppressed (${sendError.code || 'TEMPLATE_NOT_FOUND'}): ${sendError.message}`);
+      } else {
+        console.error(`❌ [WHATSAPP-DEBUG] Failed to send message:`, sendError.message);
+        console.error(`❌ [WHATSAPP-DEBUG] Error stack:`, sendError.stack);
+      }
 
       // تحديث السجل بالخطأ (لو موجود — guest-order-fk)
       if (notificationLog) {
