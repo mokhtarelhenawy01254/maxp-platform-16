@@ -3070,11 +3070,28 @@ router.get('/incomplete/convert-summary', verifyToken.authenticateToken, async (
       convertedCartIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
     } catch (_e) {}
 
-    const notConvertedClause = convertedCartIds.length > 0 ? { cartId: { notIn: convertedCartIds } } : {};
+    let dismissedCartIds = [];
+    try {
+      const dismissLogs = await getSharedPrismaClient().cartContactLog.findMany({
+        where: { companyId, method: 'dismissed' },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      dismissedCartIds = dismissLogs.map((l) => l.cartId).filter(Boolean);
+    } catch (_e) {}
 
-    const [total, readyToConvert, activeReady, lostReady, noPhoneCount] = await Promise.all([
+    const excludedIds = [...new Set([...convertedCartIds, ...dismissedCartIds])];
+    const notConvertedClause = excludedIds.length > 0 ? { cartId: { notIn: excludedIds } } : {};
+
+    const [total, active, lost, readyToConvert, activeReady, lostReady, noPhoneCount] = await Promise.all([
       getSharedPrismaClient().guestCart.count({
         where: { companyId, ...notConvertedClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause, ...activeClause }
+      }),
+      getSharedPrismaClient().guestCart.count({
+        where: { companyId, ...notConvertedClause, ...lostClause }
       }),
       getSharedPrismaClient().guestCart.count({
         where: { companyId, ...notConvertedClause, ...validPhoneClause }
@@ -3098,6 +3115,8 @@ router.get('/incomplete/convert-summary', verifyToken.authenticateToken, async (
       success: true,
       data: {
         total,
+        active,
+        lost,
         readyToConvert,
         activeReady,
         lostReady,
@@ -3188,13 +3207,28 @@ router.post('/incomplete/bulk-convert', verifyToken.authenticateToken, async (re
       convertedCartIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
     } catch (_e) {}
 
+    let dismissedCartIds = [];
+    try {
+      const dismissLogs = await getSharedPrismaClient().cartContactLog.findMany({
+        where: { companyId, method: 'dismissed' },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      dismissedCartIds = dismissLogs.map((l) => l.cartId).filter(Boolean);
+    } catch (_e) {}
+
+    const onlyWithPhone = req.body?.onlyWithPhone !== false && req.body?.includeNoPhone !== true;
     const whereConditions = [
-      { companyId },
-      validPhoneClause
+      { companyId }
     ];
 
-    if (convertedCartIds.length > 0) {
-      whereConditions.push({ cartId: { notIn: convertedCartIds } });
+    if (onlyWithPhone) {
+      whereConditions.push(validPhoneClause);
+    }
+
+    const excludedCartIds = [...new Set([...convertedCartIds, ...dismissedCartIds])];
+    if (excludedCartIds.length > 0) {
+      whereConditions.push({ cartId: { notIn: excludedCartIds } });
     }
 
     if (requestedCartIds && requestedCartIds.length > 0) {

@@ -14,6 +14,8 @@ import { toast } from "sonner";
 
 export interface ConvertSummary {
   total: number;
+  active?: number;
+  lost?: number;
   readyToConvert: number;
   activeReady: number;
   lostReady: number;
@@ -62,17 +64,28 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
   onConversionSuccess,
 }) => {
   const [scope, setScope] = useState<"all" | "active" | "lost">("all");
+  const [includeNoPhone, setIncludeNoPhone] = useState<boolean>(false);
   const [force, setForce] = useState<boolean>(false);
   const [converting, setConverting] = useState<boolean>(false);
   const [result, setResult] = useState<ConversionResult | null>(null);
 
   if (!isOpen) return null;
 
+  const totalCount = summary?.total ?? 0;
+  const activeTotal = summary?.active ?? summary?.activeReady ?? 0;
+  const lostTotal = summary?.lost ?? summary?.lostReady ?? 0;
+  const readyPhoneTotal = summary?.readyToConvert ?? 0;
+
   const getTargetCount = () => {
     if (!summary) return 0;
+    if (includeNoPhone) {
+      if (scope === "active") return activeTotal;
+      if (scope === "lost") return lostTotal;
+      return totalCount;
+    }
     if (scope === "active") return summary.activeReady;
     if (scope === "lost") return summary.lostReady;
-    return summary.readyToConvert;
+    return readyPhoneTotal;
   };
 
   const handleStartConversion = async () => {
@@ -85,6 +98,7 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
       }>("/orders-new/incomplete/bulk-convert", {
         scope,
         force,
+        includeNoPhone,
       });
 
       if (res.data?.success && res.data?.data) {
@@ -150,22 +164,24 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
         {/* Modal Body */}
         {!result ? (
           <div className="space-y-4 text-xs">
-            {/* Context Box */}
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2">
+            {/* Context Box - Exact match with /orders/incomplete */}
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2.5">
               <div className="flex items-center justify-between text-muted-foreground font-mono">
-                <span>إجمالي السلال المتاحة للتحويل (مع هاتف):</span>
+                <span className="font-semibold text-foreground">إجمالي الطلبات غير المكتملة بالمتجر:</span>
                 <strong className="text-foreground text-sm font-bold tabular-nums">
-                  {summary?.readyToConvert ?? 0}
+                  {totalCount.toLocaleString()}
                 </strong>
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-mono tabular-nums border-t border-border/40 pt-2">
-                <span>نشطة: <strong className="text-foreground">{summary?.activeReady ?? 0}</strong></span>
-                <span>•</span>
-                <span>مفقودة: <strong className="text-foreground">{summary?.lostReady ?? 0}</strong></span>
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground font-mono tabular-nums border-t border-border/40 pt-2">
+                <span>نشطة: <strong className="text-foreground">{activeTotal.toLocaleString()}</strong></span>
+                <span className="text-border">|</span>
+                <span>مفقودة: <strong className="text-foreground">{lostTotal.toLocaleString()}</strong></span>
+                <span className="text-border">|</span>
+                <span className="text-emerald-600 dark:text-emerald-400">بهاتف العميل: <strong>{readyPhoneTotal.toLocaleString()}</strong></span>
                 {(summary?.noPhoneCount ?? 0) > 0 && (
                   <>
-                    <span>•</span>
-                    <span className="text-amber-500">بدون هاتف (مستبعدة): {summary?.noPhoneCount ?? 0}</span>
+                    <span className="text-border">|</span>
+                    <span className="text-amber-500">بدون هاتف: {(summary?.noPhoneCount ?? 0).toLocaleString()}</span>
                   </>
                 )}
               </div>
@@ -186,9 +202,9 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
                       : "border-border/70 bg-background hover:bg-muted/40 text-foreground"
                   }`}
                 >
-                  <span className="text-xs">كافة السلال</span>
+                  <span className="text-xs">كافة الطلبات</span>
                   <span className="text-[11px] font-mono tabular-nums mt-0.5 opacity-80">
-                    ({summary?.readyToConvert ?? 0})
+                    ({(includeNoPhone ? totalCount : readyPhoneTotal).toLocaleString()})
                   </span>
                 </button>
 
@@ -203,7 +219,7 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
                 >
                   <span className="text-xs">النشطة فقط</span>
                   <span className="text-[11px] font-mono tabular-nums mt-0.5 opacity-80">
-                    ({summary?.activeReady ?? 0})
+                    ({(includeNoPhone ? activeTotal : (summary?.activeReady ?? 0)).toLocaleString()})
                   </span>
                 </button>
 
@@ -218,14 +234,34 @@ export const ConvertIncompleteOrdersModal: React.FC<ConvertIncompleteOrdersModal
                 >
                   <span className="text-xs">المفقودة فقط</span>
                   <span className="text-[11px] font-mono tabular-nums mt-0.5 opacity-80">
-                    ({summary?.lostReady ?? 0})
+                    ({(includeNoPhone ? lostTotal : (summary?.lostReady ?? 0)).toLocaleString()})
                   </span>
                 </button>
               </div>
             </div>
 
+            {/* Include No Phone Option */}
+            <div className="rounded-xl border border-border/70 bg-muted/15 p-3 space-y-1.5">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeNoPhone}
+                  onChange={(e) => setIncludeNoPhone(e.target.checked)}
+                  className="mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500"
+                />
+                <div>
+                  <span className="font-semibold text-foreground">
+                    تحويل كافة السلال غير المكتملة حتى التي لم يُدخل فيها العميل رقم هاتف
+                  </span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    الافتراضي يحول السلال التي بها رقم هاتف العميل فقط لسهولة التواصل. تفعيل هذا الخيار يحول جميع السلال غير المكتملة بالكامل ({totalCount.toLocaleString()} طلب).
+                  </p>
+                </div>
+              </label>
+            </div>
+
             {/* Force Convert Checkbox */}
-            <div className="rounded-xl border border-border/70 bg-muted/15 p-3.5 space-y-1.5">
+            <div className="rounded-xl border border-border/70 bg-muted/15 p-3 space-y-1.5">
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"

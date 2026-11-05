@@ -123,6 +123,9 @@ export default function IncompleteOrdersSettings() {
     );
   }
 
+  const totalIncompleteCount = summary?.total ?? 0;
+  const activeCount = summary?.active ?? summary?.activeReady ?? 0;
+  const lostCount = summary?.lost ?? summary?.lostReady ?? 0;
   const readyToConvertCount = summary?.readyToConvert ?? 0;
 
   return (
@@ -140,7 +143,11 @@ export default function IncompleteOrdersSettings() {
           </span>
           <span className="text-border">|</span>
           <span className="text-muted-foreground font-mono text-[11px] tabular-nums">
-            جاهز للتحويل: {readyToConvertCount}
+            إجمالي غير المكتملة: <strong className="text-foreground">{totalIncompleteCount.toLocaleString()}</strong>
+          </span>
+          <span className="text-border">|</span>
+          <span className="text-muted-foreground font-mono text-[11px] tabular-nums">
+            جاهز برقم هاتف: <strong className="text-emerald-500">{readyToConvertCount.toLocaleString()}</strong>
           </span>
         </div>
         <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground text-xs">
@@ -240,12 +247,12 @@ export default function IncompleteOrdersSettings() {
                 </div>
               </div>
 
-              {/* العداد اللحظي */}
-              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              {/* العداد اللحظي المطابق لجدول الطلبات غير المكتملة */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start sm:self-auto shrink-0">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-background border border-border/70 text-foreground tabular-nums shadow-2xs">
                   <span
                     className={`inline-block w-2.5 h-2.5 rounded-full ${
-                      readyToConvertCount > 0
+                      totalIncompleteCount > 0
                         ? "bg-emerald-500 animate-pulse"
                         : "bg-muted-foreground/40"
                     }`}
@@ -253,26 +260,35 @@ export default function IncompleteOrdersSettings() {
                   {summaryLoading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                   ) : (
-                    <span>{readyToConvertCount} طلب متاح للتحويل</span>
+                    <span>{totalIncompleteCount.toLocaleString()} طلب غير مكتمل</span>
                   )}
                 </div>
+                {readyToConvertCount > 0 && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    <span>{readyToConvertCount.toLocaleString()} برقم هاتف</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* تفاصيل وتفعيل التحويل */}
+            {/* تفاصيل وتفعيل التحويل المتطابقة مع صفحة /orders/incomplete */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-emerald-500/20 text-xs">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground font-mono text-[11px] tabular-nums">
-                <span>نشطة: <strong className="text-foreground">{summary?.activeReady ?? 0}</strong></span>
+                <span>إجمالي: <strong className="text-foreground">{totalIncompleteCount.toLocaleString()}</strong></span>
                 <span className="text-border">|</span>
-                <span>مفقودة: <strong className="text-foreground">{summary?.lostReady ?? 0}</strong></span>
+                <span>نشطة: <strong className="text-foreground">{activeCount.toLocaleString()}</strong></span>
+                <span className="text-border">|</span>
+                <span>مفقودة: <strong className="text-foreground">{lostCount.toLocaleString()}</strong></span>
+                <span className="text-border">|</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">بهاتف: <strong>{readyToConvertCount.toLocaleString()}</strong></span>
                 {(summary?.noPhoneCount ?? 0) > 0 && (
                   <>
                     <span className="text-border">|</span>
                     <span
                       className="text-amber-500/90 font-medium"
-                      title="السلال التي لا تحتوي على رقم هاتف لا يمكن تحويلها لطلب رسمي"
+                      title="سلال مسجلة بدون رقم هاتف"
                     >
-                      بدون هاتف: {summary?.noPhoneCount ?? 0}
+                      بدون هاتف: {(summary?.noPhoneCount ?? 0).toLocaleString()}
                     </span>
                   </>
                 )}
@@ -290,7 +306,7 @@ export default function IncompleteOrdersSettings() {
               <button
                 type="button"
                 onClick={() => setShowConvertModal(true)}
-                disabled={summaryLoading || readyToConvertCount === 0}
+                disabled={summaryLoading || totalIncompleteCount === 0}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-semibold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] cursor-pointer"
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
