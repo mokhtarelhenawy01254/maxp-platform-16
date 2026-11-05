@@ -29,14 +29,31 @@ const processImage = async (inputPath, outputDir, options = {}) => {
 
         // Read input into buffer to eliminate file lock handles and prevent "Cannot use same file for input and output"
         const inputBuffer = await fs.promises.readFile(inputPath);
-        const p = sharp(inputBuffer)
-            .resize(width, null, {
-                withoutEnlargement: true,
-                fit: 'inside'
-            })
-            .webp({ quality });
-        const info = await p.toFile(outputPath);
-        if (typeof p.destroy === 'function') p.destroy();
+        const tempOutputPath = `${outputPath}.tmp-${process.pid}-${Date.now()}`;
+        let info;
+        try {
+            const p = sharp(inputBuffer, { limitInputPixels: 40000000 })
+                .rotate()
+                .resize(width, null, {
+                    withoutEnlargement: true,
+                    fit: 'inside'
+                })
+                .webp({ quality });
+            info = await p.toFile(tempOutputPath);
+            if (typeof p.destroy === 'function') p.destroy();
+
+            try {
+                await fs.promises.rename(tempOutputPath, outputPath);
+            } catch (_) {
+                await fs.promises.copyFile(tempOutputPath, outputPath);
+                await fs.promises.unlink(tempOutputPath).catch(() => {});
+            }
+        } catch (procErr) {
+            try {
+                if (fs.existsSync(tempOutputPath)) await fs.promises.unlink(tempOutputPath);
+            } catch (_) {}
+            throw procErr;
+        }
 
         // Delete original if not requested to keep and input is a different file
         if (!keepOriginal && !isSameFile) {

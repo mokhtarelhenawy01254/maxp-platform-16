@@ -116,7 +116,17 @@ function parseJsonMaybe(value, fallback) {
 }
 
 // ╪¬╪▒╪¬┘è╪¿ ┘à╪│╪¬┘ê┘è╪º╪¬ ╪º┘ä╪¼┘ê╪»╪⌐ (╪º┘ä╪ú╪╣┘ä┘ë ╪ú┘ê┘ä╪º┘ï) ΓÇö ┘å┘ü╪│ ╪¡╪»┘ê╪» ╪¬╪¡┘ä┘è┘ä╪º╪¬ ╪º┘ä╪¼┘ê╪»╪⌐
-const QUALITY_ORDER = ['VIP', '╪╣╪º┘ä┘è', '┘à╪¬┘ê╪│╪╖', '┘à┘å╪«┘ü╪╢'];
+const QUALITY_ORDER = ['VIP', 'عالي', 'متوسط', 'منخفض'];
+
+function normalizeQualityTier(val) {
+  if (!val) return null;
+  const s = String(val).trim();
+  if (s === 'VIP') return 'VIP';
+  if (s === 'عالي' || s.includes('╪╣╪º┘ä┘è')) return 'عالي';
+  if (s === 'متوسط' || s.includes('┘à╪¬┘ê╪│╪╖')) return 'متوسط';
+  if (s === 'منخفض' || s.includes('┘à┘å╪«┘ü╪╢')) return 'منخفض';
+  return s;
+}
 
 /**
  * Γ¡É ┘â╪┤┘ü ╪¬╪║┘è┘è╪▒ ╪¬╪╡┘å┘è┘ü ╪¼┘ê╪»╪⌐ ╪º┘ä╪╣┘à┘ä╪º╪í ┘ê╪Ñ╪▒╪│╪º┘ä ╪Ñ╪┤╪╣╪º╪▒ (╪º╪▒╪¬┘ü╪º╪╣/╪º┘å╪«┘ü╪º╪╢)
@@ -142,19 +152,19 @@ async function processQualityChanges(companyId = null) {
 
   const tierForScore = (score) => {
     if (score >= 80) return 'VIP';
-    if (score >= 60) return '╪╣╪º┘ä┘è';
-    if (score >= 40) return '┘à╪¬┘ê╪│╪╖';
-    return '┘à┘å╪«┘ü╪╢';
+    if (score >= 60) return 'عالي';
+    if (score >= 40) return 'متوسط';
+    return 'منخفض';
   };
 
   let totalChanged = 0;
   for (const customer of customers) {
     const score = Number(customer.successScore || 0);
     const tier = tierForScore(score);
-    const previous = customer.lastNotifiedQualityTier;
+    const previous = normalizeQualityTier(customer.lastNotifiedQualityTier);
 
     if (previous === tier) continue;
-    if (!previous && tier === '┘à┘å╪«┘ü╪╢') continue; // ┘ä╪º ┘å╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘ä╪º╪í ╪║┘è╪▒ ╪º┘ä┘à╪¬╪º╪¿┘Ä╪╣┘è┘å
+    if (!previous && tier === 'منخفض') continue; // ┘ä╪º ┘å╪¿╪╣╪¬ ┘ä┘ä╪╣┘à┘ä╪º╪í ╪║┘è╪▒ ╪º┘ä┘à╪¬╪º╪¿┘Ä╪╣┘è┘å
 
     const isUpgrade = !previous || QUALITY_ORDER.indexOf(tier) < QUALITY_ORDER.indexOf(previous);
     const eventType = isUpgrade ? 'CUSTOMER_QUALITY_UPGRADED' : 'CUSTOMER_QUALITY_DOWNGRADED';
@@ -167,7 +177,7 @@ async function processQualityChanges(companyId = null) {
         lastName: customer.lastName,
         name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
       };
-      await sendCustomerNotification({
+      const notifyResult = await sendCustomerNotification({
         companyId: customer.companyId,
         eventType,
         customer: customerObj,
@@ -178,12 +188,15 @@ async function processQualityChanges(companyId = null) {
         }
       });
 
-      await prisma.customer.update({
-        where: { id: customer.id },
-        data: { lastNotifiedQualityTier: tier }
-      });
-
-      totalChanged++;
+      if (notifyResult && notifyResult.success !== false) {
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: { lastNotifiedQualityTier: tier }
+        });
+        totalChanged++;
+      } else {
+        console.warn(⚠️ [QUALITY-NOTIF] Notification was not delivered for customer . Not updating lastNotifiedQualityTier to allow retry.);
+      }
       console.log(`Γ¡É [QUALITY-NOTIF] ${isUpgrade ? 'Γåæ' : 'Γåô'} ${customer.firstName || ''} ${customer.lastName || ''} ΓåÆ ${tier}`);
     } catch (error) {
       console.warn(`ΓÜá∩╕Å [QUALITY-NOTIF] Failed for customer ${customer.id}:`, error.message);
@@ -388,7 +401,7 @@ async function sendCustomerNotification({ companyId, eventType, customer, variab
       customer?.name ||
       `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() ||
       variables.customerName ||
-      '╪╣┘à┘è┘ä┘å╪º ╪º┘ä╪╣╪▓┘è╪▓';
+      'عميلنا العزيز';
 
     const WhatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
     const options = {

@@ -24,10 +24,12 @@ async function triggerOverdueScan() {
         id: true,
         companyId: true,
         orderNumber: true,
-        productName: true,
         dueDate: true,
         plannedQuantity: true,
         customerId: true,
+        bom: {
+          select: { name: true },
+        },
         stages: {
           where: { partnerFactoryId: { not: null } },
           orderBy: { sequence: 'asc' },
@@ -42,7 +44,10 @@ async function triggerOverdueScan() {
       try {
         await ManufacturingNotificationService.emit('PRODUCTION_ORDER_DELAYED', {
           companyId: order.companyId,
-          productionOrder: order,
+          productionOrder: {
+            ...order,
+            productName: order.bom?.name || 'أمر إنتاج',
+          },
         });
         notificationsTriggered++;
       } catch (err) {

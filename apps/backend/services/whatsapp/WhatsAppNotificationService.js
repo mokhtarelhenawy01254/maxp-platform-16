@@ -2003,14 +2003,15 @@ async function sendNotification(options) {
 
             // 🔗 لو القالب فيه زرار صفحة العميل (URL button) — نضيف parameters الزرار
             // ({{1}}=التوكن، {{2}}=الرقم) بنفس ترتيب buildMetaTemplatePayload.
+            // 🔗 لو القالب فيه زرار صفحة العميل (URL button) — نضيف parameter التوكن فقط
+            // متوافقاً مع مواصفات Meta Cloud API (#132018 limit: max 1 parameter per button).
             if (customerPageLink) {
               comps.push({
                 type: 'BUTTON',
                 sub_type: 'url',
                 index: 0,
                 parameters: [
-                  { type: 'text', text: customerPageLink.token },
-                  { type: 'text', text: recipientPhone }
+                  { type: 'text', text: customerPageLink.token }
                 ]
               });
             }
@@ -3689,7 +3690,6 @@ async function processNotificationQueue() {
     console.log('[WHATSAPP-QUEUE] Previous run still active, skipping.');
     return;
   }
-  notificationQueueProcessing = true;
 
   const prisma = getSharedPrismaClient();
 
@@ -3707,6 +3707,7 @@ async function processNotificationQueue() {
   }
 
   try {
+    notificationQueueProcessing = true;
     // 🧹 Reaper: إعادة تعيين أي صفوف عالقة في PROCESSING منذ أكثر من 5 دقائق (يتم الفحص كل دقيقة تقريباً لتجنب العبء المستمر على قاعدة البيانات)
     const REAPER_STALE_MS = 5 * 60 * 1000;
     if (Math.random() < 0.05) {

@@ -413,7 +413,7 @@ class LeadFollowUpService {
                 await advanceOrComplete(logLine);
             } else {
                 console.error(`[LEAD-FOLLOWUP] Follow-up delivery was not successful, scheduling retry`);
-                const retryAt = new Date();
+                let retryAt = new Date();
                 retryAt.setHours(retryAt.getHours() + 1);
                 if (!this._isWithinBusinessHours(settings)) {
                     retryAt = this._nextBusinessHourDate(settings);

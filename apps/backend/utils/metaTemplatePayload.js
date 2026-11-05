@@ -52,8 +52,8 @@ function buildMetaTemplatePayload(localTemplate, company = null) {
       const metaButtons = [];
       for (const b of btns) {
         if (String(b.type || b.action || '').toUpperCase() === 'LINK') {
-          // 🔗 زر رابط صفحة العميل — الرابط بياخد token و phone كمتغيرات ({{1}}/{{2}})
-          // وبيتم تعبئتهم وقت الإرسال. محتاج الدومين يكون verified في ميتا.
+          // 🔗 زر رابط صفحة العميل — الرابط بياخد token كمتغير وحيد ({{1}})
+          // ميتا تسمح بمتغير واحد فقط كحد أقصى لأزرار URL (قاعدة #132018).
           if (company && company.id) {
             const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
             const host = (company.customDomain && String(company.customDomain).trim())
@@ -62,7 +62,7 @@ function buildMetaTemplatePayload(localTemplate, company = null) {
             metaButtons.push({
               type: 'URL',
               text: b.text || 'صفحتي على المتجر',
-              url: `https://${host}/api/v1/public/customers/magic-login?token={{1}}&phone={{2}}`
+              url: `https://${host}/api/v1/public/customers/magic-login?token={{1}}`
             });
           }
         } else {

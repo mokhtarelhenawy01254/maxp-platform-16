@@ -34,7 +34,7 @@ async function createMagicLink(prisma, { companyId, customerId, phone, expiresIn
  * @returns {Promise<Object|null>} ╪│╪¼┘ä ╪º┘ä╪▒╪º╪¿╪╖ ┘ä┘ê ╪╡╪º┘ä╪¡╪î null ┘ä┘ê ╪║┘è╪▒ ╪╡╪º┘ä╪¡.
  */
 async function validateMagicLink(prisma, { token, phone, companyId }) {
-  if (!token || !phone || !companyId) return null;
+  if (!token || !companyId) return null;
 
   const link = await prisma.customerMagicLink.findFirst({
     where: { token, companyId }
@@ -43,11 +43,13 @@ async function validateMagicLink(prisma, { token, phone, companyId }) {
   if (!link) return null;
 
   // ╪¬╪╖╪º╪¿┘é ╪º┘ä╪▒┘é┘à (╪¿╪º┘ä╪╡┘è╪║╪⌐ ╪º┘ä┘à╪«╪▓┘å╪⌐ ╪ú┘ê normalized)
-  const { toCanonicalE164 } = require('../utils/phoneNormalization');
-  const phoneNorm = toCanonicalE164(phone);
-  const linkNorm = toCanonicalE164(link.phone);
-  if (phoneNorm && linkNorm && phoneNorm !== linkNorm) return null;
-  if ((!phoneNorm || !linkNorm) && String(link.phone).replace(/\D/g, '') !== String(phone || '').replace(/\D/g, '')) return null;
+  if (phone) {
+    const { toCanonicalE164 } = require('../utils/phoneNormalization');
+    const phoneNorm = toCanonicalE164(phone);
+    const linkNorm = toCanonicalE164(link.phone);
+    if (phoneNorm && linkNorm && phoneNorm !== linkNorm) return null;
+    if ((!phoneNorm || !linkNorm) && String(link.phone).replace(/\D/g, '') !== String(phone || '').replace(/\D/g, '')) return null;
+  }
 
   // ╪º┘å╪¬┘ç╪º╪í ╪º┘ä╪╡┘ä╪º╪¡┘è╪⌐
   if (link.expiresAt && new Date(link.expiresAt).getTime() < Date.now()) return null;

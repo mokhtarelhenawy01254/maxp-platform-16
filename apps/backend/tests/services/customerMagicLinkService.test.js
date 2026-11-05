@@ -67,6 +67,16 @@ describe('customerMagicLinkService', () => {
     expect(result).toEqual(link);
   });
 
+  test('validateMagicLink succeeds without phone param (token-only validation for Meta single-parameter URL buttons)', async () => {
+    const link = { id: 'link-2', phone: '01001234567', expiresAt: new Date(Date.now() + 100000), usedAt: null, companyId };
+    findFirst.mockResolvedValue(link);
+    update.mockResolvedValue({ ...link, usedAt: new Date() });
+
+    const result = await magicLinkService.validateMagicLink(prisma, { token: 'tok_single', companyId });
+
+    expect(result).toEqual(link);
+  });
+
   test('buildMagicLinkUrl uses company customDomain when set', () => {
     const url = magicLinkService.buildMagicLinkUrl({ id: 'c1', slug: 'swan', customDomain: 'shop.example.com' }, 'tok123', '01001234567');
     expect(url).toContain('https://shop.example.com/api/v1/public/customers/magic-login');
