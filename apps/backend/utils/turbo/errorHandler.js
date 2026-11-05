@@ -76,7 +76,12 @@ function handleError(error, operation) {
     const data = error.response.data;
     const rawError = extractErrorFromData(data, status);
     const translatedError = translateTurboErrorToArabic(rawError);
-    console.error(`❌ [TURBO] ${operation} failed:`, { status, data, error_msg: rawError });
+    if (status === 404 && isShipmentNotFoundError(rawError)) {
+      // 🛡️ When Turbo returns 404 Shipment not found, it is normal when no shipments exist in that timeframe
+      console.log(`ℹ️ [TURBO] ${operation}: No shipments found in Turbo for this period`);
+    } else {
+      console.error(`❌ [TURBO] ${operation} failed:`, { status, data, error_msg: rawError });
+    }
     throw new Error(translatedError);
   } else if (error.request) {
     console.error(`❌ [TURBO] ${operation} failed: No response from Turbo API`);

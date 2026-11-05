@@ -141,6 +141,8 @@ class SocketService {
     this.isAutoReconnectSetup = true;
 
     const handleWakeup = () => {
+      // 🔐 لا تعاود الاتصال إلا إذا كان هناك مستخدم مسجل يملك Access Token
+      if (!tokenManager.getAccessToken()) return;
       if (!this.isConnected() && !this.isConnecting) {
         console.log("🔄 [SOCKET] Auto-reconnecting on window wakeup/online event");
         this.connect();
@@ -716,29 +718,33 @@ class SocketService {
       this.disconnect();
     }
 
+    // 🔐 إذا لم يكن هناك Access Token، امنع الاتصال بسيرفر الـ Socket المحمي.
+    // زوار المتاجر العامة (Swan, Red-Line, Soco) وصفحات الهبوط ليس لديهم توكن،
+    // ومحاولة الاتصال بدون توكن ستفشل فوراً وتولّد عاصفة من الأخطاء في السيرفر.
+    const freshToken = tokenManager.getAccessToken();
+    if (!freshToken && process.env.NODE_ENV !== "development") {
+      return null;
+    }
+
     // Configure Socket.IO with authentication & resilient mobile reconnection
     const socketConfig: any = {
       transports: ["websocket", "polling"],
       timeout: 20000,
       reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
       randomizationFactor: 0.5,
     };
 
     // 🔐 Use a function for auth so each reconnection gets a fresh token
     socketConfig.auth = (cb: (data: { token: string | null; deviceFingerprint?: string }) => void) => {
-      const freshToken = tokenManager.getAccessToken();
+      const currentToken = tokenManager.getAccessToken();
       const deviceFingerprint = getDeviceFingerprint();
-      if (freshToken) {
+      if (currentToken) {
         console.log("🔐 [SOCKET] Connecting with authentication token & device fingerprint");
-      } else {
-        console.warn(
-          "⚠️ [SOCKET] No authentication token found, connecting without auth",
-        );
       }
-      cb({ token: freshToken, deviceFingerprint });
+      cb({ token: currentToken, deviceFingerprint });
     };
 
 
@@ -763,7 +769,19 @@ class SocketService {
 
     this.socket.on("connect_error", (error: any) => {
       this.isConnecting = false;
-      console.error("❌ [SOCKET] Connection error:", error);
+      const errorMsg = error?.message || String(error);
+      if (
+        errorMsg.includes("Authentication failed") ||
+        errorMsg.includes("jwt must be provided") ||
+        errorMsg.includes("jwt expired")
+      ) {
+        console.warn("⚠️ [SOCKET] Authentication rejected by server; disconnecting socket:", errorMsg);
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        return;
+      }
+      console.warn("⚠️ [SOCKET] Connection warning:", errorMsg);
     });
 
     return this.socket;

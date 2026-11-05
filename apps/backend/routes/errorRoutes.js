@@ -9,6 +9,7 @@ const errorLogLimiter = rateLimit({
   max: 30,
   standardHeaders: false,
   legacyHeaders: false,
+  validate: { trustProxy: false },
   handler: (req, res) => {
     // Return 204 No Content quickly when throttled, preventing error cascades
     res.status(204).end();

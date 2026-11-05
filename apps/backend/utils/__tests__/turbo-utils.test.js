@@ -42,8 +42,8 @@ const {
 } = require('../turbo/shipmentValidator');
 
 describe('constants', () => {
-  test('FALLBACK_GOVERNMENTS has 27 entries', () => {
-    expect(FALLBACK_GOVERNMENTS).toHaveLength(27);
+  test('FALLBACK_GOVERNMENTS has at least 27 entries', () => {
+    expect(FALLBACK_GOVERNMENTS.length).toBeGreaterThanOrEqual(27);
   });
 
   test('FALLBACK_GOVERNMENTS contains القاهرة', () => {

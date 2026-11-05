@@ -91,7 +91,7 @@ class SocketService {
   // JWT Authentication middleware for Socket.IO
   async authenticateSocket(socket, next) {
     try {
-      const token = socket.handshake.auth.token || socket.handshake.query.token;
+      const token = socket.handshake.auth?.token || socket.handshake.query?.token;
 
       // Allow mock tokens ONLY in explicit development mode (allow-list, no fail-open)
       if (process.env.NODE_ENV === 'development' &&
@@ -103,6 +103,12 @@ class SocketService {
 
         console.log(`✅ [SOCKET-AUTH] Mock authentication for socket ${socket.id}`);
         return next();
+      }
+
+      if (!token) {
+        // 🛡️ Anonymous storefront visitors or unauthenticated public probes:
+        // Reject cleanly without polluting production error logs
+        return next(new Error('Authentication failed'));
       }
 
       const decoded = jwt.verify(token, getJwtSecret());
@@ -191,6 +197,10 @@ class SocketService {
       next();
 
     } catch (error) {
+      if (error?.message?.includes('jwt must be provided') || error?.name === 'JsonWebTokenError') {
+        // 🛡️ Silent rejection for unauthenticated/expired sockets to avoid log spam
+        return next(new Error('Authentication failed'));
+      }
       console.error(`❌ [SOCKET-AUTH] Authentication failed for socket ${socket.id}:`, error.message);
       next(new Error('Authentication failed'));
     }

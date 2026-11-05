@@ -6492,7 +6492,13 @@ async function getPinnedMessage(req, res) {
         const { jid } = req.params;
         const { sessionId } = req.query;
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        let targetSessionId;
+        try {
+            targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        } catch (sessionErr) {
+            // جلسة غير متصلة أو غير جاهزة حالياً — لا توجد رسائل مثبتة للدردشة بدون جلسة
+            return res.json({ success: true, pinnedMessage: null });
+        }
         const formattedJid = WhatsAppMessageHandler.formatJid(jid);
 
         const messages = await getSharedPrismaClient().whatsAppMessage.findMany({

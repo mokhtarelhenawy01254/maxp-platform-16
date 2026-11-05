@@ -506,7 +506,8 @@ const {
 // Initialize application
 const app = express();
 const server = http.createServer(app);
-app.set("trust proxy", true);
+// 🛡️ Trust the first reverse-proxy hop (Nginx) for accurate client IPs and rate limiting
+app.set("trust proxy", 1);
 
 // 🔌 In-Flight Request & Connection Tracking for Zero-Downtime Rolling Shutdown
 const activeSockets = new Set();

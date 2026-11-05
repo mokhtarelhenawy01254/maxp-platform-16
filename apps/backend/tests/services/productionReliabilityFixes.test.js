@@ -81,4 +81,32 @@ describe('Production Reliability & Crash Fixes Suite', () => {
       expect(code).toContain('rename(tempOutputPath, outputPath)');
     });
   });
+
+  describe('6. Storefront Socket.IO Anonymous Connection Guard', () => {
+    test('socketService rejects sockets without token cleanly without crashing or uncaught exception', async () => {
+      const socketServicePath = path.join(__dirname, '../../services/socketService.js');
+      const code = fs.readFileSync(socketServicePath, 'utf8');
+      expect(code).toContain("if (!token)");
+      expect(code).toContain("next(new Error('Authentication failed'))");
+    });
+  });
+
+  describe('7. WhatsApp getPinnedMessage Session Resilience', () => {
+    test('whatsappController wraps resolveActiveSessionId with try/catch to return pinnedMessage: null on missing session', () => {
+      const controllerPath = path.join(__dirname, '../../controller/whatsappController.js');
+      const code = fs.readFileSync(controllerPath, 'utf8');
+      expect(code).toContain('resolveActiveSessionId(companyId, sessionId)');
+      expect(code).toContain('pinnedMessage: null');
+      expect(code).toMatch(/try\s*\{\s*targetSessionId\s*=\s*await resolveActiveSessionId/);
+    });
+  });
+
+  describe('8. Turbo Tracking 404 Log Noise Suppression', () => {
+    test('turboTrackingScheduler and errorHandler suppress 404 shipment not found console.error', () => {
+      const errorHandlerPath = path.join(__dirname, '../../utils/turbo/errorHandler.js');
+      const code = fs.readFileSync(errorHandlerPath, 'utf8');
+      expect(code).toContain('isShipmentNotFoundError(rawError)');
+      expect(code).toContain('No shipments found in Turbo for this period');
+    });
+  });
 });

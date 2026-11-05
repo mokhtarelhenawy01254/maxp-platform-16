@@ -7,6 +7,7 @@ const cron = require('node-cron');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const TurboService = require('./turboService');
 const { syncTurboStatusToOrder } = require('./turboStatusSyncService');
+const { isShipmentNotFoundError } = require('../utils/turbo/errorHandler');
 
 const TERMINAL_TURBO_STATUSES = ['delivered', 'cancelled', 'returned', 'remitted'];
 
@@ -153,7 +154,15 @@ class TurboTrackingScheduler {
             }
           }
 
-        } catch (e) { totalErrors++; console.error(`❌ [TURBO-TRACKING] Company ${company.id}:`, e.message); }
+        } catch (e) {
+          if (isShipmentNotFoundError(e.message) || String(e.message || '').includes('Shipment not found')) {
+            // شركة لا تملك شحنات في فترة البحث لدى تربو — تسجيل كمعلومة وليس كخطأ
+            console.log(`ℹ️ [TURBO-TRACKING] Company ${company.id}: No shipments found in Turbo`);
+          } else {
+            totalErrors++;
+            console.error(`❌ [TURBO-TRACKING] Company ${company.id}:`, e.message);
+          }
+        }
       }
       this.stats.totalChecked += totalChecked;
       this.stats.totalUpdated += totalUpdated;

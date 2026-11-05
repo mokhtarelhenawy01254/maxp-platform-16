@@ -26,8 +26,19 @@ const ErrorTrackingController = {
             const errorLog = req.body || {};
 
             const message = String(errorLog.message || '');
+            const stack = String(errorLog.stack || '');
             const chunkName = errorLog.chunkName || errorLog.metadata?.chunkName || errorLog.context?.chunkName;
             const componentStack = errorLog.componentStack || errorLog.metadata?.componentStack || errorLog.context?.componentStack;
+
+            // 🛡️ Filter out client-side noise (e.g. unauthenticated storefront sockets from cached bundles or WebView disposal)
+            if (
+                message.includes('Authentication failed') ||
+                stack.includes('Authentication failed') ||
+                message.includes('Java object is gone') ||
+                message.includes('ResizeObserver loop')
+            ) {
+                return res.status(204).end();
+            }
 
             // In-memory dedupe: if identical message + chunk arrived in last 15s, return 204 immediately
             const dedupeKey = `${message}::${chunkName || ''}`;
