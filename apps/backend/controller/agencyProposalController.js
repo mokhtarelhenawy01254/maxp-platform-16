@@ -46,6 +46,8 @@ function createCodeTrepsTemplate(companyId) {
         id,
         shareToken,
         slug: 'codetreps-growth-os',
+        /** Bumped whenever the operational plan blocks are restructured. */
+        planVersion: 2,
         clientName: 'CodeTreps (كود تريبس)',
         clientBrand: 'CodeTreps Kids Academy',
         clientLogo: '/brand/codetreps-logo.png',
@@ -718,14 +720,24 @@ function backfillProposalPlan(proposal) {
     const template = createCodeTrepsTemplate(proposal.id || 'h2m-agency');
     const patch = {};
     let changed = false;
+
+    // A new plan version replaces the operational blocks wholesale (they are
+    // product-owned copy, not client edits); an older stored version only gets
+    // the fields it is missing, never an overwrite.
+    const upgrade = template.planVersion !== undefined && proposal.planVersion !== template.planVersion;
+
     for (const field of OPERATIONAL_FIELDS) {
-        if (proposal[field] === undefined && template[field] !== undefined) {
+        if (upgrade ? template[field] !== undefined : proposal[field] === undefined && template[field] !== undefined) {
             patch[field] = template[field];
             changed = true;
         }
     }
     if (proposal.showCalculator === undefined && template.showCalculator !== undefined) {
         patch.showCalculator = template.showCalculator;
+        changed = true;
+    }
+    if (upgrade) {
+        patch.planVersion = template.planVersion;
         changed = true;
     }
     return changed ? { ...proposal, ...patch } : proposal;
