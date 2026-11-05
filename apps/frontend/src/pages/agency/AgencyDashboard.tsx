@@ -1,6 +1,7 @@
 import React from "react";
 import { AgencyPerformanceModal } from "./AgencyPerformanceModal";
 import { AgencyProposalsTab } from "./proposals/AgencyProposalsTab";
+import { AgencyVisualIdentityTab } from "./visual-identity/AgencyVisualIdentityTab";
 import {
   AgencyApprovalDialog,
   AgencyApprovalsTab,
@@ -111,6 +112,10 @@ export default function AgencyDashboard() {
 
       {c.activeTab === "suite" && (
         <AgencySuiteTab onNavigate={c.navigate} />
+      )}
+
+      {c.activeTab === "visual-identity" && (
+        <AgencyVisualIdentityTab />
       )}
 
       {/* MODALS */}

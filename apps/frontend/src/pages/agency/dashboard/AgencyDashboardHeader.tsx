@@ -5,6 +5,7 @@ import {
   Briefcase,
   CheckCircle2,
   FileText,
+  Palette,
   Plus,
   Receipt,
   RefreshCw,
@@ -205,6 +206,18 @@ export const AgencyDashboardHeader: React.FC<AgencyDashboardHeaderProps> = ({
             >
               <Briefcase className="size-4" />
               <span>الأدوات المتكاملة</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange("visual-identity")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "visual-identity"
+                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold shadow-sm shadow-amber-500/30"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
+              }`}
+            >
+              <Palette className="size-4 text-amber-500" />
+              <span>الهوية البصرية (H2M)</span>
             </button>
           </div>
         </div>

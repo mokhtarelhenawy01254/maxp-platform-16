@@ -1513,6 +1513,57 @@ const respondPublicApproval = async (req, res) => {
     }
 };
 
+const getVisualIdentity = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        const prisma = getSharedPrismaClient();
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true },
+        });
+
+        const agencyData = parseAgencyData(company?.settings);
+        const visualIdentity = agencyData.visualIdentity || null;
+
+        return res.json({
+            success: true,
+            data: visualIdentity,
+        });
+    } catch (error) {
+        console.error('❌ [AGENCY] getVisualIdentity error:', error);
+        return res.status(500).json({ success: false, message: 'فشل جلب الهوية البصرية' });
+    }
+};
+
+const updateVisualIdentity = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        const prisma = getSharedPrismaClient();
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true },
+        });
+
+        const agencyData = parseAgencyData(company?.settings);
+        agencyData.visualIdentity = {
+            ...(agencyData.visualIdentity || {}),
+            ...req.body,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await saveAgencyData(prisma, companyId, agencyData);
+
+        return res.json({
+            success: true,
+            message: 'تم حفظ وتحديث الهوية البصرية بنجاح',
+            data: agencyData.visualIdentity,
+        });
+    } catch (error) {
+        console.error('❌ [AGENCY] updateVisualIdentity error:', error);
+        return res.status(500).json({ success: false, message: 'فشل حفظ الهوية البصرية' });
+    }
+};
+
 module.exports = {
     getAgencyOverview,
     getClients,
@@ -1533,4 +1584,6 @@ module.exports = {
     respondPublicApproval,
     syncClientMetaSpend,
     importClientCsv,
+    getVisualIdentity,
+    updateVisualIdentity,
 };

@@ -1265,6 +1265,7 @@ export const getSidebarConfig = (
                 { to: '/agency?tab=invoices', icon: Receipt, label: isEn ? 'Invoices & Profit' : t('sidebar.agencyInvoices', { defaultValue: 'الفواتير والأرباح' }) },
                 { to: '/agency?tab=approvals', icon: ClipboardCheck, label: isEn ? 'Content Approvals' : t('sidebar.agencyApprovals', { defaultValue: 'موافقات المحتوى' }) },
                 { to: '/agency?tab=suite', icon: Briefcase, label: isEn ? 'Integrated Suite' : t('sidebar.agencySuite', { defaultValue: 'الأدوات المتكاملة' }) },
+                { to: '/agency?tab=visual-identity', icon: Palette, label: isEn ? 'Visual Identity' : t('sidebar.agencyVisualIdentity', { defaultValue: 'الهوية البصرية' }) },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('marketing-agency-pro'),
         },

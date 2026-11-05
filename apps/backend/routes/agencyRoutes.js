@@ -73,4 +73,8 @@ router.get('/proposals/:proposalId', agencyAuth, agencyProposalController.getPro
 router.put('/proposals/:proposalId', agencyAuth, agencyProposalController.updateProposal);
 router.delete('/proposals/:proposalId', agencyAuth, agencyProposalController.deleteProposal);
 
+// Visual Identity & AI Brand Kit Directives
+router.get('/visual-identity', agencyAuth, agencyController.getVisualIdentity);
+router.put('/visual-identity', agencyAuth, agencyController.updateVisualIdentity);
+
 module.exports = router;
