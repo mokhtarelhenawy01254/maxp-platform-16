@@ -620,9 +620,18 @@ const handlePlatformSeo = async (req, res, next) => {
       const rawSettings = company && company.settings;
       const settings = typeof rawSettings === "string" ? JSON.parse(rawSettings || "{}") : rawSettings || {};
       const agencyData = settings.agencyData || {};
-      const proposal = (agencyData.proposals || []).find(
+      const storedProposal = (agencyData.proposals || []).find(
         (p) => p && (p.slug === slug || p.shareToken === slug || p.id === slug)
       );
+      let proposal = storedProposal || null;
+      if (proposal) {
+        try {
+          const { backfillProposalPlan } = require("../controller/agencyProposalController");
+          proposal = backfillProposalPlan(proposal);
+        } catch {
+          // keep the stored copy as-is; the page still renders
+        }
+      }
 
       if (proposal) {
         const indexHtml = await loadIndexHtml();

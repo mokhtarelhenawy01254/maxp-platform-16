@@ -1874,5 +1874,9 @@ module.exports = {
             console.error('Error accepting public proposal:', error);
             return res.status(500).json({ success: false, message: 'فشل اعتماد الخطة', error: error.message });
         }
-    }
+    },
+
+    // Exposed for the SEO middleware: a stored proposal gets the same
+    // operational defaults (ogImage / clientLogo) the public API returns.
+    backfillProposalPlan
 };
