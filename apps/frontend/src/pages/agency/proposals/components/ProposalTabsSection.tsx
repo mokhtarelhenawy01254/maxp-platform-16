@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ProposalTab, ProposalTabBlock } from "../types";
 import { Band, SectionTitle, Lead, Marker } from "./ProposalUi";
 
@@ -94,30 +94,55 @@ const Block: React.FC<{ block: ProposalTabBlock }> = ({ block }) => {
  */
 export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }) => {
   const [activeId, setActiveId] = useState(tabs?.[0]?.id ?? "");
+  const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const node = buttons.current[activeId];
+    if (node) node.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeId]);
+
   if (!tabs || tabs.length === 0) return null;
 
-  const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0]!;
+  const index = Math.max(
+    0,
+    tabs.findIndex((tab) => tab.id === activeId)
+  );
+  const active = tabs[index] ?? tabs[0]!;
+  const go = (target: number) => {
+    const next = tabs[target];
+    if (next) setActiveId(next.id);
+  };
 
   return (
     <Band tone="black" id="plan">
-      {/* Tab strip — scrolls sideways on a phone */}
-      <div className="-mx-5 sm:-mx-10 lg:-mx-16 px-5 sm:px-10 lg:px-16 border-b border-white/10 sticky top-14 z-30 bg-black/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto flex gap-1 overflow-x-auto no-scrollbar py-3">
+      {/* Tab strip — scrolls sideways on a phone, active chip stays centred */}
+      <div className="-mx-5 sm:-mx-10 lg:-mx-16 px-5 sm:px-10 lg:px-16 border-b border-white/15 sticky top-14 z-30 bg-black/95 backdrop-blur">
+        <div
+          role="tablist"
+          aria-label="خطة العمل"
+          className="max-w-6xl mx-auto flex gap-2 overflow-x-auto no-scrollbar py-3 snap-x snap-mandatory"
+        >
           {tabs.map((tab, idx) => {
             const isActive = tab.id === active.id;
             return (
               <button
                 key={tab.id}
+                ref={(el) => {
+                  buttons.current[tab.id] = el;
+                }}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveId(tab.id)}
-                aria-current={isActive ? "page" : undefined}
-                className={`shrink-0 px-3 py-2 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+                className={`shrink-0 snap-center inline-flex items-center gap-2 h-10 px-4 text-xs sm:text-sm font-bold border transition-colors whitespace-nowrap ${
                   isActive
-                    ? "border-[#FFD368] text-[#FFD368]"
-                    : "border-transparent text-white/55 hover:text-white"
+                    ? "bg-[#FFD368] text-black border-[#FFD368]"
+                    : "bg-white/[0.04] text-white/70 border-white/15 hover:text-white hover:border-white/35"
                 }`}
               >
-                <span className="font-mono text-[10px] opacity-60 ml-1">{idx + 1}</span>
+                <span className={`font-mono text-[10px] ${isActive ? "opacity-70" : "opacity-50"}`}>
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
                 {tab.label}
               </button>
             );
@@ -126,7 +151,14 @@ export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }
       </div>
 
       {/* Active panel */}
-      <div key={active.id} className="pt-10 space-y-8">
+      <div key={active.id} className="pt-8 sm:pt-10 space-y-8">
+        <div className="flex items-center justify-between gap-4 text-[11px] font-mono text-white/40">
+          <span>
+            التاب {index + 1} من {tabs.length}
+          </span>
+          <span className="truncate">{active.label}</span>
+        </div>
+
         <div className="space-y-4 max-w-3xl">
           {active.eyebrow && <Marker>{active.eyebrow}</Marker>}
           <SectionTitle>{active.title}</SectionTitle>
@@ -137,6 +169,29 @@ export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }
           {active.blocks.map((block, idx) => (
             <Block key={idx} block={block} />
           ))}
+        </div>
+
+        {/* Phones: one obvious way forward, never a dead end */}
+        <div className="flex items-center justify-between gap-3 pt-8 border-t border-white/15">
+          <button
+            type="button"
+            onClick={() => go(index - 1)}
+            disabled={index === 0}
+            className="h-11 px-4 border border-white/20 text-xs font-bold text-white/80 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            التاب السابق
+          </button>
+          <span className="font-mono text-[11px] text-white/40 tabular-nums">
+            {index + 1} / {tabs.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => go(index + 1)}
+            disabled={index === tabs.length - 1}
+            className="h-11 px-4 bg-[#FFD368] text-black text-xs font-black disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            التاب اللي بعده
+          </button>
         </div>
       </div>
     </Band>
