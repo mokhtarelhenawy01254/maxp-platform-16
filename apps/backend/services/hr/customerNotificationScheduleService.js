@@ -195,7 +195,7 @@ async function processQualityChanges(companyId = null) {
         });
         totalChanged++;
       } else {
-        console.warn(⚠️ [QUALITY-NOTIF] Notification was not delivered for customer . Not updating lastNotifiedQualityTier to allow retry.);
+        console.warn('⚠️ [QUALITY-NOTIF] Notification was not delivered for customer ' + customer.id + '. Not updating lastNotifiedQualityTier to allow retry.');
       }
       console.log(`Γ¡É [QUALITY-NOTIF] ${isUpgrade ? 'Γåæ' : 'Γåô'} ${customer.firstName || ''} ${customer.lastName || ''} ΓåÆ ${tier}`);
     } catch (error) {
