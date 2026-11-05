@@ -17893,6 +17893,8 @@
     "agencyClients": "Clients & Ad Spend",
     "agencyApprovals": "Content & Creative Approvals",
     "agencySuite": "Integrated Tool Suite",
+    "agencyProposals": "Growth Proposals",
+    "agencyVisualIdentity": "Visual Identity (H2M)",
     "abTests": "A/B Tests",
     "abandonedCart": "Abandoned Cart",
     "activatedApps": "Activated Apps",
@@ -18607,8 +18609,7 @@
     "academyStudents": "Students & Progress",
     "academySources": "Campaign Sources",
     "academySection": "MaxP Academy",
-    "platformExplanations": "Platform Guide",
-    "agentReports": "Agent Reports"
+    "platformExplanations": "Platform Guide"
   },
   "storeBranches": {
     "branchesTitle": "Branches & Warehouses",

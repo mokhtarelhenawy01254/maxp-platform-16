@@ -17894,6 +17894,8 @@
     "agencyClients": "العملاء وميزانيات الإعلانات",
     "agencyApprovals": "موافقات التصاميم والمحتوى",
     "agencySuite": "منظومة الأدوات المتكاملة",
+    "agencyProposals": "عروض وخطط النمو",
+    "agencyVisualIdentity": "الهوية البصرية (H2M)",
     "abTests": "اختبارات A/B",
     "abandonedCart": "السلال المهجورة",
     "activatedApps": "التطبيقات المفعلة",
@@ -18610,8 +18612,7 @@
     "academyStudents": "الطلاب والتقدم",
     "academySources": "مصادر التسجيل والحملات",
     "academySection": "أكاديمية ماكس بي",
-    "platformExplanations": "شرح المنصة",
-    "agentReports": "تقارير الوكلاء"
+    "platformExplanations": "شرح المنصة"
   },
   "storeBranches": {
     "branchesTitle": "الفروع والمخازن",
