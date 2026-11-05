@@ -2260,8 +2260,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
     return { totalRequested: 0, successCount: 0, results: [] };
   }
 
-  const isOverride = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(user?.role) ||
-    ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(user?.effectiveRole);
+  const isOverride = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'ADMIN', 'MANAGER', 'AGENT', 'تجهيز', 'STAFF', 'EMPLOYEE', 'USER'].includes(user?.role) ||
+    ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'ADMIN', 'MANAGER', 'AGENT', 'تجهيز', 'STAFF', 'EMPLOYEE', 'USER'].includes(user?.effectiveRole);
   const bulkNote = notes || getBulkStatusNote(normalizedStatus);
   const safeOrderNotes = (notes && !isSystemBulkStatusNote(notes)) ? notes : undefined;
   const results = [];

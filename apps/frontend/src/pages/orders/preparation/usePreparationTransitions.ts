@@ -108,7 +108,7 @@ export function usePreparationTransitions({
       if (
         order.stage === "ON_HOLD_PREP" &&
         forwardStages.has(normalizedNextStatus) &&
-        !["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "MANAGER"].includes(
+        !["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "MANAGER", "AGENT", "تجهيز", "STAFF", "EMPLOYEE", "USER"].includes(
           userRole || "",
         )
       ) {

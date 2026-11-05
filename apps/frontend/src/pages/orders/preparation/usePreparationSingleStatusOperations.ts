@@ -198,7 +198,13 @@ export const usePreparationSingleStatusOperations = ({
           "OWNER",
           "SUPER_ADMIN",
           "COMPANY_ADMIN",
+          "ADMIN",
           "MANAGER",
+          "AGENT",
+          "تجهيز",
+          "STAFF",
+          "EMPLOYEE",
+          "USER",
         ].includes(user?.role || "");
         await apiClient.post(
           `/orders-new/simple/${encodeURIComponent(orderNumber)}/status`,
