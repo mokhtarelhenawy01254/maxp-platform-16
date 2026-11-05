@@ -299,52 +299,25 @@
       "pageGoal": "discovery",
       "sections": [
         {
-          "type": "promo-strip",
-          "variant": "benefit-ribbon",
-          "settings": {
-            "badge": "الموسم",
-            "message": "تشكيلة محدودة",
-            "saleLabel": "عرض"
-          }
-        },
-        {
           "type": "hero-banner",
-          "variant": "soft-showcase",
+          "variant": "dawn-image-banner",
           "settings": {
-            "eyebrow": "خريف 2026",
+            "eyebrow": "",
             "title": "صغير… وشيك",
             "subtitle": "ملابس أطفال بخامات قطنية وألوان مريحة، مقاسات من 2 لـ 12 سنة.",
-            "ctaText": "تسوق الآن",
+            "ctaText": "تسوق كل حاجة",
             "ctaLink": "/shop",
-            "secondaryCtaText": "العروض",
-            "secondaryCtaLink": "/collections"
+            "backgroundImage": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1600&q=80"
           }
         },
         {
-          "type": "featured-collections",
-          "variant": "editorial-categories",
+          "type": "featured-products",
           "settings": {
-            "title": "اختار منين",
-            "subtitle": "اختار القسم"
+            "title": "منتجات مميزة",
+            "subtitle": "",
+            "columns": 4,
+            "limit": 8
           }
-        },
-        {
-          "type": "featured-products"
-        },
-        {
-          "type": "lookbook-showcase",
-          "variant": "boutique-storyboard",
-          "settings": {
-            "title": "اللوك بوك"
-          }
-        },
-        {
-          "type": "reviews",
-          "variant": "editorial"
-        },
-        {
-          "type": "features-bar",
-          "variant": "trust-strip"
         }
       ]
     },
