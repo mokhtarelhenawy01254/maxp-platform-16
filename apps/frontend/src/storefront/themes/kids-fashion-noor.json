@@ -284,14 +284,25 @@
         },
         {
           "type": "hero-banner",
-          "variant": "organic-bloom",
+          "variant": "easyorders-masonry",
           "settings": {
             "eyebrow": "عروض حصرية",
             "title": "أطقم أطفال تبدأ من 199 جنيه",
             "subtitle": "قطن 100%، مقاسات من 2 لـ 12 سنة، والدفع عند الاستلام.",
-            "ctaText": "تسوق الآن",
+            "ctaText": "اطلب الآن",
             "ctaLink": "/shop",
-            "secondaryCtaText": "العروض"
+            "secondaryCtaText": "العروض",
+            "slides": [
+              {
+                "image": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&w=1000&q=80"
+              }
+            ]
           }
         },
         {

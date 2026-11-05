@@ -828,6 +828,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "split-panel", label: "تقسيم جانبي" },
       { value: "retail-direct-banner", label: "بانر بيع مباشر" },
       { value: "fashion-billboard", label: "لوحة أزياء باستيل" },
+      { value: "easyorders-masonry", label: "ماسونري EasyOrders (صورة كبيرة + صورتين)" },
       { value: "style-ledger", label: "مذكرة الإطلالة" },
       { value: "graceful-banner", label: "بانر Graceful (صورة كاملة)" },
       { value: "retail-command", label: "لوحة بيع تقنية" },

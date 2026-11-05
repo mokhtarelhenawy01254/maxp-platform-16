@@ -280,14 +280,25 @@
         },
         {
           "type": "hero-banner",
-          "variant": "luxury-minimal",
+          "variant": "easyorders-masonry",
           "settings": {
             "eyebrow": "عروض حصرية",
             "title": "عبايات تبدأ من 399 جنيه",
             "subtitle": "أقمشة مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
-            "ctaText": "تسوق الآن",
+            "ctaText": "اطلبي الآن",
             "ctaLink": "/shop",
-            "secondaryCtaText": "العروض"
+            "secondaryCtaText": "العروض",
+            "slides": [
+              {
+                "image": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1000&q=80"
+              }
+            ]
           }
         },
         {

@@ -284,14 +284,25 @@
         },
         {
           "type": "hero-banner",
-          "variant": "style-ledger",
+          "variant": "easyorders-masonry",
           "settings": {
             "eyebrow": "عروض حصرية",
             "title": "قمصان تبدأ من 249 جنيه",
             "subtitle": "خامات مريحة، مقاسات من M لـ XXL، والدفع عند الاستلام.",
-            "ctaText": "تسوق الآن",
+            "ctaText": "اطلب الآن",
             "ctaLink": "/shop",
-            "secondaryCtaText": "العروض"
+            "secondaryCtaText": "العروض",
+            "slides": [
+              {
+                "image": "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=1000&q=80"
+              }
+            ]
           }
         },
         {

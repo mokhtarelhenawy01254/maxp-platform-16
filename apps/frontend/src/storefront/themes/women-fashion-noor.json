@@ -280,13 +280,24 @@
         },
         {
           "type": "hero-banner",
-          "variant": "graceful-banner",
+          "variant": "easyorders-masonry",
           "settings": {
             "eyebrow": "عروض حصرية",
             "title": "فساتين تبدأ من 299 جنيه",
             "subtitle": "خامات مريحة، مقاسات من S لـ XXL، والدفع عند الاستلام.",
             "ctaText": "اطلبي الآن",
-            "ctaLink": "/shop"
+            "ctaLink": "/shop",
+            "slides": [
+              {
+                "image": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1000&q=80"
+              },
+              {
+                "image": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1000&q=80"
+              }
+            ]
           }
         },
         {

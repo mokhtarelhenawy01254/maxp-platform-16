@@ -50,6 +50,7 @@ import {
   ButcherAtelierHero,
 } from './hero-banner/ButcherHeroes';
 import { DentalPrecisionHero } from './hero-banner/DentalPrecisionHero';
+import { EasyOrdersMasonryHero } from './hero-banner/EasyOrdersMasonryHero';
 
 export * from './hero-banner';
 
@@ -63,6 +64,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => 
   if (variant === 'speed-banner') return <SpeedBannerHero {...props} />;
   if (variant === 'split-panel') return <SplitPanelHero {...props} />;
   if (variant === 'fashion-billboard') return <FashionBillboardHero {...props} />;
+  if (variant === 'easyorders-masonry') return <EasyOrdersMasonryHero {...props} />;
   if (variant === 'style-ledger') return <StyleLedgerHero {...props} />;
   if (variant === 'graceful-banner') return <GracefulBannerHero {...props} />;
   if (variant === 'retail-command') return <RetailCommandHero {...props} />;

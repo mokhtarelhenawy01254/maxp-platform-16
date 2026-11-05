@@ -36,6 +36,17 @@ export const storefrontVariantRegistry = {
       status: 'implemented-now',
     },
     {
+      id: 'easyorders-masonry',
+      section: 'HeroBanner',
+      purpose: 'EasyOrders/EMY-style hero: centered green promo line, big black headline, then an RTL masonry grid (one tall image + two stacked) with 16px radius',
+      bestPages: ['home'],
+      bestArchetypes: ['cod-fashion', 'quick-order-direct', 'mass-market-retail'],
+      rtlSuitability: 'high',
+      density: 'medium',
+      tone: 'clean-retail',
+      status: 'implemented-now',
+    },
+    {
       id: 'fashion-billboard',
       section: 'HeroBanner',
       purpose: 'Pastel fashion billboard with direct promo routing, quick-view-first messaging, and a softer feminine sales surface inspired by Vela-style storefronts',
