@@ -72,7 +72,7 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
               <DollarSign className="size-4 text-primary" />
               <span>الميزانية الإعلانية الشهرية المقترحة:</span>
             </label>
-            <div className="text-base sm:text-xl font-black text-primary font-mono tabular-nums">
+            <div className="text-base sm:text-xl font-black text-primary tabular-nums">
               {budget.toLocaleString()} {currency}
             </div>
           </div>
@@ -87,10 +87,10 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
             className="w-full h-2.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
           />
 
-          <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-            <span>{(config.minBudget || 5000).toLocaleString()} {currency}</span>
+          <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
+            <span className="tabular-nums">{(config.minBudget || 5000).toLocaleString()} {currency}</span>
             <span className="text-primary font-bold">يمكنك تجربة ميزانيات مختلفة</span>
-            <span>{(config.maxBudget || 60000).toLocaleString()} {currency}</span>
+            <span className="tabular-nums">{(config.maxBudget || 60000).toLocaleString()} {currency}</span>
           </div>
         </div>
 
@@ -101,11 +101,11 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
               <Users className="size-3.5 text-primary" />
               <span>طلبات تقييم (Leads)</span>
             </div>
-            <div className="text-xl sm:text-2xl font-black font-mono tabular-nums text-foreground">
+            <div className="text-xl sm:text-2xl font-black tabular-nums text-foreground">
               {stats.leads} <span className="text-xs font-normal text-muted-foreground">ولي أمر</span>
             </div>
-            <div className="text-[11px] text-muted-foreground font-mono">
-              تكلفة الليد: ~{stats.cpl} {currency}
+            <div className="text-[11px] text-muted-foreground font-medium">
+              تكلفة الليد: ~<span className="tabular-nums">{stats.cpl}</span> {currency}
             </div>
           </div>
 
@@ -114,11 +114,11 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
               <Award className="size-3.5 text-amber-500" />
               <span>حضور الورش بالمقر</span>
             </div>
-            <div className="text-xl sm:text-2xl font-black font-mono tabular-nums text-amber-600 dark:text-amber-400">
+            <div className="text-xl sm:text-2xl font-black tabular-nums text-amber-600 dark:text-amber-400">
               {stats.attendees} <span className="text-xs font-normal text-muted-foreground">طفل وولي أمر</span>
             </div>
-            <div className="text-[11px] text-muted-foreground font-mono">
-              بنسبة حضور {Math.round((config.showUpRate || 0.65) * 100)}%
+            <div className="text-[11px] text-muted-foreground font-medium">
+              بنسبة حضور <span className="tabular-nums">{Math.round((config.showUpRate || 0.60) * 100)}</span>%
             </div>
           </div>
 
@@ -127,11 +127,11 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
               <Award className="size-3.5" />
               <span>الاشتراكات المؤكدة</span>
             </div>
-            <div className="text-xl sm:text-2xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+            <div className="text-xl sm:text-2xl font-black tabular-nums text-emerald-600 dark:text-emerald-400">
               {stats.enrolled} <span className="text-xs font-normal text-muted-foreground">طالب جديد</span>
             </div>
-            <div className="text-[11px] text-muted-foreground font-mono">
-              تكلفة الطالب (CAC): ~{stats.cac} {currency}
+            <div className="text-[11px] text-muted-foreground font-medium">
+              تكلفة الطالب (CAC): ~<span className="tabular-nums">{stats.cac}</span> {currency}
             </div>
           </div>
 
@@ -140,11 +140,11 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
               <TrendingUp className="size-3.5" />
               <span>إيراد الشهر الأول المباشر</span>
             </div>
-            <div className="text-xl sm:text-2xl font-black font-mono tabular-nums text-primary">
+            <div className="text-xl sm:text-2xl font-black tabular-nums text-primary">
               {stats.initialRevenue.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{currency}</span>
             </div>
-            <div className="text-[11px] text-muted-foreground font-mono">
-              عائد مباشر: {stats.roas}x ضعف الصرف
+            <div className="text-[11px] text-muted-foreground font-medium">
+              عائد مباشر: <span className="tabular-nums">{stats.roas}</span>x ضعف الصرف
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-primary">القيمة التراكمية عبر المستويات (Customer Lifetime Value - LTV):</span>
-              <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-mono font-bold">
+              <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-bold tabular-nums">
                 {config.studentLtvMonths || 4} مستويات
               </span>
             </div>
@@ -163,10 +163,10 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
             </p>
           </div>
           <div className="text-left sm:text-right shrink-0">
-            <div className="text-2xl font-black text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-black text-foreground tabular-nums">
               {stats.ltvRevenue.toLocaleString()} {currency}
             </div>
-            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
               عائد تراكمي يصل إلى {stats.ltvRoas}x
             </div>
           </div>

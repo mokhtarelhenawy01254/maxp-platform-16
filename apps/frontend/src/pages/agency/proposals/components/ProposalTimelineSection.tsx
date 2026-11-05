@@ -34,7 +34,7 @@ export const ProposalTimelineSection: React.FC<ProposalTimelineSectionProps> = (
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="font-mono font-bold text-xs">
+                <Badge variant="secondary" className="font-bold text-xs tabular-nums">
                   {step.days}
                 </Badge>
                 <span className="text-xs font-bold text-muted-foreground">

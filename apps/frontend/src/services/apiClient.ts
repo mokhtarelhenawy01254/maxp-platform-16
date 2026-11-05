@@ -459,6 +459,9 @@ class ApiClient {
     const currentPath = window.location.pathname;
     const isPublicRoute =
       currentPath === "/" ||
+      currentPath.startsWith("/proposal") ||
+      currentPath.startsWith("/agency/proposal") ||
+      currentPath.startsWith("/agency/client-portal") ||
       currentPath.startsWith("/test-public") ||
       currentPath.startsWith("/home") ||
       currentPath.startsWith("/shop") ||

@@ -70,7 +70,7 @@ export const ProposalPackagesSection: React.FC<ProposalPackagesSectionProps> = (
                 </div>
 
                 <div className="pt-2 pb-1 border-y border-border/50">
-                  <div className="flex items-baseline gap-1 font-mono">
+                  <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
                       {pkg.price.toLocaleString()}
                     </span>

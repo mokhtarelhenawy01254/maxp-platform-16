@@ -3,6 +3,9 @@ const PUBLIC_SUBDOMAIN_BYPASS_PREFIXES = [
   "/dental-portal",
   "/portal",
   "/academy",
+  "/proposal",
+  "/agency/proposal",
+  "/agency/client-portal",
 ];
 
 const PUBLIC_SUBDOMAIN_BYPASS_PATHS = new Set([

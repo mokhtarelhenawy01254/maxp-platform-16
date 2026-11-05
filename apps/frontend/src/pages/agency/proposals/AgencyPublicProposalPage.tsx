@@ -29,7 +29,7 @@ export default function AgencyPublicProposalPage() {
     setError(null);
     try {
       const res = await apiClient.get<{ success: boolean; data: PublicProposalData }>(
-        `/api/v1/agency/public/proposal/${encodeURIComponent(slugOrToken)}`
+        `/agency/public/proposal/${encodeURIComponent(slugOrToken)}`
       );
       if (res.data?.success && res.data.data?.proposal) {
         setData(res.data.data);
@@ -62,7 +62,7 @@ export default function AgencyPublicProposalPage() {
     if (!slugOrToken) return;
     try {
       const res = await apiClient.post<{ success: boolean; message: string; data: any }>(
-        `/api/v1/agency/public/proposal/${encodeURIComponent(slugOrToken)}/accept`,
+        `/agency/public/proposal/${encodeURIComponent(slugOrToken)}/accept`,
         payload
       );
       if (res.data?.success) {
@@ -145,20 +145,31 @@ export default function AgencyPublicProposalPage() {
               <span className="hidden sm:inline">مشاركة الرابط</span>
             </Button>
 
-            {proposal.phone && (
+            {agencyInfo?.phone && (
               <a
-                href={`https://wa.me/20${proposal.phone.replace(/^0+/, "")}?text=${encodeURIComponent(
-                  `أهلاً بك، بخصوص خطة نمو وتشغيل ${proposal.clientName} على MaxP.`
+                href={`https://wa.me/20${agencyInfo.phone.replace(/^0+/, "")}?text=${encodeURIComponent(
+                  `أهلاً بك، بخصوص خطة نمو وتشغيل ${proposal.clientName}.`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                <Button size="sm" className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1 px-3">
+                <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-emerald-600/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 gap-1 px-3">
                   <MessageCircle className="size-3.5" />
-                  <span>تواصل واتساب</span>
+                  <span className="hidden sm:inline">استفسار واتساب</span>
                 </Button>
               </a>
             )}
+
+            <Button
+              size="sm"
+              onClick={() => {
+                document.getElementById("packages-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="h-8 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground gap-1 px-3"
+            >
+              <CheckCircle2 className="size-3.5" />
+              <span>اعتماد الخطة والبدء</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -168,7 +179,7 @@ export default function AgencyPublicProposalPage() {
         {/* Hero Section */}
         <ProposalHero
           proposal={proposal}
-          agencyName={agencyInfo?.name || "H2M Media Agency (شركة H2M)"}
+          agencyName={agencyInfo?.name || "H2M Media Agency"}
           subdomain={agencyInfo?.subdomain || "h2m"}
         />
 
@@ -185,23 +196,25 @@ export default function AgencyPublicProposalPage() {
         <ProposalTimelineSection timeline={proposal.timeline} />
 
         {/* Packages & Deal Closing */}
-        <ProposalPackagesSection
-          packages={proposal.packages}
-          currency={proposal.currency}
-          isAccepted={proposal.status === "ACCEPTED"}
-          acceptedPackageId={proposal.acceptedPackageId}
-          onSelectPackage={handleSelectPackage}
-        />
+        <div id="packages-section">
+          <ProposalPackagesSection
+            packages={proposal.packages}
+            currency={proposal.currency}
+            isAccepted={proposal.status === "ACCEPTED"}
+            acceptedPackageId={proposal.acceptedPackageId}
+            onSelectPackage={handleSelectPackage}
+          />
+        </div>
 
         {/* Footer Guarantee */}
         <div className="p-6 rounded-2xl bg-muted/30 border border-border/50 text-center space-y-2">
           <p className="text-xs text-muted-foreground">
             تم إعداد هذه الخطة بواسطة وكيل النمو المعتمد ومدعومة بنظام تشغيل التجارة والتعليم على منصة MaxP.
           </p>
-          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground/80 font-mono">
-            <span>MaxP Growth Engine</span>
+          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground/80 font-medium">
+            <span className="font-mono" dir="ltr">MaxP Growth Engine</span>
             <span>•</span>
-            <span>جميع الحقوق محفوظة 2026</span>
+            <span>جميع الحقوق محفوظة <span className="tabular-nums">2026</span></span>
           </div>
         </div>
       </main>

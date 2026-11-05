@@ -25,7 +25,7 @@ export const ProposalAuditSection: React.FC<ProposalAuditSectionProps> = ({ audi
           </p>
         </div>
         <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold self-start sm:self-auto text-xs">
-          تم رصد {auditItems.length} ثغرات تشغيلية
+          تم رصد <span className="tabular-nums mx-1">{auditItems.length}</span> ثغرات تشغيلية
         </Badge>
       </div>
 
@@ -37,7 +37,7 @@ export const ProposalAuditSection: React.FC<ProposalAuditSectionProps> = ({ audi
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center size-6 rounded-full bg-muted text-xs font-bold font-mono">
+                <span className="flex items-center justify-center size-6 rounded-full bg-muted text-xs font-bold tabular-nums">
                   {index + 1}
                 </span>
                 <h3 className="font-bold text-sm text-foreground">{item.title}</h3>

@@ -31,7 +31,7 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
     subdomain: string;
     customDomain?: string | null;
   }>({
-    name: "H2M Media Agency (شركة H2M)",
+    name: "H2M Media Agency",
     subdomain: "h2m",
   });
 
@@ -44,7 +44,7 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
           proposals: AgencyProposal[];
           agencyInfo?: { name: string; subdomain: string; customDomain?: string | null };
         };
-      }>("/api/v1/agency/proposals");
+      }>("/agency/proposals");
       if (res.data?.success) {
         setProposals(res.data.data?.proposals || []);
         if (res.data.data?.agencyInfo) {
@@ -67,7 +67,7 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
     setSeeding(true);
     try {
       const res = await apiClient.post<{ success: boolean; message: string; data: AgencyProposal }>(
-        "/api/v1/agency/proposals/seed-codetreps"
+        "/agency/proposals/seed-codetreps"
       );
       if (res.data?.success) {
         toast.success(res.data.message || "تم توليد خطة كود تريبس بنجاح!");
@@ -83,7 +83,7 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
   const handleDeleteProposal = async (id: string, name: string) => {
     if (!window.confirm(`هل أنت متأكد من حذف خطة "${name}"؟`)) return;
     try {
-      const res = await apiClient.delete<{ success: boolean }>(`/api/v1/agency/proposals/${id}`);
+      const res = await apiClient.delete<{ success: boolean }>(`/agency/proposals/${id}`);
       if (res.data?.success) {
         toast.success("تم حذف الخطة بنجاح.");
         setProposals((prev) => prev.filter((p) => p.id !== id));
@@ -102,7 +102,9 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
     if (agencyInfo.customDomain) {
       return `https://${agencyInfo.customDomain}/proposal/${slug}`;
     }
-    return `https://${sub}.maxp.online/proposal/${slug}`;
+    const hostParts = hostname.split(".");
+    const rootDomain = hostParts.length >= 2 ? hostParts.slice(-2).join(".") : "maxp.online";
+    return `https://${sub}.${rootDomain}/proposal/${slug}`;
   };
 
   const copyProposalLink = (slug: string) => {
@@ -145,7 +147,7 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
             <h2 className="text-base sm:text-lg font-black text-foreground">
               عروض وخطط النمو التفاعلية (Growth Proposals)
             </h2>
-            <Badge variant="secondary" className="font-mono font-bold text-xs">
+            <Badge variant="secondary" className="font-bold text-xs tabular-nums">
               {proposals.length} خطة
             </Badge>
           </div>
@@ -154,8 +156,9 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-[11px] font-bold text-muted-foreground">النطاق والشركة:</span>
-            <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono">
-              {agencyInfo.name} ({agencyInfo.subdomain || "h2m"}.maxp.online)
+            <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+              <span>{agencyInfo.name}</span>
+              <span className="font-mono text-primary/80" dir="ltr">({agencyInfo.subdomain || "h2m"}.maxp.online)</span>
             </span>
           </div>
         </div>
@@ -225,16 +228,16 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-medium pt-1">
                   <span>العميل: <strong className="text-foreground">{p.clientName}</strong></span>
                   <span>•</span>
-                  <span className="flex items-center gap-1 font-mono">
+                  <span className="flex items-center gap-1">
                     <Calendar className="size-3 text-primary" />
-                    {new Date(p.createdAt).toLocaleDateString("ar-EG")}
+                    <span>{new Date(p.createdAt).toLocaleDateString("ar-EG")}</span>
                   </span>
                   {p.viewsCount ? (
                     <>
                       <span>•</span>
                       <span className="flex items-center gap-1 text-primary font-bold">
                         <Eye className="size-3" />
-                        {p.viewsCount} مشاهدات
+                        <span className="tabular-nums">{p.viewsCount}</span> مشاهدات
                       </span>
                     </>
                   ) : null}
@@ -247,9 +250,13 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
                 {/* Audit preview count */}
                 <div className="p-2.5 rounded-xl bg-muted/40 border border-border/50 text-xs flex items-center justify-between">
                   <span className="text-muted-foreground">ثغرات الرصد (Audit):</span>
-                  <span className="font-bold text-foreground font-mono">{p.auditItems?.length || 0} فجوات</span>
+                  <span className="font-bold text-foreground">
+                    <span className="tabular-nums">{p.auditItems?.length || 0}</span> فجوات
+                  </span>
                   <span className="text-muted-foreground">خيارات التعاقد:</span>
-                  <span className="font-bold text-foreground font-mono">{p.packages?.length || 0} باقات</span>
+                  <span className="font-bold text-foreground">
+                    <span className="tabular-nums">{p.packages?.length || 0}</span> باقات
+                  </span>
                 </div>
               </div>
 

@@ -136,11 +136,11 @@ function createCodeTrepsTemplate(companyId) {
             minBudget: 5000,
             maxBudget: 60000,
             stepBudget: 2500,
-            costPerClick: 3.5, // EGP
-            leadConversionRate: 0.12, // 12% of clicks become trial bookings
-            showUpRate: 0.65, // 65% attend the free session in Alexandria
-            enrollmentRate: 0.40, // 40% of attendees enroll into paid courses
-            averageCoursePrice: 2200, // EGP per level
+            costPerClick: 6.5, // Realistic Alexandria Class A/B Meta CPC (EGP)
+            leadConversionRate: 0.045, // 4.5% conversion to qualified trial booking
+            showUpRate: 0.60, // 60% show-up to physical session in Alexandria Fouad branch with WhatsApp Show-up Agent
+            enrollmentRate: 0.35, // 35% of attendees enroll into paid courses
+            averageCoursePrice: 2200, // EGP per level / month
             studentLtvMonths: 4, // Average student stays for 4 levels
             monthlyRetentionRate: 0.85
         },
@@ -256,7 +256,7 @@ module.exports = {
                     proposals: agencyData.proposals || [],
                     totalCount: (agencyData.proposals || []).length,
                     agencyInfo: {
-                        name: company?.name || 'H2M Media Agency (شركة H2M)',
+                        name: company?.name || 'H2M Media Agency',
                         logo: company?.logo || null,
                         subdomain,
                         customDomain: company?.customDomain || null,
@@ -454,7 +454,7 @@ module.exports = {
                 console.warn('⚠️ [AGENCY PROPOSAL] DB client offline:', pErr.message);
             }
 
-            // 1. Resolve company by subdomain first if available (e.g. h2m)
+            // 1. Resolve company by subdomain first if available (e.g. h2m, h2m-1)
             if (req.company) {
                 matchedCompany = req.company;
             } else if (requestedSubdomain && prisma) {
@@ -463,6 +463,7 @@ module.exports = {
                         where: {
                             OR: [
                                 { slug: { equals: requestedSubdomain, mode: 'insensitive' } },
+                                { slug: { startsWith: requestedSubdomain, mode: 'insensitive' } },
                                 { name: { contains: requestedSubdomain, mode: 'insensitive' } },
                             ],
                             isActive: true,
@@ -541,7 +542,7 @@ module.exports = {
             if (!foundProposal && (slugOrToken === 'codetreps-growth-os' || slugOrToken.includes('codetreps'))) {
                 foundProposal = createCodeTrepsTemplate('h2m-agency');
                 agencyInfo = {
-                    name: 'H2M Media Agency (شركة H2M)',
+                    name: 'H2M Media Agency',
                     logo: null,
                     subdomain: requestedSubdomain || 'h2m',
                     customDomain: null,

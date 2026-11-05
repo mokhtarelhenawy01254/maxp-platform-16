@@ -72,10 +72,10 @@ export const ProposalAcceptModal: React.FC<ProposalAcceptModalProps> = ({
         {selectedPackage && (
           <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 space-y-1 text-xs">
             <span className="font-bold text-foreground">الباقة المختارة:</span>
-            <div className="flex items-center justify-between font-mono">
+            <div className="flex items-center justify-between">
               <span className="font-black text-primary text-sm">{selectedPackage.name}</span>
               <span className="font-bold text-foreground">
-                {selectedPackage.price.toLocaleString()} {currency} / {selectedPackage.period}
+                <span className="tabular-nums">{selectedPackage.price.toLocaleString()}</span> {currency} / {selectedPackage.period}
               </span>
             </div>
           </div>

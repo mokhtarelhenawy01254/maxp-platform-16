@@ -2217,6 +2217,9 @@ const AppContent = () => {
 
   // Check if current path is a public route
   const isPublicRoute =
+    currentPath.startsWith("/proposal") ||
+    currentPath.startsWith("/agency/proposal") ||
+    currentPath.startsWith("/agency/client-portal") ||
     currentPath.startsWith("/portal") ||
     currentPath.startsWith("/factory-portal") ||
     currentPath.startsWith("/customer-portal") ||

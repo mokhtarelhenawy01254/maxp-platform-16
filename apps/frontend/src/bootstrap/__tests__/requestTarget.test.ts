@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { shouldBootstrapStorefront } from "../requestTarget";
 
 describe("shouldBootstrapStorefront", () => {
@@ -33,6 +34,24 @@ describe("shouldBootstrapStorefront", () => {
       shouldBootstrapStorefront(
         "swan.maxp.online",
         "/dental-portal",
+      ),
+    ).toBe(false);
+    expect(
+      shouldBootstrapStorefront(
+        "h2m.maxp.online",
+        "/proposal/codetreps-growth-os",
+      ),
+    ).toBe(false);
+    expect(
+      shouldBootstrapStorefront(
+        "h2m.maxp.online",
+        "/agency/proposal/codetreps-growth-os",
+      ),
+    ).toBe(false);
+    expect(
+      shouldBootstrapStorefront(
+        "h2m.maxp.online",
+        "/agency/client-portal/sample-token",
       ),
     ).toBe(false);
   });

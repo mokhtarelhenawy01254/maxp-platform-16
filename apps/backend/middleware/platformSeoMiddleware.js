@@ -301,6 +301,24 @@ const ROUTE_SEO_MAP = [
     noIndex: true,
   },
   {
+    match: "/proposal",
+    title: "عرض وخطة النمو الاستراتيجية | MaxP Agency OS",
+    description: "خطة نمو تسويقية وعملياتية مخصصة للعميل ومقدمة عبر وكالة التسويق المعتمدة.",
+    noIndex: true,
+  },
+  {
+    match: "/agency/proposal",
+    title: "عرض وخطة النمو الاستراتيجية | MaxP Agency OS",
+    description: "خطة نمو تسويقية وعملياتية مخصصة للعميل ومقدمة عبر وكالة التسويق المعتمدة.",
+    noIndex: true,
+  },
+  {
+    match: "/agency/client-portal",
+    title: "بوابة اعتماد ومتابعة العميل | MaxP Agency OS",
+    description: "بوابة تفاعلية للعميل لمتابعة تقارير الأداء والموافقة على الحملات والخطط.",
+    noIndex: true,
+  },
+  {
     match: "/dashboard",
     title: "لوحة التحكم الرئيسية | MaxP Dashboard",
     description: "نظرة عامة على مبيعات اليوم، الطلبات الجديدة، وأداء المتجر.",
@@ -479,10 +497,21 @@ const handlePlatformSeo = async (req, res, next) => {
   if (req.path.startsWith("/api") || req.path.startsWith("/socket.io")) return next();
   if (hasStaticFileExtension(req.path)) return next();
 
-  // If request belongs to a tenant company (subdomain or custom domain) and is NOT a funnel,
+  // If request belongs to a tenant company (subdomain or custom domain) and is NOT a funnel or agency proposal/portal,
   // let storefrontHtmlController handle it.
   const isFunnelRoute = req.path.startsWith("/funnel/") || req.path.startsWith("/funnels/");
-  if (req.companyId && req.company && req.company.slug !== "main" && req.company.slug !== "platform" && !isFunnelRoute) {
+  const isProposalRoute =
+    req.path.startsWith("/proposal/") ||
+    req.path.startsWith("/agency/proposal/") ||
+    req.path.startsWith("/agency/client-portal/");
+  if (
+    req.companyId &&
+    req.company &&
+    req.company.slug !== "main" &&
+    req.company.slug !== "platform" &&
+    !isFunnelRoute &&
+    !isProposalRoute
+  ) {
     return next();
   }
 

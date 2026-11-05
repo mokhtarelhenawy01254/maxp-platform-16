@@ -22,7 +22,7 @@ export const ProposalHero: React.FC<ProposalHeroProps> = ({ proposal, agencyName
               <Sparkles className="size-3.5" />
               مقدم من: {agencyName}
             </span>
-            <span className="text-xs text-muted-foreground font-mono bg-muted/60 px-2 py-0.5 rounded-md">
+            <span className="text-xs text-muted-foreground font-mono bg-muted/60 px-2 py-0.5 rounded-md" dir="ltr">
               {subdomain}.maxp.online
             </span>
           </div>
@@ -81,8 +81,9 @@ export const ProposalHero: React.FC<ProposalHeroProps> = ({ proposal, agencyName
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] bg-secondary px-2.5 py-1 rounded-lg text-secondary-foreground font-mono">
-              رقم المرجع: {proposal.slug}
+            <span className="text-[11px] bg-secondary px-2.5 py-1 rounded-lg text-secondary-foreground font-medium flex items-center gap-1">
+              <span>رقم المرجع:</span>
+              <span className="font-mono text-foreground font-bold" dir="ltr">{proposal.slug}</span>
             </span>
           </div>
         </div>
