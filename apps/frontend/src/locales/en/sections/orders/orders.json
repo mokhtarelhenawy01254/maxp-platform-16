@@ -836,7 +836,7 @@
   "closeFilters": "Close Filters",
   "source": "Source",
   "sourceAffiliateDirect": "Affiliate (direct)",
-  "sourceAffiliateRegular": "Affiliate (regular)",
+  "sourceRegular": "Affiliate (regular)",
   "showUnassignedOrders": "Show unassigned orders only",
   "reset": "Reset",
   "showResults": "Show Results",
