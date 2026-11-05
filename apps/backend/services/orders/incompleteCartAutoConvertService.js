@@ -280,18 +280,31 @@ async function autoConvertCompanyIncompleteCarts(companyId, { limit = 50, user =
     }
   }
 
+  // جلب السلال المستبعدة (التي تم تجاهلها أو تم تحويلها مسبقاً)
+  let excludedCartIds = [];
+  try {
+    const [dismissLogs, convertedLogs] = await Promise.all([
+      prisma.cartContactLog.findMany({
+        where: { companyId, method: 'dismissed' },
+        select: { cartId: true },
+        distinct: ['cartId']
+      }),
+      prisma.cartConversionLog.findMany({
+        where: { companyId },
+        select: { cartId: true },
+        distinct: ['cartId']
+      })
+    ]);
+    const dismissedIds = dismissLogs.map(l => l.cartId).filter(Boolean);
+    const convertedIds = convertedLogs.map(l => l.cartId).filter(Boolean);
+    excludedCartIds = [...new Set([...dismissedIds, ...convertedIds])];
+  } catch (e) {
+    console.warn('⚠️ [INCOMPLETE-AUTO-CONVERT] Error fetching excluded cart logs:', e.message);
+  }
+
   const whereConditions = [
     { companyId },
-    {
-      cartContactLog: {
-        none: { dismissed: true }
-      }
-    },
-    {
-      cartConversionLog: {
-        none: {}
-      }
-    },
+    ...(excludedCartIds.length > 0 ? [{ cartId: { notIn: excludedCartIds } }] : []),
     {
       OR: [
         { checkoutData: { contains: '"guestPhone"' } },
