@@ -21,6 +21,9 @@ export interface MessageMetadata {
   orderNumber?: string;
   orderId?: string;
   total?: number;
+  deliveryStatus?: 'PENDING' | 'SENT' | 'FAILED';
+  failureReason?: string | null;
+  facebookMessageId?: string | null;
 }
 
 export interface TemplateButton {

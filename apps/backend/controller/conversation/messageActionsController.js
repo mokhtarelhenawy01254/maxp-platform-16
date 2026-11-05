@@ -215,7 +215,7 @@ const getMessages = async (req, res) => {
                 }
 
                 // Delivery status resolution:
-                let deliveryStatus = metadata?.deliveryStatus || null;
+                let deliveryStatus = msg.deliveryStatus || metadata?.deliveryStatus || null;
                 if (!deliveryStatus) {
                     if (msg.isFromCustomer) {
                         deliveryStatus = 'SENT';
@@ -232,7 +232,7 @@ const getMessages = async (req, res) => {
                     }
                 }
 
-                const failureReason = metadata?.failureReason || metadata?.messengerError || metadata?.facebookErrorMessage || null;
+                const failureReason = msg.failureReason || metadata?.failureReason || metadata?.messengerError || metadata?.facebookErrorMessage || null;
                 const facebookMessageId = metadata?.facebookMessageId || metadata?.messengerMessageId || null;
 
                 return {

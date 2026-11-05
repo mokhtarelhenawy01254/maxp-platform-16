@@ -222,6 +222,8 @@ const postMessageConverstation = async (req, res) => {
             conversationId: id,
             isFromCustomer: false,
             senderId: senderId, // معرف الموظف
+            deliveryStatus: isFacebook ? 'PENDING' : 'SENT',
+            failureReason: null,
             metadata: JSON.stringify({
               platform: conversation.channel ? conversation.channel.toLowerCase() : 'facebook',
               source: 'manual_reply',
@@ -428,6 +430,8 @@ const postMessageConverstation = async (req, res) => {
                   await getSharedPrismaClient().message.update({
                     where: { id: savedMessage.id },
                     data: {
+                      deliveryStatus: 'SENT',
+                      failureReason: null,
                       metadata: JSON.stringify({
                         ...JSON.parse(savedMessage.metadata),
                         facebookMessageId: facebookMessageId,
@@ -479,11 +483,13 @@ const postMessageConverstation = async (req, res) => {
                   conversationCreatedAt: conversation.createdAt
                 });
               } else if (!facebookSent && savedMessage) {
-                const failureReason = response.message || response.error || 'فشل إرسال الرسالة إلى فيسبوك';
+                const failureReason = (response.message || response.error || 'فشل إرسال الرسالة إلى فيسبوك').substring(0, 500);
                 try {
                   await getSharedPrismaClient().message.update({
                     where: { id: savedMessage.id },
                     data: {
+                      deliveryStatus: 'FAILED',
+                      failureReason: failureReason,
                       metadata: JSON.stringify({
                         ...JSON.parse(savedMessage.metadata),
                         sentToFacebook: false,
@@ -956,6 +962,8 @@ const uploadFile = async (req, res) => {
               isFromCustomer: false,
               senderId: senderId,
               attachments: JSON.stringify([attachment]),
+              deliveryStatus: 'PENDING',
+              failureReason: null,
               metadata: JSON.stringify({
                 platform: 'facebook',
                 source: 'file_upload',
@@ -1122,6 +1130,8 @@ const uploadFile = async (req, res) => {
                       return await prisma.message.update({
                         where: { id: savedFileMessage.id },
                         data: {
+                          deliveryStatus: 'SENT',
+                          failureReason: null,
                           metadata: JSON.stringify({
                             ...JSON.parse(savedFileMessage.metadata),
                             facebookMessageId: facebookMessageId,
@@ -1171,7 +1181,7 @@ const uploadFile = async (req, res) => {
                   });
                 }
               } else {
-                const failureReason = result.message || 'فشل إرسال الملف إلى فيسبوك';
+                const failureReason = (result.message || 'فشل إرسال الملف إلى فيسبوك').substring(0, 500);
                 facebookSent = false;
                 if (savedFileMessage) {
                   try {
@@ -1179,6 +1189,8 @@ const uploadFile = async (req, res) => {
                       return await prisma.message.update({
                         where: { id: savedFileMessage.id },
                         data: {
+                          deliveryStatus: 'FAILED',
+                          failureReason: failureReason,
                           metadata: JSON.stringify({
                             ...JSON.parse(savedFileMessage.metadata),
                             deliveryStatus: 'FAILED',
@@ -1223,13 +1235,15 @@ const uploadFile = async (req, res) => {
               }
             } catch (error) {
               console.error('Error uploading file to Facebook:', error);
-              const failureReason = error.message || 'خطأ أثناء إرسال الملف إلى فيسبوك';
+              const failureReason = (error.message || 'خطأ أثناء إرسال الملف إلى فيسبوك').substring(0, 500);
               if (savedFileMessage) {
                 try {
                   await executeWithRetry(async () => {
                     return await prisma.message.update({
                       where: { id: savedFileMessage.id },
                       data: {
+                        deliveryStatus: 'FAILED',
+                        failureReason: failureReason,
                         metadata: JSON.stringify({
                           ...JSON.parse(savedFileMessage.metadata),
                           deliveryStatus: 'FAILED',
@@ -1419,6 +1433,8 @@ const postReply = async (req, res) => {
           isFromCustomer: false,
           senderId: senderId,
           attachments: attachmentsData ? JSON.stringify(attachmentsData) : null,
+          deliveryStatus: isFacebook ? 'PENDING' : 'SENT',
+          failureReason: null,
           metadata: JSON.stringify({
             platform: conversation?.channel?.toLowerCase() || 'facebook',
             source: 'quick_reply',
@@ -1660,6 +1676,8 @@ const postReply = async (req, res) => {
                   await getSharedPrismaClient().message.update({
                     where: { id: savedMessage.id },
                     data: {
+                      deliveryStatus: 'SENT',
+                      failureReason: null,
                       metadata: JSON.stringify({
                         ...JSON.parse(savedMessage.metadata),
                         facebookMessageId: facebookMessageId,
@@ -1707,11 +1725,13 @@ const postReply = async (req, res) => {
                   conversationCreatedAt: conversation.createdAt
                 });
               } else if (!facebookSent && savedMessage) {
-                const failureReason = facebookErrorDetails?.message || 'فشل إرسال الرسالة إلى فيسبوك';
+                const failureReason = (facebookErrorDetails?.message || 'فشل إرسال الرسالة إلى فيسبوك').substring(0, 500);
                 try {
                   await getSharedPrismaClient().message.update({
                     where: { id: savedMessage.id },
                     data: {
+                      deliveryStatus: 'FAILED',
+                      failureReason: failureReason,
                       metadata: JSON.stringify({
                         ...JSON.parse(savedMessage.metadata),
                         deliveryStatus: 'FAILED',
@@ -1956,12 +1976,16 @@ const sendExistingImage = async (req, res) => {
         isFromCustomer: false,
         senderId: senderId,
         attachments: JSON.stringify([attachment]),
+        deliveryStatus: 'PENDING',
+        failureReason: null,
         metadata: JSON.stringify({
           platform: 'facebook',
           source: 'image_gallery',
           employeeId: senderId,
           employeeName: senderName,
           isFacebookReply: true,
+          deliveryStatus: 'PENDING',
+          failureReason: null,
           timestamp: new Date(),
           instantSave: true,
           fileName: filename,
@@ -2138,9 +2162,12 @@ const sendExistingImage = async (req, res) => {
               await getSharedPrismaClient().message.update({
                 where: { id: savedMessage.id },
                 data: {
+                  deliveryStatus: 'SENT',
+                  failureReason: null,
                   metadata: JSON.stringify({
                     ...JSON.parse(savedMessage.metadata),
                     facebookMessageId: result.messageId,
+                    deliveryStatus: 'SENT',
                     sentToFacebook: true
                   })
                 }
@@ -2546,11 +2573,351 @@ const sendLocationMessage = async (req, res) => {
 };
 
 
+
+/**
+ * POST /:conversationId/messages/:messageId/retry
+ * TASK f508775c: إعادة إرسال نفس السجل الفاشل وتحديثه دون إنشاء سجل مكرر
+ */
+const retryMessage = async (req, res) => {
+  try {
+    const conversationId = req.params.conversationId || req.params.id;
+    const { messageId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'COMPANY_ID_REQUIRED',
+        message: 'معرف الشركة مطلوب'
+      });
+    }
+
+    if (!conversationId || !messageId) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_PARAMS',
+        message: 'معرف المحادثة والرسالة مطلوبان'
+      });
+    }
+
+    // 1. هات الرسالة وتأكد إن المحادثة بتاعة نفس الشركة (companyId من req.user) -> غير كده 404
+    const conversation = await getSharedPrismaClient().conversation.findFirst({
+      where: { id: conversationId, companyId },
+      include: { customer: true }
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        code: 'NOT_FOUND',
+        error: 'CONVERSATION_NOT_FOUND',
+        message: 'المحادثة غير موجودة أو غير مصرح بالوصول'
+      });
+    }
+
+    const messageRecord = await getSharedPrismaClient().message.findFirst({
+      where: { id: messageId, conversationId }
+    });
+
+    if (!messageRecord) {
+      return res.status(404).json({
+        success: false,
+        code: 'NOT_FOUND',
+        error: 'MESSAGE_NOT_FOUND',
+        message: 'الرسالة غير موجودة في هذه المحادثة'
+      });
+    }
+
+    // 2. لو deliveryStatus === 'SENT' -> 400 {success:false, code:'ALREADY_SENT'}. لو مش FAILED/PENDING -> 400
+    let meta = {};
+    try {
+      meta = messageRecord.metadata ? JSON.parse(messageRecord.metadata) : {};
+    } catch (_) {}
+
+    const currentStatus = messageRecord.deliveryStatus || meta.deliveryStatus || null;
+    if (currentStatus === 'SENT') {
+      return res.status(400).json({
+        success: false,
+        code: 'ALREADY_SENT',
+        error: 'ALREADY_SENT',
+        message: 'تم إرسال الرسالة بنجاح بالفعل ولا يمكن إعادة إرسالها'
+      });
+    }
+
+    if (currentStatus !== 'FAILED' && currentStatus !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_STATUS',
+        error: 'INVALID_STATUS',
+        message: 'حالة الرسالة لا تسمح بإعادة المحاولة'
+      });
+    }
+
+    // 3. تحقق من نافذة الـ24 ساعة بنفس الهيلبر الموجود apps/backend/utils/facebookWindow.js -> لو مقفولة 409 {code:'WINDOW_EXPIRED'} من غير أي نداء لميتا
+    const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
+    if (isFacebook) {
+      const lastInboundMsg = await getSharedPrismaClient().message.findFirst({
+        where: {
+          conversationId,
+          isFromCustomer: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      if (windowState.isWindowExpired) {
+        console.warn(`🚫 [RETRY-BLOCKED] Facebook 24h window closed for conversation ${conversationId}. Rejecting without calling Meta.`);
+        return res.status(409).json({
+          success: false,
+          code: 'WINDOW_EXPIRED',
+          error: 'WINDOW_EXPIRED',
+          message: `انتهت نافذة الـ 24 ساعة للرد على العميل${windowState.hoursSinceExpiration ? ` (النافذة اتقفلت من ${windowState.hoursSinceExpiration} ساعة)` : ''}`,
+          lastInboundAt,
+          windowExpiresAt: windowState.windowExpiresAt,
+          hoursSinceExpiration: windowState.hoursSinceExpiration
+        });
+      }
+    }
+
+    // 4. أعِد إرسال content + attachments بتاع نفس السجل بدالة الإرسال الموجودة في messagingController
+    const recipientId = conversation.customer?.facebookId;
+    if (!recipientId) {
+      const failureReason = 'لا يوجد معرف فيسبوك للعميل';
+      await getSharedPrismaClient().message.update({
+        where: { id: messageId },
+        data: {
+          deliveryStatus: 'FAILED',
+          failureReason,
+          metadata: JSON.stringify({
+            ...meta,
+            deliveryStatus: 'FAILED',
+            failureReason,
+            sentToFacebook: false
+          })
+        }
+      });
+      return res.status(400).json({
+        success: false,
+        code: 'NO_FACEBOOK_ID',
+        error: 'NO_FACEBOOK_ID',
+        message: failureReason
+      });
+    }
+
+    let convMeta = {};
+    try {
+      convMeta = conversation.metadata ? JSON.parse(conversation.metadata) : {};
+    } catch (_) {}
+
+    let pageData = null;
+    let actualPageId = null;
+
+    if (convMeta.pageId) {
+      const pageTokenData = await getPageToken(convMeta.pageId);
+      if (pageTokenData) {
+        pageData = pageTokenData;
+        actualPageId = convMeta.pageId;
+      }
+    }
+
+    if (!pageData) {
+      const facebookPage = await getSharedPrismaClient().facebookPage.findFirst({
+        where: {
+          status: 'connected',
+          companyId: conversation.companyId
+        },
+        orderBy: { connectedAt: 'desc' }
+      });
+      if (facebookPage) {
+        pageData = {
+          pageAccessToken: facebookPage.pageAccessToken,
+          pageName: facebookPage.pageName,
+          companyId: facebookPage.companyId
+        };
+        actualPageId = facebookPage.pageId;
+      }
+    }
+
+    if (!pageData && getLastWebhookPageId()) {
+      const pageTokenData = await getPageToken(getLastWebhookPageId());
+      if (pageTokenData) {
+        pageData = pageTokenData;
+        actualPageId = getLastWebhookPageId();
+      }
+    }
+
+    if (!pageData || !pageData.pageAccessToken || !actualPageId) {
+      const failureReason = 'لا توجد صفحة فيسبوك متصلة أو توكن الوصول غير متوفر';
+      await getSharedPrismaClient().message.update({
+        where: { id: messageId },
+        data: {
+          deliveryStatus: 'FAILED',
+          failureReason,
+          metadata: JSON.stringify({
+            ...meta,
+            deliveryStatus: 'FAILED',
+            failureReason,
+            sentToFacebook: false
+          })
+        }
+      });
+      return res.status(502).json({
+        success: false,
+        code: 'NO_PAGE_TOKEN',
+        error: 'NO_PAGE_TOKEN',
+        message: failureReason
+      });
+    }
+
+    // إرسال الرسالة إلى فيسبوك
+    const msgType = (messageRecord.type || 'TEXT').toUpperCase();
+    const sendResult = await sendProductionFacebookMessage(
+      recipientId,
+      messageRecord.content,
+      msgType === 'IMAGE' ? 'IMAGE' : (msgType === 'FILE' ? 'FILE' : 'TEXT'),
+      actualPageId,
+      pageData.pageAccessToken
+    );
+
+    // 5. حدّث نفس السجل: نجاح -> deliveryStatus:'SENT' + metadata.facebookMessageId + failureReason:null؛ فشل -> deliveryStatus:'FAILED' + failureReason
+    // 6. متعملش message.create جديد نهائيًا في المسار ده
+    if (sendResult?.success && sendResult?.messageId) {
+      const updatedMeta = {
+        ...meta,
+        facebookMessageId: sendResult.messageId,
+        sentToFacebook: true,
+        deliveryStatus: 'SENT',
+        failureReason: null
+      };
+
+      await getSharedPrismaClient().message.update({
+        where: { id: messageId },
+        data: {
+          deliveryStatus: 'SENT',
+          failureReason: null,
+          metadata: JSON.stringify(updatedMeta),
+          updatedAt: new Date()
+        }
+      });
+
+      // حدّث عدّاد الفشل/النجاح
+      try {
+        deliveryFailureMonitor.recordDeliveryAttempt({
+          channel: 'FACEBOOK',
+          success: true,
+          companyId: conversation.companyId,
+          messageId
+        });
+      } catch (_) {}
+
+      // إرسال السوكت
+      try {
+        const io = socketService.getIO();
+        if (io) {
+          io.to(`company_${conversation.companyId}`).emit('message_updated', {
+            id: messageId,
+            conversationId,
+            deliveryStatus: 'SENT',
+            facebookMessageId: sendResult.messageId,
+            status: 'sent'
+          });
+        }
+      } catch (_) {}
+
+      return res.json({
+        success: true,
+        message: 'تمت إعادة إرسال الرسالة بنجاح',
+        deliveryStatus: 'SENT',
+        data: {
+          id: messageId,
+          conversationId,
+          deliveryStatus: 'SENT',
+          status: 'sent',
+          facebookMessageId: sendResult.messageId,
+          failureReason: null
+        }
+      });
+    } else {
+      const rawReason = sendResult?.message || sendResult?.error || 'فشل إرسال الرسالة إلى فيسبوك';
+      const failureReason = String(rawReason).substring(0, 500);
+
+      const updatedMeta = {
+        ...meta,
+        sentToFacebook: false,
+        deliveryStatus: 'FAILED',
+        failureReason
+      };
+
+      await getSharedPrismaClient().message.update({
+        where: { id: messageId },
+        data: {
+          deliveryStatus: 'FAILED',
+          failureReason,
+          metadata: JSON.stringify(updatedMeta),
+          updatedAt: new Date()
+        }
+      });
+
+      // حدّث عدّاد الفشل/النجاح
+      try {
+        deliveryFailureMonitor.recordDeliveryAttempt({
+          channel: 'FACEBOOK',
+          success: false,
+          error: failureReason,
+          companyId: conversation.companyId,
+          messageId
+        });
+      } catch (_) {}
+
+      // إرسال السوكت
+      try {
+        const io = socketService.getIO();
+        if (io) {
+          io.to(`company_${conversation.companyId}`).emit('message_updated', {
+            id: messageId,
+            conversationId,
+            deliveryStatus: 'FAILED',
+            failureReason,
+            status: 'error'
+          });
+        }
+      } catch (_) {}
+
+      const statusCode = (sendResult?.error === 'WINDOW_EXPIRED' || sendResult?.code === 'WINDOW_EXPIRED') ? 409 : 502;
+      return res.status(statusCode).json({
+        success: false,
+        code: sendResult?.code || sendResult?.error || 'RETRY_FAILED',
+        error: sendResult?.error || 'RETRY_FAILED',
+        message: failureReason,
+        deliveryStatus: 'FAILED',
+        failureReason,
+        data: {
+          id: messageId,
+          conversationId,
+          deliveryStatus: 'FAILED',
+          status: 'error',
+          failureReason
+        }
+      });
+    }
+  } catch (error) {
+    console.error('❌ [RETRY-MESSAGE] Error:', error);
+    return res.status(500).json({
+      success: false,
+      code: 'SERVER_ERROR',
+      error: error.message || 'Internal server error',
+      message: 'حدث خطأ غير متوقع أثناء إعادة محاولة إرسال الرسالة'
+    });
+  }
+};
+
 module.exports = {
   postMessageConverstation,
   uploadFile,
   postReply,
   sendExistingImage,
   sendMediaMessage,
-  sendLocationMessage
+  sendLocationMessage,
+  retryMessage
 };

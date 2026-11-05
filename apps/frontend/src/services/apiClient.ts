@@ -794,7 +794,22 @@ class ApiClient {
   createCancelToken() {
     return axios.CancelToken.source();
   }
+
+  // Retry sending a failed conversation message (Task f508775c)
+  async retryConversationMessage<T = unknown>(
+    conversationId: string,
+    messageId: string,
+  ): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(
+      `/conversations/${conversationId}/messages/${messageId}/retry`,
+      {},
+    );
+  }
 }
 
 export const apiClient = new ApiClient();
+export const retryConversationMessage = (
+  conversationId: string,
+  messageId: string,
+) => apiClient.retryConversationMessage(conversationId, messageId);
 export default apiClient;

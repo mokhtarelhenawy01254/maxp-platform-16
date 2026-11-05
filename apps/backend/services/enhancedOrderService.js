@@ -797,6 +797,8 @@ class EnhancedOrderService {
           conversationId: conv.id,
           isFromCustomer: false,
           senderId: data.createdBy || 'system_order',
+          deliveryStatus: 'PENDING',
+          failureReason: null,
           metadata: JSON.stringify(messageMeta),
           createdAt: new Date(),
           updatedAt: new Date()
@@ -988,7 +990,11 @@ class EnhancedOrderService {
         // تحديث بيانات الـ message في الـ DB بحالة الإرسال
         await prisma.message.update({
           where: { id: savedMessage.id },
-          data: { metadata: JSON.stringify(messageMeta) }
+          data: {
+            deliveryStatus: messageMeta.deliveryStatus,
+            failureReason: messageMeta.failureReason ? messageMeta.failureReason.substring(0, 500) : null,
+            metadata: JSON.stringify(messageMeta)
+          }
         }).catch((upErr) => console.warn('⚠️ [ORDER-CONFIRMATION] Failed to update message metadata:', upErr.message));
 
         // تسجيل في مراقب الفشل

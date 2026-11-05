@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { apiClient } from '@/services/apiClient';
+import { apiClient, retryConversationMessage } from '@/services/apiClient';
 import { useSendMessage } from '@/hooks/inbox/useSendMessage';
 import type {
   InboxConversation,
@@ -466,10 +466,54 @@ export function useFacebookInboxMessageSender({
 
   const handleRetryMessage = useCallback(
     async (message: InboxMessage) => {
-      if (!message || !message.content) return;
-      await handleSendMessage(message.content);
+      if (!message || !message.id || !selectedConversation?.id) return;
+
+      // تحديث نفس العنصر في الـ cache فورياً لحالة قيد الإرسال (بدون رسالة جديدة متفائلة)
+      message.deliveryStatus = 'PENDING';
+      message.status = 'sending';
+      message.failureReason = null;
+
+      try {
+        const response = await retryConversationMessage(
+          selectedConversation.id,
+          message.id,
+        );
+        const resData = response?.data as any;
+
+        // تحديث نفس العنصر في الـ cache بنجاح
+        message.deliveryStatus = 'SENT';
+        message.status = 'sent';
+        message.failureReason = null;
+        if (resData?.data?.facebookMessageId || resData?.facebookMessageId) {
+          message.facebookMessageId =
+            resData?.data?.facebookMessageId || resData?.facebookMessageId;
+        }
+
+        loadMessages(selectedConversation.id);
+        toast.success(
+          t('conversations.messageSentSuccess', 'تم إرسال الرسالة بنجاح'),
+        );
+      } catch (error: any) {
+        console.error('Failed to retry message:', error);
+        const errMsg =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          t(
+            'conversations.messageRetryFailed',
+            'فشل إعادة إرسال الرسالة إلى فيسبوك',
+          );
+
+        // تحديث نفس العنصر في الـ cache بحالة الفشل
+        message.deliveryStatus = 'FAILED';
+        message.status = 'error';
+        message.failureReason = errMsg;
+
+        loadMessages(selectedConversation.id);
+        toast.error(errMsg);
+      }
     },
-    [handleSendMessage],
+    [selectedConversation?.id, loadMessages, t],
   );
 
   return {

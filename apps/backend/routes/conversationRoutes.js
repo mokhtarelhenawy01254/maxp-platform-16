@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const conversationController = require('../controller/conversationController');
+const messagingController = require('../controller/conversation/messagingController');
 const path = require("path")
 const fs = require("fs")
 const multer = require("multer")
@@ -78,6 +79,7 @@ router.get('/:id/messages', verifyToken.authenticateToken, verifyToken.requireCo
 
 // 🆕 Media and message management routes
 router.post('/:id/messages/media', verifyToken.authenticateToken, mediaUpload.single('file'), conversationController.sendMediaMessage);
+router.post('/:id/messages/:messageId/retry', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, messagingController.retryMessage);
 router.put('/:id/messages/:messageId', verifyToken.authenticateToken, conversationController.editMessage);
 router.put('/:id/messages/:messageId/star', verifyToken.authenticateToken, conversationController.toggleMessageStar);
 router.put('/:id/messages/:messageId/reaction', verifyToken.authenticateToken, conversationController.toggleMessageReaction);

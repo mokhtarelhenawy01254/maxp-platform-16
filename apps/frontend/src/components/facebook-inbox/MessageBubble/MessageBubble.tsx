@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect } from "react";
+import React, { memo, useState, useRef, useEffect, useMemo } from "react";
 import { Star } from "lucide-react";
 import LinkifiedText from "../../common/LinkifiedText";
 import {
@@ -82,6 +82,25 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       content: message.content,
       onCorrect,
     });
+
+    const parsedMeta = useMemo(() => {
+      if (!message.metadata) return null;
+      if (typeof message.metadata === "object") return message.metadata as any;
+      try {
+        return JSON.parse(message.metadata);
+      } catch {
+        return null;
+      }
+    }, [message.metadata]);
+
+    const deliveryStatus =
+      message.deliveryStatus || parsedMeta?.deliveryStatus || null;
+    const failureReason =
+      message.failureReason ||
+      parsedMeta?.failureReason ||
+      parsedMeta?.messengerError ||
+      parsedMeta?.facebookErrorMessage ||
+      null;
 
     useEffect(() => {
       if (!showActions) {
@@ -256,12 +275,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
               </span>
               {!isCustomer && (
                 <span className="text-xs flex items-center gap-0.5">
-                  {(message.deliveryStatus === "PENDING" || message.status === "sending") && (
+                  {(deliveryStatus === "PENDING" || message.status === "sending") && (
                     <span className="flex items-center gap-1 text-white/70" title="قيد الإرسال...">
                       <span className="animate-spin inline-block w-3 h-3 border border-white/50 border-t-white rounded-full" />
                     </span>
                   )}
-                  {(message.deliveryStatus === "SENT" || (!message.deliveryStatus && message.status === "sent")) && (
+                  {(deliveryStatus === "SENT" || (!deliveryStatus && message.status === "sent")) && (
                     <span className="text-white/90" title="تم الإرسال">✓</span>
                   )}
                   {message.status === "delivered" && (
@@ -272,8 +291,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
                       ✓✓
                     </span>
                   )}
-                  {(message.deliveryStatus === "FAILED" || message.status === "error") && (
-                    <span className="inline-flex items-center gap-1 text-amber-300 font-medium" title={message.failureReason || "فشل الإرسال"}>
+                  {(deliveryStatus === "FAILED" || message.status === "error") && (
+                    <span className="inline-flex items-center gap-1 text-amber-300 font-medium" title={failureReason || "فشل الإرسال"}>
                       <span>⚠️</span>
                     </span>
                   )}
@@ -282,11 +301,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
             </div>
 
             {/* عرض سبب الفشل وزر إعادة المحاولة للرسائل الفاشلة */}
-            {!isCustomer && (message.deliveryStatus === "FAILED" || message.status === "error") && (
+            {!isCustomer && (deliveryStatus === "FAILED" || message.status === "error") && (
               <div className="mt-2 pt-2 border-t border-red-400/30 text-xs flex flex-col gap-1.5 bg-red-950/30 -mx-2 px-2 pb-1 rounded-b-xl">
                 <div className="flex items-center gap-1 text-red-200 text-[11px] font-medium leading-tight">
                   <span>⚠️</span>
-                  <span>{message.failureReason || "فشل إرسال الرسالة إلى فيسبوك"}</span>
+                  <span>{failureReason || "فشل إرسال الرسالة إلى فيسبوك"}</span>
                 </div>
                 {onRetry && (
                   <button
