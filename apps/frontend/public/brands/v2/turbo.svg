@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <rect width="100" height="100" rx="22" fill="#FFFFFF"/>
+  <rect x="0.5" y="0.5" width="99" height="99" rx="21.5" stroke="#E2E8F0" stroke-width="1"/>
+  <g transform="translate(17, 18) scale(1.57)">
+    <path fill="#31006f" d="M40.7395 14.3436L42 7.2055H32.1241L33.3945 0H26.1799L22.226 22.3976L22.153 22.8152C21.9487 23.691 21.949 24.602 22.1539 25.4776C22.3588 26.3533 22.7628 27.17 23.3345 27.8644C23.9062 28.5589 24.6304 29.1125 25.4507 29.4822C26.2711 29.8519 27.1657 30.0279 28.0651 29.9964H37.9753L39.248 22.7865H29.3731L30.8636 14.3469L40.7395 14.3436Z"/>
+    <path fill="#e80505" d="M0 15.1196H16.7527L18 8.11963H1.24732L0 15.1196Z"/>
+  </g>
+  <text x="50" y="85" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="900" fill="#31006f" text-anchor="middle" letter-spacing="1">TURBO</text>
+</svg>

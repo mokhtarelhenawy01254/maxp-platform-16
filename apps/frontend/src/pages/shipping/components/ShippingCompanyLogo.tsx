@@ -1,3 +1,5 @@
+export const BRAND_ASSET_VERSION = '20261105';
+
 import React, { useState, useMemo } from 'react';
 
 export interface ShippingCompanyLogoProps {
@@ -49,23 +51,25 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   const slug = String(company.slug || '').trim().toLowerCase();
   const name = String(company.name || '').trim().toLowerCase();
 
+  const withVersion = (file: string) => `/brands/v2/${file}?v=${BRAND_ASSET_VERSION}`;
+
   if (key === 'TURBO' || slug.includes('turbo') || name.includes('turbo') || name.includes('تربو')) {
-    return '/brands/turbo.svg';
+    return withVersion('turbo.svg');
   }
   if (key === 'MAXP_NETWORK' || slug.includes('maxp_network') || name.includes('شبكة maxp') || name.includes('شحن على maxp')) {
-    return '/brands/maxp_network.svg';
+    return withVersion('maxp_network.svg');
   }
   if (key === 'BOSTA' || key === 'BOSTA_DEMO' || slug.includes('bosta') || name.includes('bosta') || name.includes('بوستا')) {
-    return '/brands/bosta.svg';
+    return withVersion('bosta.svg');
   }
   if (key === 'QP_EXPRESS' || key === 'QP' || slug.includes('qp') || name.includes('qp') || name.includes('كيو بي')) {
-    return '/brands/qp_express.svg';
+    return withVersion('qp_express.svg');
   }
   if (key === 'MYLERZ' || key === 'MYLERZ_DEMO' || slug.includes('mylerz') || name.includes('mylerz') || name.includes('مايلرز')) {
-    return '/brands/mylerz.svg';
+    return withVersion('mylerz.svg');
   }
   if (key === 'ARAMEX' || key === 'ARAMEX_DEMO' || slug.includes('aramex') || name.includes('aramex') || name.includes('أرامكس')) {
-    return '/brands/aramex.svg';
+    return withVersion('aramex.svg');
   }
 
   return null;
