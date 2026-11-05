@@ -14,6 +14,7 @@ import { ProposalChannelsSection } from "./components/ProposalChannelsSection";
 import { ProposalFunnelCalculator } from "./components/ProposalFunnelCalculator";
 import { ProposalSolutionSection } from "./components/ProposalSolutionSection";
 import { ProposalAgentsSection } from "./components/ProposalAgentsSection";
+import { ProposalAnalyticsSection } from "./components/ProposalAnalyticsSection";
 import { ProposalTimelineSection } from "./components/ProposalTimelineSection";
 import { ProposalPackagesSection } from "./components/ProposalPackagesSection";
 import { ProposalAcceptModal } from "./components/ProposalAcceptModal";
@@ -237,6 +238,7 @@ export default function AgencyPublicProposalPage() {
               agentOrg={proposal.agentOrg}
               toolGroups={proposal.toolGroups}
             />
+            <ProposalAnalyticsSection telemetry={proposal.telemetry} />
             {proposal.showCalculator !== false && (
               <ProposalFunnelCalculator config={proposal.funnelConfig} currency={proposal.currency} />
             )}
