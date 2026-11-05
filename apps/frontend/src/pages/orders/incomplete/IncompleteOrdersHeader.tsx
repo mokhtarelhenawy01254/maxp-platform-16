@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Settings2, BarChart3, Download, Loader2, ShoppingBag } from "lucide-react";
+import { Settings2, BarChart3, Download, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface IncompleteOrdersHeaderProps {
@@ -14,7 +14,6 @@ export const IncompleteOrdersHeader: React.FC<IncompleteOrdersHeaderProps> = ({
   exporting,
   loading,
   onExport,
-  onOpenBulkConvert,
 }) => {
   const { t } = useTranslation();
 
@@ -30,17 +29,6 @@ export const IncompleteOrdersHeader: React.FC<IncompleteOrdersHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {onOpenBulkConvert && (
-          <button
-            type="button"
-            onClick={onOpenBulkConvert}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            <span>تحويل إلى قيد الانتظار</span>
-          </button>
-        )}
-
         <Link
           to="/settings/orders?tab=incomplete"
           className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-2xs hover:bg-muted/50 active:scale-[0.98] transition-all"
