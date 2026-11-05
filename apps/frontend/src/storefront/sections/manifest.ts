@@ -776,6 +776,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
         { value: "benefit-ribbon", label: "شريط مزايا حريمي" },
         { value: "sale-signal", label: "شريط خصومات حريمي" },
         { value: "butcher-proof-marquee", label: "ماركيه ضمانات جزارة Premium" },
+        { value: "easyorders-black-bar", label: "شريط أسود (EasyOrders)" },
       ],
     fields: [
       { key: "badge", label: "شارة العرض", type: "text", placeholder: "عرض خاص" },
@@ -941,6 +942,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "catalog-pills", label: "حبوب أقسام ناعمة" },
       { value: "retail-category-tiles", label: "بلاطات أقسام مباشرة" },
       { value: "pastel-category-lane", label: "مسار أقسام باستيل" },
+      { value: "easyorders-circles", label: "دوائر الفئات (EasyOrders)" },
       { value: "fragrance-ledger", label: "دفتر العائلات العطرية" },
       { value: "butcher-cut-map", label: "خريطة تقطيعات جزارة Premium" },
       { value: "elessi-merch-panels", label: "ألواح Elessi البيعية" },

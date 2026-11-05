@@ -275,11 +275,11 @@
       "sections": [
         {
           "type": "promo-strip",
-          "variant": "sale-signal",
+          "variant": "easyorders-black-bar",
           "settings": {
             "badge": "عرض",
-            "message": "تخفيضات على بعض المنتجات",
-            "saleLabel": "حالي"
+            "message": "تخفيضات كبيرة تصل إلى 60% على بعض المنتجات",
+            "saleLabel": "عرض"
           }
         },
         {
@@ -307,10 +307,10 @@
         },
         {
           "type": "featured-collections",
-          "variant": "catalog-pills",
+          "variant": "easyorders-circles",
           "settings": {
             "title": "فئات المنتجات",
-            "subtitle": "اختار القسم"
+            "subtitle": "استعرض جميع فئات المنتجات في متجرنا"
           }
         },
         {

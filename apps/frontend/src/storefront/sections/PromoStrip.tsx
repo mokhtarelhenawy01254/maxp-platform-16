@@ -54,6 +54,14 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
     : '';
   const chips = [saleLabel, shippingLabel, returnLabel].filter(Boolean);
 
+  if (rawVariant === 'easyorders-black-bar') {
+    return (
+      <div className="bg-neutral-900 py-2 text-center text-[11px] font-semibold text-white md:text-xs">
+        {message}
+      </div>
+    );
+  }
+
   if (isButcherProofMarquee) {
     return (
       <section className="relative overflow-hidden border-y border-[#37312c] bg-[#080706] text-[#f4ead8]">
