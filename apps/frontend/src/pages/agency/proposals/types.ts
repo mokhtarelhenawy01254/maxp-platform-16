@@ -95,12 +95,56 @@ export interface ProposalAgent {
   job: string;
   steps: string[];
   kpi?: string;
+  /** تشغيل / نمو / إدارة — used to group the org chart. */
+  layer?: string;
+  /** Shown as a badge when the agent replies around the clock. */
+  alwaysOn?: boolean;
 }
 
 export interface ProposalTool {
   name: string;
   purpose: string;
   owner?: string;
+}
+
+/** A stage of the engagement: what we focus on, what we do, what it produces. */
+export interface ProposalGrowthPhase {
+  name: string;
+  window: string;
+  focus: string;
+  actions: string[];
+  outcome: string;
+}
+
+/** Why the relationship keeps paying off — the renewal ladder, not a lock-in. */
+export interface ProposalRetention {
+  headline: string;
+  steps: { title: string; detail: string }[];
+  terms: string[];
+}
+
+/** One week of the content calendar. */
+export interface ProposalContentWeek {
+  week: string;
+  theme: string;
+  reels: string;
+  posts: string;
+  stories: string;
+  goal: string;
+}
+
+/** How many agents run the academy, and who watches them. */
+export interface ProposalAgentOrg {
+  headline: string;
+  total: number;
+  layers: { name: string; count: number; detail: string }[];
+  oversight: string;
+}
+
+/** A group of platform modules that ships together. */
+export interface ProposalToolGroup {
+  name: string;
+  items: string[];
 }
 
 export interface ProposalPackage {
@@ -154,6 +198,12 @@ export interface AgencyProposal {
   contentPlan?: ProposalContentPlan;
   agents?: ProposalAgent[];
   tools?: ProposalTool[];
+  /** How the engagement runs month to month, and why it keeps earning renewal. */
+  growthPhases?: ProposalGrowthPhase[];
+  retention?: ProposalRetention;
+  contentWeeks?: ProposalContentWeek[];
+  agentOrg?: ProposalAgentOrg;
+  toolGroups?: ProposalToolGroup[];
   /** The ROI simulator is opt-in: only meaningful once real CPC/CPL data exists. */
   showCalculator?: boolean;
   /** One line next to the packages: total outlay, validity, what is not included. */

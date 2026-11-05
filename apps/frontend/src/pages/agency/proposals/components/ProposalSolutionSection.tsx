@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, Sparkles, Layers, ArrowLeft } from "lucide-react";
+import { Check } from "lucide-react";
 import { ProposalSolutionModule, ProposalWorkstream } from "../types";
 import { Band, SectionTitle, Lead, Marker, stripParens } from "./ProposalUi";
 
@@ -34,7 +34,7 @@ export const ProposalSolutionSection: React.FC<ProposalSolutionSectionProps> = (
   if (items.length === 0) return null;
 
   return (
-    <Band tone="graphite" id="workstreams">
+    <Band tone="black" id="workstreams">
       <div className="space-y-4 max-w-3xl pb-10 border-b border-white/10">
         <Marker>خطة العمل والتسليمات التنفيذية</Marker>
         <SectionTitle>

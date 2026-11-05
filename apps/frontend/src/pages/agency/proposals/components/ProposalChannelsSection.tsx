@@ -1,10 +1,11 @@
 import React from "react";
-import { ProposalChannel, ProposalContentPlan } from "../types";
+import { ProposalChannel, ProposalContentPlan, ProposalContentWeek } from "../types";
 import { Band, SectionTitle, Lead, Marker, money } from "./ProposalUi";
 
 interface ProposalChannelsSectionProps {
   channels?: ProposalChannel[];
   contentPlan?: ProposalContentPlan;
+  contentWeeks?: ProposalContentWeek[];
   currency?: string;
 }
 
@@ -17,16 +18,18 @@ const BAR_COLORS = ["#FFD368", "#E06A3B", "#5AA9C4", "#9BC17A", "#B78FD6"];
 export const ProposalChannelsSection: React.FC<ProposalChannelsSectionProps> = ({
   channels,
   contentPlan,
+  contentWeeks,
   currency = "ج.م",
 }) => {
   const hasChannels = channels && channels.length > 0;
   const hasContent = contentPlan && (contentPlan.pillars?.length || contentPlan.monthly?.length);
-  if (!hasChannels && !hasContent) return null;
+  const hasWeeks = contentWeeks && contentWeeks.length > 0;
+  if (!hasChannels && !hasContent && !hasWeeks) return null;
 
   const total = hasChannels ? channels!.reduce((sum, c) => sum + c.budget, 0) : 0;
 
   return (
-    <Band tone="black" id="channels">
+    <Band tone="graphite" id="channels">
       <div className="space-y-4 max-w-3xl pb-8 border-b border-white/10">
         <Marker>خطة الاستقطاب والقنوات</Marker>
         <SectionTitle>كل جنيه في الميزانية — على أي قناة، وبإيه، وليه</SectionTitle>
@@ -147,6 +150,45 @@ export const ProposalChannelsSection: React.FC<ProposalChannelsSectionProps> = (
               )}
             </div>
           </div>
+
+          {hasWeeks && (
+            <div className="pt-10 mt-2 border-t border-white/10 overflow-x-auto">
+              <div className="flex items-baseline justify-between gap-4 pb-4 flex-wrap">
+                <h4 className="text-base font-black text-white">تقويم شهر كامل — أسبوع بأسبوع</h4>
+                <span className="text-[11px] text-white/40">نفس الخطة تتكرر كل شهر بثيمة مختلفة</span>
+              </div>
+              <table className="w-full min-w-[720px] text-right">
+                <thead>
+                  <tr className="text-[11px] uppercase tracking-wider text-white/45 border-b border-white/10">
+                    <th className="py-3 pr-2 font-bold">الأسبوع</th>
+                    <th className="py-3 font-bold">الثيمة</th>
+                    <th className="py-3 font-bold">ريلز</th>
+                    <th className="py-3 font-bold">بوستات</th>
+                    <th className="py-3 font-bold">ستوري</th>
+                    <th className="py-3 font-bold">الهدف</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {contentWeeks!.map((week, idx) => (
+                    <tr key={idx} className="align-top">
+                      <td className="py-3 pr-2 whitespace-nowrap">
+                        <span className="font-mono text-xs font-bold text-[#FFD368] tabular-nums">
+                          {week.week}
+                        </span>
+                      </td>
+                      <td className="py-3 text-xs font-bold text-white/90 max-w-[220px] leading-relaxed">
+                        {week.theme}
+                      </td>
+                      <td className="py-3 text-xs text-white/70 leading-relaxed max-w-[200px]">{week.reels}</td>
+                      <td className="py-3 text-xs text-white/70 leading-relaxed max-w-[170px]">{week.posts}</td>
+                      <td className="py-3 text-xs text-white/55 tabular-nums whitespace-nowrap">{week.stories}</td>
+                      <td className="py-3 text-xs text-white/60 leading-relaxed max-w-[180px]">{week.goal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </Band>

@@ -8,6 +8,7 @@ import { ProposalHero } from "./components/ProposalHero";
 import { ProposalBrandBar } from "./components/ProposalBrandBar";
 import { ProposalAuditSection } from "./components/ProposalAuditSection";
 import { ProposalTargetsSection } from "./components/ProposalTargetsSection";
+import { ProposalGrowthSection } from "./components/ProposalGrowthSection";
 import { ProposalChannelsSection } from "./components/ProposalChannelsSection";
 import { ProposalFunnelCalculator } from "./components/ProposalFunnelCalculator";
 import { ProposalSolutionSection } from "./components/ProposalSolutionSection";
@@ -168,6 +169,9 @@ export default function AgencyPublicProposalPage() {
             <button onClick={() => scrollTo("targets")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
               التارجت
             </button>
+            <button onClick={() => scrollTo("growth")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
+              خطة النمو
+            </button>
             <button onClick={() => scrollTo("channels")} className="px-2.5 py-1 rounded hover:text-white hover:bg-white/5 transition-colors">
               القنوات
             </button>
@@ -241,10 +245,14 @@ export default function AgencyPublicProposalPage() {
         {/* 3. Commitment ladder — 400 children, month by month */}
         <ProposalTargetsSection targets={proposal.targets} currency={proposal.currency} />
 
-        {/* 4. Channels, media allocation and the content engine */}
+        {/* 4. Growth stages and the renewal ladder */}
+        <ProposalGrowthSection phases={proposal.growthPhases} retention={proposal.retention} />
+
+        {/* 5. Channels, media allocation and the content engine */}
         <ProposalChannelsSection
           channels={proposal.channels}
           contentPlan={proposal.contentPlan}
+          contentWeeks={proposal.contentWeeks}
           currency={proposal.currency}
         />
 
@@ -255,7 +263,12 @@ export default function AgencyPublicProposalPage() {
         />
 
         {/* 6. AI agents and the tooling that runs them */}
-        <ProposalAgentsSection agents={proposal.agents} tools={proposal.tools} />
+        <ProposalAgentsSection
+          agents={proposal.agents}
+          tools={proposal.tools}
+          agentOrg={proposal.agentOrg}
+          toolGroups={proposal.toolGroups}
+        />
 
         {/* 7. ROI simulator — opt-in, only once real CPC/CPL data exists */}
         {proposal.showCalculator !== false && (
