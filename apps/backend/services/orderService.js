@@ -3039,6 +3039,26 @@ class OrderService {
             this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId, { stage: targetStage }).catch(turboGuestErr => {
               console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in updateGuestOrderStatus for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
             });
+          } else {
+            // Also check if this is a custom status mapping to CONFIRMED or ready stages
+            try {
+              const prisma = this.getPrisma();
+              const customStatusConfig = await prisma.orderStatusConfig.findFirst({
+                where: { companyId, code: status, statusType: 'order', isActive: true }
+              });
+              const mapped = String(customStatusConfig?.mapsToSystem || '').trim().toUpperCase();
+              if (mapped === 'CONFIRMED') {
+                this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId, { stage: 'ON_CONFIRM' }).catch(turboGuestErr => {
+                  console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in custom mapped guest order for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
+                });
+              } else if (readyStatusCodes.includes(mapped)) {
+                this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId, { stage: 'ON_READY' }).catch(turboGuestErr => {
+                  console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in custom mapped guest order for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
+                });
+              }
+            } catch (customMapErr) {
+              console.warn(`⚠️ [TURBO-AUTO-GUEST-BG] Failed to resolve custom status mapping for guest ${updatedGuestOrder.orderNumber}:`, customMapErr.message);
+            }
           }
 
           if (status === 'CONFIRMED' || status === 'PROCESSING') {

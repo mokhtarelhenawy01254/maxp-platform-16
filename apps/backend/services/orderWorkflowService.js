@@ -555,7 +555,7 @@ class OrderWorkflowService {
             const targetStatusCode = String(request.toStatus?.code || apprStored || '').trim().toUpperCase();
             const targetStatusMapped = String(request.toStatus?.mapsToSystem || '').trim().toUpperCase();
             const isConfirmedApproval = targetStatusCode === 'CONFIRMED' || targetStatusMapped === 'CONFIRMED';
-            const isReadyApproval = readyStatusCodes.includes(targetStatusCode) || readyStatusCodes.includes(targetStatusMapped);
+            const isReadyApproval = READY_STATUS_CODES.includes(targetStatusCode) || READY_STATUS_CODES.includes(targetStatusMapped);
 
             if (isConfirmedApproval || isReadyApproval) {
                 try {
