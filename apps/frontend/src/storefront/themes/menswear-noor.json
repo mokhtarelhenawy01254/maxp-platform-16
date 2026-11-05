@@ -310,7 +310,35 @@
           "variant": "easyorders-circles",
           "settings": {
             "title": "فئات المنتجات",
-            "subtitle": "استعرض جميع فئات المنتجات في متجرنا"
+            "subtitle": "استعرض جميع فئات المنتجات في متجرنا",
+            "collections": [
+              {
+                "title": "قمصان",
+                "image": "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=قمصان"
+              },
+              {
+                "title": "بناطيل",
+                "image": "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=بناطيل"
+              },
+              {
+                "title": "جاكيتات",
+                "image": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=جاكيتات"
+              },
+              {
+                "title": "أحذية",
+                "image": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=أحذية"
+              },
+              {
+                "title": "إكسسوارات",
+                "image": "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=إكسسوارات"
+              }
+            ],
+            "preferRuntimeCategories": false
           }
         },
         {

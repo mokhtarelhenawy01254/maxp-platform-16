@@ -306,7 +306,35 @@
           "variant": "easyorders-circles",
           "settings": {
             "title": "فئات المنتجات",
-            "subtitle": "استعرض جميع فئات المنتجات في متجرنا"
+            "subtitle": "استعرض جميع فئات المنتجات في متجرنا",
+            "collections": [
+              {
+                "title": "حقائب يد",
+                "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=حقائب يد"
+              },
+              {
+                "title": "كروسات",
+                "image": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=كروسات"
+              },
+              {
+                "title": "ظهر",
+                "image": "https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=ظهر"
+              },
+              {
+                "title": "محافظ",
+                "image": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=محافظ"
+              },
+              {
+                "title": "إكسسوارات",
+                "image": "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=إكسسوارات"
+              }
+            ],
+            "preferRuntimeCategories": false
           }
         },
         {

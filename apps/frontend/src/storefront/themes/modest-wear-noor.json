@@ -306,7 +306,35 @@
           "variant": "easyorders-circles",
           "settings": {
             "title": "فئات المنتجات",
-            "subtitle": "استعرض جميع فئات المنتجات في متجرنا"
+            "subtitle": "استعرض جميع فئات المنتجات في متجرنا",
+            "collections": [
+              {
+                "title": "عبايات",
+                "image": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=عبايات"
+              },
+              {
+                "title": "طرح",
+                "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=طرح"
+              },
+              {
+                "title": "أطقم",
+                "image": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=أطقم"
+              },
+              {
+                "title": "فساتين",
+                "image": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=فساتين"
+              },
+              {
+                "title": "إكسسوارات",
+                "image": "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80",
+                "link": "/shop?category=إكسسوارات"
+              }
+            ],
+            "preferRuntimeCategories": false
           }
         },
         {
