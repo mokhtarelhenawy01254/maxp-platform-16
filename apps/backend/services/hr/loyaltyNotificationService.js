@@ -56,11 +56,11 @@ async function sendWhatsAppMessage(companyId, phone, text) {
  */
 function buildExpiryReminderText({ customerName, expiringPoints, daysLeft, deepLink }) {
     const name = customerName && customerName.trim() ? customerName.trim() : '';
-    const greeting = name ? مرحباً  / Hello  : 'مرحباً / Hello';
+    const greeting = name ? `مرحباً ${name} / Hello ${name}` : 'مرحباً / Hello';
     const points = Number(expiringPoints) || 0;
     const link = deepLink || '';
 
-    const ar = لديك  نقطة ستنتهي صلاحيتها خلال  أيام. افتح المتجر عبر الرابط لتستخدم خصمك قبل الفوات: ;
+    const ar = `لديك ${points} نقطة ستنتهي صلاحيتها خلال ${daysLeft} أيام. افتح المتجر عبر الرابط لتستخدم خصمك قبل الفوات: ${link}`;
     const en = `You have ${points} point(s) expiring in ${daysLeft} day(s). Open the store via the link to use your discount before it expires: ${link}`;
 
     return `${greeting}\n\n${ar}\n\n${en}`;
