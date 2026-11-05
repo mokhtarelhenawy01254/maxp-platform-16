@@ -8,6 +8,7 @@ import {
   Loader2,
   ShoppingBag,
   RotateCw,
+  Zap,
 } from "lucide-react";
 import ConvertIncompleteOrdersModal, {
   ConvertSummary,
@@ -18,6 +19,7 @@ interface OrderSettingsApiResponse {
   data?: {
     incompleteOrderLostAfterHours?: string | number;
     showIncompleteCartsInOrders?: boolean;
+    autoConvertIncompleteToPending?: boolean;
     [key: string]: any;
   };
 }
@@ -33,6 +35,7 @@ const MAX_HOURS = 720;
 export default function IncompleteOrdersSettings() {
   const [hours, setHours] = useState<number>(24);
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
+  const [autoConvertIncomplete, setAutoConvertIncomplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -62,6 +65,9 @@ export default function IncompleteOrdersSettings() {
         }
         setShowIncompleteInOrders(
           Boolean(response.data.data.showIncompleteCartsInOrders)
+        );
+        setAutoConvertIncomplete(
+          Boolean(response.data.data.autoConvertIncompleteToPending)
         );
       }
     } catch (error) {
@@ -99,10 +105,14 @@ export default function IncompleteOrdersSettings() {
       const response = await apiClient.put<OrderSettingsApiResponse>("/order-settings", {
         incompleteOrderLostAfterHours: hours,
         showIncompleteCartsInOrders: showIncompleteInOrders,
+        autoConvertIncompleteToPending: autoConvertIncomplete,
       });
 
       if (response.data?.success) {
-        tToast.success("IncompleteOrdersSettings.success_save_8fed");
+        toast.success("تم حفظ إعدادات الطلبات غير المكتملة بنجاح");
+        if (autoConvertIncomplete) {
+          toast.info("تم تفعيل التحويل التلقائي: يتم فحص ونقل السلال غير المكتملة مباشرة إلى تابة قيد الانتظار");
+        }
         fetchSettings();
         fetchSummary();
       }
@@ -150,11 +160,18 @@ export default function IncompleteOrdersSettings() {
             جاهز برقم هاتف: <strong className="text-emerald-500">{readyToConvertCount.toLocaleString()}</strong>
           </span>
         </div>
-        <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground text-xs">
+        <div className="flex flex-wrap items-center gap-3 font-mono tabular-nums text-muted-foreground text-xs">
           <span>
-            عرض السلال بقائمة الطلبات:{" "}
+            عرض السلال بالطلبات:{" "}
             <strong className="text-foreground">
               {showIncompleteInOrders ? "مفعل" : "معطل"}
+            </strong>
+          </span>
+          <span className="text-border">|</span>
+          <span className="flex items-center gap-1.5">
+            التحويل التلقائي لقيد الانتظار:{" "}
+            <strong className={autoConvertIncomplete ? "text-emerald-500 font-bold" : "text-muted-foreground"}>
+              {autoConvertIncomplete ? "مفعل تلقائياً" : "معطل"}
             </strong>
           </span>
         </div>
@@ -204,11 +221,11 @@ export default function IncompleteOrdersSettings() {
             </div>
           </div>
 
-          {/* Toggle Switch */}
+          {/* Toggle Switch: دمج وعرض السلال في جدول الطلبات */}
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border/70 bg-muted/15 p-3.5">
             <div>
               <p className="text-xs font-semibold text-foreground">
-                دمج وععرض السلال غير المكتملة في جدول الطلبات الرئيسي
+                دمج وعرض السلال غير المكتملة في جدول الطلبات الرئيسي
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 تظهر السلال المتروكة جنباً إلى جنب مع الطلبات المكتملة لسهولة الفلترة وتعيينها لفريق خدمة العملاء
@@ -225,56 +242,96 @@ export default function IncompleteOrdersSettings() {
             </label>
           </div>
 
-          {/* ⚡ تحويل الطلبات غير المكتملة إلى تابة قيد الانتظار */}
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-4 space-y-3.5 shadow-2xs">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          {/* ⚡ تحويل الطلبات غير المكتملة إلى تابة «قيد الانتظار» مع مفتاح تفعيل/تعطيل */}
+          <div className={`rounded-xl border transition-all p-4.5 space-y-4 shadow-2xs ${
+            autoConvertIncomplete
+              ? "border-emerald-500/50 bg-emerald-500/5 dark:bg-emerald-950/25 ring-1 ring-emerald-500/20"
+              : "border-border/70 bg-muted/10"
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400">
-                  <ShoppingBag className="h-4 w-4" />
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+                  autoConvertIncomplete
+                    ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                    : "bg-muted border-border/80 text-muted-foreground"
+                }`}>
+                  <Zap className={`h-5 w-5 ${autoConvertIncomplete ? "animate-pulse" : ""}`} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-xs sm:text-sm font-bold text-foreground">
                       تحويل الطلبات غير المكتملة إلى تابة «قيد الانتظار»
                     </h3>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      autoConvertIncomplete
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                        : "bg-muted text-muted-foreground border-border/80"
+                    }`}>
+                      {autoConvertIncomplete ? "مفعل تلقائياً" : "غير مفعل"}
+                    </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      تسميع فوري بالجدول
+                      تسميع مباشر في تجهيز الطلبات
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                    تحويل السلال المتروكة المتوفر بها رقم هاتف العميل إلى طلبات فعلية رسمية بحالة «قيد الانتظار» PENDING لتسمع وتظهر مباشرة داخل تابة قيد الانتظار بجدول الطلبات الرئيسي لمتابعتها وتأكيدها.
+                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed max-w-2xl">
+                    عند تفعيل هذا الخيار، يتم نقل وتحويل أي سلة متروكة (متوفر بها رقم هاتف العميل) تلقائياً وبشكل دوري ومباشر إلى طلبات فعلية رسمية بحالة «قيد الانتظار» PENDING لتسمع وتظهر داخل تابة قيد الانتظار بجدول الطلبات لتجهيزها ومتابعتها بدون الحاجة للتحويل اليدوي.
                   </p>
                 </div>
               </div>
 
-              {/* العداد اللحظي المطابق لجدول الطلبات غير المكتملة */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start sm:self-auto shrink-0">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-background border border-border/70 text-foreground tabular-nums shadow-2xs">
-                  <span
-                    className={`inline-block w-2.5 h-2.5 rounded-full ${
-                      totalIncompleteCount > 0
-                        ? "bg-emerald-500 animate-pulse"
-                        : "bg-muted-foreground/40"
-                    }`}
-                  />
-                  {summaryLoading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  ) : (
-                    <span>{totalIncompleteCount.toLocaleString()} طلب غير مكتمل</span>
-                  )}
+              {/* زر التفعيل / التعطيل (Toggle Switch) */}
+              <div className="flex items-center justify-between sm:justify-end gap-3 self-stretch sm:self-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40 shrink-0">
+                <div className="text-right sm:text-left">
+                  <span className={`block text-xs font-bold font-mono ${
+                    autoConvertIncomplete ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                  }`}>
+                    {autoConvertIncomplete ? "مفعل" : "غير مفعل"}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground">
+                    {autoConvertIncomplete ? "التحويل مستمر كل دقيقة" : "التحويل متوقف"}
+                  </span>
                 </div>
-                {readyToConvertCount > 0 && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    <span>{readyToConvertCount.toLocaleString()} برقم هاتف</span>
-                  </div>
-                )}
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={autoConvertIncomplete}
+                    onChange={() => setAutoConvertIncomplete((prev) => !prev)}
+                    className="peer sr-only"
+                  />
+                  <div className="h-6 w-11 rounded-full bg-muted border border-border/80 after:absolute after:left-[3px] after:top-[3px] after:h-4.5 after:w-4.5 after:rounded-full after:bg-muted-foreground after:transition-all peer-checked:bg-emerald-600 peer-checked:after:translate-x-full peer-checked:after:bg-white" />
+                </label>
               </div>
             </div>
 
-            {/* تفاصيل وتفعيل التحويل المتطابقة مع صفحة /orders/incomplete */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-emerald-500/20 text-xs">
+            {/* بانر حالة التفعيل اللحظية */}
+            {autoConvertIncomplete ? (
+              <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 text-xs flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                  </span>
+                  <span>
+                    <strong>نظام التحويل التلقائي نشط:</strong> السلال المتروكة التي تحتوي على رقم هاتف تتحول تلقائياً كل دقيقة إلى تابة «قيد الانتظار».
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded">
+                  مزامنة دورية PENDING ⚡
+                </span>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-lg border border-border/60 bg-muted/20 text-muted-foreground text-xs flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground/40 shrink-0" />
+                <span>
+                  التحويل التلقائي معطل حالياً. قم بتفعيل المفتاح أعلاه ثم اضغط «حفظ الإعدادات» لتحويل السلال غير المكتملة تلقائياً لقيد الانتظار.
+                </span>
+              </div>
+            )}
+
+            {/* تفاصيل العدادات المتطابقة مع صفحة /orders/incomplete وزر التحويل اليدوي الفوري */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/50 text-xs">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground font-mono text-[11px] tabular-nums">
-                <span>إجمالي: <strong className="text-foreground">{totalIncompleteCount.toLocaleString()}</strong></span>
+                <span>إجمالي غير المكتملة: <strong className="text-foreground">{totalIncompleteCount.toLocaleString()}</strong></span>
                 <span className="text-border">|</span>
                 <span>نشطة: <strong className="text-foreground">{activeCount.toLocaleString()}</strong></span>
                 <span className="text-border">|</span>
@@ -307,10 +364,11 @@ export default function IncompleteOrdersSettings() {
                 type="button"
                 onClick={() => setShowConvertModal(true)}
                 disabled={summaryLoading || totalIncompleteCount === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-semibold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 text-xs font-semibold shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] cursor-pointer"
+                title="تحويل يدوي دفعي فوري مع تخصيص الخيارات"
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
-                <span>تحويل الطلبات إلى قيد الانتظار</span>
+                <span>تحويل يدوي فوري الآن ({readyToConvertCount.toLocaleString()})</span>
               </button>
             </div>
           </div>
@@ -338,7 +396,7 @@ export default function IncompleteOrdersSettings() {
         </div>
       </div>
 
-      {/* نافذة التحويل المنبثقة */}
+      {/* نافذة التحويل المنبثقة للتحويل اليدوي */}
       <ConvertIncompleteOrdersModal
         isOpen={showConvertModal}
         onClose={() => setShowConvertModal(false)}

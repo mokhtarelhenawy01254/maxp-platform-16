@@ -118,8 +118,7 @@ export const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
                   totalCancelled={(order as any).totalCancelled}
                   isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
                   orderStatus={order.status}
-                  interactive
-                  allowManualEdit
+                  interactive={false}
                   variant="badge"
                   size="xs"
                 />
@@ -153,8 +152,7 @@ export const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
             totalCancelled={(order as any).totalCancelled}
             isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
             orderStatus={order.status}
-            interactive
-            allowManualEdit
+            interactive={false}
             variant="badge"
             size="sm"
           />

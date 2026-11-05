@@ -1423,6 +1423,21 @@ const updateAnyOrderStatus = async ({
         });
       });
 
+      // 🚚 Auto-Create Turbo shipment when transitioning to READY_TO_SHIP if Turbo is configured
+      const readyStatusCodes = ['READY', 'READY_TO_SHIP', 'READY_FOR_SHIPPING'];
+      if (readyStatusCodes.includes(normalizedStatus) && !order.turboTrackingNumber && !order.turboShipmentId) {
+        setImmediate(async () => {
+          try {
+            const orderService = require('../services/orderService');
+            await orderService.autoCreateTurboShipmentForOrder(order.id, companyId, { stage: 'ON_READY', force: true }).catch(err => {
+              console.warn(`[BULK-STATUS-TURBO] Turbo create failed for ${order.id}:`, err.message);
+            });
+          } catch (err) {
+            console.warn('[BULK-STATUS-TURBO] Error:', err.message);
+          }
+        });
+      }
+
       return { orderType: 'regular', order: updatedOrder };
     }
 
@@ -2763,257 +2778,12 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
   }
 });
 
-// قفل تزامن للطلبات غير المكتملة أثناء التحويل لمنع التكرار
-const activeIncompleteCartConversions = new Set();
-
-/**
- * 🔄 الدالة المركزية لتحويل سلة غير مكتملة إلى طلب حقيقي بقائمة "قيد الانتظار"
- */
-async function convertSingleIncompleteCart({
-  companyId,
-  cartId,
-  user,
-  forceConvert = false,
-  cart = null,
-  overrideBody = {},
-}) {
-  const conversionKey = `${companyId}:${cartId}`;
-  if (activeIncompleteCartConversions.has(conversionKey)) {
-    return {
-      success: false,
-      code: 'CONVERSION_IN_PROGRESS',
-      message: 'جاري تحويل هذا الطلب بالفعل، يرجى الانتظار...'
-    };
-  }
-  activeIncompleteCartConversions.add(conversionKey);
-
-  try {
-    // 🛡️ فحص عدم تكرار التحويل (Idempotency) في حال تم تحويل السلة مسبقاً
-    const alreadyConverted = await getSharedPrismaClient().cartConversionLog.findFirst({
-      where: { companyId, cartId }
-    });
-    if (alreadyConverted) {
-      return {
-        success: false,
-        code: 'CART_ALREADY_CONVERTED',
-        message: 'تم تحويل هذه السلة إلى طلب بالفعل مسبقاً',
-        orderNumber: alreadyConverted.orderNumber,
-        orderId: alreadyConverted.orderId
-      };
-    }
-
-    if (!cart) {
-      cart = await getSharedPrismaClient().guestCart.findFirst({
-        where: { companyId, cartId }
-      });
-    }
-
-    if (!cart) {
-      return {
-        success: false,
-        code: 'CART_NOT_FOUND',
-        message: 'السلة غير موجودة'
-      };
-    }
-
-    let checkoutData = {};
-    try {
-      checkoutData = cart.checkoutData
-        ? (typeof cart.checkoutData === 'string' ? JSON.parse(cart.checkoutData) : cart.checkoutData)
-        : {};
-    } catch (e) {
-      checkoutData = {};
-    }
-
-    let items = [];
-    try {
-      items = cart.items
-        ? (typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items)
-        : [];
-    } catch (e) {
-      items = [];
-    }
-
-    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || 'عميل';
-    const guestPhone = checkoutData.guestPhone || checkoutData.customerPhone || checkoutData.phoneNumber || checkoutData.mobileNumber || checkoutData.phone || checkoutData.mobile || '';
-    const guestEmail = checkoutData.guestEmail || checkoutData.customerEmail || checkoutData.emailAddress || checkoutData.email || '';
-    const governorate = checkoutData.governorate || checkoutData.city || checkoutData.gov || '';
-    const address = checkoutData.address || checkoutData.street || checkoutData.addressLine1 || '';
-    const notes = checkoutData.notes || '';
-
-    if (!guestPhone) {
-      return {
-        success: false,
-        code: 'MISSING_PHONE',
-        message: 'رقم الهاتف مطلوب لتحويل الطلب'
-      };
-    }
-
-    // 🛡️ فحص ما إذا كان العميل لديه طلب مسجل بالفعل خلال آخر 48 ساعة لمنع تكرار الأوردرات والشحنات
-    if (!forceConvert && guestPhone) {
-      const cleanPhone = String(guestPhone)
-        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
-        .replace(/\D/g, '')
-        .slice(-10);
-
-      if (cleanPhone && cleanPhone.length >= 8) {
-        const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
-        const existingOrder = await getSharedPrismaClient().order.findFirst({
-          where: {
-            companyId,
-            customerPhone: { contains: cleanPhone },
-            createdAt: { gte: since48h },
-            status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'] }
-          },
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            total: true,
-            createdAt: true,
-            customerName: true
-          },
-          orderBy: { createdAt: 'desc' }
-        });
-
-        if (existingOrder) {
-          return {
-            success: false,
-            code: 'EXISTING_CUSTOMER_ORDER',
-            message: `تنبيه: هذا العميل لديه طلب مسجل بالفعل برقم (${existingOrder.orderNumber}) بحالة [${existingOrder.status}] بتاريخ ${new Date(existingOrder.createdAt).toLocaleDateString('ar-EG')}. هل تريد المتابعة وإنشاء طلب مكرر؟`,
-            existingOrder: {
-              id: existingOrder.id,
-              orderNumber: existingOrder.orderNumber,
-              status: existingOrder.status,
-              total: existingOrder.total,
-              createdAt: existingOrder.createdAt
-            }
-          };
-        }
-      }
-    }
-
-    const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
-    const cartAttribution = extractAttributionFromCheckoutData(checkoutData);
-
-    const couponCode = overrideBody?.couponCode || checkoutData.couponCode || checkoutData.coupon?.code || cart.couponCode || undefined;
-    const discountAmount = overrideBody?.discountAmount !== undefined
-      ? Number(overrideBody.discountAmount)
-      : (checkoutData.discountAmount !== undefined
-        ? Number(checkoutData.discountAmount)
-        : (cart.discountAmount !== undefined ? Number(cart.discountAmount) : undefined));
-    const appliedDiscount = overrideBody?.appliedDiscount || checkoutData.appliedDiscount || undefined;
-    const bundleItems = overrideBody?.bundleItems || checkoutData.bundleItems || cart.bundleItems || undefined;
-
-    const resolvedItems = (Array.isArray(overrideBody?.items) && overrideBody.items.length > 0)
-      ? overrideBody.items
-      : items;
-
-    const orderPayload = {
-      guestName,
-      guestPhone,
-      guestEmail,
-      paymentMethod: checkoutData.paymentMethod || 'cod',
-      notes,
-      shippingAddress: {
-        governorate,
-        city: checkoutData.city || governorate,
-        street: address,
-        address,
-        addressLine1: address,
-      },
-      ...(resolvedItems && resolvedItems.length > 0 ? { items: resolvedItems } : {}),
-      ...(couponCode ? { couponCode } : {}),
-      ...(discountAmount !== undefined && !isNaN(discountAmount) ? { discountAmount } : {}),
-      ...(appliedDiscount ? { appliedDiscount } : {}),
-      ...(bundleItems ? { bundleItems } : {}),
-      ...(cartAttribution ? { attribution: cartAttribution } : {}),
-      _skipPixel: true,
-    };
-
-    const axios = require('axios');
-    const internalPort = process.env.PORT || 3007;
-
-    const createResponse = await axios.post(`http://127.0.0.1:${internalPort}/api/v1/public/orders?companyId=${encodeURIComponent(companyId)}`, orderPayload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cart-id': cartId,
-        'x-admin-convert': 'true',
-      },
-      timeout: 30000,
-    });
-
-    const result = createResponse.data;
-
-    if (result?.success && result?.data) {
-      let conversionLogError = null;
-      try {
-        const employee = user || {};
-        await getSharedPrismaClient().cartConversionLog.create({
-          data: {
-            cartId,
-            orderId: result.data?.id || null,
-            orderNumber: result.data?.orderNumber || null,
-            employeeId: employee.id || null,
-            employeeName: employee.name || employee.username || employee.email || null,
-            companyId,
-            cartValue: total,
-            governorate: governorate || null,
-            channel: 'admin-convert',
-          },
-        });
-      } catch (logError) {
-        console.warn('⚠️ [ORDERS] Conversion log failed, retrying once:', logError.message);
-        try {
-          const employee = user || {};
-          await getSharedPrismaClient().cartConversionLog.create({
-            data: {
-              cartId,
-              orderId: result.data?.id || null,
-              orderNumber: result.data?.orderNumber || null,
-              employeeId: employee.id || null,
-              employeeName: employee.name || employee.username || employee.email || null,
-              companyId,
-              cartValue: total,
-              governorate: governorate || null,
-              channel: 'admin-convert',
-            },
-          });
-        } catch (retryError) {
-          console.error('❌ [ORDERS] Failed to record cart conversion log after retry:', retryError.message);
-          conversionLogError = retryError.message;
-        }
-      }
-
-      return {
-        success: true,
-        data: result.data,
-        orderNumber: result.data?.orderNumber,
-        orderId: result.data?.id,
-        cartId,
-        total,
-        customerName: guestName,
-        customerPhone: guestPhone,
-        ...(conversionLogError ? { conversionLogFailed: true, conversionLogError } : {}),
-      };
-    }
-
-    return {
-      success: false,
-      code: 'CREATE_FAILED',
-      message: result?.message || 'فشل إنشاء الطلب'
-    };
-  } catch (error) {
-    const detail = error.response?.data?.message || error.response?.data?.error || error.message;
-    return {
-      success: false,
-      code: 'CREATE_ERROR',
-      message: detail || 'خطأ أثناء إنشاء الطلب'
-    };
-  } finally {
-    activeIncompleteCartConversions.delete(conversionKey);
-  }
-}
+// ⚡ استيراد خدمة التحويل للطلبات غير المكتملة
+const {
+  convertSingleIncompleteCart,
+  autoConvertCompanyIncompleteCarts,
+  activeIncompleteCartConversions
+} = require('../services/orders/incompleteCartAutoConvertService');
 
 // 📊 ملخص السلال غير المكتملة الجاهزة للتحويل إلى قيد الانتظار
 router.get('/incomplete/convert-summary', verifyToken.authenticateToken, async (req, res) => {
@@ -5022,7 +4792,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         id: order.orderNumber,
         orderNumber: order.orderNumber,
         customerId: order.customerId || order.customer?.id || null,
-        customerRating: order.customer?.customerRating || healthStats.customerRating || 'UNKNOWN',
+        customerRating: healthStats.customerRating || order.customer?.customerRating || 'UNKNOWN',
         customerSuccessScore: healthStats.healthScore,
         customerDeliveryRate: healthStats.deliveryRate,
         healthScore: healthStats.healthScore,
@@ -5039,7 +4809,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           lastName: order.customer.lastName,
           phone: order.customer.phone,
           email: order.customer.email,
-          customerRating: order.customer.customerRating || healthStats.customerRating || 'UNKNOWN',
+          customerRating: healthStats.customerRating || order.customer.customerRating || 'UNKNOWN',
           healthScore: healthStats.healthScore,
           deliveryRate: healthStats.deliveryRate ?? order.customer.deliveryRate ?? null,
           totalDelivered: healthStats.totalDelivered,
@@ -5257,7 +5027,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         id: order.orderNumber,
         orderNumber: order.orderNumber,
         customerId: matchedCust?.id || null,
-        customerRating: matchedCust?.customerRating || healthStats.customerRating || 'UNKNOWN',
+        customerRating: healthStats.customerRating || matchedCust?.customerRating || 'UNKNOWN',
         customerSuccessScore: healthStats.healthScore,
         customerDeliveryRate: healthStats.deliveryRate,
         healthScore: healthStats.healthScore,
@@ -5274,7 +5044,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           lastName: '',
           phone: order.guestPhone,
           email: order.guestEmail,
-          customerRating: matchedCust.customerRating || healthStats.customerRating || 'UNKNOWN',
+          customerRating: healthStats.customerRating || matchedCust.customerRating || 'UNKNOWN',
           healthScore: healthStats.healthScore,
           deliveryRate: healthStats.deliveryRate ?? matchedCust.deliveryRate ?? null,
           totalDelivered: healthStats.totalDelivered,
@@ -8624,8 +8394,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           : `عميل جديد (${Math.round(deliveryRate)}% استلام) — لم يكتمل الحد الأدنى للتقييم (3 طلبات)`;
       }
 
-      const storedCustomerRating = order?.customer?.customerRating || guestCustomer?.customerRating;
-      formattedOrder.customerRating = storedCustomerRating || ratingTier;
+      formattedOrder.customerRating = ratingTier;
       formattedOrder.customerSuccessScore = score;
       formattedOrder.customerDeliveryRate = deliveryRate;
       formattedOrder.healthScore = score;
@@ -8638,7 +8407,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       formattedOrder.totalOrdersCount = total;
 
       if (formattedOrder.customer) {
-        formattedOrder.customer.customerRating = storedCustomerRating || ratingTier;
+        formattedOrder.customer.customerRating = ratingTier;
         formattedOrder.customer.healthScore = score;
         formattedOrder.customer.deliveryRate = deliveryRate;
         formattedOrder.customer.totalDelivered = Math.floor(delivered);
@@ -9605,8 +9374,12 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
           }
         }
 
-        const isOverride = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(req.user?.role) ||
-          ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(req.user?.effectiveRole);
+        const isOverride = [
+          'OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'ADMIN', 'MANAGER', 'AGENT', 'تجهيز', 'STAFF', 'EMPLOYEE', 'USER'
+        ].includes(req.user?.role) ||
+        [
+          'OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'ADMIN', 'MANAGER', 'AGENT', 'تجهيز', 'STAFF', 'EMPLOYEE', 'USER'
+        ].includes(req.user?.effectiveRole);
 
         const updateResult = await updateAnyOrderStatus({
           orderIdentifier: id,

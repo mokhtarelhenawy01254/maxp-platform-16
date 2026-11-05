@@ -27,6 +27,14 @@ async function runOrderStatusAutoChange() {
   isRunning = true;
 
   try {
+    // ⚡ فحص التحويل التلقائي للسلال غير المكتملة إلى تابة قيد الانتظار للشركات المفعلة
+    try {
+      const { runAutoConvertIncompleteCartsJob } = require('../services/orders/incompleteCartAutoConvertService');
+      await runAutoConvertIncompleteCartsJob();
+    } catch (autoErr) {
+      console.warn('[ORDER-STATUS-AUTO-CHANGE-CRON] Auto-convert incomplete carts job warning:', autoErr.message);
+    }
+
     const prisma = getSharedPrismaClient();
 
     // Fetch all active rules

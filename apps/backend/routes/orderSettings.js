@@ -81,6 +81,9 @@ router.get('/', async (req, res) => {
         const disableAutoDiscountsWithoutApproval = companySettings.disableAutoDiscountsWithoutApproval !== undefined
             ? Boolean(companySettings.disableAutoDiscountsWithoutApproval)
             : true;
+        const autoConvertIncompleteToPending = companySettings.autoConvertIncompleteToPending !== undefined
+            ? Boolean(companySettings.autoConvertIncompleteToPending)
+            : false;
 
         res.json({
             success: true,
@@ -94,6 +97,7 @@ router.get('/', async (req, res) => {
                 duplicateSettings,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
+                autoConvertIncompleteToPending,
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
@@ -125,6 +129,7 @@ router.put('/', async (req, res) => {
             duplicateOrderWindowMinutes,
             incompleteOrderLostAfterHours,
             showIncompleteCartsInOrders,
+            autoConvertIncompleteToPending,
             minimumOrderEnabled,
             minimumOrderAmount,
             minimumOrderMessage,
@@ -331,7 +336,8 @@ router.put('/', async (req, res) => {
             exchangeReturnPolicy !== undefined ||
             requireDiscountApproval !== undefined ||
             disableAutoDiscountsWithoutApproval !== undefined ||
-            normalizedDuplicateSettings !== null
+            normalizedDuplicateSettings !== null ||
+            autoConvertIncompleteToPending !== undefined
         ) {
             try {
                 const company = await prisma.company.findUnique({
@@ -341,6 +347,23 @@ router.put('/', async (req, res) => {
                 const companySettings = typeof company?.settings === 'string'
                     ? JSON.parse(company.settings || '{}')
                     : (company?.settings || {});
+
+                if (autoConvertIncompleteToPending !== undefined) {
+                    const parsedAutoConvert = parseBooleanSetting(autoConvertIncompleteToPending);
+                    companySettings.autoConvertIncompleteToPending = parsedAutoConvert;
+                    if (parsedAutoConvert === true) {
+                        try {
+                            const { autoConvertCompanyIncompleteCarts } = require('../services/orders/incompleteCartAutoConvertService');
+                            setImmediate(() => {
+                                autoConvertCompanyIncompleteCarts(companyId, { limit: 200, user: req.user, force: true })
+                                    .then(r => console.log('[ORDER-SETTINGS] Immediate auto-conversion for ' + companyId + ': ' + r.convertedCount + ' converted to PENDING'))
+                                    .catch(err => console.warn('[ORDER-SETTINGS] Immediate auto-conversion error:', err.message));
+                            });
+                        } catch (e) {
+                            console.warn('[ORDER-SETTINGS] Could not trigger immediate auto-convert:', e.message);
+                        }
+                    }
+                }
 
                 if (exchangeReturnPolicy !== undefined) {
                     savedPolicy = {
@@ -430,6 +453,7 @@ router.put('/', async (req, res) => {
                 duplicateSettings: effectiveDuplicateSettings,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
+                autoConvertIncompleteToPending: Boolean(savedCompanySettings?.autoConvertIncompleteToPending),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,

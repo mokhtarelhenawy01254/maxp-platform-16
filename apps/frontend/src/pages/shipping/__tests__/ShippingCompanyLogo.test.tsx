@@ -17,7 +17,7 @@ describe("ShippingCompanyLogo Component", () => {
     render(<ShippingCompanyLogo company={company} size={40} />);
     const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute("src")).toBe("/brands/turbo.svg");
+    expect(img.getAttribute("src")).toContain("/brands/v2/turbo.svg");
     expect(img.getAttribute("alt")).toBe("تربو ون كوريير");
     expect(img.getAttribute("width")).toBe("40");
     expect(img.getAttribute("height")).toBe("40");
@@ -32,7 +32,7 @@ describe("ShippingCompanyLogo Component", () => {
     render(<ShippingCompanyLogo company={company} size={40} />);
     const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute("src")).toBe("/brands/bosta.svg");
+    expect(img.getAttribute("src")).toContain("/brands/v2/bosta.svg");
   });
 
   it("renders official SVG brand logo for QP_EXPRESS", () => {
@@ -44,7 +44,7 @@ describe("ShippingCompanyLogo Component", () => {
     render(<ShippingCompanyLogo company={company} size={40} />);
     const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute("src")).toBe("/brands/qp_express.svg");
+    expect(img.getAttribute("src")).toContain("/brands/v2/qp_express.svg");
   });
 
   it("renders official SVG brand logo for MAXP_NETWORK", () => {
@@ -56,7 +56,7 @@ describe("ShippingCompanyLogo Component", () => {
     render(<ShippingCompanyLogo company={company} size={40} />);
     const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute("src")).toBe("/brands/maxp_network.svg");
+    expect(img.getAttribute("src")).toContain("/brands/v2/maxp_network.svg");
   });
 
   it("prioritizes custom logoUrl from settings for custom carriers", () => {
