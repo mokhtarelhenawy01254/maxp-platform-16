@@ -835,6 +835,8 @@
   "filterDescription": "اختصر النتائج بدون ما تخرج من الشاشة.",
   "closeFilters": "إغلاق الفلاتر",
   "source": "المصدر",
+  "sourceAffiliateDirect": "مسوق مباشر",
+  "sourceAffiliateRegular": "مسوق عادي",
   "showUnassignedOrders": "عرض الطلبات غير الموزعة فقط",
   "reset": "إعادة ضبط",
   "showResults": "عرض النتائج",
