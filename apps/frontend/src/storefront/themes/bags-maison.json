@@ -48,7 +48,8 @@
       "95 15% 22%",
       "95 25% 40%",
       "45 30% 96%"
-    ]
+    ],
+    "imageUrl": "/assets/themes/bags-maison/preview.png"
   },
   "header": {
     "variant": "floating-dark",

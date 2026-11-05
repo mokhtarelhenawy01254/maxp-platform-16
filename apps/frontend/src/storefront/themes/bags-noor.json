@@ -45,7 +45,8 @@
       "20 40% 30%",
       "0 70% 48%",
       "0 0% 100%"
-    ]
+    ],
+    "imageUrl": "/assets/themes/bags-noor/preview.png"
   },
   "header": {
     "variant": "utility-frame",

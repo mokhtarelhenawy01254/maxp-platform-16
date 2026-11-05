@@ -48,7 +48,8 @@
       "20 30% 24%",
       "20 40% 42%",
       "40 30% 96%"
-    ]
+    ],
+    "imageUrl": "/assets/themes/shoes-maison/preview.png"
   },
   "header": {
     "variant": "floating-dark",

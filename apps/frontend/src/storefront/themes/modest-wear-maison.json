@@ -48,7 +48,8 @@
       "30 25% 20%",
       "30 35% 45%",
       "40 35% 96%"
-    ]
+    ],
+    "imageUrl": "/assets/themes/modest-wear-maison/preview.png"
   },
   "header": {
     "variant": "floating-dark",

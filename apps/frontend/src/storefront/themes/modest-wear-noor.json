@@ -45,7 +45,8 @@
       "160 45% 25%",
       "160 55% 45%",
       "0 0% 100%"
-    ]
+    ],
+    "imageUrl": "/assets/themes/modest-wear-noor/preview.png"
   },
   "header": {
     "variant": "utility-frame",
