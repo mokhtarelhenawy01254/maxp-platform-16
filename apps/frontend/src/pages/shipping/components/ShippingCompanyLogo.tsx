@@ -32,17 +32,20 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   if (company.settings) {
     if (typeof company.settings === 'string') {
       try {
-        parsedSettings = JSON.parse(company.settings);
+        const parsed = JSON.parse(company.settings);
+        if (parsed && typeof parsed === 'object') {
+          parsedSettings = parsed;
+        }
       } catch {}
-    } else if (typeof company.settings === 'object') {
+    } else if (typeof company.settings === 'object' && company.settings !== null) {
       parsedSettings = company.settings;
     }
   }
 
-  if (parsedSettings.logoUrl && typeof parsedSettings.logoUrl === 'string' && parsedSettings.logoUrl.trim()) {
+  if (parsedSettings?.logoUrl && typeof parsedSettings.logoUrl === 'string' && parsedSettings.logoUrl.trim()) {
     return parsedSettings.logoUrl.trim();
   }
-  if (parsedSettings.logo && typeof parsedSettings.logo === 'string' && parsedSettings.logo.trim()) {
+  if (parsedSettings?.logo && typeof parsedSettings.logo === 'string' && parsedSettings.logo.trim()) {
     return parsedSettings.logo.trim();
   }
 
