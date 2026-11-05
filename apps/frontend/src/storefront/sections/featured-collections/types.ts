@@ -102,6 +102,7 @@ export type FeaturedCollectionsVariant =
   | 'floating-bubbles'
   | 'occasion-ribbon'
   | 'travel-postcards'
+  | 'easyorders-circles'
   | 'legacy-circle-categories';
 
 export const FEATURED_COLLECTIONS_FAMILY = 'FeaturedCollections';
@@ -140,6 +141,7 @@ export const normalizeFeaturedCollectionsVariant = (
       value === 'floating-bubbles' ||
       value === 'occasion-ribbon' ||
       value === 'travel-postcards' ||
+      value === 'easyorders-circles' ||
       value === 'legacy-circle-categories') &&
     hasRegisteredVariant(FEATURED_COLLECTIONS_FAMILY, value)
   ) {
