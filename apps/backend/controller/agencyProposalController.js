@@ -239,7 +239,8 @@ module.exports = {
             }
 
             const agencyData = parseAgencyData(company?.settings);
-            const subdomain = company?.slug || 'h2m';
+            let subdomain = company?.slug || 'h2m';
+            if (subdomain.startsWith('h2m')) subdomain = 'h2m';
 
             // Auto-seed CodeTreps if proposals is empty for current company
             if (!agencyData.proposals || agencyData.proposals.length === 0) {
@@ -259,7 +260,7 @@ module.exports = {
                         name: company?.name || 'H2M Media Agency',
                         logo: company?.logo || null,
                         subdomain,
-                        customDomain: company?.customDomain || null,
+                        customDomain: null,
                     }
                 }
             });
@@ -493,11 +494,13 @@ module.exports = {
 
                 if (match) {
                     foundProposal = match;
+                    let compSub = matchedCompany.slug || requestedSubdomain || 'h2m';
+                    if (compSub.startsWith('h2m')) compSub = 'h2m';
                     agencyInfo = {
                         name: matchedCompany.name || 'H2M Media Agency',
                         logo: matchedCompany.logo || null,
-                        subdomain: matchedCompany.slug || requestedSubdomain || 'h2m',
-                        customDomain: matchedCompany.customDomain || null,
+                        subdomain: compSub,
+                        customDomain: null,
                     };
                 }
             }
@@ -527,11 +530,13 @@ module.exports = {
                     if (match) {
                         foundProposal = match;
                         matchedCompany = comp;
+                        let compSub = comp.slug || 'h2m';
+                        if (compSub.startsWith('h2m')) compSub = 'h2m';
                         agencyInfo = {
                             name: comp.name || 'H2M Media Agency',
                             logo: comp.logo || null,
-                            subdomain: comp.slug || 'h2m',
-                            customDomain: comp.customDomain || null,
+                            subdomain: compSub,
+                            customDomain: null,
                         };
                         break;
                     }

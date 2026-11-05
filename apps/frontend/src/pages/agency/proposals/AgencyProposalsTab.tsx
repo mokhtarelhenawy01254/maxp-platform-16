@@ -6,6 +6,7 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  FileEdit,
   FileText,
   MessageCircle,
   Plus,
@@ -17,6 +18,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { apiClient } from "../../../services/apiClient";
 import { AgencyProposal } from "./types";
+import { AgencyProposalEditorModal } from "./components/AgencyProposalEditorModal";
 
 interface AgencyProposalsTabProps {
   onNavigateToPreview?: (slug: string) => void;
@@ -26,6 +28,8 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
   const [proposals, setProposals] = useState<AgencyProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
+  const [editingProposal, setEditingProposal] = useState<AgencyProposal | null>(null);
+  const [editorModalOpen, setEditorModalOpen] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<{
     name: string;
     subdomain: string;
@@ -94,14 +98,13 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
   };
 
   const getPublicUrl = (slug: string) => {
-    const sub = agencyInfo.subdomain || "h2m";
+    let sub = agencyInfo.subdomain || "h2m";
+    if (sub === "h2m-1" || sub.startsWith("h2m")) sub = "h2m";
     const hostname = window.location.hostname;
     if (hostname.includes("localhost") || hostname.includes("127.0.0.1")) {
       return `${window.location.origin}/proposal/${slug}?subdomain=${sub}`;
     }
-    if (agencyInfo.customDomain) {
-      return `https://${agencyInfo.customDomain}/proposal/${slug}`;
-    }
+    // Always use active, SSL-verified wildcard subdomain on maxp.online
     const hostParts = hostname.split(".");
     const rootDomain = hostParts.length >= 2 ? hostParts.slice(-2).join(".") : "maxp.online";
     return `https://${sub}.${rootDomain}/proposal/${slug}`;
@@ -266,6 +269,20 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={() => {
+                      setEditingProposal(p);
+                      setEditorModalOpen(true);
+                    }}
+                    className="h-8 text-xs font-bold gap-1 px-2.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/30"
+                    title="تعديل الخطة"
+                  >
+                    <FileEdit className="size-3" />
+                    <span>تعديل</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => copyProposalLink(p.slug)}
                     className="h-8 text-xs font-bold gap-1 px-2.5"
                     title="نسخ الرابط"
@@ -307,6 +324,19 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
           ))}
         </div>
       )}
+
+      {/* Live In-App Proposal Editor Modal */}
+      <AgencyProposalEditorModal
+        open={editorModalOpen}
+        onOpenChange={setEditorModalOpen}
+        proposal={editingProposal}
+        onSaved={(updated) => {
+          setProposals((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+          if (editingProposal?.id === updated.id) {
+            setEditingProposal(updated);
+          }
+        }}
+      />
     </div>
   );
 };
