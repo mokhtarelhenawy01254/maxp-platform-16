@@ -595,6 +595,66 @@ const handlePlatformSeo = async (req, res, next) => {
     }
   }
 
+  // Proposal deal rooms: per-client title / description / image for WhatsApp and social previews
+  if (isProposalRoute) {
+    try {
+      const slug = req.path
+        .replace(/^\/agency\/client-portal\//, "")
+        .replace(/^\/agency\/proposal\//, "")
+        .replace(/^\/proposal\//, "")
+        .split("/")[0]
+        .trim();
+
+      let company = req.company || null;
+      if (!company) {
+        const { getSharedPrismaClientAsync } = require("../services/sharedDatabase");
+        const prisma = await getSharedPrismaClientAsync();
+        const host = String(req.headers.host || "").split(":")[0];
+        const sub = host.split(".")[0];
+        company = await prisma.company.findFirst({
+          where: { slug: { startsWith: sub, mode: "insensitive" }, isActive: true },
+          select: { id: true, name: true, settings: true, slug: true },
+        });
+      }
+
+      const rawSettings = company && company.settings;
+      const settings = typeof rawSettings === "string" ? JSON.parse(rawSettings || "{}") : rawSettings || {};
+      const agencyData = settings.agencyData || {};
+      const proposal = (agencyData.proposals || []).find(
+        (p) => p && (p.slug === slug || p.shareToken === slug || p.id === slug)
+      );
+
+      if (proposal) {
+        const indexHtml = await loadIndexHtml();
+        if (indexHtml) {
+          const origin = `${req.protocol}://${req.get("host")}`;
+          const imagePath = proposal.ogImage || proposal.clientLogo;
+          const image = imagePath
+            ? imagePath.startsWith("http")
+              ? imagePath
+              : `${origin}${imagePath}`
+            : PLATFORM_OG_COVER;
+          const title = `${proposal.clientName || "خطة"} — خطة التشغيل والنمو | ${company?.name || "H2M"}`;
+          const description = String(proposal.ogDescription || proposal.executiveSummary || "").slice(0, 180);
+          const html = injectSeoTags(indexHtml, {
+            title,
+            description,
+            image,
+            url: `${origin}${req.originalUrl}`,
+            noIndex: false,
+            type: "website",
+          });
+          res.set("Content-Type", "text/html; charset=utf-8");
+          res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+          return res.status(200).send(html);
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️ [PLATFORM-SEO] proposal meta failed:", err?.message);
+    }
+    return next();
+  }
+
   const routeSeo = resolveRouteSeo(req.path);
   if (!routeSeo) return next();
 

@@ -47,10 +47,11 @@ function createCodeTrepsTemplate(companyId) {
         shareToken,
         slug: 'codetreps-growth-os',
         /** Bumped whenever the operational plan blocks are restructured. */
-        planVersion: 4,
+        planVersion: 5,
         clientName: 'CodeTreps (كود تريبس)',
         clientBrand: 'CodeTreps Kids Academy',
         clientLogo: '/brand/codetreps-logo.png',
+        ogImage: '/og/codetreps.png',
         contactPerson: 'م. باسم فخري & م. فراس السويركي',
         phone: '01507766462',
         email: 'info@codetreps.com',
@@ -602,6 +603,17 @@ function createCodeTrepsTemplate(companyId) {
                 lead: '٣ مسارات نادرة في الإسكندرية: برمجة، بيزنس، وإلقاء. الفكرة قوية — بس الطريق اللي بيوصلها لأولياء الأمور فيه ٤ خروق.',
                 blocks: [
                     {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'إصلاح صفحات الموقع المعطلة (برامج، أسئلة، كورسات)', owner: 'H2M', when: 'أول أسبوع' },
+                            { task: 'تركيب التتبع: بيكسل + CAPI', owner: 'H2M', when: 'أول أسبوع' },
+                            { task: 'تشغيل صفحة حجز الورشة وتحديد المستوى', owner: 'H2M', when: 'أول أسبوع' },
+                            { task: 'تجهيز فريق الاستقبال على شاشة الحجوزات', owner: 'الأكاديمية', when: 'أسبوع ١' },
+                            { task: 'تثبيت عدد المدرسين والقاعات والمواعيد', owner: 'الأكاديمية', when: 'قبل الإطلاق' }
+                        ]
+                    },
+                    {
                         type: 'bullets',
                         title: 'الخروق الأربعة',
                         items: [
@@ -631,6 +643,17 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'مش صفحة — نظام تشغيل للأكاديمية',
                 lead: 'كل حاجة بتحصل جوه مكان واحد: من أول إعلان لحد تجديد الاشتراك.',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'ربط رقم واتساب الأكاديمية بالمنصة', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'تشغيل صندوق الرسائل الموحّد (واتساب + ماسنجر + إنستجرام)', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'إعداد بوابة أولياء الأمور بالاسم واللوجو', owner: 'H2M', when: 'أسبوع ٢' },
+                            { task: 'ربط الدفع الإلكتروني والفواتير', owner: 'H2M', when: 'أسبوع ٢' },
+                            { task: 'تدريب الفريق على الشاشات والصلاحيات', owner: 'الأكاديمية', when: 'أسبوع ٢' }
+                        ]
+                    },
                     { type: 'text', text: 'ماكس بي إيه؟ مش موقع — دي منصة تشغيل للأكاديمية: صفحة الحجز، ورسايل واتساب وماسنجر وإنستجرام في شاشة واحدة، ووكلاء بيردوا ويأكدوا المواعيد، وفواتير ودفع إلكتروني، وصفحة لأولياء الأمور، وتقارير أرقام. يعني بدل ٦ أدوات منفصلة ودفتر وإكسل — مكان واحد.' },
                     {
                         type: 'table',
@@ -673,6 +696,16 @@ function createCodeTrepsTemplate(companyId) {
                 lead: 'عرض قوي + قناة رخيصة + تحويل سريع + استكمال. لو واحدة ضعيفة، الباقي بيضيع.',
                 blocks: [
                     {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'توزيع الميزانية على ٣ منصات (ميتا/تيك توك/جوجل)', owner: 'H2M', when: 'كل أسبوع' },
+                            { task: 'اختبار زاوية إعلانية جديدة', owner: 'H2M', when: 'كل أسبوع' },
+                            { task: 'مراجعة أرقام الأسبوع (حجز/حضور/اشتراك/استكمال)', owner: 'H2M + الأكاديمية', when: 'كل أحد' },
+                            { task: 'إيقاف القناة اللي مش بتجيب وتقوية اللي بتجيب', owner: 'H2M', when: 'آخر الشهر' }
+                        ]
+                    },
+                    {
                         type: 'table',
                         columns: ['المحرك', 'أطفال جدد شهريًا'],
                         rows: [
@@ -713,6 +746,17 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'بنبيع زيارة — مش بنبيع كورس',
                 lead: 'العرض واحد: ورشة مجانية + اختبار تحديد مستوى داخل المقر. الطفل يجرب، ولي الأمر يشوف المكان، ويتكلم مع المؤسسين.',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'كتابة ٤ زوايا إعلانية', owner: 'H2M', when: 'قبل الإطلاق' },
+                            { task: 'تصوير ٣ فيديوهات لكل زاوية', owner: 'H2M + الأكاديمية', when: 'أسبوع ١' },
+                            { task: 'إطلاق ٤ حملات على ميتا وتيك توك وجوجل', owner: 'H2M', when: 'أسبوع ٢' },
+                            { task: 'ربط كل حجز بالإعلان اللي جابه', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'مراجعة أسبوعية وتوقيف الإعلان الضعيف', owner: 'H2M', when: 'كل أسبوع' }
+                        ]
+                    },
                     { type: 'text', text: 'الجمهور: أمهات وآباء ٣٠–٤٨ في الإسكندرية — سموحة، رشدي، لوران، كفر عبده، سيدي جابر، الشاطبي، الأزاريطة، فليمنج.' },
                     {
                         type: 'bullets',
@@ -744,6 +788,17 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'خط إنتاج — مش شغل فرد',
                 lead: '٣٠٠ فيديو في الشهر. بيخرجوا من يوم عادي في الأكاديمية، مش من جلسة تصوير منفصلة.',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'جدول تصوير أسبوعي لكل مدرس (٥ دقايق من الحصة)', owner: 'الأكاديمية', when: 'كل أسبوع' },
+                            { task: 'يوم تصوير شهري داخل الأكاديمية', owner: 'H2M', when: 'كل شهر' },
+                            { task: 'مونتاج ٣ فيديوهات «أبطال» أسبوعيًا', owner: 'H2M', when: 'كل أسبوع' },
+                            { task: 'نشر ١٠ مقاطع يوميًا على القنوات', owner: 'H2M', when: 'يومي' },
+                            { task: 'مراجعة أي فيديو جاب حجز', owner: 'H2M', when: 'كل أحد' }
+                        ]
+                    },
                     {
                         type: 'table',
                         columns: ['العنصر', 'إزاي'],
@@ -793,6 +848,16 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'كل قناة ليها دور — مش كلها بتعمل نفس الحاجة',
                 blocks: [
                     {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'تحديث بروفايل خرائط جوجل بالصور والمواعيد', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'تجميع قايمة واتساب من متابعي الأكاديمية', owner: 'الأكاديمية', when: 'أسبوع ٢' },
+                            { task: 'اختيار ٢–٥ مؤثرين محليين شهريًا', owner: 'H2M', when: 'كل شهر' },
+                            { task: 'اتفاق موافقة مكتوب قبل أي تصوير', owner: 'H2M', when: 'قبل التصوير' }
+                        ]
+                    },
+                    {
                         type: 'table',
                         columns: ['القناة', 'دورها'],
                         rows: [
@@ -826,6 +891,16 @@ function createCodeTrepsTemplate(companyId) {
                 lead: 'مش جزء من التزامنا ولا من التارجت. حاجة إضافية بتجيب ٢٠ طفل شهريًا فوق الإعلانات، وبتطلع محتوى حقيقي بيقنع.',
                 blocks: [
                     {
+                        type: 'tasks',
+                        title: 'المهام (اختيارية)',
+                        items: [
+                            { task: 'تجهيز عرض الورشة والمواد', owner: 'H2M', when: 'عند الطلب' },
+                            { task: 'فتح الباب مع مدرستين', owner: 'الأكاديمية', when: 'عند الطلب' },
+                            { task: 'تصوير الورشة وتقطيعها محتوى', owner: 'H2M', when: 'يوم الورشة' },
+                            { task: 'تحويل الحضور لحجز تقييم', owner: 'الأكاديمية', when: 'نفس اليوم' }
+                        ]
+                    },
+                    {
                         type: 'bullets',
                         title: 'شكل الورشة',
                         items: [
@@ -853,6 +928,16 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'الطفل اللي بينسحب — إزاي نخلّيه يكمّل',
                 lead: 'مش لأن التعليم وحش — لأن مفيش حاجة بتفكّره إنه كمّل حاجة.',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'تقرير أسبوعي لكل طفل لولي الأمر', owner: 'H2M + الأكاديمية', when: 'كل أسبوع' },
+                            { task: 'متابعة أي طفل غاب ٣ مرات', owner: 'الأكاديمية', when: 'فورًا' },
+                            { task: 'مكالمة تجديد قبل نهاية المستوى بأسبوعين', owner: 'الأكاديمية', when: 'قبل النهاية' },
+                            { task: 'يوم Pitch في نهاية كل مستوى', owner: 'الأكاديمية', when: 'آخر المستوى' }
+                        ]
+                    },
                     {
                         type: 'bullets',
                         title: 'خطة الاستكمال',
@@ -899,6 +984,16 @@ function createCodeTrepsTemplate(companyId) {
                 title: 'بشري ولا ذكاء اصطناعي — وكل دور بيستخدم إيه',
                 blocks: [
                     {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'مراجعة محادثات الوكلاء وتصحيح الردود', owner: 'H2M', when: 'كل أسبوع' },
+                            { task: 'تدريب الفريق على السكربت والردود', owner: 'H2M', when: 'أسبوع ٢' },
+                            { task: 'تحديد صلاحيات كل دور على المنصة', owner: 'الأكاديمية', when: 'أسبوع ٢' },
+                            { task: 'مراجعة أداء كل وكيل بالأرقام', owner: 'H2M', when: 'كل شهر' }
+                        ]
+                    },
+                    {
                         type: 'table',
                         columns: ['الدور', 'مين', 'بيستخدم إيه', 'بيراقبه'],
                         rows: [
@@ -934,6 +1029,16 @@ function createCodeTrepsTemplate(companyId) {
                 eyebrow: 'الأدوات',
                 title: 'اللي هنشتغل بيه بالظبط',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'تفعيل اشتراكات الأدوات المطلوبة', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'بناء سكربت المونتاج الآلي والقوالب', owner: 'H2M', when: 'أسبوع ١' },
+                            { task: 'تجهيز قوالب التقارير الأسبوعية', owner: 'H2M', when: 'أسبوع ٢' },
+                            { task: 'تدريب الفريق على CapCut وماكس بي', owner: 'H2M', when: 'أسبوع ٢' }
+                        ]
+                    },
                     {
                         type: 'bullets',
                         title: 'داخل ماكس بي',
@@ -993,6 +1098,16 @@ function createCodeTrepsTemplate(companyId) {
                 eyebrow: 'المتابعة',
                 title: 'إحنا فين من ٤٠٠؟',
                 blocks: [
+                    {
+                        type: 'tasks',
+                        title: 'المهام',
+                        items: [
+                            { task: 'تقرير أسبوعي بالأرقام (جديد/ساب/نشط/حضور)', owner: 'H2M', when: 'كل أحد' },
+                            { task: 'اجتماع ٣٠ دقيقة لمراجعة الأرقام', owner: 'الطرفان', when: 'كل أسبوع' },
+                            { task: 'خطة الأسبوع الجاي بناءً على النتيجة', owner: 'H2M', when: 'بعد الاجتماع' },
+                            { task: 'قرار الميزانية والتوزيع', owner: 'الطرفان', when: 'آخر الشهر' }
+                        ]
+                    },
                     {
                         type: 'table',
                         columns: ['كل أسبوع', 'الهدف', 'الفعلي'],
@@ -1081,6 +1196,129 @@ function createCodeTrepsTemplate(companyId) {
             }
         ],
 
+        // Native MaxP Intelligence, Telemetry & SLA Matrix
+        telemetry: {
+            title: 'منظومة التقارير والقياس الذكي MaxP Telemetry Suite',
+            lead: 'بدلاً من تقارير الوكالات الورقية والوعود النظرية، نوفر لأكاديمية كود تريبس محركات قياس حية مرتبطة مباشرة بقواعد بيانات MaxP وحملات Meta وبوابة المتابعة، لتشهد كل جنيه أين صرف وكم عائداً حقق.',
+            cadence: [
+                {
+                    title: 'النبض اليومي الفوري (Daily Flash)',
+                    period: 'يومياً 9:00 م',
+                    destination: 'جروب واتساب الإدارة',
+                    description: 'ملخص أرقام اليوم: رسائل أولياء الأمور الجديدة، جلسات التقييم المؤكدة، الصرف الإعلاني، ومتوسط تكلفة التسجيل (CPL).',
+                    badge: 'نوم هادئ للإدارة'
+                },
+                {
+                    title: 'لوحة التحكم الحية في الجيب (Mobile Cockpit)',
+                    period: 'لحظياً 24/7',
+                    destination: 'تطبيق MaxP على الموبايل',
+                    description: 'شاشة حية يفتحها المدير في أي ثانية: عداد الطلاب النشطين، المجموعات المكتملة، وجدول مواعيد فرع فؤاد اليوم وغداً.',
+                    badge: 'رقابة مباشرة'
+                },
+                {
+                    title: 'التقرير الأسبوعي التنفيذي (Weekly Scorecard)',
+                    period: 'كل خميس 5:00 م',
+                    destination: 'شاشة تفاعلية + PDF فخم',
+                    description: 'تحليل قمع التحويل الأسبوعي الكامل، نسبة الحضور الفعلي بالفرع، وتحديد موعد جلسة الـ 20 دقيقة لمراجعة خطة الأسبوع القادم.',
+                    badge: 'قرارات كل 7 أيام'
+                }
+            ],
+            reports: [
+                {
+                    id: 'att',
+                    number: '01',
+                    name: 'رادار الإسناد المالي الدقيق للإعلانات',
+                    category: 'الإسناد وتتبع العائد',
+                    maxpModule: 'CampaignAttributionAnalytics',
+                    timing: 'لحظي ومباشر',
+                    channel: 'MaxP CAPI Engine',
+                    questionAnswered: 'أي إعلان وفيديو بالتحديد أتى بالطالب (أحمد) الذي دفع 2,200 ج.م في الفرع اليوم؟',
+                    metrics: ['Real CAC', 'ROAS المباشر', 'First & Last Touch Attribution', 'CPL لكل حي'],
+                    impact: 'منع هدر الميزانية في إعلانات تجلب نقرات ورسائل عشوائية دون سداد حقيقي.'
+                },
+                {
+                    id: 'fun',
+                    number: '02',
+                    name: 'قمع التحويل وتتبع مسار ولي الأمر',
+                    category: 'سلوك أولياء الأمور',
+                    maxpModule: 'StoreAnalyticsFunnel',
+                    timing: 'محدث بعد كل خطوة',
+                    channel: 'MaxP Funnel Telemetry',
+                    questionAnswered: 'أين يتوقف ولي الأمر بالتحديد بين زيارة الموقع، اختبار المستوى، وحضور فرع فؤاد؟',
+                    metrics: ['تحديد المستوى %', 'معدل حجز الموعد %', 'نسبة الحضور بالفرع %', 'معدل السداد %'],
+                    impact: 'كشف عنق الزجاجة فوراً ومعالجته خلال 24 ساعة بدلاً من التخمين وتبادل الاتهامات.'
+                },
+                {
+                    id: 'wa',
+                    number: '03',
+                    name: 'ذكاء محادثات واستقبال واتساب',
+                    category: 'كفاءة الاستقبال والرد',
+                    maxpModule: 'WhatsAppConversationAnalytics',
+                    timing: '24/7 على مدار الساعة',
+                    channel: 'MaxP WhatsApp AI',
+                    questionAnswered: 'كم ثانية يستغرق الرد على رسائل أولياء الأمور؟ وما هي أشهر اعتراضاتهم؟',
+                    metrics: ['Speed-to-lead بالثواني', 'مصفوفة الاعتراضات الشائعة', 'معدل إغلاق كل موظف', 'نسبة تأكيد الحضور'],
+                    impact: 'رفع نسبة الحضور لجلسة التقييم لـ 65%+ وخفض زمن الرد إلى أقل من 30 ثانية.'
+                },
+                {
+                    id: 'coh',
+                    number: '04',
+                    name: 'تحليل أفواج الطلاب ومضاعفة التجديد',
+                    category: 'الولاء والقيمة التراكمية',
+                    maxpModule: 'CustomerLoyaltyAnalytics',
+                    timing: 'شهري وتراكمي',
+                    channel: 'MaxP Cohort Engine',
+                    questionAnswered: 'طلاب دفعة أكتوبر، كم منهم أكمل للمستوى الثاني والثالث؟ وما هو الـ LTV الحقيقي؟',
+                    metrics: ['Retention Rate %', 'Student LTV (EGP)', 'معدل التسرب Churn', 'تنبيهات الانقطاع المبكرة'],
+                    impact: 'تنبيه مبكر قبل 10 أيام من نهاية كل مستوى للطلاب المعرضين لعدم التجديد لتداركهم فوراً.'
+                },
+                {
+                    id: 'geo',
+                    number: '05',
+                    name: 'الخريطة الجغرافية وقنوات الدفع في الإسكندرية',
+                    category: 'التوزيع المكاني والمالي',
+                    maxpModule: 'RegionAnalytics & PaymentMethodAnalytics',
+                    timing: 'أسبوعي ومجمع',
+                    channel: 'MaxP Regional Matrix',
+                    questionAnswered: 'من أي أحياء الإسكندرية يأتي الطلاب الأعلى إنفاقاً؟ وما طريقة الدفع المفضلة؟',
+                    metrics: ['توزيع أحياء الإسكندرية (فؤاد، سموحة، كفر عبده)', 'نسبة الدفع الإلكتروني (InstaPay, Cards)', 'متوسط سلة المشتريات'],
+                    impact: 'تركيز الإنفاق الإعلاني على المناطق الجغرافية الأعلى في القوة الشرائية والقرب من الفرع.'
+                }
+            ],
+            kpis: [
+                {
+                    metric: 'سرعة الرد على أولياء الأمور (Speed-to-Lead)',
+                    benchmark: 'أقل من 90 ثانية (عبر الذكاء الاصطناعي)',
+                    alertThreshold: 'أكثر من 5 دقائق',
+                    action: 'تفعيل الرد الفوري الآلي وتحويل المحادثة لأولوية قصوى لمسؤول الفرع.'
+                },
+                {
+                    metric: 'حضور جلسات التقييم المجانية (Show-up Rate)',
+                    benchmark: '60% - 75% من إجمالي المحجوزين',
+                    alertThreshold: 'أقل من 50%',
+                    action: 'إعادة ضبط توقيت رسائل التذكير على واتساب، وإرسال لوكيشن الفرع بفيديو تفصيلي.'
+                },
+                {
+                    metric: 'معدل إتمام الاشتراك بالفرع (Closing Rate)',
+                    benchmark: '40% - 55% من الحاضرين للجلسة',
+                    alertThreshold: 'أقل من 35%',
+                    action: 'مراجعة أسلوب العرض بالفرع، وتفعيل خصم الحجز الفوري أو حزمة الأخوة (Sibling Offer).'
+                },
+                {
+                    metric: 'تكلفة تسجيل الطالب الجديد (Blended CAC)',
+                    benchmark: '220 - 320 ج.م كحد أقصى',
+                    alertThreshold: 'أكثر من 420 ج.م',
+                    action: 'إيقاف الزوايا الإعلانية الضعيفة، وتدوير الفيديوهات الإبداعية، وزيادة ميزانية إعلانات التوصية.'
+                },
+                {
+                    metric: 'استبقاء الطلاب وتجديد المستويات (Retention Rate)',
+                    benchmark: '70%+ تجديد للمستوى اللاحق',
+                    alertThreshold: 'أقل من 60%',
+                    action: 'إرسال تقرير إنجاز الطفل التفاعلي بالفيديو لولي الأمر، ومكالمة متابعة خاصة من المدرب.'
+                }
+            ]
+        },
+
         // Packages / Pricing Options
         packages: [
             {
@@ -1135,6 +1373,7 @@ const OPERATIONAL_FIELDS = [
     'agentOrg',
     'tools',
     'toolGroups',
+    'telemetry',
     'commercialNote',
     'clientLogo'
 ];

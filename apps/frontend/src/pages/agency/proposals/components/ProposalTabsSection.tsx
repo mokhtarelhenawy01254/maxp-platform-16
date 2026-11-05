@@ -34,6 +34,35 @@ const Block: React.FC<{ block: ProposalTabBlock }> = ({ block }) => {
     );
   }
 
+  if (block.type === "tasks") {
+    return (
+      <div className="space-y-3">
+        {block.title && <div className="text-sm font-black text-white">{block.title}</div>}
+        <ul className="divide-y divide-white/10 border-t border-white/10">
+          {block.items.map((item, i) => (
+            <li key={i} className="py-3 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 border border-[#FFD368]/60 grid place-items-center"
+                >
+                  <span className="size-1.5 bg-[#FFD368]" />
+                </span>
+                <span className="text-sm text-white/85 leading-relaxed">{item.task}</span>
+              </div>
+              <div className="shrink-0 text-right space-y-0.5">
+                {item.owner && (
+                  <div className="text-[10px] font-mono text-[#FFD368]/90 whitespace-nowrap">{item.owner}</div>
+                )}
+                {item.when && <div className="text-[10px] text-white/40 whitespace-nowrap">{item.when}</div>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
   if (block.type === "bullets") {
     return (
       <div className="space-y-3 max-w-3xl">
@@ -94,12 +123,27 @@ const Block: React.FC<{ block: ProposalTabBlock }> = ({ block }) => {
  */
 export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }) => {
   const [activeId, setActiveId] = useState(tabs?.[0]?.id ?? "");
+  const [sheetOpen, setSheetOpen] = useState(false);
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     const node = buttons.current[activeId];
     if (node) node.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [activeId]);
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSheetOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [sheetOpen]);
 
   if (!tabs || tabs.length === 0) return null;
 
@@ -112,6 +156,22 @@ export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }
     const next = tabs[target];
     if (next) setActiveId(next.id);
   };
+
+  const renderBody = () => (
+    <>
+      <div className="space-y-4 max-w-3xl">
+        {active.eyebrow && <Marker>{active.eyebrow}</Marker>}
+        <SectionTitle>{active.title}</SectionTitle>
+        {active.lead && <Lead>{active.lead}</Lead>}
+      </div>
+
+      <div className="space-y-8 pt-2">
+        {active.blocks.map((block, idx) => (
+          <Block key={idx} block={block} />
+        ))}
+      </div>
+    </>
+  );
 
   return (
     <Band tone="black" id="plan">
@@ -156,20 +216,16 @@ export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }
           <span>
             التاب {index + 1} من {tabs.length}
           </span>
-          <span className="truncate">{active.label}</span>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="h-9 px-3 border border-white/20 text-[11px] font-bold text-white/70 hover:text-white hover:border-white/40"
+          >
+            شاشة كاملة
+          </button>
         </div>
 
-        <div className="space-y-4 max-w-3xl">
-          {active.eyebrow && <Marker>{active.eyebrow}</Marker>}
-          <SectionTitle>{active.title}</SectionTitle>
-          {active.lead && <Lead>{active.lead}</Lead>}
-        </div>
-
-        <div className="space-y-8 pt-2">
-          {active.blocks.map((block, idx) => (
-            <Block key={idx} block={block} />
-          ))}
-        </div>
+        {renderBody()}
 
         {/* Phones: one obvious way forward, never a dead end */}
         <div className="flex items-center justify-between gap-3 pt-8 border-t border-white/15">
@@ -194,6 +250,54 @@ export const ProposalTabsSection: React.FC<ProposalTabsSectionProps> = ({ tabs }
           </button>
         </div>
       </div>
+
+      {/* Full-screen sheet — same content, no page chrome around it */}
+      {sheetOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={active.label}
+          className="fixed inset-0 z-[60] bg-[#0a0a0a] overflow-y-auto"
+        >
+          <div className="sticky top-0 z-10 bg-[#0d0d0d]/95 backdrop-blur border-b border-white/10">
+            <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+              <span className="font-mono text-[11px] text-white/50 truncate">
+                {index + 1} / {tabs.length} — {active.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(false)}
+                className="h-9 px-4 border border-white/25 text-xs font-bold text-white/85"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+
+          <div className="max-w-3xl mx-auto px-5 py-8 space-y-8">
+            {renderBody()}
+
+            <div className="flex items-center justify-between gap-3 pt-6 border-t border-white/15">
+              <button
+                type="button"
+                onClick={() => go(index - 1)}
+                disabled={index === 0}
+                className="h-11 px-4 border border-white/20 text-xs font-bold text-white/80 disabled:opacity-30"
+              >
+                السابق
+              </button>
+              <button
+                type="button"
+                onClick={() => go(index + 1)}
+                disabled={index === tabs.length - 1}
+                className="h-11 px-4 bg-[#FFD368] text-black text-xs font-black disabled:opacity-30"
+              >
+                اللي بعده
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Band>
   );
 };

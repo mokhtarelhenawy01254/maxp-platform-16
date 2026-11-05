@@ -57,7 +57,8 @@ export type ProposalTabBlock =
   | { type: "note"; text: string }
   | { type: "bullets"; title?: string; items: string[]; ordered?: boolean }
   | { type: "numbers"; items: { value: string; label: string }[] }
-  | { type: "table"; columns: string[]; rows: string[][] };
+  | { type: "table"; columns: string[]; rows: string[][] }
+  | { type: "tasks"; title?: string; items: { task: string; owner?: string; when?: string }[] };
 
 /** One tab of the proposal: a part of the plan on its own. */
 export interface ProposalTab {
@@ -175,6 +176,38 @@ export interface ProposalPackage {
   features: string[];
 }
 
+export interface ProposalTelemetryReport {
+  id: string;
+  number?: string;
+  name: string;
+  category: string;
+  maxpModule: string;
+  timing: string;
+  channel: string;
+  questionAnswered: string;
+  metrics: string[];
+  impact: string;
+}
+
+export interface ProposalTelemetrySuite {
+  title?: string;
+  lead?: string;
+  cadence: {
+    title: string;
+    period: string;
+    destination: string;
+    description: string;
+    badge: string;
+  }[];
+  reports: ProposalTelemetryReport[];
+  kpis: {
+    metric: string;
+    benchmark: string;
+    alertThreshold: string;
+    action: string;
+  }[];
+}
+
 export interface AgencyProposal {
   id: string;
   shareToken: string;
@@ -208,6 +241,8 @@ export interface AgencyProposal {
   solutionModules: ProposalSolutionModule[];
   /** Optional rich scope of work. When absent the page derives it from solutionModules. */
   workstreams?: ProposalWorkstream[];
+  /** Native MaxP intelligence, reporting cadence & KPI governance suite. */
+  telemetry?: ProposalTelemetrySuite;
   /** What the client must provide for the plan to run on time. */
   clientNeeds?: string[];
   /** The whole plan as tabs — one part per tab, mobile-first. */
