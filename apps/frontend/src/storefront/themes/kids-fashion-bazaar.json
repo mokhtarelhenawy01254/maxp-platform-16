@@ -1,0 +1,421 @@
+{
+  "id": "kids-fashion-bazaar",
+  "name": "Kids Bazaar — أزياء أطفال",
+  "description": "قالب أزياء أطفال كثيف للبيع السريع: عروض، فئات، شبكة منتجات، وألوان مرحة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "268 55% 45%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "268 60% 96%",
+      "secondaryForeground": "268 55% 35%",
+      "accent": "45 95% 55%",
+      "accentForeground": "30 40% 15%",
+      "background": "0 0% 100%",
+      "foreground": "268 20% 14%",
+      "muted": "268 20% 96%",
+      "mutedForeground": "268 10% 45%",
+      "border": "268 15% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "268 20% 14%",
+      "ring": "45 95% 55%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 1px 2px hsl(220 15% 12% / .06)",
+      "hoverShadow": "0 10px 24px -12px hsl(220 15% 12% / .25)"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | KIDS BAZAAR",
+    "description": "قالب أزياء أطفال كثيف للبيع السريع: عروض، فئات، شبكة منتجات، وألوان مرحة."
+  },
+  "preview": {
+    "colors": [
+      "268 55% 45%",
+      "45 95% 55%",
+      "0 0% 100%"
+    ]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "KIDS BAZAAR",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "خصم 30% على تشكيلة الشتاء — لفترة محدودة",
+    "announcementLinkText": "تسوقي العروض",
+    "announcementLinkTo": "/sale",
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "أطقم",
+        "to": "/shop?category=sets"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "أحذية",
+        "to": "/shop?category=shoes"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ],
+    "megaMenu": {
+      "triggerLabel": "الأقسام",
+      "ctaText": "شوفي كل حاجة",
+      "ctaLink": "/shop",
+      "tabs": [
+        {
+          "label": "فساتين",
+          "title": "فساتين يومية ومناسبات",
+          "link": "/shop?category=dresses"
+        },
+        {
+          "label": "أطقم",
+          "title": "أطقم جاهزة",
+          "link": "/shop?category=sets"
+        }
+      ]
+    }
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "قالب أزياء أطفال كثيف للبيع السريع: عروض، فئات، شبكة منتجات، وألوان مرحة.",
+    "copyrightText": "© 2026 Bazaar",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "تسوقي",
+        "links": [
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "أطقم",
+            "to": "/shop?category=sets"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصلي بينا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "market-basket",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "market-checkout",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "standard"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "market-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "خصم 30%",
+            "message": "توصيل لكل المحافظات — استبدال خلال 14 يوم",
+            "saleLabel": "العرض ساري",
+            "shippingLabel": "شحن 24-72 ساعة"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "retail-direct-banner",
+          "settings": {
+            "eyebrow": "تشكيلة الأطفال",
+            "title": "كل حاجة بيبي في مكان",
+            "subtitle": "أطقم وأحذية وملابس يومية بأسعار واضحة وشحن لكل المحافظات.",
+            "ctaText": "تسوق الآن",
+            "ctaLink": "/sale",
+            "secondaryCtaText": "العروض"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "تسوق بالقسم",
+            "subtitle": "أطقم، فساتين، أحذية"
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر مبيعًا"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "title": "عروض الكومبو"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "title": "من عميلاتنا"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "bulk-savings"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    }
+  }
+}
