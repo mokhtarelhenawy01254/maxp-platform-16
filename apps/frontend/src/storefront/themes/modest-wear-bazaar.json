@@ -299,15 +299,14 @@
           "type": "promo-strip",
           "variant": "sale-signal",
           "settings": {
-            "badge": "خصم 30%",
-            "message": "على تشكيلة الشتاء — لحد آخر الكمية",
-            "saleLabel": "العرض ساري",
-            "shippingLabel": "شحن 24-72 ساعة"
+            "badge": "خصم",
+            "message": "عروض لفترة محدودة",
+            "saleLabel": "ساري"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "retail-direct-banner",
+          "variant": "graceful-banner",
           "settings": {
             "eyebrow": "تشكيلة العبايات",
             "title": "كل حاجة محتشمة في مكان",
@@ -321,22 +320,19 @@
           "type": "featured-collections",
           "variant": "retail-category-tiles",
           "settings": {
-            "title": "أقسام عبايات ومحجبات",
-            "subtitle": "اختاري القسم"
+            "title": "تسوق بالقسم",
+            "subtitle": "اختار القسم"
           }
         },
         {
           "type": "countdown-banner",
           "variant": "inline",
           "settings": {
-            "title": "العرض بينتهي خلال"
+            "heading": "العرض بينتهي"
           }
         },
         {
-          "type": "featured-products",
-          "settings": {
-            "title": "الأكثر مبيعًا"
-          }
+          "type": "featured-products"
         },
         {
           "type": "offer-bento",
@@ -351,10 +347,7 @@
         },
         {
           "type": "social-gallery",
-          "variant": "marquee",
-          "settings": {
-            "title": "من عميلاتنا"
-          }
+          "variant": "marquee"
         }
       ]
     },

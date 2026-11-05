@@ -302,9 +302,8 @@
           "variant": "benefit-ribbon",
           "settings": {
             "badge": "الموسم",
-            "message": "تشكيلة محدودة — قطعة واحدة من كل مقاس",
-            "saleLabel": "خصم حتى 25%",
-            "shippingLabel": "شحن 48 ساعة"
+            "message": "تشكيلة محدودة",
+            "saleLabel": "عرض"
           }
         },
         {
@@ -324,31 +323,23 @@
           "type": "featured-collections",
           "variant": "editorial-categories",
           "settings": {
-            "title": "اختاري منين",
-            "subtitle": "ثلاث عوالم: يومي، مناسبات، وأساسيات"
+            "title": "اختار منين",
+            "subtitle": "اختار القسم"
           }
         },
         {
-          "type": "featured-products",
-          "settings": {
-            "title": "قطع الموسم",
-            "subtitle": "مختارة بعناية"
-          }
+          "type": "featured-products"
         },
         {
           "type": "lookbook-showcase",
           "variant": "boutique-storyboard",
           "settings": {
-            "title": "اللوك بوك",
-            "subtitle": "تنسيقات كاملة بالقطع"
+            "title": "اللوك بوك"
           }
         },
         {
           "type": "reviews",
-          "variant": "editorial",
-          "settings": {
-            "title": "آراء العميلات"
-          }
+          "variant": "editorial"
         },
         {
           "type": "features-bar",

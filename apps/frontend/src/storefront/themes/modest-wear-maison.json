@@ -276,7 +276,7 @@
       "sections": [
         {
           "type": "hero-banner",
-          "variant": "wardrobe-planner",
+          "variant": "nature-breeze",
           "settings": {
             "eyebrow": "دولاب كامل",
             "title": "اختاري المناسبة… وإحنا نكمّل اللوك",
@@ -292,8 +292,7 @@
           "type": "look-planner",
           "variant": "stepper",
           "settings": {
-            "title": "خطة اللوك",
-            "subtitle": "مناسبة → قطع → مقاس"
+            "title": "خطة اللوك"
           }
         },
         {
@@ -307,21 +306,18 @@
           "type": "featured-collections",
           "variant": "gallery-columns",
           "settings": {
-            "title": "أقسام عبايات ومحجبات",
-            "subtitle": "اختاري القسم"
+            "title": "الأقسام",
+            "subtitle": "اختار القسم"
           }
         },
         {
-          "type": "featured-products",
-          "settings": {
-            "title": "قطع أساسية"
-          }
+          "type": "featured-products"
         },
         {
           "type": "lookbook-showcase",
           "variant": "standard",
           "settings": {
-            "title": "ستايلينج كامل"
+            "title": "ستايلينج"
           }
         },
         {
@@ -333,10 +329,7 @@
         },
         {
           "type": "reviews",
-          "variant": "editorial",
-          "settings": {
-            "title": "تجارب حقيقية"
-          }
+          "variant": "editorial"
         },
         {
           "type": "features-bar",

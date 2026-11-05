@@ -276,14 +276,14 @@
           "type": "promo-strip",
           "variant": "sale-signal",
           "settings": {
-            "badge": "خصم 60%",
-            "message": "توصيل لكل المحافظات — استبدال خلال 14 يوم",
-            "saleLabel": "عرض حالي"
+            "badge": "عرض",
+            "message": "تخفيضات على بعض المنتجات",
+            "saleLabel": "حالي"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "centered",
+          "variant": "style-ledger",
           "settings": {
             "eyebrow": "عروض حصرية",
             "title": "قمصان تبدأ من 249 جنيه",
@@ -298,22 +298,15 @@
           "variant": "catalog-pills",
           "settings": {
             "title": "فئات المنتجات",
-            "subtitle": "استعرض كل فئة"
+            "subtitle": "اختار القسم"
           }
         },
         {
-          "type": "featured-products",
-          "settings": {
-            "title": "الأكثر طلبًا",
-            "limit": 8
-          }
+          "type": "featured-products"
         },
         {
           "type": "featured-product",
-          "settings": {
-            "title": "بنطلون جبردين بظهر مبطن",
-            "badge": "خصم 60%"
-          }
+          "variant": "spotlight"
         },
         {
           "type": "features-bar",

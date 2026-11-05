@@ -302,14 +302,13 @@
           "variant": "benefit-ribbon",
           "settings": {
             "badge": "الموسم",
-            "message": "توصيل لكل المحافظات — استبدال خلال 14 يوم",
-            "saleLabel": "خصم حتى 25%",
-            "shippingLabel": "شحن 48 ساعة"
+            "message": "تشكيلة محدودة",
+            "saleLabel": "عرض"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "fashion-billboard",
+          "variant": "luxury-minimal",
           "settings": {
             "eyebrow": "خريف 2026",
             "title": "الهدوء رجولي",
@@ -325,30 +324,22 @@
           "variant": "editorial-categories",
           "settings": {
             "title": "اختار منين",
-            "subtitle": "قمصان، بناطيل، وجاكيتات"
+            "subtitle": "اختار القسم"
           }
         },
         {
-          "type": "featured-products",
-          "settings": {
-            "title": "قطع الموسم",
-            "subtitle": "مختارة بعناية"
-          }
+          "type": "featured-products"
         },
         {
           "type": "lookbook-showcase",
           "variant": "boutique-storyboard",
           "settings": {
-            "title": "اللوك بوك",
-            "subtitle": "تنسيقات كاملة بالقطع"
+            "title": "اللوك بوك"
           }
         },
         {
           "type": "reviews",
-          "variant": "editorial",
-          "settings": {
-            "title": "آراء العميلات"
-          }
+          "variant": "editorial"
         },
         {
           "type": "features-bar",
