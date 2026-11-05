@@ -34,7 +34,7 @@ export const EasyOrdersMasonryHero: React.FC<HeroVariantProps> = (props) => {
           ) : null}
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 md:gap-4">
+        <div className="mt-6 grid grid-cols-[1.8fr_1fr] gap-3 md:gap-4">
           <div className="order-1 aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100">
             {hero ? (
               <img
