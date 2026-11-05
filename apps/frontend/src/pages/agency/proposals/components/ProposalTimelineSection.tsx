@@ -1,7 +1,7 @@
 import React from "react";
-import { Calendar, CheckCircle2 } from "lucide-react";
-import { Badge } from "../../../../components/ui/badge";
+import { Check, CheckCircle2 } from "lucide-react";
 import { ProposalTimelinePhase } from "../types";
+import { Band, SectionTitle, Lead, Marker, stripParens } from "./ProposalUi";
 
 interface ProposalTimelineSectionProps {
   timeline: ProposalTimelinePhase[];
@@ -11,53 +11,57 @@ export const ProposalTimelineSection: React.FC<ProposalTimelineSectionProps> = (
   if (!timeline || timeline.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <Calendar className="size-4" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-black">الجدول الزمني وخريطة التنفيذ (14-Day Roadmap)</h2>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            خطة العمل الميدانية من لحظة البدء حتى إطلاق أول حملات وحضور أولياء الأمور
-          </p>
-        </div>
+    <Band tone="black" id="timeline">
+      <div className="space-y-4 max-w-3xl pb-10 border-b border-white/10">
+        <Marker>خريطة الإطلاق والتنفيذ</Marker>
+        <SectionTitle>
+          ١٤ يوماً من توقيع العقد وحتى استقبال أول طالب
+        </SectionTitle>
+        <Lead>
+          جدول زمني محكم ومحدد الأيام، مع تسليمات واضحة في كل مرحلة لضمان الإطلاق السريع دون تعطيل لعمليات فرع فؤاد الحالية.
+        </Lead>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4 Sequential Phases — Connected Single Surface */}
+      <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {timeline.map((step, idx) => (
-          <div
-            key={idx}
-            className="rounded-2xl border border-border/70 bg-card p-5 space-y-3 relative overflow-hidden flex flex-col justify-between shadow-xs"
-          >
-            <div className="space-y-3">
+          <div key={idx} className="space-y-4 relative">
+            {/* Phase Header */}
+            <div className="space-y-2 border-b border-white/10 pb-4">
               <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="font-bold text-xs tabular-nums">
+                <span className="font-mono text-xs font-bold text-[#FFD368] uppercase tracking-wider">
+                  المرحلة 0{idx + 1}
+                </span>
+                <span className="font-mono text-xs text-white/50 bg-white/5 px-2 py-0.5 rounded border border-white/10 tabular-nums">
                   {step.days}
-                </Badge>
-                <span className="text-xs font-bold text-muted-foreground">
-                  خطوة {idx + 1}
                 </span>
               </div>
-
-              <h3 className="font-black text-sm text-foreground leading-snug">
-                {step.phase}
+              <h3 className="text-base font-black text-white leading-snug">
+                {stripParens(step.phase)}
               </h3>
-
-              <ul className="space-y-2 text-xs text-muted-foreground">
-                {step.tasks.map((task, tIdx) => (
-                  <li key={tIdx} className="flex items-start gap-1.5 leading-relaxed">
-                    <CheckCircle2 className="size-3.5 text-primary shrink-0 mt-0.5" />
-                    <span>{task}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
+
+            {/* Task Checklist */}
+            <ul className="space-y-2.5 text-xs text-white/70">
+              {step.tasks.map((task, tIdx) => (
+                <li key={tIdx} className="flex items-start gap-2 leading-relaxed">
+                  <span className="p-0.5 rounded-full bg-[#FFD368]/20 text-[#FFD368] mt-0.5 shrink-0">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </span>
+                  <span>{task}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Handover Statement */}
+            {step.handover && (
+              <div className="pt-2 text-[11px] text-white/50 font-medium border-t border-white/5">
+                <span className="text-[#FFD368] font-bold">التسليم:</span> {step.handover}
+              </div>
+            )}
           </div>
         ))}
       </div>
-    </section>
+    </Band>
   );
 };

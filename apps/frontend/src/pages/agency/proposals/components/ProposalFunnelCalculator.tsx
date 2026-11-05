@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Calculator, DollarSign, TrendingUp, Users, Award, Percent } from "lucide-react";
+import { Calculator, ArrowLeft, TrendingUp, Sparkles } from "lucide-react";
 import { ProposalFunnelConfig } from "../types";
+import { Band, SectionTitle, Lead, Marker, money } from "./ProposalUi";
 
 interface ProposalFunnelCalculatorProps {
   config: ProposalFunnelConfig;
-  currency: string;
+  currency?: string;
 }
 
 export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> = ({
@@ -17,7 +18,7 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
     const cpc = config?.costPerClick || 3.5;
     const leadRate = config?.leadConversionRate || 0.12;
     const showRate = config?.showUpRate || 0.65;
-    const enrollRate = config?.enrollmentRate || 0.40;
+    const enrollRate = config?.enrollmentRate || 0.4;
     const coursePrice = config?.averageCoursePrice || 2200;
     const ltvMonths = config?.studentLtvMonths || 4;
 
@@ -30,7 +31,7 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
     const cac = enrolled > 0 ? Math.round(budget / enrolled) : 0;
 
     const initialRevenue = enrolled * coursePrice;
-    const ltvRevenue = Math.round(enrolled * coursePrice * ltvMonths * 0.85); // accounting for natural drop-off
+    const ltvRevenue = Math.round(enrolled * coursePrice * ltvMonths * 0.85);
     const roas = budget > 0 ? (initialRevenue / budget).toFixed(2) : "0";
     const ltvRoas = budget > 0 ? (ltvRevenue / budget).toFixed(2) : "0";
 
@@ -48,130 +49,121 @@ export const ProposalFunnelCalculator: React.FC<ProposalFunnelCalculatorProps> =
     };
   }, [budget, config]);
 
+  const minB = config.minBudget || 5000;
+  const maxB = config.maxBudget || 60000;
+  const stepB = config.stepBudget || 2500;
+
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <Calculator className="size-4" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-black">حاسبة العائد والنمو التفاعلية (ROI & Funnel Simulator)</h2>
+    <Band tone="graphite" id="calculator">
+      <div className="space-y-4 max-w-3xl pb-8 border-b border-white/10">
+        <Marker>محاكاة العائد المالي وتدفق الطلاب</Marker>
+        <SectionTitle>
+          كم طالب وإيراد متوقع من كل جنيه يُنفق في الإعلانات؟
+        </SectionTitle>
+        <Lead>
+          نموذج حسابي تفاعلي مبني على أرقام واقعية لقطاع تعليم البرمجة للأطفال في الإسكندرية، مع حساب تكلفة
+          الاستقطاب وعائد الاستثمار الفوري والتراكمي.
+        </Lead>
+      </div>
+
+      {/* Slider Control Bar — Clean Line, No Nested Box */}
+      <div className="py-8 space-y-4 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="text-sm font-bold text-white/90">
+            حدد الميزانية الشهرية المقترحة للحملات:
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            حرك مؤشر الميزانية الإعلانية لمعاينة تدفق أولياء الأمور والطلاب المتوقعين وعائد الاستثمار
-          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-3xl sm:text-4xl font-black text-[#FFD368] tabular-nums">
+              {budget.toLocaleString("en-US")}
+            </span>
+            <span className="text-xs text-[#FFD368]/80 font-bold">{currency} / شهر</span>
+          </div>
+        </div>
+
+        <input
+          type="range"
+          min={minB}
+          max={maxB}
+          step={stepB}
+          value={budget}
+          onChange={(e) => setBudget(Number(e.target.value))}
+          aria-label="الميزانية الإعلانية الشهرية المقترحة"
+          className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#FFD368]"
+        />
+
+        <div className="flex justify-between text-xs font-mono text-white/40">
+          <span>{minB.toLocaleString()} {currency}</span>
+          <span className="text-white/60 font-sans">اسحب المؤشر لليمين أو اليسار</span>
+          <span>{maxB.toLocaleString()} {currency}</span>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/70 bg-card p-5 sm:p-7 space-y-6 shadow-xs">
-        {/* Slider Controls */}
-        <div className="space-y-3 bg-muted/30 p-4 sm:p-5 rounded-xl border border-border/50">
-          <div className="flex items-center justify-between">
-            <label className="text-xs sm:text-sm font-bold flex items-center gap-2">
-              <DollarSign className="size-4 text-primary" />
-              <span>الميزانية الإعلانية الشهرية المقترحة:</span>
-            </label>
-            <div className="text-base sm:text-xl font-black text-primary tabular-nums">
-              {budget.toLocaleString()} {currency}
-            </div>
+      {/* 4-Stage Funnel Progression — Flat Grid */}
+      <div className="py-8 grid grid-cols-2 lg:grid-cols-4 gap-6 border-b border-white/10">
+        <div className="space-y-1">
+          <div className="text-xs font-mono text-[#FFD368] font-bold">المرحلة 01</div>
+          <div className="text-xs text-white/60 font-medium">زيارات مستهدفة للإعلانات</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-white tabular-nums pt-1">
+            {stats.clicks.toLocaleString("en-US")}
           </div>
-
-          <input
-            type="range"
-            min={config.minBudget || 5000}
-            max={config.maxBudget || 60000}
-            step={config.stepBudget || 2500}
-            value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))}
-            className="w-full h-2.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-          />
-
-          <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
-            <span className="tabular-nums">{(config.minBudget || 5000).toLocaleString()} {currency}</span>
-            <span className="text-primary font-bold">يمكنك تجربة ميزانيات مختلفة</span>
-            <span className="tabular-nums">{(config.maxBudget || 60000).toLocaleString()} {currency}</span>
-          </div>
+          <div className="text-[11px] text-white/40 font-mono">متوسط النقرة 3.5 ج.م</div>
         </div>
 
-        {/* Funnel Visual Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <Users className="size-3.5 text-primary" />
-              <span>طلبات تقييم (Leads)</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-black tabular-nums text-foreground">
-              {stats.leads} <span className="text-xs font-normal text-muted-foreground">ولي أمر</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground font-medium">
-              تكلفة الليد: ~<span className="tabular-nums">{stats.cpl}</span> {currency}
-            </div>
+        <div className="space-y-1">
+          <div className="text-xs font-mono text-[#FFD368] font-bold">المرحلة 02</div>
+          <div className="text-xs text-white/60 font-medium">أولياء أمور سجلوا اهتمامهم</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-white tabular-nums pt-1">
+            {stats.leads.toLocaleString("en-US")}
           </div>
-
-          <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <Award className="size-3.5 text-amber-500" />
-              <span>حضور الورش بالمقر</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-black tabular-nums text-amber-600 dark:text-amber-400">
-              {stats.attendees} <span className="text-xs font-normal text-muted-foreground">طفل وولي أمر</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground font-medium">
-              بنسبة حضور <span className="tabular-nums">{Math.round((config.showUpRate || 0.60) * 100)}</span>%
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-bold">
-              <Award className="size-3.5" />
-              <span>الاشتراكات المؤكدة</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-black tabular-nums text-emerald-600 dark:text-emerald-400">
-              {stats.enrolled} <span className="text-xs font-normal text-muted-foreground">طالب جديد</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground font-medium">
-              تكلفة الطالب (CAC): ~<span className="tabular-nums">{stats.cac}</span> {currency}
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-primary font-bold">
-              <TrendingUp className="size-3.5" />
-              <span>إيراد الشهر الأول المباشر</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-black tabular-nums text-primary">
-              {stats.initialRevenue.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{currency}</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground font-medium">
-              عائد مباشر: <span className="tabular-nums">{stats.roas}</span>x ضعف الصرف
-            </div>
-          </div>
+          <div className="text-[11px] text-[#FFD368]/90 font-mono">تكلفة التسجيل: {stats.cpl} ج.م</div>
         </div>
 
-        {/* LTV & Long-Term Compounding Banner */}
-        <div className="p-4 rounded-xl bg-gradient-to-l from-primary/10 via-background to-secondary/30 border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-primary">القيمة التراكمية عبر المستويات (Customer Lifetime Value - LTV):</span>
-              <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-bold tabular-nums">
-                {config.studentLtvMonths || 4} مستويات
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              بقاء الطالب في كود تريبس وتدرجه في المستويات يولد إجمالي إيرادات تقديرية تصل إلى:
-            </p>
+        <div className="space-y-1">
+          <div className="text-xs font-mono text-[#FFD368] font-bold">المرحلة 03</div>
+          <div className="text-xs text-white/60 font-medium">حضور جلسة التقييم بالفرع</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-white tabular-nums pt-1">
+            {stats.attendees.toLocaleString("en-US")}
           </div>
-          <div className="text-left sm:text-right shrink-0">
-            <div className="text-2xl font-black text-foreground tabular-nums">
-              {stats.ltvRevenue.toLocaleString()} {currency}
-            </div>
-            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              عائد تراكمي يصل إلى {stats.ltvRoas}x
-            </div>
+          <div className="text-[11px] text-emerald-400 font-mono">نسبة حضور 65% مع تذكير واتساب</div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="text-xs font-mono text-[#FFD368] font-bold">المرحلة 04</div>
+          <div className="text-xs text-white/60 font-medium">طلاب مسجلين ومسددين</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-[#FFD368] tabular-nums pt-1">
+            {stats.enrolled.toLocaleString("en-US")}
           </div>
+          <div className="text-[11px] text-white/40 font-mono">تكلفة الاستحواذ: {stats.cac} ج.م</div>
         </div>
       </div>
-    </section>
+
+      {/* Financial Bottomline Results */}
+      <div className="pt-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div className="space-y-1 border-r-2 border-white/10 pr-4">
+          <div className="text-xs text-white/50 font-bold uppercase">إيراد الشهر الأول المباشر</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-white tabular-nums">
+            {stats.initialRevenue.toLocaleString("en-US")} <span className="text-xs font-sans text-white/60">{currency}</span>
+          </div>
+          <div className="text-xs text-emerald-400 font-medium font-mono">
+            عائد إعلاني مباشر: {stats.roas}x ROAS
+          </div>
+        </div>
+
+        <div className="space-y-1 border-r-2 border-[#FFD368]/40 pr-4">
+          <div className="text-xs text-[#FFD368] font-bold uppercase">القيمة التراكمية للطلاب (LTV 4 أشهر)</div>
+          <div className="font-mono text-2xl sm:text-3xl font-black text-[#FFD368] tabular-nums">
+            {stats.ltvRevenue.toLocaleString("en-US")} <span className="text-xs font-sans text-[#FFD368]/70">{currency}</span>
+          </div>
+          <div className="text-xs text-[#FFD368]/80 font-medium font-mono">
+            عائد تراكمي متوقع: {stats.ltvRoas}x LTV/CAC
+          </div>
+        </div>
+
+        <div className="text-xs text-white/60 leading-relaxed font-normal bg-white/[0.02] p-4 rounded-lg border border-white/10">
+          💡 <strong className="text-white">قوة المنظومة:</strong> اشتراك ولي الأمر في الدورة الأولى يفتح باب استمراره لعدة مراحل،
+          ما يجعل تكلفة الاستحواذ تُسدد بالكامل من الأسبوع الثاني للتشغيل.
+        </div>
+      </div>
+    </Band>
   );
 };

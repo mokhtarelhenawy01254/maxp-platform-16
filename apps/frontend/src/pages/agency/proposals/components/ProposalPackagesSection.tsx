@@ -1,12 +1,11 @@
 import React from "react";
-import { Check, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
+import { Check, CheckCircle2, Sparkles } from "lucide-react";
 import { ProposalPackage } from "../types";
+import { Band, SectionTitle, Lead, Marker, stripParens, money } from "./ProposalUi";
 
 interface ProposalPackagesSectionProps {
   packages: ProposalPackage[];
-  currency: string;
+  currency?: string;
   isAccepted: boolean;
   acceptedPackageId?: string | null;
   onSelectPackage: (pkg: ProposalPackage) => void;
@@ -22,71 +21,75 @@ export const ProposalPackagesSection: React.FC<ProposalPackagesSectionProps> = (
   if (!packages || packages.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <ShieldCheck className="size-4" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-black">باقات الاستثمار ونموذج التعاقد (Investment Options)</h2>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            اختر الباقة الأنسب لأهداف كود تريبس التشغيلية والتوسعية
-          </p>
-        </div>
+    <Band tone="graphite" id="packages">
+      <div className="space-y-4 max-w-3xl pb-10 border-b border-white/10">
+        <Marker>خيارات الاستثمار والشراكة</Marker>
+        <SectionTitle>
+          اختر نموذج التعاقد الأنسب لمرحلة نمو كود تريبس
+        </SectionTitle>
+        <Lead>
+          بدون أي مصاريف خفية. يشمل الاشتراك الترخيص الكامل لمنصة MaxP، وإدارة الحملات الإعلانية، وتدريب فريق فرع
+          فؤاد على إدارة الحجوزات والطلاب.
+        </Lead>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      {/* Side-by-Side Clean Comparison — Single Surface */}
+      <div className="py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
         {packages.map((pkg) => {
           const isThisAccepted = isAccepted && acceptedPackageId === pkg.id;
+          const isPopular = pkg.isPopular;
 
           return (
             <div
               key={pkg.id}
-              className={`rounded-3xl border p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all relative ${
-                pkg.isPopular
-                  ? "border-primary bg-card shadow-lg shadow-primary/5 ring-1 ring-primary/20"
-                  : "border-border/70 bg-card shadow-xs"
+              className={`p-8 rounded-2xl flex flex-col justify-between transition-all ${
+                isPopular
+                  ? "bg-[#181818] border-2 border-[#FFD368]/60 shadow-2xl shadow-[#FFD368]/5"
+                  : "bg-white/[0.02] border border-white/10"
               }`}
             >
-              {pkg.isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground font-black text-xs px-3 py-1 flex items-center gap-1 shadow-xs">
-                    <Sparkles className="size-3" />
-                    الباقة الموصى بها للأكاديمية
-                  </Badge>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-black text-foreground">
-                    {pkg.name}
+              <div className="space-y-6">
+                {/* Header & Tagline */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold text-[#FFD368] uppercase tracking-wider">
+                      {isPopular ? "الخيار الموصى به" : "خيار الانطلاق"}
+                    </span>
+                    {isPopular && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#FFD368] text-black">
+                        <Sparkles className="size-3" />
+                        الأعلى عائداً
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                    {stripParens(pkg.name)}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-white/60 leading-relaxed">
                     {pkg.tagline}
                   </p>
                 </div>
 
-                <div className="pt-2 pb-1 border-y border-border/50">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                      {pkg.price.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-bold">
-                      {currency} / {pkg.period}
-                    </span>
-                  </div>
+                {/* Price Display */}
+                <div className="py-4 border-y border-white/10 flex items-baseline gap-2">
+                  <span className="font-mono text-3xl sm:text-4xl font-black text-[#FFD368] tabular-nums">
+                    {money(pkg.price)}
+                  </span>
+                  <span className="text-xs font-bold text-white/60">
+                    {currency} / {pkg.period}
+                  </span>
                 </div>
 
-                <div className="space-y-2.5 pt-2">
-                  <span className="text-xs font-bold text-foreground">يشمل هذا الخيار:</span>
-                  <ul className="space-y-2 text-xs text-muted-foreground">
+                {/* Scope Feature List */}
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-white/50 uppercase tracking-wider">
+                    ما تتضمنه الباقة شهرياً:
+                  </div>
+                  <ul className="space-y-2.5 text-xs text-white/80">
                     {pkg.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-start gap-2 leading-relaxed">
-                        <span className="flex items-center justify-center size-4 rounded-full bg-primary/10 text-primary shrink-0 mt-0.5">
-                          <Check className="size-2.5" />
+                      <li key={fIdx} className="flex items-start gap-2.5 leading-relaxed">
+                        <span className="p-0.5 rounded-full bg-[#FFD368]/20 text-[#FFD368] mt-0.5 shrink-0">
+                          <Check className="size-3" strokeWidth={3} />
                         </span>
                         <span>{feature}</span>
                       </li>
@@ -95,33 +98,31 @@ export const ProposalPackagesSection: React.FC<ProposalPackagesSectionProps> = (
                 </div>
               </div>
 
-              <div>
+              {/* Action Button */}
+              <div className="pt-8">
                 {isThisAccepted ? (
-                  <Button
-                    disabled
-                    className="w-full bg-emerald-600 text-white font-black h-11 text-xs sm:text-sm rounded-xl cursor-default"
-                  >
-                    <CheckCircle2 className="size-4 ml-2" />
-                    تم اختيار هذه الباقة
-                  </Button>
+                  <div className="w-full h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
+                    <CheckCircle2 className="size-4" />
+                    <span>تم اعتماد هذا الخيار بنجاح</span>
+                  </div>
                 ) : (
-                  <Button
+                  <button
                     onClick={() => onSelectPackage(pkg)}
                     disabled={isAccepted}
-                    className={`w-full font-black h-11 text-xs sm:text-sm rounded-xl transition-all shadow-sm ${
-                      pkg.isPopular
-                        ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20"
-                        : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                    className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                      isPopular
+                        ? "bg-gradient-to-r from-[#FFD368] to-[#D99518] text-black hover:opacity-95 shadow-lg shadow-[#FFD368]/15"
+                        : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
                     }`}
                   >
-                    {isAccepted ? "تم اعتماد الخطة مسبقاً" : "اعتماد الخطة واختيار هذه الباقة"}
-                  </Button>
+                    <span>{isAccepted ? "الخطة معتمدة" : `اعتماد ${pkg.name}`}</span>
+                  </button>
                 )}
               </div>
             </div>
           );
         })}
       </div>
-    </section>
+    </Band>
   );
 };

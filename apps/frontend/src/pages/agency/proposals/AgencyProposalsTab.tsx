@@ -104,10 +104,8 @@ export const AgencyProposalsTab: React.FC<AgencyProposalsTabProps> = () => {
     if (hostname.includes("localhost") || hostname.includes("127.0.0.1")) {
       return `${window.location.origin}/proposal/${slug}?subdomain=${sub}`;
     }
-    // Always use active, SSL-verified wildcard subdomain on maxp.online
-    const hostParts = hostname.split(".");
-    const rootDomain = hostParts.length >= 2 ? hostParts.slice(-2).join(".") : "maxp.online";
-    return `https://${sub}.${rootDomain}/proposal/${slug}`;
+    // Always resolve to the official SSL-secured wildcard subdomain on maxp.online
+    return `https://${sub}.maxp.online/proposal/${slug}`;
   };
 
   const copyProposalLink = (slug: string) => {

@@ -1,7 +1,7 @@
 import React from "react";
-import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Search, ShieldAlert } from "lucide-react";
-import { Badge } from "../../../../components/ui/badge";
+import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { ProposalAuditItem } from "../types";
+import { Band, SectionTitle, Lead, Marker, stripParens } from "./ProposalUi";
 
 interface ProposalAuditSectionProps {
   auditItems: ProposalAuditItem[];
@@ -11,73 +11,86 @@ export const ProposalAuditSection: React.FC<ProposalAuditSectionProps> = ({ audi
   if (!auditItems || auditItems.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Search className="size-4" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-black text-foreground">
-              فحص التشخيص الرقمي وفجوات التسرب المالي (Audit & Leaky Bucket)
-            </h2>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            رصد الفجوات التشغيلية في موقع ومنظومة كود تريبس الحالية التي تتسبب في تسرب أكثر من 40% من أولياء الأمور قبل حجز جلسة التقييم
-          </p>
+    <Band tone="graphite" id="audit">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-white/10">
+        <div className="space-y-3 max-w-3xl">
+          <Marker>التشخيص التشغيلي وتحديد فجوات التسرب</Marker>
+          <SectionTitle>
+            أين تتسرب الميزانية الإعلانية وأولياء الأمور قبل حجز المقابلة؟
+          </SectionTitle>
+          <Lead>
+            فحص تفصيلي للمنظومة الحالية في فرع فؤاد بالإسكندرية، كشف عن ٣ فجوات رئيسية تتسبب في هدر أكثر من ٤٠٪ من
+            الميزانيات التسويقية بسبب بطء الرد وغياب التتبع السحابي.
+          </Lead>
         </div>
-        <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold self-start sm:self-auto text-xs">
-          تم تشخيص <span className="tabular-nums mx-1">{auditItems.length}</span> ثغرات تشغيلية
-        </Badge>
+        <div className="text-right shrink-0">
+          <div className="font-mono text-3xl font-black text-[#FFD368] tabular-nums">
+            {auditItems.length}
+          </div>
+          <div className="text-xs text-white/50 font-medium">فجوات مرصودة ومحلولة في الخطة</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {auditItems.map((item, index) => (
-          <div
-            key={item.id || index}
-            className="rounded-2xl border border-border/70 bg-card p-5 space-y-4 hover:border-primary/40 transition-colors shadow-xs flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
+      {/* Editorial Diagnosis Ledger — Flat Single Surface, No Box-in-Box */}
+      <div className="divide-y divide-white/10">
+        {auditItems.map((item, index) => {
+          const isHigh = item.severity === "HIGH";
+          return (
+            <div
+              key={item.id || index}
+              className="py-7 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start hover:bg-white/[0.02] transition-colors"
+            >
+              {/* Col 1: Index + Title + Severity (4 cols) */}
+              <div className="lg:col-span-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="flex items-center justify-center size-6 rounded-full bg-primary/10 text-primary text-xs font-bold tabular-nums">
-                    {index + 1}
+                  <span className="font-mono text-xs font-bold text-[#FFD368]/80 tabular-nums">
+                    0{index + 1}
                   </span>
-                  <h3 className="font-bold text-sm text-foreground leading-snug">{item.title}</h3>
+                  <span
+                    className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      isHigh
+                        ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                        : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    }`}
+                  >
+                    {isHigh ? "أثر فوري حرج" : "أثر تشغيلي متوسط"}
+                  </span>
                 </div>
-                <Badge
-                  variant={item.severity === "HIGH" ? "destructive" : "secondary"}
-                  className="text-[10px] font-bold px-2 py-0.5 shrink-0"
-                >
-                  {item.severity === "HIGH" ? "تأثير مرتفع (Critical)" : "تأثير متوسط"}
-                </Badge>
+                <h3 className="text-base sm:text-lg font-black text-white leading-snug">
+                  {stripParens(item.title)}
+                </h3>
               </div>
 
-              {/* Problem Finding & Impact */}
-              <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/15 text-destructive-foreground space-y-1.5 text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-destructive">
-                  <AlertTriangle className="size-3.5 shrink-0" />
-                  <span>الملاحظة والرصد الميداني:</span>
+              {/* Col 2: The Gap & Root Cause (4 cols) */}
+              <div className="lg:col-span-4 space-y-2">
+                <div className="text-[11px] font-bold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider">
+                  <AlertCircle className="size-3.5 shrink-0" />
+                  <span>الملاحظة والأثر الميداني</span>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">{item.finding}</p>
-                <div className="pt-1 border-t border-destructive/10 flex items-center gap-1 text-[11px] text-destructive font-semibold">
-                  <span>الأثر المالي:</span>
-                  <span>{item.impact}</span>
-                </div>
+                <p className="text-sm text-white/70 leading-relaxed font-normal">
+                  {item.finding}
+                </p>
+                {item.impact && (
+                  <div className="text-xs text-rose-300/80 font-medium pt-1">
+                    <span className="text-rose-400 font-bold">الخسارة المقدرة:</span> {item.impact}
+                  </div>
+                )}
               </div>
 
-              {/* Solution on MaxP */}
-              <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 space-y-1.5 text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+              {/* Col 3: The Engineered MaxP Fix (4 cols) */}
+              <div className="lg:col-span-4 space-y-2 border-r-2 border-[#FFD368]/40 pr-4">
+                <div className="text-[11px] font-bold text-[#FFD368] flex items-center gap-1.5 uppercase tracking-wider">
                   <CheckCircle2 className="size-3.5 shrink-0" />
-                  <span>الحل التنفيذي المباشر على منصة MaxP:</span>
+                  <span>الحل التنفيذي المباشر من H2M</span>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">{item.solution}</p>
+                <p className="text-sm text-white/90 leading-relaxed font-normal">
+                  {item.solution}
+                </p>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </section>
+    </Band>
   );
 };

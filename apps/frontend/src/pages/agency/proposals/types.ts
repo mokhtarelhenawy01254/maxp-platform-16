@@ -32,6 +32,17 @@ export interface ProposalTimelinePhase {
   phase: string;
   days: string;
   tasks: string[];
+  /** What the client holds in hand when this phase ends. */
+  handover?: string;
+}
+
+/** A concrete stream of work: what we do, exactly what is delivered, and the result. */
+export interface ProposalWorkstream {
+  id: string;
+  title: string;
+  summary: string;
+  deliverables: string[];
+  outcome?: string;
 }
 
 export interface ProposalPackage {
@@ -73,6 +84,10 @@ export interface AgencyProposal {
   };
   auditItems: ProposalAuditItem[];
   solutionModules: ProposalSolutionModule[];
+  /** Optional rich scope of work. When absent the page derives it from solutionModules. */
+  workstreams?: ProposalWorkstream[];
+  /** What the client must provide for the plan to run on time. */
+  clientNeeds?: string[];
   funnelConfig: ProposalFunnelConfig;
   timeline: ProposalTimelinePhase[];
   packages: ProposalPackage[];
