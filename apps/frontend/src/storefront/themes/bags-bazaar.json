@@ -1,0 +1,417 @@
+{
+  "id": "bags-bazaar",
+  "name": "Bag Souq — شنط وحقائب",
+  "description": "قالب شنط وحقائب — Bag Souq.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 12%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 95%",
+      "secondaryForeground": "0 0% 12%",
+      "accent": "42 55% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 10%",
+      "muted": "0 0% 88%",
+      "mutedForeground": "0 0% 42%",
+      "border": "0 0% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 10%",
+      "ring": "42 55% 50%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.375rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 1px 2px hsl(220 15% 12% / .06)",
+      "hoverShadow": "0 10px 24px -12px hsl(220 15% 12% / .25)"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Bag Souq",
+    "description": "قالب شنط وحقائب — Bag Souq."
+  },
+  "preview": {
+    "colors": [
+      "0 0% 12%",
+      "42 55% 50%",
+      "0 0% 100%"
+    ]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Bag Souq",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "خصم 30% على تشكيلة الشتاء — لفترة محدودة",
+    "announcementLinkText": "تسوقي العروض",
+    "announcementLinkTo": "/sale",
+    "navigation": [
+      {
+        "label": "حقائب يد",
+        "to": "/shop?category=حقائب يد"
+      },
+      {
+        "label": "كروسات",
+        "to": "/shop?category=كروسات"
+      },
+      {
+        "label": "ظهر",
+        "to": "/shop?category=ظهر"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ],
+    "megaMenu": {
+      "triggerLabel": "الأقسام",
+      "ctaText": "شوفي كل حاجة",
+      "ctaLink": "/shop",
+      "tabs": [
+        {
+          "label": "فساتين",
+          "title": "فساتين يومية ومناسبات",
+          "link": "/shop?category=dresses"
+        },
+        {
+          "label": "أطقم",
+          "title": "أطقم جاهزة",
+          "link": "/shop?category=sets"
+        }
+      ]
+    }
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "قالب شنط وحقائب — Bag Souq.",
+    "copyrightText": "© 2026 Bazaar",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "تسوقي",
+        "links": [
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "أطقم",
+            "to": "/shop?category=sets"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصلي بينا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "market-basket",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "market-checkout",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "standard"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "market-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "خصم 30%",
+            "message": "على تشكيلة الشتاء — لحد آخر الكمية",
+            "saleLabel": "العرض ساري",
+            "shippingLabel": "شحن 24-72 ساعة"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "retail-direct-banner",
+          "settings": {
+            "eyebrow": "تشكيلة الحقائب",
+            "title": "كل حاجة في مكان",
+            "subtitle": "حقائب يد وكروسات وظهر بأسعار واضحة.",
+            "ctaText": "تسوق الآن",
+            "ctaLink": "/sale",
+            "secondaryCtaText": "العروض"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "أقسام شنط وحقائب",
+            "subtitle": "اختاري القسم"
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر مبيعًا"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "title": "عروض الكومبو"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "title": "من عميلاتنا"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "bulk-savings"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    }
+  }
+}

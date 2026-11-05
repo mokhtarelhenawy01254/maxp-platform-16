@@ -3,6 +3,18 @@ import boldFashionData from "./bold-fashion.json";
 import womenFashionLumiereData from "./women-fashion-lumiere.json";
 import menswearLumiereData from "./menswear-lumiere.json";
 import kidsFashionLumiereData from "./kids-fashion-lumiere.json";
+import modestWearLumiereData from "./modest-wear-lumiere.json";
+import modestWearBazaarData from "./modest-wear-bazaar.json";
+import modestWearNoorData from "./modest-wear-noor.json";
+import modestWearMaisonData from "./modest-wear-maison.json";
+import shoesLumiereData from "./shoes-lumiere.json";
+import shoesBazaarData from "./shoes-bazaar.json";
+import shoesNoorData from "./shoes-noor.json";
+import shoesMaisonData from "./shoes-maison.json";
+import bagsLumiereData from "./bags-lumiere.json";
+import bagsBazaarData from "./bags-bazaar.json";
+import bagsNoorData from "./bags-noor.json";
+import bagsMaisonData from "./bags-maison.json";
 import kidsFashionBazaarData from "./kids-fashion-bazaar.json";
 import kidsFashionNoorData from "./kids-fashion-noor.json";
 import kidsFashionMaisonData from "./kids-fashion-maison.json";
@@ -681,6 +693,18 @@ const styleStoreEgData = createAliasPreset(legacyDefaultOldData, {
 });
 
 export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
+  "modest-wear-lumiere": asStorefrontTheme(modestWearLumiereData),
+  "modest-wear-bazaar": asStorefrontTheme(modestWearBazaarData),
+  "modest-wear-noor": asStorefrontTheme(modestWearNoorData),
+  "modest-wear-maison": asStorefrontTheme(modestWearMaisonData),
+  "shoes-lumiere": asStorefrontTheme(shoesLumiereData),
+  "shoes-bazaar": asStorefrontTheme(shoesBazaarData),
+  "shoes-noor": asStorefrontTheme(shoesNoorData),
+  "shoes-maison": asStorefrontTheme(shoesMaisonData),
+  "bags-lumiere": asStorefrontTheme(bagsLumiereData),
+  "bags-bazaar": asStorefrontTheme(bagsBazaarData),
+  "bags-noor": asStorefrontTheme(bagsNoorData),
+  "bags-maison": asStorefrontTheme(bagsMaisonData),
   "kids-fashion-lumiere": asStorefrontTheme(kidsFashionLumiereData),
   "kids-fashion-bazaar": asStorefrontTheme(kidsFashionBazaarData),
   "kids-fashion-noor": asStorefrontTheme(kidsFashionNoorData),

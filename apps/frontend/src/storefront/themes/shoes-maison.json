@@ -1,0 +1,404 @@
+{
+  "id": "shoes-maison",
+  "name": "Maison Sole — أحذية",
+  "description": "قالب أحذية — Maison Sole.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "20 30% 24%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "20 20% 92%",
+      "secondaryForeground": "20 30% 24%",
+      "accent": "20 40% 42%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 30% 96%",
+      "foreground": "20 30% 24%",
+      "muted": "20 15% 86%",
+      "mutedForeground": "0 0% 42%",
+      "border": "20 15% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "20 30% 24%",
+      "ring": "20 40% 42%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 20px 40px -28px hsl(25 20% 16% / .45)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Maison Sole",
+    "description": "قالب أحذية — Maison Sole."
+  },
+  "preview": {
+    "colors": [
+      "20 30% 24%",
+      "20 40% 42%",
+      "40 30% 96%"
+    ]
+  },
+  "header": {
+    "variant": "floating-dark",
+    "brandName": "Maison Sole",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "كل أسبوع 3 لوكات جديدة جاهزة للتنسيق",
+    "announcementLinkText": "شوفي اللوكات",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "سنيكرز",
+        "to": "/shop?category=سنيكرز"
+      },
+      {
+        "label": "كلاسيك",
+        "to": "/shop?category=كلاسيك"
+      },
+      {
+        "label": "صنادل",
+        "to": "/shop?category=صنادل"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "قالب أحذية — Maison Sole.",
+    "copyrightText": "© 2026 MAISON",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com",
+      "pinterest": "https://pinterest.com"
+    },
+    "navigation": [
+      {
+        "title": "الدولاب",
+        "links": [
+          {
+            "label": "لوكات",
+            "to": "/collections"
+          },
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "كمّلي الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "fitting-room-checkout",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "الإجمالي",
+            "checkoutButtonText": "تأكيد الطلب"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على تشكيلة مختارة لحد آخر الكمية.",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "العرض بينتهي خلال"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "boutique-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "تواصلي معانا"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    },
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "wardrobe-planner",
+          "settings": {
+            "eyebrow": "دولاب كامل",
+            "title": "اختار اللوك… وإحنا نكمّل الحذاء",
+            "subtitle": "لوكات جاهزة كل أسبوع.",
+            "ctaText": "تسوق الآن",
+            "ctaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+            "panelImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+            "secondaryCtaText": "العروض"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "خطة اللوك",
+            "subtitle": "مناسبة → قطع → مقاس"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "masonry",
+          "settings": {
+            "title": "لوكات الأسبوع"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "أقسام أحذية",
+            "subtitle": "اختاري القسم"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "قطع أساسية"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "title": "ستايلينج كامل"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo",
+          "settings": {
+            "title": "باكدج اللوك"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "تجارب حقيقية"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "store-advantages-pastel"
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "boutique-discovery"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "boutique-ledger"
+        },
+        {
+          "type": "look-progress",
+          "variant": "ladder"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "closet-pairings"
+        }
+      ]
+    }
+  }
+}

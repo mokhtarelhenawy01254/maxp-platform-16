@@ -4,6 +4,18 @@ import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefron
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
 export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
+  "modest-wear-lumiere": () => import("./modest-wear-lumiere.json"),
+  "modest-wear-bazaar": () => import("./modest-wear-bazaar.json"),
+  "modest-wear-noor": () => import("./modest-wear-noor.json"),
+  "modest-wear-maison": () => import("./modest-wear-maison.json"),
+  "shoes-lumiere": () => import("./shoes-lumiere.json"),
+  "shoes-bazaar": () => import("./shoes-bazaar.json"),
+  "shoes-noor": () => import("./shoes-noor.json"),
+  "shoes-maison": () => import("./shoes-maison.json"),
+  "bags-lumiere": () => import("./bags-lumiere.json"),
+  "bags-bazaar": () => import("./bags-bazaar.json"),
+  "bags-noor": () => import("./bags-noor.json"),
+  "bags-maison": () => import("./bags-maison.json"),
   "kids-fashion-lumiere": () => import("./kids-fashion-lumiere.json"),
   "kids-fashion-bazaar": () => import("./kids-fashion-bazaar.json"),
   "kids-fashion-noor": () => import("./kids-fashion-noor.json"),
