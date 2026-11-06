@@ -162,11 +162,19 @@ check('F-07: /hr/debug/user/:id route and handler are gone', () => {
   assertTrue(!controller.includes('debugGetUser'), 'hrController must not keep debugGetUser');
 });
 
-check('F-04: PUT /settings/company requires settings.manage', () => {
+check('F-04: PUT /settings/company requires an authorized writer (settings.manage / admin role)', () => {
   const routes = fs.readFileSync(path.join(ROOT, 'routes', 'settingsRoutes.js'), 'utf8');
   assertTrue(
-    /router\.put\(\s*'\/company'\s*,\s*requireDbPermission\('settings\.manage'\)/.test(routes),
-    "PUT /company must call requireDbPermission('settings.manage')"
+    /router\.put\(\s*'\/company'\s*,\s*requireSettingsWrite/.test(routes),
+    "PUT /company must be guarded by requireSettingsWrite"
+  );
+  assertTrue(
+    /return requireDbPermission\('settings\.manage'\)\(req, res, next\)/.test(routes),
+    "requireSettingsWrite must fall back to requireDbPermission('settings.manage')"
+  );
+  assertTrue(
+    /SETTINGS_WRITE_ROLES\s*=\s*Object\.freeze\(\[[^\]]*'MANAGER'/.test(routes),
+    "MANAGER must stay in the admin allowlist (no functional regression)"
   );
   for (const key of [
     'bypassExpiry',

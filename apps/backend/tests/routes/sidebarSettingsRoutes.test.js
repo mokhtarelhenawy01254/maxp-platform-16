@@ -345,6 +345,23 @@ describe("company settings authorization (PUT /settings/company — F-04)", () =
     }
   });
 
+  test("MANAGER keeps write access (no regression) but never bypass keys", async () => {
+    mockCurrentUser = { id: "user-manager", companyId: "company-1", role: "MANAGER" };
+    // MANAGER does not have settings.manage in the seed — write access comes from the
+    // role allowlist so operational admins keep working after the F-04 hardening.
+    permissionService.getUserPermissions.mockResolvedValue(["settings.view"]);
+
+    const res = await request(app)
+      .put("/api/v1/settings/company")
+      .send({ settings: { currency: "SAR", bypassAppExpiry: ["hr-core"] } });
+
+    expect(res.status).toBe(200);
+
+    const stored = JSON.parse(mockCompanyRecord.settings);
+    expect(stored.currency).toBe("SAR");
+    expect(stored.bypassAppExpiry).toBeUndefined();
+  });
+
   test("OWNER can write bypass keys (intentional bypass preserved)", async () => {
     const res = await request(app)
       .put("/api/v1/settings/company")

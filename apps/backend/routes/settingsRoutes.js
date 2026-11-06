@@ -167,9 +167,19 @@ router.get('/company', async (req, res) => {
   }
 });
 
+// 🔐 F-04: الأدوار الإدارية المعروفة تُحفظ كما كانت (بدون تراجع وظيفي)، وأي دور آخر
+// (مثل AGENT أو دور مخصص) لازم يملك settings.manage صراحةً.
+// مفاتيح تجاوز الاشتراك تبقى محظورة على غير OWNER/SUPER_ADMIN عبر stripPrivilegedSettingsKeys.
+const SETTINGS_WRITE_ROLES = Object.freeze(['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER']);
+const requireSettingsWrite = (req, res, next) => {
+  const role = String(req.user?.role || '').trim().toUpperCase();
+  if (SETTINGS_WRITE_ROLES.includes(role)) return next();
+  return requireDbPermission('settings.manage')(req, res, next);
+};
+
 // Update company settings
-// 🔐 F-04: الكتابة تحتاج صلاحية settings.manage (OWNER/COMPANY_ADMIN فقط حسب الـ seed)
-router.put('/company', requireDbPermission('settings.manage'), async (req, res) => {
+// 🔐 F-04: الكتابة تحتاج دوراً إدارياً أو صلاحية settings.manage — القراءة متاحة كما هي
+router.put('/company', requireSettingsWrite, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     const { settings: safeSettings, strippedKeys } = stripPrivilegedSettingsKeys(
