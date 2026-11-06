@@ -148,71 +148,61 @@ const HRReportsHub: React.FC = () => {
   ];
 
   return (
-    <div
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
-      dir="rtl"
-    >
+    <div className="space-y-5 w-full">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 print:hidden">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/hr")}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400 rotate-180" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  تقارير الموارد البشرية
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  تقارير شاملة لجميع أنشطة الموارد البشرية
-                </p>
-              </div>
-            </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70 print:hidden">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/hr")}
+            aria-label="العودة إلى الموارد البشرية"
+            className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
+          >
+            <ChevronLeft className="size-4 rotate-180" />
+          </button>
+          <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <BarChart3 className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+              تقارير الموارد البشرية
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
+              تقارير شاملة لجميع أنشطة الموارد البشرية
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4">
           {/* Sidebar Tabs */}
-          <div className="w-72 flex-shrink-0 print:hidden">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-6">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
+          <div className="lg:w-64 shrink-0 print:hidden">
+            <div className="bg-card text-card-foreground rounded-xl border border-border/70 overflow-hidden lg:sticky lg:top-4">
+              <div className="p-3 border-b border-border/70">
+                <h2 className="font-medium text-sm text-foreground">
                   التقارير المتاحة
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  اختر التقرير المطلوب
-                </p>
               </div>
-              <nav className="p-2 max-h-[calc(100vh-200px)] overflow-y-auto font-ar">
+              <nav className="p-1.5 max-h-[calc(100vh-220px)] overflow-y-auto">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg text-right transition-colors mb-1 ${
+                    className={`w-full flex items-start gap-2.5 px-3 py-2.5 rounded-lg text-right transition-colors ${
                       activeTab === tab.id
-                        ? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground/80 hover:bg-muted"
                     }`}
                   >
                     <tab.icon
-                      className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                      className={`size-4 mt-0.5 shrink-0 ${
                         activeTab === tab.id
-                          ? "text-purple-600 dark:text-purple-400"
-                          : "text-gray-400 dark:text-gray-500"
+                          ? "text-primary"
+                          : "text-muted-foreground"
                       }`}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm">{tab.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 text-right">
+                      <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2 text-right">
                         {tab.description}
                       </div>
                     </div>
@@ -236,47 +226,46 @@ const HRReportsHub: React.FC = () => {
               {activeTab === "overtime" && <OvertimeReport />}
               {activeTab === "late-absence" && <LateAbsenceReport />}
               {activeTab === "training" && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+                <div className="bg-card text-card-foreground rounded-xl border border-border/70 p-8">
                   <div className="text-center">
-                    <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <GraduationCap className="size-10 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
                       تقرير التدريب
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      قريباً - تقرير البرامج التدريبية وفعاليتها
+                    <p className="text-sm text-muted-foreground">
+                      قريباً — تقرير البرامج التدريبية وفعاليتها
                     </p>
                   </div>
                 </div>
               )}
               {activeTab === "warnings" && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+                <div className="bg-card text-card-foreground rounded-xl border border-border/70 p-8">
                   <div className="text-center">
-                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <FileText className="size-10 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
                       تقرير الإنذارات
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      قريباً - تقرير الإنذارات والجزاءات التأديبية
+                    <p className="text-sm text-muted-foreground">
+                      قريباً — تقرير الإنذارات والجزاءات التأديبية
                     </p>
                   </div>
                 </div>
               )}
               {activeTab === "kpis" && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+                <div className="bg-card text-card-foreground rounded-xl border border-border/70 p-8">
                   <div className="text-center">
-                    <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <BarChart3 className="size-10 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
                       مؤشرات الأداء الرئيسية
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      قريباً - Dashboard شامل لجميع مؤشرات الأداء الرئيسية
+                    <p className="text-sm text-muted-foreground">
+                      قريباً — لوحة شاملة لمؤشرات الأداء
                     </p>
                   </div>
                 </div>
               )}
             </ErrorBoundary>
           </div>
-        </div>
       </div>
     </div>
   );

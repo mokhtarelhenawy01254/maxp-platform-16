@@ -27,34 +27,36 @@ const CreateEditReward: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
-          <p className="text-gray-600 dark:text-gray-400">جاري التحميل...</p>
+          <RefreshCw className="size-6 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 w-full min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-5 w-full">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-3 pb-4 border-b border-border/70">
         <button
           onClick={() => navigate("/hr/rewards")}
           aria-label="العودة للمكافآت"
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-300"
+          className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="size-4" />
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Award className="w-8 h-8 text-blue-600" />
+        <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+          <Award className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
             {isEdit
               ? t("rewards.form.editReward")
               : t("rewards.form.addReward")}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
             {isEdit
               ? "تعديل بيانات المكافأة"
               : "إنشاء مكافأة يدوية جديدة للموظف"}

@@ -180,14 +180,14 @@ export const PayrollSimulatorResultsPanel: React.FC<
                   </div>
                 </div>
 
-                <div className="bg-indigo-600 rounded-3xl p-6 text-white text-center shadow-xl shadow-indigo-200 dark:shadow-none relative overflow-hidden">
+                <div className="bg-primary text-primary-foreground rounded-2xl p-6 text-center shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-10">
-                    <ShieldCheck className="h-20 w-20" />
+                    <ShieldCheck className="h-16 w-16" />
                   </div>
-                  <p className="text-indigo-100 text-sm font-medium mb-1">
+                  <p className="text-primary-foreground/80 text-sm font-medium mb-1">
                     صافي المبلغ المستحق
                   </p>
-                  <h4 className="text-3xl font-black mb-1 font-mono tabular-nums">
+                  <h4 className="text-3xl font-bold mb-1 tabular-nums">
                     {formatCurrency(results.netSalary)}
                   </h4>
                   <p className="text-[10px] text-white/90 font-bold mb-1">

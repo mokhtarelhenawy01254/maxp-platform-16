@@ -71,18 +71,18 @@ export const PayrollSimulatorWorkspace: React.FC<
 
   return (
     <Card className="flex-1 flex flex-col overflow-hidden border-none shadow-xl">
-      <CardHeader className="bg-indigo-600 text-white py-4 px-6 flex-row items-center justify-between">
+      <CardHeader className="bg-primary text-primary-foreground py-4 px-6 flex-row items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+          <div className="h-12 w-12 bg-white/15 rounded-xl flex items-center justify-center">
             <Calculator className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold">
               محاكاة راتب: {selectedEmployee.firstName}
             </h2>
-            <p className="text-indigo-100 text-xs opacity-90">
+            <p className="text-primary-foreground/80 text-xs opacity-90">
               الراتب الأساسي الحالي:{" "}
-              <span className="font-mono tabular-nums">
+              <span className="tabular-nums">
                 {formatCurrency(selectedEmployee.baseSalary)}
               </span>
             </p>
@@ -92,7 +92,7 @@ export const PayrollSimulatorWorkspace: React.FC<
           <Button
             onClick={onRunSimulation}
             disabled={calculating}
-            className="bg-white text-indigo-700 hover:bg-indigo-50 font-bold h-10 px-6 rounded-lg"
+            className="bg-white text-primary hover:bg-primary/10 font-bold h-10 px-6 rounded-lg"
           >
             {calculating ? (
               <RefreshCw className="h-4 w-4 animate-spin ml-2" />
@@ -108,25 +108,25 @@ export const PayrollSimulatorWorkspace: React.FC<
         <TabsList className="bg-slate-50 dark:bg-slate-900 p-1 flex justify-start rounded-none h-14 px-6 gap-2">
           <TabsTrigger
             value="scenarios"
-            className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 px-6 font-bold"
+            className="data-[state=active]:bg-card dark:data-[state=active]:bg-card h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 font-bold"
           >
             سيناريوهات جاهزة
           </TabsTrigger>
           <TabsTrigger
             value="attendance"
-            className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 px-6 font-bold"
+            className="data-[state=active]:bg-card dark:data-[state=active]:bg-card h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 font-bold"
           >
             الحضور والإضافي
           </TabsTrigger>
           <TabsTrigger
             value="deductions"
-            className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 px-6 font-bold"
+            className="data-[state=active]:bg-card dark:data-[state=active]:bg-card h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 font-bold"
           >
             الخصومات
           </TabsTrigger>
           <TabsTrigger
             value="allowances"
-            className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 px-6 font-bold"
+            className="data-[state=active]:bg-card dark:data-[state=active]:bg-card h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 font-bold"
           >
             البدلات
           </TabsTrigger>
@@ -141,12 +141,12 @@ export const PayrollSimulatorWorkspace: React.FC<
                     <button
                       key={scenario.id}
                       onClick={() => onApplyScenario(scenario.id)}
-                      className="group text-right p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 hover:border-indigo-300 hover:bg-white dark:hover:bg-slate-800 transition-all hover:shadow-lg"
+                      className="group text-right p-5 rounded-2xl bg-muted/50 border border-border/70 hover:border-primary/40 hover:bg-card transition-all hover:shadow-sm"
                     >
-                      <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-slate-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <scenario.icon className="h-5 w-5 text-indigo-600" />
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                        <scenario.icon className="h-5 w-5 text-primary" />
                       </div>
-                      <h4 className="font-bold text-slate-900 dark:text-white mb-1">
+                      <h4 className="font-bold text-foreground mb-1">
                         {scenario.name}
                       </h4>
                       <p className="text-xs text-slate-500 leading-relaxed">

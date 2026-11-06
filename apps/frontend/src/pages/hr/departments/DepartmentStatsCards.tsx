@@ -16,49 +16,61 @@ export const DepartmentStatsCards: React.FC<DepartmentStatsCardsProps> = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      className="grid grid-cols-1 sm:grid-cols-3 gap-4"
     >
-      <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-900 overflow-hidden relative group">
-        <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-          <Building2 className="h-16 w-16 text-blue-600" />
-        </div>
-        <CardContent className="p-6 relative">
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider">
-            إجمالي الأقسام
-          </p>
-          <h3 className="text-4xl font-black mt-2 text-blue-600 dark:text-blue-400 font-mono tabular-nums">
-            {totalDepartments}
-          </h3>
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs transition-colors hover:border-border">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate mb-1">
+                إجمالي الأقسام
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
+                {totalDepartments}
+              </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+              <Building2 className="size-5" />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <Card className="border-none shadow-md bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 overflow-hidden relative group">
-        <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-          <Activity className="h-16 w-16 text-emerald-600" />
-        </div>
-        <CardContent className="p-6 relative">
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider">
-            الأقسام النشطة
-          </p>
-          <h3 className="text-4xl font-black mt-2 text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-            {activeDepartments}
-          </h3>
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs transition-colors hover:border-border">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate mb-1">
+                الأقسام النشطة
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
+                {activeDepartments}
+              </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <Activity className="size-5" />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <Card className="border-none shadow-md bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-gray-900 overflow-hidden relative group">
-        <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-          <Users className="h-16 w-16 text-purple-600" />
-        </div>
-        <CardContent className="p-6 relative">
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider">
-            إجمالي الموظفين
-          </p>
-          <h3 className="text-4xl font-black mt-2 text-purple-600 dark:text-purple-400 font-mono tabular-nums">
-            {totalEmployees}
-          </h3>
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs transition-colors hover:border-border">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate mb-1">
+                إجمالي الموظفين
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
+                {totalEmployees}
+              </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+              <Users className="size-5" />
+            </div>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

@@ -36,7 +36,7 @@ export const PayrollSimulatorEmployeeList: React.FC<
     <Card className="w-80 flex flex-col shrink-0 border-none shadow-xl bg-slate-50/50 dark:bg-slate-950/20">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5 text-indigo-600" />
+          <Users className="h-5 w-5 text-primary" />
           اختيار موظف للتجربة
         </CardTitle>
         <div className="relative mt-2">
@@ -58,13 +58,13 @@ export const PayrollSimulatorEmployeeList: React.FC<
                 onClick={() => onSelectEmployee(emp)}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                   selectedEmployee?.id === emp.id
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
-                    : "bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card hover:bg-primary/10 dark:hover:bg-primary/10"
                 }`}
               >
                 <Avatar className="h-10 w-10 border-2 border-white/20">
                   <AvatarImage src={emp.avatar} />
-                  <AvatarFallback className="bg-indigo-200 text-indigo-700">
+                  <AvatarFallback className="bg-primary/15 text-primary">
                     {emp.firstName?.[0]}
                   </AvatarFallback>
                 </Avatar>
@@ -75,8 +75,8 @@ export const PayrollSimulatorEmployeeList: React.FC<
                   <p
                     className={`text-xs ${
                       selectedEmployee?.id === emp.id
-                        ? "text-indigo-100"
-                        : "text-slate-500"
+                        ? "text-primary-foreground/80"
+                        : "text-muted-foreground"
                     }`}
                   >
                     <span className="font-mono tabular-nums">

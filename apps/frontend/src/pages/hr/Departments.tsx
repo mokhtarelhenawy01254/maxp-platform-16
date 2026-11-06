@@ -78,7 +78,7 @@ const Departments: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             إدارة الأقسام
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 tabular-nums">
             {departments.length} قسم • {totalEmployees} موظف
           </p>
         </div>

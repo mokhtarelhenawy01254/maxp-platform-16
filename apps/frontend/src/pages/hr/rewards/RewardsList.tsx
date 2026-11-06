@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Award, Plus, RefreshCw, AlertCircle } from "lucide-react";
+import { Button } from "../../../components/ui/button";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";
 import {
   useRewardsListController,
@@ -37,10 +38,10 @@ const RewardsList: React.FC = () => {
 
   if (loading && records.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
-          <p className="text-gray-600 dark:text-gray-400">
+          <RefreshCw className="size-6 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">
             جاري تحميل المكافآت...
           </p>
         </div>
@@ -50,44 +51,46 @@ const RewardsList: React.FC = () => {
 
   if (error && records.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <AlertCircle className="size-10 text-destructive mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-foreground mb-1">
             حدث خطأ
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-          <button
-            onClick={() => fetchRewards()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <Button size="sm" onClick={() => fetchRewards()}>
             إعادة المحاولة
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-5 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Award className="w-8 h-8 text-blue-600" />
-            {t("rewards.pageTitle")}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {t("rewards.pageDescription")}
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <Award className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+              {t("rewards.pageTitle")}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
+              {t("rewards.pageDescription")}
+            </p>
+          </div>
         </div>
-        <button
+        <Button
+          size="sm"
           onClick={() => navigate("/hr/rewards/create")}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="gap-1.5 text-xs font-semibold shadow-xs"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="size-4" />
           {t("rewards.form.addReward")}
-        </button>
+        </Button>
       </div>
 
       {/* Statistics & Filters */}

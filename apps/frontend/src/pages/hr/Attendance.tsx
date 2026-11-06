@@ -83,7 +83,7 @@ export const Attendance: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">الحضور والانصراف</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 tabular-nums">
             {formatAttendanceDate(
               selectedDate,
               {

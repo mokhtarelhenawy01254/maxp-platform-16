@@ -53,7 +53,7 @@ export const HRDashboardStatsGrid: React.FC<HRDashboardStatsGridProps> = ({
         >
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate mb-1">
+              <p className="text-xs font-medium text-muted-foreground truncate mb-1">
                 {stat.label}
               </p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono tabular-nums tracking-tight">
