@@ -14,6 +14,13 @@ export interface Courier {
   isActive: boolean;
   status: 'AVAILABLE' | 'ON_DUTY' | 'OFF_DUTY';
   notes?: string | null;
+  documentsStatus?: 'INCOMPLETE' | 'PENDING_REVIEW' | 'VERIFIED';
+  hireDate?: string | null;
+  salaryBase?: number | null;
+  compensationModel?: string | null;
+  bonusPerOrder?: number | null;
+  bonusStartsAfterOrders?: number | null;
+  bonusTiers?: string | null;
   activeShipmentsCount: number;
   expectedCashInTransit: number;
   pendingSettlementCash: number;
@@ -38,6 +45,64 @@ export interface CourierInput {
   commissionAmount?: number;
   isActive?: boolean;
   notes?: string;
+}
+
+export interface CourierDocument {
+  id: string;
+  companyId: string;
+  courierId: string;
+  type: string;
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  expiryDate?: string | null;
+  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourierPayroll {
+  id: string;
+  companyId: string;
+  courierId: string;
+  month: string;
+  compensationModel: string;
+  baseSalary: number;
+  bonus: number;
+  commission: number;
+  deductions: number;
+  netPayable: number;
+  deliveredOrdersCount: number;
+  status: 'DRAFT' | 'APPROVED' | 'PAID' | 'CANCELLED';
+  calculationDetails?: string | null;
+  treasuryAccountId?: string | null;
+  treasuryTransactionId?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  paidBy?: string | null;
+  paidAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  courier?: {
+    id: string;
+    name: string;
+    phone: string;
+    documentsStatus?: string;
+  };
+}
+
+export interface PayrollTotals {
+  totalBaseSalary: number;
+  totalBonus: number;
+  totalCommission: number;
+  totalDeductions: number;
+  totalNetPayable: number;
+  totalDeliveredOrders: number;
 }
 
 export interface DeliveryRunItem {
@@ -85,6 +150,13 @@ export interface DeliveryRun {
   returnedCount?: number;
   pendingCount?: number;
   notes?: string | null;
+  documentsStatus?: 'INCOMPLETE' | 'PENDING_REVIEW' | 'VERIFIED';
+  hireDate?: string | null;
+  salaryBase?: number | null;
+  compensationModel?: string | null;
+  bonusPerOrder?: number | null;
+  bonusStartsAfterOrders?: number | null;
+  bonusTiers?: string | null;
   settledAt?: string | null;
   settledBy?: string | null;
   treasuryAccountId?: string | null;
@@ -126,6 +198,13 @@ export interface CourierCommissionEntry {
   status: 'DUE' | 'PAID';
   paidAt?: string | null;
   notes?: string | null;
+  documentsStatus?: 'INCOMPLETE' | 'PENDING_REVIEW' | 'VERIFIED';
+  hireDate?: string | null;
+  salaryBase?: number | null;
+  compensationModel?: string | null;
+  bonusPerOrder?: number | null;
+  bonusStartsAfterOrders?: number | null;
+  bonusTiers?: string | null;
   createdAt: string;
   courier?: { id: string; name: string; phone: string };
 }
@@ -256,7 +335,39 @@ const courierService = {
     } catch {
       return null;
     }
-  }
+  },
+
+
+  // Courier Documents
+  listDocuments: (courierId: string): Promise<{ success: boolean; data: { courier: { id: string; name: string; documentsStatus: string }; documents: CourierDocument[] } }> =>
+    api.get(`/couriers/${courierId}/documents`).then((r) => r.data),
+
+  uploadDocument: (courierId: string, formData: FormData): Promise<{ success: boolean; data: { document: CourierDocument; documentsStatus: string } }> =>
+    api.post(`/couriers/${courierId}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data),
+
+  updateDocumentStatus: (courierId: string, docId: string, payload: { status: string; notes?: string }): Promise<{ success: boolean; data: { document: CourierDocument; documentsStatus: string } }> =>
+    api.patch(`/couriers/${courierId}/documents/${docId}/status`, payload).then((r) => r.data),
+
+  deleteDocument: (courierId: string, docId: string): Promise<{ success: boolean; data: { deletedId: string; documentsStatus: string } }> =>
+    api.delete(`/couriers/${courierId}/documents/${docId}`).then((r) => r.data),
+
+  // Courier Payroll & Compensation
+  runPayroll: (month?: string): Promise<{ success: boolean; data: { month: string; createdCount: number; payrolls: CourierPayroll[] } }> =>
+    api.post('/couriers/payroll/run', {}, { params: { month } }).then((r) => r.data),
+
+  listPayroll: (month?: string): Promise<{ success: boolean; data: { month: string; totals: PayrollTotals; payrolls: CourierPayroll[] } }> =>
+    api.get('/couriers/payroll', { params: { month } }).then((r) => r.data),
+
+  approvePayroll: (payrollId: string): Promise<{ success: boolean; data: CourierPayroll }> =>
+    api.post(`/couriers/payroll/${payrollId}/approve`).then((r) => r.data),
+
+  payPayroll: (payrollId: string, payload?: { treasuryAccountId?: string; notes?: string }): Promise<{ success: boolean; data: CourierPayroll }> =>
+    api.post(`/couriers/payroll/${payrollId}/pay`, payload || {}).then((r) => r.data),
+
+  previewCompensation: (payload: any): Promise<{ success: boolean; data: any }> =>
+    api.post('/couriers/compensation/preview', payload).then((r) => r.data)
 };
 
 export default courierService;

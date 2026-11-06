@@ -5,6 +5,10 @@ import {
   PencilSquareIcon,
   TrashIcon,
   KeyIcon,
+  DocumentTextIcon,
+  CheckBadgeIcon,
+  ClockIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import courierService, { Courier } from '../../../../services/courierService';
 import { useCurrency } from '../../../../hooks/useCurrency';
@@ -20,12 +24,14 @@ export const VEHICLE_LABELS: Record<string, string> = {
 interface CourierTableProps {
   couriers: Courier[];
   onOpenEdit: (c: Courier) => void;
+  onOpenDocuments?: (c: Courier) => void;
   onDelete: (id: string, name: string) => Promise<void>;
 }
 
 export const CourierTable: React.FC<CourierTableProps> = ({
   couriers,
   onOpenEdit,
+  onOpenDocuments,
   onDelete,
 }) => {
   const { formatPrice } = useCurrency();
@@ -53,7 +59,7 @@ export const CourierTable: React.FC<CourierTableProps> = ({
         <table className="w-full text-right text-xs sm:text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
             <tr>
-              <th className="py-3 px-4 font-medium">المندوب</th>
+              <th className="py-3 px-4 font-medium">المندوب والتوثيق</th>
               <th className="py-3 px-4 font-medium">وسيلة الانتقال</th>
               <th className="py-3 px-4 font-medium">الحالة</th>
               <th className="py-3 px-4 font-medium">شحنات جارية</th>
@@ -73,7 +79,34 @@ export const CourierTable: React.FC<CourierTableProps> = ({
               couriers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4">
-                    <div className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</div>
+                      {c.documentsStatus === 'VERIFIED' ? (
+                        <span
+                          title="مستندات معتمدة وموثقة بالكامل"
+                          className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200"
+                        >
+                          <CheckBadgeIcon className="w-3.5 h-3.5" />
+                          موثق
+                        </span>
+                      ) : c.documentsStatus === 'PENDING_REVIEW' ? (
+                        <span
+                          title="مستندات مرفوعة قيد المراجعة"
+                          className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200"
+                        >
+                          <ClockIcon className="w-3.5 h-3.5" />
+                          قيد الفحص
+                        </span>
+                      ) : (
+                        <span
+                          title="أوراق ناقصة (يلزم بطاقة + وصل أمانة)"
+                          className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200"
+                        >
+                          <ExclamationCircleIcon className="w-3.5 h-3.5" />
+                          أوراق ناقصة
+                        </span>
+                      )}
+                    </div>
                     <div
                       className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5"
                       dir="ltr"
@@ -137,6 +170,15 @@ export const CourierTable: React.FC<CourierTableProps> = ({
                   </td>
                   <td className="py-3.5 px-4 text-left">
                     <div className="flex items-center justify-end gap-1.5">
+                      {onOpenDocuments && (
+                        <button
+                          onClick={() => onOpenDocuments(c)}
+                          title="إدارة مستندات وتوثيق المندوب"
+                          className="p-1.5 text-blue-600 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
+                        >
+                          <DocumentTextIcon className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleSetPin(c)}
                         title="تعيين/إلغاء رمز PIN الميداني"

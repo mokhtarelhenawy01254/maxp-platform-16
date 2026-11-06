@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   ArrowPathIcon,
   Cog6ToothIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import { useCourierManagementData } from './hooks/useCourierManagementData';
 import { CourierSummaryCards } from './components/CourierSummaryCards';
 import { CourierTable } from './components/CourierTable';
 import { CourierModal } from './components/CourierModal';
+import { CourierDocumentsModal } from './components/CourierDocumentsModal';
+import { Courier } from '../../../../services/courierService';
 
 const CourierManagementPage: React.FC = () => {
   const {
@@ -33,6 +36,14 @@ const CourierManagementPage: React.FC = () => {
     handleDelete,
   } = useCourierManagementData();
 
+  const [selectedCourierForDocs, setSelectedCourierForDocs] = useState<Courier | null>(null);
+  const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
+
+  const handleOpenDocuments = (c: Courier) => {
+    setSelectedCourierForDocs(c);
+    setIsDocsModalOpen(true);
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1800px] mx-auto text-slate-900 dark:text-slate-100">
       {/* Header */}
@@ -40,10 +51,17 @@ const CourierManagementPage: React.FC = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">إدارة المناديب والتوصيل الداخلي</h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            متابعة أسطول التوصيل الداخلي، أداء المناديب، ومراقبة العهد النقدية والبضائع في الميدان
+            متابعة أسطول التوصيل الداخلي، توثيق المستندات، احتساب المرتبات والبونص، ومراقبة العهد النقدية
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/shipping/courier-payroll"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition"
+          >
+            <BanknotesIcon className="w-4 h-4" />
+            مسير الرواتب والمكافآت
+          </Link>
           <Link
             to="/shipping/delivery-runs"
             className="px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
@@ -113,6 +131,7 @@ const CourierManagementPage: React.FC = () => {
       <CourierTable
         couriers={couriers}
         onOpenEdit={handleOpenEdit}
+        onOpenDocuments={handleOpenDocuments}
         onDelete={handleDelete}
       />
 
@@ -125,6 +144,16 @@ const CourierManagementPage: React.FC = () => {
         setFormData={setFormData}
         saving={saving}
         onSave={handleSave}
+      />
+
+      {/* Documents Modal */}
+      <CourierDocumentsModal
+        isOpen={isDocsModalOpen}
+        onClose={() => setIsDocsModalOpen(false)}
+        courier={selectedCourierForDocs}
+        onStatusUpdated={() => {
+          fetchData();
+        }}
       />
     </div>
   );

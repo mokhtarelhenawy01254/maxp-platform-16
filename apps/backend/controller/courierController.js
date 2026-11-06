@@ -1,4 +1,5 @@
 const courierService = require('../services/courierService');
+const courierPayrollService = require('../services/courierPayrollService');
 
 const getCompanyId = (req) =>
   req.user?.companyId || req.headers['x-company-id'] || req.headers['X-Company-Id'];
@@ -555,6 +556,152 @@ async function resendOtp(req, res) {
   }
 }
 
+// Document handlers
+async function uploadDocument(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const courierId = req.params.id;
+    const file = req.file;
+    const { type, expiryDate, notes } = req.body;
+
+    const result = await courierService.uploadCourierDocument(
+      companyId,
+      courierId,
+      { file, type, expiryDate, notes },
+      req.user?.id
+    );
+
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in uploadDocument:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر رفع المستند' });
+  }
+}
+
+async function listDocuments(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const courierId = req.params.id;
+    const result = await courierService.listCourierDocuments(companyId, courierId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in listDocuments:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر جلب المستندات' });
+  }
+}
+
+async function updateDocumentStatus(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const courierId = req.params.id;
+    const docId = req.params.docId;
+    const { status, notes } = req.body;
+
+    const result = await courierService.updateCourierDocumentStatus(
+      companyId,
+      courierId,
+      docId,
+      { status, notes },
+      req.user?.id
+    );
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in updateDocumentStatus:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تحديث حالة المستند' });
+  }
+}
+
+async function deleteDocument(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const courierId = req.params.id;
+    const docId = req.params.docId;
+
+    const result = await courierService.deleteCourierDocument(companyId, courierId, docId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in deleteDocument:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر حذف المستند' });
+  }
+}
+
+// Payroll handlers
+async function runPayroll(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const month = req.query.month || req.body?.month;
+    const result = await courierPayrollService.runMonthlyPayroll(companyId, month, req.user?.id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in runPayroll:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تشغيل مسير الرواتب' });
+  }
+}
+
+async function listPayroll(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const month = req.query.month;
+    const result = await courierPayrollService.listMonthlyPayroll(companyId, month);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in listPayroll:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر جلب مسير الرواتب' });
+  }
+}
+
+async function approvePayroll(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const payrollId = req.params.id;
+    const result = await courierPayrollService.approvePayroll(companyId, payrollId, req.user?.id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in approvePayroll:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر اعتماد مسير الراتب' });
+  }
+}
+
+async function payPayroll(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+    const payrollId = req.params.id;
+    const { treasuryAccountId, notes } = req.body || {};
+    const result = await courierPayrollService.payPayroll(companyId, payrollId, { treasuryAccountId, notes }, req.user?.id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in payPayroll:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر صرف مسير الراتب' });
+  }
+}
+
+async function previewCompensation(req, res) {
+  try {
+    const calc = courierPayrollService.computeCompensation(req.body || {});
+    res.json({ success: true, data: calc });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in previewCompensation:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
+
 module.exports = {
   getSummary,
   listCouriers,
@@ -574,5 +721,14 @@ module.exports = {
   getPerformance,
   reassignShipments,
   resendOtp,
-  revokeRunLink
+  revokeRunLink,
+  uploadDocument,
+  listDocuments,
+  updateDocumentStatus,
+  deleteDocument,
+  runPayroll,
+  listPayroll,
+  approvePayroll,
+  payPayroll,
+  previewCompensation
 };

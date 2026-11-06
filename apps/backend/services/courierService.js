@@ -52,7 +52,14 @@ function formatCourier(courier) {
   return {
     ...courier,
     governorates: parsedGovernorates,
-    commissionAmount: normalizeAmount(courier.commissionAmount)
+    commissionAmount: normalizeAmount(courier.commissionAmount),
+    salaryBase: courier.salaryBase !== null && courier.salaryBase !== undefined ? normalizeAmount(courier.salaryBase) : null,
+    bonusPerOrder: courier.bonusPerOrder !== null && courier.bonusPerOrder !== undefined ? normalizeAmount(courier.bonusPerOrder) : null,
+    bonusStartsAfterOrders: courier.bonusStartsAfterOrders !== null && courier.bonusStartsAfterOrders !== undefined ? Number(courier.bonusStartsAfterOrders) : null,
+    documentsStatus: courier.documentsStatus || 'INCOMPLETE',
+    hireDate: courier.hireDate || null,
+    compensationModel: courier.compensationModel || (courier.commissionType === 'SALARY_ONLY' ? 'SALARY_ONLY' : 'COMMISSION_ONLY'),
+    bonusTiers: courier.bonusTiers || null
   };
 }
 
@@ -165,6 +172,13 @@ async function listCouriers(companyId, { search, status, isActive, restrictToCou
     return {
       ...formatCourier(courier),
       commissionAmount: normalizeAmount(courier.commissionAmount),
+    salaryBase: courier.salaryBase !== null && courier.salaryBase !== undefined ? normalizeAmount(courier.salaryBase) : null,
+    bonusPerOrder: courier.bonusPerOrder !== null && courier.bonusPerOrder !== undefined ? normalizeAmount(courier.bonusPerOrder) : null,
+    bonusStartsAfterOrders: courier.bonusStartsAfterOrders !== null && courier.bonusStartsAfterOrders !== undefined ? Number(courier.bonusStartsAfterOrders) : null,
+    documentsStatus: courier.documentsStatus || 'INCOMPLETE',
+    hireDate: courier.hireDate || null,
+    compensationModel: courier.compensationModel || (courier.commissionType === 'SALARY_ONLY' ? 'SALARY_ONLY' : 'COMMISSION_ONLY'),
+    bonusTiers: courier.bonusTiers || null,
       activeShipmentsCount,
       expectedCashInTransit,
       pendingSettlementCash,
@@ -241,6 +255,13 @@ async function createCourier(companyId, data) {
       commissionType: data.commissionType || 'FIXED_PER_ORDER',
       commissionAmount: normalizeAmount(data.commissionAmount),
       isActive: data.isActive !== false,
+      documentsStatus: data.documentsStatus || 'INCOMPLETE',
+      hireDate: data.hireDate ? new Date(data.hireDate) : null,
+      salaryBase: data.salaryBase !== undefined && data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null,
+      compensationModel: data.compensationModel || (data.commissionType === 'SALARY_ONLY' ? 'SALARY_ONLY' : 'COMMISSION_ONLY'),
+      bonusPerOrder: data.bonusPerOrder !== undefined && data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null,
+      bonusStartsAfterOrders: data.bonusStartsAfterOrders !== undefined && data.bonusStartsAfterOrders !== null ? parseInt(data.bonusStartsAfterOrders, 10) : null,
+      bonusTiers: data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null,
       status: 'AVAILABLE',
       notes: data.notes?.trim() || null,
       userId: data.userId || null
@@ -289,6 +310,15 @@ async function updateCourier(companyId, courierId, data) {
   if (data.status !== undefined) updateData.status = data.status;
   if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
   if (data.userId !== undefined) updateData.userId = data.userId || null;
+  if (data.documentsStatus !== undefined) updateData.documentsStatus = data.documentsStatus;
+  if (data.hireDate !== undefined) updateData.hireDate = data.hireDate ? new Date(data.hireDate) : null;
+  if (data.salaryBase !== undefined) updateData.salaryBase = data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null;
+  if (data.compensationModel !== undefined) updateData.compensationModel = data.compensationModel;
+  if (data.bonusPerOrder !== undefined) updateData.bonusPerOrder = data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null;
+  if (data.bonusStartsAfterOrders !== undefined) updateData.bonusStartsAfterOrders = data.bonusStartsAfterOrders !== null ? parseInt(data.bonusStartsAfterOrders, 10) : null;
+  if (data.bonusTiers !== undefined) {
+    updateData.bonusTiers = data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null;
+  }
 
   await prisma.courier.updateMany({
     where: { id: courierId, companyId },
@@ -360,7 +390,7 @@ async function generateRunNumber(prisma, companyId) {
 /**
  * Create a delivery run (Manifest) and assign shipments
  */
-async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, notes, userId }) {
+async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, notes, userId, allowUnverifiedCouriers }) {
   const prisma = getSharedPrismaClient();
 
   const courier = await prisma.courier.findFirst({
@@ -372,6 +402,30 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
   }
 
   // Resolve target shipments: either directly by shipmentIds or by orderIds
+  // 🛡️ Business Rule: Documents verification check before field assignment
+  if (courier.documentsStatus !== 'VERIFIED') {
+    const fleetApp = await prisma.installedApp.findFirst({
+      where: { companyId, appId: 'internal-courier-fleet' },
+      select: { settings: true }
+    });
+    const installed = buildInstalledMarketplaceAppSettings('internal-courier-fleet', fleetApp?.settings || {}, {});
+    const isPolicyAllowed = Boolean(
+      allowUnverifiedCouriers ||
+      installed?.general?.allowUnverifiedCouriers ||
+      installed?.allowUnverifiedCouriers ||
+      fleetApp?.settings?.general?.allowUnverifiedCouriers ||
+      fleetApp?.settings?.allowUnverifiedCouriers
+    );
+
+    if (!isPolicyAllowed) {
+      throw serviceError(
+        `لا يمكن إسناد مأمورية للمندوب "${courier.name}" لعدم اكتمال واعتماد مستنداته (حالة المستندات: ${courier.documentsStatus || 'غير معتمد'}). يرجى اعتماد البطاقة ووصل الأمانة أولاً أو تفعيل سياسة السماح بالمناديب غير المعتمدين في إعدادات الأسطول.`,
+        400,
+        'UNVERIFIED_COURIER'
+      );
+    }
+  }
+
   let targetShipmentIds = Array.isArray(shipmentIds) ? [...shipmentIds] : [];
 
   if (Array.isArray(orderIds) && orderIds.length > 0) {
@@ -1835,6 +1889,280 @@ async function revokeDeliveryRunLink(companyId, runId) {
   };
 }
 
+let courierTablesEnsured = false;
+async function ensureCourierTables(prismaClient) {
+  if (courierTablesEnsured) return;
+  const prisma = prismaClient || getSharedPrismaClient();
+  try {
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='documentsStatus') THEN
+          ALTER TABLE "couriers" ADD COLUMN "documentsStatus" TEXT NOT NULL DEFAULT 'INCOMPLETE';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='hireDate') THEN
+          ALTER TABLE "couriers" ADD COLUMN "hireDate" TIMESTAMP(3);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='salaryBase') THEN
+          ALTER TABLE "couriers" ADD COLUMN "salaryBase" DECIMAL(10, 2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='compensationModel') THEN
+          ALTER TABLE "couriers" ADD COLUMN "compensationModel" TEXT DEFAULT 'COMMISSION_ONLY';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='bonusPerOrder') THEN
+          ALTER TABLE "couriers" ADD COLUMN "bonusPerOrder" DECIMAL(10, 2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='bonusStartsAfterOrders') THEN
+          ALTER TABLE "couriers" ADD COLUMN "bonusStartsAfterOrders" INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='couriers' AND column_name='bonusTiers') THEN
+          ALTER TABLE "couriers" ADD COLUMN "bonusTiers" TEXT;
+        END IF;
+      END $$;
+    `).catch(() => {});
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "courier_documents" (
+        "id" TEXT PRIMARY KEY,
+        "companyId" TEXT NOT NULL,
+        "courierId" TEXT NOT NULL,
+        "type" TEXT NOT NULL,
+        "fileUrl" TEXT NOT NULL,
+        "fileName" TEXT NOT NULL,
+        "mimeType" TEXT NOT NULL,
+        "sizeBytes" INTEGER NOT NULL,
+        "expiryDate" TIMESTAMP(3),
+        "status" TEXT NOT NULL DEFAULT 'PENDING',
+        "reviewedBy" TEXT,
+        "reviewedAt" TIMESTAMP(3),
+        "notes" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "courier_documents_courierId_fkey" FOREIGN KEY ("courierId") REFERENCES "couriers"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS "courier_documents_companyId_idx" ON "courier_documents"("companyId");
+      CREATE INDEX IF NOT EXISTS "courier_documents_courierId_idx" ON "courier_documents"("courierId");
+      CREATE INDEX IF NOT EXISTS "courier_documents_status_idx" ON "courier_documents"("status");
+      CREATE INDEX IF NOT EXISTS "courier_documents_type_idx" ON "courier_documents"("type");
+    `).catch(() => {});
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "courier_payrolls" (
+        "id" TEXT PRIMARY KEY,
+        "companyId" TEXT NOT NULL,
+        "courierId" TEXT NOT NULL,
+        "month" TEXT NOT NULL,
+        "compensationModel" TEXT NOT NULL DEFAULT 'COMMISSION_ONLY',
+        "baseSalary" DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+        "bonus" DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+        "commission" DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+        "deductions" DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+        "netPayable" DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+        "deliveredOrdersCount" INTEGER NOT NULL DEFAULT 0,
+        "status" TEXT NOT NULL DEFAULT 'DRAFT',
+        "calculationDetails" TEXT,
+        "treasuryAccountId" TEXT,
+        "treasuryTransactionId" TEXT,
+        "approvedBy" TEXT,
+        "approvedAt" TIMESTAMP(3),
+        "paidBy" TEXT,
+        "paidAt" TIMESTAMP(3),
+        "notes" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "courier_payrolls_courierId_fkey" FOREIGN KEY ("courierId") REFERENCES "couriers"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "courier_payrolls_companyId_courierId_month_key" ON "courier_payrolls"("companyId", "courierId", "month");
+      CREATE INDEX IF NOT EXISTS "courier_payrolls_companyId_month_idx" ON "courier_payrolls"("companyId", "month");
+      CREATE INDEX IF NOT EXISTS "courier_payrolls_courierId_idx" ON "courier_payrolls"("courierId");
+      CREATE INDEX IF NOT EXISTS "courier_payrolls_status_idx" ON "courier_payrolls"("status");
+    `).catch(() => {});
+
+    courierTablesEnsured = true;
+  } catch (err) {
+    console.warn('[COURIER-DB] ensureCourierTables notice:', err.message);
+  }
+}
+
+async function recalculateCourierDocumentsStatus(prismaClient, companyId, courierId) {
+  const prisma = prismaClient || getSharedPrismaClient();
+
+  const docs = await prisma.courierDocument.findMany({
+    where: { companyId, courierId },
+  });
+
+  if (docs.length === 0) {
+    await prisma.courier.update({
+      where: { id: courierId },
+      data: { documentsStatus: 'INCOMPLETE' },
+    });
+    return 'INCOMPLETE';
+  }
+
+  const hasVerifiedNationalId = docs.some(
+    (d) => ['NATIONAL_ID_FRONT', 'NATIONAL_ID_BACK'].includes(d.type) && d.status === 'VERIFIED'
+  );
+  const hasVerifiedCustody = docs.some(
+    (d) => d.type === 'CUSTODY_RECEIPT' && d.status === 'VERIFIED'
+  );
+
+  const hasRejected = docs.some((d) => d.status === 'REJECTED');
+  const hasPending = docs.some((d) => d.status === 'PENDING');
+
+  let newStatus = 'INCOMPLETE';
+  if (hasVerifiedNationalId && hasVerifiedCustody && !hasRejected) {
+    newStatus = 'VERIFIED';
+  } else if (hasPending || docs.length > 0) {
+    newStatus = 'PENDING_REVIEW';
+  } else {
+    newStatus = 'INCOMPLETE';
+  }
+
+  await prisma.courier.update({
+    where: { id: courierId },
+    data: { documentsStatus: newStatus },
+  });
+
+  return newStatus;
+}
+
+async function uploadCourierDocument(companyId, courierId, { file, type, expiryDate, notes }, userId) {
+  const prisma = getSharedPrismaClient();
+  await ensureCourierTables(prisma);
+
+  const courier = await prisma.courier.findFirst({
+    where: { id: courierId, companyId },
+  });
+  if (!courier) {
+    throw serviceError('المندوب غير موجود', 404, 'COURIER_NOT_FOUND');
+  }
+
+  if (!file) {
+    throw serviceError('ملف المستند مطلوب', 400, 'FILE_REQUIRED');
+  }
+
+  const allowedTypes = [
+    'NATIONAL_ID_FRONT',
+    'NATIONAL_ID_BACK',
+    'CRIMINAL_RECORD',
+    'DRIVING_LICENSE',
+    'CUSTODY_RECEIPT',
+    'CONTRACT',
+    'MEDICAL',
+    'OTHER'
+  ];
+  const docType = (type || 'OTHER').toUpperCase();
+  if (!allowedTypes.includes(docType)) {
+    throw serviceError('نوع المستند غير مدعوم', 400, 'INVALID_DOCUMENT_TYPE');
+  }
+
+  const fileUrl = `/uploads/courier-documents/${file.filename}`;
+
+  const document = await prisma.courierDocument.create({
+    data: {
+      companyId,
+      courierId,
+      type: docType,
+      fileUrl,
+      fileName: file.originalname || file.filename,
+      mimeType: file.mimetype || 'application/octet-stream',
+      sizeBytes: file.size || 0,
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
+      status: 'PENDING',
+      notes: notes?.trim() || null,
+      reviewedBy: null,
+      reviewedAt: null,
+    },
+  });
+
+  const documentsStatus = await recalculateCourierDocumentsStatus(prisma, companyId, courierId);
+
+  return {
+    document,
+    documentsStatus,
+  };
+}
+
+async function listCourierDocuments(companyId, courierId) {
+  const prisma = getSharedPrismaClient();
+  await ensureCourierTables(prisma);
+
+  const courier = await prisma.courier.findFirst({
+    where: { id: courierId, companyId },
+    select: { id: true, name: true, documentsStatus: true },
+  });
+  if (!courier) {
+    throw serviceError('المندوب غير موجود', 404, 'COURIER_NOT_FOUND');
+  }
+
+  const documents = await prisma.courierDocument.findMany({
+    where: { companyId, courierId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    courier,
+    documents,
+  };
+}
+
+async function updateCourierDocumentStatus(companyId, courierId, docId, { status, notes }, userId) {
+  const prisma = getSharedPrismaClient();
+  await ensureCourierTables(prisma);
+
+  const existing = await prisma.courierDocument.findFirst({
+    where: { id: docId, companyId, courierId },
+  });
+  if (!existing) {
+    throw serviceError('المستند غير موجود', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  const validStatuses = ['PENDING', 'VERIFIED', 'REJECTED'];
+  if (!validStatuses.includes(status)) {
+    throw serviceError('حالة المستند يجب أن تكون PENDING أو VERIFIED أو REJECTED', 400, 'INVALID_STATUS');
+  }
+
+  const updatedDoc = await prisma.courierDocument.update({
+    where: { id: docId },
+    data: {
+      status,
+      notes: notes !== undefined ? (notes?.trim() || null) : existing.notes,
+      reviewedBy: userId || 'SYSTEM',
+      reviewedAt: new Date(),
+    },
+  });
+
+  const documentsStatus = await recalculateCourierDocumentsStatus(prisma, companyId, courierId);
+
+  return {
+    document: updatedDoc,
+    documentsStatus,
+  };
+}
+
+async function deleteCourierDocument(companyId, courierId, docId) {
+  const prisma = getSharedPrismaClient();
+  await ensureCourierTables(prisma);
+
+  const existing = await prisma.courierDocument.findFirst({
+    where: { id: docId, companyId, courierId },
+  });
+  if (!existing) {
+    throw serviceError('المستند غير موجود', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  await prisma.courierDocument.delete({
+    where: { id: docId },
+  });
+
+  const documentsStatus = await recalculateCourierDocumentsStatus(prisma, companyId, courierId);
+
+  return {
+    deletedId: docId,
+    documentsStatus,
+  };
+}
+
 module.exports = {
   listCouriers,
   getCourierById,
@@ -1856,5 +2184,11 @@ module.exports = {
   getCouriersPerformance,
   reassignShipments,
   resendShipmentOtp,
-  revokeDeliveryRunLink
+  revokeDeliveryRunLink,
+  ensureCourierTables,
+  uploadCourierDocument,
+  listCourierDocuments,
+  updateCourierDocumentStatus,
+  deleteCourierDocument,
+  recalculateCourierDocumentsStatus
 };

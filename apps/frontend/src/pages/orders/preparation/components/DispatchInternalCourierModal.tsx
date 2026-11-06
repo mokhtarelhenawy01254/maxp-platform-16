@@ -126,7 +126,18 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
                           className="w-4 h-4 text-primary"
                         />
                         <div>
-                          <div className="font-semibold text-foreground">{c.name}</div>
+                          <div className="font-semibold text-foreground flex items-center gap-1.5">
+                            <span>{c.name}</span>
+                            {c.documentsStatus === 'VERIFIED' ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200">
+                                موثق
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200">
+                                غير موثق
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[11px] text-muted-foreground flex items-center gap-1" dir="ltr">
                             <PhoneIcon className="w-3 h-3" />
                             {c.phone}

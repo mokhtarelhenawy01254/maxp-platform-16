@@ -447,6 +447,9 @@ const ShippingSettlement = React.lazy(
 const CourierManagementPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierManagementPage"),
 );
+const CourierPayrollPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierPayrollPage"),
+);
 const DeliveryRunsPage = React.lazy(
   () => import("./pages/shipping/couriers/DeliveryRunsPage"),
 );
@@ -7467,6 +7470,16 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <CourierManagementPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/courier-payroll"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
+                        <CourierPayrollPage />
                       </AppAccessRoute>
                     </Layout>
                   }

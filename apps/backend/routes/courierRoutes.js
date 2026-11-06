@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 const courierController = require('../controller/courierController');
+const uploadCourierDocument = require('../middleware/courierDocumentUpload');
 
 const MANAGE_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'WAREHOUSE'];
 const COURIER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'WAREHOUSE', 'COURIER', 'EMPLOYEE'];
@@ -105,6 +106,37 @@ router.post(
   courierController.settleRun
 );
 
+// Payroll & Compensation endpoints (MUST precede /:id)
+router.post(
+  '/payroll/run',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.runPayroll
+);
+
+router.get(
+  '/payroll',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.listPayroll
+);
+
+router.post(
+  '/payroll/:id/approve',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.approvePayroll
+);
+
+router.post(
+  '/payroll/:id/pay',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.payPayroll
+);
+
+router.post(
+  '/compensation/preview',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.previewCompensation
+);
+
 // Couriers CRUD — root first, then the two-segment /:id/pin, and the one-segment
 // /:id routes LAST so they can never shadow any static path above.
 router.get(
@@ -141,6 +173,32 @@ router.delete(
   '/:id',
   verifyToken.requireRole(MANAGE_ROLES),
   courierController.deleteCourier
+);
+
+// Courier Documents endpoints
+router.post(
+  '/:id/documents',
+  verifyToken.requireRole(MANAGE_ROLES),
+  uploadCourierDocument.single('file'),
+  courierController.uploadDocument
+);
+
+router.get(
+  '/:id/documents',
+  verifyToken.requireRole(COURIER_ROLES),
+  courierController.listDocuments
+);
+
+router.patch(
+  '/:id/documents/:docId/status',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.updateDocumentStatus
+);
+
+router.delete(
+  '/:id/documents/:docId',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.deleteDocument
 );
 
 module.exports = router;
