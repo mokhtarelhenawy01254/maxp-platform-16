@@ -1,13 +1,16 @@
 ---
 name: taste-skill
-description: Anti-slop frontend skill for landing pages, marketing sites, portfolios, and redesigns (taste-skill by Leonxlnx). The agent reads the brief, infers the right design direction, and ships interfaces that do not look templated. Use whenever designing or implementing landing pages, websites, portfolios, UI components, animations, or redesigns. Includes 3 dials (VARIANCE, MOTION, DENSITY), canonical GSAP/CSS skeletons, and strict anti-slop rules.
+description: Anti-slop frontend and unified design system skill for both: 1) Public marketing sites, landing pages, and brand storefronts (editorial, high-conversion), and 2) Enterprise SaaS cockpits, operational dashboards, and ERP modules (MaxP single-surface chassis, semantic tokens, tabular telemetry). Enforces strict anti-slop rules, bans purple dark mesh, cookie-cutter cards, and AI tells across all web surfaces.
 ---
 
 
-# tasteskill: Anti-Slop Frontend Skill
+# tasteskill: Anti-Slop Frontend & Unified SaaS Design System
 
-> Landing pages, portfolios, and redesigns. Not dashboards, not data tables, not multi-step product UI.
-> Every rule below is **contextual**. None of it fires automatically. First read the brief, then pull only what fits.
+> **Dual-Track Architectural Standard:**
+> 1. **Track A (Public Marketing, Landing Pages, Storefronts & Brand Sites):** Editorial hierarchy, high-fashion typography, domain-first palettes, purposeful GSAP/CSS motion.
+> 2. **Track B (Enterprise SaaS Cockpits, Dashboards & Operational Product UI):** Strictly governed by **Section 15** — Single-Surface Chassis (Linear/Cursor caliber), 100% semantic design tokens (`bg-card`, `border-border/70`, `text-foreground`), executive action headers, dense tabular telemetry (`font-mono tabular-nums`), zero marketing fluff, and zero blast-radius.
+>
+> Every rule below is **contextual**. None of it fires automatically. First read the brief, classify the track (Marketing vs SaaS Cockpit), then pull only what fits.
 
 ---
 
@@ -16,7 +19,9 @@ description: Anti-slop frontend skill for landing pages, marketing sites, portfo
 Before touching code or tweaking dials, **infer what the user actually wants**. Most LLM design output is bad because the model jumps to a default aesthetic instead of reading the room.
 
 ### 0.A Read these signals first
-1. **Page kind** - landing (SaaS / consumer / agency / event), portfolio (dev / designer / creative studio), redesign (preserve vs overhaul), editorial / blog.
+1. **Page kind** - 
+   - **Track A (Public / Commercial):** landing (SaaS / consumer / agency / event), storefront / lookbook, portfolio (dev / designer / studio), editorial / blog.
+   - **Track B (Internal / Operational SaaS):** enterprise cockpit, operational dashboard, ERP domain (HR, Attendance, Payroll, POS, Dental Lab, Logistics, Billing, Settings, Analytics).
 2. **Vibe words** the user used - "minimalist", "calm", "Linear-style", "Awwwards", "brutalist", "premium consumer", "Apple-y", "playful", "serious B2B", "editorial", "agency-y", "glassy", "dark tech".
 3. **Reference signals** - URLs they linked, screenshots they pasted, products they named, brands they're competing with.
 4. **Audience** - B2B procurement panel vs. design-conscious consumer vs. recruiter scanning a portfolio. The audience picks the aesthetic, not your taste.
@@ -28,6 +33,7 @@ Before any code, state in one line: **"Reading this as: \<page kind> for \<audie
 
 Example reads:
 - *"Reading this as: B2B SaaS landing for technical buyers, with a Linear-style minimalist language, leaning toward Tailwind utilities + Geist + restrained motion."*
+- *"Reading this as: Enterprise SaaS Cockpit for internal operators (HR / Attendance / Payroll / Operations), with a Linear/Cursor-caliber Single-Surface language, leaning toward Section 15 semantic tokens (bg-card, border-border/70), dense tabular telemetry, and zero marketing clutter."*
 - *"Reading this as: solo designer portfolio for hiring managers, with an editorial / kinetic-type language, leaning toward native CSS + scroll-driven animation + custom typography."*
 - *"Reading this as: redesign of a public-sector service site, with a trust-first language, leaning toward GOV.UK Frontend or USWDS."*
 
@@ -957,17 +963,17 @@ stack: ["react", "next", "tailwind", "motion"]
 
 ---
 
-## 13. OUT OF SCOPE
+## 13. OUT OF SCOPE & TRACK ROUTING
 
-This skill is NOT for:
-* Dashboards / dense product UI / admin panels (use Fluent, Carbon, Atlassian, or Polaris from Section 2.A).
-* Data tables (use TanStack Table or AG Grid).
-* Multi-step forms / wizards (use Form-specific patterns; this skill won't make them better).
-* Code editors (use Monaco / CodeMirror with their official skinning).
-* Native mobile (use Apple HIG / Material directly).
-* Realtime collab UIs (presence, cursors, OT-aware - different problem class).
+This skill treats user-facing surfaces through two distinct, rigorous tracks:
+* **Track A (Public Marketing, Landing Pages, Storefronts & Portfolios):** Governed by Sections 0 through 12.
+* **Track B (Enterprise SaaS Cockpits, Workspaces & Operational Dashboards):** Governed strictly and comprehensively by **Section 15**.
 
-If the brief is one of the above, **say so explicitly**, point to the right tool, and only apply this skill's marketing-page / about-page / landing-page parts to the surfaces where they apply.
+Truly Out of Scope:
+* Raw unstyled native mobile (use Apple HIG / Android Material directly).
+* Embedded Code editors (use Monaco / CodeMirror with their official skinning).
+* Low-level terminal consoles or CLIs (dark titanium / raw mono only).
+* Realtime canvas engines (Figma-style infinite WebGL whiteboards).
 
 ---
 
@@ -1040,7 +1046,119 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **Core Web Vitals** plausibly hit (LCP < 2.5s, INP < 200ms, CLS < 0.1)?
 - [ ] **One design system** per project (no Material + shadcn mixed)?
 
+#### SaaS Cockpit & Operational Product Verification (Track B - Mandatory for any internal/operational page):
+- [ ] **Track B verified**: Built strictly in accordance with **Section 15**?
+- [ ] **Single-Surface Chassis**: No floating island fragmentation, no wide background gaps, root container uses `<div className="space-y-6 w-full pb-8" dir="rtl">` (or ltr)?
+- [ ] **Zero Layout Leakage**: Free of `min-h-screen` and outer `bg-gray-50/900` wrappers, respecting `Layout.tsx` shell bounds?
+- [ ] **100% Semantic Tokens**: Strictly uses `bg-card`, `border-border/70`, `text-foreground`, `text-muted-foreground`, `bg-primary`, with ZERO hardcoded raw palette splashes (`indigo-600`, `blue-500`, `violet-800`, `slate-950`)?
+- [ ] **Executive Action Header**: Clean header with title `text-xl sm:text-2xl font-bold tracking-tight text-foreground`, subtle 1-line context, zero marketing essays, no `text-4xl` gradient titles?
+- [ ] **Tabular Numerics**: Every single currency amount, count, percentage, and date formatted with `font-mono tabular-nums`?
+- [ ] **No Box-in-Box Cramping**: Sub-sections blend cleanly with hairline dividers, no multi-level card-inside-card padding cascades?
+- [ ] **No Competing Navigation**: No custom duplicate in-page sidebars or secondary navigation bars duplicating `AppSidebar`?
+
 If a single checkbox cannot be honestly ticked, the page is not done. Fix it before delivering.
+
+---
+
+---
+
+## 15. ENTERPRISE SAAS COCKPITS & OPERATIONAL PRODUCT UI (MaxP Unified Standard)
+
+> **The Operational Law:** When the brief is an enterprise SaaS application, workspace, operational cockpit, ERP module (HR, Payroll, Accounting, POS, Inventory, Dental Lab, Settings, Analytics), marketing and landing-page rules **DO NOT APPLY**. Operational tools are built for repetitive daily execution, lightning-fast comprehension, and dense data precision — not first-time marketing conversion. Follow these non-negotiable architectural laws to ensure a 100% unified, seamless, and authentic human-engineered interface.
+
+### 15.1 The Single-Surface Continuous Chassis (حظر تجزئة الجزر العائمة والخلفيات المزدوجة)
+* **One Continuous Chassis (Linear / Cursor Caliber):**
+  - Workspaces, dashboards, and studios MUST be a single continuous surface.
+  - Panels and sub-sections are separated only by subtle hairline dividers (`border-r`, `border-l`, or `border-b border-border/70`), never by container background gaps or floating grey card boxes (`bg-slate-100 gap-6 rounded-2xl`).
+* **Root Container Standardization:**
+  Every operational screen hosted inside `Layout.tsx` MUST use the standard chassis root:
+  ```tsx
+  <div className="space-y-6 w-full pb-8" dir="rtl"> {/* or ltr */}
+  ```
+* **Absolute Ban on `min-h-screen` & Outer Gray Wrappers:**
+  - The application shell (`Layout.tsx`) already owns scrolling, theme backgrounds, and viewport bounds.
+  - **NEVER** write `<div className="min-h-screen bg-gray-50 dark:bg-gray-900 ...">` inside an operational page. Doing so introduces double scrollbars, broken viewport heights, and mismatched nested background boxes.
+* **Eliminate Container Nesting (Cards inside Cards):**
+  - Never nest a full-border card inside another card with heavy padding (`p-6`).
+  - Sub-sections must blend into the parent chassis using vertical rhythm (`space-y-6`) or subtle top dividers (`border-t border-border/70`).
+
+### 15.2 Strict Semantic Design Token Law (حظر الألوان الصلبة والتدرجات العشوائية)
+* **100% Semantic Token Enforcement:**
+  - AI models routinely invent ad-hoc colors (`bg-indigo-600`, `text-blue-500`, `border-violet-700`, `bg-slate-950`). This is PERMANENTLY BANNED on SaaS screens.
+  - Every surface, border, and text MUST strictly map to the platform's semantic CSS design tokens:
+
+| UI Element | Allowed Semantic Token | Banned AI Default |
+|---|---|---|
+| Card / Container Surface | `bg-card text-card-foreground` | `bg-white dark:bg-gray-900`, `bg-slate-900` |
+| Base Page Background | `bg-background text-foreground` | `bg-gray-50`, `bg-slate-50` |
+| Subtle Tile / Table Row | `bg-muted/30`, `hover:bg-muted/50` | `bg-gray-100`, `hover:bg-violet-50` |
+| Hairline Borders | `border-border/70` or `border-border/40` | `border-gray-200`, `border-violet-700/30` |
+| Primary Action / Accent | `bg-primary text-primary-foreground` | `bg-blue-600`, `bg-indigo-600` |
+| Accent Pill / Subtle Badge | `bg-primary/10 text-primary border-primary/20` | `bg-purple-100 text-purple-700` |
+| Primary Text | `text-foreground` | `text-gray-900 dark:text-white` |
+| Secondary / Metadata Text | `text-muted-foreground` | `text-gray-500`, `text-slate-400` |
+| Success / Completed | `text-emerald-500 bg-emerald-500/10 border-emerald-500/20` | `text-green-600 bg-green-100` |
+| Destructive / Overdue | `text-destructive bg-destructive/10 border-destructive/20` | `text-red-600 bg-red-100` |
+| Warning / Pending | `text-amber-500 bg-amber-500/10 border-amber-500/20` | `text-yellow-600 bg-yellow-100` |
+
+### 15.3 Executive Action Header Law (حظر الهيدرات التسويقية والشروحات التعليمية)
+* **Show, Don't Tell:** Enterprise software users do not read introductory essays or marketing slogans inside tools they open 50 times a day.
+* **PERMANENT BAN on:**
+  - `text-4xl` or `text-3xl` gradient titles (`bg-clip-text text-transparent from-indigo-600...`).
+  - 3-line instructional paragraphs under the page title explaining what HR, accounting, or attendance is.
+  - Giant hero banners with decorative background blur circles (`blur-3xl`, `bg-violet-200/30`).
+* **Canonical Executive Header Pattern:**
+  ```tsx
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+    <div className="flex items-center gap-3">
+      {/* Contextual icon badge */}
+      <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
+        <Icon className="size-5 sm:size-6" />
+      </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          {pageTitle}
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          {conciseOneLineContext}
+        </p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      {/* Primary and secondary action controls */}
+      <Button variant="outline" size="sm">تصدير</Button>
+      <Button size="sm">إضافة جديد</Button>
+    </div>
+  </div>
+  ```
+
+### 15.4 Dense Tabular Telemetry & Financial Precision (الأرقام والبيانات الجداولية المحكمة)
+* **Tabular Figures Law:** Every single numeric value, currency amount, percentage, employee count, invoice number, date, and timestamp MUST have `font-mono tabular-nums`.
+* **Telemetry Metric Cards:**
+  - Card chassis: `rounded-2xl border border-border/70 bg-card shadow-xs p-4 sm:p-5`.
+  - Number display: `text-2xl sm:text-3xl font-bold font-mono tabular-nums text-foreground`.
+  - Label: `text-xs font-medium text-muted-foreground`.
+  - Comparison trend badge: `text-xs font-mono tabular-nums inline-flex items-center gap-1`.
+
+### 15.5 Anti-Double Navigation Syndrome (حظر القوائم العلوية أو السايدبارات المكررة)
+* **Central Sidebar Hegemony:** The central sidebar (`AppSidebar`) owns 100% of app navigation.
+* **NEVER:**
+  - Embed an independent in-page sidebar (e.g. secondary 72-wide dark gradient navigation inside a page) that duplicates or competes with the app shell.
+  - Create duplicate secondary horizontal `<NavLink>` tab bars at the top of an app screen when the links already belong in the sidebar.
+  - If sub-tabs are functionally required (e.g., Settings tabs or Asset views), use clean, accessible Radix `<Tabs>` styled with semantic tokens (`bg-muted/50 p-1 rounded-xl text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground`).
+
+### 15.6 Responsive Viewport Ergonomics (Laptop <= 768px & Mobile Utilization)
+* **Laptop Viewport Height (usable 550-650px below browser chrome):**
+  - Never use tall fixed-ratio media blocks (`aspect-[4/3]`) or giant headers that push primary CTAs and tables below the fold.
+  - Keep tables and operational grids visible within the top 600px of the viewport.
+* **Mobile-First Single-Depth Surfaces (MOB-015):**
+  - Content width on mobile (inputs, tables, cards) MUST occupy >= 85% of screen width.
+  - Eliminate outer margin cascades (`px-4 sm:px-6`).
+  - Convert dense multi-button toolbars to compact horizontal scrolling rows (`overflow-x-auto no-scrollbar`).
+
+### 15.7 Defensive Layout & Arabic Typography Law
+* **Defensive Layout:** Always apply `min-w-0` on flex children with `truncate` or `line-clamp-*` to prevent overflow crashes.
+* **Arabic Typography Integrity:** NEVER apply `font-mono` to Arabic words as it breaks cursive letter attachments. Apply `font-mono tabular-nums` strictly to Latin codes, currencies, and digit blocks.
 
 ---
 
