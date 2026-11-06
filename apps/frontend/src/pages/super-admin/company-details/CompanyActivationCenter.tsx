@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CheckCircle2, Loader2, Layers, Zap, AlertTriangle, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Layers, Zap, AlertTriangle, Sparkles, Search } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
 import {
@@ -112,9 +113,25 @@ export function CompanyActivationCenter({
   toggleFeatureLoading: boolean;
 }) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
   const uninstalledApps = orderedCatalogApps.filter((a) => !a.isInstalled);
   const uninstalledCount = uninstalledApps.length;
+
+  // فلترة موحّدة للاثنين: بحث بالاسم/الslug + حالة التفعيل
+  const matchesFilters = (item: ActivationItem) => {
+    const q = query.trim().toLowerCase();
+    const haystack = `${item.name || ""} ${item.slug || ""}`.toLowerCase();
+    const matchesQuery = !q || haystack.includes(q);
+    const matchesStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "ACTIVE" ? Boolean(item.isInstalled) : !item.isInstalled);
+    return matchesQuery && matchesStatus;
+  };
+  const filteredApps = orderedCatalogApps.filter(matchesFilters);
+  const filteredBundles = resolvedBundles.filter(matchesFilters);
+  const isFiltering = Boolean(query.trim()) || statusFilter !== "ALL";
 
   const totalMonthlyCost = uninstalledApps.reduce((acc, app) => acc + (Number(app.monthlyPrice) || 0), 0);
   const subscriptionAppsCount = uninstalledApps.filter((a) => a.pricingModel === "SUBSCRIPTION" || a.pricingModel === "HYBRID").length;
@@ -153,6 +170,45 @@ export function CompanyActivationCenter({
             </div>
           ) : null}
 
+          {/* Search + status filter — 20 أداة + 8 باقات مش قابلة للتصفح بدونهم */}
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="ابحث باسم الأداة أو الباقة..."
+                className="h-10 rounded-xl pr-9 text-sm"
+              />
+            </div>
+            <div className="flex gap-1 rounded-xl bg-muted/60 p-1">
+              {([
+                { key: "ALL", label: "الكل" },
+                { key: "ACTIVE", label: "المفعلة" },
+                { key: "INACTIVE", label: "غير المفعلة" },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                    statusFilter === tab.key
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {isFiltering ? (
+            <p className="text-xs font-medium text-muted-foreground">
+              المعروض: {formatNumber(filteredApps.length)} أداة من {formatNumber(orderedCatalogApps.length)} · {formatNumber(filteredBundles.length)} باقة من {formatNumber(resolvedBundles.length)}
+            </p>
+          ) : null}
+
           {/* Apps Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between pb-2 border-b border-border/40">
@@ -162,11 +218,15 @@ export function CompanyActivationCenter({
               </span>
             </div>
             {orderedCatalogApps.length ? (
-              <div className="divide-y divide-border/20">
-                {orderedCatalogApps.map((app) => (
-                  <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} />
-                ))}
-              </div>
+              filteredApps.length ? (
+                <div className="divide-y divide-border/20">
+                  {filteredApps.map((app) => (
+                    <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={Search} message="لا توجد أدوات مطابقة للبحث أو الفلتر الحالي." />
+              )
             ) : (
               <EmptyState icon={Zap} message="لا توجد أدوات متاحة في المتجر حالياً." />
             )}
@@ -181,11 +241,15 @@ export function CompanyActivationCenter({
               <span className="text-xs text-muted-foreground">مجموعات أدوات مخصصة للأنشطة المختلفة</span>
             </div>
             {resolvedBundles.length ? (
-              <div className="divide-y divide-border/20">
-                {resolvedBundles.map((bundle) => (
-                  <BundleItemRow key={bundle.slug} bundle={bundle} onSubscribe={handleSubscribeBundle} action={bundleAction} />
-                ))}
-              </div>
+              filteredBundles.length ? (
+                <div className="divide-y divide-border/20">
+                  {filteredBundles.map((bundle) => (
+                    <BundleItemRow key={bundle.slug} bundle={bundle} onSubscribe={handleSubscribeBundle} action={bundleAction} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={Search} message="لا توجد باقات مطابقة للبحث أو الفلتر الحالي." />
+              )
             ) : (
               <EmptyState icon={Layers} message="لا توجد باقات جاهزة متاحة حالياً." />
             )}

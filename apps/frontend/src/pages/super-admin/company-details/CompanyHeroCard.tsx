@@ -18,8 +18,8 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
     : null;
 
   return (
-    <Card className="app-panel-theme rounded-2xl border">
-      <CardContent className="space-y-5 p-5 sm:p-6">
+    <Card className="rounded-none border-0 bg-transparent shadow-none">
+      <CardContent className="space-y-5 p-0 sm:p-0">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/10 to-amber-200/60 text-3xl font-black text-primary dark:to-amber-500/20">
             {company.name?.charAt(0) || "ش"}

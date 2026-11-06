@@ -1,7 +1,6 @@
 import type { ElementType } from "react";
 import { Activity, CreditCard, Ticket, Users, Wallet } from "lucide-react";
 import type { CompanyReview, ActivityEntry } from "./companyDetailsTypes";
-import { Card, CardContent } from "../../../components/ui/card";
 import { formatCurrency, formatNumber, formatRelativeDateLabel, getStatusMeta } from "./helpers";
 
 export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivity, activeUsers }: {
@@ -22,8 +21,8 @@ export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivi
     subStatus === "ACTIVE" ? "success" : subStatus === "EXPIRED" || subStatus === "CANCELLED" ? "danger" : "warning";
 
   return (
-    <Card className="rounded-2xl border border-border/50 bg-card/70 shadow-xs">
-      <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-5">
+    <div className="border-t border-border/50 pt-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <PulseItem
           icon={Users}
           label="الأعضاء النشطون"
@@ -52,8 +51,8 @@ export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivi
           label="آخر نشاط"
           value={recentActivity ? formatRelativeDateLabel(recentActivity.createdAt) : "لا يوجد"}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
