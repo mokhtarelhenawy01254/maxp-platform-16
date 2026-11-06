@@ -148,35 +148,3 @@ model AppBundle {
   @@index([isActive])
   @@map("app_bundles")
 }
-
-/// UNUSED - Planned feature for company wallet system
-model CompanyWallet {
-  id           String        @id @default(cuid())
-  companyId    String        @unique
-  balance      Decimal       @default(0) @db.Decimal(10, 2)
-  currency     String        @default("EGP")
-  totalSpent   Decimal       @default(0) @db.Decimal(10, 2)
-  totalDeposited Decimal     @default(0) @db.Decimal(10, 2)
-  updatedAt    DateTime      @updatedAt
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-
-  @@map("company_wallets")
-}
-
-/// UNUSED - Planned feature for company wallet system
-model Transaction {
-  id          String        @id @default(cuid())
-  walletId    String
-  amount      Decimal       @db.Decimal(10, 2)
-  type        String
-  status      String        @default("COMPLETED")
-  description String?
-  referenceId String?
-  createdAt   DateTime      @default(now())
-  wallet      CompanyWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-
-  @@index([walletId])
-  @@map("transactions")
-}
-

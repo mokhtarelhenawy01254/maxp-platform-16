@@ -74,9 +74,14 @@ function calculateShipmentLineFees(shipment, card) {
     }
 
     const returnFee = 0;
-    const net = round(collectedAmount - shippingFee - codFee - returnFee);
+    const extraFees = round((shipment.serviceLines || []).reduce((acc, sl) => acc + Number(sl.amount || 0), 0));
+    const totalCharges = round(shippingFee + codFee + returnFee + extraFees);
+    const net = round(collectedAmount - totalCharges);
 
     return {
+      extraFees,
+      totalCharges,
+      serviceLines: shipment.serviceLines || [],
       shipmentId: shipment.id,
       shipmentBarcode: shipment.barcode || shipment.trackingNumber || shipment.id,
       trackingNumber: shipment.trackingNumber,
@@ -101,9 +106,14 @@ function calculateShipmentLineFees(shipment, card) {
     const shippingFee = 0;
     const codFee = 0;
     const returnFee = card ? round(Number(card.returnFee || 0)) : 0;
-    const net = round(0 - shippingFee - codFee - returnFee);
+    const extraFees = round((shipment.serviceLines || []).reduce((acc, sl) => acc + Number(sl.amount || 0), 0));
+    const totalCharges = round(shippingFee + codFee + returnFee + extraFees);
+    const net = round(0 - totalCharges);
 
     return {
+      extraFees,
+      totalCharges,
+      serviceLines: shipment.serviceLines || [],
       shipmentId: shipment.id,
       shipmentBarcode: shipment.barcode || shipment.trackingNumber || shipment.id,
       trackingNumber: shipment.trackingNumber,
@@ -181,6 +191,25 @@ async function preview({ companyId, merchantId, from, to, prismaClient = null })
     return false;
   });
 
+  const shipmentIds = eligibleShipments.map((s) => s.id);
+  const serviceLinesMap = {};
+  if (prisma.shipmentServiceLine && shipmentIds.length > 0) {
+    try {
+      const allLines = await prisma.shipmentServiceLine.findMany({
+        where: { shipmentId: { in: shipmentIds } },
+      });
+      for (const sl of allLines) {
+        if (!serviceLinesMap[sl.shipmentId]) serviceLinesMap[sl.shipmentId] = [];
+        serviceLinesMap[sl.shipmentId].push(sl);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  for (const s of eligibleShipments) {
+    s.serviceLines = serviceLinesMap[s.id] || [];
+  }
+
   const lines = [];
   for (const shipment of eligibleShipments) {
     const card = matchRateCard(rateCards, shipment.destinationGovernorate);
@@ -192,7 +221,8 @@ async function preview({ companyId, merchantId, from, to, prismaClient = null })
   const shippingFeesTotal = round(lines.reduce((sum, l) => sum + l.shippingFee, 0));
   const codFeesTotal = round(lines.reduce((sum, l) => sum + l.codFee, 0));
   const returnFeesTotal = round(lines.reduce((sum, l) => sum + l.returnFee, 0));
-  const netPayout = round(grossCOD - shippingFeesTotal - codFeesTotal - returnFeesTotal);
+  const extraFeesTotal = round(lines.reduce((sum, l) => sum + (l.extraFees || 0), 0));
+  const netPayout = round(grossCOD - shippingFeesTotal - codFeesTotal - returnFeesTotal - extraFeesTotal);
 
   const deliveredCount = lines.filter((l) => l.status === 'DELIVERED').length;
   const returnedCount = lines.filter((l) => l.status === 'RETURNED').length;
@@ -227,6 +257,7 @@ async function preview({ companyId, merchantId, from, to, prismaClient = null })
       returnedCount,
       grossCOD,
       shippingFeesTotal,
+      extraFeesTotal,
       codFeesTotal,
       returnFeesTotal,
       netPayout,
@@ -336,6 +367,13 @@ async function issue({
       },
     });
 
+    try {
+      const companyWalletService = require('./companyWalletService');
+      await companyWalletService.recalculateUpcomingRemittance(companyId, tx);
+    } catch (wErr) {
+      console.warn('[settlementService] Warning updating upcomingRemittance on issue:', wErr.message);
+    }
+
     return createdSettlement;
   });
 }
@@ -441,6 +479,20 @@ async function pay(id, { companyId, method = 'CASH', reference, treasuryAccountI
       },
       include: { lines: true },
     });
+
+    try {
+      const companyWalletService = require('./companyWalletService');
+      await companyWalletService.recordSettlementPayout({
+        companyId,
+        settlementNumber: settlement.settlementNumber,
+        netPayout: netPayoutAmount,
+        createdBy: userId,
+        notes: `صرف كشف تسوية رقم ${settlement.settlementNumber}`,
+        prismaClient: tx,
+      });
+    } catch (walletErr) {
+      console.warn('[settlementService] Warning recording settlement payout in wallet:', walletErr.message);
+    }
 
     return updatedSettlement;
   });

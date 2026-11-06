@@ -329,3 +329,17 @@ class WalletService {
 }
 
 module.exports = WalletService;
+
+// Company Wallet & Ledger integration (SHIP-T2)
+const companyWalletService = require('./shipping/companyWalletService');
+WalletService.company = companyWalletService;
+WalletService.getCompanyWallet = companyWalletService.getOrCreateWallet;
+WalletService.recordCompanyTransaction = companyWalletService.recordTransaction;
+WalletService.recordCodCollected = companyWalletService.recordCodCollected;
+WalletService.recordPrintFee = companyWalletService.recordPrintFee;
+WalletService.recordOpenPackageFee = companyWalletService.recordOpenPackageFee;
+WalletService.recordSettlementPayout = companyWalletService.recordSettlementPayout;
+WalletService.adjustCompanyBalance = companyWalletService.adjustBalance;
+WalletService.listCompanyTransactions = companyWalletService.listTransactions;
+WalletService.getCompanyFeeReport = companyWalletService.getFeeReport;
+

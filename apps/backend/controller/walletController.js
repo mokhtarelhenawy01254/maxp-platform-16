@@ -14,7 +14,6 @@ class WalletController {
     try {
       const companyId = req.user?.companyId;
 
-      // Handle null, undefined, or string 'null'/'undefined'
       if (!companyId || companyId === 'null' || companyId === 'undefined') {
         return res.status(400).json({
           success: false,
@@ -23,32 +22,16 @@ class WalletController {
         });
       }
 
-      let wallet = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().companyWallet.findUnique({
-          where: { companyId }
-        });
-      });
+      const companyWalletService = require('../services/shipping/companyWalletService');
+      const wallet = await companyWalletService.getOrCreateWallet(companyId);
 
-      // Create wallet if doesn't exist
-      if (!wallet) {
-        wallet = await executeWithRetry(async () => {
-          return await getSharedPrismaClient().companyWallet.create({
-            data: {
-              companyId,
-              balance: 0,
-              currency: 'EGP'
-            }
-          });
-        });
-      }
-
-      res.json({
+      return res.json({
         success: true,
-        data: wallet
+        data: wallet,
       });
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'خطأ في جلب رصيد المحفظة',
         error: error.message
@@ -56,81 +39,124 @@ class WalletController {
     }
   }
 
+  static async getWalletSummary(req, res) {
+    return WalletController.getBalance(req, res);
+  }
+
   /**
    * @route GET /api/v1/wallet/transactions
-   * @desc Get wallet transactions
+   * @desc Get wallet transactions (SHIP-T2: Turbo Ledger with CSV export & filters)
    * @access Protected
    */
   static async getTransactions(req, res) {
     try {
       const { companyId } = req.user;
 
-      // Handle null, undefined, or string 'null'/'undefined'
       if (!companyId || companyId === 'null' || companyId === 'undefined') {
         return res.status(400).json({
           success: false,
           message: 'يجب تحديد الشركة لعرض المحفظة'
         });
       }
-      const { page = 1, limit = 20, type, startDate, endDate } = req.query;
 
-      const wallet = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().companyWallet.findUnique({
-          where: { companyId }
-        });
+      const {
+        page = 1,
+        limit = 50,
+        type,
+        reason,
+        from,
+        to,
+        startDate,
+        endDate,
+        export: exportParam,
+        format,
+      } = req.query;
+
+      const isCsv = exportParam === 'csv' || format === 'csv';
+      const companyWalletService = require('../services/shipping/companyWalletService');
+
+      const result = await companyWalletService.listTransactions({
+        companyId,
+        from: from || startDate,
+        to: to || endDate,
+        type,
+        reason,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 50,
+        exportCsv: isCsv,
       });
 
-      if (!wallet) {
-        return res.json({
-          success: true,
-          data: [],
-          pagination: { page: 1, limit: 20, total: 0, pages: 0 }
-        });
+      if (isCsv) {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+        return res.send(result.csv);
       }
 
-      const where = { walletId: wallet.id };
-
-      if (type) {
-        where.type = type;
-      }
-
-      if (startDate || endDate) {
-        where.createdAt = {};
-        if (startDate) where.createdAt.gte = new Date(startDate);
-        if (endDate) where.createdAt.lte = new Date(endDate);
-      }
-
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-
-      const [transactions, total] = await executeWithRetry(async () => {
-        return await Promise.all([
-          getSharedPrismaClient().transaction.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            skip,
-            take: parseInt(limit)
-          }),
-          getSharedPrismaClient().transaction.count({ where })
-        ]);
-      });
-
-      res.json({
+      return res.json({
         success: true,
-        data: transactions,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / parseInt(limit))
-        }
+        data: result.transactions,
+        pagination: result.pagination,
+        wallet: result.wallet,
       });
     } catch (error) {
       console.error('Error fetching transactions:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message: 'خطأ في جلب حركات المحفظة',
+        message: 'خطأ في جلب معاملات المحفظة',
         error: error.message
       });
+    }
+  }
+
+  /**
+   * @route GET /api/v1/wallet/fees
+   * @desc Fee summary report (print fees & open package fees)
+   */
+  static async getFeesReport(req, res) {
+    try {
+      const { companyId } = req.user;
+      const { from, to } = req.query;
+      const companyWalletService = require('../services/shipping/companyWalletService');
+      const data = await companyWalletService.getFeeReport({ companyId, from, to });
+      return res.json({ success: true, data });
+    } catch (error) {
+      console.error('Error fetching fees report:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * @route POST /api/v1/wallet/adjust
+   * @desc Manual wallet adjustment with audit log (createdBy)
+   */
+  static async adjustBalance(req, res) {
+    try {
+      const { companyId } = req.user;
+      const { amount, type, reason, notes, code } = req.body || {};
+
+      if (!amount || Number(amount) <= 0) {
+        return res.status(400).json({ success: false, error: 'المبلغ يجب أن يكون أكبر من صفر' });
+      }
+
+      const companyWalletService = require('../services/shipping/companyWalletService');
+      const result = await companyWalletService.adjustBalance({
+        companyId,
+        amount: Number(amount),
+        type: type || 'DEPOSIT',
+        reason: reason || 'ADJUSTMENT',
+        notes,
+        code,
+        createdBy: req.user?.id || req.user?.name || 'ADMIN',
+      });
+
+      return res.json({
+        success: true,
+        message: 'تم تعديل الرصيد بنجاح',
+        data: result,
+      });
+    } catch (error) {
+      console.error('Error adjusting balance:', error);
+      return res.status(500).json({ success: false, error: error.message });
     }
   }
 

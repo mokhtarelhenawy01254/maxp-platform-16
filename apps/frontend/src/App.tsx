@@ -522,6 +522,15 @@ const ShippingOpsSettlementsPage = React.lazy(
 const ShippingReportsPage = React.lazy(
   () => import("./pages/shipping-ops/ShippingReportsPage"),
 );
+const ShippingServicesPage = React.lazy(
+  () => import("./pages/shipping-ops/services/ShippingServicesPage"),
+);
+const ShippingWalletPage = React.lazy(
+  () => import("./pages/shipping-ops/ShippingWalletPage"),
+);
+const ShippingSettingsPage = React.lazy(
+  () => import("./pages/shipping-ops/ShippingSettingsPage"),
+);
 const ClientSettlementsPage = React.lazy(
   () => import("./pages/shipping-client/ClientSettlementsPage"),
 );
@@ -7658,6 +7667,36 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
                         <ShippingReportsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/services"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingServicesPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/wallet"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingWalletPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-ops/settings"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet', 'order-shipping-turbo']}>
+                        <ShippingSettingsPage />
                       </AppAccessRoute>
                     </Layout>
                   }

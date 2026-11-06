@@ -99,6 +99,8 @@ async function syncTurboOrdersToShipments(prisma, companyId) {
 // Print & Label aliases (SHIP-W17)
 router.get('/:id/print', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.printShipmentPdf(req, res));
 router.get('/:id/label', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.printShipmentPdf(req, res));
+router.post('/:id/confirm-open', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.confirmOpenPackage(req, res));
+router.post('/:id/collect', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.collectShipmentCod(req, res));
 
 // GET /api/v1/shipments - List all shipments with multi-carrier filters & pagination
 router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
@@ -1214,5 +1216,16 @@ router.post('/sync-carrier', verifyToken.authenticateToken, blockCourierMobileTo
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
+// ============================================================================
+// Extra Services on Shipments (SHIP-T3)
+// ============================================================================
+const shippingExtraServicesController = require('../controller/shippingExtraServicesController');
+router.post('/:id/services', verifyToken.authenticateToken, shippingExtraServicesController.addShipmentService);
+router.get('/:id/services', verifyToken.authenticateToken, shippingExtraServicesController.listShipmentServices);
+router.delete('/:id/services/:lineId', verifyToken.authenticateToken, shippingExtraServicesController.removeShipmentService);
+router.post('/:id/open-request', verifyToken.authenticateToken, shippingExtraServicesController.createPackageOpenRequest);
+router.post('/:id/change-request', verifyToken.authenticateToken, shippingExtraServicesController.createOrderChangeRequest);
 
 module.exports = router;

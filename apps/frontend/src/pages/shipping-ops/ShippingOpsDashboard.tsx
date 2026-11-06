@@ -12,8 +12,12 @@ import {
   ArrowRight,
   Eye,
   Boxes,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  Scale,
 } from 'lucide-react';
-import { shippingOpsService, DashboardStats } from '../../services/shippingOpsService';
+import { shippingOpsService, DashboardStats, CompanyWalletData } from '../../services/shippingOpsService';
 import { getStatusBadge, formatDate, formatCurrency } from './shippingOpsShared';
 
 export const ShippingOpsDashboard: React.FC = () => {
@@ -21,6 +25,7 @@ export const ShippingOpsDashboard: React.FC = () => {
   const isEn = i18n.language === 'en';
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [wallet, setWallet] = useState<CompanyWalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +33,16 @@ export const ShippingOpsDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await shippingOpsService.getDashboardStats();
-      setStats(data);
+      const [statsRes, walletRes] = await Promise.allSettled([
+        shippingOpsService.getDashboardStats(),
+        shippingOpsService.getWalletSummary(),
+      ]);
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value);
+      }
+      if (walletRes.status === 'fulfilled') {
+        setWallet(walletRes.value);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('shippingOps.loadError', 'حدث خطأ أثناء تحميل البيانات');
       setError(msg);
@@ -65,6 +78,14 @@ export const ShippingOpsDashboard: React.FC = () => {
             <span>{isEn ? 'Refresh' : 'تحديث'}</span>
           </button>
           <Link
+            to="/shipping-ops/wallet"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            title="المحفظة ودفتر المعاملات"
+          >
+            <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{isEn ? 'Wallet Ledger' : 'المحفظة والمعاملات'}</span>
+          </Link>
+          <Link
             to="/shipping-ops/parcels"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
@@ -86,6 +107,71 @@ export const ShippingOpsDashboard: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* SHIP-T2: Turbo Financial Wallet Cards (الرصيد · القابل للتوريد · التوريد القادم) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* Total Balance */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-700/60 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-300 tracking-wide">
+              {isEn ? 'Total Balance' : 'الرصيد الإجمالي'}
+            </span>
+            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-white mt-1">
+            {loading ? '—' : formatCurrency(wallet?.balance ?? 0, wallet?.currency || 'EGP')}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-300">
+            <span>{isEn ? 'Live Net Liquidity' : 'صافي الرصيد اللحظي'}</span>
+            <Link to="/shipping-ops/wallet" className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-medium">
+              <span>{isEn ? 'Ledger' : 'دفتر المعاملات'}</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Available For Remittance */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
+              {isEn ? 'Available for Remittance' : 'القابل للتوريد'}
+            </span>
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
+              <Banknote className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-blue-600 dark:text-blue-400 mt-1">
+            {loading ? '—' : formatCurrency(wallet?.availableForRemittance ?? 0, wallet?.currency || 'EGP')}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{isEn ? 'COD − Fees − Payouts' : 'مجموع COD المحصّل − الرسوم'}</span>
+            <Link to="/shipping-ops/settlements" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+              {isEn ? 'Settlements' : 'كشوف التسوية'}
+            </Link>
+          </div>
+        </div>
+
+        {/* Upcoming Remittance */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
+              {isEn ? 'Upcoming Remittance' : 'التوريد القادم'}
+            </span>
+            <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
+              <Scale className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-amber-600 dark:text-amber-400 mt-1">
+            {loading ? '—' : formatCurrency(wallet?.upcomingRemittance ?? 0, wallet?.currency || 'EGP')}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{isEn ? 'Net Issued Statements' : 'صافي كشوف التسوية المعتمدة'}</span>
+            <span className="text-slate-400 font-mono text-[11px]">{isEn ? 'ISSUED/APPROVED' : 'معتمد/قيد الصرف'}</span>
+          </div>
+        </div>
+      </div>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">

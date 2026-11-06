@@ -953,8 +953,11 @@ export const getSidebarConfig = (
                 { to: '/shipping-ops/hub-receive', icon: ScanLine, label: isEn ? 'Hub Inward & Sorting' : 'استلام وفرز الهاَب', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/branches', icon: Building2, label: isEn ? 'Shipping Branches' : 'فروع ومراكز الشحن', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/rate-cards', icon: CreditCard, label: isEn ? 'Client Rate Cards' : 'بطاقات أسعار العملاء', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/wallet', icon: Wallet, label: isEn ? 'Wallet & Ledger' : 'المحفظة والمعاملات', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/settlements', icon: Receipt, label: isEn ? 'COD Settlements' : 'تسويات وكشوف COD', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/reports', icon: BarChart3, label: isEn ? 'Shipping Reports' : 'تقارير الشحن', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/services', icon: Layers, label: isEn ? 'Extra Services & Requests' : 'الخدمات الإضافية والطلبات', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/settings', icon: Settings, label: isEn ? 'Shipping Settings' : 'إعدادات الشحن والسياسات', requiredPermissions: ['orders.shipping.view'] },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo'])
         },

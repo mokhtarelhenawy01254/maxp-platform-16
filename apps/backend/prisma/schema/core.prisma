@@ -99,6 +99,7 @@ model Company {
   commissions                     Commission[]
   installedApps                   CompanyApp[]
   wallet                          CompanyWallet?
+  walletTransactions              CompanyWalletTransaction[]
   conversationMemories            ConversationMemory[]
   conversationOutcomes            ConversationOutcome[]
   conversations                   Conversation[]

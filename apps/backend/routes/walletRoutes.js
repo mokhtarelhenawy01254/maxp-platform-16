@@ -6,9 +6,12 @@ const verifyToken = require("../utils/verifyToken");
 // Middleware for all routes
 router.use(verifyToken.authenticateToken);
 
-// --- Company Wallet & Billing Routes ---
+// --- Company Wallet & Billing Routes (SHIP-T2) ---
+router.get('/', walletController.getWalletSummary);
 router.get('/balance', walletController.getBalance);
 router.get('/transactions', walletController.getTransactions);
+router.get('/fees', walletController.getFeesReport);
+router.post('/adjust', walletController.adjustBalance);
 router.post('/recharge', walletController.rechargeWallet);
 router.post('/kashier/create-session', walletController.createKashierRechargeSession);
 router.post('/kashier/verify-session', walletController.verifyKashierSession);
