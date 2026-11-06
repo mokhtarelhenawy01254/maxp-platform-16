@@ -35,7 +35,9 @@ export function CompanyUsageSection({ review, reviewCurrency }: {
                   <p className="text-sm font-bold text-foreground">{formatUsageFeatureLabel(entry.feature)}</p>
                   <p className="text-xs text-muted-foreground">{formatNumber(entry.totalActions)} عملية / {formatNumber(entry.totalQuantity)} وحدة</p>
                 </div>
-                <div className="text-sm font-bold text-foreground">{formatCurrency(entry.totalCost, reviewCurrency)}</div>
+                <div className={cn("text-sm font-bold", Number(entry.totalCost || 0) > 0 ? "text-foreground" : "text-muted-foreground")}>
+                  {Number(entry.totalCost || 0) > 0 ? formatCurrency(entry.totalCost, reviewCurrency) : "بدون تكلفة"}
+                </div>
               </div>
             ))
           ) : (
@@ -47,7 +49,12 @@ export function CompanyUsageSection({ review, reviewCurrency }: {
       <SectionShell title="الأدوات المثبتة" description="حالة كل أداة، تاريخها القادم، واستهلاكها الشهري.">
         <div className="space-y-2">
           {review?.usage?.installedApps?.length ? (
-            review.usage.installedApps.map((companyApp) => (
+            review.usage.installedApps.map((companyApp) => {
+              const hasUsage =
+                Number(companyApp.monthlyUsage?.totalCost || 0) > 0 ||
+                Number(companyApp.monthlyUsage?.totalActions || 0) > 0 ||
+                Number(companyApp.totalSpent || 0) > 0;
+              return (
               <div key={companyApp.id} className="py-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -70,14 +77,19 @@ export function CompanyUsageSection({ review, reviewCurrency }: {
                             : "بدون موعد محدد"}
                     </p>
                   </div>
-                  <div className="grid min-w-[180px] gap-2 text-xs text-muted-foreground sm:text-left">
-                    <span>شهر حالي: {formatCurrency(companyApp.monthlyUsage?.totalCost, reviewCurrency)}</span>
-                    <span>{companyApp.monthlyUsage?.totalActions || 0} عملية</span>
-                    <span>إجمالي مصروف {formatCurrency(companyApp.totalSpent, reviewCurrency)}</span>
-                  </div>
+                  {hasUsage ? (
+                    <div className="grid min-w-[180px] gap-2 text-xs text-muted-foreground sm:text-left">
+                      <span>شهر حالي: {formatCurrency(companyApp.monthlyUsage?.totalCost, reviewCurrency)}</span>
+                      <span>{companyApp.monthlyUsage?.totalActions || 0} عملية</span>
+                      <span>إجمالي مصروف {formatCurrency(companyApp.totalSpent, reviewCurrency)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground sm:text-left">بدون استهلاك مسجل</span>
+                  )}
                 </div>
               </div>
-            ))
+              );
+            })
           ) : (
             <EmptyState message="لا توجد أدوات مثبتة على هذه الشركة حاليًا." icon={Package} />
           )}

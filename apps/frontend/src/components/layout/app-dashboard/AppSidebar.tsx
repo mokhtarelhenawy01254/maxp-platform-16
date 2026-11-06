@@ -117,6 +117,13 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
     );
   };
 
+  // اسم التطبيق بيتكرر ٣ مرات لما القسم الوحيد اسمه نفس اسم التطبيق:
+  // عنوان السايدبار + ليبل القسم + عنصر التنقل النشط. نخفي ليبل القسم في الحالة دي.
+  const visibleSections = sections.filter(
+    (section) => !section.hidden && section.items.some((item) => !item.hidden),
+  );
+  const showSectionHeaders = visibleSections.length > 1;
+
   return (
     <aside
       aria-label={String(t('appDashboard.appNavigation', { appName }))}
@@ -171,13 +178,13 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
 
           return (
             <div key={section.id} className="mb-2">
-              {!isCollapsed && (
+              {!isCollapsed && showSectionHeaders && (section.title || "").trim() !== appName.trim() ? (
                 <div className="px-4 py-1.5">
                   <h3 className="text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider">
                     {section.title}
                   </h3>
                 </div>
-              )}
+              ) : null}
               {visibleItems.map((item) => {
                 const visibleChildren = item.children?.filter((child) => !child.hidden) ?? [];
                 const itemContent = (
