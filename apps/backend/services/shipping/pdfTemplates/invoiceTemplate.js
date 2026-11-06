@@ -82,16 +82,16 @@ function renderInvoicePage(doc, shipment, qrBuffer) {
   curY += 17;
 
   // Items Rendering
-  const items = shipment.order?.items || [];
+  const items = shipment.order?.orderItems || shipment.order?.items || [];
   const codAmount = Number(shipment.codAmount || 0);
   const shippingFee = Number(shipment.cost || 0);
   const itemsSubtotal = Math.max(0, codAmount - shippingFee);
 
   if (items.length > 0) {
     items.slice(0, 3).forEach((item) => {
-      const itemName = item.productName || item.productSku || 'صنف';
+      const itemName = item.productName || item.name || item.productSku || 'صنف';
       const itemQty = item.quantity || 1;
-      const itemPrice = Number(item.price || item.total || 0).toFixed(2);
+      const itemPrice = Number(item.price !== undefined ? item.price : (item.total || 0)).toFixed(2);
 
       doc.rect(MARGIN + 4, curY, CONTENT_WIDTH - 8, 14).fill('#ffffff');
       doc.fontSize(7).fillColor('#1e293b')

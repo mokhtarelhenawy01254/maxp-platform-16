@@ -1936,12 +1936,11 @@ async function printShipmentPdf(req, res) {
         ],
       },
       include: {
-        branch: true,
         company: { select: { id: true, name: true, phone: true, address: true } },
         merchant: { select: { id: true, name: true, phone: true } },
         order: {
           include: {
-            items: true,
+            orderItems: true,
           },
         },
       },
@@ -1949,6 +1948,26 @@ async function printShipmentPdf(req, res) {
 
     if (!shipment) {
       return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    // Load branch separately if branchId is present (Shipment has no branch relation)
+    let branch = null;
+    if (shipment.branchId) {
+      try {
+        const branchModel = prisma.shippingBranch || prisma.branch;
+        if (branchModel && typeof branchModel.findFirst === 'function') {
+          branch = await branchModel.findFirst({
+            where: { id: shipment.branchId, companyId },
+            select: { id: true, name: true, code: true, phone: true, address: true, governorate: true },
+          });
+        }
+      } catch (branchErr) {
+        console.warn('[ShippingPortal] Could not load branch for shipment:', branchErr.message);
+      }
+    }
+    shipment.branch = branch;
+    if (shipment.order && shipment.order.orderItems && !shipment.order.items) {
+      shipment.order.items = shipment.order.orderItems;
     }
 
     const pdfBuffer = await generateShipmentPdf(shipment, {
@@ -2008,12 +2027,11 @@ async function printBatchShipmentsPdf(req, res) {
         id: { in: shipmentIds },
       },
       include: {
-        branch: true,
         company: { select: { id: true, name: true, phone: true, address: true } },
         merchant: { select: { id: true, name: true, phone: true } },
         order: {
           include: {
-            items: true,
+            orderItems: true,
           },
         },
       },
@@ -2029,6 +2047,31 @@ async function printBatchShipmentsPdf(req, res) {
     // Preserve original shipmentIds ordering
     const idMap = new Map(shipments.map((s) => [s.id, s]));
     const orderedShipments = shipmentIds.map((id) => idMap.get(id)).filter(Boolean);
+
+    // Load branches separately for all branchIds present
+    const branchIds = [...new Set(shipments.map((s) => s.branchId).filter(Boolean))];
+    let branchMap = new Map();
+    if (branchIds.length > 0) {
+      try {
+        const branchModel = prisma.shippingBranch || prisma.branch;
+        if (branchModel && typeof branchModel.findMany === 'function') {
+          const branches = await branchModel.findMany({
+            where: { id: { in: branchIds }, companyId },
+            select: { id: true, name: true, code: true, phone: true, address: true, governorate: true },
+          });
+          branchMap = new Map(branches.map((b) => [b.id, b]));
+        }
+      } catch (branchErr) {
+        console.warn('[ShippingPortal] Could not load branches for batch:', branchErr.message);
+      }
+    }
+
+    shipments.forEach((s) => {
+      s.branch = s.branchId ? (branchMap.get(s.branchId) || null) : null;
+      if (s.order && s.order.orderItems && !s.order.items) {
+        s.order.items = s.order.orderItems;
+      }
+    });
 
     const pdfBuffer = await generateBatchPdf(orderedShipments, {
       template: String(template).toUpperCase(),

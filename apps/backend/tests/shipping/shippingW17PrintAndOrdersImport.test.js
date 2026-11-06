@@ -35,6 +35,10 @@ const mockPrisma = {
   shippingZone: {
     findMany: jest.fn(),
   },
+  shippingBranch: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
   shipmentEvent: {
     create: jest.fn(),
   },
@@ -106,6 +110,8 @@ describe('SHIP-W17 Acceptance Suite', () => {
       role: 'OPERATIONS_MANAGER',
     };
     mockPrisma.shippingZone.findMany.mockResolvedValue([]);
+    mockPrisma.shippingBranch.findFirst.mockResolvedValue({ id: 'branch-1', name: 'فرع الإسكندرية', code: 'ALX-01' });
+    mockPrisma.shippingBranch.findMany.mockResolvedValue([{ id: 'branch-1', name: 'فرع الإسكندرية', code: 'ALX-01' }]);
     mockPrisma.clientRateCard.findMany.mockResolvedValue([]);
     mockPrisma.shippingPolicySettings.findUnique.mockResolvedValue(null);
     mockPrisma.clientPricingPackage.findFirst.mockResolvedValue(null);
