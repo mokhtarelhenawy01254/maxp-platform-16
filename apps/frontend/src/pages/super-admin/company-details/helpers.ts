@@ -260,6 +260,11 @@ export function formatUsageFeatureLabel(feature: string): string {
     outbound_messages: "الرسائل الصادرة",
     pdf_exports: "تصدير PDF",
     scheduled_reports: "التقارير المجدولة",
+    cart_upsell_view: "عرض بيع إضافي في السلة",
+    checkout_payment_view: "عرض الدفع عند إتمام الشراء",
+    cross_sell_section_view: "عرض قسم البيع المتقاطع",
+    duplicate_order_created: "إنشاء طلب مكرر",
+    order_billing: "فوترة الطلبات",
   };
   if (labels[normalizedFeature]) return labels[normalizedFeature] ?? normalizedFeature;
   return normalizedFeature.replace(/[_-]+/g, " ");

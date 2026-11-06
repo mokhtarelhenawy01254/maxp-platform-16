@@ -21,6 +21,20 @@ import {
   getBillingTypeLabel,
 } from "./helpers";
 
+// أوصاف الفوترة تيجي من الباك إنجليزي جاهز — تُعرض عربي، وأي وصف جديد يرجع زي ما هو
+const BILLING_DESCRIPTION_LABELS: Record<string, string> = {
+  "Subscription created": "إنشاء اشتراك",
+  "Subscription renewed": "تجديد اشتراك",
+  "Subscription cancelled": "إلغاء اشتراك",
+  "Wallet top-up": "شحن محفظة",
+  "Wallet topup": "شحن محفظة",
+};
+
+function billingDescription(description?: string | null) {
+  if (!description) return "حركة فوترة";
+  return BILLING_DESCRIPTION_LABELS[description.trim()] ?? description;
+}
+
 export function CompanyBillingSection({
   review,
   reviewCurrency,
@@ -260,7 +274,7 @@ export function CompanyBillingSection({
                         {getBillingTypeLabel(entry.type)}
                       </Badge>
                       <p className="text-sm font-bold text-foreground">
-                        {entry.description}
+                        {billingDescription(entry.description)}
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
