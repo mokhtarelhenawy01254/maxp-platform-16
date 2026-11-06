@@ -211,7 +211,7 @@ export const ExplanationRow: React.FC<{
         } ${open ? "bg-primary/[0.02] dark:bg-primary/[0.04]" : ""}`}
       >
         <CollapsibleTrigger
-          aria-current={cursorActive ? "true" : undefined}
+          data-cursor={cursorActive ? "true" : undefined}
           className={`group flex min-h-[50px] w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-4 ${
             cursorActive ? "bg-muted/50 ring-2 ring-inset ring-primary/40" : ""
           }`}
