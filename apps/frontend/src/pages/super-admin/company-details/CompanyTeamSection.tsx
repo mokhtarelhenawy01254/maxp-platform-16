@@ -22,6 +22,19 @@ const ROLE_OPTIONS = [
   { value: "AGENT", label: "موظف" },
 ];
 
+const ROLE_FILTER_ITEMS: Record<string, string> = {
+  ALL: "كل الأدوار",
+  COMPANY_ADMIN: "مدراء الشركة",
+  MANAGER: "المدراء",
+  AGENT: "الموظفون",
+};
+
+const STATUS_FILTER_ITEMS: Record<string, string> = {
+  ALL: "كل الحالات",
+  ACTIVE: "نشط فقط",
+  INACTIVE: "موقوف فقط",
+};
+
 export function CompanyTeamSection({
   companyUsers, usersLoading, company, facebookPages, pagesLoading, openAddEmployeeModal,
   handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
@@ -107,7 +120,7 @@ export function CompanyTeamSection({
                 />
               </div>
 
-              <Select value={roleFilter} onValueChange={(val: string | null) => setRoleFilter(val ?? "ALL")}>
+              <Select value={roleFilter} items={ROLE_FILTER_ITEMS} onValueChange={(val: string | null) => setRoleFilter(val ?? "ALL")}>
                 <SelectTrigger className="h-10 rounded-xl text-xs">
                   <SelectValue placeholder="الدور" />
                 </SelectTrigger>
@@ -119,7 +132,7 @@ export function CompanyTeamSection({
                 </SelectContent>
               </Select>
 
-              <Select value={statusFilter} onValueChange={(val: string | null) => setStatusFilter(val ?? "ALL")}>
+              <Select value={statusFilter} items={STATUS_FILTER_ITEMS} onValueChange={(val: string | null) => setStatusFilter(val ?? "ALL")}>
                 <SelectTrigger className="h-10 rounded-xl text-xs">
                   <SelectValue placeholder="الحالة" />
                 </SelectTrigger>

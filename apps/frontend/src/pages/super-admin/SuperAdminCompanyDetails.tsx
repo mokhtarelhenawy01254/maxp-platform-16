@@ -20,6 +20,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";
 import { businessSpecialtyService, type BusinessSpecialty } from "../../services/businessSpecialtyService";
@@ -91,7 +92,18 @@ const SuperAdminCompanyDetails = () => {
     trialActive, trialEndsAt, trialStartedAt, trialDaysRemaining,
   } = useCompanyDetails();
 
-  const [activeTab, setActiveTab] = useState("general");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_IDS = ["general", "financial", "management", "activation", "team", "support", "activity"] as const;
+  const initialTab = TAB_IDS.find((id) => id === searchParams.get("tab")) ?? "general";
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
+
+  const handleTabChange = useCallback((next: string) => {
+    setActiveTab(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "general") params.delete("tab");
+    else params.set("tab", next);
+    setSearchParams(params, { replace: true });
+  }, [setSearchParams]);
   const [linkOpen, setLinkOpen] = useState(false);
   const [partnerCodeInput, setPartnerCodeInput] = useState("");
   const [linking, setLinking] = useState(false);
@@ -173,7 +185,7 @@ const SuperAdminCompanyDetails = () => {
       {/* 2. Streamlined Company Details Header */}
       <div className="rounded-2xl border bg-card p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          {/* Back button and quick identity */}
+          {/* Back button only — اسم الشركة موجود في الـbreadcrumb وفى كارت الهوية، مش ثلاث مرات */}
           <div className="flex items-center gap-3">
             <Button
               type="button"
@@ -184,12 +196,6 @@ const SuperAdminCompanyDetails = () => {
             >
               <ArrowLeft className="size-3.5" /> رجوع
             </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-foreground sm:text-xl truncate max-w-[250px] sm:max-w-md">
-                {company?.name || "..."}
-              </span>
-              {company ? <StatusBadge isActive={company.isActive} /> : null}
-            </div>
           </div>
 
           {/* Exactly 3 primary/secondary actions + "More" dropdown menu */}
@@ -312,8 +318,8 @@ const SuperAdminCompanyDetails = () => {
 
       {/* 3. Seven Structured Tabs */}
       {!loading && company ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full sm:w-fit justify-start gap-1 rounded-xl bg-muted p-1 overflow-x-auto">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="sticky top-2 z-20 w-full sm:w-fit justify-start gap-1 rounded-xl bg-muted/95 p-1 overflow-x-auto shadow-xs backdrop-blur-sm">
             <TabsTrigger value="general" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-xs">عام</TabsTrigger>
             <TabsTrigger value="financial" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-xs">مالي</TabsTrigger>
             <TabsTrigger value="management" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-xs">الإدارة</TabsTrigger>
@@ -324,7 +330,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsList>
 
           {/* Tab 1: General (Cleaned up, no 3x duplicate metrics) */}
-          <TabsContent value="general" className="pt-4 space-y-4">
+          <TabsContent value="general" hidden={activeTab !== "general"} className="pt-4 space-y-4">
             {reviewAlerts.length ? (
               <div className="grid gap-3 xl:grid-cols-2">
                 {reviewAlerts.map((alertItem) => (
@@ -352,7 +358,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 2: Financial */}
-          <TabsContent value="financial" className="pt-4 space-y-4">
+          <TabsContent value="financial" hidden={activeTab !== "financial"} className="pt-4 space-y-4">
             {financialMetrics.length ? (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {financialMetrics.slice(0, 3).map((metric) => (
@@ -381,7 +387,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 3: Management (Limits + Usage + Distinct Danger Zone) */}
-          <TabsContent value="management" className="pt-4 space-y-6">
+          <TabsContent value="management" hidden={activeTab !== "management"} className="pt-4 space-y-6">
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <CompanyLimitsSection review={review} limitEntries={limitEntries} />
               <CompanyUsageSection review={review} reviewCurrency={reviewCurrency} />
@@ -415,8 +421,7 @@ const SuperAdminCompanyDetails = () => {
                   <Button
                     type="button"
                     variant={company.isActive ? "destructive" : "default"}
-                    size="sm"
-                    className="rounded-xl font-bold shrink-0"
+                    className="h-10 rounded-xl px-4 font-bold shrink-0"
                     onClick={openEditModal}
                   >
                     {company.isActive ? "إيقاف الشركة" : "تفعيل الشركة"}
@@ -434,8 +439,7 @@ const SuperAdminCompanyDetails = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="rounded-xl font-bold border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
+                    className="h-10 rounded-xl px-4 font-bold border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
                     onClick={() => setTransferOpen(true)}
                   >
                     نقل الملكية
@@ -446,7 +450,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 4: Activation Center */}
-          <TabsContent value="activation" className="pt-4">
+          <TabsContent value="activation" hidden={activeTab !== "activation"} className="pt-4">
             <CompanyActivationCenter
               orderedCatalogApps={orderedCatalogApps}
               resolvedBundles={resolvedBundles}
@@ -465,7 +469,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 5: Team */}
-          <TabsContent value="team" className="pt-4">
+          <TabsContent value="team" hidden={activeTab !== "team"} className="pt-4">
             <CompanyTeamSection
               companyUsers={companyUsers}
               usersLoading={usersLoading}
@@ -483,7 +487,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 6: Support */}
-          <TabsContent value="support" className="pt-4 space-y-4">
+          <TabsContent value="support" hidden={activeTab !== "support"} className="pt-4 space-y-4">
             <SectionShell
               title="تذاكر الدعم الفني"
               description="التذاكر المرفوعة من مستخدمي هذه الشركة لمتابعتها وحلها."
@@ -504,7 +508,7 @@ const SuperAdminCompanyDetails = () => {
           </TabsContent>
 
           {/* Tab 7: Activity (Natural Arabic Timeline, Zero /api/) */}
-          <TabsContent value="activity" className="pt-4 space-y-4">
+          <TabsContent value="activity" hidden={activeTab !== "activity"} className="pt-4 space-y-4">
             <SectionShell
               title="سجل الأنشطة والتدقيق"
               description="سجل العمليات الإدارية وأنشطة المستخدمين بالترتيب الزمني."

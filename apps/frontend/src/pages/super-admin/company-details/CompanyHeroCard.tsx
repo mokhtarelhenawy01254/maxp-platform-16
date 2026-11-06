@@ -68,17 +68,17 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
                   <ExternalLink className="size-3 opacity-60" />
                 </a>
               ) : null}
-              <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs">
+              <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground">
                 العملة: {company.currency || "EGP"}
               </Badge>
               {company.createdAt ? (
-                <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs gap-1">
+                <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground gap-1">
                   <CalendarClock className="size-3" /> {formatDateTime(company.createdAt)}
                 </Badge>
               ) : null}
               {company.slug ? (
-                <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs">
-                  slug: {company.slug}
+                <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                  المعرّف: {company.slug}
                 </Badge>
               ) : null}
               {review?.limits?.coupon?.appliedCode ? (

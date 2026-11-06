@@ -5,7 +5,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
 import i18n from "../../../i18n";
 import { tToast } from "../../../utils/i18n-toast";
-import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, ShoppingBag, Wallet } from "lucide-react";
 import type { ElementType } from "react";
 import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry, UnifiedKpiStats } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";
@@ -590,10 +590,10 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   const detailMetrics: Metric[] = company ? [
     {
-      icon: Users,
-      label: "أعضاء الفريق",
-      value: formatNumber(unifiedKpiStats.users.total),
-      hint: `${formatNumber(unifiedKpiStats.users.active)} نشط • ${formatNumber(unifiedKpiStats.users.inactive)} موقوف`,
+      icon: ShoppingBag,
+      label: "طلبات الشهر",
+      value: formatNumber(unifiedKpiStats.ordersThisMonth),
+      hint: "إجمالي طلبات الشهر الحالي",
     },
     {
       icon: Building2,

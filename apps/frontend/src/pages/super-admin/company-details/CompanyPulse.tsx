@@ -2,7 +2,6 @@ import type { ElementType } from "react";
 import { Activity, CreditCard, Ticket, Users, Wallet } from "lucide-react";
 import type { CompanyReview, ActivityEntry } from "./companyDetailsTypes";
 import { Card, CardContent } from "../../../components/ui/card";
-import { Badge } from "../../../components/ui/badge";
 import { formatCurrency, formatNumber, formatRelativeDateLabel, getStatusMeta } from "./helpers";
 
 export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivity, activeUsers }: {
@@ -16,7 +15,11 @@ export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivi
   const monthlyFee = review?.subscription?.monthlyFee || 0;
   const subStatus = review?.subscription?.status || "ACTIVE";
   const subMeta = getStatusMeta("subscription", subStatus);
-  const walletOk = balance >= monthlyFee;
+  // رصيد صفر أو أقل من قيمة التجديد = خطر، مش لون نجاح
+  const walletTone: "success" | "warning" | "danger" =
+    balance <= 0 ? "danger" : monthlyFee > 0 && balance < monthlyFee ? "warning" : "success";
+  const subTone: "success" | "warning" | "danger" =
+    subStatus === "ACTIVE" ? "success" : subStatus === "EXPIRED" || subStatus === "CANCELLED" ? "danger" : "warning";
 
   return (
     <Card className="rounded-2xl border border-border/50 bg-card/70 shadow-xs">
@@ -25,25 +28,24 @@ export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivi
           icon={Users}
           label="الأعضاء النشطون"
           value={`${formatNumber(activeUsers)} عضو`}
-          badge="success"
         />
         <PulseItem
           icon={CreditCard}
           label="حالة الاشتراك"
           value={subMeta.label}
-          badgeClassName={subMeta.className}
+          tone={subTone}
         />
         <PulseItem
           icon={Wallet}
           label="رصيد المحفظة"
           value={formatCurrency(balance, reviewCurrency)}
-          badge={walletOk ? "success" : balance === 0 ? undefined : "warning"}
+          tone={walletTone}
         />
         <PulseItem
           icon={Ticket}
           label="تذاكر مفتوحة"
           value={`${formatNumber(openTickets)} تذكرة`}
-          badge={openTickets > 0 ? "warning" : undefined}
+          tone={openTickets > 0 ? "warning" : undefined}
         />
         <PulseItem
           icon={Activity}
@@ -55,28 +57,27 @@ export function CompanyPulse({ review, reviewCurrency, openTickets, recentActivi
   );
 }
 
-function PulseItem({ icon: Icon, label, value, badge, badgeClassName }: {
+function PulseItem({ icon: Icon, label, value, tone }: {
   icon: ElementType;
   label: string;
   value: string;
-  badge?: "success" | "warning";
-  badgeClassName?: string;
+  tone?: "success" | "warning" | "danger";
 }) {
-  const badgeClass = badgeClassName || (
-    badge === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300"
-      : badge === "warning"
-      ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300"
-      : "border-border/50 bg-muted/30 text-foreground"
-  );
+  const toneClass = tone === "success"
+    ? "text-emerald-600 dark:text-emerald-400"
+    : tone === "warning"
+    ? "text-amber-600 dark:text-amber-400"
+    : tone === "danger"
+    ? "text-rose-600 dark:text-rose-400"
+    : "text-foreground";
 
   return (
-    <div className="flex flex-col items-center gap-1.5 text-center">
+    <div className="flex flex-col items-center gap-1 text-center">
       <Icon className="size-4 text-muted-foreground" />
-      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-      <Badge variant="outline" className={`font-bold px-2.5 py-0.5 text-xs ${badgeClass}`}>
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className={`text-sm font-black leading-tight ${toneClass}`}>
         {value}
-      </Badge>
+      </span>
     </div>
   );
 }

@@ -92,37 +92,40 @@ export function getMetricDetails(entry: MetricEntryLike) {
   const limitFormatted = formatLimit(entry.limit);
   const remainingFormatted = entry.isUnlimited ? "غير محدود" : formatNumber(entry.remaining);
   const pct = Math.round(Number(entry.percentage) || 0);
+  // «بدون حد أقصى» تُكتب مرة واحدة في الكارت، مش أربع صيغ لنفس المعنى
+  const limitSuffix = entry.isUnlimited ? "" : ` من أصل ${limitFormatted}`;
+  const remainingText = entry.isUnlimited ? "" : undefined;
 
   switch (entry.key) {
     case "users":
       return {
-        detail: `الأعضاء النشطون: ${currentFormatted} عضو من أصل ${limitFormatted}`,
+        detail: `الأعضاء النشطون: ${currentFormatted} عضو${limitSuffix}`,
         percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة الفريق`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} مقعد`}`,
+        remainingText: remainingText ?? `المتبقي: ${remainingFormatted} مقعد`,
       };
     case "products":
       return {
-        detail: `المنتجات المضافة: ${currentFormatted} منتج من أصل ${limitFormatted}`,
+        detail: `المنتجات المضافة: ${currentFormatted} منتج${limitSuffix}`,
         percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من الحد المسموح`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} منتج`}`,
+        remainingText: remainingText ?? `المتبقي: ${remainingFormatted} منتج`,
       };
     case "orders":
       return {
-        detail: `طلبات هذا الشهر: ${currentFormatted} طلب من أصل ${limitFormatted}`,
+        detail: `طلبات هذا الشهر: ${currentFormatted} طلب${limitSuffix}`,
         percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من حصة الشهر`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} طلب`}`,
+        remainingText: remainingText ?? `المتبقي: ${remainingFormatted} طلب`,
       };
     case "customers":
       return {
-        detail: `العملاء المسجلون: ${currentFormatted} عميل من أصل ${limitFormatted}`,
+        detail: `العملاء المسجلون: ${currentFormatted} عميل${limitSuffix}`,
         percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% من سعة العملاء`,
-        remainingText: `المتبقي: ${entry.isUnlimited ? "غير محدود" : `${remainingFormatted} عميل`}`,
+        remainingText: remainingText ?? `المتبقي: ${remainingFormatted} عميل`,
       };
     default:
       return {
-        detail: `الاستهلاك الحالي: ${currentFormatted} من أصل ${limitFormatted}`,
+        detail: `الاستهلاك الحالي: ${currentFormatted}${limitSuffix}`,
         percentageText: entry.isUnlimited ? "بدون حد أقصى" : `${pct}% مستهلك`,
-        remainingText: `المتبقي: ${remainingFormatted}`,
+        remainingText: remainingText ?? `المتبقي: ${remainingFormatted}`,
       };
   }
 }

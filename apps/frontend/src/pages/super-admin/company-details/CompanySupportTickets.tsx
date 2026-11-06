@@ -12,6 +12,12 @@ const PRIORITY_LABELS: Record<string, string> = {
   CRITICAL: "حرجة",
 };
 
+function priorityLabel(priority?: string | null) {
+  if (!priority) return "—";
+  const key = priority.trim().toUpperCase();
+  return PRIORITY_LABELS[key] ?? "—";
+}
+
 export function CompanySupportTickets({ tickets, companyId, loading }: {
   tickets: TicketListItem[];
   companyId: string;
@@ -47,7 +53,7 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="font-mono text-[11px] font-semibold">{ticket.ticketId}</span>
                 <span>•</span>
-                <span>أولوية {PRIORITY_LABELS[ticket.priority] || ticket.priority}</span>
+                <span>أولوية {priorityLabel(ticket.priority)}</span>
                 {ticket.user ? (
                   <>
                     <span>•</span>

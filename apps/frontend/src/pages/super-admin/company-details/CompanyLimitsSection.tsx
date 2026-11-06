@@ -26,13 +26,14 @@ export function CompanyLimitsSection({ review, limitEntries }: {
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <MiniStat label="مزايا متقدمة" value={review?.limits?.features?.advancedReports ? "مفعلة" : "غير مفعلة"} helper="تقارير متقدمة على مستوى الخطة" />
-        <MiniStat label="API Access" value={review?.limits?.features?.apiAccess ? "مفعل" : "غير مفعل"} helper="صلاحية الربط البرمجي" />
+        <MiniStat label="الربط البرمجي (API)" value={review?.limits?.features?.apiAccess ? "مفعل" : "غير مفعل"} helper="صلاحية الربط البرمجي" />
       </div>
 
       <div className="space-y-4 pt-2">
         {(limitEntries || []).map((entry) => {
           const tone = getUsageTone(entry.percentage);
           const meta = getMetricDetails(entry);
+          const unlimited = Boolean(entry.isUnlimited) || Number(entry.limit) === -1;
           return (
             <div key={entry.key} className="rounded-xl border border-border/40 bg-card/60 p-3.5 space-y-2.5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -47,15 +48,25 @@ export function CompanyLimitsSection({ review, limitEntries }: {
                   </div>
                   <p className="text-xs font-medium text-muted-foreground">{meta.detail}</p>
                 </div>
-                <div className={cn("text-xs font-black", tone.text)}>
-                  {meta.percentageText}
-                </div>
+                {unlimited ? (
+                  <span className="w-fit rounded-full border border-border/50 bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+                    بدون حد أقصى
+                  </span>
+                ) : (
+                  <div className={cn("text-xs font-black", tone.text)}>
+                    {meta.percentageText}
+                  </div>
+                )}
               </div>
-              <UsageBar percentage={entry.percentage} />
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                <span className="font-semibold">{meta.remainingText}</span>
-                <span>الحد الإجمالي: {formatLimit(entry.limit)}</span>
-              </div>
+              {unlimited ? null : (
+                <>
+                  <UsageBar percentage={entry.percentage} />
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                    <span className="font-semibold">{meta.remainingText}</span>
+                    <span>الحد الإجمالي: {formatLimit(entry.limit)}</span>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
