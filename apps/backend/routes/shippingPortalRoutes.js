@@ -112,9 +112,28 @@ router.post('/branches/:id/transfer', ...portalAuth, shippingPortalController.tr
 router.put('/branches/:id', ...portalAuth, shippingPortalController.updateBranch);
 router.delete('/branches/:id', ...portalAuth, shippingPortalController.deleteBranch);
 
-// Label PDF & Hub Receive (SHIP-W2)
-router.get('/shipments/:id/label', ...portalAuth, shippingPortalController.getShipmentLabelPdf);
+// Label PDF & Hub Receive (SHIP-W2 & SHIP-W17)
+router.get('/shipments/:id/print', ...portalAuth, shippingPortalController.printShipmentPdf);
+router.get('/shipments/:id/label', ...portalAuth, shippingPortalController.printShipmentPdf);
+router.post('/print/batch', ...portalAuth, shippingPortalController.printBatchShipmentsPdf);
+router.post('/shipments/print/batch', ...portalAuth, shippingPortalController.printBatchShipmentsPdf);
 router.post('/shipments/:id/receive', ...portalAuth, shippingPortalController.receiveShipmentAtHub);
+
+// Full Orders Excel Import (SHIP-W17)
+router.get('/orders/import-template', ...portalAuth, shippingPortalController.downloadOrdersImportTemplate);
+router.post(
+  '/orders/import',
+  ...portalAuth,
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ success: false, code: 'UPLOAD_ERROR', message: err.message });
+      }
+      next();
+    });
+  },
+  shippingPortalController.importOrdersFromExcel
+);
 
 // Failure Reasons Management (SHIP-W3)
 router.get('/failure-reasons', ...portalAuth, shippingPortalController.getFailureReasons);

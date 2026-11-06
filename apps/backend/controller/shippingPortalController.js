@@ -7,7 +7,8 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { quotePrice } = require('../services/shipping/policyService');
 const { recordShipmentEvent } = require('../services/shipping/shipmentEventService');
 const crypto = require('crypto');
-const { generateWaybillPdf } = require('../services/shipping/waybillPdfService');
+const { generateWaybillPdf, generateShipmentPdf, generateBatchPdf } = require('../services/shipping/waybillPdfService');
+const { importOrdersAndShipments, generateOrdersImportTemplate } = require('../services/shipping/ordersImportService');
 const courierPortalService = require('../services/courierPortalService');
 const shippingRtoService = require('../services/shipping/shippingRtoService');
 const {
@@ -1914,13 +1915,15 @@ async function deleteBranch(req, res) {
 }
 
 /**
+ * GET /api/v1/shipping-portal/shipments/:id/print
  * GET /api/v1/shipping-portal/shipments/:id/label
- * Generates and streams A6 Waybill PDF
+ * Generates and streams A6 PDF for Waybill, COD Invoice, or Pickup Slip with copies support
  */
-async function getShipmentLabelPdf(req, res) {
+async function printShipmentPdf(req, res) {
   try {
     const { companyId } = req.user;
     const { id } = req.params;
+    const { template = 'WAYBILL', copies = 1 } = req.query;
     const prisma = getSharedPrismaClient();
 
     const shipment = await prisma.shipment.findFirst({
@@ -1934,7 +1937,13 @@ async function getShipmentLabelPdf(req, res) {
       },
       include: {
         branch: true,
-        company: { select: { id: true, name: true, phone: true } },
+        company: { select: { id: true, name: true, phone: true, address: true } },
+        merchant: { select: { id: true, name: true, phone: true } },
+        order: {
+          include: {
+            items: true,
+          },
+        },
       },
     });
 
@@ -1942,17 +1951,146 @@ async function getShipmentLabelPdf(req, res) {
       return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
     }
 
-    const pdfBuffer = await generateWaybillPdf(shipment);
+    const pdfBuffer = await generateShipmentPdf(shipment, {
+      template: String(template).toUpperCase(),
+      copies: parseInt(copies, 10) || 1,
+    });
 
+    const filePrefix = String(template).toLowerCase();
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="waybill-${shipment.trackingNumber || shipment.id}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${filePrefix}-${shipment.trackingNumber || shipment.id}.pdf"`);
     res.setHeader('Content-Length', pdfBuffer.length);
     return res.send(pdfBuffer);
   } catch (error) {
-    console.error('[ShippingPortal] Error generating shipment label PDF:', error);
+    console.error('[ShippingPortal] Error generating shipment PDF:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'حدث خطأ أثناء توليد بوليصة الشحن PDF',
+      error: error.message || 'حدث خطأ أثناء توليد مستند الشحن PDF',
+    });
+  }
+}
+
+/**
+ * Backward compatibility alias for label
+ */
+async function getShipmentLabelPdf(req, res) {
+  return printShipmentPdf(req, res);
+}
+
+/**
+ * POST /api/v1/shipping-portal/print/batch
+ * POST /api/v1/shipping-portal/shipments/print/batch
+ * Merges up to 100 shipments into a single A6 PDF document
+ */
+async function printBatchShipmentsPdf(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { shipmentIds, template = 'WAYBILL', copies = 1 } = req.body || {};
+
+    if (!Array.isArray(shipmentIds) || shipmentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى تحديد معرفات الشحنات المراد طباعتها (shipmentIds)',
+      });
+    }
+
+    if (shipmentIds.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'الحد الأقصى للطباعة المجمعة هو 100 شحنة في الطلب الواحد',
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const shipments = await prisma.shipment.findMany({
+      where: {
+        companyId,
+        id: { in: shipmentIds },
+      },
+      include: {
+        branch: true,
+        company: { select: { id: true, name: true, phone: true, address: true } },
+        merchant: { select: { id: true, name: true, phone: true } },
+        order: {
+          include: {
+            items: true,
+          },
+        },
+      },
+    });
+
+    if (shipments.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'لم يتم العثور على أي من الشحنات المحددة',
+      });
+    }
+
+    // Preserve original shipmentIds ordering
+    const idMap = new Map(shipments.map((s) => [s.id, s]));
+    const orderedShipments = shipmentIds.map((id) => idMap.get(id)).filter(Boolean);
+
+    const pdfBuffer = await generateBatchPdf(orderedShipments, {
+      template: String(template).toUpperCase(),
+      copies: parseInt(copies, 10) || 1,
+    });
+
+    const filePrefix = String(template).toLowerCase();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="batch-${filePrefix}-${orderedShipments.length}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('[ShippingPortal] Error generating batch PDF:', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء إنشاء ملف الطباعة المجمع',
+    });
+  }
+}
+
+/**
+ * POST /api/v1/shipping-portal/orders/import
+ * Ingest full orders (Order + Shipment) or standalone shipments from Excel/CSV
+ */
+async function importOrdersFromExcel(req, res) {
+  try {
+    const { companyId, id: userId, role: userRole } = req.user;
+    const result = await importOrdersAndShipments({
+      companyId,
+      userId,
+      userRole,
+      req,
+    });
+    return res.json(result);
+  } catch (error) {
+    console.error('[ShippingPortal] Error importing orders/shipments:', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      code: error.code || 'IMPORT_FAILED',
+      message: error.message || 'فشل استيراد الأوردرات من الملف',
+    });
+  }
+}
+
+/**
+ * GET /api/v1/shipping-portal/orders/import-template
+ * Download ready-to-fill XLSX template with sample data and guidelines
+ */
+async function downloadOrdersImportTemplate(req, res) {
+  try {
+    const templateBuffer = generateOrdersImportTemplate();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="orders_import_template.xlsx"');
+    res.setHeader('Content-Length', templateBuffer.length);
+    return res.send(templateBuffer);
+  } catch (error) {
+    console.error('[ShippingPortal] Error downloading import template:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'تعذر إنشاء نموذج استيراد الأوردرات',
     });
   }
 }
@@ -2349,6 +2487,10 @@ module.exports = {
   getBranchSummary,
   getCustodyDiff,
   getShipmentLabelPdf,
+  printShipmentPdf,
+  printBatchShipmentsPdf,
+  importOrdersFromExcel,
+  downloadOrdersImportTemplate,
   receiveShipmentAtHub,
   getFailureReasons,
   createFailureReason,

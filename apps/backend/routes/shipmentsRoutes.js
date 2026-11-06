@@ -10,6 +10,7 @@ const { STATUS_FILTER_ALIASES } = require('../utils/turbo/constants');
 const { classifyCarrierShipmentStage } = require('../utils/statusNormalizer');
 const { recordShipmentEvent } = require('../services/shipping/shipmentEventService');
 const policyService = require('../services/shipping/policyService');
+const shippingPortalController = require('../controller/shippingPortalController');
 
 // 🛡️ Courier mobile share-link tokens are scoped to the internal fleet module (/api/v1/couriers).
 // They must never reach external-carrier operations: creating, cancelling, or syncing shipments
@@ -94,6 +95,10 @@ async function syncTurboOrdersToShipments(prisma, companyId) {
     console.warn('⚠️ [SHIPMENTS] syncTurboOrdersToShipments warning:', err.message);
   }
 }
+
+// Print & Label aliases (SHIP-W17)
+router.get('/:id/print', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.printShipmentPdf(req, res));
+router.get('/:id/label', verifyToken.authenticateToken, blockCourierMobileToken, (req, res) => shippingPortalController.printShipmentPdf(req, res));
 
 // GET /api/v1/shipments - List all shipments with multi-carrier filters & pagination
 router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {

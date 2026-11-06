@@ -13,7 +13,9 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { BulkOrdersImportModal } from './BulkOrdersImportModal';
 import { toast } from 'sonner';
 import {
   shippingOpsService,
@@ -56,6 +58,7 @@ export const NewParcelPage: React.FC = () => {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
 
   // Load merchants
   useEffect(() => {
@@ -179,13 +182,24 @@ export const NewParcelPage: React.FC = () => {
             {t('shippingOps.newParcel', 'إنشاء طرد مستقل جديد')}
           </h1>
         </div>
-        <Link
-          to="/shipping-ops/parcels"
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-        >
-          <ArrowRight className="w-4 h-4 rtl:rotate-180" />
-          <span>{isEn ? 'Back to Parcels' : 'العودة لسجل الشحنات'}</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg shadow-sm transition active:scale-95 cursor-pointer"
+            title={isEn ? 'Import Orders & Shipments from Excel' : 'استيراد أوردرات وشحنات كاملة من ملف إكسيل'}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>{isEn ? 'Import Excel' : 'استيراد Excel'}</span>
+          </button>
+          <Link
+            to="/shipping-ops/parcels"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+            <span>{isEn ? 'Back to Parcels' : 'العودة لسجل الشحنات'}</span>
+          </Link>
+        </div>
       </div>
 
       {formError && (
@@ -584,6 +598,14 @@ export const NewParcelPage: React.FC = () => {
           </div>
         </div>
       </form>
+      <BulkOrdersImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          navigate('/shipping-ops/parcels');
+        }}
+        isEn={isEn}
+      />
     </div>
   );
 };

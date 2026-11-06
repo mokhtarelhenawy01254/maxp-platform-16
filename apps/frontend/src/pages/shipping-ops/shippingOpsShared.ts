@@ -116,17 +116,25 @@ export function getPickupStatusBadge(status?: string | null, isEn = false) {
   };
 }
 
-export async function printShipmentLabel(shipmentId: string, trackingNumber?: string) {
+export async function printShipmentLabel(
+  shipmentId: string,
+  trackingNumber?: string,
+  template: string = 'WAYBILL',
+  copies: number = 1
+) {
   const token = localStorage.getItem('token');
   try {
-    const res = await fetch(`/api/v1/shipping-portal/shipments/${shipmentId}/label`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetch(
+      `/api/v1/shipping-portal/shipments/${shipmentId}/print?template=${encodeURIComponent(template)}&copies=${copies}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
-      throw new Error(errJson.error || 'فشل تحميل بوليصة الشحن');
+      throw new Error(errJson.error || 'فشل تحميل مستند الشحن');
     }
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
@@ -134,14 +142,83 @@ export async function printShipmentLabel(shipmentId: string, trackingNumber?: st
     if (!win) {
       const a = document.createElement('a');
       a.href = url;
-      a.download = `waybill-${trackingNumber || shipmentId}.pdf`;
+      a.download = `${template.toLowerCase()}-${trackingNumber || shipmentId}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
   } catch (err: any) {
-    console.error('Print label error:', err);
-    alert(err.message || 'حدث خطأ أثناء طباعة البوليصة');
+    console.error('Print error:', err);
+    alert(err.message || 'حدث خطأ أثناء طباعة المستند');
+  }
+}
+
+export async function printBatchShipments(
+  shipmentIds: string[],
+  template: string = 'WAYBILL',
+  copies: number = 1
+) {
+  if (!shipmentIds || shipmentIds.length === 0) {
+    alert('يرجى تحديد شحنة واحدة على الأقل للطباعة');
+    return;
+  }
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch('/api/v1/shipping-portal/print/batch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        shipmentIds,
+        template,
+        copies,
+      }),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || 'فشل توليد ملف الطباعة المجمع');
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `batch-${template.toLowerCase()}-${shipmentIds.length}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  } catch (err: any) {
+    console.error('Batch print error:', err);
+    alert(err.message || 'حدث خطأ أثناء الطباعة المجمعة');
+  }
+}
+
+export async function downloadOrdersImportTemplate() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch('/api/v1/shipping-portal/orders/import-template', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error('فشل تحميل نموذج الاستيراد');
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'orders_import_template.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err: any) {
+    console.error('Download template error:', err);
+    alert(err.message || 'تعذر تحميل نموذج الاستيراد');
   }
 }
 

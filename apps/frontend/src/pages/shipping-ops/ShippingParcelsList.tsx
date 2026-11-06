@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import {
   PackagePlus,
   RefreshCw,
+  FileSpreadsheet,
+  CheckSquare,
   Search,
   Filter,
   Eye,
@@ -24,7 +26,8 @@ import {
   ShipmentsQuery,
 } from '../../services/shippingOpsService';
 import { EGYPT_GOVERNORATES } from '../../constants/egyptGovernorates';
-import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel } from './shippingOpsShared';
+import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel, printBatchShipments } from './shippingOpsShared';
+import { BulkOrdersImportModal } from './BulkOrdersImportModal';
 import { DateInput } from '../../components/ui/DateInput';
 
 export const ShippingParcelsList: React.FC = () => {
@@ -54,6 +57,37 @@ export const ShippingParcelsList: React.FC = () => {
   const [cancellingShipment, setCancellingShipment] = useState<ShipmentItem | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Multi-select & Batch Print (SHIP-W17)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [batchTemplate, setBatchTemplate] = useState<string>('WAYBILL');
+  const [batchCopies, setBatchCopies] = useState<number>(1);
+  const [batchPrinting, setBatchPrinting] = useState<boolean>(false);
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === shipments.length && shipments.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(shipments.map((s) => s.id));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBatchPrint = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      setBatchPrinting(true);
+      await printBatchShipments(selectedIds, batchTemplate, batchCopies);
+    } finally {
+      setBatchPrinting(false);
+    }
+  };
 
   // Load merchants list for filter
   useEffect(() => {
@@ -149,6 +183,15 @@ export const ShippingParcelsList: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             <span>{isEn ? 'Refresh' : 'تحديث'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-lg shadow-sm transition active:scale-95 cursor-pointer"
+            title={isEn ? 'Import Orders & Shipments from Excel' : 'استيراد أوردرات وشحنات كاملة من ملف إكسيل'}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>{isEn ? 'Import Excel' : 'استيراد Excel'}</span>
           </button>
           <Link
             to="/shipping-ops/parcels/new"
@@ -299,12 +342,82 @@ export const ShippingParcelsList: React.FC = () => {
         </div>
       </div>
 
+      {/* Batch Print Floating/Inline Action Bar (SHIP-W17) */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm text-xs sm:text-sm animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-blue-900 dark:text-blue-200">
+              {isEn ? `Selected ${selectedIds.length} shipments` : `تم تحديد ${selectedIds.length} شحنة`}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline mr-1"
+            >
+              {isEn ? 'Deselect all' : 'إلغاء التحديد'}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-800 text-xs">
+              <span className="text-slate-500">{isEn ? 'Template:' : 'القالب:'}</span>
+              <select
+                value={batchTemplate}
+                onChange={(e) => setBatchTemplate(e.target.value)}
+                className="bg-transparent font-semibold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none"
+              >
+                <option value="WAYBILL">{isEn ? 'Waybill (A6)' : 'بوليصة لصق'}</option>
+                <option value="INVOICE">{isEn ? 'COD Invoice' : 'فاتورة COD'}</option>
+                <option value="PICKUP_SLIP">{isEn ? 'Pickup Slip' : 'إذن استلام'}</option>
+                <option value="BOTH">{isEn ? 'Both (Waybill+Invoice)' : 'الاثنين (بوليصة+فاتورة)'}</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-800 text-xs">
+              <span className="text-slate-500">{isEn ? 'Copies:' : 'النسخ:'}</span>
+              <select
+                value={batchCopies}
+                onChange={(e) => setBatchCopies(Number(e.target.value))}
+                className="bg-transparent font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none"
+              >
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBatchPrint}
+              disabled={batchPrinting}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg shadow-sm transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>
+                {batchPrinting
+                  ? (isEn ? 'Generating PDF...' : 'جاري الدمج...')
+                  : (isEn ? `Print Selected (${selectedIds.length})` : `طباعة المحدد (${selectedIds.length})`)}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Parcels Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-right rtl:text-right ltr:text-left text-xs sm:text-sm">
             <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
               <tr>
+                <th className="w-10 px-3 py-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={shipments.length > 0 && selectedIds.length === shipments.length}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                    title={isEn ? 'Select all on page' : 'تحديد كل الصفحة'}
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.trackingNumber', 'رقم التتبع')}</th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.recipient', 'المستلم')}</th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.destination', 'الوجهة')}</th>
@@ -319,14 +432,14 @@ export const ShippingParcelsList: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading && shipments.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
                     <span>{isEn ? 'Loading parcels...' : 'جاري تحميل الشحنات...'}</span>
                   </td>
                 </tr>
               ) : (!shipments || shipments.length === 0) ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
                     <Boxes className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <span>{t('shippingOps.list.noParcelsFound', 'لم يتم العثور على أي شحنات')}</span>
                   </td>
@@ -337,7 +450,15 @@ export const ShippingParcelsList: React.FC = () => {
                   const isCancelable = s.status === 'PENDING';
 
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                    <tr key={s.id} className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition ${selectedIds.includes(s.id) ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''}`}>
+                      <td className="w-10 px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(s.id)}
+                          onChange={() => handleSelectOne(s.id)}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 font-mono font-medium text-blue-600 dark:text-blue-400">
                           <Link to={`/shipping-ops/parcels/${s.id}`} className="hover:underline">
@@ -505,6 +626,15 @@ export const ShippingParcelsList: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Bulk Orders Import Modal (SHIP-W17) */}
+      <BulkOrdersImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          loadShipments();
+        }}
+        isEn={isEn}
+      />
     </div>
   );
 };

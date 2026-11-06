@@ -40,6 +40,7 @@ export const ShippingParcelDetails: React.FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [printCopies, setPrintCopies] = useState<number>(1);
 
   // Reattempt modal state (SHIP-W3)
   const [showReattemptModal, setShowReattemptModal] = useState(false);
@@ -178,13 +179,45 @@ export const ShippingParcelDetails: React.FC = () => {
             <span>{isEn ? 'Back to List' : 'سجل الشحنات'}</span>
           </Link>
 
-          <button
-            onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95 shadow-sm"
-          >
-            <Printer className="w-4 h-4" />
-            <span>{isEn ? 'Print Waybill (A6)' : 'طباعة البوليصة (A6)'}</span>
-          </button>
+          {/* Print Toolbar: Waybill, Invoice, Both + Copies (SHIP-W17) */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1 px-1.5">
+              <span className="text-[11px] text-slate-500 font-medium">{isEn ? 'Copies:' : 'النسخ:'}</span>
+              <select
+                value={printCopies}
+                onChange={(e) => setPrintCopies(Number(e.target.value))}
+                className="text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-1 text-slate-800 dark:text-slate-200 font-bold focus:ring-1 focus:ring-blue-500"
+              >
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </select>
+            </div>
+            <button
+              onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'WAYBILL', printCopies)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              title={isEn ? 'Print Waybill (A6)' : 'طباعة بوليصة شحن لصق'}
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Waybill' : 'بوليصة'}</span>
+            </button>
+            <button
+              onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'INVOICE', printCopies)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              title={isEn ? 'Print COD Invoice' : 'طباعة فاتورة تحصيل COD'}
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Invoice' : 'فاتورة'}</span>
+            </button>
+            <button
+              onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'BOTH', printCopies)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              title={isEn ? 'Print Both (Waybill + Invoice)' : 'طباعة الاثنين (بوليصة + فاتورة)'}
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Both' : 'الاثنين'}</span>
+            </button>
+          </div>
 
           {shipment.status !== 'DELIVERED' && shipment.status !== 'CANCELLED' && shipment.status !== 'RETURNED' && (
             <button
