@@ -69,8 +69,15 @@ describe("AppExplanationsPage Component", () => {
     );
   });
 
-  it("embeds the YouTube player with the jsapi flag and the fallback link", () => {
+  it("shows a facade thumbnail first and embeds the player with the jsapi flag after clicking play", () => {
     render(<CardVideoBlock exp={youtubeExp} watchVideoLabel="شاهد الفيديو" />);
+
+    // الفاساد: ثامبنيل + زر تشغيل — بلا iframe قبل الضغطة (تحميل عند الطلب)
+    expect(screen.queryByTitle("شرح لوحة التطبيقات")).not.toBeInTheDocument();
+    const facade = screen.getByRole("button", { name: /شاهد الفيديو — شرح لوحة التطبيقات/ });
+    expect(facade.querySelector("img[src*='i.ytimg.com']")).not.toBeNull();
+
+    fireEvent.click(facade);
 
     const iframe = screen.getByTitle("شرح لوحة التطبيقات");
     expect(iframe).toHaveAttribute(
@@ -86,6 +93,7 @@ describe("AppExplanationsPage Component", () => {
   it("swaps a dead video for the Arabic notice when YouTube reports onError", () => {
     render(<CardVideoBlock exp={youtubeExp} watchVideoLabel="شاهد الفيديو" />);
 
+    fireEvent.click(screen.getByRole("button", { name: /شاهد الفيديو — شرح لوحة التطبيقات/ }));
     expect(screen.getByTitle("شرح لوحة التطبيقات")).toBeInTheDocument();
 
     act(() => {

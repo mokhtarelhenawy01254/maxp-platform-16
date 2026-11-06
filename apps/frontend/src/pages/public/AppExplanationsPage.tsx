@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Sparkles } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { ExplanationsHeader } from "./app-explanations/ExplanationsHeader";
@@ -114,6 +115,18 @@ const AppExplanationsPage: React.FC = () => {
     (group: RouteGroup) => ar(group.labelKey, group.labelFallback),
     [ar],
   );
+
+  /* «أضيف حديثًا»: آخر 8 شروحات خلال آخر 30 يومًا — ينزّل للـ hash المباشر */
+  const recent = useMemo(() => {
+    const now = Date.now();
+    return explanations
+      .filter((exp) => {
+        const t = Date.parse(exp.createdAt || "");
+        return !Number.isNaN(t) && now - t <= 30 * 24 * 60 * 60 * 1000;
+      })
+      .sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""))
+      .slice(0, 8);
+  }, [explanations]);
 
   useEffect(() => {
     if (grouped.length > 0 && (!activeGroup || !grouped.some((g) => g.key === activeGroup))) {
@@ -283,7 +296,7 @@ const AppExplanationsPage: React.FC = () => {
           {/* شريط التبويبات:
               على الموبايل: يلتصق أسفل شريط التطبيق العلوي مباشرة (Sticky Sub-Header) مع تمويه خلفية.
               على الديسكتوب: شريط جانبي عمودي ثابت (Sidebar). */}
-          <aside className="min-w-0 sticky top-14 z-20 bg-background/95 backdrop-blur-md pb-1 sm:top-[60px] md:static md:top-auto md:bg-transparent md:backdrop-blur-none md:pb-0 md:sticky md:top-[76px] md:h-fit">
+          <aside className="sticky top-14 z-20 min-w-0 bg-background/95 pb-1 backdrop-blur-md sm:top-[60px] md:top-[76px] md:h-fit md:bg-transparent md:backdrop-blur-none md:pb-0">
             <p className="mb-2 hidden text-[11px] font-bold text-muted-foreground md:block">
               الأقسام
             </p>
@@ -297,6 +310,29 @@ const AppExplanationsPage: React.FC = () => {
 
           {/* متن الشروحات الرئيسي */}
           <main className="min-w-0">
+            {/* شريط «أضيف حديثًا» — أحدث الشروحات المضافة خلال آخر 30 يومًا */}
+            {!isSearching && recent.length > 0 && (
+              <div className="mb-4 flex items-center gap-2">
+                <span className="flex shrink-0 items-center gap-1 text-[11px] font-extrabold text-muted-foreground">
+                  <Sparkles className="size-3 text-emerald-500" aria-hidden="true" />
+                  {ar("explanations.recentSection", "أضيف حديثًا")}
+                </span>
+                <div className="exp-rail -mx-3 flex min-w-0 flex-1 gap-2 overflow-x-auto px-3 py-0.5 md:mx-0 md:px-0">
+                  {recent.map((exp) => (
+                    <button
+                      key={exp.id}
+                      type="button"
+                      onClick={() => openFromSlug(exp.slug)}
+                      className="shrink-0 whitespace-nowrap rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
+                      title={exp.title}
+                    >
+                      {exp.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {(isSearching || videoOnly) && grouped.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
                 <p className="text-sm font-semibold text-foreground">

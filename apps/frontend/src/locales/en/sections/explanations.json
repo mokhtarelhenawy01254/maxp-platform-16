@@ -16,6 +16,7 @@
   "videoBadge": "Video",
   "emptyState": "No guides available yet",
   "loadError": "Failed to load guides. Please try again later.",
+  "recentSection": "Recently added",
   "groupStart": "Getting started",
   "groupProducts": "Products & inventory",
   "groupOrders": "Orders & shipping",

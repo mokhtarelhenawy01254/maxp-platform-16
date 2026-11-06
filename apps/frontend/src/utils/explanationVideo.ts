@@ -63,6 +63,33 @@ export function getYouTubeEmbedUrl(
 }
 
 /**
+ * Extracts the raw YouTube video ID from various YouTube URL formats
+ * (watch?v=, youtu.be/, /shorts/, /embed/, /live/). Returns null for
+ * non-YouTube URLs. Used for ytimg thumbnails (facade player + row thumbs).
+ */
+export function getYouTubeVideoId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+
+    if (host === "youtu.be") {
+      const id = u.pathname.replace(/^\/+/, "").split("/")[0];
+      return id || null;
+    }
+
+    if (host.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return v;
+      const m = u.pathname.match(/^\/(?:shorts|embed|live)\/([^/?#]+)/);
+      if (m?.[1]) return m[1];
+    }
+  } catch {
+    // not a valid URL
+  }
+  return null;
+}
+
+/**
  * Detects a self-hosted video file (mp4/webm/ogg/mov/m3u8) that can play in a native <video>.
  */
 export function getDirectVideoUrl(url: string): string | null {

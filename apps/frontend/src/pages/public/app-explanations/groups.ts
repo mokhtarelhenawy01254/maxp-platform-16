@@ -18,6 +18,8 @@ export interface AppExplanation {
   order: number;
   targetRoute?: string;
   videoUrl?: string | null;
+  /** من الـ API العام (Prisma بيرجّع كل الحقول) — تُستخدم لشارة «جديد» وشريط «أضيف حديثًا» */
+  createdAt?: string | null;
 }
 
 export interface RouteGroup {

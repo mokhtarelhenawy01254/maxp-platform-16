@@ -210,6 +210,22 @@
   border: 1px solid var(--color-border, transparent);
 }
 
+/* chip المصطلح اللاتيني — (Slug) بقت Slug داخل كبسولة LTR صغيرة بدل كسر الاتجاه */
+.exp-article .exp-term-chip {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82em;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--color-muted, transparent);
+  border: 1px solid var(--color-border, transparent);
+  border-radius: 0.375rem;
+  padding: 0.18em 0.45em;
+  vertical-align: baseline;
+}
+
 /* احترام تقليل الحركة */
 @media (prefers-reduced-motion: reduce) {
   .exp-rail {
