@@ -148,7 +148,7 @@ export const RewardEmployeeAndTypeSection: React.FC<
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
                         قائمة القوالب فارغة حالياً. بضغطة واحدة، سنقوم بتجهيز{" "}
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                        <span className="font-bold text-primary">
                           <span className="font-mono tabular-nums">10</span>{" "}
                           أنواع مكافآت احترافية
                         </span>{" "}
@@ -160,7 +160,7 @@ export const RewardEmployeeAndTypeSection: React.FC<
                         type="button"
                         onClick={onSeedDefaults}
                         disabled={loading}
-                        className="group/btn relative px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                        className="relative px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl shadow-xs hover:bg-primary/90 transition-all active:scale-98 flex items-center gap-2.5 disabled:opacity-50 text-sm"
                       >
                         <RefreshCw
                           className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}

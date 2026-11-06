@@ -135,7 +135,7 @@ export const AddMaintenanceRecordModal: React.FC<
         <div className="flex gap-4 mt-10">
           <button
             onClick={onSubmit}
-            className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-indigo-700 shadow-xl shadow-indigo-100 dark:shadow-none transform hover:-translate-y-1 transition-all"
+            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 shadow-xs transition-colors"
           >
             حفظ السجل / الجدولة
           </button>

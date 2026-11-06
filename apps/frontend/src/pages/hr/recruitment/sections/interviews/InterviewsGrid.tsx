@@ -62,14 +62,14 @@ export const InterviewsGrid: React.FC<InterviewsGridProps> = ({
               transition={{ delay: index * 0.05 }}
               className="group relative bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl rounded-[2rem] p-6 border border-white/40 dark:border-gray-700/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 dark:hover:bg-gray-800/80"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="absolute inset-0 hidden" />
 
               <div className="relative">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-white dark:from-violet-900/50 dark:to-gray-800 flex items-center justify-center shadow-inner border border-white/50 dark:border-gray-700">
-                      <UserIcon className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                      <UserIcon className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 dark:text-white leading-tight">
@@ -118,7 +118,7 @@ export const InterviewsGrid: React.FC<InterviewsGridProps> = ({
                         {getInterviewTypeText(interview.type)}
                       </p>
                       {interview.location && (
-                        <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 truncate max-w-[200px]">
+                        <p className="text-xs text-primary mt-0.5 truncate max-w-[200px]">
                           {interview.location}
                         </p>
                       )}
@@ -192,7 +192,7 @@ export const InterviewsGrid: React.FC<InterviewsGridProps> = ({
           </p>
           <button
             onClick={onOpenScheduleModal}
-            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl shadow-lg hover:shadow-violet-500/30 hover:-translate-y-1 transition-all duration-300 font-bold"
+            className="px-8 py-3 bg-primary text-primary-foreground rounded-xl shadow-xs font-medium"
           >
             جدولة أول مقابلة
           </button>
@@ -202,9 +202,9 @@ export const InterviewsGrid: React.FC<InterviewsGridProps> = ({
       {loading && (
         <div className="flex justify-center items-center py-32">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 bg-violet-100 rounded-full animate-pulse" />
+              
             </div>
           </div>
         </div>

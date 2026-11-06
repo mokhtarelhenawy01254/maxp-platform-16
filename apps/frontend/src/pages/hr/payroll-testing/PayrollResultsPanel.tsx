@@ -33,17 +33,16 @@ export const PayrollResultsPanel: React.FC<PayrollResultsPanelProps> = ({
   setSaveAsDraft,
 }) => {
   return (
-    <Card className="lg:w-80 flex flex-col shrink-0 shadow-lg">
-      <CardHeader className="pb-3 bg-indigo-600 text-white">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Calculator className="h-5 w-5" />
+    <Card className="lg:w-80 flex flex-col shrink-0 rounded-2xl border border-border/70 bg-card shadow-xs">
+      <CardHeader className="pb-3 border-b border-border/70 bg-muted/20">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+          <Calculator className="h-4 w-4 text-primary" />
           نتائج الحساب
         </CardTitle>
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
             size="sm"
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
             onClick={calculatePayroll}
             disabled={calculating}
           >

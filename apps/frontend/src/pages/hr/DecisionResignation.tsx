@@ -80,7 +80,7 @@ const DecisionResignation = () => {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-[350px] w-full">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -93,7 +93,7 @@ const DecisionResignation = () => {
     );
 
   return (
-    <div className="p-6 w-full max-w-4xl mx-auto space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -103,7 +103,7 @@ const DecisionResignation = () => {
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 tracking-tight text-foreground">
             {isApprove ? (
               <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-500" />
             ) : (

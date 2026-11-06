@@ -107,7 +107,7 @@ const WorkReportFormsDashboard: React.FC = () => {
         value: totalFields,
         icon: FilePlus2,
         tone:
-          "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200",
+          "border-primary/20 bg-primary/10 text-primary",
       },
     ];
   }, [forms]);

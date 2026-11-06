@@ -39,24 +39,21 @@ export const PayrollGenerateModal: React.FC<PayrollGenerateModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
-        {/* Header with Background Pattern */}
-        <div className="relative bg-indigo-600 p-8 text-white">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Calculator className="h-32 w-32 rotate-12" />
-          </div>
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/30">
-              <Sparkles className="h-6 w-6 text-white" />
+      <DialogContent className="sm:max-w-xl overflow-hidden p-0 rounded-2xl border border-border/70 shadow-2xl bg-card">
+        {/* Header */}
+        <div className="border-b border-border/70 p-6 bg-muted/20">
+          <div className="flex items-center gap-4">
+            <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
+              <Calculator className="h-5 w-5" />
             </div>
-          </div>
-          <div>
-            <DialogTitle className="text-2xl font-bold">إعداد مسودة الرواتب</DialogTitle>
-            <p className="text-indigo-100 mt-1 opacity-90">دورة {months[selectedMonth - 1]} {selectedYear}</p>
+            <div>
+              <DialogTitle className="text-lg font-bold text-foreground">إعداد مسودة الرواتب</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">دورة {months[selectedMonth - 1]} {selectedYear}</p>
+            </div>
           </div>
         </div>
 
-        <div className="p-8 space-y-6 bg-white dark:bg-slate-900">
+        <div className="p-6 space-y-6 bg-card">
           {/* Process Summary Section */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
@@ -133,14 +130,14 @@ export const PayrollGenerateModal: React.FC<PayrollGenerateModalProps> = ({
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 h-12 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
+              className="flex-1 h-11 rounded-xl"
             >
               إلغاء العملية
             </Button>
             <Button
               onClick={onGenerate}
               disabled={generating}
-              className={`flex-[2] h-12 rounded-xl shadow-lg transition-all active:scale-95 ${generating ? 'bg-slate-200' : forceRegenerate ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200 dark:shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none'}`}
+              className={`flex-[2] h-11 rounded-xl transition-all ${forceRegenerate ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}`}
             >
               <AnimatePresence mode="wait">
                 {generating ? (

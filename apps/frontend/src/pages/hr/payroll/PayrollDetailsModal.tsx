@@ -310,14 +310,14 @@ export const PayrollDetailsModal: React.FC<PayrollDetailsModalProps> = ({
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-indigo-600 text-white flex justify-between items-center shadow-lg shadow-indigo-100 dark:shadow-none mt-4">
+            <div className="p-4 rounded-2xl bg-primary text-primary-foreground flex justify-between items-center shadow-xs mt-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
                   <DollarSign className="h-6 w-6" />
                 </div>
                 <span className="text-lg font-bold">صافي الراتب المستلم</span>
               </div>
-              <span className="text-2xl font-black tabular-nums" dir="ltr">
+              <span className="text-2xl font-black font-mono tabular-nums" dir="ltr">
                 {formatCurrency(payroll.netSalary)}
               </span>
             </div>

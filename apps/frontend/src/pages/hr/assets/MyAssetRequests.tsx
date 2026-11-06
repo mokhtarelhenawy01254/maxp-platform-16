@@ -121,7 +121,7 @@ const MyAssetRequests: React.FC = () => {
         </h2>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           طلب جديد
@@ -194,7 +194,7 @@ const MyAssetRequests: React.FC = () => {
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
               إنشاء طلب جديد
@@ -294,7 +294,7 @@ const MyAssetRequests: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary text-primary-foreground rounded-lg hover:bg-indigo-700"
                 >
                   إرسال الطلب
                 </button>

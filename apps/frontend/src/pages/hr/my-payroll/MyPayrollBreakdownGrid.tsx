@@ -28,71 +28,71 @@ export const MyPayrollBreakdownGrid: React.FC<MyPayrollBreakdownGridProps> = ({
   totalDeductionsDisplay,
 }) => {
   return (
-    <div className="grid md:grid-cols-2 gap-10">
+    <div className="grid md:grid-cols-2 gap-6">
       {/* Earnings */}
-      <motion.div variants={itemVariants} className="space-y-8">
-        <div className="flex items-center justify-between px-6">
-          <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-4">
-            <div className="h-9 w-9 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4" />
             </div>
             {t("employee.payroll.earnings")}
           </h3>
-          <div className="text-emerald-400 font-black text-lg font-mono tabular-nums">
+          <div className="text-emerald-600 dark:text-emerald-400 font-bold text-base font-mono tabular-nums">
             +{formatCurrency(totalEarningsDisplay)}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-slate-200 dark:border-white/5 space-y-6 shadow-xl dark:shadow-2xl">
-          <div className="flex justify-between items-center bg-slate-50 dark:bg-white/5 p-5 rounded-3xl border border-slate-100 dark:border-white/5 group hover:border-emerald-500/30 transition-all">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 dark:text-blue-400">
-                <FileText className="h-5 w-5" />
+        <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-5 shadow-xs">
+          <div className="flex justify-between items-center rounded-xl border border-border/50 bg-muted/20 p-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <FileText className="h-4 w-4" />
               </div>
-              <span className="font-bold text-slate-600 dark:text-slate-300 text-base">
+              <span className="font-medium text-foreground text-sm">
                 {t("employee.payroll.baseSalary")}
               </span>
             </div>
-            <span className="font-black text-slate-900 dark:text-white text-lg font-mono tabular-nums">
+            <span className="font-bold text-foreground text-base font-mono tabular-nums">
               {formatCurrency(
                 payrollData.employee?.baseSalary || payrollData.baseSalary,
               )}
             </span>
           </div>
 
-          <div className="space-y-4 px-4">
+          <div className="space-y-3 px-1">
             {allowances.map((al, idx) => (
-              <div key={idx} className="flex justify-between items-center group">
-                <span className="text-slate-500 dark:text-slate-400 font-bold group-hover:text-emerald-500 transition-colors text-sm">
+              <div key={idx} className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium text-sm">
                   {al.name}
                 </span>
-                <span className="font-black text-emerald-600 dark:text-emerald-400 text-base font-mono tabular-nums">
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-sm font-mono tabular-nums">
                   +{formatCurrency(al.amount)}
                 </span>
               </div>
             ))}
             {payrollData.overtimeAmount > 0 && (
-              <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-white/5">
+              <div className="flex justify-between items-center pt-2.5 border-t border-border/50">
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 font-bold block leading-none mb-1 text-sm">
+                  <span className="text-muted-foreground font-medium block leading-none mb-1 text-sm">
                     {t("employee.payroll.overtime")}
                   </span>
-                  <span className="text-[9px] text-emerald-500/80 font-black uppercase font-mono tabular-nums">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase font-mono tabular-nums">
                     ({payrollData.overtimeHours}H APPROVED)
                   </span>
                 </div>
-                <span className="font-black text-emerald-600 dark:text-emerald-400 text-base font-mono tabular-nums">
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-sm font-mono tabular-nums">
                   +{formatCurrency(payrollData.overtimeAmount)}
                 </span>
               </div>
             )}
           </div>
 
-          <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
-            <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">
+          <div className="pt-4 border-t border-border/70 flex justify-between items-center">
+            <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
               {t("employee.payroll.totalEarnings")}
             </span>
-            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {formatCurrency(totalEarningsDisplay)}
             </span>
           </div>
@@ -100,60 +100,60 @@ export const MyPayrollBreakdownGrid: React.FC<MyPayrollBreakdownGridProps> = ({
       </motion.div>
 
       {/* Deductions */}
-      <motion.div variants={itemVariants} className="space-y-8">
-        <div className="flex items-center justify-between px-6">
-          <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-4">
-            <div className="h-9 w-9 bg-red-500/20 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
-              <AlertCircle className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
+              <AlertCircle className="h-4 w-4" />
             </div>
             {t("employee.payroll.deductions")}
           </h3>
-          <div className="text-red-400 font-black text-lg font-mono tabular-nums">
+          <div className="text-destructive font-bold text-base font-mono tabular-nums">
             -{formatCurrency(totalDeductionsDisplay)}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-slate-200 dark:border-white/5 space-y-6 shadow-xl dark:shadow-2xl">
-          <div className="flex justify-between items-center bg-slate-50 dark:bg-white/5 p-5 rounded-3xl border border-slate-100 dark:border-white/5 group hover:border-red-500/30 transition-all">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-500 dark:text-indigo-400">
-                <ShieldCheck className="h-5 w-5" />
+        <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-5 shadow-xs">
+          <div className="flex justify-between items-center rounded-xl border border-border/50 bg-muted/20 p-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4" />
               </div>
-              <span className="font-bold text-slate-600 dark:text-slate-300 text-base">
+              <span className="font-medium text-foreground text-sm">
                 {t("employee.payroll.insurance")}
               </span>
             </div>
-            <span className="font-black text-red-600 dark:text-red-400 text-lg font-mono tabular-nums">
+            <span className="font-bold text-destructive text-base font-mono tabular-nums">
               -{formatCurrency(payrollData.socialInsurance)}
             </span>
           </div>
 
-          <div className="space-y-4 px-4">
+          <div className="space-y-3 px-1">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500 dark:text-slate-400 font-bold text-sm">
+              <span className="text-muted-foreground font-medium text-sm">
                 {t("employee.payroll.tax")}
               </span>
-              <span className="font-black text-red-600 dark:text-red-400 text-base font-mono tabular-nums">
+              <span className="font-semibold text-destructive text-sm font-mono tabular-nums">
                 -{formatCurrency(payrollData.taxAmount)}
               </span>
             </div>
             {groupedDeductions.map((de, idx) => (
-              <div key={idx} className="flex justify-between items-center group">
-                <span className="text-slate-500 dark:text-slate-400 font-bold group-hover:text-red-500 transition-colors text-sm">
+              <div key={idx} className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium text-sm">
                   {de.name}
                 </span>
-                <span className="font-black text-red-600 dark:text-red-400 text-base font-mono tabular-nums">
+                <span className="font-semibold text-destructive text-sm font-mono tabular-nums">
                   -{formatCurrency(de.amount)}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
-            <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">
+          <div className="pt-4 border-t border-border/70 flex justify-between items-center">
+            <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
               {t("employee.payroll.totalDeductions")}
             </span>
-            <span className="text-3xl font-black text-red-600 dark:text-red-400 font-mono tabular-nums">
+            <span className="text-2xl font-bold text-destructive font-mono tabular-nums">
               {formatCurrency(totalDeductionsDisplay)}
             </span>
           </div>

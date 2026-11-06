@@ -192,7 +192,7 @@ export const AssetRequestsContentPanels: React.FC<
               <div className="flex gap-3">
                 <button
                   onClick={() => onUpdateStatus(req.id, "APPROVED")}
-                  className="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-xs flex items-center justify-center gap-2"
                 >
                   <CheckCircleIcon className="h-5 w-5" />
                   موافقة وارسال WhatsApp
@@ -216,7 +216,7 @@ export const AssetRequestsContentPanels: React.FC<
           .map((req) => (
             <div
               key={req.id}
-              className="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-800/30 p-6"
+              className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs"
             >
               <div className="flex justify-between items-center mb-4">
                 <span className="px-3 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full">
@@ -235,7 +235,7 @@ export const AssetRequestsContentPanels: React.FC<
                 تمت الموافقة على {req.assetType}. يرجى تخصيص أصل فعلي لإتمام
                 العملية.
               </p>
-              <button className="w-full bg-white dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 py-3 rounded-xl text-sm font-black hover:bg-indigo-600 hover:text-white transition-all">
+              <button className="w-full rounded-xl border border-border/70 bg-muted/40 text-foreground py-2.5 text-sm font-semibold hover:bg-muted/70 transition-colors">
                 تخصيص وتسليم الأصل
               </button>
             </div>

@@ -37,17 +37,12 @@ export const WarningPreviewModal: React.FC<WarningPreviewModalProps> = ({
       onOpenChange={(open) => !open && onClose()}
     >
       <DialogContent
-        className="max-w-2xl bg-white dark:bg-gray-950 border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden"
+        className="max-w-2xl bg-card text-card-foreground border border-border/70 shadow-2xl rounded-2xl p-0 overflow-hidden"
         dir="rtl"
       >
         {selectedWarning && (
           <>
-            {/* Status Header */}
-            <div className="h-2 bg-primary/20 bg-gradient-to-r from-primary via-primary/50 to-primary/10" />
-
-            <DialogHeader className="px-8 pt-8 pb-6 bg-gradient-to-br from-muted/50 via-background to-background relative overflow-hidden">
-              <div className="absolute top-[-20%] left-[-10%] w-48 h-48 bg-primary/5 rounded-full blur-3xl" />
-
+            <DialogHeader className="px-6 py-5 border-b border-border/70 bg-muted/20 relative">
               <div className="flex items-start justify-between relative z-10">
                 <div className="flex items-center gap-5">
                   <div className="relative">

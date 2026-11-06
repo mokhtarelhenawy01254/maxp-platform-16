@@ -96,7 +96,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                         applicantId: "",
                       })
                     }
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent focus:border-violet-500 rounded-xl outline-none transition-all hover:bg-white dark:hover:bg-gray-700"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent focus:border-primary rounded-xl outline-none transition-all hover:bg-white dark:hover:bg-gray-700"
                   >
                     <option value="">اختر الوظيفة...</option>
                     {jobs.map((job) => (
@@ -132,7 +132,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                           applicantId: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent focus:border-violet-500 rounded-xl outline-none transition-all hover:bg-white dark:hover:bg-gray-700"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent focus:border-primary rounded-xl outline-none transition-all hover:bg-white dark:hover:bg-gray-700"
                     >
                       <option value="">اختر المتقدم...</option>
                       {applicantsForJob.map((applicant) => (
@@ -162,7 +162,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                           })
                         }
                         min={new Date().toISOString().split("T")[0]}
-                        className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-violet-500 outline-none font-mono tabular-nums"
+                        className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-primary outline-none font-mono tabular-nums"
                       />
                       <input
                         type="time"
@@ -173,7 +173,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                             time: e.target.value,
                           })
                         }
-                        className="w-32 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-violet-500 outline-none font-mono tabular-nums"
+                        className="w-32 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-primary outline-none font-mono tabular-nums"
                       />
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                             }
                             className={`flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all ${
                               newInterview.type === value
-                                ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-700"
+                                ? "border-primary bg-primary/10 text-primary"
                                 : "border-transparent bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100"
                             }`}
                           >
@@ -259,12 +259,12 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                         (e.preventDefault(), onAddInterviewer())
                       }
                       placeholder="اكتب الاسم واضغط إضافة..."
-                      className="flex-1 bg-transparent border-b-2 border-gray-200 dark:border-gray-700 focus:border-violet-500 px-2 py-2 outline-none transition-colors"
+                      className="flex-1 bg-transparent border-b-2 border-gray-200 dark:border-gray-700 focus:border-primary px-2 py-2 outline-none transition-colors"
                     />
                     <button
                       type="button"
                       onClick={onAddInterviewer}
-                      className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors font-medium text-sm"
+                      className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 transition-colors font-medium text-sm"
                     >
                       + إضافة
                     </button>
@@ -280,14 +280,14 @@ export const InterviewScheduleModal: React.FC<InterviewScheduleModalProps> = ({
                         key={idx}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-900/30 dark:to-fuchsia-900/30 text-violet-700 dark:text-violet-300 rounded-full border border-violet-100 dark:border-violet-800 text-sm font-medium pr-3 pl-1"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full border border-primary/20 text-sm font-medium pr-3 pl-1"
                       >
                         {interviewer}
                         <button
                           type="button"
                           onClick={() => onRemoveInterviewer(idx)}
                           aria-label={`حذف ${interviewer}`}
-                          className="p-0.5 hover:bg-white/50 rounded-full transition-colors text-violet-500"
+                          className="p-0.5 hover:bg-white/50 rounded-full transition-colors text-primary"
                         >
                           <XMarkIcon className="w-4 h-4" />
                         </button>

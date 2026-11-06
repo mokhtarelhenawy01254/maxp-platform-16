@@ -24,17 +24,17 @@ export const PayrollEmployeeSidebar: React.FC<PayrollEmployeeSidebarProps> = ({
   handleSelectEmployee,
 }) => {
   return (
-    <Card className="lg:w-80 flex flex-col shrink-0 shadow-lg">
-      <CardHeader className="pb-3 bg-indigo-600 text-white">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5" />
+    <Card className="lg:w-80 flex flex-col shrink-0 rounded-2xl border border-border/70 bg-card shadow-xs">
+      <CardHeader className="pb-3 border-b border-border/70 bg-muted/20">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+          <Users className="h-4 w-4 text-primary" />
           اختيار موظف للاختبار
         </CardTitle>
         <div className="relative mt-2">
-          <Search className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="بحث باسم أو رقم الموظف..."
-            className="pr-9 bg-white/20 text-white placeholder:text-white/70 border-white/20"
+            className="pr-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -61,15 +61,15 @@ export const PayrollEmployeeSidebar: React.FC<PayrollEmployeeSidebarProps> = ({
                 <button
                   key={emp.id}
                   onClick={() => handleSelectEmployee(emp)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
                     selectedEmployee?.id === emp.id
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
-                      : "bg-white hover:bg-indigo-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                      ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
+                      : "hover:bg-muted/50 text-foreground"
                   }`}
                 >
-                  <Avatar className="h-10 w-10 border-2 border-white/20">
+                  <Avatar className="h-10 w-10 border border-border/70">
                     <AvatarImage src={emp.avatar} />
-                    <AvatarFallback className="bg-indigo-200 text-indigo-700">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
                       {emp.firstName?.[0]}
                     </AvatarFallback>
                   </Avatar>

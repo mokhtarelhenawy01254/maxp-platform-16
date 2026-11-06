@@ -61,7 +61,7 @@ export const CreateAssetRequestModal: React.FC<
                   }
                   className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${
                     newRequest.priority === p.key
-                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      ? "bg-primary border-primary text-primary-foreground shadow-xs"
                       : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400"
                   }`}
                 >
@@ -87,7 +87,7 @@ export const CreateAssetRequestModal: React.FC<
         <div className="flex gap-3 mt-8">
           <button
             onClick={onSubmit}
-            className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 dark:shadow-none transition-all"
+            className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold hover:bg-primary/90 shadow-xs transition-colors"
           >
             إرسال الطلب
           </button>

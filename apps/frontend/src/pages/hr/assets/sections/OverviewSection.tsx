@@ -79,34 +79,34 @@ const OverviewSection: React.FC = () => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden relative text-white group"
+        className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs relative overflow-hidden text-card-foreground"
       >
         <div className="relative z-10 max-w-2xl">
           <motion.h2 
             initial={{ x: -20 }}
             animate={{ x: 0 }}
-            className="text-4xl font-black mb-6 tracking-tight"
+            className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-2"
           >
             لوحة تحكم الأصول الذكية
           </motion.h2>
-          <p className="text-xl text-indigo-100/90 mb-8 font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
             تتبع أصولك وسيطر على العهد بكفاءة تامة. نظامنا المتصل يوفر لك بيانات
             دقيقة في الوقت الفعلي لاتخاذ قرارات أسرع وأكثر ذكاءً.
           </p>
           <div className="flex flex-wrap gap-4">
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-2 text-sm font-black bg-white/20 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/30 shadow-lg"
+              className="flex items-center gap-2 text-xs font-semibold bg-primary/10 text-primary px-3 py-1.5 rounded-lg border border-primary/20"
             >
-              <ShieldCheckIcon className="h-5 w-5 text-indigo-200" />
+              <ShieldCheckIcon className="h-5 w-5 text-primary" />
               أمان البيانات 100%
             </motion.div>
           </div>
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/20 transition-colors duration-700"></div>
-        <ComputerDesktopIcon className="absolute -left-10 -bottom-10 h-80 w-80 text-white/5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000 ease-in-out" />
+        
+        <ComputerDesktopIcon className="hidden" />
       </motion.div>
 
       {/* Quick Stats */}
@@ -118,7 +118,7 @@ const OverviewSection: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ y: -5 }}
-            className="bg-white dark:bg-gray-800 rounded-[2rem] p-7 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-2xl transition-all group"
+            className="rounded-2xl border border-border/70 bg-card shadow-xs p-5 transition-all group"
           >
             <div
               className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all group-hover:rotate-6 group-hover:scale-110 shadow-lg ${colorClasses[stat.color]}`}
@@ -128,7 +128,7 @@ const OverviewSection: React.FC = () => {
             <p className="text-xs font-black text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
               {stat.label}
             </p>
-            <h3 className="text-4xl font-black text-gray-900 dark:text-white tabular-nums">
+            <h3 className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-foreground">
               {loading ? (
                 <div className="h-10 w-16 bg-gray-100 dark:bg-gray-700 animate-pulse rounded-lg"></div>
               ) : (

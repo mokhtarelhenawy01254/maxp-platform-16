@@ -15,29 +15,29 @@ export const ShiftsHeader: React.FC<ShiftsHeaderProps> = ({
   onCreateNew,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 dark:text-gray-100">
-          المناوبات
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 mt-1 text-sm">
-          <Clock className="h-4 w-4 text-purple-500 shrink-0" />
-          <span>إدارة مناوبات العمل وجداول الموظفين</span>
-        </p>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
+          <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            المناوبات وجداول العمل
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            إدارة وتوزيع مناوبات العمل وجداول الموظفين الأسبوعية
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center bg-card p-1 rounded-xl border border-border/70">
           <Button
             type="button"
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => onViewModeChange("grid")}
-            className={
-              viewMode === "grid"
-                ? "shadow-sm bg-white dark:bg-gray-700 font-bold text-xs"
-                : "text-xs"
-            }
+            className="h-8 px-2.5 text-xs rounded-lg"
           >
             <LayoutGrid className="h-3.5 w-3.5 ml-1.5" />
             <span>شبكة</span>
@@ -47,11 +47,7 @@ export const ShiftsHeader: React.FC<ShiftsHeaderProps> = ({
             variant={viewMode === "table" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => onViewModeChange("table")}
-            className={
-              viewMode === "table"
-                ? "shadow-sm bg-white dark:bg-gray-700 font-bold text-xs"
-                : "text-xs"
-            }
+            className="h-8 px-2.5 text-xs rounded-lg"
           >
             <TableIcon className="h-3.5 w-3.5 ml-1.5" />
             <span>جدول</span>
@@ -61,7 +57,8 @@ export const ShiftsHeader: React.FC<ShiftsHeaderProps> = ({
         <Button
           type="button"
           onClick={onCreateNew}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md transition-colors"
+          size="sm"
+          className="h-8 sm:h-9 text-xs"
         >
           <Plus className="h-4 w-4 ml-1.5" />
           <span>مناوبة جديدة</span>

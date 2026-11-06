@@ -44,7 +44,7 @@ export const Benefits: React.FC = () => {
 
   if (loading && benefits.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50/30 dark:bg-gray-900/30">
+      <div className="flex items-center justify-center min-h-[350px] w-full">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <p className="text-sm text-muted-foreground animate-pulse">

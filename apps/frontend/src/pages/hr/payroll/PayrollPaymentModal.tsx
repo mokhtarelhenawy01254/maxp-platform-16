@@ -123,8 +123,8 @@ export const PayrollPaymentModal: React.FC<PayrollPaymentModalProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="border border-slate-200 dark:border-slate-800 rounded-2xl p-8 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col items-center justify-center text-center space-y-4"
               >
-                <div className="h-20 w-20 bg-violet-100 dark:bg-violet-500/20 text-violet-600 rounded-full flex items-center justify-center">
-                  <Zap className="h-10 w-10" />
+                <div className="h-16 w-16 bg-primary/10 border border-primary/20 text-primary rounded-full flex items-center justify-center">
+                  <Zap className="h-8 w-8" />
                 </div>
                 <div>
                   <p className="font-bold text-xl dark:text-white">تحويل المحفظة الإلكترونية</p>

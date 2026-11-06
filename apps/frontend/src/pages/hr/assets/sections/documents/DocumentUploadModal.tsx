@@ -33,7 +33,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4">
+      <div className="flex items-center justify-center min-h-full flex items-center justify-center p-4">
         <div
           className="fixed inset-0 bg-black bg-opacity-50"
           onClick={onClose}
@@ -197,7 +197,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 type="button"
                 onClick={onUpload}
                 disabled={uploading || !uploadForm.assetId}
-                className="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 text-primary-foreground focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 {uploading ? "جاري الرفع..." : "رفع المستند"}
               </button>

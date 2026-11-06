@@ -22,7 +22,7 @@ const CreatePromotion: React.FC = () => {
 
   return (
     <div
-      className="p-6 w-full max-w-6xl 2xl:max-w-7xl mx-auto space-y-8"
+      className="space-y-6 w-full pb-8 max-w-6xl 2xl:max-w-7xl mx-auto"
       dir="rtl"
     >
       <CreatePromotionHeader onBack={() => navigate("/hr/promotions")} />

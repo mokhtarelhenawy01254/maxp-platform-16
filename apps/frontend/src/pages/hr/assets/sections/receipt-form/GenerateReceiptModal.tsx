@@ -149,7 +149,7 @@ export const GenerateReceiptModal: React.FC<GenerateReceiptModalProps> = ({
           <button
             onClick={onGenerate}
             disabled={!selectedEmployee || !selectedAsset}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PlusCircleIcon className="h-5 w-5 inline-block ml-2" />
             توليد النموذج

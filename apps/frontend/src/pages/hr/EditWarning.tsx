@@ -290,18 +290,17 @@ const EditWarning: React.FC = () => {
 
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl bg-white dark:bg-gray-950 border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden" dir="rtl">
+        <DialogContent className="max-w-2xl bg-card border border-border/70 shadow-lg rounded-2xl p-0 overflow-hidden" dir="rtl">
           {/* Header with Background Pattern */}
-          <div className="relative h-32 bg-gradient-to-r from-orange-600 to-amber-700 flex items-center px-8 overflow-hidden">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" />
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+          <div className="p-6 border-b border-border/70 flex items-center gap-4">
+            
 
             <div className="flex items-center gap-5 relative z-10 w-full">
-              <div className="p-4 bg-white/20 rounded-[1.5rem] backdrop-blur-md shadow-inner ring-1 ring-white/30">
-                <ShieldAlert className="h-8 w-8 text-white" />
+              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-500/20">
+                <ShieldAlert className="h-6 w-6" />
               </div>
               <div className="space-y-1 flex-1 min-w-0">
-                <DialogTitle className="text-2xl font-black text-white break-words pr-2 max-w-[450px]">
+                <DialogTitle className="text-lg font-bold text-foreground break-words pr-2 max-w-[450px]">
                   {formData.title || "عنوان الإنذار"}
                 </DialogTitle>
                 <div className="flex items-center gap-2 text-white/70 text-[10px] font-black uppercase tracking-widest">

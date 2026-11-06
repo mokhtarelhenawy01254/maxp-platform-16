@@ -248,41 +248,41 @@ export const ShiftFormDialog: React.FC<ShiftFormDialogProps> = ({
           </div>
 
           {/* Enhanced Live Preview */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-5 text-white shadow-lg shadow-blue-200 dark:shadow-none overflow-hidden relative group">
+          <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 relative overflow-hidden">
             <div className="flex items-center justify-between relative z-10">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100/70">
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   ساعات العمل الصافية
                 </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-black font-mono tabular-nums">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-foreground">
                     {calculateWorkHours(
                       formData.startTime,
                       formData.endTime,
                       formData.breakDuration,
                     )}
                   </span>
-                  <span className="text-sm font-bold text-blue-100/90 tracking-tight">
+                  <span className="text-xs font-medium text-muted-foreground">
                     ساعة / يوم
                   </span>
                 </div>
               </div>
-              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center p-3 backdrop-blur-md shadow-inner border border-white/20">
-                <Clock className="w-full h-full text-white" />
+              <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center p-2 text-primary">
+                <Clock className="w-full h-full" />
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between relative z-10">
+            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between relative z-10">
               <div className="flex items-center gap-2">
-                <Badge className="bg-white/20 hover:bg-white/30 text-white border-none rounded-lg font-black text-[10px] px-2 py-0.5 font-mono tabular-nums">
+                <Badge variant="outline" className="bg-card border-border/70 text-foreground rounded-md text-[11px] px-2 py-0.5 font-mono tabular-nums">
                   {formData.startTime}
                 </Badge>
-                <div className="h-0.5 w-3 bg-white/30 rounded-full" />
-                <Badge className="bg-white/20 hover:bg-white/30 text-white border-none rounded-lg font-black text-[10px] px-2 py-0.5 font-mono tabular-nums">
+                <div className="h-0.5 w-2.5 bg-border rounded-full" />
+                <Badge variant="outline" className="bg-card border-border/70 text-foreground rounded-md text-[11px] px-2 py-0.5 font-mono tabular-nums">
                   {formData.endTime}
                 </Badge>
               </div>
-              <p className="text-[10px] font-black text-blue-100/60">
-                تلقائي • ذكي
+              <p className="text-[11px] font-mono text-muted-foreground">
+                احتساب تلقائي
               </p>
             </div>
           </div>

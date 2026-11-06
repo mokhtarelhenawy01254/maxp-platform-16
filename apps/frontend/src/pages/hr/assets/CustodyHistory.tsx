@@ -146,17 +146,17 @@ const CustodyHistory: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: idx * 0.05 }}
-                className="group relative bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden"
+                className="group relative rounded-2xl border border-border/70 bg-card p-5 shadow-xs overflow-hidden transition-all"
               >
                 {/* Decorative background circle */}
-                <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                
                 
                 <div className="flex flex-col lg:flex-row lg:items-center gap-8 relative z-10">
                   {/* Asset Info */}
                   <div className="flex items-center gap-5 flex-1 min-w-[300px]">
                     <div className="relative">
-                      <div className="p-4 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-[2rem] group-hover:rotate-6 transition-transform duration-500">
-                        <ComputerDesktopIcon className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
+                      <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                        <ComputerDesktopIcon className="h-8 w-8 text-primary" />
                       </div>
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full flex items-center justify-center">
                         <CheckCircleIcon className="h-4 w-4 text-white" />
@@ -217,7 +217,7 @@ const CustodyHistory: React.FC = () => {
                       </button>
                       <button
                         onClick={() => setReturningAsset({ ...record.asset, type: 'return' })}
-                        className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 hover:-translate-y-1 active:translate-y-0 transition-all text-sm"
+                        className="flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground text-white rounded-2xl font-black shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 hover:-translate-y-1 active:translate-y-0 transition-all text-sm"
                       >
                         <ArrowPathIcon className="h-4 w-4" />
                         استرجاع

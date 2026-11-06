@@ -90,7 +90,7 @@ const AssetForm: React.FC<AssetFormProps> = ({
             type="submit"
             form="asset-form"
             disabled={loading}
-            className="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors inline-flex items-center justify-center min-w-[120px]"
+            className="px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary hover:bg-primary/90 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors inline-flex items-center justify-center min-w-[120px]"
           >
             {loading ? "جاري الحفظ..." : "حفظ الأصل"}
           </button>

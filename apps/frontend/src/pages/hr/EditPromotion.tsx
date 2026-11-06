@@ -25,7 +25,7 @@ const EditPromotion: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-[350px] w-full">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -44,7 +44,7 @@ const EditPromotion: React.FC = () => {
 
   return (
     <div
-      className="p-6 w-full max-w-6xl 2xl:max-w-7xl mx-auto space-y-8"
+      className="space-y-6 w-full pb-8 max-w-6xl 2xl:max-w-7xl mx-auto"
       dir="rtl"
     >
       <EditPromotionHeader status={promotion.status} onBack={goBack} />

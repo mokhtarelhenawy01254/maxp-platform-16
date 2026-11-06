@@ -47,7 +47,7 @@ export const ReceiptDocumentPreview: React.FC<ReceiptDocumentPreviewProps> = ({
         <div className="flex gap-2">
           <button
             onClick={onPrint}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-200 dark:shadow-none"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-semibold shadow-xs"
           >
             <PrinterIcon className="h-5 w-5" />
             طباعة
@@ -63,7 +63,7 @@ export const ReceiptDocumentPreview: React.FC<ReceiptDocumentPreviewProps> = ({
         <div className="flex gap-2">
           <button
             onClick={onToggleUploadSignature}
-            className="flex items-center gap-2 px-4 py-2 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+            className="flex items-center gap-2 px-4 py-2 text-primary font-semibold hover:bg-primary/10 rounded-xl transition-colors"
           >
             <CameraIcon className="h-5 w-5" />
             إدراج توقيع
@@ -73,19 +73,19 @@ export const ReceiptDocumentPreview: React.FC<ReceiptDocumentPreviewProps> = ({
 
       {/* Signature Upload Placeholder - Hidden on Print */}
       {showUploadSignature && (
-        <div className="p-6 bg-indigo-50 dark:bg-indigo-900/10 border-2 border-dashed border-indigo-200 dark:border-indigo-800 rounded-2xl animate-slide-down print:hidden">
+        <div className="p-6 bg-muted/20 border-2 border-dashed border-border/70 rounded-2xl print:hidden">
           <div className="flex flex-col items-center text-center">
             <CloudArrowUpIcon className="h-10 w-10 text-indigo-500 mb-2" />
             <h4 className="font-bold text-indigo-900 dark:text-indigo-100">
               تحميل صورة التوقيع
             </h4>
-            <p className="text-sm text-indigo-600/70 mb-4 italic">
+            <p className="text-sm text-muted-foreground mb-4">
               يمكنك رفع صورة توقيع الموظف ليظهر في النموذج تلقائياً
             </p>
             <input type="file" className="hidden" id="sig-upload" />
             <label
               htmlFor="sig-upload"
-              className="cursor-pointer px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-bold"
+              className="cursor-pointer px-5 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-semibold shadow-xs"
             >
               اختر ملف
             </label>

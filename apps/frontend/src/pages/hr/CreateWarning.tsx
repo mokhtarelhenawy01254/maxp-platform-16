@@ -25,7 +25,7 @@ const CreateWarning: React.FC = () => {
 
   return (
     <div
-      className="p-6 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+      className="space-y-6 w-full pb-8 max-w-5xl mx-auto"
       dir="rtl"
     >
       <CreateWarningHeader onBack={goBack} />

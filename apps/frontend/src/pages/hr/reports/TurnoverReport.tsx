@@ -221,22 +221,22 @@ const TurnoverReport: React.FC = () => {
 
             {/* Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-6">
+              <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
+                <CardContent className="p-5">
                   <div className="text-center">
-                    <p className="text-gray-500 text-sm">إجمالي الموظفين</p>
-                    <h3 className="text-4xl font-bold mt-2 text-primary">
+                    <p className="text-muted-foreground text-xs font-medium">إجمالي الموظفين</p>
+                    <h3 className="text-2xl sm:text-3xl font-bold font-mono tabular-nums mt-1 text-foreground">
                       {report.totalEmployees}
                     </h3>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-6">
+              <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
+                <CardContent className="p-5">
                   <div className="text-center">
-                    <p className="text-gray-500 text-sm">متوسط مدة الخدمة</p>
-                    <h3 className="text-4xl font-bold mt-2 text-blue-600">
+                    <p className="text-muted-foreground text-xs font-medium">متوسط مدة الخدمة</p>
+                    <h3 className="text-2xl sm:text-3xl font-bold font-mono tabular-nums mt-1 text-foreground">
                       {report.averageTenure} سنة
                     </h3>
                   </div>

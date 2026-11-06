@@ -50,7 +50,7 @@ const ReceiptFormSection: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setShowGenerateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-200 dark:shadow-none"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-semibold shadow-xs"
           >
             <PlusCircleIcon className="h-5 w-5" />
             توليد نموذج جديد

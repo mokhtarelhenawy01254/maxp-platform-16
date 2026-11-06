@@ -47,12 +47,12 @@ const AssetRequestsSection: React.FC = () => {
               className={`h-5 w-5 text-gray-500 ${loading ? "animate-spin" : ""}`}
             />
           </button>
-          <div className="flex bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex bg-card p-1 rounded-xl border border-border/70 shadow-xs">
             <button
               onClick={() => setView("employee")}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 view === "employee"
-                  ? "bg-indigo-600 text-white shadow-md"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
@@ -62,7 +62,7 @@ const AssetRequestsSection: React.FC = () => {
               onClick={() => setView("hr")}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 view === "hr"
-                  ? "bg-indigo-600 text-white shadow-md"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >

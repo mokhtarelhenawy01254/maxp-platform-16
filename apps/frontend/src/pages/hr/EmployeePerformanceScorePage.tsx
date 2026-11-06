@@ -162,7 +162,7 @@ export const EmployeePerformanceScorePage: React.FC = () => {
               {/* Score Left Column */}
               <div className="lg:col-span-5 flex items-center gap-6">
                 <div className="flex flex-col items-center justify-center h-28 w-28 rounded-2xl bg-muted/40 border border-border/80 shadow-inner">
-                  <span className="text-4xl font-extrabold tracking-tight tabular-nums text-foreground">
+                  <span className="text-3xl font-bold tracking-tight tabular-nums text-foreground">
                     {score}
                   </span>
                   <span className="text-xs font-semibold text-muted-foreground mt-0.5">من 100</span>

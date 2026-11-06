@@ -40,10 +40,8 @@ export const HRUnsavedDialog: React.FC<HRUnsavedDialogProps> = ({
                 إلغاء
               </Button>
               <Button
-                variant="outline"
                 size="sm"
                 onClick={onSaveFirst}
-                className="bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 حفظ أولاً
               </Button>

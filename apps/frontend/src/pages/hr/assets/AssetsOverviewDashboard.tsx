@@ -50,7 +50,7 @@ const AssetsOverviewDashboard: React.FC = () => {
               </h2>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors shadow-xs font-semibold"
               >
                 <PlusIcon className="h-5 w-5" />
                 إضافة أصل جديد
@@ -58,7 +58,7 @@ const AssetsOverviewDashboard: React.FC = () => {
             </div>
 
             {showAddModal && (
-              <div className="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-slate-700 rounded-2xl shadow-lg p-4 sm:p-6">
+              <div className="rounded-2xl border border-border/70 bg-card shadow-xs p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     نموذج إضافة أصل

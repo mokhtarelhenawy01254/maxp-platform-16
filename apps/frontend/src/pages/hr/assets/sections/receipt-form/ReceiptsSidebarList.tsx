@@ -55,14 +55,13 @@ export const ReceiptsSidebarList: React.FC<ReceiptsSidebarListProps> = ({
         </button>
       ))}
 
-      <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-        <h4 className="font-bold mb-2 flex items-center gap-2">
-          <CheckBadgeIcon className="h-5 w-5" />
-          لماذا نستخدم هذا النموذج؟
-        </h4>
-        <p className="text-xs opacity-90 leading-relaxed">
-          هذا النموذج يعتبر وثيقة قانونية تثبت استلام الموظف للعهدة الموضحة،
-          ويستخدم كمستند رسمي عند الجرد أو عند إخلاء الطرف.
+      <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 text-muted-foreground text-xs">
+        <p className="font-medium flex items-center gap-1.5 text-foreground mb-1">
+          <CheckBadgeIcon className="h-4 w-4 text-primary" />
+          مستند رسمي معتمد
+        </p>
+        <p className="leading-relaxed">
+          وثيقة استلام رسمية تثبت استلام العهدة ومطابقتها للمواصفات القانونية والجرد.
         </p>
       </div>
     </div>

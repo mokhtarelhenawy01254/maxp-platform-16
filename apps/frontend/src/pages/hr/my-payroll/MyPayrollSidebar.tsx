@@ -1,94 +1,66 @@
 import React from "react";
-import { TFunction } from "i18next";
-import { motion } from "framer-motion";
-import { CreditCard, ShieldCheck, Zap } from "lucide-react";
+import { CreditCard, Zap, ShieldCheck } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { PayrollData } from "./types";
-import { itemVariants } from "./helpers";
+import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { itemVariants } from "./types";
 
 interface MyPayrollSidebarProps {
-  t: TFunction;
-  payrollData: PayrollData;
-  originalBaseSalary: number;
+  payrollData: any;
 }
 
 export const MyPayrollSidebar: React.FC<MyPayrollSidebarProps> = ({
-  t,
   payrollData,
-  originalBaseSalary,
 }) => {
+  const { t } = useTranslation();
+
   return (
-    <div className="lg:col-span-4 space-y-10">
-      {/* Payment Method Card - Premium Wallet Style */}
+    <div className="lg:col-span-4 space-y-6">
+      {/* Payment Method Card */}
       <motion.div
         variants={itemVariants}
-        className="bg-white dark:bg-slate-900/60 backdrop-blur-3xl rounded-[3rem] p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group shadow-xl"
+        className="rounded-2xl border border-border/70 bg-card shadow-xs p-6 relative overflow-hidden"
       >
-        <div className="absolute -top-10 -left-10 h-40 w-40 bg-blue-500/5 rounded-full blur-[60px]"></div>
-
-        <div className="space-y-8 relative z-10">
+        <div className="space-y-6 relative z-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-black text-slate-800 dark:text-white">
+            <h3 className="text-base font-bold text-foreground">
               {t("employee.payroll.paymentDetails")}
             </h3>
-            <CreditCard className="text-blue-500 dark:text-emerald-400" />
+            <CreditCard className="size-5 text-primary" />
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-5 border border-slate-100 dark:border-white/10 hover:border-emerald-500/20 transition-all">
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+          <div className="space-y-4">
+            <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1.5">
                 {t("employee.payroll.bankTransfer")}
               </p>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-100 dark:bg-white/10 rounded-xl flex items-center justify-center font-black text-blue-600 dark:text-white italic text-lg">
+                <div className="h-9 w-9 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center font-bold text-primary text-sm">
                   {payrollData.employee?.bankName?.substring(0, 1) || "B"}
                 </div>
                 <div>
-                  <p className="text-base font-black text-slate-800 dark:text-white leading-none">
-                    {payrollData.employee?.bankName ||
-                      t("employee.payroll.bankName")}
+                  <p className="font-semibold text-sm text-foreground">
+                    {payrollData.employee?.bankName || "البنك الأهلي التجاري"}
                   </p>
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-500 mt-1">
-                    {t("employee.payroll.accountActive")}
+                  <p className="text-xs text-muted-foreground font-mono tabular-nums">
+                    {payrollData.employee?.bankAccount
+                      ? `•••• ${payrollData.employee.bankAccount.slice(-4)}`
+                      : "•••• 8821"}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-5 border border-slate-100 dark:border-white/10 hover:border-emerald-500/20 transition-all">
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
-                {t("employee.payroll.iban")}
-              </p>
-              <p className="text-base font-black text-slate-800 dark:text-white font-mono tabular-nums tracking-wider truncate">
-                {payrollData.employee?.bankAccountNumber
-                  ? `**** **** ${payrollData.employee.bankAccountNumber.slice(-4)}`
-                  : "EG82 0003 4827 1019 3828"}
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-2 space-y-4">
-            <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-              <span className="text-slate-400 dark:text-slate-500">
-                {t("employee.payroll.monthlyIncentive")}
-              </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                {(
-                  (payrollData.bonuses / (originalBaseSalary || 1)) *
-                  100
-                ).toFixed(1)}
-                %
-              </span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{
-                  width: `${Math.min((payrollData.bonuses / (originalBaseSalary || 1)) * 100 * 2, 100)}%`,
-                }}
-                transition={{ duration: 2, ease: "circOut" }}
-                className="h-full bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 rounded-full"
-              />
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {t("employee.payroll.transferSpeed")}
+                </span>
+                <span className="font-bold text-emerald-500 font-mono tabular-nums">100%</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full w-full" />
+              </div>
             </div>
           </div>
         </div>
@@ -97,38 +69,38 @@ export const MyPayrollSidebar: React.FC<MyPayrollSidebarProps> = ({
       {/* Secure Info Card */}
       <motion.div
         variants={itemVariants}
-        className="bg-emerald-500/5 dark:bg-emerald-500/10 backdrop-blur-3xl rounded-[3rem] p-8 border border-emerald-500/20 space-y-6 relative overflow-hidden shadow-lg"
+        className="rounded-2xl border border-border/70 bg-card shadow-xs p-6 space-y-4 relative overflow-hidden"
       >
-        <div className="absolute top-0 right-0 p-8 opacity-5 scale-150 rotate-12">
-          <ShieldCheck className="h-24 w-24" />
-        </div>
-
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="h-9 w-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
-            <Zap className="h-5 w-5" />
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+            <ShieldCheck className="size-5" />
           </div>
-          <h3 className="text-xl font-black text-slate-800 dark:text-white">
+          <h3 className="text-base font-bold text-foreground">
             {t("employee.payroll.securityNotice")}
           </h3>
         </div>
 
-        <div className="space-y-4 relative z-10">
+        <div className="space-y-2.5 relative z-10 text-xs">
           {[
             t("employee.payroll.encryptedData"),
             t("employee.payroll.digitalSignature"),
             t("employee.payroll.keepStatement"),
           ].map((text, i) => (
-            <div key={i} className="flex gap-4 group">
-              <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full mt-2 group-hover:scale-150 transition-all"></div>
-              <p className="text-[13px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full shrink-0" />
+              <p className="text-muted-foreground">
                 {text}
               </p>
             </div>
           ))}
         </div>
 
-        <Button className="w-full rounded-2xl h-14 bg-white dark:bg-emerald-500 text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] shadow-xl border border-slate-200 dark:border-none">
-          {t("employee.payroll.privacyPolicy")}
+        <Button
+          variant="outline"
+          className="w-full rounded-xl text-xs font-semibold"
+          onClick={() => window.print()}
+        >
+          {t("employee.payroll.printStatement")}
         </Button>
       </motion.div>
     </div>

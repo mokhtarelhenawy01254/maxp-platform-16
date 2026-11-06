@@ -155,15 +155,15 @@ const AssetCategories: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden relative"
+          className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden relative"
         >
           {/* Decorative pattern */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+          
           
           <div className="p-6 relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
-                <PlusIcon className="h-6 w-6 text-white" />
+              <div className="p-2.5 bg-primary/10 border border-primary/20 text-primary rounded-xl">
+                <PlusIcon className="h-5 w-5 text-primary" />
               </div>
               <h3 className="text-xl font-black text-gray-900 dark:text-white">
                 تصنيف جديد

@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { Building2, History } from "lucide-react";
 
 export const MyPayrollSkeleton: React.FC = () => (
-  <div className="max-w-[1400px] mx-auto w-full grid lg:grid-cols-3 gap-10">
+  <div className="max-w-[1400px] mx-auto w-full grid md:grid-cols-3 gap-6">
     {[1, 2, 3].map((i) => (
       <div
         key={i}
-        className="h-96 bg-slate-900/50 animate-pulse rounded-[4rem]"
-      ></div>
+        className="h-64 bg-muted/40 animate-pulse rounded-2xl border border-border/50"
+      />
     ))}
   </div>
 );
@@ -22,36 +22,34 @@ export const MyPayrollEmptyState: React.FC<MyPayrollEmptyStateProps> = ({
   t,
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 40 }}
+    initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="max-w-4xl mx-auto flex flex-col items-center justify-center py-40 text-center bg-slate-900/30 backdrop-blur-3xl rounded-[5rem] border border-white/5 shadow-3xl"
+    className="max-w-2xl mx-auto flex flex-col items-center justify-center py-16 px-6 text-center rounded-2xl border border-border/70 bg-card shadow-xs"
   >
-    <div className="relative mb-12">
-      <div className="h-40 w-40 bg-emerald-500/10 rounded-[3rem] flex items-center justify-center animate-bounce">
-        <History className="h-20 w-20 text-emerald-500" />
-      </div>
+    <div className="h-14 w-14 rounded-2xl bg-muted/50 border border-border/70 flex items-center justify-center mb-4 text-muted-foreground">
+      <History className="h-7 w-7" />
     </div>
-    <h3 className="text-5xl font-black text-white mb-6 tracking-tight">
+    <h3 className="text-lg font-semibold text-foreground mb-2">
       {t("employee.payroll.noData")}
     </h3>
-    <p className="text-slate-400 max-w-lg text-xl font-medium leading-relaxed">
+    <p className="text-muted-foreground max-w-md text-sm leading-relaxed">
       {t("employee.payroll.processing")}
     </p>
   </motion.div>
 );
 
 export const MyPayrollFooter: React.FC = () => (
-  <div className="max-w-[1400px] mx-auto w-full pt-16 flex flex-col md:flex-row items-center justify-between gap-6 opacity-40 border-t border-slate-200 dark:border-white/5">
-    <div className="flex items-center gap-4 text-slate-600 dark:text-white">
-      <Building2 className="h-5 w-5" />
-      <span className="text-[10px] font-black tracking-[0.4em] uppercase">
-        MAX-P ENTERPRISE PLATFORM
+  <div className="max-w-[1400px] mx-auto w-full pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/70 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2">
+      <Building2 className="h-4 w-4" />
+      <span className="font-semibold tracking-wider uppercase">
+        MaxP Enterprise HR
       </span>
     </div>
-    <div className="flex items-center gap-6 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+    <div className="flex items-center gap-4">
       <span>Security Certified</span>
-      <span className="h-1 w-1 bg-slate-400 rounded-full"></span>
-      <span>© 2026 All Rights Reserved</span>
+      <span className="h-1 w-1 bg-muted-foreground/50 rounded-full"></span>
+      <span className="font-mono tabular-nums">© 2026 All Rights Reserved</span>
     </div>
   </div>
 );

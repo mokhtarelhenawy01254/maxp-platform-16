@@ -98,7 +98,7 @@ const CreateResignation: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5 p-4 sm:p-6 font-sans text-foreground text-xs" dir="rtl">
+    <div className="space-y-6 w-full pb-8 max-w-3xl mx-auto font-sans text-foreground text-xs" dir="rtl">
       {/* Top Header */}
       <header className="flex items-center gap-3 border-b border-border/70 pb-4">
         <button

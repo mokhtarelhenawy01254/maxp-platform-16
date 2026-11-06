@@ -82,7 +82,7 @@ export const DocumentsHeaderAndFilters: React.FC<
         </div>
         <button
           onClick={() => onOpenUploadModal()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors shadow-xs font-semibold"
         >
           <PlusIcon className="h-5 w-5" />
           رفع مستند جديد
@@ -176,7 +176,7 @@ export const DocumentsHeaderAndFilters: React.FC<
               onClick={() => onActiveTabChange(tab.id)}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
               }`}
             >

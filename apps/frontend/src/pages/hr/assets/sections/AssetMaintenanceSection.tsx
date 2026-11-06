@@ -41,7 +41,7 @@ const AssetMaintenanceSection: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none"
+            className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-xs"
           >
             <PlusIcon className="h-5 w-5" />
             تسجيل صيانة

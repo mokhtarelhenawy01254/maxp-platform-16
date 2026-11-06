@@ -202,7 +202,7 @@ export const AssetListFiltersAndTable: React.FC<
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => onToggleSelect(asset.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                        className="h-4 w-4 rounded border-border/70 text-primary focus:ring-primary cursor-pointer"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
