@@ -7,6 +7,10 @@ const { getSharedPrismaClient, executeWithRetry } = require('../sharedDatabase')
 const { validateEmployeeData } = require('../../utils/hrValidation');
 const { resolveAssignableEmployeeRole } = require('../../utils/hrEmployeeAccessPolicy');
 const {
+  normalizeEmployeeContractType,
+  normalizeUserContractType,
+} = require('../../utils/hrContractType');
+const {
   NotFoundError,
   ConflictError,
   UnauthorizedError,
@@ -754,12 +758,10 @@ class EmployeeService {
 
       const updateData = {};
       if (data.hireDate) updateData.hireDate = new Date(data.hireDate);
-      if (data.contractType) {
-        const type = data.contractType.toUpperCase();
-        if (type === 'INTERNSHIP') updateData.contractType = 'INTERN';
-        else if (['CONTRACT', 'TEMPORARY', 'FREELANCE'].includes(type)) updateData.contractType = 'CONTRACTOR';
-        else updateData.contractType = data.contractType;
-      }
+      // 🐞 نوع العقد كان بيتحدّث على User فقط، بينما القراءة (getEmployees/getEmployeeById)
+      // بتفضّل سجل HR أولاً → تعديل نوع العقد من فورم الموظف كان بيضيع بدون أي خطأ.
+      const employeeContractType = normalizeEmployeeContractType(data.contractType);
+      if (employeeContractType) updateData.contractType = normalizeUserContractType(data.contractType);
       if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary ? parseFloat(data.baseSalary) : null;
       if (data.departmentId !== undefined) {
         updateData.departmentId = (data.departmentId && data.departmentId.trim() !== '') ? data.departmentId : null;
@@ -840,6 +842,7 @@ class EmployeeService {
       if (data.departmentId !== undefined) hrFields.departmentId = updateData.departmentId;
       if (data.positionId !== undefined) hrFields.positionId = updateData.positionId;
       if (data.hireDate) hrFields.hireDate = updateData.hireDate;
+      if (employeeContractType) hrFields.contractType = employeeContractType;
       if (data.baseSalary !== undefined) hrFields.baseSalary = updateData.baseSalary;
       if (data.employeeNumber !== undefined) hrFields.employeeNumber = data.employeeNumber;
       if (data.status) hrFields.status = data.status;
