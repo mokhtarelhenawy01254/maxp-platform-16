@@ -37,6 +37,10 @@ interface UpcomingSessionItem {
 export default function TeacherDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [upcoming, setUpcoming] = useState<UpcomingSessionItem[]>([]);
+  const [stats, setStats] = useState<{ rate: number | null; total: number }>({
+    rate: null,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -52,6 +56,18 @@ export default function TeacherDashboardPage() {
       }
       const json = await res.json();
       const rows: any[] = Array.isArray(json?.data) ? json.data : [];
+      // معدل الالتزام يُحسب من الحصص الحقيقية (كان رقم ثابت 98% في الواجهة)
+      const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const recent = rows.filter((s) => {
+        const when = new Date(s?.scheduledAt ?? 0).getTime();
+        return Number.isFinite(when) && when >= monthAgo;
+      });
+      const countable = recent.filter((s) => s?.status !== "CANCELLED");
+      const done = countable.filter((s) => s?.status === "CONFIRMED" || s?.status === "COMPLETED");
+      setStats({
+        total: countable.length,
+        rate: countable.length > 0 ? Math.round((done.length / countable.length) * 100) : null,
+      });
       const now = Date.now();
       const mapped: UpcomingSessionItem[] = rows
         .filter((s) => {
@@ -353,7 +369,9 @@ export default function TeacherDashboardPage() {
               <span>معدل الالتزام التعليمي</span>
             </div>
             <p className="leading-relaxed text-[10px]">
-              تم إنجاز 98% من الحصص المجدولة خلال الـ 30 يوماً الماضية دون تأخير مسجل.
+              {stats.total === 0
+                ? "لا توجد حصص مسجّلة خلال الـ 30 يوماً الماضية — سيظهر المعدل بعد أول حصة."
+                : `تم إنجاز ${stats.rate}% من ${stats.total} حصة مسجّلة خلال الـ 30 يوماً الماضية.`}
             </p>
           </div>
         </div>

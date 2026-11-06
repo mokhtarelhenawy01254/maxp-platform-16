@@ -32,14 +32,16 @@ const DAYS = [
   "السبت",
 ];
 
+// قالب فاضي: الأيام غير مفعّلة افتراضياً — المدرس هو اللي يفعّل أيامه ويحدد ساعاته.
+// (قبل كده كانت بتظهر "متاح 9-17" لكل الأيام من غير ما المدرس يحددها، وبتتحفظ كأنها اختياره.)
 const DEFAULT_SLOTS: Slot[] = [
-  { dayOfWeek: 0, startTime: "09:00", endTime: "17:00", isAvailable: true },
-  { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", isAvailable: true },
-  { dayOfWeek: 2, startTime: "09:00", endTime: "17:00", isAvailable: true },
-  { dayOfWeek: 3, startTime: "09:00", endTime: "17:00", isAvailable: true },
-  { dayOfWeek: 4, startTime: "09:00", endTime: "17:00", isAvailable: true },
-  { dayOfWeek: 5, startTime: "14:00", endTime: "18:00", isAvailable: false },
-  { dayOfWeek: 6, startTime: "10:00", endTime: "18:00", isAvailable: true },
+  { dayOfWeek: 0, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 2, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 3, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 4, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 5, startTime: "09:00", endTime: "17:00", isAvailable: false },
+  { dayOfWeek: 6, startTime: "09:00", endTime: "17:00", isAvailable: false },
 ];
 
 export default function TeacherAvailabilityPage() {
