@@ -93,12 +93,12 @@ function formatShipment(shipment) {
 async function getShippingQuote(req, res) {
   try {
     const { companyId } = req.user;
-    const { merchantId, governorate, weightKg, codAmount } = req.body;
+    const { merchantId, governorate, city, destinationCity, weightKg, codAmount } = req.body;
 
-    if (!governorate) {
+    if (!governorate && !city && !destinationCity) {
       return res.status(400).json({
         success: false,
-        error: 'المحافظة مطلوبة لاحتساب سعر الشحن',
+        error: 'المحافظة أو المدينة مطلوبة لاحتساب سعر الشحن',
       });
     }
 
@@ -120,7 +120,9 @@ async function getShippingQuote(req, res) {
     const quote = await quotePrice({
       companyId,
       merchantId: merchantId || null,
-      governorate,
+      governorate: governorate || city || destinationCity,
+      city: city || destinationCity || null,
+      destinationCity: destinationCity || city || null,
       weightKg: weightKg ? Number(weightKg) : 1,
       codAmount: codAmount ? Number(codAmount) : 0,
       prisma,
@@ -260,6 +262,8 @@ async function createStandaloneShipment(req, res) {
       companyId,
       merchantId: merchantId || null,
       governorate: gov,
+      city: city || destinationCity || null,
+      destinationCity: destinationCity || city || null,
       weightKg: finalWeight,
       codAmount: finalCod,
       prisma,
@@ -290,6 +294,9 @@ async function createStandaloneShipment(req, res) {
         allowOpenPackage: allowOpenPackage !== false,
         clientReference: trimmedRef || null,
         clientRateCardId: quote.rateCardId || null,
+        pricingPackageId: quote.packageId || null,
+        priceSource: quote.priceSource || quote.source,
+        costSource: quote.priceSource || quote.source,
         cost: quote.price,
         currency: quote.currency || 'EGP',
         status: 'PENDING',
@@ -297,8 +304,8 @@ async function createStandaloneShipment(req, res) {
         carrierType: 'MANUAL',
         trackingNumber,
         metadata: notes || manualDeliveryNotes
-          ? JSON.stringify({ notes: notes || manualDeliveryNotes, pricingSource: quote.source, declaredWeightKg: finalWeight })
-          : JSON.stringify({ pricingSource: quote.source, declaredWeightKg: finalWeight }),
+          ? JSON.stringify({ notes: notes || manualDeliveryNotes, pricingSource: quote.priceSource || quote.source, packageId: quote.packageId || null, isOverage: quote.isOverage, overage: quote.overage, declaredWeightKg: finalWeight })
+          : JSON.stringify({ pricingSource: quote.priceSource || quote.source, packageId: quote.packageId || null, isOverage: quote.isOverage, overage: quote.overage, declaredWeightKg: finalWeight }),
       },
     });
 
@@ -608,6 +615,8 @@ async function createRateCard(req, res) {
       merchantId,
       name,
       governorateCode,
+      cityName,
+      cities,
       basePrice,
       baseWeightKg = 1,
       extraKgPrice = 0,
@@ -658,6 +667,8 @@ async function createRateCard(req, res) {
         merchantId,
         name: name.trim(),
         governorateCode: normGov,
+        cityName: cityName ? String(cityName).trim() : null,
+        cities: cities ? (Array.isArray(cities) ? JSON.stringify(cities) : String(cities).trim()) : null,
         basePrice: Number(basePrice),
         baseWeightKg: Number(baseWeightKg || 1),
         extraKgPrice: Number(extraKgPrice || 0),
@@ -707,6 +718,8 @@ async function updateRateCard(req, res) {
     const {
       name,
       governorateCode,
+      cityName,
+      cities,
       basePrice,
       baseWeightKg,
       extraKgPrice,
@@ -720,6 +733,8 @@ async function updateRateCard(req, res) {
 
     const dataToUpdate = {};
     if (name !== undefined) dataToUpdate.name = String(name).trim();
+    if (cityName !== undefined) dataToUpdate.cityName = cityName ? String(cityName).trim() : null;
+    if (cities !== undefined) dataToUpdate.cities = cities ? (Array.isArray(cities) ? JSON.stringify(cities) : String(cities).trim()) : null;
     if (governorateCode !== undefined) {
       if (!governorateCode || String(governorateCode).trim() === 'null') {
         dataToUpdate.governorateCode = null;
@@ -893,13 +908,50 @@ async function getMerchants(req, res) {
 
     const merchants = await prisma.merchant.findMany({
       where: { companyId, isActive: true },
-      select: { id: true, name: true, phone: true, email: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        expectedMonthlyOrders: true,
+        coverageMode: true,
+        preferredCities: true,
+      },
       orderBy: { name: 'asc' },
     });
 
+    let activePackages = [];
+    if (prisma.clientPricingPackage) {
+      try {
+        activePackages = await prisma.clientPricingPackage.findMany({
+          where: { companyId, isActive: true },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch (_) {}
+    }
+
+    const packageMap = new Map();
+    for (const p of activePackages) {
+      if (!packageMap.has(p.merchantId)) {
+        packageMap.set(p.merchantId, {
+          id: p.id,
+          name: p.name,
+          pricingMode: p.pricingMode,
+          monthlyVolumeTo: p.monthlyVolumeTo !== null ? Number(p.monthlyVolumeTo) : null,
+          flatMonthlyPrice: p.flatMonthlyPrice !== null ? Number(p.flatMonthlyPrice) : null,
+          perShipmentPrice: p.perShipmentPrice !== null ? Number(p.perShipmentPrice) : null,
+        });
+      }
+    }
+
+    const data = merchants.map((m) => ({
+      ...m,
+      currentPackage: packageMap.get(m.id) || null,
+    }));
+
     return res.json({
       success: true,
-      data: merchants,
+      data,
     });
   } catch (error) {
     console.error('[ShippingPortal] Error listing merchants:', error);
@@ -1245,6 +1297,8 @@ async function createPickupRequest(req, res) {
       timeSlot,
       contactName,
       contactPhone,
+      contactUserId,
+      contactEmployeeName,
       pickupAddress,
       city,
       governorate,
@@ -1253,7 +1307,41 @@ async function createPickupRequest(req, res) {
       notes,
     } = req.body;
 
-    if (!contactName || !String(contactName).trim()) {
+    let resolvedContactName = contactName ? String(contactName).trim() : '';
+    let resolvedEmployeeName = contactEmployeeName ? String(contactEmployeeName).trim() : null;
+
+    if (!contactUserId && !resolvedContactName) {
+      return res.status(400).json({
+        success: false,
+        error: 'مسؤول الاستلام مطلوب من قائمة فريق العمل',
+        code: 'CONTACT_USER_REQUIRED'
+      });
+    }
+
+    if (contactUserId) {
+      const teamMember = await prisma.user.findFirst({
+        where: {
+          id: String(contactUserId),
+          OR: [
+            { companyId },
+            { userCompanies: { some: { companyId, isActive: true } } }
+          ],
+          isActive: true
+        }
+      });
+      if (!teamMember) {
+        return res.status(400).json({
+          success: false,
+          error: 'عضو فريق العمل المحدد غير موجود أو غير تابع للشركة',
+          code: 'INVALID_CONTACT_USER'
+        });
+      }
+      const memberName = `${teamMember.firstName || ''} ${teamMember.lastName || ''}`.trim() || teamMember.email;
+      resolvedContactName = memberName;
+      resolvedEmployeeName = memberName;
+    }
+
+    if (!resolvedContactName) {
       return res.status(400).json({ success: false, error: 'اسم مسؤول الاستلام مطلوب' });
     }
     if (!contactPhone || !String(contactPhone).trim()) {
@@ -1296,8 +1384,10 @@ async function createPickupRequest(req, res) {
         status: 'REQUESTED',
         scheduledDate: new Date(scheduledDate),
         timeSlot: timeSlot ? String(timeSlot).trim() : null,
-        contactName: String(contactName).trim(),
+        contactName: resolvedContactName,
         contactPhone: String(contactPhone).trim(),
+        contactUserId: contactUserId ? String(contactUserId) : null,
+        contactEmployeeName: resolvedEmployeeName,
         pickupAddress: String(pickupAddress).trim(),
         city: city ? String(city).trim() : null,
         governorate: String(governorate).trim(),

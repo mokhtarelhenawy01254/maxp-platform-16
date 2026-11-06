@@ -919,6 +919,7 @@ const PRIVATE_UPLOAD_PREFIXES = [
   '/payment-receipts/',
   '/affiliate-documents/',
   '/affiliate-payouts/',
+  '/courier-documents/',
   '/dental-lab/',
   '/support/',
 ];
@@ -1322,6 +1323,8 @@ app.use("/api/v1/shipping-client", shippingClientRoutes);
 app.use("/api/v1/shipping-clients-admin", shippingClientAdminRoutes);
 app.use("/api/v1/shipping-reports", shippingReportsRoutes);
 app.use("/api/v1/shipping-assign", shippingAssignRoutes);
+app.use("/api/v1/route-plans", require("./routes/routePlanRoutes"));
+app.use("/api/v1/team", require("./routes/teamRoutes"));
 app.use("/api/v1/shipping", shippingPolicyRoutes);
 app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
 app.use("/api/v1/easy-warehouse", easyWarehouseRoutes);

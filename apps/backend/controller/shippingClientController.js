@@ -512,6 +512,16 @@ async function createPickup(req, res) {
 
     if (!cName) return res.status(400).json({ success: false, error: 'اسم مسؤول الاستلام مطلوب' });
     if (!cPhone) return res.status(400).json({ success: false, error: 'رقم هاتف مسؤول الاستلام مطلوب' });
+
+    const cleanedPhone = cPhone.replace(/[\s\-\(\)\+]/g, '');
+    const isValidPhone = /^(01[0125]\d{8}|201[0125]\d{8})$/.test(cleanedPhone) || /^\d{8,15}$/.test(cleanedPhone);
+    if (!isValidPhone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم هاتف مسؤول الاستلام غير صالح',
+        code: 'INVALID_PHONE_NUMBER'
+      });
+    }
     if (!pAddr) return res.status(400).json({ success: false, error: 'عنوان الاستلام مطلوب' });
     if (!pGov) return res.status(400).json({ success: false, error: 'المحافظة مطلوبة' });
     if (!scheduledDate) return res.status(400).json({ success: false, error: 'تاريخ الاستلام مطلوب' });

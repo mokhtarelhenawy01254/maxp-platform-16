@@ -947,6 +947,7 @@ export const getSidebarConfig = (
                 { to: '/shipping-ops/parcels', icon: Package, label: isEn ? 'Parcels & Shipments' : 'الشحنات والطرود', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/parcels/new', icon: Plus, label: isEn ? 'New Standalone Parcel' : 'إنشاء طرد جديد', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/auto-assign', icon: Sparkles, label: isEn ? 'Auto Assign' : 'التوزيع التلقائي', requiredPermissions: ['orders.shipping.view'] },
+                { to: '/shipping-ops/route-plans', icon: MapPin, label: isEn ? 'Route Plans' : 'خطط السير المسبقة', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/pickups', icon: Truck, label: isEn ? 'Pickup Requests' : 'طلبات الاستلام (Pickup)', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/hub-receive', icon: ScanLine, label: isEn ? 'Hub Inward & Sorting' : 'استلام وفرز الهاَب', requiredPermissions: ['orders.shipping.view'] },
                 { to: '/shipping-ops/branches', icon: Building2, label: isEn ? 'Shipping Branches' : 'فروع ومراكز الشحن', requiredPermissions: ['orders.shipping.view'] },

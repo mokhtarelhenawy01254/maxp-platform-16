@@ -47,6 +47,7 @@ export const PickupsPage: React.FC = () => {
   const [branches, setBranches] = useState<ShippingBranch[]>([]);
   const [merchants, setMerchants] = useState<Array<{ id: string; name: string }>>([]);
   const [couriers, setCouriers] = useState<Array<{ id: string; name: string; phone?: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string; phone: string }>>([]);
 
   // Modals & Drawers
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -57,7 +58,9 @@ export const PickupsPage: React.FC = () => {
 
   // Form states
   const [createForm, setCreateForm] = useState({
+    contactUserId: '',
     contactName: '',
+    contactEmployeeName: '',
     contactPhone: '',
     pickupAddress: '',
     governorate: 'القاهرة',
@@ -108,15 +111,17 @@ export const PickupsPage: React.FC = () => {
 
   const fetchAuxData = useCallback(async () => {
     try {
-      const [brRes, mRes, cRes] = await Promise.all([
+      const [brRes, mRes, cRes, teamRes] = await Promise.all([
         fetch('/api/v1/shipping-portal/branches', { headers: authHeaders }),
         fetch('/api/v1/shipping-portal/merchants', { headers: authHeaders }),
         fetch('/api/couriers', { headers: authHeaders }).catch(() => ({ json: () => ({ success: false }) })),
+        fetch('/api/v1/team/members', { headers: authHeaders }).catch(() => ({ json: () => ({ success: false }) })),
       ]);
-      const [brData, mData, cData] = await Promise.all([brRes.json(), mRes.json(), cRes.json()]);
+      const [brData, mData, cData, teamData] = await Promise.all([brRes.json(), mRes.json(), cRes.json(), teamRes.json()]);
       if (brData.success) setBranches(brData.branches || []);
       if (mData.success) setMerchants(mData.data || []);
       if (cData && (cData.couriers || cData.data)) setCouriers(cData.couriers || cData.data || []);
+      if (teamData && teamData.success) setTeamMembers(teamData.members || teamData.data || []);
     } catch (e) {
       console.warn('Aux fetch warning:', e);
     }
@@ -133,8 +138,8 @@ export const PickupsPage: React.FC = () => {
   // Handle Create Pickup
   const handleCreatePickup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.contactName || !createForm.contactPhone || !createForm.pickupAddress) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
+    if (!createForm.contactUserId || !createForm.contactPhone || !createForm.pickupAddress) {
+      toast.error('يرجى اختيار مسؤول الاستلام من فريق العمل وملء جميع الحقول');
       return;
     }
     setSubmitting(true);
@@ -150,7 +155,9 @@ export const PickupsPage: React.FC = () => {
         setShowCreateModal(false);
         fetchPickups();
         setCreateForm({
+          contactUserId: '',
           contactName: '',
+          contactEmployeeName: '',
           contactPhone: '',
           pickupAddress: '',
           governorate: 'القاهرة',
@@ -533,14 +540,29 @@ export const PickupsPage: React.FC = () => {
                   <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">
                     {isEn ? 'Contact Name *' : 'اسم مسؤول الاستلام *'}
                   </label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    value={createForm.contactName}
-                    onChange={(e) => setCreateForm({ ...createForm, contactName: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/60 outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="مثال: أحمد عبد الله"
-                  />
+                    value={createForm.contactUserId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      const sel = teamMembers.find((m) => m.id === selId);
+                      setCreateForm({
+                        ...createForm,
+                        contactUserId: selId,
+                        contactName: sel ? sel.name : '',
+                        contactEmployeeName: sel ? sel.name : '',
+                        contactPhone: sel?.phone || createForm.contactPhone,
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/60 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  >
+                    <option value="">{isEn ? '-- Select Team Member --' : '-- اختر مسؤول الاستلام من فريق العمل --'}</option>
+                    {teamMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name} ({member.role}) {member.phone ? `— ${member.phone}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">

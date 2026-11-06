@@ -92,6 +92,8 @@ model ClientRateCard {
   merchantId      String
   name            String
   governorateCode String?
+  cityName        String?
+  cities          String?  @db.Text
   basePrice       Decimal  @db.Decimal(10, 2)
   baseWeightKg    Decimal  @default(1) @db.Decimal(10, 3)
   extraKgPrice    Decimal  @default(0) @db.Decimal(10, 2)

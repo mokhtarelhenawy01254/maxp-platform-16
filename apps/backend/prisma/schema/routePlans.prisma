@@ -1,0 +1,53 @@
+model RoutePlan {
+  id                  String      @id @default(cuid())
+  companyId           String
+  planNumber          String
+  name                String
+  planDate            DateTime
+  status              String      @default("DRAFT") /// DRAFT | READY | ASSIGNED | DISPATCHED | COMPLETED | CANCELLED
+  branchId            String?
+  governorate         String?
+  courierId           String?
+  deliveryRunId       String?
+  totalStops          Int         @default(0)
+  totalShipments      Int         @default(0)
+  estimatedDistanceKm Float?
+  notes               String?
+  createdBy           String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  stops               RouteStop[]
+
+  @@unique([companyId, planNumber])
+  @@index([companyId, planDate])
+  @@index([companyId, status])
+  @@index([courierId])
+  @@index([deliveryRunId])
+  @@map("route_plans")
+}
+
+model RouteStop {
+  id             String    @id @default(cuid())
+  companyId      String
+  routePlanId    String
+  seq            Int       @default(1)
+  shipmentId     String?
+  address        String
+  city           String?
+  governorate    String
+  contactName    String
+  contactPhone   String
+  timeWindowFrom String?
+  timeWindowTo   String?
+  status         String    @default("PENDING") /// PENDING | DONE | FAILED | SKIPPED
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  routePlan      RoutePlan @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+
+  @@index([routePlanId, seq])
+  @@index([companyId, shipmentId])
+  @@map("route_stops")
+}
