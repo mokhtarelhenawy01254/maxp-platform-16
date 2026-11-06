@@ -1,0 +1,246 @@
+/*
+ * أنماط صفحة /app-explanations فقط — أسماء كلاسات مُنَطَّقة (exp-*) عشان
+ * مفيش أي تسريب على الـ global styles. متضافش هنا أي selector عام.
+ */
+
+/* الصفحة بتملك scrollport خاص بيها: #root عليه overflow-x:hidden وده بيلغي
+   position:sticky لأي عنصر جواه، فالهيدر وشريط الأقسام مش بيثبتوا بدونه. */
+.exp-page {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* شريط الأقسام: سكرول أفقي بدون scrollbar مرئي (الكلاس القديم scrollbar-none مكانش موجود) */
+.exp-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+}
+.exp-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* متن الشرح: بديل `prose` — بلجن الـ typography مش متسجل في index.css */
+.exp-article {
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: var(--color-foreground, inherit);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.exp-article > :first-child {
+  margin-top: 0;
+}
+
+/* تصفير هوامش المتصفح الافتراضية لكل العناصر المباشرة */
+.exp-article > * {
+  margin-block: 0;
+}
+
+/* المسافة بين البلوكات — أهم من قاعدة التصفير بالترتيب وبنفس الخصوصية */
+.exp-article > * + * {
+  margin-block-start: 0.8em;
+}
+
+.exp-article h1,
+.exp-article h2,
+.exp-article h3,
+.exp-article h4 {
+  font-family: var(--font-heading, inherit);
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+.exp-article h1 {
+  font-size: 1.24rem;
+  margin-top: 1.5em;
+}
+
+.exp-article h2 {
+  font-size: 1.08rem;
+  margin-top: 1.35em;
+}
+
+.exp-article h3 {
+  font-size: 0.98rem;
+  margin-top: 1.2em;
+}
+
+.exp-article h4 {
+  font-size: 0.92rem;
+  margin-top: 1.1em;
+}
+
+.exp-article strong,
+.exp-article b {
+  font-weight: 800;
+}
+
+.exp-article em {
+  font-style: italic;
+}
+
+.exp-article a {
+  color: var(--color-primary, inherit);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.exp-article a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.exp-article ul,
+.exp-article ol {
+  padding-inline-start: 1.35rem;
+  margin: 0.55em 0;
+}
+
+.exp-article ul {
+  list-style-type: disc;
+}
+
+.exp-article ol {
+  list-style-type: decimal;
+}
+
+.exp-article li {
+  margin: 0.28em 0;
+}
+
+.exp-article li > ul,
+.exp-article li > ol {
+  margin: 0.25em 0;
+}
+
+.exp-article li::marker {
+  color: var(--color-muted-foreground, currentColor);
+}
+
+.exp-article blockquote {
+  border-inline-start: 3px solid var(--color-border, currentColor);
+  padding-inline-start: 0.9rem;
+  color: var(--color-muted-foreground, inherit);
+  font-size: 0.95em;
+}
+
+.exp-article img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.9em 0;
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-border, transparent);
+}
+
+.exp-article figure {
+  margin: 1em 0;
+}
+
+.exp-article figcaption {
+  margin-top: 0.4em;
+  font-size: 0.82em;
+  color: var(--color-muted-foreground, inherit);
+  text-align: center;
+}
+
+.exp-article hr {
+  border: 0;
+  border-top: 1px solid var(--color-border, currentColor);
+  margin: 1.4em 0;
+}
+
+.exp-article table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  display: block;
+  overflow-x: auto;
+}
+
+.exp-article th,
+.exp-article td {
+  border: 1px solid var(--color-border, currentColor);
+  padding: 0.45rem 0.6rem;
+  text-align: start;
+  vertical-align: top;
+}
+
+.exp-article th {
+  background: var(--color-muted, transparent);
+  font-weight: 700;
+}
+
+.exp-article code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--color-muted, transparent);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.35em;
+}
+
+.exp-article pre {
+  background: var(--color-muted, transparent);
+  border: 1px solid var(--color-border, transparent);
+  border-radius: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  overflow-x: auto;
+  direction: ltr;
+  text-align: start;
+}
+
+.exp-article pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.exp-article iframe {
+  max-width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-border, transparent);
+}
+
+/* احترام تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  .exp-rail {
+    scroll-behavior: auto;
+  }
+}
+
+/* حركة انزلاق النافذة السفلية على الموبايل (Native Bottom Sheet Transition) */
+@keyframes exp-sheet-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.exp-sheet-panel {
+  animation: exp-sheet-slide-up 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* تنسيق شريط التمرير السلس على الموبايل */
+@media (max-width: 767px) {
+  .exp-sticky-rail {
+    position: sticky;
+    top: 56px;
+    z-index: 25;
+    background-color: var(--color-background, #fff);
+  }
+}
+

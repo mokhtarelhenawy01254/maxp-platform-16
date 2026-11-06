@@ -1,120 +1,23 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { ExplanationsHeader } from "./app-explanations/ExplanationsHeader";
+import { SectionRail } from "./app-explanations/SectionRail";
+import { ExplanationRow } from "./app-explanations/ExplanationRow";
+import { MobileBottomBar } from "./app-explanations/MobileBottomBar";
+import { MobileCategorySheet } from "./app-explanations/MobileCategorySheet";
 import {
-  BookOpen,
-  PlayCircle,
-  ChevronDown,
-  Search,
-  ExternalLink,
-  Settings,
-  Package,
-  Truck,
-  MessageSquare,
-  Megaphone,
-  BarChart3,
-  Users,
-  MoreHorizontal,
-  VideoOff,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "../../components/ui/collapsible";
-import {
-  getYouTubeEmbedUrl,
-  getDirectVideoUrl,
-} from "../../utils/explanationVideo";
-import { useYouTubeEmbedError } from "../../hooks/useYouTubeEmbedError";
-import DOMPurify from "dompurify";
+  OTHER_GROUP,
+  ROUTE_GROUPS,
+  groupOf,
+  type AppExplanation,
+  type RouteGroup,
+} from "./app-explanations/groups";
+import { buildSearchIndex, matchesQuery, normalizeArabic } from "./app-explanations/search";
+import "./app-explanations/explanations.css";
 
-interface AppExplanation {
-  id: string;
-  title: string;
-  content: string;
-  slug: string;
-  order: number;
-  targetRoute?: string;
-  videoUrl?: string | null;
-}
-
-/** تجميع الشروحات حسب أول جزء من المسار — ترتيب المجموعات ثابت ومقصود */
-const ROUTE_GROUPS: {
-  key: string;
-  labelKey: string;
-  labelFallback: string;
-  prefixes: string[];
-}[] = [
-  {
-    key: "start",
-    labelKey: "explanations.groupStart",
-    labelFallback: "البداية والإعدادات",
-    prefixes: ["/company-dashboard", "/apps", "/settings", "/payments", "/marketplace", "/notifications"],
-  },
-  {
-    key: "products",
-    labelKey: "explanations.groupProducts",
-    labelFallback: "المنتجات والمخزون",
-    prefixes: ["/products", "/categories", "/inventory", "/procurement"],
-  },
-  {
-    key: "orders",
-    labelKey: "explanations.groupOrders",
-    labelFallback: "الطلبات والشحن",
-    prefixes: ["/orders", "/shipping-companies", "/returns"],
-  },
-  {
-    key: "customers",
-    labelKey: "explanations.groupCustomers",
-    labelFallback: "العملاء والمحادثات",
-    prefixes: ["/customers", "/whatsapp", "/unified-inbox"],
-  },
-  {
-    key: "marketing",
-    labelKey: "explanations.groupMarketing",
-    labelFallback: "التسويق والعروض",
-    prefixes: ["/advertising", "/coupons", "/wholesale", "/affiliates"],
-  },
-  {
-    key: "finance",
-    labelKey: "explanations.groupFinance",
-    labelFallback: "المالية والتقارير",
-    prefixes: ["/analytics", "/reports", "/treasury-expenses", "/invoices"],
-  },
-  {
-    key: "team",
-    labelKey: "explanations.groupTeam",
-    labelFallback: "الفريق والتشغيل",
-    prefixes: ["/hr", "/admin/agent-profiles", "/academy"],
-  },
-];
-
-const GROUP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  start: Settings,
-  products: Package,
-  orders: Truck,
-  customers: MessageSquare,
-  marketing: Megaphone,
-  finance: BarChart3,
-  team: Users,
-  other: MoreHorizontal,
-};
-
-const groupOf = (route?: string) => {
-  if (!route) return "other";
-  let best: { key: string; len: number } | null = null;
-  for (const group of ROUTE_GROUPS) {
-    for (const prefix of group.prefixes) {
-      const matches = route === prefix || route.startsWith(prefix + "/");
-      if (matches && (!best || prefix.length > best.len)) {
-        best = { key: group.key, len: prefix.length };
-      }
-    }
-  }
-  return best?.key ?? "other";
-};
+export { CardVideoBlock } from "./app-explanations/ExplanationVideo";
 
 const AppExplanationsPage: React.FC = () => {
   const { i18n } = useTranslation();
@@ -124,171 +27,251 @@ const AppExplanationsPage: React.FC = () => {
   const [query, setQuery] = useState("");
   const [openSlugs, setOpenSlugs] = useState<Set<string>>(new Set());
   const [activeGroup, setActiveGroup] = useState<string>("");
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
+  const [videoOnly, setVideoOnly] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const ar = (key: string, fallback: string): string => {
-    const res = i18n.getResource("ar", "translation", key);
-    return typeof res === "string" && res.trim() ? res : fallback;
-  };
+  const ar = useCallback(
+    (key: string, fallback: string): string => {
+      const res = i18n.getResource("ar", "translation", key);
+      return typeof res === "string" && res.trim() ? res : fallback;
+    },
+    [i18n],
+  );
 
   useEffect(() => {
     document.title = "شرح المنصة — MaxP";
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchExplanations = async () => {
       try {
         setLoading(true);
         const res = await apiClient.get("/app-explanations/public");
-        const data = res.data as any;
-        if (data.success) {
+        const data = res.data as { success?: boolean; explanations?: AppExplanation[] };
+        if (!cancelled && data.success && Array.isArray(data.explanations)) {
           setExplanations(data.explanations);
         }
       } catch (err) {
         console.error("Failed to load explanations", err);
-        setError(ar("explanations.loadError", "تعذر تحميل الشروحات. يرجى المحاولة لاحقاً."));
+        if (!cancelled) {
+          setError(ar("explanations.loadError", "تعذر تحميل الشروحات. يرجى المحاولة لاحقاً."));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchExplanations();
-  }, [i18n]);
+    return () => {
+      cancelled = true;
+    };
+  }, [ar]);
 
-  const toggleSlug = (slug: string, open: boolean) => {
-    setOpenSlugs((prev) => {
-      const next = new Set(prev);
-      if (open) next.add(slug);
-      else next.delete(slug);
-      return next;
-    });
-  };
+  const hasVideosAvailable = useMemo(
+    () => explanations.some((exp) => Boolean(exp.videoUrl)),
+    [explanations],
+  );
 
-  const isSearching = query.trim().length > 0;
+  /* تصفية الفيديو أولاً إن فُعّل زر الفيديو */
+  const baseList = useMemo(() => {
+    if (!videoOnly) return explanations;
+    return explanations.filter((exp) => Boolean(exp.videoUrl));
+  }, [explanations, videoOnly]);
+
+  /* البحث: فهرس مبني على النص المجرد */
+  const searchIndex = useMemo(() => buildSearchIndex(baseList), [baseList]);
+  const needle = normalizeArabic(query);
+  const isSearching = needle.length > 0;
 
   const grouped = useMemo(() => {
-    const needle = query.trim().toLowerCase();
     const filtered = isSearching
-      ? explanations.filter(
-          (exp) =>
-            exp.title.toLowerCase().includes(needle) ||
-            (exp.content || "").toLowerCase().includes(needle)
-        )
-      : explanations;
+      ? baseList.filter((exp) => matchesQuery(searchIndex.get(exp.id), needle))
+      : baseList;
 
     const buckets = new Map<string, AppExplanation[]>();
     for (const group of ROUTE_GROUPS) buckets.set(group.key, []);
-    buckets.set("other", []);
+    buckets.set(OTHER_GROUP.key, []);
 
     for (const exp of filtered) {
       buckets.get(groupOf(exp.targetRoute))!.push(exp);
     }
 
-    return ROUTE_GROUPS.concat([
-      {
-        key: "other",
-        labelKey: "explanations.groupOther",
-        labelFallback: "أخرى",
-        prefixes: [],
-      },
-    ])
-      .map((group) => ({
-        ...group,
-        items: buckets.get(group.key) ?? [],
-      }))
+    return [...ROUTE_GROUPS, OTHER_GROUP]
+      .map((group) => ({ ...group, items: buckets.get(group.key) ?? [] }))
       .filter((group) => group.items.length > 0);
-  }, [explanations, query, isSearching]);
+  }, [baseList, searchIndex, needle, isSearching]);
 
   const filteredTotal = useMemo(
-    () => grouped.reduce((sum, g) => sum + g.items.length, 0),
-    [grouped]
+    () => grouped.reduce((sum, group) => sum + group.items.length, 0),
+    [grouped],
+  );
+
+  const labelFor = useCallback(
+    (group: RouteGroup) => ar(group.labelKey, group.labelFallback),
+    [ar],
   );
 
   useEffect(() => {
     if (grouped.length > 0 && (!activeGroup || !grouped.some((g) => g.key === activeGroup))) {
-      const firstGroup = grouped[0];
-      if (firstGroup) {
-        setActiveGroup(firstGroup.key);
-      }
+      setActiveGroup(grouped[0].key);
     }
   }, [grouped, activeGroup]);
 
-  // Scroll spy: راقب سكرول الصفحة وحدّد القسم الظاهر عند خط ~150px
+  /* Scroll spy ومراقبة التمرير لزر الرجوع للأعلى */
   useEffect(() => {
     let rafId = 0;
+
     const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 320);
+
+      if (!grouped.length) return;
       if (rafId) return;
+
       rafId = requestAnimationFrame(() => {
         rafId = 0;
-        const line = 150;
+        const headerHeight =
+          document.querySelector("[data-exp-header]")?.getBoundingClientRect().height ?? 56;
+        const line = headerHeight + 64;
+
         const sections = grouped
           .map((g) => document.getElementById(g.key))
           .filter((el): el is HTMLElement => el !== null);
+        if (!sections.length) return;
 
-        const firstSection = sections[0];
-        if (!firstSection) return;
-
-        let currentId = firstSection.id;
+        let currentId = sections[0].id;
         for (const section of sections) {
-          const top = section.getBoundingClientRect().top;
-          if (top <= line) {
-            currentId = section.id;
-          }
+          if (section.getBoundingClientRect().top <= line) currentId = section.id;
         }
         setActiveGroup((prev) => (prev !== currentId ? currentId : prev));
       });
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
     handleScroll();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [grouped]);
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, key: string) => {
-    e.preventDefault();
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, key: string) => {
+    event.preventDefault();
     setActiveGroup(key);
-    const target = document.getElementById(key);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const toggleSlug = useCallback((slug: string, open: boolean) => {
+    setOpenSlugs((prev) => {
+      const next = new Set(prev);
+      if (open) next.add(slug);
+      else next.delete(slug);
+      return next;
+    });
+
+    const currentHash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    if (open && currentHash !== slug) {
+      window.history.replaceState(null, "", `#${slug}`);
+    } else if (!open && currentHash === slug) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }, []);
+
+  /* لينك مباشر: /app-explanations#slug يفتح الشرح نفسه */
+  const openFromSlug = useCallback(
+    (slug: string) => {
+      if (!slug || !explanations.some((exp) => exp.slug === slug)) return;
+      setOpenSlugs((prev) => {
+        if (prev.has(slug)) return prev;
+        const next = new Set(prev);
+        next.add(slug);
+        return next;
+      });
+      window.setTimeout(() => {
+        document.getElementById(slug)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 140);
+    },
+    [explanations],
+  );
+
+  useEffect(() => {
+    if (loading || !explanations.length) return;
+    const slug = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    if (slug) openFromSlug(slug);
+  }, [loading, explanations, openFromSlug]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      openFromSlug(decodeURIComponent(window.location.hash.replace(/^#/, "")));
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [openFromSlug]);
+
+  /* اختصار / لفتح البحث */
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      event.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  /* نتيجة واحدة؟ افتحها تلقائيًا */
+  useEffect(() => {
+    if (!isSearching || filteredTotal !== 1) return;
+    const only = grouped[0]?.items[0];
+    if (only && !openSlugs.has(only.slug)) {
+      setOpenSlugs((prev) => new Set(prev).add(only.slug));
+    }
+  }, [isSearching, filteredTotal, grouped, openSlugs]);
+
+  const watchVideoLabel = ar("explanations.watchVideo", "شاهد الفيديو التوضيحي");
 
   return (
     <div className="rtl min-h-screen bg-background text-foreground" dir="rtl">
-      {/* الشريط الأعلى الثابت */}
-      <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-4 py-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <span>{ar("explanations.breadcrumbHome", "الرئيسية")}</span>
-            <span className="text-muted-foreground/60">⁄</span>
-            <b className="font-extrabold text-foreground">
-              {ar("explanations.pageTitle", "شرح المنصة")}
-            </b>
-          </div>
-          {!loading && !error && explanations.length > 0 && (
-            <div className="text-xs font-bold text-muted-foreground tabular-nums">
-              <span>{filteredTotal}</span> {ar("explanations.guidesCount", "شرح")} ·{" "}
-              <span>{grouped.length}</span> {ar("explanations.groupsCount", "أقسام")}
-            </div>
-          )}
-        </div>
-      </header>
+      {/* شريط التطبيق العلوي الثابت */}
+      <ExplanationsHeader
+        title={ar("explanations.pageTitle", "شرح المنصة")}
+        homeLabel={ar("explanations.breadcrumbHome", "الرئيسية")}
+        total={filteredTotal}
+        query={query}
+        isSearching={isSearching}
+        onQueryChange={setQuery}
+        inputRef={searchInputRef}
+        searchLabel={ar("explanations.searchPlaceholder", "ابحث في الشروحات…")}
+        clearLabel={ar("explanations.clearSearch", "مسح البحث")}
+        onOpenCategorySheet={() => setIsCategorySheetOpen(true)}
+      />
 
       {loading ? (
         <div className="flex justify-center py-20">
           <LoadingSpinner size="lg" />
         </div>
       ) : error ? (
-        <div className="mx-auto max-w-[1180px] px-4 py-8">
-          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <div className="mx-auto max-w-[1180px] px-3 py-8 sm:px-4">
+          <div className="rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
             {error}
           </div>
         </div>
       ) : explanations.length === 0 ? (
-        <div className="mx-auto max-w-[1180px] px-4 py-8">
+        <div className="mx-auto max-w-[1180px] px-3 py-8 sm:px-4">
           <div className="rounded-2xl border bg-card p-12 text-center">
             <p className="text-muted-foreground">
               {ar("explanations.emptyState", "لا توجد شروحات متاحة حالياً")}
@@ -296,114 +279,80 @@ const AppExplanationsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="mx-auto grid max-w-[1180px] gap-6 px-4 py-5 md:grid-cols-[286px_minmax(0,1fr)] md:gap-[22px]">
-          {/* الشريط الجانبي */}
-          <aside className="rounded-2xl border bg-card p-3.5 shadow-sm md:sticky md:top-[60px] md:h-fit">
-            {/* بلوك الهوية */}
-            <div className="mb-3.5 flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <BookOpen className="size-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <b className="block truncate text-[15px] font-extrabold leading-tight text-foreground">
-                  {ar("explanations.pageTitle", "شرح المنصة")}
-                </b>
-                <span className="text-[11.5px] text-muted-foreground tabular-nums">
-                  {filteredTotal} {ar("explanations.guidesCount", "شرح")} · {grouped.length}{" "}
-                  {ar("explanations.groupsCount", "أقسام")}
-                </span>
-              </div>
-            </div>
-
-            {/* البحث */}
-            <div className="relative mb-3">
-              <Search
-                className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <input
-                id="explanation-search"
-                name="search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث…"
-                aria-label={ar("explanations.searchPlaceholder", "ابحث في الشروحات…")}
-                className="h-10 w-full rounded-xl border bg-card ps-9 pe-14 text-sm outline-none focus:ring-2 focus:ring-ring text-foreground"
-              />
-              <span className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold tabular-nums text-muted-foreground">
-                {filteredTotal}
-              </span>
-            </div>
-
-            {/* قائمة الأقسام */}
-            <nav
-              aria-label="مجموعات الشروحات"
-              className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 md:flex-col md:gap-[3px] md:overflow-visible md:pb-0"
-            >
-              {grouped.map((group) => {
-                const isActive = activeGroup === group.key;
-                const Icon = GROUP_ICONS[group.key] || MoreHorizontal;
-
-                return (
-                  <a
-                    key={group.key}
-                    href={`#${group.key}`}
-                    onClick={(e) => handleNavClick(e, group.key)}
-                    className={`flex w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-2.5 py-2 text-[13.5px] font-semibold no-underline transition-colors ${
-                      isActive
-                        ? "bg-primary/10 font-extrabold text-primary"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    <Icon
-                      className={`size-4 shrink-0 ${
-                        isActive ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    />
-                    <span className="truncate">{ar(group.labelKey, group.labelFallback)}</span>
-                    <span
-                      className={`ms-auto rounded-full px-2 py-0.5 text-[11px] tabular-nums ${
-                        isActive
-                          ? "bg-primary/20 font-bold text-primary"
-                          : "bg-muted font-semibold text-muted-foreground"
-                      }`}
-                    >
-                      {group.items.length}
-                    </span>
-                  </a>
-                );
-              })}
-            </nav>
-
-            {/* سطر توضيحي أسفل الشريط */}
-            <div className="hidden border-t pt-3 text-[11.5px] leading-relaxed text-muted-foreground md:block mt-3">
-              {ar("explanations.railHint", "اختر القسم وتنقّل — الصفحة بتفضل في نفس المكان.")}
-            </div>
+        <div className="mx-auto grid min-w-0 max-w-[1180px] grid-cols-1 gap-4 px-3 py-2 sm:px-4 md:grid-cols-[268px_minmax(0,1fr)] md:gap-6 md:py-5 pb-24 md:pb-12">
+          {/* شريط التبويبات:
+              على الموبايل: يلتصق أسفل شريط التطبيق العلوي مباشرة (Sticky Sub-Header) مع تمويه خلفية.
+              على الديسكتوب: شريط جانبي عمودي ثابت (Sidebar). */}
+          <aside className="min-w-0 sticky top-14 z-20 bg-background/95 backdrop-blur-md pb-1 sm:top-[60px] md:static md:top-auto md:bg-transparent md:backdrop-blur-none md:pb-0 md:sticky md:top-[76px] md:h-fit">
+            <p className="mb-2 hidden text-[11px] font-bold text-muted-foreground md:block">
+              الأقسام
+            </p>
+            <SectionRail
+              groups={grouped}
+              activeGroup={activeGroup}
+              labelFor={labelFor}
+              onSelect={handleNavClick}
+            />
           </aside>
 
-          {/* العمود الرئيسي */}
-          <main>
-            {isSearching && grouped.length === 0 ? (
-              <div className="rounded-2xl border border-dashed bg-card p-12 text-center text-sm text-muted-foreground">
-                <p>{ar("explanations.searchEmpty", "مفيش نتائج للبحث")}</p>
+          {/* متن الشروحات الرئيسي */}
+          <main className="min-w-0">
+            {(isSearching || videoOnly) && grouped.length === 0 ? (
+              <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
+                <p className="text-sm font-semibold text-foreground">
+                  {videoOnly && !isSearching
+                    ? "لا توجد شروحات مصحوبة بفيديو في هذا القسم حالياً"
+                    : `مفيش نتائج لـ «${query.trim()}»`}
+                </p>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">
+                  {videoOnly
+                    ? "يمكنك إلغاء فلتر الفيديو لعرض كل الشروحات النصية."
+                    : "جرّب كلمة أقصر أو اسم الأداة نفسها، زي «الطلبات» أو «الكوبونات»."}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {videoOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setVideoOnly(false)}
+                      className="inline-flex items-center rounded-xl bg-primary px-3 py-1.5 text-[12px] font-bold text-primary-foreground shadow-xs transition-transform active:scale-95"
+                    >
+                      عرض كل الشروحات
+                    </button>
+                  )}
+                  {isSearching && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuery("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="inline-flex items-center rounded-xl border border-border/70 bg-card px-3 py-1.5 text-[12px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
+                    >
+                      {ar("explanations.clearSearch", "مسح البحث")}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               grouped.map((group) => (
-                <section key={group.key} id={group.key} className="scroll-mt-24 mb-6">
-                  {/* رأس القسم */}
-                  <div className="mb-2.5 flex items-center gap-2.5">
-                    <h2 className="text-sm font-bold text-foreground">
-                      {ar(group.labelKey, group.labelFallback)}
+                <section
+                  key={group.key}
+                  id={group.key}
+                  className="mb-5 scroll-mt-[120px] last:mb-0 sm:scroll-mt-[80px]"
+                >
+                  {/* ترويسة القسم */}
+                  <div className="mb-2 flex items-center gap-2.5 px-0.5">
+                    <h2 className="font-heading text-[14.5px] font-extrabold text-foreground sm:text-[15px]">
+                      {labelFor(group)}
                     </h2>
-                    <span className="rounded-full bg-muted/60 px-2 py-0.5 text-xs font-bold text-muted-foreground tabular-nums">
+                    <span className="rounded-full bg-muted/80 px-2 py-0.5 text-[10.5px] font-bold tabular-nums text-muted-foreground">
                       {group.items.length}
                     </span>
-                    <div className="h-px flex-1 bg-border" aria-hidden="true" />
+                    <div className="h-px flex-1 bg-border/60" aria-hidden="true" />
                   </div>
 
-                  {/* كارت القسم الموحد */}
-                  <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+                  {/* بطاقة المجموعة المحاطة بأسلوب التطبيقات الأصلية (Grouped Inset Card) */}
+                  <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
                     {group.items.map((exp, idx) => (
                       <ExplanationRow
                         key={exp.id}
@@ -411,7 +360,7 @@ const AppExplanationsPage: React.FC = () => {
                         idx={idx}
                         open={openSlugs.has(exp.slug)}
                         onOpenChange={(open) => toggleSlug(exp.slug, open)}
-                        watchVideoLabel={ar("explanations.watchVideo", "شاهد الفيديو التوضيحي")}
+                        watchVideoLabel={watchVideoLabel}
                       />
                     ))}
                   </div>
@@ -421,159 +370,36 @@ const AppExplanationsPage: React.FC = () => {
           </main>
         </div>
       )}
+
+      {/* شريط التحكم السفلي العائم (Floating Mobile App Dock) */}
+      {!loading && !error && grouped.length > 0 && (
+        <MobileBottomBar
+          groups={grouped}
+          activeGroup={activeGroup}
+          labelFor={labelFor}
+          onOpenSheet={() => setIsCategorySheetOpen(true)}
+          showScrollTop={showScrollTop}
+          onScrollToTop={handleScrollToTop}
+          videoOnly={videoOnly}
+          onToggleVideoOnly={() => setVideoOnly((prev) => !prev)}
+          hasVideosAvailable={hasVideosAvailable}
+        />
+      )}
+
+      {/* نافذة الأقسام السفلية للموبايل (Mobile Category Bottom Sheet) */}
+      <MobileCategorySheet
+        isOpen={isCategorySheetOpen}
+        onClose={() => setIsCategorySheetOpen(false)}
+        groups={grouped}
+        activeGroup={activeGroup}
+        labelFor={labelFor}
+        onSelect={(key) => {
+          setActiveGroup(key);
+          document.getElementById(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        totalExplanations={filteredTotal}
+      />
     </div>
-  );
-};
-
-/** صف شرح واحد داخل كارت القسم */
-const ExplanationRow: React.FC<{
-  exp: AppExplanation;
-  idx: number;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  watchVideoLabel: string;
-}> = ({ exp, idx, open, onOpenChange, watchVideoLabel }) => {
-  const hasVideo = Boolean(exp.videoUrl);
-
-  return (
-    <Collapsible open={open} onOpenChange={(nextOpen: boolean) => onOpenChange(nextOpen)}>
-      <div
-        id={exp.slug}
-        className={`transition-colors ${idx > 0 ? "border-t border-border/60" : ""} ${
-          open ? "bg-muted/30" : ""
-        }`}
-      >
-        <CollapsibleTrigger
-          className="flex w-full items-center gap-3 p-3.5 text-start hover:bg-muted/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {hasVideo && (
-            <span
-              className="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground"
-              aria-hidden="true"
-            >
-              <PlayCircle className="size-3.5" />
-            </span>
-          )}
-          <span className="flex-1 min-w-0 text-[14.5px] font-bold leading-snug text-foreground">
-            {exp.title}
-          </span>
-          <ChevronDown
-            className={`size-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-              open ? "rotate-180" : ""
-            }`}
-            aria-hidden="true"
-          />
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          {open && (
-            <div className="border-t border-border/60 p-4 sm:p-5 space-y-4">
-              <CardVideoBlock exp={exp} watchVideoLabel={watchVideoLabel} />
-              <div
-                className="prose prose-sm max-w-[640px] dark:prose-invert [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_p]:leading-relaxed [&_img]:rounded-lg [&_img]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.content) }}
-              />
-            </div>
-          )}
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
-  );
-};
-
-/** فيديو الكارت — ما يُرندر إلا بعد فتح الكارت (تحميل عند الطلب) */
-export const CardVideoBlock: React.FC<{ exp: AppExplanation; watchVideoLabel: string }> = ({
-  exp,
-  watchVideoLabel,
-}) => {
-  const yt = exp.videoUrl ? getYouTubeEmbedUrl(exp.videoUrl, { jsApi: true }) : null;
-  const direct = exp.videoUrl && !yt ? getDirectVideoUrl(exp.videoUrl) : null;
-  const { failed: ytFailed, iframeRef, handshake } = useYouTubeEmbedError(yt);
-
-  if (!exp.videoUrl) return null;
-
-  return (
-    <>
-      {yt && ytFailed && (
-        <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/70 bg-amber-50 p-3.5 dark:border-amber-500/40 dark:bg-amber-500/10 max-w-[640px]">
-          <VideoOff className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden="true" />
-          <div className="text-xs leading-relaxed">
-            <span className="block font-bold text-foreground">الفيديو التوضيحي مش متاح حاليًا</span>
-            <span className="block text-muted-foreground">
-              الشرح المكتوب تحت كامل — وإحنا بنرجّع الفيديو في أقرب وقت.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {yt && !ytFailed && (
-        <div className="space-y-2 mb-4">
-          <div className="w-full max-w-[640px] aspect-video max-h-[380px] rounded-xl overflow-hidden bg-black border border-border shadow-sm">
-            <iframe
-              ref={iframeRef}
-              id={`yt-card-${exp.id}`}
-              className="w-full h-full border-0"
-              src={yt}
-              title={exp.title}
-              onLoad={handshake}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          </div>
-          <div className="flex items-center justify-start max-w-[640px] px-1">
-            <a
-              href={exp.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
-            >
-              <ExternalLink className="size-3.5" />
-              <span>فتح على يوتيوب ↗</span>
-            </a>
-          </div>
-        </div>
-      )}
-
-      {direct && (
-        <div className="space-y-2 mb-4">
-          <div className="w-full max-w-[640px] aspect-video max-h-[380px] rounded-xl overflow-hidden bg-black border border-border shadow-sm">
-            <video
-              className="w-full h-full object-contain"
-              src={direct}
-              controls
-              playsInline
-              preload="metadata"
-            />
-          </div>
-          <div className="flex items-center justify-start max-w-[640px] px-1">
-            <a
-              href={direct}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
-            >
-              <ExternalLink className="size-3.5" />
-              <span>فتح الفيديو في نافذة جديدة</span>
-            </a>
-          </div>
-        </div>
-      )}
-
-      {!yt && !direct && (
-        <div className="mb-4">
-          <a
-            href={exp.videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-          >
-            <PlayCircle className="size-5" aria-hidden="true" />
-            <span>{watchVideoLabel}</span>
-            <ExternalLink className="size-3.5" />
-          </a>
-        </div>
-      )}
-    </>
   );
 };
 
