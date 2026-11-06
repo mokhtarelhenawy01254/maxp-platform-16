@@ -8,6 +8,7 @@ import { getProtectedUserActionMessage } from "../../utils/usersManagementGuards
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { saveDefaultPagePreference } from "../../utils/postAuthRouting";
+import { copyToClipboard } from "../../utils/clipboard";
 import { APP_REGISTRY } from "../../config/appRegistry";
 import {
   type RoleRecord,
@@ -531,7 +532,7 @@ export function useUsersManagementController() {
       }
 
       if (response.data?.invitationLink) {
-        void navigator.clipboard.writeText(response.data.invitationLink);
+        void copyToClipboard(response.data.invitationLink);
       }
       toast.success(response.message || "تم إرسال الدعوة بنجاح");
       setInviteDialogOpen(false);
@@ -596,8 +597,12 @@ export function useUsersManagementController() {
   const copyInvitationLink = async (invitation: InvitationRecord) => {
     try {
       const inviteUrl = `${window.location.origin}/auth/accept-invitation?token=${invitation.token}`;
-      await navigator.clipboard.writeText(inviteUrl);
-      toast.success(t("users.linkCopied") || "تم نسخ رابط الدعوة");
+      const success = await copyToClipboard(inviteUrl);
+      if (success) {
+        toast.success(t("users.linkCopied") || "تم نسخ رابط الدعوة");
+      } else {
+        toast.error("فشل نسخ رابط الدعوة");
+      }
     } catch {
       tToast.error("UsersManagement.msg_8387");
     }

@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { copyToClipboard as copyTextToClipboard } from "../../utils/clipboard";
 
 interface Department {
   id: string;
@@ -225,10 +226,14 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
     const text = linkToCopy || generatedLink;
     if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success("تم نسخ الرابط إلى الحافظة");
-      setTimeout(() => setCopied(false), 2500);
+      const success = await copyTextToClipboard(text);
+      if (success) {
+        setCopied(true);
+        toast.success("تم نسخ الرابط إلى الحافظة");
+        setTimeout(() => setCopied(false), 2500);
+      } else {
+        toast.error("فشل نسخ الرابط، يرجى تحديده ونسخه يدوياً");
+      }
     } catch {
       toast.error("فشل نسخ الرابط");
     }
@@ -349,7 +354,10 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
                   <Input
                     readOnly
                     value={generatedLink}
-                    className="h-8 text-xs font-mono bg-transparent border-none focus-visible:ring-0 select-all truncate text-zinc-700 dark:text-zinc-300"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    onFocus={(e) => (e.target as HTMLInputElement).select()}
+                    className="h-8 text-xs font-mono bg-transparent border-none focus-visible:ring-0 select-all truncate text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                    title="اضغط لتحديد الرابط بالكامل"
                   />
                   <Button
                     type="button"
