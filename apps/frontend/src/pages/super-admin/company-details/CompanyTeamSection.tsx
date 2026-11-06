@@ -109,7 +109,7 @@ export function CompanyTeamSection({
 
           <CardContent className="space-y-4">
             {/* Search and Filters Bar */}
-            <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_140px_130px]">
+            <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem_11rem]">
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
