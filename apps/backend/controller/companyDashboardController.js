@@ -167,7 +167,12 @@ const fetchCompanySpecialtyAndApps = async (companyId, prisma) => {
     }
 
     try {
-        const hasMedical = installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug)) || businessSpecialty?.slug === 'medical-clinics';
+        const isEducationSpecialty = businessSpecialty?.slug?.includes('education');
+        const hasMedical = !isEducationSpecialty && (
+            businessSpecialty?.slug?.includes('medical') ||
+            businessSpecialty?.slug === 'medical-clinics' ||
+            installedApps.some(a => a.slug === 'medical-system')
+        );
         if (hasMedical && prisma.appointment) {
             const [appointmentsCount, todayAppointments] = await Promise.all([
                 prisma.appointment.count({ where: { companyId } }).catch(() => 0),
@@ -195,6 +200,20 @@ const fetchCompanySpecialtyAndApps = async (companyId, prisma) => {
             specialtyMetrics.dentalLab = {
                 activeCases,
                 totalDoctors
+            };
+        }
+    } catch (_) {}
+
+    try {
+        const hasEducation = businessSpecialty?.slug?.includes('education') || installedApps.some(a => a.slug === 'education-app');
+        if (hasEducation && prisma.educationSession) {
+            const today = startOfDay(new Date());
+            const tomorrow = endOfDay(new Date());
+            const todayClasses = await prisma.educationSession.count({
+                where: { companyId, scheduledAt: { gte: today, lte: tomorrow } }
+            }).catch(() => 0);
+            specialtyMetrics.education = {
+                todayClasses
             };
         }
     } catch (_) {}

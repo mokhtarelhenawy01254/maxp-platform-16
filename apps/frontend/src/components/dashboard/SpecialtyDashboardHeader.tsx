@@ -25,11 +25,19 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   const specialtyMetrics = dashboard.specialtyMetrics || {};
 
   const primaryVertical = (() => {
-    if (specialtySlug.includes('medical') || installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug))) return 'medical';
-    if (specialtySlug.includes('dental') || installedApps.some(a => a.slug === 'dental-lab-app')) return 'dental';
-    if (specialtySlug.includes('education') || installedApps.some(a => a.slug === 'education-app')) return 'education';
-    if (specialtySlug.includes('marketing') || installedApps.some(a => ['facebook-ads-pro', 'campaign-attribution'].includes(a.slug))) return 'marketing';
-    if (specialtySlug.includes('support') || specialtySlug.includes('customer') || installedApps.some(a => ['unified-inbox', 'whatsapp-business'].includes(a.slug))) return 'messaging';
+    // 1. Direct business specialty preference (if set by company/admin)
+    if (specialtySlug.includes('education')) return 'education';
+    if (specialtySlug.includes('medical')) return 'medical';
+    if (specialtySlug.includes('dental')) return 'dental';
+    if (specialtySlug.includes('marketing')) return 'marketing';
+    if (specialtySlug.includes('support') || specialtySlug.includes('customer')) return 'messaging';
+
+    // 2. Fallback to installed vertical-specific app slugs (only dedicated vertical apps)
+    if (installedApps.some(a => a.slug === 'education-app')) return 'education';
+    if (installedApps.some(a => a.slug === 'medical-system')) return 'medical';
+    if (installedApps.some(a => a.slug === 'dental-lab-app')) return 'dental';
+    if (installedApps.some(a => ['facebook-ads-pro', 'campaign-attribution'].includes(a.slug))) return 'marketing';
+    if (installedApps.some(a => ['unified-inbox', 'whatsapp-business'].includes(a.slug))) return 'messaging';
     return null;
   })();
 

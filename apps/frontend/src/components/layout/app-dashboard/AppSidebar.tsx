@@ -165,6 +165,7 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
 
       <nav ref={navRef} className="app-shell-sidebar-content">
         {sections.map((section) => {
+          if (section.hidden) return null;
           const visibleItems = section.items.filter((item) => !item.hidden);
           if (visibleItems.length === 0) return null;
 
