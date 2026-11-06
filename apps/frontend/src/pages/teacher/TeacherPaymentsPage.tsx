@@ -25,44 +25,6 @@ interface Payment {
   paidAt: string | null;
 }
 
-const mockPaymentsData: Payment[] = [
-  {
-    id: "pay-101",
-    periodFrom: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    periodTo: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-    totalSessions: 28,
-    totalHours: 35,
-    grossAmount: 5250,
-    deductions: 250,
-    netAmount: 5000,
-    status: "PAID",
-    paidAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-  },
-  {
-    id: "pay-102",
-    periodFrom: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-    periodTo: new Date(Date.now() - 1000 * 60 * 60 * 24 * 31).toISOString(),
-    totalSessions: 32,
-    totalHours: 40,
-    grossAmount: 6000,
-    deductions: 0,
-    netAmount: 6000,
-    status: "PAID",
-    paidAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 31).toISOString(),
-  },
-  {
-    id: "pay-103",
-    periodFrom: new Date().toISOString(),
-    periodTo: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
-    totalSessions: 14,
-    totalHours: 18,
-    grossAmount: 2700,
-    deductions: 100,
-    netAmount: 2600,
-    status: "PENDING",
-    paidAt: null,
-  },
-];
 
 export default function TeacherPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -81,10 +43,10 @@ export default function TeacherPaymentsPage() {
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         setPayments(json.data);
       } else {
-        setPayments(mockPaymentsData);
+        setPayments([]);
       }
     } catch {
-      setPayments(mockPaymentsData);
+      setPayments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

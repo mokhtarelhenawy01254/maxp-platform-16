@@ -34,40 +34,63 @@ interface UpcomingSessionItem {
   status: "CONFIRMED" | "SCHEDULED" | "IN_PROGRESS";
 }
 
-const mockUpcoming: UpcomingSessionItem[] = [
-  {
-    id: "sess-1",
-    studentName: "يوسف أحمد النجار",
-    subject: "الرياضيات التطبيقية",
-    time: "04:30 م",
-    date: "اليوم",
-    duration: 60,
-    status: "CONFIRMED",
-  },
-  {
-    id: "sess-2",
-    studentName: "سارة محمود إبراهيم",
-    subject: "الجبر وحساب المثلثات",
-    time: "06:00 م",
-    date: "اليوم",
-    duration: 45,
-    status: "SCHEDULED",
-  },
-  {
-    id: "sess-3",
-    studentName: "كريم حسام العوضي",
-    subject: "الهندسة الفراغية",
-    time: "03:00 م",
-    date: "غداً",
-    duration: 90,
-    status: "SCHEDULED",
-  },
-];
-
 export default function TeacherDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [upcoming, setUpcoming] = useState<UpcomingSessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // الحصص القادمة الحقيقية — كانت قبل كده لستة ثابتة (أسماء طلبة وهمية).
+  const fetchUpcoming = async (token: string | null) => {
+    try {
+      const res = await fetch("/api/v1/education/teacher-portal/sessions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setUpcoming([]);
+        return;
+      }
+      const json = await res.json();
+      const rows: any[] = Array.isArray(json?.data) ? json.data : [];
+      const now = Date.now();
+      const mapped: UpcomingSessionItem[] = rows
+        .filter((s) => {
+          const when = new Date(s?.scheduledAt ?? s?.date ?? 0).getTime();
+          return (
+            Number.isFinite(when) &&
+            when >= now &&
+            (s?.status === "SCHEDULED" || s?.status === "CONFIRMED")
+          );
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.scheduledAt ?? a.date).getTime() -
+            new Date(b.scheduledAt ?? b.date).getTime()
+        )
+        .slice(0, 5)
+        .map((s) => {
+          const when = new Date(s.scheduledAt ?? s.date);
+          return {
+            id: String(s.id),
+            studentName: s?.student?.name ?? s?.studentName ?? "طالب",
+            subject: s?.subject?.name ?? s?.subjectName ?? "—",
+            time: when.toLocaleTimeString("ar-EG", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            date: when.toLocaleDateString("ar-EG", {
+              day: "numeric",
+              month: "short",
+            }),
+            duration: Number(s?.plannedDuration ?? s?.duration ?? 0),
+            status: s?.status,
+          } as UpcomingSessionItem;
+        });
+      setUpcoming(mapped);
+    } catch {
+      setUpcoming([]);
+    }
+  };
 
   const fetchDashboard = async () => {
     try {
@@ -79,22 +102,27 @@ export default function TeacherDashboardPage() {
       const json = await res.json();
       if (json.success && json.data) {
         setData(json.data);
+        void fetchUpcoming(token);
+      } else if (res.status === 401) {
+        localStorage.removeItem("teacherToken");
+        window.location.replace("/teacher/login");
+        return;
       } else {
         setData({
-          upcomingSessions: 4,
-          totalSessions: 38,
-          thisWeekSessions: 12,
-          totalPaid: 4850,
-          totalStudents: 19,
+          upcomingSessions: 0,
+          totalSessions: 0,
+          thisWeekSessions: 0,
+          totalPaid: 0,
+          totalStudents: 0,
         });
       }
     } catch {
       setData({
-        upcomingSessions: 4,
-        totalSessions: 38,
-        thisWeekSessions: 12,
-        totalPaid: 4850,
-        totalStudents: 19,
+        upcomingSessions: 0,
+        totalSessions: 0,
+        thisWeekSessions: 0,
+        totalPaid: 0,
+        totalStudents: 0,
       });
     } finally {
       setLoading(false);
@@ -118,7 +146,7 @@ export default function TeacherDashboardPage() {
   const kpis = [
     {
       label: "الحصص القادمة",
-      value: data?.upcomingSessions ?? 4,
+      value: data?.upcomingSessions ?? 0,
       subtext: "مجدولة للأيام القادمة",
       icon: CalendarDays,
       badge: "جاهزة",
@@ -126,7 +154,7 @@ export default function TeacherDashboardPage() {
     },
     {
       label: "حصص هذا الأسبوع",
-      value: data?.thisWeekSessions ?? 12,
+      value: data?.thisWeekSessions ?? 0,
       subtext: "ضمن الجدول الأسبوعي",
       icon: Clock,
       badge: "نشط",
@@ -134,15 +162,15 @@ export default function TeacherDashboardPage() {
     },
     {
       label: "إجمالي الحصص المنفذة",
-      value: data?.totalSessions ?? 38,
-      subtext: `${data?.totalStudents ?? 19} طالب مسجل`,
+      value: data?.totalSessions ?? 0,
+      subtext: `${data?.totalStudents ?? 0} طالب مسجل`,
       icon: GraduationCap,
       badge: "مكتمل",
       color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
     },
     {
       label: "المستحقات والمدفوعات",
-      value: `${(data?.totalPaid ?? 4850).toLocaleString("en-US")} ج.م`,
+      value: `${(data?.totalPaid ?? 0).toLocaleString("en-US")} ج.م`,
       subtext: "الرصيد المعتمد",
       icon: DollarSign,
       badge: "معتمد",
@@ -243,7 +271,12 @@ export default function TeacherDashboardPage() {
           </div>
 
           <div className="divide-y divide-border/50">
-            {mockUpcoming.map((item) => (
+            {upcoming.length === 0 && (
+              <div className="py-6 text-center text-xs text-muted-foreground font-mono">
+                لا توجد حصص قادمة مجدولة
+              </div>
+            )}
+            {upcoming.map((item) => (
               <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                 <div className="flex items-start gap-2.5">
                   <div className="size-8 rounded-md bg-muted/40 flex items-center justify-center shrink-0 border border-border/60 text-muted-foreground">

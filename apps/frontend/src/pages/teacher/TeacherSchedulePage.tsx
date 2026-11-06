@@ -25,48 +25,6 @@ interface Session {
   enrollment?: { remainingHours: number };
 }
 
-const mockScheduleSessions: Session[] = [
-  {
-    id: "sch-1",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 120).toISOString(),
-    plannedDuration: 60,
-    actualDuration: null,
-    status: "SCHEDULED",
-    student: { firstName: "أحمد", lastName: "طارق سليم", phone: "01098765432" },
-    subject: { name: "الرياضيات المتقدمة - تفاضل وتكامل" },
-    enrollment: { remainingHours: 14 },
-  },
-  {
-    id: "sch-2",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 360).toISOString(),
-    plannedDuration: 90,
-    actualDuration: null,
-    status: "CONFIRMED",
-    student: { firstName: "مريم", lastName: "عبد العزيز الهاشمي", phone: "01123456789" },
-    subject: { name: "الهندسة التحليلية والفراغية" },
-    enrollment: { remainingHours: 8 },
-  },
-  {
-    id: "sch-3",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 26).toISOString(),
-    plannedDuration: 60,
-    actualDuration: null,
-    status: "SCHEDULED",
-    student: { firstName: "عمر", lastName: "خالد الشربيني", phone: "01234567890" },
-    subject: { name: "الجبر والمصفوفات" },
-    enrollment: { remainingHours: 20 },
-  },
-  {
-    id: "sch-4",
-    scheduledAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    plannedDuration: 60,
-    actualDuration: 60,
-    status: "COMPLETED",
-    student: { firstName: "نور", lastName: "سامح فهمي", phone: "01011223344" },
-    subject: { name: "حساب المثلثات والميكانيكا" },
-    enrollment: { remainingHours: 6 },
-  },
-];
 
 export default function TeacherSchedulePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -86,10 +44,10 @@ export default function TeacherSchedulePage() {
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         setSessions(json.data);
       } else {
-        setSessions(mockScheduleSessions);
+        setSessions([]);
       }
     } catch {
-      setSessions(mockScheduleSessions);
+      setSessions([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

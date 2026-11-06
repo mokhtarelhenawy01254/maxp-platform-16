@@ -20,6 +20,21 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [hasToken] = React.useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem('teacherToken'));
+    } catch {
+      return false;
+    }
+  });
+
+  // 🔐 حماية بوابة المدرس: بدون توكن مدرس مفيش وصول — قبل كده كانت الصفحات
+  // بتفتح لأي زائر وتعرض بيانات وهمية بدل شاشة تسجيل الدخول.
+  React.useEffect(() => {
+    if (!hasToken) {
+      navigate('/teacher/login', { replace: true });
+    }
+  }, [hasToken, navigate]);
 
   const teacher = useMemo(() => {
     try {
@@ -47,6 +62,12 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background text-foreground">
+      {!hasToken ? (
+        <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+          جاري التحويل لتسجيل الدخول...
+        </div>
+      ) : (
+      <>
       {/* Mobile header */}
       <header className="bg-card/95 backdrop-blur-md border-b border-border/70 lg:hidden sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 py-3">
@@ -147,6 +168,8 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
+      </>
+      )}
     </div>
   );
 };
