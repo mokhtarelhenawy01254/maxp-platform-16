@@ -185,6 +185,7 @@ describe("verifyToken middleware", () => {
         role: true,
         companyId: true,
         isActive: true,
+        merchantId: true,
       },
     });
     expect(tenantContext.run).toHaveBeenCalledWith("company-1", expect.any(Function));
@@ -198,8 +199,48 @@ describe("verifyToken middleware", () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it("returns 503 when company access fails because the database is still warming up", async () => {
+  // 🔐 roleRef (جدول الأدوار) هو المصدر الأول للدور الفعّال. العمود المنسوخ
+  // userCompany.role ممكن يتكتب فيه غلط (زي مزامنة موظفين بتخلي المالك AGENT)،
+  // وكان ده بيخفّض صلاحيات المالك على كل مسار بيستخدم requireCompanyAccess.
+  it("prefers the roleRef role over a drifted userCompany.role column", async () => {
     const req = {
+      originalUrl: "/api/v1/permissions",
+      params: {},
+      query: {},
+      body: {},
+      user: {
+        id: "user-1",
+        role: "OWNER",
+        companyId: "company-1",
+      },
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      firstName: "Store",
+      lastName: "Owner",
+      email: "owner@test.com",
+      role: "OWNER",
+      companyId: "company-1",
+      isActive: true,
+    });
+
+    mockPrisma.userCompany.findUnique.mockResolvedValue({
+      role: "AGENT", // العمود المنسوخ انحرف
+      isActive: true,
+      roleId: "role-owner",
+      roleRef: { key: "OWNER" }, // لكن الدور الحقيقي مالك
+    });
+
+    await requireCompanyAccess(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.user.role).toBe("OWNER");
+  });
+
+  it("returns 503 when company access fails because the database is still warming up", async () => {    const req = {
       originalUrl: "/api/v1/storefront-settings",
       params: {},
       query: {},

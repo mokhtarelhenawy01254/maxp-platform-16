@@ -719,7 +719,8 @@ const requireCompanyAccess = async (req, res, next) => {
           select: {
             role: true,
             isActive: true,
-            roleId: true
+            roleId: true,
+            roleRef: { select: { key: true } }
           }
         })
       )
@@ -743,8 +744,12 @@ const requireCompanyAccess = async (req, res, next) => {
           code: 'ACCESS_REVOKED'
         });
       }
-    } else if (membership.role) {
-      req.user.role = membership.role;
+    } else if (membership.role || membership.roleRef?.key) {
+      // 🔐 الدور الفعّال من جدول الأدوار (roleRef) هو المصدر الأول — نفس منطق
+      // authenticateToken (سطر 542). الاعتماد على العمود المنسوخ userCompany.role
+      // وحده كان بيخفّض مالك الشركة لـ AGENT بمجرد ما أي عملية مزامنة تكتب فيه،
+      // فيفقد صلاحيات الإدارة رغم أن roleId بيشاور على دور المالك.
+      req.user.role = membership.roleRef?.key || membership.role;
     }
 
     // Load DB-based permissions for this company context
