@@ -14,7 +14,6 @@ import { ProposalChannelsSection } from "./components/ProposalChannelsSection";
 import { ProposalFunnelCalculator } from "./components/ProposalFunnelCalculator";
 import { ProposalSolutionSection } from "./components/ProposalSolutionSection";
 import { ProposalAgentsSection } from "./components/ProposalAgentsSection";
-import { ProposalAnalyticsSection } from "./components/ProposalAnalyticsSection";
 import { ProposalTimelineSection } from "./components/ProposalTimelineSection";
 import { ProposalPackagesSection } from "./components/ProposalPackagesSection";
 import { ProposalAcceptModal } from "./components/ProposalAcceptModal";
@@ -216,10 +215,7 @@ export default function AgencyPublicProposalPage() {
         {/* 2. The whole plan — one tab per part */}
         <ProposalTabsSection tabs={proposal.tabs} />
 
-        {/* 3. Dedicated Telemetry & Real-Time Intelligence Suite */}
-        <ProposalAnalyticsSection telemetry={proposal.telemetry} />
-
-        {/* 4. Legacy blocks kept for proposals that have no tabs yet */}
+        {/* 3. Legacy blocks kept for proposals that have no tabs yet */}
         {!proposal.tabs?.length && (
           <>
             <ProposalAuditSection auditItems={proposal.auditItems} />
