@@ -14,6 +14,7 @@ import {
   EmployeeFormData,
   AssetsDialogState,
   PaginationState,
+  CredentialsModalState,
 } from "./types";
 import { createDefaultEmployeeForm } from "./helpers";
 
@@ -50,6 +51,14 @@ export const useEmployeesController = () => {
     assets: [],
     loading: false,
     error: "",
+  });
+
+  const [credentialsModal, setCredentialsModal] = useState<CredentialsModalState>({
+    open: false,
+    employeeName: "",
+    email: "",
+    temporaryPassword: null,
+    resetLink: null,
   });
 
   // Form state
@@ -259,12 +268,27 @@ export const useEmployeesController = () => {
       setErrors([]);
 
       // For inactive former employees, use the reactivation endpoint
+      let response;
       if (lookupResult?.status === "INACTIVE_FORMER_EMPLOYEE" && lookupResult?.user?.id) {
-        await api.post(`/hr/employees/${lookupResult.user.id}/reactivate`, formData);
+        response = await api.post(`/hr/employees/${lookupResult.user.id}/reactivate`, formData);
         toast.success(t("employees.successReactivate"));
       } else {
-        await api.post("/hr/employees", formData);
+        response = await api.post("/hr/employees", formData);
         toast.success(t("employees.successAdd"));
+      }
+
+      // If backend generated temporary credentials or setup link, show credentials modal
+      const creds = response.data?.employee?.credentials || response.data?.credentials;
+      if (creds?.temporaryPassword || creds?.setupToken) {
+        setCredentialsModal({
+          open: true,
+          employeeName: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: creds.email || formData.email,
+          temporaryPassword: creds.temporaryPassword || null,
+          resetLink: creds.setupToken
+            ? `https://maxp.online/reset-password?token=${creds.setupToken}&email=${encodeURIComponent(creds.email || formData.email)}`
+            : null,
+        });
       }
 
       setShowAddDialog(false);
@@ -343,6 +367,55 @@ export const useEmployeesController = () => {
     }
   };
 
+  const handleResetPassword = async (emp: Employee) => {
+    try {
+      const res: any = await api.post(`/hr/employees/${emp.id}/reset-password`);
+      if (res.data?.success && res.data?.data) {
+        setCredentialsModal({
+          open: true,
+          employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
+          email: res.data.data.email,
+          temporaryPassword: res.data.data.temporaryPassword || null,
+          resetLink: res.data.data.resetLink || null,
+        });
+        toast.success("تم استخراج بيانات الدخول بنجاح");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "فشل في استخراج بيانات الدخول");
+    }
+  };
+
+  const handleToggleStatus = async (emp: Employee) => {
+    try {
+      const currentActive = emp.user?.isActive ?? (emp.status === "ACTIVE");
+      const res: any = await api.post(`/hr/employees/${emp.id}/toggle-user-status`, {
+        isActive: !currentActive,
+      });
+      toast.success(res.data?.message || "تم تغيير حالة الحساب بنجاح");
+      fetchEmployees();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "فشل في تعديل حالة الحساب");
+    }
+  };
+
+  const handleTerminateEmployee = async (emp: Employee) => {
+    const reason = window.prompt(
+      `أدخل سبب إنهاء خدمة الموظف "${emp.firstName} ${emp.lastName}":`,
+      "إنهاء خدمة",
+    );
+    if (reason === null) return;
+    try {
+      await api.post(`/hr/employees/${emp.id}/terminate`, {
+        terminationDate: new Date().toISOString(),
+        terminationReason: reason || "إنهاء خدمة",
+      });
+      toast.success("تم إنهاء خدمة الموظف بنجاح");
+      fetchEmployees();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "فشل في إنهاء الخدمة");
+    }
+  };
+
   const resetForm = () => {
     setFormData(createDefaultEmployeeForm());
     setErrors([]);
@@ -375,6 +448,8 @@ export const useEmployeesController = () => {
     errors,
     assetsDialog,
     setAssetsDialog,
+    credentialsModal,
+    setCredentialsModal,
     formData,
     setFormData,
     lookupLoading,
@@ -384,6 +459,9 @@ export const useEmployeesController = () => {
     handleAddEmployee,
     handleDeleteEmployee,
     handleReactivateEmployee,
+    handleResetPassword,
+    handleToggleStatus,
+    handleTerminateEmployee,
     resetForm,
   };
 };

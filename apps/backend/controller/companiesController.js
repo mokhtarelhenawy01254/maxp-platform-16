@@ -1772,6 +1772,14 @@ const createnewUserForCompany = async (req, res) => {
         `✅ [CREATE-USER] Existing user ${existingUser.email} added to company ${companyId}`,
       );
 
+      // مزامنة تلقائية مع جدول الموظفين hr_employees
+      try {
+        const employeeService = require("../services/hr/employeeService");
+        await employeeService.syncWithEmployeeTable(existingUser.id, companyId);
+      } catch (syncErr) {
+        console.warn("⚠️ [CREATE-USER] Failed to sync existing user to employee table:", syncErr.message);
+      }
+
       return res.status(201).json({
         success: true,
         message: "تم إضافة المستخدم الموجود إلى الشركة بنجاح",
@@ -1891,6 +1899,14 @@ const createnewUserForCompany = async (req, res) => {
 
       return { user: newUser };
     });
+
+    // مزامنة تلقائية مع جدول الموظفين hr_employees لضمان تسجيل الحضور والرواتب فوراً
+    try {
+      const employeeService = require("../services/hr/employeeService");
+      await employeeService.syncWithEmployeeTable(result.user.id, companyId);
+    } catch (syncErr) {
+      console.warn("⚠️ [CREATE-USER] Failed to sync new user to employee table:", syncErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -2298,6 +2314,14 @@ const updateUser = async (req, res) => {
           }
         : null,
     };
+
+    // مزامنة تحديثات بيانات الموظف مع جدول hr_employees
+    try {
+      const employeeService = require("../services/hr/employeeService");
+      await employeeService.syncWithEmployeeTable(userId, companyId);
+    } catch (syncErr) {
+      console.warn("⚠️ [UPDATE-USER] Failed to sync updated user to employee table:", syncErr.message);
+    }
 
     res.json({
       success: true,

@@ -100,18 +100,24 @@ class EmployeeService {
       } else {
         // ✅ Create User automatically for new Employee (Completely new user)
         const bcrypt = require('bcryptjs');
+        const crypto = require('crypto');
 
         let passwordToUse;
         let isTemporaryPassword = false;
+        let generatedRawPassword = null;
+        let setupPasswordToken = null;
+        let setupPasswordExpires = null;
 
         if (data.password && data.password.trim() !== '') {
           passwordToUse = await bcrypt.hash(data.password, 12);
           console.log('✅ [HR] Using password from frontend for new User');
         } else {
-          const tempPassword = Math.random().toString(36).slice(-12);
-          passwordToUse = await bcrypt.hash(tempPassword, 12);
+          generatedRawPassword = Math.random().toString(36).slice(-10) + 'A1!';
+          passwordToUse = await bcrypt.hash(generatedRawPassword, 12);
           isTemporaryPassword = true;
-          console.log('✅ [HR] Generated temporary password for new User');
+          setupPasswordToken = crypto.randomBytes(32).toString('hex');
+          setupPasswordExpires = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days
+          console.log('✅ [HR] Generated temporary password and setup token for new User');
         }
 
         try {
@@ -124,7 +130,9 @@ class EmployeeService {
               phone: data.phone || null,
               role: data.role || 'AGENT',
               isActive: true,
-              companyId: companyId
+              companyId: companyId,
+              resetPasswordToken: setupPasswordToken,
+              resetPasswordExpires: setupPasswordExpires,
             }
           });
 
@@ -142,6 +150,11 @@ class EmployeeService {
           });
 
           console.log(`✅ [HR] Created User (${newUser.email}) and UserCompany record.`);
+          this._lastCreatedCredentials = isTemporaryPassword ? {
+            email: emailLower,
+            temporaryPassword: generatedRawPassword,
+            setupToken: setupPasswordToken
+          } : null;
         } catch (userError) {
           console.error(`❌ [HR] Failed to create User for Employee:`, userError.message);
           throw new Error(`فشل إنشاء حساب المستخدم للموظف: ${userError.message}`);
@@ -291,7 +304,13 @@ class EmployeeService {
       }
     }
 
-    return employee;
+    const credentials = this._lastCreatedCredentials;
+    this._lastCreatedCredentials = null;
+
+    return {
+      ...employee,
+      credentials: credentials || null
+    };
   }
 
   /**
@@ -344,12 +363,41 @@ class EmployeeService {
       // جلب جميع المستخدمين في الشركة (الموظفين هم Users في نفس الشركة)
       // Only include users whose membership in this company is active.
       // Soft-deleted employees keep a disabled UserCompany row; adding isActive filter hides them from the list.
+      const hrEmployeeRecords = await this.prisma.employee.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          userId: true,
+          employeeNumber: true,
+          nationalId: true,
+          dateOfBirth: true,
+          gender: true,
+          nationality: true,
+          address: true,
+          emergencyContact: true,
+          status: true,
+          contractType: true,
+          baseSalary: true,
+          hireDate: true,
+          departmentId: true,
+          positionId: true,
+          manager: {
+            select: { id: true, firstName: true, lastName: true, avatar: true }
+          }
+        }
+      });
+      const validHrUserIds = hrEmployeeRecords.map(e => e.userId).filter(Boolean);
+
       const userWhere = {
-        // يجب أن يكون لديه رقم موظف فعلي ليظهر في جدول الموظفين
-        employeeNumber: { not: null },
         OR: [
-          { companyId: companyId },
-          { userCompanies: { some: { companyId, isActive: true } } }
+          {
+            employeeNumber: { not: null },
+            OR: [
+              { companyId: companyId },
+              { userCompanies: { some: { companyId, isActive: true } } }
+            ]
+          },
+          ...(validHrUserIds.length > 0 ? [{ id: { in: validHrUserIds } }] : [])
         ]
       };
 
@@ -448,9 +496,15 @@ class EmployeeService {
 
       console.log('✅ [HR] Found employees:', total, 'Returned:', users.length);
 
-      // ✅ FIX: تحويل البيانات من User إلى تنسيق Employee للـ frontend
+      const employeeMap = new Map();
+      for (const emp of hrEmployeeRecords) {
+        if (emp.userId) employeeMap.set(emp.userId, emp);
+        employeeMap.set(emp.id, emp);
+      }
+
+      // ✅ FIX: دمج بيانات User مع بيانات hr_employees لتقديم سجل موظف متكامل للـ frontend
       const formattedEmployees = users.map(user => {
-        // Always prioritize User.isActive for UI status, and fall back to UserCompany ONLY if needed
+        const empRecord = employeeMap.get(user.id) || null;
         const userIsActive = user.isActive;
         const userCompany = user.userCompanies?.[0];
         const userRole = userCompany?.role || user.role || null;
@@ -458,33 +512,36 @@ class EmployeeService {
         return {
           id: user.id, // Use user.id as employee id
           userId: user.id,
-          employeeNumber: user.employeeNumber,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          firstNameEn: null, // Not in User model
-          lastNameEn: null, // Not in User model
-          email: user.email,
-          phone: user.phone,
-          mobile: null, // Not in User model
-          avatar: user.avatar,
-          dateOfBirth: null, // Not in User model
-          gender: null, // Not in User model
-          nationality: null, // Not in User model
-          nationalId: null, // Not in User model
-          status: userIsActive ? 'ACTIVE' : 'INACTIVE', // Use actual user status
-          contractType: user.contractType,
-          hireDate: user.hireDate,
-          baseSalary: user.baseSalary,
-          department: user.departmentRelation,
-          position: user.positionRelation,
-          manager: null, // Not directly in User model
-          hasEmployeeRecord: !!user.employeeNumber, // true if has employeeNumber
+          employeeRecordId: empRecord?.id || null,
+          employeeNumber: empRecord?.employeeNumber || user.employeeNumber || 'N/A',
+          firstName: empRecord?.firstName || user.firstName,
+          lastName: empRecord?.lastName || user.lastName,
+          firstNameEn: null,
+          lastNameEn: null,
+          email: empRecord?.email || user.email,
+          phone: empRecord?.phone || user.phone,
+          mobile: null,
+          avatar: empRecord?.avatar || user.avatar,
+          dateOfBirth: empRecord?.dateOfBirth || null,
+          gender: empRecord?.gender || null,
+          nationality: empRecord?.nationality || null,
+          nationalId: empRecord?.nationalId || null,
+          address: empRecord?.address || null,
+          emergencyContact: empRecord?.emergencyContact || null,
+          status: empRecord?.status || (userIsActive ? 'ACTIVE' : 'INACTIVE'),
+          contractType: empRecord?.contractType || user.contractType || 'FULL_TIME',
+          hireDate: empRecord?.hireDate || user.hireDate,
+          baseSalary: empRecord?.baseSalary !== undefined && empRecord?.baseSalary !== null ? empRecord.baseSalary : user.baseSalary,
+          department: user.departmentRelation || null,
+          position: user.positionRelation || null,
+          manager: empRecord?.manager || null,
+          hasEmployeeRecord: Boolean(empRecord || user.employeeNumber),
           // ✅ Include User (HR Integration) data
           user: {
             id: user.id,
             email: user.email,
             role: userRole,
-            isActive: userIsActive,
+            isActive: userCompany ? userCompany.isActive : userIsActive,
             isEmailVerified: user.isEmailVerified,
             lastLoginAt: user.lastLoginAt,
             createdAt: user.createdAt
@@ -517,13 +574,18 @@ class EmployeeService {
    */
   async getEmployeeById(companyId, employeeId) {
     try {
-      const user = await this.prisma.user.findFirst({
-        where: { id: employeeId, companyId },
+      // 1. Fetch user (check direct companyId and userCompanies)
+      let user = await this.prisma.user.findFirst({
+        where: {
+          id: employeeId,
+          OR: [
+            { companyId },
+            { userCompanies: { some: { companyId } } }
+          ]
+        },
         include: {
           departmentRelation: true,
           positionRelation: true,
-          // Note: employeeDocuments and leaveRequests relations are commented out in User model
-          // Using separate queries if needed
           attendances: {
             where: { companyId },
             orderBy: { date: 'desc' },
@@ -540,7 +602,105 @@ class EmployeeService {
         }
       });
 
-      return user;
+      // 2. Fetch corresponding hr_employees record
+      let empRecord = await this.prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [
+            { id: employeeId },
+            ...(user ? [{ userId: user.id }] : [{ userId: employeeId }])
+          ]
+        },
+        include: {
+          department: true,
+          position: true,
+          manager: {
+            select: { id: true, firstName: true, lastName: true, avatar: true }
+          }
+        }
+      });
+
+      // If user wasn't found by employeeId directly, but empRecord has userId
+      if (!user && empRecord?.userId) {
+        user = await this.prisma.user.findFirst({
+          where: { id: empRecord.userId },
+          include: {
+            departmentRelation: true,
+            positionRelation: true,
+            attendances: {
+              where: { companyId },
+              orderBy: { date: 'desc' },
+              take: 30
+            },
+            userCompanies: {
+              where: { companyId },
+              select: {
+                role: true,
+                isActive: true
+              },
+              take: 1
+            }
+          }
+        });
+      }
+
+      if (!user && !empRecord) {
+        return null;
+      }
+
+      const userCompany = user?.userCompanies?.[0];
+      const effectiveRole = userCompany?.role || user?.role || 'AGENT';
+
+      return {
+        ...(user || {}),
+        id: employeeId,
+        userId: user?.id || empRecord?.userId || null,
+        employeeRecordId: empRecord?.id || null,
+        employeeNumber: empRecord?.employeeNumber || user?.employeeNumber || 'N/A',
+        firstName: empRecord?.firstName || user?.firstName || '',
+        lastName: empRecord?.lastName || user?.lastName || '',
+        firstNameEn: empRecord?.firstNameEn || null,
+        lastNameEn: empRecord?.lastNameEn || null,
+        email: empRecord?.email || user?.email || '',
+        phone: empRecord?.phone || user?.phone || '',
+        mobile: empRecord?.mobile || null,
+        avatar: empRecord?.avatar || user?.avatar || null,
+        hireDate: empRecord?.hireDate || user?.hireDate || null,
+        contractType: empRecord?.contractType || user?.contractType || 'FULL_TIME',
+        baseSalary: empRecord?.baseSalary !== undefined && empRecord?.baseSalary !== null ? empRecord.baseSalary : user?.baseSalary,
+        department: user?.departmentRelation || empRecord?.department || null,
+        position: user?.positionRelation || empRecord?.position || null,
+        manager: empRecord?.manager || null,
+        status: empRecord?.status || (user?.isActive ? 'ACTIVE' : 'INACTIVE'),
+        // Rich personal HR fields
+        nationalId: empRecord?.nationalId || null,
+        dateOfBirth: empRecord?.dateOfBirth || null,
+        gender: empRecord?.gender || null,
+        nationality: empRecord?.nationality || null,
+        maritalStatus: empRecord?.maritalStatus || null,
+        address: empRecord?.address || null,
+        city: empRecord?.city || null,
+        country: empRecord?.country || null,
+        postalCode: empRecord?.postalCode || null,
+        emergencyContact: empRecord?.emergencyContact || null,
+        bankName: empRecord?.bankName || null,
+        bankAccountNumber: empRecord?.bankAccountNumber || null,
+        bankIban: empRecord?.bankIban || null,
+        terminationDate: empRecord?.terminationDate || null,
+        terminationReason: empRecord?.terminationReason || null,
+        documents: empRecord?.documents || null,
+        notes: empRecord?.notes || null,
+        attendances: user?.attendances || [],
+        user: user ? {
+          id: user.id,
+          email: user.email,
+          role: effectiveRole,
+          isActive: userCompany ? userCompany.isActive : user.isActive,
+          isEmailVerified: user.isEmailVerified,
+          lastLoginAt: user.lastLoginAt,
+          createdAt: user.createdAt
+        } : null
+      };
     } catch (error) {
       console.error('❌ Error getting employee:', error);
       throw error;
@@ -552,24 +712,38 @@ class EmployeeService {
    */
   async updateEmployee(companyId, employeeId, data) {
     try {
-      // التحقق من وجود الموظف (User)
-      const existing = await this.prisma.user.findFirst({
-        where: { id: employeeId, companyId }
+      // Find existing User or Employee
+      let existingUser = await this.prisma.user.findFirst({
+        where: {
+          id: employeeId,
+          OR: [
+            { companyId },
+            { userCompanies: { some: { companyId } } }
+          ]
+        }
       });
 
-      if (!existing) {
+      let empRecord = await this.prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [
+            { id: employeeId },
+            ...(existingUser ? [{ userId: existingUser.id }] : [{ userId: employeeId }])
+          ]
+        }
+      });
+
+      if (!existingUser && empRecord?.userId) {
+        existingUser = await this.prisma.user.findUnique({
+          where: { id: empRecord.userId }
+        });
+      }
+
+      if (!existingUser && !empRecord) {
         throw new Error('الموظف غير موجود');
       }
 
-      // تحويل التواريخ وإعداد البيانات للتحديث
       const updateData = {};
-      console.log('🔍 [DEBUG] updateEmployee payload:', {
-        dept: data.departmentId,
-        pos: data.positionId,
-        typeDept: typeof data.departmentId,
-        typePos: typeof data.positionId
-      });
-
       if (data.hireDate) updateData.hireDate = new Date(data.hireDate);
       if (data.contractType) {
         const type = data.contractType.toUpperCase();
@@ -577,8 +751,7 @@ class EmployeeService {
         else if (['CONTRACT', 'TEMPORARY', 'FREELANCE'].includes(type)) updateData.contractType = 'CONTRACTOR';
         else updateData.contractType = data.contractType;
       }
-      if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary;
-      // Handle foreign keys - convert empty strings to null
+      if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary ? parseFloat(data.baseSalary) : null;
       if (data.departmentId !== undefined) {
         updateData.departmentId = (data.departmentId && data.departmentId.trim() !== '') ? data.departmentId : null;
       }
@@ -591,87 +764,87 @@ class EmployeeService {
       if (data.phone !== undefined) updateData.phone = data.phone;
       if (data.avatar !== undefined) updateData.avatar = data.avatar;
 
+      // Handle email update safely
+      if (data.email && existingUser && data.email.trim().toLowerCase() !== existingUser.email.toLowerCase()) {
+        const cleanEmail = data.email.trim().toLowerCase();
+        const emailConflict = await this.prisma.user.findFirst({
+          where: { email: cleanEmail, id: { not: existingUser.id } }
+        });
+        if (emailConflict) {
+          throw new ConflictError('البريد الإلكتروني مستخدم بالفعل لمستخدم آخر');
+        }
+        updateData.email = cleanEmail;
+      }
+
       // Deduction fields
       if (data.enableAutoDeduction !== undefined) updateData.enableAutoDeduction = data.enableAutoDeduction;
       if (data.monthlyGraceMinutes !== undefined) updateData.monthlyGraceMinutes = parseInt(data.monthlyGraceMinutes);
       if (data.maxDailyLateMinutes !== undefined) updateData.maxDailyLateMinutes = parseInt(data.maxDailyLateMinutes);
       if (data.lateDeductionRate !== undefined) updateData.lateDeductionRate = parseFloat(data.lateDeductionRate);
 
-      // تسجيل تغيير الراتب إذا تغير
-      if (data.baseSalary && existing.baseSalary &&
-        parseFloat(data.baseSalary) !== parseFloat(existing.baseSalary)) {
+      // Record salary change if changed
+      if (existingUser && data.baseSalary && existingUser.baseSalary &&
+        parseFloat(data.baseSalary) !== parseFloat(existingUser.baseSalary)) {
         await this.prisma.salaryHistory.create({
           data: {
             companyId,
-            userId: employeeId,
-            previousSalary: existing.baseSalary,
+            userId: existingUser.id,
+            previousSalary: existingUser.baseSalary,
             newSalary: data.baseSalary,
             changeType: 'adjustment',
-            changePercentage: Number(((data.baseSalary - existing.baseSalary) / existing.baseSalary * 100)),
+            changePercentage: Number(((data.baseSalary - existingUser.baseSalary) / existingUser.baseSalary * 100)),
             effectiveDate: new Date()
           }
         });
       }
 
-      const employee = await this.prisma.user.update({
-        where: { id: employeeId },
-        data: updateData,
-        include: {
-          departmentRelation: true,
-          positionRelation: true
-        }
-      });
-
-      // ✅ FIX: Update User record if Employee is linked to a User (HR Integration)
-      if (employee.userId && employee.user) {
-        try {
-          const userUpdateData = {};
-          if (data.firstName && data.firstName !== employee.user.firstName) {
-            userUpdateData.firstName = data.firstName;
+      // Update User table if existingUser exists
+      if (existingUser) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: updateData,
+          include: {
+            departmentRelation: true,
+            positionRelation: true
           }
-          if (data.lastName && data.lastName !== employee.user.lastName) {
-            userUpdateData.lastName = data.lastName;
-          }
-          if (data.email && data.email !== employee.user.email) {
-            userUpdateData.email = data.email.toLowerCase();
-          }
-          if (data.phone && data.phone !== employee.user.phone) {
-            userUpdateData.phone = data.phone;
-          }
-          if (data.avatar && data.avatar !== employee.user.avatar) {
-            userUpdateData.avatar = data.avatar;
-          }
-
-          if (Object.keys(userUpdateData).length > 0) {
-            await this.prisma.user.update({
-              where: { id: employee.userId },
-              data: userUpdateData
-            });
-            console.log(`✅ [HR] Updated User (${employee.user.email}) for Employee: ${employee.employeeNumber}`);
-          }
-
-          // Also update UserCompany if email changed
-          if (data.email && data.email !== employee.user.email) {
-            await this.prisma.userCompany.updateMany({
-              where: {
-                userId: employee.userId,
-                companyId: companyId
-              },
-              data: {
-                // Note: role and isActive are managed separately
-              }
-            });
-          }
-        } catch (userError) {
-          console.warn(`⚠️ [HR] Failed to update User for Employee:`, userError.message);
-          // Don't fail the request if User update fails
-        }
+        });
       }
 
-      // ✅ Sync with mirror Employee table
-      await this.syncWithEmployeeTable(employeeId, companyId);
+      // Update hr_employees record with personal/HR fields
+      const hrFields = {};
+      if (data.firstName) hrFields.firstName = data.firstName;
+      if (data.lastName) hrFields.lastName = data.lastName;
+      if (data.email) hrFields.email = data.email.trim().toLowerCase();
+      if (data.phone !== undefined) hrFields.phone = data.phone;
+      if (data.mobile !== undefined) hrFields.mobile = data.mobile;
+      if (data.nationalId !== undefined) hrFields.nationalId = data.nationalId;
+      if (data.dateOfBirth) hrFields.dateOfBirth = new Date(data.dateOfBirth);
+      if (data.gender) hrFields.gender = data.gender;
+      if (data.maritalStatus) hrFields.maritalStatus = data.maritalStatus;
+      if (data.address !== undefined) hrFields.address = data.address;
+      if (data.city !== undefined) hrFields.city = data.city;
+      if (data.country !== undefined) hrFields.country = data.country;
+      if (data.emergencyContact !== undefined) hrFields.emergencyContact = data.emergencyContact;
+      if (data.bankName !== undefined) hrFields.bankName = data.bankName;
+      if (data.bankAccountNumber !== undefined) hrFields.bankAccountNumber = data.bankAccountNumber;
+      if (data.bankIban !== undefined) hrFields.bankIban = data.bankIban;
+      if (data.departmentId !== undefined) hrFields.departmentId = updateData.departmentId;
+      if (data.positionId !== undefined) hrFields.positionId = updateData.positionId;
+      if (data.hireDate) hrFields.hireDate = updateData.hireDate;
+      if (data.baseSalary !== undefined) hrFields.baseSalary = updateData.baseSalary;
+      if (data.employeeNumber !== undefined) hrFields.employeeNumber = data.employeeNumber;
+      if (data.status) hrFields.status = data.status;
 
-      return employee;
+      if (empRecord) {
+        await this.prisma.employee.update({
+          where: { id: empRecord.id },
+          data: { ...hrFields, updatedAt: new Date() }
+        });
+      } else if (existingUser) {
+        await this.syncWithEmployeeTable(existingUser.id, companyId);
+      }
+
+      return await this.getEmployeeById(companyId, employeeId);
     } catch (error) {
       console.error('❌ Error updating employee:', error);
       throw error;
@@ -896,18 +1069,50 @@ class EmployeeService {
   /**
    * إنهاء خدمة موظف
    */
-  async terminateEmployee(companyId, employeeId, data) {
+  async terminateEmployee(companyId, employeeId, data = {}) {
     try {
-      // Update user to mark as inactive (we don't have status field in User)
-      const user = await this.prisma.user.update({
-        where: { id: employeeId },
+      console.log(`🛑 [HR] Terminating employee ${employeeId} in company ${companyId}`);
+
+      const terminationDate = data.terminationDate ? new Date(data.terminationDate) : new Date();
+      const terminationReason = data.terminationReason || data.reason || 'إنهاء خدمة';
+
+      // 1. تحديث سجل hr_employees بحالة TERMINATED وتوثيق التاريخ والسبب
+      await this.prisma.employee.updateMany({
+        where: {
+          companyId,
+          OR: [{ userId: employeeId }, { id: employeeId }]
+        },
         data: {
-          isActive: false
-          // Note: terminationDate and terminationReason are not in User model
+          status: 'TERMINATED',
+          terminationDate,
+          terminationReason,
+          updatedAt: new Date()
         }
       });
 
-      return user;
+      // 2. تعطيل عضوية الشركة للمستخدم على مستوى هذه الشركة فقط
+      await this.prisma.userCompany.updateMany({
+        where: { userId: employeeId, companyId },
+        data: { isActive: false, isDefault: false }
+      });
+
+      // 3. التحقق إذا كان المستخدم عضواً في شركات أخرى فعالة قبل تعطيل الحساب عالمياً
+      const otherActiveMemberships = await this.prisma.userCompany.count({
+        where: {
+          userId: employeeId,
+          companyId: { not: companyId },
+          isActive: true
+        }
+      });
+
+      if (otherActiveMemberships === 0) {
+        await this.prisma.user.update({
+          where: { id: employeeId },
+          data: { isActive: false }
+        });
+      }
+
+      return await this.getEmployeeById(companyId, employeeId);
     } catch (error) {
       console.error('❌ Error terminating employee:', error);
       throw error;
@@ -1067,16 +1272,45 @@ class EmployeeService {
    */
   async linkToUser(companyId, employeeId, userId) {
     try {
-      // Since employeeId is already userId, just verify the user exists
-      const user = await this.prisma.user.findFirst({
-        where: { id: employeeId, companyId }
-      });
+      console.log(`🔗 [HR] Linking employee ${employeeId} to user ${userId} in company ${companyId}`);
 
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          OR: [{ companyId }, { userCompanies: { some: { companyId } } }]
+        }
+      });
       if (!user) {
-        throw new Error('الموظف غير موجود');
+        throw new Error('حساب المستخدم غير موجود في هذه الشركة');
       }
 
-      return user;
+      // البحث عن سجل الموظف
+      let empRecord = await this.prisma.employee.findFirst({
+        where: { companyId, OR: [{ id: employeeId }, { userId: employeeId }] }
+      });
+      if (!empRecord) {
+        throw new Error('سجل الموظف غير موجود في هذه الشركة');
+      }
+
+      // ربط سجل hr_employees بحساب المستخدم
+      await this.prisma.employee.update({
+        where: { id: empRecord.id },
+        data: { userId: user.id, updatedAt: new Date() }
+      });
+
+      // مزامنة كود الموظف وبياناته إلى جدول users
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          employeeNumber: empRecord.employeeNumber,
+          departmentId: empRecord.departmentId || user.departmentId,
+          positionId: empRecord.positionId || user.positionId,
+          hireDate: empRecord.hireDate || user.hireDate,
+          baseSalary: empRecord.baseSalary !== undefined && empRecord.baseSalary !== null ? empRecord.baseSalary : user.baseSalary
+        }
+      });
+
+      return await this.getEmployeeById(companyId, user.id);
     } catch (error) {
       console.error('❌ Error linking employee to user:', error);
       throw error;
@@ -1264,12 +1498,23 @@ class EmployeeService {
 
       if (!user) return;
 
+      const targetCompanyId = companyId || user.companyId;
+      const cleanEmpNum = user.employeeNumber || `EMP${userId.slice(-5).toUpperCase()}`;
+
+      // إذا لم يكن لدى المستخدم رقم موظف، حفظ الرقم في المستخدم أيضاً
+      if (!user.employeeNumber) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { employeeNumber: cleanEmpNum }
+        });
+      }
+
       // تحديث أو إنشاء في جدول Employee
       await this.prisma.employee.upsert({
         where: { userId },
         update: {
-          companyId: companyId || user.companyId,
-          employeeNumber: user.employeeNumber,
+          companyId: targetCompanyId,
+          employeeNumber: cleanEmpNum,
           departmentId: user.departmentId,
           positionId: user.positionId,
           firstName: user.firstName,
@@ -1284,8 +1529,8 @@ class EmployeeService {
         },
         create: {
           userId,
-          companyId,
-          employeeNumber: user.employeeNumber || `EMP - ${userId.slice(-5).toUpperCase()} `,
+          companyId: targetCompanyId,
+          employeeNumber: cleanEmpNum,
           departmentId: user.departmentId,
           positionId: user.positionId,
           firstName: user.firstName,
@@ -1298,7 +1543,7 @@ class EmployeeService {
           status: user.isActive ? 'ACTIVE' : 'INACTIVE'
         }
       });
-      console.log(`🔄[HR] Synced Employee record for user: ${user.email} `);
+      console.log(`🔄 [HR] Synced Employee record for user: ${user.email} (${cleanEmpNum})`);
     } catch (error) {
       console.error('❌ [HR] Error syncing Employee table:', error.message);
     }

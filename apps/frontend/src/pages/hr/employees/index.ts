@@ -9,3 +9,4 @@ export * from "./EmployeeSmartDetectionCard";
 export * from "./EmployeePersonalFields";
 export * from "./EmployeeDeductionSettingsSection";
 export * from "./AddEmployeeDialog";
+export * from "./EmployeeCredentialsDialog";

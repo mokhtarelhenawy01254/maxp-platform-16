@@ -10,6 +10,12 @@ export interface Employee {
   status: string;
   contractType: string;
   hireDate: string;
+  baseSalary?: string | number | null;
+  nationalId?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  emergencyContact?: string | null;
   department: { id: string; name: string; color: string } | null;
   position: { id: string; title: string; level: number } | null;
   manager: {
@@ -106,4 +112,12 @@ export interface PaginationState {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface CredentialsModalState {
+  open: boolean;
+  employeeName: string;
+  email: string;
+  temporaryPassword?: string | null;
+  resetLink?: string | null;
 }

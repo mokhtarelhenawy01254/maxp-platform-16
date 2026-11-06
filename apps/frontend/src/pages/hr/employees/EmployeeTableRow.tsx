@@ -1,5 +1,5 @@
 import React from "react";
-import { MoreVertical, Edit, Trash2, Eye, Shield } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Eye, Shield, KeyRound, UserX, UserCheck, UserMinus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TableRow, TableCell } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Employee } from "./types";
@@ -19,12 +20,18 @@ interface EmployeeTableRowProps {
   employee: Employee;
   onOpenAssets: (employee: Employee) => void;
   onDelete: (employee: Employee) => void;
+  onResetPassword?: (employee: Employee) => void;
+  onToggleStatus?: (employee: Employee) => void;
+  onTerminate?: (employee: Employee) => void;
 }
 
 export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
   employee,
   onOpenAssets,
   onDelete,
+  onResetPassword,
+  onToggleStatus,
+  onTerminate,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -164,29 +171,73 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-48" dir="rtl">
             <DropdownMenuItem
               onClick={() => navigate(`/hr/employees/${employee.id}`)}
             >
-              <Eye className="h-4 w-4 ml-2" />
-              عرض
+              <Eye className="h-4 w-4 ml-2 text-gray-500" />
+              عرض الملف
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onOpenAssets(employee)}>
-              <Shield className="h-4 w-4 ml-2" />
-              عهدته
+              <Shield className="h-4 w-4 ml-2 text-gray-500" />
+              العهدة والممتلكات
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => navigate(`/hr/employees/${employee.id}/edit`)}
             >
-              <Edit className="h-4 w-4 ml-2" />
-              تعديل
+              <Edit className="h-4 w-4 ml-2 text-gray-500" />
+              تعديل البيانات
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {onResetPassword && (
+              <DropdownMenuItem
+                onClick={() => onResetPassword(employee)}
+                className="text-indigo-600 focus:text-indigo-700"
+              >
+                <KeyRound className="h-4 w-4 ml-2" />
+                بيانات الدخول / كلمة السر
+              </DropdownMenuItem>
+            )}
+
+            {onToggleStatus && (
+              <DropdownMenuItem
+                onClick={() => onToggleStatus(employee)}
+                className={employee.user?.isActive ? "text-amber-600" : "text-emerald-600"}
+              >
+                {employee.user?.isActive ? (
+                  <>
+                    <UserX className="h-4 w-4 ml-2" />
+                    تجميد حساب الدخول
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4 ml-2" />
+                    تفعيل حساب الدخول
+                  </>
+                )}
+              </DropdownMenuItem>
+            )}
+
+            {onTerminate && employee.status !== "TERMINATED" && (
+              <DropdownMenuItem
+                onClick={() => onTerminate(employee)}
+                className="text-orange-600"
+              >
+                <UserMinus className="h-4 w-4 ml-2" />
+                إنهاء الخدمة
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+
             <DropdownMenuItem
-              className="text-red-600"
+              className="text-red-600 focus:text-red-700"
               onClick={() => onDelete(employee)}
             >
               <Trash2 className="h-4 w-4 ml-2" />
-              حذف
+              حذف الموظف
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

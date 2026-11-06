@@ -2007,6 +2007,117 @@ async function linkEmployeeToUser(req, res) {
 }
 
 /**
+ * إعادة تعيين كلمة مرور أو استخراج رابط دعوة للموظف
+ * POST /api/hr/employees/:id/reset-password
+ */
+async function resetEmployeePassword(req, res) {
+  try {
+    const { companyId } = req.user;
+    const employeeId = req.params.id;
+    const bcrypt = require('bcryptjs');
+    const crypto = require('crypto');
+    const prisma = getSharedPrismaClient();
+
+    let targetUser = await prisma.user.findFirst({
+      where: {
+        id: employeeId,
+        OR: [{ companyId }, { userCompanies: { some: { companyId } } }]
+      }
+    });
+
+    if (!targetUser) {
+      const emp = await prisma.employee.findFirst({
+        where: { id: employeeId, companyId }
+      });
+      if (emp?.userId) {
+        targetUser = await prisma.user.findUnique({ where: { id: emp.userId } });
+      }
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, error: 'حساب المستخدم غير موجود' });
+    }
+
+    const tempPassword = Math.random().toString(36).slice(-8) + 'M1!';
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+
+    await prisma.user.update({
+      where: { id: targetUser.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: resetToken,
+        resetPasswordExpires: resetExpires,
+        updatedAt: new Date()
+      }
+    });
+
+    const resetLink = `https://maxp.online/reset-password?token=${resetToken}&email=${encodeURIComponent(targetUser.email)}`;
+
+    res.json({
+      success: true,
+      message: 'تم توليد بيانات تسجيل الدخول بنجاح',
+      data: {
+        email: targetUser.email,
+        temporaryPassword: tempPassword,
+        resetToken,
+        resetLink
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error resetting employee password:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إعادة تعيين كلمة المرور' });
+  }
+}
+
+/**
+ * تفعيل / تعطيل وصول المستخدم للنظام
+ * POST /api/hr/employees/:id/toggle-user-status
+ */
+async function toggleEmployeeUserStatus(req, res) {
+  try {
+    const { companyId } = req.user;
+    const employeeId = req.params.id;
+    const { isActive } = req.body;
+    const prisma = getSharedPrismaClient();
+
+    let targetUserId = employeeId;
+    const emp = await prisma.employee.findFirst({
+      where: { id: employeeId, companyId }
+    });
+    if (emp?.userId) targetUserId = emp.userId;
+
+    const membership = await prisma.userCompany.findFirst({
+      where: { userId: targetUserId, companyId }
+    });
+
+    const newActiveState = isActive !== undefined ? Boolean(isActive) : !membership?.isActive;
+
+    if (membership) {
+      await prisma.userCompany.update({
+        where: { id: membership.id },
+        data: { isActive: newActiveState }
+      });
+    }
+
+    await prisma.employee.updateMany({
+      where: { companyId, OR: [{ userId: targetUserId }, { id: employeeId }] },
+      data: { status: newActiveState ? 'ACTIVE' : 'INACTIVE', updatedAt: new Date() }
+    });
+
+    res.json({
+      success: true,
+      message: newActiveState ? 'تم تفعيل حساب الموظف بنجاح' : 'تم تجميد حساب الموظف بنجاح',
+      isActive: newActiveState
+    });
+  } catch (error) {
+    console.error('❌ Error toggling employee user status:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تعديل حالة الحساب' });
+  }
+}
+
+/**
  * الهيكل التنظيمي
  * GET /api/hr/employees/organization-chart
  */
@@ -8232,6 +8343,8 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   terminateEmployee,
+  resetEmployeePassword,
+  toggleEmployeeUserStatus,
   linkEmployeeToUser,
   getEmployeeStats,
   getOrganizationChart,

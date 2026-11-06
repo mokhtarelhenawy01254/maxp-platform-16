@@ -14,6 +14,7 @@ import {
   EmployeeTable,
   EmployeeAssetsDialog,
   AddEmployeeDialog,
+  EmployeeCredentialsDialog,
 } from "./employees/index";
 
 export const Employees: React.FC = () => {
@@ -42,6 +43,8 @@ export const Employees: React.FC = () => {
     errors,
     assetsDialog,
     setAssetsDialog,
+    credentialsModal,
+    setCredentialsModal,
     formData,
     setFormData,
     lookupLoading,
@@ -51,6 +54,9 @@ export const Employees: React.FC = () => {
     handleAddEmployee,
     handleDeleteEmployee,
     handleReactivateEmployee,
+    handleResetPassword,
+    handleToggleStatus,
+    handleTerminateEmployee,
     resetForm,
   } = useEmployeesController();
 
@@ -132,6 +138,9 @@ export const Employees: React.FC = () => {
         }}
         onOpenAssets={openAssetsDialog}
         onDelete={handleDeleteEmployee}
+        onResetPassword={handleResetPassword}
+        onToggleStatus={handleToggleStatus}
+        onTerminate={handleTerminateEmployee}
       />
 
       {/* Assets Dialog */}
@@ -144,6 +153,14 @@ export const Employees: React.FC = () => {
             error: "",
             assets: [],
           }))
+        }
+      />
+
+      {/* Employee Credentials Dialog */}
+      <EmployeeCredentialsDialog
+        state={credentialsModal}
+        onOpenChange={(open) =>
+          setCredentialsModal((prev) => ({ ...prev, open }))
         }
       />
 

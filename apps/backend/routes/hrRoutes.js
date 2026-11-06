@@ -253,6 +253,8 @@ router.post('/employees', verifyToken.authenticateToken, verifyToken.requireRole
 router.put('/employees/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.updateEmployee);
 router.delete('/employees/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.deleteEmployee);
 router.post('/employees/:id/terminate', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.terminateEmployee);
+router.post('/employees/:id/reset-password', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.resetEmployeePassword);
+router.post('/employees/:id/toggle-user-status', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.toggleEmployeeUserStatus);
 router.post('/employees/:id/link-user', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.linkEmployeeToUser);
 router.post('/employees/:id/reactivate', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.reactivateEmployee);
 router.post('/employees/request-link', hrController.requestEmployeeLink);

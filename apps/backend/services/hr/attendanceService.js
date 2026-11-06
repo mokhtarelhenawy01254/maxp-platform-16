@@ -886,12 +886,39 @@ class AttendanceService {
       }
 
       // التحقق من قيد المستخدم كموظف في الشركة (hr_employees)
-      const employeeRecord = await this.prisma.employee.findFirst({
+      let employeeRecord = await this.prisma.employee.findFirst({
         where: {
           companyId,
           userId: employeeId,
         },
       });
+
+      // ✅ معالجة ذاتية (Self-Healing): إذا كان المستخدم مسجلاً في الشركة لكن ينقصه سجل hr_employees
+      if (!employeeRecord) {
+        try {
+          const userMembership = await this.prisma.userCompany.findFirst({
+            where: { userId: employeeId, companyId, isActive: true },
+            include: { user: true }
+          });
+          const directUser = !userMembership ? await this.prisma.user.findFirst({
+            where: { id: employeeId, companyId, isActive: true }
+          }) : null;
+
+          const validUser = userMembership?.user || directUser;
+          if (validUser) {
+            const employeeService = require("./employeeService");
+            await employeeService.syncWithEmployeeTable(validUser.id, companyId);
+            employeeRecord = await this.prisma.employee.findFirst({
+              where: { companyId, userId: employeeId }
+            });
+            if (employeeRecord) {
+              console.log(`🔄 [ATTENDANCE] Self-healed & auto-synced missing hr_employees record for user ${validUser.email}`);
+            }
+          }
+        } catch (healErr) {
+          console.warn("⚠️ [ATTENDANCE] Self-healing sync failed:", healErr.message);
+        }
+      }
 
       if (!employeeRecord) {
         // تسجيل المحاولة المرفوضة في hr_attendance_attempts لتوثيق الواقعة

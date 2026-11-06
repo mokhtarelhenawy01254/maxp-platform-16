@@ -23,6 +23,9 @@ interface EmployeeTableProps {
   onOpenAddDialog: () => void;
   onOpenAssets: (employee: Employee) => void;
   onDelete: (employee: Employee) => void;
+  onResetPassword?: (employee: Employee) => void;
+  onToggleStatus?: (employee: Employee) => void;
+  onTerminate?: (employee: Employee) => void;
 }
 
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
@@ -33,6 +36,9 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onOpenAddDialog,
   onOpenAssets,
   onDelete,
+  onResetPassword,
+  onToggleStatus,
+  onTerminate,
 }) => {
   const { t } = useTranslation();
 
@@ -91,6 +97,9 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   employee={employee}
                   onOpenAssets={onOpenAssets}
                   onDelete={onDelete}
+                  onResetPassword={onResetPassword}
+                  onToggleStatus={onToggleStatus}
+                  onTerminate={onTerminate}
                 />
               ))}
             </TableBody>
