@@ -17,7 +17,8 @@ import {
   ArrowDownRight,
   Scale,
 } from 'lucide-react';
-import { shippingOpsService, DashboardStats, CompanyWalletData } from '../../services/shippingOpsService';
+import { shippingOpsService, DashboardStats, CompanyWalletData, ShippingPolicyData } from '../../services/shippingOpsService';
+import { Calendar, AlertTriangle } from 'lucide-react';
 import { getStatusBadge, formatDate, formatCurrency } from './shippingOpsShared';
 
 export const ShippingOpsDashboard: React.FC = () => {
@@ -26,6 +27,8 @@ export const ShippingOpsDashboard: React.FC = () => {
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [wallet, setWallet] = useState<CompanyWalletData | null>(null);
+  const [policy, setPolicy] = useState<ShippingPolicyData | null>(null);
+  const [staleCount, setStaleCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,16 +36,16 @@ export const ShippingOpsDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [statsRes, walletRes] = await Promise.allSettled([
+      const [statsRes, walletRes, policyRes, staleRes] = await Promise.allSettled([
         shippingOpsService.getDashboardStats(),
         shippingOpsService.getWalletSummary(),
+        shippingOpsService.getShippingPolicy(),
+        shippingOpsService.getStaleShipments(),
       ]);
-      if (statsRes.status === 'fulfilled') {
-        setStats(statsRes.value);
-      }
-      if (walletRes.status === 'fulfilled') {
-        setWallet(walletRes.value);
-      }
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value);
+      if (walletRes.status === 'fulfilled') setWallet(walletRes.value);
+      if (policyRes.status === 'fulfilled') setPolicy(policyRes.value);
+      if (staleRes.status === 'fulfilled') setStaleCount(staleRes.value?.count || 0);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('shippingOps.loadError', 'حدث خطأ أثناء تحميل البيانات');
       setError(msg);
@@ -54,6 +57,26 @@ export const ShippingOpsDashboard: React.FC = () => {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+
+  const dayNamesAr: Record<string, string> = {
+    SUNDAY: 'الأحد',
+    MONDAY: 'الاثنين',
+    TUESDAY: 'الثلاثاء',
+    WEDNESDAY: 'الأربعاء',
+    THURSDAY: 'الخميس',
+    FRIDAY: 'الجمعة',
+    SATURDAY: 'السبت',
+  };
+
+  const rawDays = policy?.remittanceDays;
+  const parsedDaysList: string[] = Array.isArray(rawDays)
+    ? rawDays
+    : (typeof rawDays === 'string' ? (rawDays.startsWith('[') ? JSON.parse(rawDays) : rawDays.split(',')) : ['SUNDAY', 'WEDNESDAY']);
+  const formattedDaysText = isEn
+    ? parsedDaysList.join(', ')
+    : parsedDaysList.map((d) => dayNamesAr[d] || d).join('، ');
+  const maxDaysVal = policy?.maxDeliveryDays ?? 11;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1800px] mx-auto text-slate-900 dark:text-slate-100">
@@ -169,6 +192,59 @@ export const ShippingOpsDashboard: React.FC = () => {
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>{isEn ? 'Net Issued Statements' : 'صافي كشوف التسوية المعتمدة'}</span>
             <span className="text-slate-400 font-mono text-[11px]">{isEn ? 'ISSUED/APPROVED' : 'معتمد/قيد الصرف'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SHIP-T5: Turbo Policy & Remittance Cards (جدول التوريد + أقصى فترة توصيل) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        {/* Remittance Days Card */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
+              {isEn ? 'Remittance Schedule (Turbo)' : 'جدول أيام التوريد (Turbo)'}
+            </span>
+            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+              <Calendar className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 mt-1">
+            {loading ? '—' : formattedDaysText}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{isEn ? 'Automatic COD payout cycle' : 'دورة توريد وتحويل متحصلات الشحن'}</span>
+            <Link to="/shipping-ops/settings" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+              {isEn ? 'Edit Schedule' : 'تعديل الجدول'}
+            </Link>
+          </div>
+        </div>
+
+        {/* Max Delivery Window & Stale Alert Card */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
+              {isEn ? 'Max Delivery Window (SLA)' : 'أقصى فترة توصيل مسموحة'}
+            </span>
+            <div className={`p-2 rounded-lg ${staleCount > 0 ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
+              {loading ? '—' : maxDaysVal}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">{isEn ? 'Days' : 'يوم'}</span>
+            {staleCount > 0 && (
+              <span className="mr-auto px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse">
+                {staleCount} {isEn ? 'stale parcels' : 'شحنة متأخرة'}
+              </span>
+            )}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{isEn ? 'Threshold for stale parcel alert' : 'تنبيه آلي للشحنات المتجاوزة للمهلة'}</span>
+            <Link to="/shipping-ops/parcels" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+              {isEn ? 'View Parcels' : 'سجل الشحنات'}
+            </Link>
           </div>
         </div>
       </div>

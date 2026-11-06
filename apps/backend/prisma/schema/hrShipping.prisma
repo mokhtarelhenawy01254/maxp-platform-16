@@ -1,0 +1,25 @@
+// ============================================================================
+// HR Shipping Employees (SHIP-T5)
+// ============================================================================
+
+model ShippingEmployee {
+  id            String    @id @default(cuid())
+  companyId     String
+  userId        String?
+  employeeCode  String
+  fullName      String
+  jobTitle      String
+  photoUrl      String?
+  personalPhone String?
+  workPhone     String?
+  hireDate      DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([companyId, employeeCode])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([userId])
+  @@map("shipping_employees")
+}

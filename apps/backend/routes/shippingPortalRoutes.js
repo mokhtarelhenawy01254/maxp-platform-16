@@ -69,6 +69,7 @@ router.post(
 
 // Shipment list and details
 router.get('/shipments', ...portalAuth, shippingPortalController.getShipments);
+router.get('/shipments/stale', ...portalAuth, shippingPortalController.getStaleShipments);
 router.get('/shipments/:id', ...portalAuth, shippingPortalController.getShipmentById);
 
 // Cancel shipment (only allowed when PENDING)
@@ -155,21 +156,21 @@ router.post('/maintenance/run-rto', ...portalAuth, shippingPortalController.runR
 router.use('/settlements', ...portalAuth, require('./shippingPortalSettlementRoutes'));
 
 // Policy Settings (SHIP-W1A / SHIP-UAT-2)
-router.get('/policy', ...portalAuth, async (req, res) => {
+router.get(['/policy', '/policy-settings', '/settings/policy'], ...portalAuth, async (req, res) => {
   try {
     const policyService = require('../services/shipping/policyService');
     const policy = await policyService.getPolicy(req.user.companyId);
-    return res.json({ success: true, data: policy });
+    return res.json({ success: true, data: policy, policy });
   } catch (error) {
     return res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 });
 
-router.put('/policy', ...portalAuth, async (req, res) => {
+router.put(['/policy', '/policy-settings', '/settings/policy'], ...portalAuth, async (req, res) => {
   try {
     const policyService = require('../services/shipping/policyService');
     const updated = await policyService.updatePolicy(req.user.companyId, req.body);
-    return res.json({ success: true, data: updated, message: 'تم تحديث سياسة الشحن بنجاح' });
+    return res.json({ success: true, data: updated, policy: updated, message: 'تم تحديث سياسة الشحن بنجاح' });
   } catch (error) {
     return res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -220,5 +221,12 @@ router.post('/wallet/adjust', ...portalAuth, walletController.adjustBalance);
 router.post('/shipments/:id/confirm-open', ...portalAuth, shippingPortalController.confirmOpenPackage);
 router.post('/shipments/:id/collect', ...portalAuth, shippingPortalController.collectShipmentCod);
 
-module.exports = router;
+// Store Integrations (SHIP-T5)
+router.use('/integrations', require('./integrationRoutes'));
 
+// SHIP-T4 International Shipments & Customs Acknowledgments
+router.post('/shipments/:id/international', ...portalAuth, shippingPortalController.convertToInternational);
+router.get('/international/pending', ...portalAuth, shippingPortalController.getPendingInternational);
+router.patch('/international/:id/review', ...portalAuth, shippingPortalController.reviewInternationalAck);
+
+module.exports = router;

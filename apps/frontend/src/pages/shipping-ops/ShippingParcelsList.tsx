@@ -17,6 +17,7 @@ import {
   Copy,
   Printer,
   AlertCircle,
+  Globe2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -27,6 +28,7 @@ import {
 } from '../../services/shippingOpsService';
 import { EGYPT_GOVERNORATES } from '../../constants/egyptGovernorates';
 import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel, printBatchShipments } from './shippingOpsShared';
+import { InternationalAcksModal } from './InternationalAcksModal';
 import { BulkOrdersImportModal } from './BulkOrdersImportModal';
 import { DateInput } from '../../components/ui/DateInput';
 
@@ -61,6 +63,9 @@ export const ShippingParcelsList: React.FC = () => {
   const [status, setStatus] = useState('');
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [needsRtoReview, setNeedsRtoReview] = useState(false);
+  const [isInternational, setIsInternational] = useState<boolean>(false);
+  const [showIntlModal, setShowIntlModal] = useState<boolean>(false);
+
   const [governorate, setGovernorate] = useState('');
   const [merchantId, setMerchantId] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -129,6 +134,7 @@ export const ShippingParcelsList: React.FC = () => {
         from: fromDate || undefined,
         to: toDate || undefined,
         needsRtoReview: needsRtoReview || undefined,
+        isInternational: isInternational ? true : undefined,
       };
 
       const res = await shippingOpsService.getShipments(query);
@@ -147,7 +153,7 @@ export const ShippingParcelsList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, status, governorate, merchantId, fromDate, toDate, t]);
+  }, [page, search, status, governorate, merchantId, fromDate, toDate, needsRtoReview, isInternational, t]);
 
   useEffect(() => {
     loadShipments();
@@ -157,6 +163,7 @@ export const ShippingParcelsList: React.FC = () => {
     setSearch('');
     setStatus('');
     setNeedsRtoReview(false);
+    setIsInternational(false);
     setGovernorate('');
     setMerchantId('');
     setFromDate('');
@@ -237,7 +244,7 @@ export const ShippingParcelsList: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
           {TURBO_STATUS_TABS.map((tab) => {
             const isSelected = status === tab.key;
-            const count = tab.key === '' ? (statusCounts.ALL !== undefined ? statusCounts.ALL : totalCount) : (statusCounts[tab.key] || 0);
+            const count = tab.key === '' ? (statusCounts['ALL'] !== undefined ? statusCounts['ALL'] : totalCount) : (statusCounts[tab.key] || 0);
             return (
               <button
                 key={tab.key}
@@ -567,9 +574,16 @@ export const ShippingParcelsList: React.FC = () => {
                         {formatCurrency(s.cost)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.badgeClass}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.badgeClass}`}>
+                            {badge.label}
+                          </span>
+                          {Boolean((s as any).isStale) && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse">
+                              {isEn ? 'Stale (>11d)' : 'متأخرة (تجاوزت المهلة)'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {s.latestEvent ? (
@@ -577,9 +591,9 @@ export const ShippingParcelsList: React.FC = () => {
                             <span className="font-medium text-slate-800 dark:text-slate-200">
                               {getStatusBadge(s.latestEvent.toStatus, isEn).label}
                             </span>
-                            {s.latestEvent.note && (
-                              <p className="text-[11px] text-slate-500 truncate max-w-[140px]" title={s.latestEvent.note}>
-                                {s.latestEvent.note}
+                            {s.latestEvent.notes && (
+                              <p className="text-[11px] text-slate-500 truncate max-w-[140px]" title={s.latestEvent.notes}>
+                                {s.latestEvent.notes}
                               </p>
                             )}
                             <span className="text-[10px] text-slate-400 block font-mono">
@@ -721,7 +735,13 @@ export const ShippingParcelsList: React.FC = () => {
         }}
         isEn={isEn}
       />
-    </div>
+          {/* International Customs Acknowledgments Modal (SHIP-T4) */}
+      <InternationalAcksModal
+        isOpen={showIntlModal}
+        onClose={() => setShowIntlModal(false)}
+        onAckUpdated={loadShipments}
+      />
+</div>
   );
 };
 

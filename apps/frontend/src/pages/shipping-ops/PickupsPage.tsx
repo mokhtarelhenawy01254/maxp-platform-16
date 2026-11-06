@@ -58,6 +58,7 @@ export const PickupsPage: React.FC = () => {
 
   // Form states
   const [createForm, setCreateForm] = useState({
+    contactEmployeeId: '',
     contactUserId: '',
     contactName: '',
     contactEmployeeName: '',
@@ -111,17 +112,33 @@ export const PickupsPage: React.FC = () => {
 
   const fetchAuxData = useCallback(async () => {
     try {
-      const [brRes, mRes, cRes, teamRes] = await Promise.all([
+      const [brRes, mRes, cRes, empRes, teamRes] = await Promise.all([
         fetch('/api/v1/shipping-portal/branches', { headers: authHeaders }),
         fetch('/api/v1/shipping-portal/merchants', { headers: authHeaders }),
         fetch('/api/couriers', { headers: authHeaders }).catch(() => ({ json: () => ({ success: false }) })),
+        fetch('/api/v1/team/employees?isActive=true', { headers: authHeaders }).catch(() => ({ json: () => ({ success: false }) })),
         fetch('/api/v1/team/members', { headers: authHeaders }).catch(() => ({ json: () => ({ success: false }) })),
       ]);
-      const [brData, mData, cData, teamData] = await Promise.all([brRes.json(), mRes.json(), cRes.json(), teamRes.json()]);
+      const [brData, mData, cData, empData, teamData] = await Promise.all([
+        brRes.json(), mRes.json(), cRes.json(), empRes.json(), teamRes.json()
+      ]);
       if (brData.success) setBranches(brData.branches || []);
       if (mData.success) setMerchants(mData.data || []);
       if (cData && (cData.couriers || cData.data)) setCouriers(cData.couriers || cData.data || []);
-      if (teamData && teamData.success) setTeamMembers(teamData.members || teamData.data || []);
+      if (empData && empData.success && empData.employees?.length > 0) {
+        const mapped = empData.employees.map((e: any) => ({
+          id: e.id,
+          name: e.fullName,
+          role: e.jobTitle || 'مسؤول استلام',
+          phone: e.workPhone || e.personalPhone || '',
+          isEmployee: true,
+          employeeId: e.id,
+          employeeCode: e.employeeCode,
+        }));
+        setTeamMembers(mapped);
+      } else if (teamData && teamData.success) {
+        setTeamMembers(teamData.members || teamData.data || []);
+      }
     } catch (e) {
       console.warn('Aux fetch warning:', e);
     }
@@ -138,7 +155,7 @@ export const PickupsPage: React.FC = () => {
   // Handle Create Pickup
   const handleCreatePickup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.contactUserId || !createForm.contactPhone || !createForm.pickupAddress) {
+    if ((!createForm.contactEmployeeId && !createForm.contactUserId) || !createForm.contactPhone || !createForm.pickupAddress) {
       toast.error('يرجى اختيار مسؤول الاستلام من فريق العمل وملء جميع الحقول');
       return;
     }
@@ -155,6 +172,7 @@ export const PickupsPage: React.FC = () => {
         setShowCreateModal(false);
         fetchPickups();
         setCreateForm({
+          contactEmployeeId: '',
           contactUserId: '',
           contactName: '',
           contactEmployeeName: '',
@@ -545,10 +563,11 @@ export const PickupsPage: React.FC = () => {
                     value={createForm.contactUserId}
                     onChange={(e) => {
                       const selId = e.target.value;
-                      const sel = teamMembers.find((m) => m.id === selId);
+                      const sel = teamMembers.find((m: any) => m.id === selId);
                       setCreateForm({
                         ...createForm,
-                        contactUserId: selId,
+                        contactEmployeeId: (sel as any)?.employeeId || '',
+                        contactUserId: (sel as any)?.employeeId ? '' : selId,
                         contactName: sel ? sel.name : '',
                         contactEmployeeName: sel ? sel.name : '',
                         contactPhone: sel?.phone || createForm.contactPhone,

@@ -39,6 +39,8 @@ const DEFAULT_POLICY_SETTINGS = {
   openPackageFeeAlways: null,
   openPackageFeeAsk: null,
   openPackageFeeDeny: null,
+  remittanceDays: '["SUNDAY","WEDNESDAY"]',
+  maxDeliveryDays: 11,
 };
 
 /**
@@ -145,12 +147,27 @@ async function getPolicy(companyId, customPrisma = null) {
       id: null,
       companyId,
       ...DEFAULT_POLICY_SETTINGS,
+      remittanceDays: ['SUNDAY', 'WEDNESDAY'],
+      maxDeliveryDays: 11,
       createdAt: null,
       updatedAt: null,
     };
   }
 
-  return policy;
+  const rawPolicy = typeof policy.toJSON === 'function' ? policy.toJSON() : { ...policy };
+  if (rawPolicy.remittanceDays) {
+    try {
+      rawPolicy.remittanceDays = typeof rawPolicy.remittanceDays === 'string'
+        ? JSON.parse(rawPolicy.remittanceDays)
+        : rawPolicy.remittanceDays;
+    } catch (_) {
+      rawPolicy.remittanceDays = ['SUNDAY', 'WEDNESDAY'];
+    }
+  } else {
+    rawPolicy.remittanceDays = ['SUNDAY', 'WEDNESDAY'];
+  }
+  rawPolicy.maxDeliveryDays = rawPolicy.maxDeliveryDays != null ? rawPolicy.maxDeliveryDays : 11;
+  return rawPolicy;
 }
 
 /**
@@ -502,6 +519,8 @@ const ALLOWED_POLICY_KEYS = [
   'openPackageFeeAlways',
   'openPackageFeeAsk',
   'openPackageFeeDeny',
+  'remittanceDays',
+  'maxDeliveryDays',
 ];
 
 /**
@@ -609,6 +628,20 @@ async function updatePolicy(companyId, payload = {}, customPrisma = null) {
   }
   if (payload.openPackageFeeDeny !== undefined) {
     sanitized.openPackageFeeDeny = payload.openPackageFeeDeny !== null && payload.openPackageFeeDeny !== '' ? Math.max(0, parseFloat(payload.openPackageFeeDeny) || 0) : null;
+  }
+  if (payload.remittanceDays !== undefined) {
+    if (Array.isArray(payload.remittanceDays)) {
+      sanitized.remittanceDays = JSON.stringify(payload.remittanceDays);
+    } else if (typeof payload.remittanceDays === 'string') {
+      sanitized.remittanceDays = payload.remittanceDays;
+    } else {
+      sanitized.remittanceDays = JSON.stringify(['SUNDAY', 'WEDNESDAY']);
+    }
+  }
+  if (payload.maxDeliveryDays !== undefined) {
+    sanitized.maxDeliveryDays = payload.maxDeliveryDays !== null && payload.maxDeliveryDays !== ''
+      ? Math.max(1, parseInt(payload.maxDeliveryDays, 10) || 11)
+      : 11;
   }
 
   const updated = await prisma.shippingPolicySettings.upsert({

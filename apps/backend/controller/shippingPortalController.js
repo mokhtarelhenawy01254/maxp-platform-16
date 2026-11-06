@@ -1,3 +1,4 @@
+const internationalShippingService = require('../services/shipping/internationalShippingService');
 /**
  * Shipping Portal Controller (SHIP-W1A)
  * Standalone shipments, client rate-card pricing, and parcel timeline
@@ -88,6 +89,8 @@ function formatShipment(shipment) {
     remittedAt: raw.remittedAt || null,
     parentShipmentId: raw.parentShipmentId || null,
     latestEvent: raw.events?.[0] || null,
+    isStale: !['DELIVERED', 'RETURNED', 'CANCELLED', 'DELIVERED_TO_SENDER'].includes(raw.status) &&
+      Boolean(raw.createdAt && (Date.now() - new Date(raw.createdAt).getTime()) > (11 * 24 * 60 * 60 * 1000)),
   };
 }
 
@@ -1297,8 +1300,9 @@ async function createPickupRequest(req, res) {
       scheduledDate,
       timeSlot,
       contactName,
-      contactPhone,
+      contactPhone: rawContactPhone,
       contactUserId,
+      contactEmployeeId,
       contactEmployeeName,
       pickupAddress,
       city,
@@ -1308,10 +1312,11 @@ async function createPickupRequest(req, res) {
       notes,
     } = req.body;
 
+    let contactPhone = rawContactPhone;
     let resolvedContactName = contactName ? String(contactName).trim() : '';
     let resolvedEmployeeName = contactEmployeeName ? String(contactEmployeeName).trim() : null;
 
-    if (!contactUserId && !resolvedContactName) {
+    if (!contactEmployeeId && !contactUserId && !resolvedContactName) {
       return res.status(400).json({
         success: false,
         error: 'مسؤول الاستلام مطلوب من قائمة فريق العمل',
@@ -1319,7 +1324,27 @@ async function createPickupRequest(req, res) {
       });
     }
 
-    if (contactUserId) {
+    if (contactEmployeeId) {
+      const employee = await prisma.shippingEmployee.findFirst({
+        where: {
+          id: String(contactEmployeeId),
+          companyId,
+          isActive: true,
+        },
+      });
+      if (!employee) {
+        return res.status(400).json({
+          success: false,
+          error: 'الموظف المحدد غير موجود أو غير نشط في الشركة',
+          code: 'INVALID_EMPLOYEE',
+        });
+      }
+      resolvedContactName = employee.fullName;
+      resolvedEmployeeName = employee.fullName;
+      if (!contactPhone || !String(contactPhone).trim()) {
+        contactPhone = employee.workPhone || employee.personalPhone || '';
+      }
+    } else if (contactUserId) {
       const teamMember = await prisma.user.findFirst({
         where: {
           id: String(contactUserId),
@@ -2813,7 +2838,152 @@ async function reshipShipment(req, res) {
   }
 }
 
+/**
+ * GET /api/v1/shipping-portal/shipments/stale
+ * Retrieve non-delivered shipments exceeding maxDeliveryDays policy
+ */
+async function getStaleShipments(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const policy = await prisma.shippingPolicySettings.findUnique({
+      where: { companyId },
+    });
+
+    const maxDays = (policy && policy.maxDeliveryDays != null) ? policy.maxDeliveryDays : 11;
+    const cutoffDate = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000);
+
+    const staleShipments = await prisma.shipment.findMany({
+      where: {
+        companyId,
+        createdAt: { lte: cutoffDate },
+        status: {
+          notIn: ['DELIVERED', 'RETURNED', 'CANCELLED', 'DELIVERED_TO_SENDER'],
+        },
+      },
+      include: {
+        merchant: { select: { id: true, name: true, phone: true } },
+        shippingCompany: { select: { id: true, name: true } },
+        events: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const formatted = staleShipments.map((s) => ({
+      ...formatShipment(s),
+      isStale: true,
+      daysPending: Math.floor((Date.now() - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000)),
+      maxDeliveryDays: maxDays,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formatted.length,
+      maxDeliveryDays: maxDays,
+      cutoffDate,
+      data: formatted,
+      shipments: formatted,
+    });
+  } catch (error) {
+    console.error('[ShippingPortal] Error fetching stale shipments:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'حدث خطأ أثناء جلب الشحنات المتأخرة',
+    });
+  }
+}
+
+
+/**
+ * Convert a domestic shipment into an international shipment (SHIP-T4)
+ * POST /api/v1/shipping-portal/shipments/:id/international
+ */
+async function convertToInternational(req, res) {
+  try {
+    const companyId = req.user?.companyId || req.headers['x-company-id'];
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { id } = req.params;
+    const result = await internationalShippingService.convertToInternational(companyId, id, req.body, req.user);
+    return res.status(200).json({
+      success: true,
+      message: 'تم تحويل الشحنة إلى شحنة دولية وإنشاء الإقرار الجمركي بنجاح',
+      ...result,
+    });
+  } catch (error) {
+    console.error('❌ [SHIPPING-PORTAL] Error in convertToInternational:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'فشل في تحويل الشحنة إلى دولية',
+      code: error.code || 'INTL_CONVERSION_ERROR',
+    });
+  }
+}
+
+/**
+ * Get pending international acknowledgments for review (SHIP-T4)
+ * GET /api/v1/shipping-portal/international/pending
+ */
+async function getPendingInternational(req, res) {
+  try {
+    const companyId = req.user?.companyId || req.headers['x-company-id'];
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const result = await internationalShippingService.getPendingAcknowledgments(companyId, req.query);
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error('❌ [SHIPPING-PORTAL] Error in getPendingInternational:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'فشل في جلب الإقرارات الجمركية المعلقة',
+      code: error.code || 'PENDING_INTL_FETCH_ERROR',
+    });
+  }
+}
+
+/**
+ * Review an international customs acknowledgment (approve/reject) (SHIP-T4)
+ * PATCH /api/v1/international/:id/review or /api/v1/shipping-portal/international/:id/review
+ */
+async function reviewInternationalAck(req, res) {
+  try {
+    const companyId = req.user?.companyId || req.headers['x-company-id'];
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { id } = req.params;
+    const { status, notes } = req.body || {};
+    const result = await internationalShippingService.reviewAcknowledgment(companyId, id, { status, notes }, req.user);
+    return res.status(200).json({
+      success: true,
+      message: status === 'APPROVED' ? 'تمت الموافقة على الإقرار الجمركي' : 'تم رفض الإقرار الجمركي',
+      ...result,
+    });
+  } catch (error) {
+    console.error('❌ [SHIPPING-PORTAL] Error in reviewInternationalAck:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'فشل في مراجعة الإقرار الجمركي',
+      code: error.code || 'INTL_REVIEW_ERROR',
+    });
+  }
+}
+
 module.exports = {
+  convertToInternational,
+  getPendingInternational,
+  reviewInternationalAck,
+
+  getStaleShipments,
   confirmOpenPackage,
   collectShipmentCod,
   getWalletFeesReport,

@@ -146,6 +146,8 @@ model ShippingPolicySettings {
   allowIncompleteStatus Boolean  @default(true)
   allowPostponedStatus  Boolean  @default(true)
   allowReshippedStatus  Boolean  @default(true)
+  remittanceDays        String?  // JSON: ["SUNDAY","WEDNESDAY"]
+  maxDeliveryDays       Int?     @default(11)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

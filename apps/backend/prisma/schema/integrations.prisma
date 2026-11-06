@@ -1,0 +1,23 @@
+// ============================================================================
+// Store Integrations (WooCommerce / Shopify) (SHIP-T5)
+// ============================================================================
+
+model StoreIntegration {
+  id             String    @id @default(cuid())
+  companyId      String
+  platform       String    // WOOCOMMERCE | SHOPIFY
+  storeUrl       String
+  consumerKey    String?   // Encrypted with INTEGRATION_ENC_KEY
+  consumerSecret String?   // Encrypted with INTEGRATION_ENC_KEY
+  accessToken    String?   // Encrypted with INTEGRATION_ENC_KEY
+  webhookSecret  String?
+  isActive       Boolean   @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, platform])
+  @@index([companyId, isActive])
+  @@map("store_integrations")
+}

@@ -29,6 +29,12 @@ export interface ShipmentItem {
   carrierType: string;
   source: string;
   metadata?: string | null;
+  isInternational?: boolean;
+  destinationCountry?: string | null;
+  destinationCityIntl?: string | null;
+  customsValue?: number | null;
+  intlAckStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | string | null;
+  internationalAck?: any;
   createdAt: string;
   updatedAt: string;
   merchant?: {
@@ -448,11 +454,104 @@ export const shippingOpsService = {
     return res.data.data;
   },
 
+  // Stale Shipments (SHIP-T5)
+  async getStaleShipments(): Promise<{ count: number; maxDeliveryDays: number; shipments: ShipmentItem[] }> {
+    const res = await api.get<{ success: boolean; count: number; maxDeliveryDays: number; shipments: ShipmentItem[] }>('/shipping-portal/shipments/stale');
+    return {
+      count: res.data.count || 0,
+      maxDeliveryDays: res.data.maxDeliveryDays || 11,
+      shipments: res.data.shipments || [],
+    };
+  },
+
+  // Shipping Employees (SHIP-T5)
+  async getEmployees(params: { isActive?: boolean; search?: string } = {}): Promise<ShippingEmployeeItem[]> {
+    const res = await api.get<{ success: boolean; data: ShippingEmployeeItem[] }>('/v1/team/employees', { params });
+    return res.data.data || [];
+  },
+
+  async createEmployee(data: Partial<ShippingEmployeeItem>): Promise<ShippingEmployeeItem> {
+    const res = await api.post<{ success: boolean; employee: ShippingEmployeeItem }>('/v1/team/employees', data);
+    return res.data.employee;
+  },
+
+  async updateEmployee(id: string, data: Partial<ShippingEmployeeItem>): Promise<ShippingEmployeeItem> {
+    const res = await api.put<{ success: boolean; employee: ShippingEmployeeItem }>(`/v1/team/employees/${id}`, data);
+    return res.data.employee;
+  },
+
+  async deleteEmployee(id: string): Promise<void> {
+    await api.delete(`/v1/team/employees/${id}`);
+  },
+
+  async linkEmployeeUser(id: string, userId: string): Promise<ShippingEmployeeItem> {
+    const res = await api.post<{ success: boolean; employee: ShippingEmployeeItem }>(`/v1/team/employees/${id}/link`, { userId });
+    return res.data.employee;
+  },
+
+  async unlinkEmployeeUser(id: string): Promise<ShippingEmployeeItem> {
+    const res = await api.post<{ success: boolean; employee: ShippingEmployeeItem }>(`/v1/team/employees/${id}/unlink`);
+    return res.data.employee;
+  },
+
+  // Store Integrations (SHIP-T5)
+  async getStoreIntegrations(): Promise<StoreIntegrationItem[]> {
+    const res = await api.get<{ success: boolean; data: StoreIntegrationItem[] }>('/shipping-portal/integrations');
+    return res.data.data || [];
+  },
+
+  async createStoreIntegration(data: any): Promise<StoreIntegrationItem> {
+    const res = await api.post<{ success: boolean; integration: StoreIntegrationItem }>('/shipping-portal/integrations', data);
+    return res.data.integration;
+  },
+
+  async updateStoreIntegration(id: string, data: any): Promise<StoreIntegrationItem> {
+    const res = await api.patch<{ success: boolean; integration: StoreIntegrationItem }>(`/shipping-portal/integrations/${id}`, data);
+    return res.data.integration;
+  },
+
+  async deleteStoreIntegration(id: string): Promise<void> {
+    await api.delete(`/shipping-portal/integrations/${id}`);
+  },
+
+  async testStoreIntegration(id: string): Promise<{ success: boolean; message: string }> {
+    const res = await api.post<{ success: boolean; message: string }>(`/shipping-portal/integrations/${id}/test`);
+    return res.data;
+  },
+
   async confirmOpenPackage(id: string, notes?: string): Promise<{ success: boolean; data: ShipmentItem; feeDeducted?: boolean; fee?: number }> {
     const res = await api.post<{ success: boolean; data: ShipmentItem; feeDeducted?: boolean; fee?: number }>(
       `/shipping-portal/shipments/${id}/confirm-open`,
       { notes }
     );
+    return res.data;
+  },
+
+  async convertToInternational(
+    shipmentId: string,
+    data: {
+      destinationCountry: string;
+      destinationCityIntl?: string;
+      customsValue: number;
+      customerName?: string;
+      contentDescription: string;
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; data: ShipmentItem; acknowledgment: any }> {
+    const res = await api.post<{ success: boolean; data: ShipmentItem; acknowledgment: any }>(`/shipping-portal/shipments/${shipmentId}/international`, data);
+    return res.data;
+  },
+
+  async getPendingInternational(): Promise<{ success: boolean; count: number; items: any[] }> {
+    const res = await api.get<{ success: boolean; count: number; items: any[] }>('/shipping-portal/international/pending');
+    return res.data;
+  },
+
+  async reviewInternationalAck(
+    ackId: string,
+    data: { status: 'APPROVED' | 'REJECTED'; notes?: string }
+  ): Promise<{ success: boolean; data: any; shipment?: ShipmentItem }> {
+    const res = await api.patch<{ success: boolean; data: any; shipment?: ShipmentItem }>(`/shipping-portal/international/${ackId}/review`, data);
     return res.data;
   },
 
@@ -509,6 +608,37 @@ export interface WalletFeesReport {
   openPackageFees: { count: number; total: number };
 }
 
+export interface ShippingEmployeeItem {
+  id: string;
+  companyId: string;
+  userId?: string | null;
+  employeeCode: string;
+  fullName: string;
+  jobTitle: string;
+  photoUrl?: string | null;
+  personalPhone?: string | null;
+  workPhone?: string | null;
+  hireDate?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoreIntegrationItem {
+  id: string;
+  companyId: string;
+  platform: 'WOOCOMMERCE' | 'SHOPIFY' | string;
+  storeUrl: string;
+  webhookSecret?: string | null;
+  isActive: boolean;
+  lastSyncAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  hasConsumerKey?: boolean;
+  hasConsumerSecret?: boolean;
+  hasAccessToken?: boolean;
+}
+
 export interface ShippingPolicyData {
   id?: string;
   companyId: string;
@@ -517,6 +647,8 @@ export interface ShippingPolicyData {
   openPackageFeeAlways: number;
   openPackageFeeAsk: number;
   openPackageFeeDeny: number;
+  remittanceDays?: string[] | string;
+  maxDeliveryDays?: number;
   [key: string]: any;
 }
 
@@ -555,4 +687,26 @@ export interface PublicTrackingResponse {
     notes?: string | null;
     createdAt: string;
   }>;
+}
+
+
+export interface InternationalAcknowledgmentItem {
+  id: string;
+  companyId: string;
+  shipmentId: string;
+  customerName: string;
+  contentDescription: string;
+  customsValue: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  shipment?: {
+    id: string;
+    trackingNumber: string;
+    recipientName: string;
+    destinationCountry?: string | null;
+  };
 }
