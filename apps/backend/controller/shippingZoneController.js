@@ -663,6 +663,7 @@ const normalizeShippingZoneResponse = (zone) => {
 
   return {
     ...rest,
+    cities: zone.cities ? parseZoneGovernorates(zone.cities, 'normalizeShippingZoneResponse.cities') : [],
     governorates: parseZoneGovernorates(zone.governorates, 'normalizeShippingZoneResponse.governorates'),
     governorateIds: canonicalGovernorates.map((governorate) => governorate.code),
     pricingTiers: parseZonePricingTiers(zone.pricingTiers, 'normalizeShippingZoneResponse.pricingTiers'),
@@ -935,9 +936,32 @@ const resolvePublicShippingQuote = async ({
   };
 };
 
-const resolveShippingQuoteForGovernorate = async (companyId, governorateInput) => {
-  if (!companyId || !governorateInput) {
+const resolveShippingQuoteForGovernorate = async (companyId, governorateInput, cityInput = null) => {
+  if (!companyId || (!governorateInput && !cityInput)) {
     return buildShippingQuotePayload(null, null);
+  }
+
+  if (cityInput) {
+    try {
+      const zones = await runShippingQuery((prisma) => findShippingZonesWithCanonicalFallback(prisma, {
+        where: {
+          companyId,
+          isActive: true,
+        },
+      }));
+      const matchedCityZone = zones.find((zone) => {
+        if (!zone.cities) return false;
+        const cities = parseZoneGovernorates(zone.cities, 'resolveShippingQuoteForGovernorate.cities');
+        return cities.some((ct) => isGovernorateMatch(ct, cityInput));
+      });
+      if (matchedCityZone) {
+        return {
+          ...buildShippingQuotePayload(matchedCityZone, cityInput),
+          isCityMatch: true,
+          matchedCity: cityInput,
+        };
+      }
+    } catch (_) {}
   }
 
   const canonicalMatch = await findZoneViaCanonicalGovernorate(companyId, governorateInput);
@@ -1367,7 +1391,7 @@ const getShippingZoneById = async (req, res) => {
 };
 
 // Create new shipping zone
-const buildShippingZonePayload = async ({ name, governorateIds, governorates, pricingType, price, pricingTiers, deliveryTime, deliveryTimeType, freeShippingThreshold, isActive, companyId }) => {
+const buildShippingZonePayload = async ({ name, governorateIds, governorates, cities, pricingType, price, pricingTiers, deliveryTime, deliveryTimeType, freeShippingThreshold, isActive, companyId }) => {
   const canonicalGovernorates = getSeedCanonicalGovernorateRecords({
     governorateIds,
     governorates
@@ -1390,6 +1414,7 @@ const buildShippingZonePayload = async ({ name, governorateIds, governorates, pr
       deliveryTime: deliveryTime !== undefined && deliveryTime !== null ? String(deliveryTime).trim() : '',
       deliveryTimeType: deliveryTimeType || 'custom',
       freeShippingThreshold: toNullableNumber(freeShippingThreshold),
+      cities: cities !== undefined ? (Array.isArray(cities) ? JSON.stringify(cities) : (cities || null)) : undefined,
       isActive: isActive !== undefined ? isActive : true,
       companyId
     },
@@ -1404,6 +1429,7 @@ const createShippingZone = async (req, res) => {
       name,
       governorateIds,
       governorates, 
+      cities,
       pricingType,
       price, 
       pricingTiers,
@@ -1471,6 +1497,7 @@ const createShippingZone = async (req, res) => {
       name,
       governorateIds,
       governorates,
+      cities,
       pricingType: finalPricingType,
       price,
       pricingTiers,
@@ -1522,6 +1549,7 @@ const updateShippingZone = async (req, res) => {
       name,
       governorateIds,
       governorates, 
+      cities,
       pricingType,
       price, 
       pricingTiers,
@@ -1621,10 +1649,12 @@ const updateShippingZone = async (req, res) => {
     const nextFreeShippingThreshold = freeShippingThreshold !== undefined ? freeShippingThreshold : existingZone.freeShippingThreshold;
     const nextIsActive = isActive !== undefined ? isActive : existingZone.isActive;
 
+    const nextCities = cities !== undefined ? cities : (existingZone.cities ? parseZoneGovernorates(existingZone.cities, 'updateShippingZone.existingCities') : undefined);
     const payload = await buildShippingZonePayload({
       name: nextName,
       governorateIds: nextGovernorateIds,
       governorates: nextGovernorates,
+      cities: nextCities,
       pricingType: nextPricingType,
       price: nextPrice,
       pricingTiers: nextPricingTiers,

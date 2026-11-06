@@ -1,6 +1,6 @@
 /**
- * Shipping Policy & Pricing Engine (SHIP-W1A)
- * Handles company shipping policies, client rate cards, and dynamic price quotes
+ * Shipping Policy & Pricing Engine (SHIP-W1A & SHIP-W14)
+ * Handles company shipping policies, client rate cards, volume packages, and dynamic city/governorate price quotes
  */
 
 const { getSharedPrismaClient } = require('../sharedDatabase');
@@ -34,6 +34,91 @@ const DEFAULT_POLICY_SETTINGS = {
 };
 
 /**
+ * Normalizes city names for fuzzy/accent-insensitive matching
+ */
+function normalizeCity(str) {
+  if (!str) return '';
+  return String(str)
+    .trim()
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // Arabic diacritics + tatweel
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/[ة]/g, 'ه')
+    .replace(/[ى]/g, 'ي')
+    .replace(/[^\w\u0600-\u06FF\s]/g, '') // remove special symbols
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Checks if two city strings match (exact or significant substring)
+ */
+function isCityMatch(candidate, target) {
+  if (!candidate || !target) return false;
+  const c = normalizeCity(candidate);
+  const t = normalizeCity(target);
+  if (!c || !t) return false;
+  if (c === t) return true;
+  if (c.length >= 3 && t.length >= 3) {
+    if (c.includes(t) || t.includes(c)) return true;
+  }
+  return false;
+}
+
+/**
+ * Parses JSON or comma-separated lists safely
+ */
+function parseList(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (_) {}
+    }
+    return trimmed.split(/[,،]+/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Calculates rate card formula price (base + extra kg + cod fee)
+ */
+function computeRateCardPrice(card, weight, cod) {
+  const basePrice = Number(card.basePrice);
+  const baseWeight = Number(card.baseWeightKg || 1.0);
+  const extraKgPrice = Number(card.extraKgPrice || 0);
+
+  const extraWeight = Math.max(0, weight - baseWeight);
+  let extraUnits = 0;
+  if (weight > baseWeight) {
+    extraUnits = Math.ceil(Math.max(0, weight - baseWeight) - 1e-9);
+  }
+  const extraWeightFee = extraUnits * extraKgPrice;
+
+  let codFee = 0;
+  if (cod > 0) {
+    const fixed = Number(card.codFeeFixed || 0);
+    const pct = Number(card.codFeePercent || 0);
+    codFee = fixed + (cod * pct) / 100;
+  }
+
+  const totalPrice = Number((basePrice + extraWeightFee + codFee).toFixed(2));
+  return {
+    totalPrice,
+    basePrice,
+    baseWeight,
+    extraWeight,
+    extraUnits,
+    extraKgPrice,
+    extraWeightFee,
+    codFee,
+  };
+}
+
+/**
  * Get company shipping policy settings (or defaults if not yet created)
  * @param {string} companyId
  * @param {Object} [customPrisma]
@@ -61,15 +146,21 @@ async function getPolicy(companyId, customPrisma = null) {
 }
 
 /**
- * Calculate shipping quote for a shipment
- * 1. Checks active ClientRateCard for merchant + normalized governorate (or general fallback)
- * 2. Falls back to company ShippingZone
- * 3. Returns { price, currency, source: 'RATE_CARD'|'ZONE'|'NONE', breakdown }
+ * Calculate shipping quote for a shipment (SHIP-W14)
+ * Priority order:
+ * 0. Active ClientPricingPackage (if destination city/governorate is covered)
+ * 1. بطاقة العميل (مدينة) -> RATE_CARD_CITY
+ * 2. بطاقة العميل (محافظة) -> RATE_CARD_GOV (source: RATE_CARD)
+ * 3. منطقة (مدينة) -> ZONE_CITY
+ * 4. منطقة (محافظة) -> ZONE_GOV (source: ZONE)
+ * 5. Reject if neither covers destination
  *
  * @param {Object} params
  * @param {string} params.companyId
  * @param {string} [params.merchantId]
  * @param {string} params.governorate
+ * @param {string} [params.city]
+ * @param {string} [params.destinationCity]
  * @param {number} [params.weightKg=1]
  * @param {number} [params.codAmount=0]
  * @param {Object} [params.prisma]
@@ -79,6 +170,8 @@ async function quotePrice({
   companyId,
   merchantId = null,
   governorate,
+  city = null,
+  destinationCity = null,
   weightKg = 1,
   codAmount = 0,
   prisma = null,
@@ -89,8 +182,11 @@ async function quotePrice({
     throw err;
   }
 
-  const normalizedGov = normalizeGovernorateName(governorate);
-  if (!normalizedGov) {
+  const rawCity = destinationCity || city || null;
+  const targetCity = rawCity ? String(rawCity).trim() : null;
+
+  const normalizedGov = normalizeGovernorateName(governorate, targetCity);
+  if (!normalizedGov && !targetCity) {
     const err = new Error('المحافظة غير صالحة أو غير محددة');
     err.statusCode = 400;
     throw err;
@@ -100,7 +196,158 @@ async function quotePrice({
   const weight = Math.max(0.1, Number(weightKg || 1));
   const cod = Math.max(0, Number(codAmount || 0));
 
-  // 1. Check for Active ClientRateCard
+  // -------------------------------------------------------------------------
+  // 0. Check for Active Client Monthly Package (ClientPricingPackage)
+  // -------------------------------------------------------------------------
+  if (merchantId && db.clientPricingPackage) {
+    const clientPackage = await db.clientPricingPackage.findFirst({
+      where: {
+        companyId,
+        merchantId,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (clientPackage) {
+      const mode = clientPackage.coverageMode || 'BOTH';
+      const pkgCities = parseList(clientPackage.cities);
+      const pkgGovs = parseList(clientPackage.governorates);
+
+      let isCityCovered = false;
+      if (targetCity && (mode === 'CITIES' || mode === 'BOTH')) {
+        isCityCovered = pkgCities.some((c) => isCityMatch(c, targetCity));
+      }
+
+      let isGovCovered = false;
+      if (normalizedGov && (mode === 'GOVERNORATES' || mode === 'BOTH')) {
+        isGovCovered = pkgGovs.some((g) => normalizeGovernorateName(g) === normalizedGov);
+      }
+
+      // If coverageMode is GOVERNORATES and city is not specified or not in list, gov match applies
+      if (isCityCovered || isGovCovered) {
+        const matchedSource = isCityCovered ? 'PACKAGE_CITY' : 'PACKAGE_GOV';
+
+        // Count non-cancelled shipments created in the current month
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        const currentMonthCount = await db.shipment.count({
+          where: {
+            companyId,
+            merchantId,
+            status: { notIn: ['CANCELLED'] },
+            createdAt: { gte: startOfMonth, lte: endOfMonth },
+          },
+        });
+
+        const limit = clientPackage.monthlyVolumeTo !== null && clientPackage.monthlyVolumeTo !== undefined
+          ? Number(clientPackage.monthlyVolumeTo)
+          : null;
+
+        const isOverage = Boolean(limit && currentMonthCount >= limit);
+        const overageCount = isOverage ? currentMonthCount + 1 - limit : 0;
+
+        let finalPrice = 0;
+        if (isOverage) {
+          finalPrice = Number(clientPackage.overagePricePerShipment ?? clientPackage.perShipmentPrice ?? 0);
+        } else if (clientPackage.pricingMode === 'PACKAGE_FLAT') {
+          // Flat monthly subscription includes up to limit at 0 additional per-shipment cost
+          finalPrice = 0;
+        } else {
+          finalPrice = Number(clientPackage.perShipmentPrice || 0);
+        }
+
+        return {
+          price: Number(finalPrice.toFixed(2)),
+          currency: 'EGP',
+          source: matchedSource,
+          priceSource: matchedSource,
+          packageId: clientPackage.id,
+          packageName: clientPackage.name,
+          pricingMode: clientPackage.pricingMode,
+          flatMonthlyPrice: clientPackage.flatMonthlyPrice ? Number(clientPackage.flatMonthlyPrice) : null,
+          perShipmentPrice: clientPackage.perShipmentPrice ? Number(clientPackage.perShipmentPrice) : null,
+          governorate: normalizedGov,
+          city: targetCity || null,
+          isOverage,
+          overage: overageCount,
+          currentMonthShipmentCount: currentMonthCount,
+          monthlyVolumeTo: limit,
+          breakdown: {
+            basePrice: finalPrice,
+            pricingMode: clientPackage.pricingMode,
+            flatMonthlyPrice: clientPackage.flatMonthlyPrice ? Number(clientPackage.flatMonthlyPrice) : null,
+            perShipmentPrice: clientPackage.perShipmentPrice ? Number(clientPackage.perShipmentPrice) : null,
+            overagePricePerShipment: clientPackage.overagePricePerShipment ? Number(clientPackage.overagePricePerShipment) : null,
+            isOverage,
+            overage: overageCount,
+            currentMonthShipmentCount: currentMonthCount,
+            monthlyVolumeTo: limit,
+            total: finalPrice,
+          },
+        };
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 1. بطاقة العميل (مدينة) -> RATE_CARD_CITY
+  // -------------------------------------------------------------------------
+  if (merchantId && targetCity) {
+    const cityCards = await db.clientRateCard.findMany({
+      where: {
+        companyId,
+        merchantId,
+        isActive: true,
+        OR: [
+          { cityName: { not: null } },
+          { cities: { not: null } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const matchedCityCard = cityCards.find((c) => {
+      if (c.cityName && isCityMatch(c.cityName, targetCity)) return true;
+      if (c.cities) {
+        const list = parseList(c.cities);
+        if (list.some((item) => isCityMatch(item, targetCity))) return true;
+      }
+      return false;
+    });
+
+    if (matchedCityCard) {
+      const calc = computeRateCardPrice(matchedCityCard, weight, cod);
+      return {
+        price: calc.totalPrice,
+        currency: 'EGP',
+        source: 'RATE_CARD_CITY',
+        priceSource: 'RATE_CARD_CITY',
+        rateCardId: matchedCityCard.id,
+        rateCardName: matchedCityCard.name,
+        governorate: normalizedGov,
+        city: targetCity,
+        breakdown: {
+          basePrice: calc.basePrice,
+          baseWeightKg: calc.baseWeight,
+          actualWeightKg: weight,
+          extraWeightKg: calc.extraWeight,
+          extraUnits: calc.extraUnits,
+          extraKgPrice: calc.extraKgPrice,
+          extraWeightFee: calc.extraWeightFee,
+          codAmount: cod,
+          codFee: calc.codFee,
+          total: calc.totalPrice,
+        },
+      };
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. بطاقة العميل (محافظة) -> RATE_CARD_GOV (source: RATE_CARD)
+  // -------------------------------------------------------------------------
   if (merchantId) {
     const rateCards = await db.clientRateCard.findMany({
       where: {
@@ -108,7 +355,7 @@ async function quotePrice({
         merchantId,
         isActive: true,
         OR: [
-          { governorateCode: normalizedGov },
+          ...(normalizedGov ? [{ governorateCode: normalizedGov }] : []),
           { governorateCode: null },
         ],
       },
@@ -118,73 +365,106 @@ async function quotePrice({
       ],
     });
 
-    const card = rateCards.find((c) => c.governorateCode === normalizedGov) || rateCards.find((c) => !c.governorateCode);
+    // Exclude cards specifically scoped to a different city when city doesn't match
+    const govCard = rateCards.find((c) => {
+      if (normalizedGov && c.governorateCode === normalizedGov) return true;
+      if (!c.governorateCode && !c.cityName && !c.cities) return true;
+      return false;
+    });
 
-    if (card) {
-      const basePrice = Number(card.basePrice);
-      const baseWeight = Number(card.baseWeightKg || 1.0);
-      const extraKgPrice = Number(card.extraKgPrice || 0);
-
-      const extraWeight = Math.max(0, weight - baseWeight);
-      // SHIP-H1: Extra weight rounded UP (ceil) to nearest whole kg with floating-point epsilon protection
-      let extraUnits = 0;
-      if (weight > baseWeight) {
-        extraUnits = Math.ceil(Math.max(0, weight - baseWeight) - 1e-9);
-      }
-      const extraWeightFee = extraUnits * extraKgPrice;
-
-      let codFee = 0;
-      if (cod > 0) {
-        const fixed = Number(card.codFeeFixed || 0);
-        const pct = Number(card.codFeePercent || 0);
-        codFee = fixed + (cod * pct) / 100;
-      }
-
-      const totalPrice = Number((basePrice + extraWeightFee + codFee).toFixed(2));
-
+    if (govCard) {
+      const calc = computeRateCardPrice(govCard, weight, cod);
       return {
-        price: totalPrice,
+        price: calc.totalPrice,
         currency: 'EGP',
         source: 'RATE_CARD',
-        rateCardId: card.id,
-        rateCardName: card.name,
+        priceSource: 'RATE_CARD_GOV',
+        rateCardId: govCard.id,
+        rateCardName: govCard.name,
         governorate: normalizedGov,
+        city: targetCity || null,
         breakdown: {
-          basePrice,
-          baseWeightKg: baseWeight,
+          basePrice: calc.basePrice,
+          baseWeightKg: calc.baseWeight,
           actualWeightKg: weight,
-          extraWeightKg: extraWeight,
-          extraUnits,
-          extraKgPrice,
-          extraWeightFee,
+          extraWeightKg: calc.extraWeight,
+          extraUnits: calc.extraUnits,
+          extraKgPrice: calc.extraKgPrice,
+          extraWeightFee: calc.extraWeightFee,
           codAmount: cod,
-          codFee,
-          total: totalPrice,
+          codFee: calc.codFee,
+          total: calc.totalPrice,
         },
       };
     }
   }
 
-  // 2. Fallback to ShippingZone
-  const zoneQuote = await resolveShippingQuoteForGovernorate(companyId, normalizedGov);
-  if (zoneQuote && zoneQuote.zoneId) {
-    const price = Number(zoneQuote.price || 0);
-    return {
-      price,
-      currency: 'EGP',
-      source: 'ZONE',
-      zoneId: zoneQuote.zoneId,
-      governorate: normalizedGov,
-      deliveryTime: zoneQuote.deliveryTime || null,
-      breakdown: {
-        basePrice: price,
-        total: price,
+  // -------------------------------------------------------------------------
+  // 3. منطقة (مدينة) -> ZONE_CITY
+  // -------------------------------------------------------------------------
+  if (targetCity) {
+    const cityZones = await db.shippingZone.findMany({
+      where: {
+        companyId,
+        isActive: true,
+        cities: { not: null },
       },
-    };
+    });
+
+    const matchedCityZone = cityZones.find((z) => {
+      const list = parseList(z.cities);
+      return list.some((item) => isCityMatch(item, targetCity));
+    });
+
+    if (matchedCityZone) {
+      const price = Number(matchedCityZone.price || 0);
+      return {
+        price,
+        currency: 'EGP',
+        source: 'ZONE_CITY',
+        priceSource: 'ZONE_CITY',
+        zoneId: matchedCityZone.id,
+        zoneName: matchedCityZone.name,
+        governorate: normalizedGov,
+        city: targetCity,
+        deliveryTime: matchedCityZone.deliveryTime || null,
+        breakdown: {
+          basePrice: price,
+          total: price,
+        },
+      };
+    }
   }
 
-  // 3. Neither RateCard nor Zone covers this governorate
-  const err = new Error(`المحافظة غير مغطاة في مناطق الشحن أو بطاقات الأسعار: ${normalizedGov}`);
+  // -------------------------------------------------------------------------
+  // 4. منطقة (محافظة) -> ZONE_GOV (source: ZONE)
+  // -------------------------------------------------------------------------
+  if (normalizedGov) {
+    const zoneQuote = await resolveShippingQuoteForGovernorate(companyId, normalizedGov);
+    if (zoneQuote && zoneQuote.zoneId) {
+      const price = Number(zoneQuote.price || 0);
+      return {
+        price,
+        currency: 'EGP',
+        source: 'ZONE',
+        priceSource: 'ZONE_GOV',
+        zoneId: zoneQuote.zoneId,
+        governorate: normalizedGov,
+        city: targetCity || null,
+        deliveryTime: zoneQuote.deliveryTime || null,
+        breakdown: {
+          basePrice: price,
+          total: price,
+        },
+      };
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 5. Neither RateCard nor Zone covers this destination -> Reject
+  // -------------------------------------------------------------------------
+  const locationLabel = [targetCity, normalizedGov || governorate].filter(Boolean).join(' - ');
+  const err = new Error(`المحافظة أو المدينة غير مغطاة في مناطق الشحن أو بطاقات الأسعار: ${locationLabel}`);
   err.statusCode = 400;
   throw err;
 }
@@ -308,4 +588,7 @@ module.exports = {
   quotePrice,
   DEFAULT_POLICY_SETTINGS,
   ALLOWED_POLICY_KEYS,
+  normalizeCity,
+  isCityMatch,
+  parseList,
 };

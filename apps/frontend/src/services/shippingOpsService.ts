@@ -66,6 +66,8 @@ export interface ShipmentEventItem {
 
 export interface QuoteRequest {
   governorate: string;
+  city?: string;
+  destinationCity?: string;
   weightKg?: number;
   codAmount?: number;
   merchantId?: string;
@@ -87,9 +89,16 @@ export interface QuoteBreakdown {
 export interface QuoteResponse {
   price: number;
   currency: string;
-  source: 'RATE_CARD' | 'ZONE' | 'NONE';
+  source: string;
+  priceSource?: string;
   rateCardId?: string;
   rateCardName?: string;
+  packageId?: string;
+  packageName?: string;
+  pricingMode?: string;
+  flatMonthlyPrice?: number;
+  isOverage?: boolean;
+  overage?: number;
   governorate: string;
   breakdown?: QuoteBreakdown;
 }
@@ -135,6 +144,47 @@ export interface ClientRateCardItem {
     phone?: string | null;
     email?: string | null;
   } | null;
+}
+
+
+export interface ClientPricingPackageItem {
+  id: string;
+  companyId: string;
+  merchantId: string;
+  name: string;
+  monthlyVolumeFrom: number;
+  monthlyVolumeTo?: number | null;
+  pricingMode: 'PACKAGE_FLAT' | 'PER_SHIPMENT';
+  flatMonthlyPrice?: number | null;
+  perShipmentPrice?: number | null;
+  coverageMode: 'GOVERNORATES' | 'CITIES' | 'BOTH';
+  governorates?: string | null;
+  cities?: string | null;
+  overagePricePerShipment: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  merchant?: {
+    id: string;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
+}
+
+export interface PackageInput {
+  merchantId: string;
+  name: string;
+  monthlyVolumeFrom: number;
+  monthlyVolumeTo?: number | null;
+  pricingMode: 'PACKAGE_FLAT' | 'PER_SHIPMENT';
+  flatMonthlyPrice?: number | null;
+  perShipmentPrice?: number | null;
+  coverageMode: 'GOVERNORATES' | 'CITIES' | 'BOTH';
+  governorates?: string | string[] | null;
+  cities?: string | string[] | null;
+  overagePricePerShipment: number;
+  isActive?: boolean;
 }
 
 export interface RateCardInput {
@@ -247,6 +297,38 @@ export const shippingOpsService = {
 
   async deleteRateCard(id: string): Promise<void> {
     await api.delete(`/shipping-portal/rate-cards/${id}`);
+  },
+
+
+  // Packages (SHIP-W14)
+  async getPackages(params: { merchantId?: string; isActive?: boolean } = {}): Promise<ClientPricingPackageItem[]> {
+    const res = await api.get<{ success: boolean; data: ClientPricingPackageItem[] }>('/shipping-portal/packages', { params });
+    return res.data.data || [];
+  },
+
+  async getPackageById(id: string): Promise<ClientPricingPackageItem> {
+    const res = await api.get<{ success: boolean; data: ClientPricingPackageItem }>(`/shipping-portal/packages/${id}`);
+    return res.data.data;
+  },
+
+  async createPackage(data: PackageInput): Promise<ClientPricingPackageItem> {
+    const res = await api.post<{ success: boolean; data: ClientPricingPackageItem }>('/shipping-portal/packages', data);
+    return res.data.data;
+  },
+
+  async updatePackage(id: string, data: Partial<PackageInput>): Promise<ClientPricingPackageItem> {
+    const res = await api.put<{ success: boolean; data: ClientPricingPackageItem }>(`/shipping-portal/packages/${id}`, data);
+    return res.data.data;
+  },
+
+  async deletePackage(id: string): Promise<{ success: boolean }> {
+    const res = await api.delete<{ success: boolean }>(`/shipping-portal/packages/${id}`);
+    return res.data;
+  },
+
+  async getPackageQuote(params: { merchantId: string; city?: string; governorate?: string; weightKg?: number }): Promise<QuoteResponse> {
+    const res = await api.get<{ success: boolean; data: QuoteResponse }>('/shipping-portal/packages/quote', { params });
+    return res.data.data;
   },
 
   // Telemetry & Helpers

@@ -23,6 +23,8 @@ model Courier {
   shipments        Shipment[]
   deliveryRuns     DeliveryRun[]
   commissions      CourierCommission[]
+  documents        CourierDocument[]
+  payrolls         CourierPayroll[]
 
   @@index([companyId])
   @@index([isActive])

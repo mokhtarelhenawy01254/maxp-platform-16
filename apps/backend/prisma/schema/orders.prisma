@@ -525,6 +525,7 @@ model ShippingZone {
   name                  String                  @default("")
   pricingTiers          String?
   pricingType           String                  @default("flat")
+  cities                String?                 @db.Text
   shippingMethods       ShippingMethod[]
   company               Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   governorateMappings   ShippingZoneGovernorate[]

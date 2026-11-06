@@ -705,6 +705,11 @@ model Merchant {
   address          String?
   isActive         Boolean           @default(true)
   commissionRate   Float             @default(10)
+  expectedMonthlyOrders Int?
+  coverageMode     String?           @default("BOTH")
+  preferredCities  String?           @db.Text
+  avgWeightKg      Decimal?          @db.Decimal(10, 3)
+  codSharePct      Decimal?          @db.Decimal(5, 2)
   autoFulfill      Boolean           @default(false)
   fulfillmentMode  String            @default("MERCHANT")
   defaultWarehouseId String?
@@ -781,6 +786,8 @@ model Shipment {
   isFragile              Boolean?         @default(false)
   allowOpenPackage       Boolean?         @default(true)
   clientRateCardId       String?
+  pricingPackageId       String?
+  priceSource            String?
   attemptCount           Int              @default(0)
   failureReasonCode      String?
   nextAttemptDate        DateTime?

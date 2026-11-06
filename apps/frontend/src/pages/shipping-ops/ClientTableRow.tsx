@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   AlertTriangle,
+  Package,
 } from 'lucide-react';
 import { formatCurrency } from './shippingOpsShared';
 
@@ -35,6 +36,17 @@ export interface ShippingClient {
   address?: string | null;
   isActive: boolean;
   commissionRate: number;
+  expectedMonthlyOrders?: number | null;
+  coverageMode?: string | null;
+  preferredCities?: string | null;
+  currentPackage?: {
+    id: string;
+    name: string;
+    pricingMode: string;
+    monthlyVolumeTo?: number | null;
+    perShipmentPrice?: number | null;
+    flatMonthlyPrice?: number | null;
+  } | null;
   hasAccount: boolean;
   account?: ClientAccount | null;
   metrics: ClientMetrics;
@@ -88,6 +100,26 @@ export const ClientTableRow: React.FC<ClientTableRowProps> = ({
             <ShieldAlert className="w-3 h-3" />
             <span>{isEn ? 'Disabled' : 'معطّل'}</span>
           </span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-center font-medium tabular-nums text-slate-700 dark:text-slate-300">
+        {client.expectedMonthlyOrders ? (
+          <span className="inline-flex items-center gap-1">
+            <span>{client.expectedMonthlyOrders}</span>
+            <span className="text-[11px] text-slate-400">{isEn ? '/mo' : 'ش/ش'}</span>
+          </span>
+        ) : (
+          <span className="text-slate-400">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-center">
+        {client.currentPackage ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
+            <Package className="w-3 h-3 text-blue-500" />
+            <span className="truncate max-w-[110px]">{client.currentPackage.name}</span>
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400">{isEn ? 'No Package' : 'بدون باقة'}</span>
         )}
       </td>
       <td className="px-4 py-3 text-center font-medium tabular-nums text-slate-900 dark:text-white">

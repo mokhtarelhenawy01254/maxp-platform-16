@@ -1,0 +1,39 @@
+model ClientPricingPackage {
+  id                      String   @id @default(cuid())
+  companyId               String
+  merchantId              String
+  name                    String
+  monthlyVolumeFrom       Int      @default(0)
+  monthlyVolumeTo         Int?
+  pricingMode             String   @default("PER_SHIPMENT") // PACKAGE_FLAT | PER_SHIPMENT
+  flatMonthlyPrice        Decimal? @db.Decimal(10, 2)
+  perShipmentPrice        Decimal? @db.Decimal(10, 2)
+  coverageMode            String   @default("BOTH") // GOVERNORATES | CITIES | BOTH
+  governorates            String?  @db.Text // JSON string: ["القاهرة", "الجيزة"]
+  cities                  String?  @db.Text // JSON string: ["مدينة نصر", "التجمع"]
+  overagePricePerShipment Decimal? @db.Decimal(10, 2)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([companyId, merchantId, isActive])
+  @@index([companyId, isActive])
+  @@map("client_pricing_packages")
+}
+
+model ClientProfile {
+  id                    String   @id @default(cuid())
+  companyId             String
+  merchantId            String   @unique
+  expectedMonthlyOrders Int?
+  coverageMode          String?  @default("BOTH") // GOVERNORATES | CITIES | BOTH
+  preferredCities       String?  @db.Text
+  avgWeightKg           Decimal? @db.Decimal(10, 3)
+  codSharePct           Decimal? @db.Decimal(5, 2)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([merchantId])
+  @@map("client_profiles")
+}

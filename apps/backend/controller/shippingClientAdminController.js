@@ -77,6 +77,11 @@ async function listClients(req, res) {
         address: true,
         isActive: true,
         commissionRate: true,
+        expectedMonthlyOrders: true,
+        coverageMode: true,
+        preferredCities: true,
+        avgWeightKg: true,
+        codSharePct: true,
         defaultWarehouseId: true,
         createdAt: true,
         updatedAt: true,
@@ -109,6 +114,32 @@ async function listClients(req, res) {
     for (const u of portalUsers) {
       if (u.merchantId && !usersByMerchantId.has(u.merchantId)) {
         usersByMerchantId.set(u.merchantId, u);
+      }
+    }
+
+    // Fetch active packages & profiles for each merchant (SHIP-W14)
+    let clientProfiles = [];
+    let activePackages = [];
+    try {
+      if (prisma.clientProfile) {
+        clientProfiles = await prisma.clientProfile.findMany({
+          where: { companyId, merchantId: { in: merchantIds } },
+        });
+      }
+      if (prisma.clientPricingPackage) {
+        activePackages = await prisma.clientPricingPackage.findMany({
+          where: { companyId, merchantId: { in: merchantIds }, isActive: true },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+    } catch (profileErr) {
+      console.warn('[ShippingClientAdmin] Could not load profiles/packages:', profileErr.message);
+    }
+    const profileMap = new Map((clientProfiles || []).map((p) => [p.merchantId, p]));
+    const packageMap = new Map();
+    for (const pkg of (activePackages || [])) {
+      if (!packageMap.has(pkg.merchantId)) {
+        packageMap.set(pkg.merchantId, pkg);
       }
     }
 
@@ -177,8 +208,25 @@ async function listClients(req, res) {
         pendingCodAmount: 0,
       };
 
+      const profile = profileMap.get(merchant.id);
+      const activePkg = packageMap.get(merchant.id);
       return {
         ...merchant,
+        expectedMonthlyOrders: profile?.expectedMonthlyOrders ?? merchant.expectedMonthlyOrders ?? null,
+        coverageMode: profile?.coverageMode ?? merchant.coverageMode ?? 'BOTH',
+        preferredCities: profile?.preferredCities ?? merchant.preferredCities ?? null,
+        currentPackage: activePkg ? {
+          id: activePkg.id,
+          name: activePkg.name,
+          monthlyVolumeFrom: activePkg.monthlyVolumeFrom,
+          monthlyVolumeTo: activePkg.monthlyVolumeTo !== null ? Number(activePkg.monthlyVolumeTo) : null,
+          pricingMode: activePkg.pricingMode,
+          flatMonthlyPrice: activePkg.flatMonthlyPrice !== null ? Number(activePkg.flatMonthlyPrice) : null,
+          perShipmentPrice: activePkg.perShipmentPrice !== null ? Number(activePkg.perShipmentPrice) : null,
+          coverageMode: activePkg.coverageMode,
+          overagePricePerShipment: activePkg.overagePricePerShipment !== null ? Number(activePkg.overagePricePerShipment) : null,
+          isActive: activePkg.isActive,
+        } : null,
         hasAccount: Boolean(user),
         account: user
           ? {
@@ -215,7 +263,7 @@ async function listClients(req, res) {
 async function createClient(req, res) {
   try {
     const { companyId } = req.user;
-    const { name, email, phone, commissionRate, address } = req.body || {};
+    const { name, email, phone, commissionRate, address, expectedMonthlyOrders, coverageMode, preferredCities, avgWeightKg, codSharePct } = req.body || {};
     const prisma = getSharedPrismaClient();
 
     if (!name || String(name).trim().length < 2) {
@@ -252,6 +300,11 @@ async function createClient(req, res) {
     const firstName = nameParts[0] || 'Client';
     const lastName = nameParts.slice(1).join(' ') || 'Portal';
 
+    const expOrders = expectedMonthlyOrders !== undefined && expectedMonthlyOrders !== null && expectedMonthlyOrders !== ''
+      ? parseInt(expectedMonthlyOrders, 10)
+      : null;
+    const prefCitiesStr = preferredCities ? (typeof preferredCities === 'object' ? JSON.stringify(preferredCities) : String(preferredCities).trim()) : null;
+
     // Create Merchant
     const merchant = await prisma.merchant.create({
       data: {
@@ -261,9 +314,33 @@ async function createClient(req, res) {
         phone: phone ? String(phone).trim() : null,
         address: address ? String(address).trim() : null,
         commissionRate: commissionRate !== undefined && !isNaN(Number(commissionRate)) ? Number(commissionRate) : 10,
+        expectedMonthlyOrders: expOrders,
+        coverageMode: coverageMode || 'BOTH',
+        preferredCities: prefCitiesStr,
+        avgWeightKg: avgWeightKg ? Number(avgWeightKg) : null,
+        codSharePct: codSharePct ? Number(codSharePct) : null,
         isActive: true,
       },
     });
+
+    // Create ClientProfile (SHIP-W14)
+    if (prisma.clientProfile) {
+      try {
+        await prisma.clientProfile.create({
+          data: {
+            companyId,
+            merchantId: merchant.id,
+            expectedMonthlyOrders: expOrders,
+            coverageMode: coverageMode || 'BOTH',
+            preferredCities: prefCitiesStr,
+            avgWeightKg: avgWeightKg ? Number(avgWeightKg) : null,
+            codSharePct: codSharePct ? Number(codSharePct) : null,
+          },
+        });
+      } catch (profileErr) {
+        console.warn('[ShippingClientAdmin] Could not create clientProfile:', profileErr.message);
+      }
+    }
 
     // Create User linked to merchant
     const user = await prisma.user.create({

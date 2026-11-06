@@ -10,6 +10,7 @@ const checkAppAccess = require('../middleware/checkAppAccess');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const shippingPortalController = require('../controller/shippingPortalController');
+const shippingPackageController = require('../controller/shippingPackageController');
 
 /**
  * Access guard allowing either internal-courier-fleet OR order-shipping-turbo
@@ -72,6 +73,14 @@ router.get('/shipments/:id', ...portalAuth, shippingPortalController.getShipment
 // Cancel shipment (only allowed when PENDING)
 router.delete('/shipments/:id/cancel', ...portalAuth, shippingPortalController.cancelShipment);
 router.post('/shipments/:id/cancel', ...portalAuth, shippingPortalController.cancelShipment);
+
+// Client monthly packages CRUD & quote (SHIP-W14)
+router.get('/packages/quote', ...portalAuth, shippingPackageController.getPackageQuote);
+router.get('/packages', ...portalAuth, shippingPackageController.listPackages);
+router.post('/packages', ...portalAuth, shippingPackageController.createPackage);
+router.get('/packages/:id', ...portalAuth, shippingPackageController.getPackageById);
+router.put('/packages/:id', ...portalAuth, shippingPackageController.updatePackage);
+router.delete('/packages/:id', ...portalAuth, shippingPackageController.deletePackage);
 
 // Client rate cards CRUD
 router.get('/rate-cards', ...portalAuth, shippingPortalController.getRateCards);

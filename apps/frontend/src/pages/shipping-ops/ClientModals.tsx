@@ -24,6 +24,9 @@ export interface AddClientModalProps {
     phone: string;
     address: string;
     commissionRate: number;
+    expectedMonthlyOrders: number;
+    coverageMode: string;
+    preferredCities: string;
   };
   setForm: React.Dispatch<React.SetStateAction<{
     name: string;
@@ -31,6 +34,9 @@ export interface AddClientModalProps {
     phone: string;
     address: string;
     commissionRate: number;
+    expectedMonthlyOrders: number;
+    coverageMode: string;
+    preferredCities: string;
   }>>;
   onSubmit: (e: React.FormEvent) => void;
   actionLoading: boolean;
@@ -110,6 +116,48 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder={isEn ? 'e.g. Cairo' : 'مثال: القاهرة - المعادي'}
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-800 rounded-lg bg-transparent focus:ring-2 focus:ring-primary focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Expected Monthly Orders' : 'حجم الشحنات الشهري المتوقع'} *
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={form.expectedMonthlyOrders || ''}
+                onChange={(e) => setForm({ ...form, expectedMonthlyOrders: Number(e.target.value) || 0 })}
+                placeholder={isEn ? 'e.g. 500' : 'مثال: 500'}
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-800 rounded-lg bg-transparent focus:ring-2 focus:ring-primary focus:outline-none tabular-nums"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Coverage Mode' : 'نوع التغطية'}
+              </label>
+              <select
+                value={form.coverageMode || 'BOTH'}
+                onChange={(e) => setForm({ ...form, coverageMode: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-800 rounded-lg bg-transparent dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:outline-none"
+              >
+                <option value="BOTH">{isEn ? 'Governorates & Cities' : 'محافظات ومدن معاً'}</option>
+                <option value="GOVERNORATES">{isEn ? 'Governorates Only' : 'محافظات فقط'}</option>
+                <option value="CITIES">{isEn ? 'Cities Only' : 'مدن فقط'}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {isEn ? 'Preferred / Target Cities' : 'المدن والمناطق المفضلة'}
+            </label>
+            <input
+              type="text"
+              value={form.preferredCities || ''}
+              onChange={(e) => setForm({ ...form, preferredCities: e.target.value })}
+              placeholder={isEn ? 'e.g. Nasr City, New Cairo, 6th of October' : 'مثال: مدينة نصر، التجمع الخامس، 6 أكتوبر'}
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-800 rounded-lg bg-transparent focus:ring-2 focus:ring-primary focus:outline-none"
             />
           </div>

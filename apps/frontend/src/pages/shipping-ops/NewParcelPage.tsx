@@ -11,6 +11,7 @@ import {
   MapPin,
   FileText,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -77,6 +78,8 @@ export const NewParcelPage: React.FC = () => {
       setQuoteError(null);
       const res = await shippingOpsService.getQuote({
         governorate: formData.destinationGovernorate,
+        city: formData.destinationCity,
+        destinationCity: formData.destinationCity,
         weightKg: Number(formData.weightKg || 1),
         codAmount: Number(formData.codAmount || 0),
         merchantId: formData.merchantId || undefined,
@@ -89,7 +92,7 @@ export const NewParcelPage: React.FC = () => {
     } finally {
       setQuoteLoading(false);
     }
-  }, [formData.destinationGovernorate, formData.weightKg, formData.codAmount, formData.merchantId]);
+  }, [formData.destinationGovernorate, formData.destinationCity, formData.weightKg, formData.codAmount, formData.merchantId]);
 
   // Debounced quote recalculation
   useEffect(() => {
@@ -498,12 +501,38 @@ export const NewParcelPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2 text-xs divide-y divide-slate-100 dark:divide-slate-800">
+                {quote.isOverage && (
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-lg text-xs flex items-center gap-1.5 font-medium">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>تجاوز الحد الشهري للباقة (+{quote.overage || 1} زائدة) — احتسبت بسعر Overage</span>
+                  </div>
+                )}
+
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-slate-500">{t('shippingOps.form.quoteSource', 'مصدر التسعير')}</span>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">
-                      {quote.source === 'RATE_CARD'
-                        ? `${t('shippingOps.form.quoteSourceRateCard', 'بطاقة العميل')}: ${quote.rateCardName || ''}`
-                        : t('shippingOps.form.quoteSourceZone', 'تسعير المناطق')}
+                    <span className="font-medium text-slate-800 dark:text-slate-200 text-end">
+                      {quote.packageName ? (
+                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                          <span>باقة: {quote.packageName}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/60 rounded">
+                            {quote.priceSource === 'PACKAGE_CITY' ? 'مدينة' : 'محافظة'}
+                          </span>
+                        </span>
+                      ) : quote.rateCardName ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span>{quote.rateCardName}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-400">
+                            {quote.priceSource === 'RATE_CARD_CITY' ? 'بطاقة مدينة' : 'بطاقة محافظة'}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <span>{t('shippingOps.form.quoteSourceZone', 'تسعير المناطق')}</span>
+                          {quote.priceSource === 'ZONE_CITY' && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">مدينة</span>
+                          )}
+                        </span>
+                      )}
                     </span>
                   </div>
 

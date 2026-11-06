@@ -44,6 +44,9 @@ export const ClientsPage: React.FC = () => {
     phone: '',
     address: '',
     commissionRate: 10,
+    expectedMonthlyOrders: 100,
+    coverageMode: 'BOTH',
+    preferredCities: '',
   });
 
   const token = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined' ? window.localStorage.getItem('token') : '';
@@ -80,8 +83,8 @@ export const ClientsPage: React.FC = () => {
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email) {
-      toast.error('يرجى ملء الاسم والبريد الإلكتروني');
+    if (!form.name || !form.email || !form.expectedMonthlyOrders) {
+      toast.error(isEn ? 'Please fill in name, email, and expected monthly volume' : 'يرجى ملء الاسم والبريد الإلكتروني وحجم الشحنات المتوقع');
       return;
     }
 
@@ -101,7 +104,16 @@ export const ClientsPage: React.FC = () => {
           email: data.data.credentials.email,
           temporaryPassword: data.data.credentials.temporaryPassword,
         });
-        setForm({ name: '', email: '', phone: '', address: '', commissionRate: 10 });
+        setForm({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          commissionRate: 10,
+          expectedMonthlyOrders: 100,
+          coverageMode: 'BOTH',
+          preferredCities: '',
+        });
         fetchClients();
       } else {
         toast.error(data.error || 'فشل في إنشاء العميل');
@@ -268,6 +280,8 @@ export const ClientsPage: React.FC = () => {
                 <th className="px-4 py-3 text-start">{isEn ? 'Client' : 'العميل'}</th>
                 <th className="px-4 py-3 text-start">{isEn ? 'Email' : 'البريد الإلكتروني'}</th>
                 <th className="px-4 py-3 text-center">{isEn ? 'Portal Account' : 'حالة البوابة'}</th>
+                <th className="px-4 py-3 text-center">{isEn ? 'Expected Volume' : 'الحجم المتوقع'}</th>
+                <th className="px-4 py-3 text-center">{isEn ? 'Current Package' : 'الباكج الحالي'}</th>
                 <th className="px-4 py-3 text-center">{isEn ? 'Month Shipments' : 'شحنات الشهر'}</th>
                 <th className="px-4 py-3 text-center">{isEn ? 'Pending COD' : 'COD معلّق'}</th>
                 <th className="px-4 py-3 text-end">{isEn ? 'Actions' : 'الإجراءات'}</th>
@@ -276,14 +290,14 @@ export const ClientsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400">
+                  <td colSpan={8} className="text-center py-10 text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
                     <span>{isEn ? 'Loading clients...' : 'جاري تحميل العملاء...'}</span>
                   </td>
                 </tr>
               ) : clients.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">
+                  <td colSpan={8} className="text-center py-12 text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
                     <p>{isEn ? 'No clients found' : 'لا يوجد عملاء شحن مسجلين'}</p>
                   </td>
