@@ -205,7 +205,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         apiClient.get(`/admin/companies/${companyId}/users`, getCompanyScopedRequestConfig({ params: { limit: 100, sortBy: "createdAt", sortOrder: "desc" } })),
         apiClient.get(`/admin/companies/${companyId}/facebook-pages`, getCompanyScopedRequestConfig()),
         apiClient.get(`/support/admin/tickets`, getCompanyScopedRequestConfig({ params: { companyId, limit: 20 } })),
-        apiClient.get(`/activity/company/activities`, getCompanyScopedRequestConfig({ params: { companyId, limit: 10 } })),
+        apiClient.get(`/activity/company/activities`, getCompanyScopedRequestConfig({ params: { companyId, limit: 50 } })),
       ]);
       const detailData: any = detailResult.status === "fulfilled" ? detailResult.value.data : null;
       const usersData: any = usersResult.status === "fulfilled" ? usersResult.value.data : null;
