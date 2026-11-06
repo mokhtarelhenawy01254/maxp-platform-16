@@ -153,7 +153,7 @@ const MyCustody: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-4 p-4 md:p-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Control Bar Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
         <div>

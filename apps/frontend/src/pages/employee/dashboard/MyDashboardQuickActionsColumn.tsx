@@ -50,7 +50,7 @@ export const MyDashboardQuickActionsColumn: React.FC<
 }) => {
   return (
     <div className="space-y-6 lg:col-span-1">
-      <Card className="border-none shadow-md bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 overflow-hidden">
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />

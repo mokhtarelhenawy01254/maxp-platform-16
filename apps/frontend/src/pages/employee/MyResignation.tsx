@@ -172,15 +172,15 @@ const MyResignation = () => {
     const hasPending = history.some(r => r.status === 'PENDING');
 
     return (
-        <div className="p-4 sm:p-8 w-full max-w-5xl mx-auto space-y-8" dir="rtl">
+        <div className="space-y-6 w-full pb-8 max-w-5xl mx-auto" dir="rtl">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-                        <FileX className="h-10 w-10 text-red-500" />
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2.5 text-foreground">
+                        <FileX className="h-6 w-6 text-destructive" />
                         {t("employee.resignation.title")}
                     </h1>
-                    <p className="text-muted-foreground text-lg">
+                    <p className="text-muted-foreground text-sm">
                         {t("employee.resignation.subtitle")}
                     </p>
                 </div>
@@ -205,8 +205,8 @@ const MyResignation = () => {
                         exit={{ opacity: 0, y: -20 }}
                         className="w-full"
                     >
-                        <Card className="border-red-100 shadow-2xl shadow-red-500/5 relative overflow-hidden bg-white/50 backdrop-blur-sm">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+                        <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+                            
                             <CardHeader>
                                 <CardTitle className="text-xl flex items-center gap-2 text-red-700">
                                     <AlertCircle className="w-5 h-5" />

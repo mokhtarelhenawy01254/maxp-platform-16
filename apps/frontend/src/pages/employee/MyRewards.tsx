@@ -122,27 +122,27 @@ const MyRewards: React.FC = () => {
         .reduce((sum, r) => sum + r.calculatedValue, 0);
 
     return (
-        <div className="space-y-6 p-6" dir="rtl">
+        <div className="space-y-6 w-full pb-8" dir="rtl">
             {/* Header & Stats */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                        <Trophy className="h-10 w-10 text-yellow-500 ml-3 drop-shadow-md" />
+                    <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center">
+                        <Trophy className="h-6 w-6 text-amber-500 ml-2" />
                         {t("employee.rewards.title")}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
+                    <p className="text-sm text-muted-foreground mt-1">
                         {t("employee.rewards.subtitle")}
                     </p>
                 </div>
 
-                <Card className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-xl border-none min-w-[280px]">
+                <Card className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs text-foreground min-w-[260px]">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-indigo-100 font-medium">{t("employee.rewards.totalApproved")}</span>
+                            <span className="text-muted-foreground text-xs font-semibold">{t("employee.rewards.totalApproved")}</span>
                             <Gift className="h-6 w-6 text-yellow-300" />
                         </div>
-                        <div className="text-4xl font-black">{formatCurrency(totalRewards)}</div>
-                        <div className="mt-4 flex items-center text-indigo-100 text-sm">
+                        <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-foreground">{formatCurrency(totalRewards)}</div>
+                        <div className="mt-2 flex items-center text-muted-foreground text-xs">
                             <TrendingUp className="h-4 w-4 ml-1" />
                             <span>{t("employee.rewards.basedOnRecords")}</span>
                         </div>
@@ -179,7 +179,7 @@ const MyRewards: React.FC = () => {
                                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                             <div className="flex flex-col md:flex-row md:items-center gap-6 flex-1">
                                                 <div className="flex-shrink-0">
-                                                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                                                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary transition-colors">
                                                         <DollarSign className="h-8 w-8 text-indigo-600 dark:text-indigo-400 group-hover:text-white" />
                                                     </div>
                                                 </div>
@@ -226,7 +226,7 @@ const MyRewards: React.FC = () => {
                                                         setSelectedReward(reward);
                                                         setShowDetailsModal(true);
                                                     }}
-                                                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-xl text-sm font-bold transition-all duration-300 border border-gray-200 dark:border-gray-700"
+                                                    className="flex items-center gap-2 px-4 py-2 bg-muted/40 text-foreground hover:bg-primary hover:text-primary-foreground rounded-xl text-xs font-semibold transition-colors border border-border/70"
                                                 >
                                                     <Info className="h-4 w-4" />
                                                     {t("employee.rewards.details")}
@@ -248,7 +248,7 @@ const MyRewards: React.FC = () => {
                         {/* Modal Header */}
                         <div className="p-8 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
+                                <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
                                     <Award className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -326,7 +326,7 @@ const MyRewards: React.FC = () => {
                         <div className="p-8 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-4">
                             <button
                                 onClick={() => setShowDetailsModal(false)}
-                                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all duration-300 shadow-xl shadow-indigo-200 dark:shadow-none font-black text-lg"
+                                className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors shadow-xs font-semibold"
                             >
                                 {t("employee.common.close")}
                             </button>

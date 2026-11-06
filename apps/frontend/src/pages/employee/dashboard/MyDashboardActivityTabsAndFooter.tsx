@@ -98,7 +98,7 @@ export const MyDashboardActivityTabsAndFooter: React.FC<
           className="w-full"
           onValueChange={onTabChange}
         >
-          <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-900 p-2 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between mb-4 bg-card p-1.5 rounded-xl border border-border/70 shadow-xs">
             <TabsList className="bg-transparent gap-2 h-auto p-0">
               <TabsTrigger
                 value="activity"
@@ -122,7 +122,7 @@ export const MyDashboardActivityTabsAndFooter: React.FC<
           </div>
 
           <TabsContent value="activity" className="mt-0">
-            <Card className="border-none shadow-sm dark:bg-gray-900/50">
+            <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
               <CardContent className="p-6">
                 <div className="space-y-6">
                   {combinedMovements.map((item: any, idx) => (

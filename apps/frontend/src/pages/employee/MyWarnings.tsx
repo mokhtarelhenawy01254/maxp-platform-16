@@ -160,8 +160,7 @@ const MyWarnings: React.FC = () => {
                     </div>
                 </div>
                 {/* Decorative Circles */}
-                <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-black/10 rounded-full blur-3xl" />
+                
             </div>
 
             <AnimatePresence mode="wait">
@@ -309,14 +308,14 @@ const MyWarnings: React.FC = () => {
 
             {/* Preview Modal */}
             <Dialog open={!!selectedWarning} onOpenChange={(open) => !open && setSelectedWarning(null)}>
-                <DialogContent className="max-w-2xl bg-white dark:bg-gray-950 border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden" dir="rtl">
+                <DialogContent className="max-w-2xl bg-card border border-border/70 shadow-lg rounded-2xl p-0 overflow-hidden" dir="rtl">
                     {selectedWarning && (
                         <>
                             {/* Accent Header */}
                             <div className={`h-2 ${severityConfig[selectedWarning.severity]?.color || 'bg-blue-500'}`} />
 
                             <DialogHeader className="px-8 pt-8 pb-6 bg-gradient-to-br from-muted/50 via-background to-background relative overflow-hidden">
-                                <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+                                
 
                                 <div className="flex items-center gap-5 relative z-10">
                                     <div className={`p-4 rounded-[1.5rem] shadow-xl ring-4 ring-white dark:ring-gray-900 ${severityConfig[selectedWarning.severity]?.color || 'bg-blue-500'} bg-opacity-10 dark:bg-opacity-20`}>
@@ -325,7 +324,7 @@ const MyWarnings: React.FC = () => {
                                         })}
                                     </div>
                                     <div className="space-y-1">
-                                        <DialogTitle className="text-2xl font-black tracking-tight text-gray-900 dark:text-white break-words max-w-[420px]">
+                                        <DialogTitle className="text-lg font-bold tracking-tight text-foreground break-words max-w-[420px]">
                                             {selectedWarning.title}
                                         </DialogTitle>
                                         <div className="flex items-center gap-2">

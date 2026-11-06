@@ -21,7 +21,7 @@ const MyTraining: React.FC = () => {
   } = useMyTrainingController();
 
   return (
-    <div className="min-h-screen p-6 md:p-8 space-y-8" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <MyTrainingHeaderAndStats
         t={t}
         searchTerm={searchTerm}

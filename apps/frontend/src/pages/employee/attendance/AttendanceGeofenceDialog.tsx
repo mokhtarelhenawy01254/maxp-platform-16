@@ -321,7 +321,7 @@ export const AttendanceGeofenceDialog: React.FC<AttendanceGeofenceDialogProps> =
               {(isState1OutOfRange || isState2WeakAccuracy) && !showReasonInput && (
                 <Button
                   onClick={handleOpenExceptionForm}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold"
                 >
                   <Send className="h-4 w-4 ml-1.5" />
                   {t("employee.attendance.geofenceRequestException", "طلب استثناء")}
@@ -332,7 +332,7 @@ export const AttendanceGeofenceDialog: React.FC<AttendanceGeofenceDialogProps> =
                 <Button
                   onClick={handleSubmitException}
                   disabled={submitting || !reason.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold"
                 >
                   {submitting ? (
                     t("employee.attendance.geofenceSending", "جاري الإرسال...")

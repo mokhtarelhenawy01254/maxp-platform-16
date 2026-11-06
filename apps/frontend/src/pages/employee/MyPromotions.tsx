@@ -299,7 +299,7 @@ const MyPromotions: React.FC = () => {
                         <div className="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                             <button
                                 onClick={() => setShowDetailsModal(false)}
-                                className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none font-bold"
+                                className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors shadow-xs font-semibold"
                             >
                                 {t("employee.common.close")}
                             </button>

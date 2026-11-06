@@ -43,12 +43,23 @@ export const MyPayrollSidebar: React.FC<MyPayrollSidebarProps> = ({
                     {payrollData.employee?.bankName || "البنك الأهلي التجاري"}
                   </p>
                   <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                    {payrollData.employee?.bankAccount
-                      ? `•••• ${payrollData.employee.bankAccount.slice(-4)}`
-                      : "•••• 8821"}
+                    {t("employee.payroll.accountActive")}
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1.5">
+                {t("employee.payroll.iban")}
+              </p>
+              <p className="text-sm font-semibold text-foreground font-mono tabular-nums tracking-wider truncate">
+                {payrollData.employee?.bankAccountNumber
+                  ? `**** **** ${payrollData.employee.bankAccountNumber.slice(-4)}`
+                  : payrollData.employee?.bankAccount
+                    ? `**** **** ${payrollData.employee.bankAccount.slice(-4)}`
+                    : "EG82 0003 4827 1019 3828"}
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -98,9 +109,8 @@ export const MyPayrollSidebar: React.FC<MyPayrollSidebarProps> = ({
         <Button
           variant="outline"
           className="w-full rounded-xl text-xs font-semibold"
-          onClick={() => window.print()}
         >
-          {t("employee.payroll.printStatement")}
+          {t("employee.payroll.privacyPolicy")}
         </Button>
       </motion.div>
     </div>

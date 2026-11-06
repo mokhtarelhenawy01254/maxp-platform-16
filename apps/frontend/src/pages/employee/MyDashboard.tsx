@@ -31,7 +31,7 @@ const MyDashboard: React.FC = () => {
   if (!hasHrActive || employeeErrorStatus === 403) {
     return (
       <div
-        className="p-4 md:p-8 min-h-screen flex items-center justify-center"
+        className="min-h-[400px] flex items-center justify-center w-full"
         dir="rtl"
       >
         <div className="text-center max-w-md">
@@ -52,7 +52,7 @@ const MyDashboard: React.FC = () => {
   if (loading) {
     return (
       <div
-        className="p-4 md:p-8 min-h-screen flex items-center justify-center bg-[#f8faff] dark:bg-gray-950"
+        className="min-h-[400px] flex items-center justify-center w-full"
         dir="rtl"
       >
         <div className="text-center">
@@ -70,7 +70,7 @@ const MyDashboard: React.FC = () => {
   if (!employee || employeeErrorStatus === 401 || employeeErrorStatus === 404) {
     return (
       <div
-        className="p-4 md:p-8 min-h-screen flex items-center justify-center bg-[#f8faff] dark:bg-gray-950"
+        className="min-h-[400px] flex items-center justify-center w-full"
         dir="rtl"
       >
         <div className="bg-red-50 dark:bg-red-900/20 p-8 rounded-2xl text-center max-w-md">
@@ -91,7 +91,7 @@ const MyDashboard: React.FC = () => {
 
   return (
     <div
-      className="p-4 md:p-8 space-y-8 bg-[#f8faff] dark:bg-gray-950 font-inter"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       <MyDashboardHeaderAndStats

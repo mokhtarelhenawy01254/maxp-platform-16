@@ -26,14 +26,14 @@ const MyDeductions: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[350px] w-full">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 w-full pb-8">
       <MyDeductionsStatsAndFilters
         t={t}
         stats={stats}

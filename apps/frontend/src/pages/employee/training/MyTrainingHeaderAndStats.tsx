@@ -42,10 +42,10 @@ export const MyTrainingHeaderAndStats: React.FC<
     <>
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-          <h1 className="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {t("employee.training.title")}
           </h1>
-          <p className="text-gray-500 font-medium flex items-center gap-2 mt-1">
+          <p className="text-sm text-muted-foreground flex items-center gap-2 mt-0.5">
             <GraduationCap className="h-4 w-4 text-purple-400" />
             {t("employee.training.subtitle")}
           </p>
@@ -103,7 +103,7 @@ export const MyTrainingHeaderAndStats: React.FC<
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <Card className="border-none shadow-lg bg-white/60 backdrop-blur-md overflow-hidden group hover:shadow-xl transition-all">
+        <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden group hover:border-border transition-colors">
           <div className="h-1 w-full bg-purple-500 opacity-50" />
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-1">

@@ -36,11 +36,11 @@ export const MyDashboardHeaderAndStats: React.FC<
                 {employee.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 border-4 border-[#f8faff] dark:border-gray-950 rounded-full shadow-lg"></div>
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 border-4 border-background rounded-full shadow-lg"></div>
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
                 {t("employee.dashboard.welcome", { name: employee.firstName })}
               </h1>
             </div>
@@ -58,7 +58,7 @@ export const MyDashboardHeaderAndStats: React.FC<
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="bg-white dark:bg-gray-900 px-5 py-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center min-w-[120px]">
+          <div className="bg-card px-4 py-2 rounded-xl shadow-xs border border-border/70 flex flex-col items-center min-w-[110px]">
             <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">
               {t("employee.dashboard.employeeNumber")}
             </span>
@@ -79,33 +79,33 @@ export const MyDashboardHeaderAndStats: React.FC<
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         <Card
-          className="border-none shadow-sm bg-blue-600 text-white overflow-hidden relative group cursor-pointer"
+          className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden relative group cursor-pointer hover:border-border transition-colors"
           onClick={() => onNavigate("/my-attendance")}
         >
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
             <Clock className="h-24 w-24" />
           </div>
           <CardContent className="p-6 relative">
-            <p className="text-blue-100 text-sm font-bold mb-4 flex items-center gap-2">
+            <p className="text-muted-foreground text-xs font-semibold mb-3 flex items-center gap-2">
               <Clock className="h-4 w-4" />{" "}
               {t("employee.dashboard.todayAttendance")}
             </p>
             <div className="flex flex-col">
               {todayAttendance?.checkIn ? (
                 <>
-                  <span className="text-3xl font-black font-mono tabular-nums mb-1">
+                  <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums mb-1 text-foreground">
                     {new Date(todayAttendance.checkIn).toLocaleTimeString(
                       "ar-EG",
                       { hour: "2-digit", minute: "2-digit" },
                     )}
                   </span>
-                  <span className="text-xs text-blue-100 font-medium">
+                  <span className="text-xs text-muted-foreground font-medium">
                     {t("employee.dashboard.checkedIn")}
                   </span>
                 </>
               ) : (
                 <>
-                  <span className="text-3xl font-black font-mono tabular-nums mb-1 text-blue-200 opacity-60">
+                  <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums mb-1 text-muted-foreground/60">
                     --:--
                   </span>
                   <span className="text-xs text-blue-100 font-medium">
@@ -118,7 +118,7 @@ export const MyDashboardHeaderAndStats: React.FC<
         </Card>
 
         <Card
-          className="border-none shadow-sm bg-white dark:bg-gray-900 overflow-hidden relative group cursor-pointer"
+          className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden relative group cursor-pointer hover:border-border transition-colors"
           onClick={() => onNavigate("/my-leaves")}
         >
           <CardContent className="p-6">
@@ -137,7 +137,7 @@ export const MyDashboardHeaderAndStats: React.FC<
               {t("employee.dashboard.leaveBalance")}
             </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black font-mono tabular-nums text-gray-900 dark:text-white">
+              <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums text-foreground">
                 {employee.annualLeaveBalance}
               </span>
               <span className="text-sm text-gray-400 font-bold">
