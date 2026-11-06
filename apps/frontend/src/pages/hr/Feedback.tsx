@@ -45,7 +45,7 @@ const Feedback: React.FC = () => {
 
   return (
     <div
-      className="p-6 space-y-8 animate-in fade-in duration-500 min-h-screen transition-colors duration-300"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       {/* Header Section */}
@@ -55,8 +55,8 @@ const Feedback: React.FC = () => {
       <FeedbackStatsGrid stats={stats} feedback={feedback} />
 
       {/* Main Content Card */}
-      <Card className="border-none shadow-xl overflow-hidden bg-card/50 backdrop-blur-sm border-t border-white/10">
-        <CardHeader className="bg-muted/50 border-b dark:border-white/5">
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+        <CardHeader className="bg-muted/20 border-b border-border/70 px-5 py-3.5">
           <FeedbackFilterBar
             activeTab={activeTab}
             onTabChange={setActiveTab}

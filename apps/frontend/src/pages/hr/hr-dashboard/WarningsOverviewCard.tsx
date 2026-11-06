@@ -32,76 +32,73 @@ export const WarningsOverviewCard: React.FC<WarningsOverviewCardProps> = ({
   const acknowledgmentRate = total > 0 ? Math.round((acknowledged / total) * 100) : 0;
 
   return (
-    <Card className="border-none shadow-xl overflow-hidden bg-gradient-to-br from-white to-rose-50/30 dark:from-gray-800 dark:to-rose-900/10">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-rose-100/20 dark:border-rose-800/20 px-6 py-5">
-        <CardTitle className="flex items-center gap-3 text-lg font-bold text-rose-900 dark:text-rose-100">
-          <div className="p-2.5 bg-rose-500 shadow-lg shadow-rose-500/20 rounded-xl">
-            <AlertCircle className="h-5 w-5 text-white" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
+            <AlertCircle className="h-4 w-4" />
           </div>
           {t("hrDashboard.warnings")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-rose-600 hover:text-rose-700 hover:bg-rose-100/50 transition-all rounded-lg"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/warnings")}
         >
           <span className="hidden sm:inline">{t("hrDashboard.viewAll")}</span>
-          <ChevronRight className="h-4 w-4 ms-1" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between p-5 bg-white/50 dark:bg-gray-900/40 rounded-3xl border border-rose-100/50 dark:border-rose-900/20 shadow-inner">
-            <div>
-              <p className="text-4xl font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums">
-                {total}
-              </p>
-              <p className="text-[10px] font-bold text-rose-500/60 uppercase tracking-tighter">
-                {t("hrDashboard.totalWarnings")}
-              </p>
-            </div>
-            <div className="h-14 w-14 bg-rose-500/10 rounded-2xl flex items-center justify-center transform -rotate-6">
-              <AlertCircle className="h-7 w-7 text-rose-500" />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-              {t("hrDashboard.bySeverity")}
+      <CardContent className="p-5">
+        <div className="flex items-baseline justify-between mb-4">
+          <div>
+            <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
+              {total}
             </p>
-            <div className="space-y-2">
-              {warnings?.bySeverity?.map((sev, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400 capitalize">
-                    {t(`common.severity.${sev.severity.toLowerCase()}`) ||
-                      sev.severity}
-                  </span>
-                  <Badge variant="outline" className="font-bold font-mono tabular-nums">
-                    {sev._count}
-                  </Badge>
-                </div>
-              ))}
-              {(!warnings?.bySeverity || warnings.bySeverity.length === 0) && (
-                <p className="text-sm text-gray-500 italic">
-                  {t("hrDashboard.noWarningsRecord") || "لا توجد سجلات"}
-                </p>
-              )}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("hrDashboard.totalWarnings") || "إجمالي الإنذارات"}
+            </p>
           </div>
-
-          <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center justify-between text-sm font-bold mb-2">
-              <span className="text-gray-500">
-                {t("hrDashboard.acknowledgmentRate") || "نسبة الاعتراف"}
-              </span>
-              <span className="text-rose-600 font-mono tabular-nums">
-                {acknowledgmentRate}%
-              </span>
-            </div>
-            <Progress value={acknowledgmentRate} className="h-2 bg-gray-100" />
+          <div className="text-end">
+            <Badge
+              variant="outline"
+              className="font-mono tabular-nums text-xs border-border/70"
+            >
+              {acknowledgmentRate}% {t("hrDashboard.acknowledged") || "تم الاستلام"}
+            </Badge>
           </div>
         </div>
+
+        <div className="space-y-1.5 mb-5">
+          <Progress value={acknowledgmentRate} className="h-2 rounded-full" />
+        </div>
+
+        {warnings?.bySeverity && warnings.bySeverity.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/60">
+            {warnings.bySeverity.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-2.5 bg-muted/30 border border-border/60 rounded-xl text-center"
+              >
+                <p className="text-[11px] font-medium text-muted-foreground truncate mb-0.5">
+                  {item.severity === "HIGH"
+                    ? "شديد"
+                    : item.severity === "MEDIUM"
+                      ? "متوسط"
+                      : "بسيط"}
+                </p>
+                <p className="text-sm font-bold text-foreground font-mono tabular-nums">
+                  {item._count}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-center text-muted-foreground py-2">
+            لا توجد إنذارات نشطة
+          </p>
+        )}
       </CardContent>
     </Card>
   );

@@ -66,25 +66,33 @@ const Leaves: React.FC = () => {
   } = useLeavesController();
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             {isMyLeaves ? t("employee.leaves.myLeaves") : t("employee.leaves.manageLeaves")}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
             {t("employee.leaves.totalRequests", { count: pagination.total })}
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <Download className="h-4 w-4 ml-2" />
-            {t("employee.leaves.export")}
-          </Button>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 ml-2" />
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setShowAddDialog(true)}
+            className="gap-1.5 text-xs font-semibold shadow-xs"
+          >
+            <Plus className="h-4 w-4" />
             {t("employee.leaves.newLeaveRequest")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs font-semibold"
+          >
+            <Download className="h-4 w-4" />
+            {t("employee.leaves.export")}
           </Button>
         </div>
       </div>

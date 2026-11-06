@@ -15,7 +15,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { Cpu } from "lucide-react";
 import { MerchantCopilotHost, toggleMerchantCopilot } from "../merchant-copilot";
-import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -1090,7 +1089,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
              <main
                   className={`business-shell-main flex-1 flex flex-col ${
                     shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0 h-full max-h-full"
-                  } hr-theme`}
+                  }`}
                   style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}
                 >
 
@@ -1211,7 +1210,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                <main
                   className={`business-shell-main flex-1 flex flex-col ${
                     shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0 h-full max-h-full"
-                  } hr-theme`}
+                  }`}
                   style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}
               >
                  {location.pathname === '/apps' ? (

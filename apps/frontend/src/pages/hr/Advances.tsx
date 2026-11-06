@@ -47,7 +47,7 @@ export const Advances: React.FC = () => {
 
   return (
     <div
-      className="p-6 space-y-6 min-h-screen bg-gradient-to-br from-[#f9fbff] via-[#f2f6ff] to-[#fff7fc] text-slate-900 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 dark:text-white"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       {/* Header */}

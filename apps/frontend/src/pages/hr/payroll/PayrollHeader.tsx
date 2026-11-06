@@ -27,56 +27,58 @@ export const PayrollHeader: React.FC<PayrollHeaderProps> = ({
   onAutoCalculate,
 }) => {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
           {isMyPayroll ? 'رواتبي' : 'إدارة الرواتب'}
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
           {months[selectedMonth - 1]} {selectedYear}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Button variant="outline" onClick={onExportBankFile}>
-          <Download className="h-4 w-4 ml-2" />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" onClick={onExportBankFile} className="gap-1.5 text-xs font-semibold">
+          <Download className="h-4 w-4" />
           ملف الصرف
         </Button>
         {!isMyPayroll && (
           <>
             <Button
+              size="sm"
               variant={view === 'simulator' ? "default" : "outline"}
               onClick={() => setView(view === 'list' ? 'simulator' : 'list')}
-              className={view === 'simulator' ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+              className="gap-1.5 text-xs font-semibold"
             >
               {view === 'list' ? (
                 <>
-                  <Zap className="h-4 w-4 ml-2" />
+                  <Zap className="h-4 w-4" />
                   محاكي الرواتب
                 </>
               ) : (
                 <>
-                  <FileText className="h-4 w-4 ml-2" />
+                  <FileText className="h-4 w-4" />
                   عرض الكشوف
                 </>
               )}
             </Button>
-            <Button onClick={onOpenGenerateDialog} variant="outline">
-              <Calculator className="h-4 w-4 ml-2" />
+            <Button size="sm" onClick={onOpenGenerateDialog} variant="outline" className="gap-1.5 text-xs font-semibold">
+              <Calculator className="h-4 w-4" />
               إعداد الرواتب
             </Button>
             <Button
+              size="sm"
               onClick={onAutoCalculate}
               disabled={autoCalculating}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5"
+              className="gap-1.5 text-xs font-semibold shadow-xs"
             >
               {autoCalculating ? (
                 <>
-                  <RefreshCw className="h-4 w-4 ml-1.5 animate-spin" />
+                  <RefreshCw className="h-4 w-4 animate-spin" />
                   جاري الحساب والخصم الآلي...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 ml-1.5" />
+                  <Sparkles className="h-4 w-4" />
                   أتمتة وحساب الرواتب والخصومات
                 </>
               )}

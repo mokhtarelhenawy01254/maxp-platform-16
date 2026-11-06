@@ -78,12 +78,12 @@ export const Attendance: React.FC = () => {
   } = useAttendanceController();
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">الحضور والانصراف</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">الحضور والانصراف</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
             {formatAttendanceDate(
               selectedDate,
               {
@@ -97,19 +97,24 @@ export const Attendance: React.FC = () => {
             )}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            size="sm"
             onClick={() => {
               resetManualForm();
               setShowManualDialog(true);
             }}
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="gap-1.5 text-xs font-semibold shadow-xs"
           >
-            <Clock className="h-4 w-4 ml-2" /> تسجيل يدوي
+            <Clock className="h-4 w-4" /> تسجيل يدوي
           </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 ml-2" /> تصدير
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExport}
+            className="gap-1.5 text-xs font-semibold"
+          >
+            <Download className="h-4 w-4" /> تصدير
           </Button>
         </div>
       </div>

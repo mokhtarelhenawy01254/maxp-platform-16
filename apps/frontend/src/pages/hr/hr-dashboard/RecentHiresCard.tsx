@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, ChevronRight } from "lucide-react";
+import { UserCheck, ChevronRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,63 +27,66 @@ export const RecentHiresCard: React.FC<RecentHiresCardProps> = ({
   const navigate = useNavigate();
 
   return (
-    <Card className="border-none shadow-md overflow-hidden bg-white dark:bg-gray-800/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-gray-50/50 dark:bg-gray-900/20 px-6 py-4">
-        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
-          <div className="p-2 bg-indigo-500/10 rounded-lg">
-            <TrendingUp className="h-5 w-5 text-indigo-600" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-primary/10 text-primary rounded-lg">
+            <UserCheck className="h-4 w-4" />
           </div>
           {t("hrDashboard.recentHires")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors gap-2"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/employees")}
         >
           {t("hrDashboard.viewAll")}
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          {recentHires.map((employee) => (
-            <div
-              key={employee.id}
-              className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 border border-gray-100 dark:border-gray-800/50 rounded-2xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12 ring-2 ring-white dark:ring-gray-700 shadow-sm">
-                  <AvatarImage src={employee.avatar} />
-                  <AvatarFallback className="bg-indigo-50 text-indigo-600 font-bold uppercase">
-                    {employee.firstName?.[0]}
-                    {employee.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">
-                    {employee.firstName} {employee.lastName}
-                  </p>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-tighter">
-                    {employee.position?.title}
-                  </p>
+      <CardContent className="p-5">
+        {recentHires.length === 0 ? (
+          <p className="text-xs text-center text-muted-foreground py-8">
+            لا توجد تعيينات حديثة مسجلة
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {recentHires.map((employee) => (
+              <div
+                key={employee.id}
+                className="flex items-center justify-between p-3 bg-muted/20 border border-border/60 rounded-xl hover:bg-muted/40 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Avatar className="h-9 w-9 shrink-0">
+                    <AvatarImage src={employee.avatar} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      {employee.firstName?.[0]}
+                      {employee.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground truncate">
+                      {employee.firstName} {employee.lastName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {typeof employee.position === "object"
+                        ? employee.position?.title
+                        : (employee.position || "موظف جديد")}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-end shrink-0">
+                  <span className="text-[11px] font-medium text-muted-foreground font-mono tabular-nums">
+                    {employee.hireDate
+                      ? new Date(employee.hireDate).toLocaleDateString("ar-EG")
+                      : "—"}
+                  </span>
                 </div>
               </div>
-              <div className="text-left bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 font-mono tabular-nums">
-                  {employee.hireDate
-                    ? new Date(employee.hireDate).toLocaleDateString("ar-EG")
-                    : "-"}
-                </p>
-              </div>
-            </div>
-          ))}
-          {recentHires.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-6">
-              {t("hrDashboard.noRecentHires") || "لا يوجد تعيينات حديثة"}
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

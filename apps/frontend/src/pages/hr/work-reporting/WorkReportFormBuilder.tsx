@@ -28,7 +28,7 @@ const WorkReportFormBuilder: React.FC = () => {
   if (loading) {
     return (
       <div
-        className="min-h-screen bg-slate-50 px-4 py-10 text-center text-slate-500 dark:bg-slate-950 dark:text-slate-400"
+        className="min-h-[350px] flex items-center justify-center text-center text-sm text-muted-foreground w-full"
         dir="rtl"
       >
         جاري تحميل إعدادات الفورم...
@@ -38,10 +38,10 @@ const WorkReportFormBuilder: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 dark:bg-slate-950 dark:text-slate-50 sm:px-6 lg:px-8"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
-      <div className="mx-auto max-w-6xl 2xl:max-w-7xl">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl space-y-6">
         <WorkReportFormHeader
           isEditing={isEditing}
           formId={formId}

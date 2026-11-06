@@ -43,11 +43,11 @@ const ShiftDetails: React.FC = () => {
 
   if (!shift) {
     return (
-      <div className="p-6" dir="rtl">
-        <Card>
+      <div className="space-y-6 w-full pb-8" dir="rtl">
+        <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
           <CardContent className="p-12 text-center">
-            <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500">المناوبة غير موجودة</p>
+            <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">المناوبة غير موجودة</p>
             <Button onClick={goBack} className="mt-4">
               العودة للمناوبات
             </Button>
@@ -62,7 +62,7 @@ const ShiftDetails: React.FC = () => {
     shift._count?.assignments || shift.assignments?.length || 0;
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <ShiftDetailsHeader
         shift={shift}
         onBack={goBack}

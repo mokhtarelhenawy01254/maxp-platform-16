@@ -42,7 +42,7 @@ const PositionsManagement: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <PositionsHeader
         onBack={handleNavigateBack}

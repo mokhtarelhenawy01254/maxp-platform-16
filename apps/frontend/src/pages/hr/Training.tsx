@@ -109,7 +109,7 @@ const Training: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Top Chassis Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>

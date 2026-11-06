@@ -129,34 +129,34 @@ export const HRSettingsSidebar: React.FC<HRSettingsSidebarProps> = ({
 
   return (
     <div className="lg:w-64 flex-shrink-0">
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-24">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-          <h2 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">
+      <div className="bg-card rounded-2xl border border-border/70 shadow-xs overflow-hidden lg:sticky lg:top-6">
+        <div className="p-3.5 border-b border-border/70 bg-muted/20">
+          <h2 className="font-semibold text-foreground text-xs uppercase tracking-wider mb-2.5">
             أقسام الإعدادات
           </h2>
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
               type="text"
               placeholder="بحث في الأقسام..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className={`pr-9 text-sm ${searchQueryTrimmed ? "pl-9" : ""}`}
+              className={`pr-8 text-xs h-8 ${searchQueryTrimmed ? "pl-8" : ""}`}
               aria-label="بحث في أقسام الإعدادات"
             />
             {searchQueryTrimmed && (
               <button
                 type="button"
                 onClick={() => onSearchChange("")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
                 aria-label="مسح البحث"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
           {searchQueryTrimmed && (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 tabular-nums font-mono">
+            <p className="mt-2 text-xs text-muted-foreground tabular-nums font-mono">
               {filteredTabs.length === 0
                 ? "لا توجد نتائج"
                 : `${filteredTabs.length} من ${hrSettingsTabs.length} قسم`}
@@ -164,11 +164,11 @@ export const HRSettingsSidebar: React.FC<HRSettingsSidebarProps> = ({
           )}
         </div>
         <nav
-          className="p-2 space-y-1 max-h-[400px] lg:max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar"
+          className="p-2 space-y-1 max-h-[400px] lg:max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar"
           aria-label="تنقل أقسام الإعدادات"
         >
           {filteredTabs.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="p-4 text-center text-xs text-muted-foreground">
               لا توجد نتائج للبحث. جرّب كلمات أخرى أو امسح البحث.
             </div>
           ) : (
@@ -180,28 +180,28 @@ export const HRSettingsSidebar: React.FC<HRSettingsSidebarProps> = ({
                   key={tab.id}
                   onClick={() => onTabChange(tab.id)}
                   type="button"
-                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-right transition-all duration-200 ${
+                  className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-right transition-colors text-xs ${
                     isActive
-                      ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 shadow-sm"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent"
+                      ? "bg-primary/10 text-primary font-semibold border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
                   }`}
                   aria-current={isActive ? "page" : undefined}
                 >
                   <Icon
-                    className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
                       isActive
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-gray-400 dark:text-gray-500"
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     }`}
                     aria-hidden
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{tab.label}</div>
+                    <div className="truncate">{tab.label}</div>
                     <div
                       className={`text-[10px] truncate ${
                         isActive
-                          ? "text-indigo-500/80 dark:text-indigo-400/80"
-                          : "text-gray-500"
+                          ? "text-primary/70"
+                          : "text-muted-foreground/70"
                       }`}
                     >
                       {tab.description}

@@ -12,18 +12,18 @@ export const PositionsHeader: React.FC<PositionsHeaderProps> = ({
   onNewPosition,
 }) => {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Briefcase className="h-8 w-8 text-blue-500" />
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             إدارة المناصب
           </h1>
-          <p className="text-gray-500 mt-1">
-            إضافة وتعديل وحذف المناصب الوظيفية
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            إضافة وتعديل وحذف وتصنيف المناصب الوظيفية
           </p>
         </div>
       </div>

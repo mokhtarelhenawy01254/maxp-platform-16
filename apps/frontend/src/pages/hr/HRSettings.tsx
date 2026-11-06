@@ -21,12 +21,12 @@ const HRSettings: React.FC = () => {
   if (data.loading) {
     return (
       <div
-        className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center"
+        className="min-h-[350px] flex items-center justify-center w-full"
         dir="rtl"
       >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">
             جاري تحميل الإعدادات...
           </p>
         </div>
@@ -145,7 +145,7 @@ const HRSettings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <HRUnsavedDialog
         open={data.showUnsavedDialog}
         onCancel={data.cancelNavigation}
@@ -163,7 +163,7 @@ const HRSettings: React.FC = () => {
         onSave={data.handleSave}
       />
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           <HRSettingsSidebar
             activeTab={data.activeTab}

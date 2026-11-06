@@ -121,19 +121,20 @@ const EditWarning: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => navigate(`/hr/warnings/${id}`)}
           >
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <ArrowRight className="h-4 w-4 ml-1.5" />
             العودة
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">تعديل الإنذار</h1>
-            <p className="text-gray-500 mt-1">تحديث معلومات الإنذار</p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">تعديل الإنذار</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">تحديث معلومات وإجراءات الإنذار الإداري</p>
           </div>
         </div>
       </div>

@@ -21,14 +21,14 @@ const CreatePerformanceReview: React.FC = () => {
 
   if (loading || loadingReview) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[350px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="w-full p-4 md:p-8 space-y-8" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <CreatePerformanceReviewHeader
         isEditing={isEditing}
         onBack={() => navigate("/hr/performance-reviews")}

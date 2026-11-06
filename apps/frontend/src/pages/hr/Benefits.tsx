@@ -56,7 +56,7 @@ export const Benefits: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 bg-gray-50/20 min-h-screen" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <BenefitsHeader onAddNew={openCreateDialog} />
 

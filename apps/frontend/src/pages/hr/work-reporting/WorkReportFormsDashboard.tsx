@@ -135,42 +135,37 @@ const WorkReportFormsDashboard: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 dark:bg-slate-950 dark:text-slate-50 sm:px-6 lg:px-8"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
-      <div className="mx-auto max-w-6xl 2xl:max-w-7xl">
-        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 pb-4 border-b border-border/70 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1.5">
             <button
               type="button"
               onClick={() => navigate("/hr")}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs text-muted-foreground transition hover:text-foreground mb-1"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               الرجوع إلى الموارد البشرية
             </button>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                إدارة فورمات المتابعة والتحليل
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight">
+            <div className="space-y-1">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 نظام فورمات تقارير الموظفين
               </h1>
-              <p className="max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                أنشئ الفورم، عاينه، شاركه مع الموظفين، ثم راقب السجلات والتحليل
-                من نفس المسار. كل فورم يدعم حقول من النظام، إدخال يدوي، وحقول
-                حسابية.
+              <p className="max-w-3xl text-xs sm:text-sm text-muted-foreground">
+                أنشئ الفورم، عاينه، شاركه مع الموظفين، ثم راقب السجلات والتحليل من نفس المسار.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={seedPresetInSession}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-card px-3.5 py-2 text-xs font-medium text-foreground transition hover:bg-muted/30"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
               ابدأ بقالب فريق الرد
             </button>
             <Link

@@ -71,14 +71,14 @@ const Departments: React.FC = () => {
   } = useDepartmentsController();
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             إدارة الأقسام
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono tabular-nums">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-mono tabular-nums">
             {departments.length} قسم • {totalEmployees} موظف
           </p>
         </div>

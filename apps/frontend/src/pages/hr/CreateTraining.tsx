@@ -23,7 +23,7 @@ const CreateTraining: React.FC = () => {
 
   return (
     <div
-      className="hr-theme min-h-screen p-4 md:p-8 w-full space-y-8"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       <CreateTrainingHeader onBack={goBack} />

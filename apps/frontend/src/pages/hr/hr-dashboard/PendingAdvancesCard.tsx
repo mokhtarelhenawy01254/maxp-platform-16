@@ -29,65 +29,66 @@ export const PendingAdvancesCard: React.FC<PendingAdvancesCardProps> = ({
   const navigate = useNavigate();
 
   return (
-    <Card className="border-none shadow-xl overflow-hidden bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800 dark:to-emerald-900/10">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/20 dark:border-emerald-800/20 px-6 py-5">
-        <CardTitle className="flex items-center gap-3 text-lg font-bold text-emerald-900 dark:text-emerald-100">
-          <div className="p-2.5 bg-emerald-500 shadow-lg shadow-emerald-500/20 rounded-xl">
-            <DollarSign className="h-5 w-5 text-white" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+            <DollarSign className="h-4 w-4" />
           </div>
           {t("hrDashboard.pendingAdvances")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 transition-all rounded-lg"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/advances")}
         >
           <span className="hidden sm:inline">{t("hrDashboard.viewAll")}</span>
-          <ChevronRight className="h-4 w-4 ms-1" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-5">
         {pendingAdvances.length === 0 ? (
-          <div className="text-center py-10 flex flex-col items-center">
-            <div className="w-16 h-16 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mb-4 transform -rotate-12">
-              <DollarSign className="h-8 w-8 text-emerald-200" />
+          <div className="text-center py-8 flex flex-col items-center">
+            <div className="w-10 h-10 bg-muted/40 rounded-xl flex items-center justify-center mb-2 text-muted-foreground">
+              <DollarSign className="h-5 w-5" />
             </div>
-            <p className="text-gray-400 font-medium text-sm">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("hrDashboard.noPendingAdvances")}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {pendingAdvances.map((adv) => (
               <div
                 key={adv.id}
-                className="group p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
+                className="p-3.5 bg-card border border-border/70 rounded-xl hover:bg-muted/30 transition-colors"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 ring-2 ring-gray-50">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar className="h-9 w-9 shrink-0">
                       <AvatarImage src={adv.employee?.avatar} />
-                      <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold">
+                      <AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-xs font-bold">
                         {adv.employee?.firstName?.[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900 dark:text-white">
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-foreground truncate">
                         {adv.employee?.firstName} {adv.employee?.lastName}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-bold font-mono tabular-nums">
-                        {adv.createdAt
-                          ? new Date(adv.createdAt).toLocaleDateString(
-                              i18n.language === "ar" ? "ar-EG" : "en-US",
-                            )
-                          : ""}
+                      <p className="text-[10px] text-muted-foreground font-mono tabular-nums truncate">
+                        {new Date(adv.createdAt).toLocaleDateString(
+                          i18n.language === "ar" ? "ar-EG" : "en-US",
+                        )}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-emerald-600 font-mono tabular-nums">
-                      {adv.amount} {t("dashboard.egp")}
+                  <div className="text-start shrink-0">
+                    <p className="text-sm font-bold text-foreground font-mono tabular-nums">
+                      {adv.amount?.toLocaleString()}{" "}
+                      <span className="text-[10px] font-normal text-muted-foreground">
+                        {t("common.currency") || "ج.م"}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -95,7 +96,7 @@ export const PendingAdvancesCard: React.FC<PendingAdvancesCardProps> = ({
                   <Button
                     size="sm"
                     onClick={() => onAction(adv.id, "approve")}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-bold"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold shadow-xs"
                   >
                     {t("hrDashboard.approve")}
                   </Button>
@@ -103,7 +104,7 @@ export const PendingAdvancesCard: React.FC<PendingAdvancesCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => onAction(adv.id, "reject")}
-                    className="flex-1 h-8 text-xs font-bold border-gray-200 dark:border-gray-600"
+                    className="flex-1 h-8 text-xs font-semibold hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                   >
                     {t("hrDashboard.reject")}
                   </Button>

@@ -31,7 +31,7 @@ const CompanyPolicy: React.FC = () => {
   } = useCompanyPolicyController();
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header & Stats */}
       <div className="flex flex-col gap-6">
         <CompanyPolicyHeader onNewPolicy={() => setIsAddDialogOpen(true)} />

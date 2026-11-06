@@ -37,7 +37,7 @@ const CreateFeedback: React.FC = () => {
 
   return (
     <div
-      className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-screen"
+      className="max-w-4xl mx-auto space-y-6 pb-8"
       dir="rtl"
     >
       <CreateFeedbackHeader

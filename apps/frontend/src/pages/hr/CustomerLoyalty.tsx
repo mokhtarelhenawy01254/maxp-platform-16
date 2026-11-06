@@ -35,14 +35,14 @@ export const CustomerLoyalty: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <div className="flex items-center justify-center min-h-[350px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-gray-900 dark:text-gray-100">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <CustomerLoyaltyHeader
         onRefresh={fetchLoyaltyData}
@@ -57,7 +57,7 @@ export const CustomerLoyalty: React.FC = () => {
       />
 
       {/* Unified Tabs Container */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
         <CustomerLoyaltyTabsBar
           activeTab={activeTab}
           onTabChange={setActiveTab}

@@ -55,21 +55,21 @@ export const Permissions: React.FC = () => {
 
   return (
     <div
-      className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-x-hidden"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="p-2.5 sm:p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-200 dark:shadow-blue-900/20 shrink-0">
-            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
+            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white truncate sm:overflow-visible">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate sm:overflow-visible">
               {t("employee.permissions.title")}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 flex items-center gap-1.5 text-xs sm:text-sm">
-              <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs sm:text-sm">
+              <History className="h-3.5 w-3.5 shrink-0" />
               <span>
                 {t("employee.permissions.totalRecords", {
                   count: pagination.total,
@@ -81,9 +81,9 @@ export const Permissions: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="flex-1 sm:flex-initial bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4"
+            className="flex-1 sm:flex-initial text-xs sm:text-sm h-9 px-3 sm:px-4"
           >
-            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1.5" />
+            <Download className="h-3.5 w-3.5 ml-1.5" />
             {t("employee.permissions.export")}
           </Button>
           <Button
@@ -91,7 +91,7 @@ export const Permissions: React.FC = () => {
               resetForm();
               setShowAddDialog(true);
             }}
-            className="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 dark:shadow-none text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4"
+            className="flex-1 sm:flex-initial text-xs sm:text-sm h-9 px-3 sm:px-4"
           >
             <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1.5" />
             {t("employee.permissions.newPermission")}

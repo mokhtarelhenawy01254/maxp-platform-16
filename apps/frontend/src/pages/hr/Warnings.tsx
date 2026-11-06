@@ -39,7 +39,7 @@ const Warnings: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <WarningsHeader onNewWarning={handleNavigateNew} />
 
@@ -47,7 +47,7 @@ const Warnings: React.FC = () => {
       <WarningsStatsGrid stats={stats} />
 
       {/* Main Content Area */}
-      <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+      <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
         <CardHeader className="pb-4 border-b">
           <WarningsFilterBar
             activeTab={activeTab}

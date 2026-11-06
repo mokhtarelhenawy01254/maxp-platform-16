@@ -121,41 +121,37 @@ const AssetsOverviewDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50/30 via-purple-50/20 to-fuchsia-50/20 dark:bg-gradient-to-br dark:from-[#1a1040] dark:via-[#1e1248] dark:to-[#231250] flex">
-      {/* Sidebar Navigation */}
-      <AssetsOverviewSidebar
-        activeSection={activeSection}
-        onSelectSection={setActiveSection}
-      />
-
-      {/* Main Content Area */}
-      <main className="flex-1 min-h-screen relative">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-20 left-10 w-96 h-96 bg-violet-200/30 dark:bg-violet-500/10 rounded-full blur-3xl" />
-          <div className="absolute top-40 right-20 w-80 h-80 bg-purple-200/30 dark:bg-purple-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-fuchsia-200/20 dark:bg-fuchsia-500/5 rounded-full blur-3xl" />
-        </div>
-
-        {/* Top Header */}
-        <AssetsOverviewTopHeader
+    <div className="space-y-6 w-full pb-8" dir="rtl">
+      <div className="rounded-2xl border border-border/70 bg-card flex flex-col md:flex-row overflow-hidden shadow-xs">
+        {/* Sidebar Navigation */}
+        <AssetsOverviewSidebar
           activeSection={activeSection}
           onSelectSection={setActiveSection}
         />
 
-        {/* Content with animation */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="p-6 relative z-10"
-          >
-            {renderSection()}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-[600px]">
+          {/* Top Header */}
+          <AssetsOverviewTopHeader
+            activeSection={activeSection}
+            onSelectSection={setActiveSection}
+          />
+
+          {/* Content with animation */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="p-4 sm:p-6 flex-1"
+            >
+              {renderSection()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };

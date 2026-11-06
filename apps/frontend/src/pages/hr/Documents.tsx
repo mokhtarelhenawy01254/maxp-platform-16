@@ -166,10 +166,10 @@ const Documents: React.FC = () => {
 
   if (!employeeId) {
     return (
-      <div className="p-6" dir="rtl">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-gray-500">الرجاء اختيار موظف لعرض مستنداته</p>
+      <div className="space-y-6 w-full pb-8" dir="rtl">
+        <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
+          <CardContent className="p-12 text-center">
+            <p className="text-sm text-muted-foreground">الرجاء اختيار موظف لعرض مستنداته</p>
             <Button onClick={() => navigate("/hr/employees")} className="mt-4">
               العودة إلى الموظفين
             </Button>
@@ -180,11 +180,11 @@ const Documents: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-3xl font-bold">مستندات الموظف</h1>
-          <p className="text-gray-500 mt-1">إدارة مستندات الموظف</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">مستندات الموظف</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">إدارة ومتابعة وثائق ومستندات الموظف وصلاحيتها</p>
         </div>
         <Button onClick={() => setUploadDialog(true)}>
           <Upload className="h-4 w-4 ml-2" />

@@ -14,20 +14,20 @@ export const AssignShiftHeader: React.FC<AssignShiftHeaderProps> = ({
   onToggleDateRangeMode,
 }) => {
   return (
-    <div className="flex items-center justify-between mb-2">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
-          className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="rounded-lg hover:bg-muted/50 shrink-0"
         >
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">تعيين مناوبة</h1>
-          <p className="text-muted-foreground text-sm">
-            اختر موظف أو عدة موظفين لتعيينهم في المناوبة
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">تعيين مناوبة</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            اختر موظف أو عدة موظفين لتعيينهم في المناوبة المحددة
           </p>
         </div>
       </div>

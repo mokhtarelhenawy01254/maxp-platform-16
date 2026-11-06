@@ -23,7 +23,7 @@ const AuditLogs: React.FC = () => {
   } = useAuditLogsController();
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <AuditLogsHeader
         onExport={handleExport}

@@ -256,7 +256,7 @@ const WorkReportSubmissionPage: React.FC = () => {
   if (loading) {
     return (
       <div
-        className="min-h-screen bg-slate-50 px-4 py-10 text-center text-slate-500 dark:bg-slate-950 dark:text-slate-400"
+        className="min-h-[350px] flex items-center justify-center text-center text-sm text-muted-foreground w-full"
         dir="rtl"
       >
         جاري تحميل شاشة التقرير...
@@ -267,7 +267,7 @@ const WorkReportSubmissionPage: React.FC = () => {
   if (!context) {
     return (
       <div
-        className="min-h-screen bg-slate-50 px-4 py-10 text-center text-slate-500 dark:bg-slate-950 dark:text-slate-400"
+        className="min-h-[350px] flex items-center justify-center text-center text-sm text-muted-foreground w-full"
         dir="rtl"
       >
         لم يتم العثور على الفورم المطلوب.
@@ -277,10 +277,10 @@ const WorkReportSubmissionPage: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 dark:bg-slate-950 dark:text-slate-50 sm:px-6 lg:px-8"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl space-y-6">
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Link

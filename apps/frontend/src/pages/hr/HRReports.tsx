@@ -38,7 +38,7 @@ export const HRReports: React.FC = () => {
   } = useHRReportsController();
 
   return (
-    <div className="p-2.5 sm:p-6 space-y-4 sm:space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <HRReportsHeader
         selectedMonth={selectedMonth}

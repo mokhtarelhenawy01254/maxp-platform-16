@@ -60,7 +60,7 @@ export const Shifts: React.FC = () => {
   } = useShiftsController();
 
   return (
-    <div className="hr-theme min-h-screen p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <ShiftsHeader
         viewMode={viewMode}

@@ -8,6 +8,7 @@ import {
   Calendar,
   DollarSign,
   BarChart3,
+  Sparkles,
 } from "lucide-react";
 import {
   Card,
@@ -26,76 +27,62 @@ export const HRQuickActionsCard: React.FC = () => {
       label: t("hrDashboard.employees"),
       icon: Users,
       path: "/hr/employees",
-      color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
     },
     {
       label: t("hrDashboard.rewards") || "المكافآت",
       icon: DollarSign,
       path: "/hr/rewards",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
     },
     {
       label: t("hrDashboard.departments"),
       icon: Building2,
       path: "/hr/departments",
-      color: "text-purple-600",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
     },
     {
       label: t("hrDashboard.attendanceLabel"),
       icon: Clock,
       path: "/hr/attendance",
-      color: "text-amber-600",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
     },
     {
       label: t("hrDashboard.leaves"),
       icon: Calendar,
       path: "/hr/leaves",
-      color: "text-rose-600",
-      bg: "bg-rose-50 dark:bg-rose-900/20",
     },
     {
       label: t("hrDashboard.payroll"),
       icon: DollarSign,
       path: "/hr/payroll",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
     },
     {
       label: t("hrDashboard.reports"),
       icon: BarChart3,
-      path: "/hr/reports",
-      color: "text-cyan-600",
-      bg: "bg-cyan-50 dark:bg-cyan-900/20",
+      path: "/hr/reports-hub",
     },
   ];
 
   return (
-    <Card className="border-none shadow-md overflow-hidden bg-white dark:bg-gray-800/50 backdrop-blur-sm mt-8">
-      <CardHeader className="border-b bg-gray-50/50 dark:bg-gray-900/20 px-6 py-4">
-        <CardTitle className="text-lg font-bold flex items-center gap-2">
-          <div className="w-2 h-6 bg-primary rounded-full" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <div className="p-1.5 bg-primary/10 text-primary rounded-lg">
+            <Sparkles className="h-4 w-4" />
+          </div>
           {t("hrDashboard.quickActions")}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <CardContent className="p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {actions.map((action, i) => (
             <Button
               key={i}
               variant="outline"
-              className={`h-auto aspect-square flex-col gap-3 border-gray-100 dark:border-gray-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-4 ${action.bg}`}
+              className="h-auto py-3.5 px-3 flex-col gap-2 rounded-xl border-border/70 hover:bg-muted/50 hover:border-border transition-colors group"
               onClick={() => navigate(action.path)}
             >
-              <div
-                className={`p-3 rounded-2xl bg-white dark:bg-gray-800 shadow-sm ${action.color}`}
-              >
-                <action.icon className="h-6 w-6" />
+              <div className="p-2.5 rounded-lg bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <action.icon className="h-4 w-4" />
               </div>
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tracking-tight text-center">
+              <span className="text-xs font-semibold text-foreground tracking-tight text-center truncate w-full">
                 {action.label}
               </span>
             </Button>

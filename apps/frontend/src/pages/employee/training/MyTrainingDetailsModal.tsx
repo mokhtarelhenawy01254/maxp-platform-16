@@ -38,7 +38,7 @@ export const MyTrainingDetailsModal: React.FC<MyTrainingDetailsModalProps> = ({
     >
       <div
         dir="rtl"
-        className="relative border-none shadow-2xl overflow-hidden rounded-[2rem] bg-white hr-theme p-0 w-full max-w-[600px] my-auto"
+        className="relative border border-border/70 shadow-2xl overflow-hidden rounded-2xl bg-card text-card-foreground p-0 w-full max-w-[600px] my-auto"
       >
         <div className="relative w-full h-full pb-6">
           <div className="h-2 w-full bg-gradient-to-r from-purple-500 to-indigo-500 absolute top-0 left-0" />

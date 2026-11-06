@@ -25,7 +25,7 @@ const MyFeedback: React.FC = () => {
 
   return (
     <div
-      className="container mx-auto p-4 md:p-6 space-y-6 min-h-screen pb-20"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       <MyFeedbackHeaderAndStats

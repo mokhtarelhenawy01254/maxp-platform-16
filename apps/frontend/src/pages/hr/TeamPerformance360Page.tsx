@@ -32,7 +32,7 @@ export const TeamPerformance360Page: React.FC = () => {
   } = useTeamPerformance360Controller();
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Top Header */}
       <TeamPerformance360Header
         selectedPeriodMode={selectedPeriodMode}

@@ -12,17 +12,17 @@ export const AuditLogsHeader: React.FC<AuditLogsHeaderProps> = ({
   disabled,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Shield className="h-8 w-8 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+          <Shield className="size-5 sm:size-6 text-primary" />
           سجلات التدقيق
         </h1>
-        <p className="text-muted-foreground mt-1">
-          سجل التغييرات ومراقبة النظام
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          سجل التغييرات ومراقبة النظام والعمليات الإدارية
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           className="gap-2"

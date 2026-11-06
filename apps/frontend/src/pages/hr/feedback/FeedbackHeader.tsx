@@ -10,21 +10,21 @@ export const FeedbackHeader: React.FC<FeedbackHeaderProps> = ({
   onNewFeedback,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
       <div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-foreground mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
           التغذية الراجعة 360°
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           نظرة شاملة على الأداء والتفاعل في الشركة
         </p>
       </div>
       <Button
         onClick={onNewFeedback}
-        size="lg"
-        className="shadow-lg hover:shadow-xl transition-all duration-300"
+        size="sm"
+        className="gap-1.5 text-xs font-semibold shadow-xs"
       >
-        <Plus className="h-5 w-5 ml-2" />
+        <Plus className="h-4 w-4" />
         تغذية راجعة جديدة
       </Button>
     </div>

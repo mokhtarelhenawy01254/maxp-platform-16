@@ -71,7 +71,7 @@ const Payroll: React.FC = () => {
   } = usePayrollController();
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <PayrollHeader
         isMyPayroll={isMyPayroll}

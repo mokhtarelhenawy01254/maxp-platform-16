@@ -138,20 +138,19 @@ const PerformanceReviews: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-10" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             تقييمات الأداء
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">تحليل وتطوير الكفاءات البشرية في المؤسسة</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">تحليل وتطوير الكفاءات البشرية ومتابعة الأداء الدوري</p>
         </div>
         <Button
           onClick={() => navigate("/hr/performance-reviews/new")}
-          className="h-14 px-8 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary"
         >
-          <Plus className="h-6 w-6 ml-2" />
+          <Plus className="h-4 w-4 ml-2" />
           إنشاء تقييم شامل
         </Button>
       </div>

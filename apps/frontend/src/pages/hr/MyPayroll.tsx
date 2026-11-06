@@ -33,22 +33,9 @@ const MyPayroll: React.FC = () => {
 
   return (
     <div
-      className="p-4 md:p-8 lg:p-12 space-y-10 bg-slate-50 dark:bg-[#020617] min-h-screen font-inter text-slate-800 dark:text-slate-200 relative overflow-hidden transition-colors duration-500"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
-      {/* Dynamic Ambient Background */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div
-          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 dark:bg-emerald-600/10 rounded-full blur-[120px] animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-        <div
-          className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-indigo-500/5 dark:bg-indigo-600/10 rounded-full blur-[100px] animate-pulse"
-          style={{ animationDelay: "4s" }}
-        ></div>
-      </div>
-
       <MyPayrollHeader
         t={t}
         payrollData={payrollData}

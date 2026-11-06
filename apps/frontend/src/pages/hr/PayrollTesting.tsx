@@ -21,7 +21,7 @@ const PayrollTesting: React.FC = () => {
   const ctrl = usePayrollTestingController();
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <PayrollTestingHeader />
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -54,21 +54,21 @@ const PayrollTesting: React.FC = () => {
               </p>
             </div>
           ) : (
-            <Card className="shadow-lg">
-              <CardHeader className="bg-indigo-600 text-white py-4 px-6 flex-row items-center justify-between">
+            <Card className="rounded-2xl border border-border/70 bg-card shadow-xs">
+              <CardHeader className="rounded-t-2xl border-b border-border/70 bg-muted/30 text-card-foreground py-4 px-6 flex-row items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
-                    <Calculator className="h-6 w-6 text-white" />
+                  <div className="h-10 w-10 bg-primary/10 border border-primary/20 text-primary rounded-xl flex items-center justify-center">
+                    <Calculator className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">
+                    <h2 className="text-lg font-bold text-foreground">
                       اختبار راتب: {ctrl.selectedEmployee.firstName}{" "}
                       {ctrl.selectedEmployee.lastName}
                     </h2>
-                    <p className="text-indigo-100 text-xs opacity-90">
+                    <p className="text-muted-foreground text-xs font-mono tabular-nums">
                       الراتب الأساسي الحالي:{" "}
-                      {formatCurrency(ctrl.selectedEmployee.baseSalary)} •
-                      {ctrl.selectedEmployee.position?.title || "موظف"} •
+                      {formatCurrency(ctrl.selectedEmployee.baseSalary)} •{" "}
+                      {ctrl.selectedEmployee.position?.title || "موظف"} •{" "}
                       {ctrl.selectedEmployee.department?.name || "بدون قسم"}
                     </p>
                   </div>

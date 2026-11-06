@@ -62,50 +62,54 @@ export const Employees: React.FC = () => {
 
   return (
     <div
-      className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/70">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             {t("employees.pageTitle")}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
             {t("employees.pageSubtitle")}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
+            size="sm"
             onClick={() => setShowInviteDialog(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-all active:scale-95"
+            className="gap-1.5 text-xs font-semibold shadow-xs"
           >
-            <Link2 className="h-4 w-4 ml-1.5" />
+            <Link2 className="h-4 w-4" />
             دعوة موظف برابط
           </Button>
           <Button
+            size="sm"
+            variant="outline"
             onClick={() => {
               resetForm();
               setShowAddDialog(true);
             }}
-            variant="outline"
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="gap-1.5 text-xs font-semibold"
           >
-            <Plus className="h-4 w-4 ml-1.5" />
+            <Plus className="h-4 w-4" />
             {t("employees.addEmployee")}
           </Button>
           <Button
+            size="sm"
             variant="outline"
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="gap-1.5 text-xs font-semibold"
           >
-            <Upload className="h-4 w-4 ml-2" />
+            <Upload className="h-4 w-4" />
             {t("employees.import")}
           </Button>
           <Button
+            size="sm"
             variant="outline"
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="gap-1.5 text-xs font-semibold"
           >
-            <Download className="h-4 w-4 ml-2" />
+            <Download className="h-4 w-4" />
             {t("employees.export")}
           </Button>
         </div>

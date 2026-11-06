@@ -51,16 +51,16 @@ const AssignShift: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[350px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!shift) {
     return (
-      <div className="p-6 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+      <div className="space-y-6 w-full pb-8 text-center" dir="rtl">
+        <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
         <h2 className="text-xl font-bold">المناوبة غير موجودة</h2>
         <Button onClick={handleNavigateBack} className="mt-4">
           العودة للمناوبات
@@ -70,7 +70,7 @@ const AssignShift: React.FC = () => {
   }
 
   return (
-    <div className="w-full p-4 md:p-6 space-y-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       {/* Header */}
       <AssignShiftHeader
         onBack={handleNavigateBack}

@@ -31,127 +31,127 @@ export const AttendanceOverviewCard: React.FC<AttendanceOverviewCardProps> = ({
   const navigate = useNavigate();
 
   return (
-    <Card className="lg:col-span-2 border-none shadow-md overflow-hidden bg-white dark:bg-gray-800/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-gray-50/50 dark:bg-gray-900/20 px-6 py-4">
-        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Clock className="h-5 w-5 text-primary" />
+    <Card className="lg:col-span-2 rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
+            <Clock className="h-4 w-4" />
           </div>
           {t("hrDashboard.todaysAttendanceTitle")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-primary hover:text-primary/80 hover:bg-primary/5 transition-colors gap-2"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/attendance")}
         >
           {t("hrDashboard.viewAll")}
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6 pt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-          <div className="relative group bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20 p-6 rounded-2xl text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/20 transition-colors">
-              <UserCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+      <CardContent className="p-5 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
+          <div className="bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-xl text-center">
+            <div className="w-9 h-9 bg-emerald-500/10 rounded-lg flex items-center justify-center mx-auto mb-2 text-emerald-600 dark:text-emerald-400">
+              <UserCheck className="h-4 w-4" />
             </div>
-            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400 mb-1 leading-none font-mono tabular-nums">
+            <p className="text-2xl font-bold text-foreground mb-0.5 leading-none font-mono tabular-nums">
               {data?.attendance.present || 0}
             </p>
-            <p className="text-sm font-medium text-emerald-600/70 dark:text-emerald-400/50">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("hrDashboard.present")}
             </p>
           </div>
 
-          <div className="relative group bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 p-6 rounded-2xl text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-500/20 transition-colors">
-              <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl text-center">
+            <div className="w-9 h-9 bg-amber-500/10 rounded-lg flex items-center justify-center mx-auto mb-2 text-amber-600 dark:text-amber-400">
+              <Clock className="h-4 w-4" />
             </div>
-            <p className="text-3xl font-bold text-amber-700 dark:text-amber-400 mb-1 leading-none font-mono tabular-nums">
+            <p className="text-2xl font-bold text-foreground mb-0.5 leading-none font-mono tabular-nums">
               {data?.attendance.late || 0}
             </p>
-            <p className="text-sm font-medium text-amber-600/70 dark:text-amber-400/50">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("hrDashboard.late")}
             </p>
           </div>
 
-          <div className="relative group bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/20 p-6 rounded-2xl text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-rose-500/20 transition-colors">
-              <UserX className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+          <div className="bg-rose-500/5 border border-rose-500/20 p-4 rounded-xl text-center">
+            <div className="w-9 h-9 bg-rose-500/10 rounded-lg flex items-center justify-center mx-auto mb-2 text-rose-600 dark:text-rose-400">
+              <UserX className="h-4 w-4" />
             </div>
-            <p className="text-3xl font-bold text-rose-700 dark:text-rose-400 mb-1 leading-none font-mono tabular-nums">
+            <p className="text-2xl font-bold text-foreground mb-0.5 leading-none font-mono tabular-nums">
               {data?.attendance.absent || 0}
             </p>
-            <p className="text-sm font-medium text-rose-600/70 dark:text-rose-400/50">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("hrDashboard.absent")}
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/30">
-          <div className="flex items-center justify-between text-sm font-semibold">
-            <span className="text-gray-600 dark:text-gray-400">
+        <div className="space-y-2.5 bg-muted/30 p-4 rounded-xl border border-border/60">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className="text-muted-foreground">
               {t("hrDashboard.attendanceRate")}
             </span>
-            <span className="text-primary bg-primary/10 px-2 py-1 rounded-md font-mono tabular-nums">
+            <span className="text-primary font-mono tabular-nums">
               {attendanceRate}%
             </span>
           </div>
           <Progress
             value={attendanceRate}
-            className="h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"
+            className="h-2 rounded-full"
           />
         </div>
 
         {/* Recent Check-ins */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between mb-5">
-            <h4 className="text-base font-bold text-gray-800 dark:text-gray-200">
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-bold text-foreground">
               {t("hrDashboard.recentCheckins")}
             </h4>
-            <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4" />
+            <div className="h-px flex-1 bg-border/60 mx-3" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {data?.attendance.records
               ?.slice(0, 6)
               .map((record: AttendanceRecord, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3.5 bg-white dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all group"
+                  className="flex items-center justify-between p-3 bg-card border border-border/70 rounded-xl hover:bg-muted/40 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm transition-transform group-hover:scale-105">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative shrink-0">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src={record.employee?.avatar} />
-                        <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                           {record.employee?.firstName?.[0]}
                           {record.employee?.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div
-                        className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 ${
-                          record.checkIn ? "bg-emerald-500" : "bg-gray-300"
+                        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-card ${
+                          record.checkIn ? "bg-emerald-500" : "bg-muted-foreground"
                         }`}
                       />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">
                         {record.employee?.firstName} {record.employee?.lastName}
                       </p>
-                      <p className="text-[11px] font-medium text-gray-500 uppercase tracking-tighter">
-                        {record.employee?.department?.name}
+                      <p className="text-[11px] font-medium text-muted-foreground truncate">
+                        {record.employee?.department?.name || "—"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-end shrink-0">
                     <Badge
                       variant="outline"
-                      className={`rounded-full px-3 py-0.5 text-[10px] font-bold font-mono tabular-nums ${
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tabular-nums ${
                         record.status === "PRESENT"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                           : record.status === "LATE"
-                            ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20"
-                            : "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                            : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20"
                       }`}
                     >
                       {record.checkIn

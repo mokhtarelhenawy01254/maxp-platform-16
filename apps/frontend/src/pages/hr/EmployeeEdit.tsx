@@ -157,19 +157,19 @@ const EmployeeEdit: React.FC = () => {
   }
 
   return (
-    <div className="p-6 w-full space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+    <div className="space-y-6 w-full pb-8" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <User className="h-8 w-8 text-blue-500" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               تعديل بيانات الموظف
             </h1>
-            <p className="text-gray-500 mt-1">
-              تحديث ملف الموظف والإعدادات الخاصة به
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              تحديث ملف الموظف والإعدادات والرواتب الخاصة به
             </p>
           </div>
         </div>

@@ -29,67 +29,66 @@ export const PendingLeavesCard: React.FC<PendingLeavesCardProps> = ({
   const navigate = useNavigate();
 
   return (
-    <Card className="border-none shadow-md overflow-hidden bg-white dark:bg-gray-800/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-gray-50/50 dark:bg-gray-900/20 px-6 py-4">
-        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <Calendar className="h-5 w-5 text-amber-600" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
+            <Calendar className="h-4 w-4" />
           </div>
           {t("hrDashboard.leavesRequests")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors gap-2"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/leaves")}
         >
           {t("hrDashboard.viewAll")}
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-5 sm:p-6">
         {pendingLeaves.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center">
-            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <Calendar className="h-8 w-8 text-gray-400 opacity-50" />
+          <div className="text-center py-10 flex flex-col items-center">
+            <div className="w-12 h-12 bg-muted/40 rounded-xl flex items-center justify-center mb-3">
+              <Calendar className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-gray-500 font-medium">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("hrDashboard.noPendingRequests")}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {pendingLeaves.map((leave) => (
               <div
                 key={leave.id}
-                className="group p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
+                className="p-3.5 bg-card border border-border/70 rounded-xl hover:bg-muted/30 transition-colors"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <Avatar className="h-12 w-12 ring-2 ring-gray-50 dark:ring-gray-600">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={leave.employee?.avatar} />
-                    <AvatarFallback className="bg-amber-50 text-amber-600 text-sm font-bold uppercase">
+                    <AvatarFallback className="bg-amber-500/10 text-amber-600 text-xs font-bold uppercase">
                       {leave.employee?.firstName?.[0]}
                       {leave.employee?.lastName?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-bold text-gray-900 dark:text-white group-hover:text-amber-600 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground truncate">
                       {leave.employee?.firstName} {leave.employee?.lastName}
                     </p>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-tighter">
-                      {leave.employee?.department?.name}
+                    <p className="text-[11px] font-medium text-muted-foreground truncate">
+                      {leave.employee?.department?.name || "—"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs font-bold gap-2 mb-4">
-                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <div className="flex items-center justify-between text-xs font-medium gap-2 mb-3">
+                  <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-lg border border-border/50">
+                    <span className="text-foreground text-[11px]">
                       {leave.type}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 bg-primary/5 text-primary px-3 py-1.5 rounded-lg font-mono tabular-nums">
+                  <div className="flex items-center gap-1 bg-primary/10 text-primary px-2.5 py-1 rounded-lg font-mono tabular-nums text-[11px] font-bold">
                     <Clock className="h-3 w-3" />
                     <span>
                       {leave.totalDays} {t("common.days") || "أيام"}
@@ -101,7 +100,7 @@ export const PendingLeavesCard: React.FC<PendingLeavesCardProps> = ({
                   <Button
                     size="sm"
                     onClick={() => onAction(leave.id, "approve")}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 shadow-sm shadow-emerald-200 dark:shadow-none transition-all active:scale-95"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold h-8 shadow-xs"
                   >
                     {t("hrDashboard.approve")}
                   </Button>
@@ -109,7 +108,7 @@ export const PendingLeavesCard: React.FC<PendingLeavesCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => onAction(leave.id, "reject")}
-                    className="flex-1 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-bold h-9 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all active:scale-95"
+                    className="flex-1 text-xs font-semibold h-8 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                   >
                     {t("hrDashboard.reject")}
                   </Button>

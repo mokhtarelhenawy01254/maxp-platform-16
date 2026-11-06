@@ -109,7 +109,7 @@ const Resignations: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-background flex items-center justify-center text-foreground">
+      <div className="w-full min-h-[350px] flex items-center justify-center text-foreground">
         <div className="text-center">
           <RotateCcw className="animate-spin size-8 text-primary mx-auto mb-3" />
           <p className="text-xs font-mono text-muted-foreground">LOADING RESIGNATION DOSSIERS...</p>
@@ -119,10 +119,8 @@ const Resignations: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background text-foreground" dir={i18n.dir()}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-        {/* Top Command Bar */}
+    <div className="space-y-6 w-full pb-8" dir={i18n.dir()}>
+      {/* Top Command Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary">
@@ -335,8 +333,6 @@ const Resignations: React.FC = () => {
             onSuccess={fetchResignations}
           />
         )}
-
-      </div>
     </div>
   );
 };

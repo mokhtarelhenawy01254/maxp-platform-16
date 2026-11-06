@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, ChevronRight } from "lucide-react";
+import { TrendingUp, ChevronRight, UserPlus, Users, CalendarCheck, CheckCircle2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -26,69 +26,70 @@ export const RecruitmentOverviewCard: React.FC<RecruitmentOverviewCardProps> = (
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const metrics = [
+    {
+      label: t("hrDashboard.activeJobs"),
+      value: recruitment?.activeJobs || 0,
+      icon: UserPlus,
+    },
+    {
+      label: t("hrDashboard.totalApplicants"),
+      value: recruitment?.totalApplicants || 0,
+      icon: Users,
+    },
+    {
+      label: t("hrDashboard.interviews"),
+      value: recruitment?.scheduledInterviews || 0,
+      icon: CalendarCheck,
+    },
+    {
+      label: t("hrDashboard.hiredThisMonth"),
+      value: recruitment?.hiredThisMonth || 0,
+      icon: CheckCircle2,
+    },
+  ];
+
   return (
-    <Card className="border-none shadow-xl overflow-hidden bg-gradient-to-r from-purple-500/5 to-indigo-500/5 dark:from-purple-900/10 dark:to-indigo-900/10 border border-white/20 dark:border-white/5 backdrop-blur-xl mb-8">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-purple-100/20 dark:border-purple-800/20 px-6 py-5">
-        <CardTitle className="flex items-center gap-3 text-lg font-bold text-purple-900 dark:text-purple-100">
-          <div className="p-2.5 bg-purple-500 shadow-lg shadow-purple-500/20 rounded-xl">
-            <TrendingUp className="h-5 w-5 text-white" />
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-5 py-3.5 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <div className="p-1.5 bg-primary/10 text-primary rounded-lg">
+            <TrendingUp className="h-4 w-4" />
           </div>
           {t("hrDashboard.recruitmentOverview")}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="text-purple-600 hover:text-purple-700 hover:bg-purple-100/50 transition-all rounded-lg"
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
           onClick={() => navigate("/hr/recruitment")}
         >
           <span className="hidden sm:inline">
             {t("hrDashboard.manageRecruitment")}
           </span>
-          <ChevronRight className="h-4 w-4 ms-1" />
+          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          <div className="group p-5 bg-white/50 dark:bg-gray-800/40 rounded-3xl border border-purple-100/50 dark:border-purple-900/20 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <p className="text-3xl font-black text-purple-600 dark:text-purple-400 mb-1 font-mono tabular-nums">
-              {recruitment?.activeJobs || 0}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 group-hover:text-purple-600/70 uppercase tracking-widest transition-colors">
-              {t("hrDashboard.activeJobs")}
-            </p>
-          </div>
-          <div className="group p-5 bg-white/50 dark:bg-gray-800/40 rounded-3xl border border-blue-100/50 dark:border-blue-900/20 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <p className="text-3xl font-black text-blue-600 dark:text-blue-400 mb-1 font-mono tabular-nums">
-              {recruitment?.totalApplicants || 0}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 group-hover:text-blue-600/70 uppercase tracking-widest transition-colors">
-              {t("hrDashboard.totalApplicants")}
-            </p>
-          </div>
-          <div className="group p-5 bg-white/50 dark:bg-gray-800/40 rounded-3xl border border-indigo-100/50 dark:border-indigo-900/20 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-1 font-mono tabular-nums">
-              {recruitment?.scheduledInterviews || 0}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 group-hover:text-indigo-600/70 uppercase tracking-widest transition-colors">
-              {t("hrDashboard.interviews")}
-            </p>
-          </div>
-          <div className="group p-5 bg-white/50 dark:bg-gray-800/40 rounded-3xl border border-amber-100/50 dark:border-amber-900/20 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <p className="text-3xl font-black text-amber-600 dark:text-amber-400 mb-1 font-mono tabular-nums">
-              {recruitment?.pendingReviews || 0}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 group-hover:text-amber-600/70 uppercase tracking-widest transition-colors">
-              {t("hrDashboard.pendingReviews")}
-            </p>
-          </div>
-          <div className="group p-5 bg-white/50 dark:bg-gray-800/40 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-1 font-mono tabular-nums">
-              {recruitment?.hiredThisMonth || 0}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 group-hover:text-emerald-600/70 uppercase tracking-widest transition-colors">
-              {t("hrDashboard.hiredThisMonth")}
-            </p>
-          </div>
+      <CardContent className="p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          {metrics.map((metric, idx) => (
+            <div
+              key={idx}
+              className="p-4 bg-muted/30 border border-border/60 rounded-xl flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground truncate mb-1">
+                  {metric.label}
+                </p>
+                <p className="text-2xl font-bold text-foreground font-mono tabular-nums tracking-tight">
+                  {metric.value}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-muted text-muted-foreground shrink-0">
+                <metric.icon className="h-4 w-4" />
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

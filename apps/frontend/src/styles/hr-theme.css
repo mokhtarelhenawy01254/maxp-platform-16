@@ -1,133 +1,78 @@
 /* ═══════════════════════════════════════════════════════════════
-   App Theme - Soft Gradient Colors (Light & Dark Mode)
-   Applied via .hr-theme class on main content area
+   HR Domain Theme — Standardized with MaxP Design Tokens
+   Unified with daylight / OLED design system (No purple gradient leakage)
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Light Mode Background ── */
 .hr-theme {
-  background: var(--app-bg-gradient);
+  background: transparent;
+  color: var(--color-foreground, inherit);
   position: relative;
 }
 
-.hr-theme::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--app-bg-glow);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.hr-theme > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Cards & Containers ── */
+/* ── Standard Cards & Containers ── */
 .hr-theme > div .bg-white.rounded-lg.border.shadow-sm:not(.text-white) {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(245, 243, 255, 0.88) 100%
-  );
-  backdrop-filter: blur(12px);
-  border-color: rgba(167, 139, 250, 0.2);
-  box-shadow:
-    0 1px 3px rgba(139, 92, 246, 0.06),
-    0 0 0 1px rgba(139, 92, 246, 0.04);
+  background: var(--color-card, #ffffff);
+  border-color: var(--color-border, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .dark .hr-theme > div .bg-white.rounded-lg.border.shadow-sm:not(.text-white) {
-  background: linear-gradient(
-    145deg,
-    rgba(35, 25, 65, 0.85) 0%,
-    rgba(28, 20, 55, 0.8) 50%,
-    rgba(32, 22, 60, 0.82) 100%
-  );
-  backdrop-filter: blur(12px);
-  border-color: rgba(139, 92, 246, 0.18);
-  box-shadow:
-    0 1px 4px rgba(139, 92, 246, 0.08),
-    0 0 0 1px rgba(139, 92, 246, 0.06);
+  background: var(--color-card, #18181b);
+  border-color: var(--color-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* ── Table Headers ── */
+/* ── Standard Table Headers (Unified with Orders/POS tables) ── */
 .hr-theme table thead th {
-  background: linear-gradient(
-    135deg,
-    oklch(0.962 0.018 272.3) 0%,
-    oklch(0.943 0.028 294.6) 50%,
-    oklch(0.969 0.016 293.8) 100%
-  );
-  color: oklch(0.432 0.211 292.8);
+  background: var(--color-muted, #f4f4f5);
+  color: var(--color-muted-foreground, #71717a);
+  font-size: 11px;
   font-weight: 600;
-  border-bottom: 2px solid rgba(139, 92, 246, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
 }
 
 .dark .hr-theme table thead th {
-  background: linear-gradient(
-    135deg,
-    oklch(0.284 0.120 287.7) 0%,
-    oklch(0.309 0.135 289.0) 50%,
-    oklch(0.266 0.109 290.7) 100%
-  );
-  color: oklch(0.811 0.101 293.6);
-  border-bottom: 2px solid rgba(167, 139, 250, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-muted-foreground, #a1a1aa);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
 }
 
-/* ── Table Row Hover ── */
+/* ── Standard Table Row Hover ── */
 .hr-theme table tbody tr:hover {
-  background: linear-gradient(
-    90deg,
-    rgba(238, 242, 255, 0.6) 0%,
-    rgba(237, 233, 254, 0.4) 100%
-  );
+  background: var(--color-muted, rgba(0, 0, 0, 0.02));
 }
 
 .dark .hr-theme table tbody tr:hover {
-  background: linear-gradient(
-    90deg,
-    rgba(139, 92, 246, 0.1) 0%,
-    rgba(99, 102, 241, 0.08) 50%,
-    rgba(167, 139, 250, 0.06) 100%
-  );
+  background: rgba(255, 255, 255, 0.03);
 }
-
-/* ── Badges & Tags ── */
-.dark .hr-theme span.rounded-full.bg-green-100 { background-color: rgba(22, 101, 52, 0.2); color: oklch(0.800 0.182 151.7); background-image: none; }
-.dark .hr-theme span.rounded-full.bg-blue-100 { background-color: rgba(30, 64, 175, 0.2); color: oklch(0.714 0.143 254.6); background-image: none; }
-.dark .hr-theme span.rounded-full.bg-yellow-100 { background-color: rgba(133, 77, 14, 0.2); color: oklch(0.861 0.173 91.9); background-image: none; }
-.dark .hr-theme span.rounded-full.bg-red-100 { background-color: rgba(153, 27, 27, 0.2); color: oklch(0.711 0.166 22.2); background-image: none; }
-.dark .hr-theme span.rounded-full.bg-gray-100 { background-color: rgba(31, 41, 55, 0.2); color: oklch(0.711 0.035 256.8); background-image: none; }
 
 /* ── Input Focus States ── */
 .hr-theme input:focus,
 .hr-theme select:focus,
 .hr-theme textarea:focus {
-  border-color: oklch(0.606 0.219 292.7);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 2px var(--color-primary-ring, rgba(37, 99, 235, 0.15));
   outline: none;
 }
 
 .dark .hr-theme input:focus,
 .dark .hr-theme select:focus,
 .dark .hr-theme textarea:focus {
-  border-color: oklch(0.709 0.159 293.5);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 2px var(--color-primary-ring, rgba(59, 130, 246, 0.2));
 }
 
 /* ── Scrollbar Styling ── */
 .hr-theme {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
 }
 
 .hr-theme::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 .hr-theme::-webkit-scrollbar-track {
@@ -135,39 +80,27 @@
 }
 
 .hr-theme::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, oklch(0.811 0.101 293.6) 0%, oklch(0.709 0.159 293.5) 100%);
+  background: rgba(150, 150, 150, 0.3);
   border-radius: 4px;
 }
 
 .hr-theme::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, oklch(0.75 0.14 293.6) 0%, oklch(0.65 0.18 293.5) 100%);
-}
-
-.dark .hr-theme {
-  scrollbar-color: rgba(167, 139, 250, 0.5) transparent;
-}
-
-.dark .hr-theme::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, oklch(0.541 0.247 293.0) 0%, oklch(0.627 0.233 303.9) 100%);
-}
-
-.dark .hr-theme::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, oklch(0.62 0.25 293.0) 0%, oklch(0.7 0.24 303.9) 100%);
+  background: rgba(150, 150, 150, 0.5);
 }
 
 /* ── Select/Dropdown Triggers ── */
 .hr-theme button[role="combobox"] {
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  transition: all 0.2s ease;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
+  transition: all 0.15s ease;
 }
 
 /* ── Tabs Active State ── */
 .hr-theme [data-state="active"][role="tab"] {
-  border-color: oklch(0.541 0.247 293.0);
-  color: oklch(0.541 0.247 293.0);
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
 }
 
 .dark .hr-theme [data-state="active"][role="tab"] {
-  border-color: oklch(0.709 0.159 293.5);
-  color: oklch(0.709 0.159 293.5);
+  border-color: var(--color-primary, #60a5fa);
+  color: var(--color-primary, #60a5fa);
 }
