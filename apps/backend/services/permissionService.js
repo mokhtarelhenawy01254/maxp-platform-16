@@ -181,7 +181,11 @@ const setUserRole = async (userId, companyId, roleId, actorId) => {
     where: { id: roleId },
   });
   if (!role) throw new Error('Role not found');
-  if (role.companyId && role.companyId !== companyId) throw new Error('Role does not belong to this company');
+  // الأدوار المدمجة (OWNER/COMPANY_ADMIN/MANAGER/AGENT/AFFILIATE) مخزّنة بصلاحية
+  // نظامية (companyId = '__system__' أو null) ومشتركة بين كل الشركات — كانت
+  // المقارنة بترفضها فكان مستحيل إسناد أي دور مدمج لأي مستخدم.
+  const isSystemRole = !role.companyId || role.companyId === '__system__';
+  if (!isSystemRole && role.companyId !== companyId) throw new Error('Role does not belong to this company');
 
   const userCompany = await getSharedPrismaClient().userCompany.findUnique({
     where: { userId_companyId: { userId, companyId } },
