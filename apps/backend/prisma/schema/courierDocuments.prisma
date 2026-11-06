@@ -1,0 +1,58 @@
+model CourierDocument {
+  id         String    @id @default(cuid())
+  companyId  String
+  courierId  String
+  type       String /// NATIONAL_ID_FRONT, NATIONAL_ID_BACK, CRIMINAL_RECORD, DRIVING_LICENSE, CUSTODY_RECEIPT, CONTRACT, MEDICAL, OTHER
+  fileUrl    String
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  expiryDate DateTime?
+  status     String    @default("PENDING") /// PENDING, VERIFIED, REJECTED
+  reviewedBy String?
+  reviewedAt DateTime?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  courier Courier @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([courierId])
+  @@index([status])
+  @@index([type])
+  @@map("courier_documents")
+}
+
+model CourierPayroll {
+  id                    String    @id @default(cuid())
+  companyId             String
+  courierId             String
+  month                 String /// YYYY-MM
+  compensationModel     String    @default("COMMISSION_ONLY") /// COMMISSION_ONLY, SALARY_ONLY, SALARY_PLUS_BONUS, SALARY_PLUS_COMMISSION
+  baseSalary            Decimal   @default(0.0) @db.Decimal(10, 2)
+  bonus                 Decimal   @default(0.0) @db.Decimal(10, 2)
+  commission            Decimal   @default(0.0) @db.Decimal(10, 2)
+  deductions            Decimal   @default(0.0) @db.Decimal(10, 2)
+  netPayable            Decimal   @default(0.0) @db.Decimal(10, 2)
+  deliveredOrdersCount  Int       @default(0)
+  status                String    @default("DRAFT") /// DRAFT, APPROVED, PAID, CANCELLED
+  calculationDetails    String? /// JSON breakdown
+  treasuryAccountId     String?
+  treasuryTransactionId String?
+  approvedBy            String?
+  approvedAt            DateTime?
+  paidBy                String?
+  paidAt                DateTime?
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  courier Courier @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, courierId, month])
+  @@index([companyId, month])
+  @@index([courierId])
+  @@index([status])
+  @@map("courier_payrolls")
+}
