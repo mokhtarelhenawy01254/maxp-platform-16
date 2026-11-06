@@ -101,7 +101,7 @@ export const JoinEmployee: React.FC = () => {
 
     const verifyToken = async () => {
       try {
-        const response = await apiClient.get(
+        const response = await apiClient.get<any>(
           `/hr/employee-invitations/verify/${token}`
         );
         if (response.data?.success && response.data?.data?.invitation) {
@@ -140,7 +140,7 @@ export const JoinEmployee: React.FC = () => {
     setError("");
     try {
       setSubmitting(true);
-      const response = await apiClient.post(
+      const response = await apiClient.post<any>(
         `/hr/employee-invitations/accept/${token}`,
         {
           email: currentUser?.email || formData.email,
@@ -221,7 +221,7 @@ export const JoinEmployee: React.FC = () => {
         if (formData.lastName.trim()) payload.lastName = formData.lastName.trim();
       }
 
-      const response = await apiClient.post(
+      const response = await apiClient.post<any>(
         `/hr/employee-invitations/accept/${token}`,
         payload
       );
@@ -725,7 +725,9 @@ export const JoinEmployee: React.FC = () => {
               <DateInput
                 name="dateOfBirth"
                 value={formData.dateOfBirth}
-                onChange={handleChange}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, dateOfBirth: e.target.value }))
+                }
                 className="business-auth-date-wrap"
               />
             </div>

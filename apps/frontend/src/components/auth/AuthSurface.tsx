@@ -154,7 +154,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
                         ? companyLogo
                         : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
                     }
-                    alt={companyName || t("auth.brandName")}
+                    alt={companyName || String(t("auth.brandName") || "")}
                     className="logo-img"
                     onError={(e) => {
                       const target = e.currentTarget;
@@ -166,7 +166,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
                 ) : companyName ? null : (
                   <img
                     src="/logo.png"
-                    alt={t("auth.brandName")}
+                    alt={String(t("auth.brandName") || "")}
                     className="logo-img"
                   />
                 )}
@@ -174,7 +174,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
                   className="logo-icon"
                   style={{ display: companyLogo || !companyName ? "none" : "flex" }}
                 >
-                  {(companyName || t("auth.brandName")).charAt(0)}
+                  {(companyName || String(t("auth.brandName") || "")).charAt(0)}
                 </div>
                 <span className="logo-text">
                   {companyName || t("auth.brandName")}
