@@ -17,6 +17,7 @@
   "emptyState": "No guides available yet",
   "loadError": "Failed to load guides. Please try again later.",
   "recentSection": "Recently added",
+  "allGroups": "All sections",
   "groupStart": "Getting started",
   "groupProducts": "Products & inventory",
   "groupOrders": "Orders & shipping",

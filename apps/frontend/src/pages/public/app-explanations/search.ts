@@ -53,3 +53,65 @@ export const matchesQuery = (entry: SearchEntry | undefined, needle: string): bo
   if (!entry) return false;
   return entry.title.includes(needle) || entry.body.includes(needle);
 };
+
+export interface TitleMatchRange {
+  start: number;
+  end: number;
+}
+
+/**
+ * يحدد موضع أول تطابق للنص المُبحث عنه داخل العنوان الأصلي — رغم أن
+ * normalizeArabic بيحذف حروف (تشكيل/تطويل) فطول النص بيتغير؛ هنا بنبني
+ * خريطة من فهرس النص المُوحَّد لفهرس العنوان الأصلي عشان الـ highlight
+ * يقص من النص الحقيقي مش المتحول. نفس تحويلات normalizeArabic بالظبط.
+ */
+export const locateTitleMatch = (title: string, needle: string): TitleMatchRange | null => {
+  if (!needle) return null;
+
+  const lower = title.toLowerCase();
+  const kept: number[] = [];
+  let mapped = "";
+  for (let i = 0; i < lower.length; i++) {
+    const ch = lower[i];
+    if (/[\u064B-\u0652\u0670\u0640\u200e\u200f]/.test(ch)) continue;
+    mapped += /[أإآٱ]/.test(ch)
+      ? "ا"
+      : ch === "ى"
+        ? "ي"
+        : ch === "ة"
+          ? "ه"
+          : /[ؤئ]/.test(ch)
+            ? "ء"
+            : ch;
+    kept.push(i);
+  }
+
+  /* طي المسافات المتتالية + القص من الطرفين — مع الاحتفاظ بأول فهرس أصلي */
+  let text = "";
+  const map: number[] = [];
+  let spacePending = false;
+  let spaceAt = -1;
+  for (let j = 0; j < mapped.length; j++) {
+    if (/\s/.test(mapped[j])) {
+      if (!spacePending) {
+        spacePending = true;
+        spaceAt = kept[j];
+      }
+      continue;
+    }
+    if (text.length > 0 && spacePending) {
+      text += " ";
+      map.push(spaceAt);
+    }
+    spacePending = false;
+    text += mapped[j];
+    map.push(kept[j]);
+  }
+
+  const at = text.indexOf(needle);
+  if (at < 0) return null;
+  const start = map[at];
+  const end = map[Math.min(at + needle.length - 1, map.length - 1)] + 1;
+  if (typeof start !== "number" || !Number.isFinite(end)) return null;
+  return { start, end };
+};

@@ -9,13 +9,20 @@ import { ExplanationRow } from "./app-explanations/ExplanationRow";
 import { MobileBottomBar } from "./app-explanations/MobileBottomBar";
 import { MobileCategorySheet } from "./app-explanations/MobileCategorySheet";
 import {
+  ALL_TAB,
   OTHER_GROUP,
   ROUTE_GROUPS,
   groupOf,
   type AppExplanation,
   type RouteGroup,
 } from "./app-explanations/groups";
-import { buildSearchIndex, matchesQuery, normalizeArabic } from "./app-explanations/search";
+import {
+  buildSearchIndex,
+  locateTitleMatch,
+  matchesQuery,
+  normalizeArabic,
+} from "./app-explanations/search";
+import type { RailGroup } from "./app-explanations/SectionRail";
 import "./app-explanations/explanations.css";
 
 export { CardVideoBlock } from "./app-explanations/ExplanationVideo";
@@ -27,10 +34,12 @@ const AppExplanationsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [openSlugs, setOpenSlugs] = useState<Set<string>>(new Set());
-  const [activeGroup, setActiveGroup] = useState<string>("");
+  /* تاب فلتر حقيقي: «all» = كل الأقسام، أو مفتاح مجموعة واحدة — البحث بيتجاوزه */
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [videoOnly, setVideoOnly] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [resultCursor, setResultCursor] = useState(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const ar = useCallback(
@@ -88,10 +97,27 @@ const AppExplanationsPage: React.FC = () => {
   const needle = normalizeArabic(query);
   const isSearching = needle.length > 0;
 
+  /* تابات الأقسام بعد فلتر الفيديو (البحث مش بيدخل في العدّ) */
+  const tabGroups: RailGroup[] = useMemo(() => {
+    const buckets = new Map<string, AppExplanation[]>();
+    for (const group of [...ROUTE_GROUPS, OTHER_GROUP]) buckets.set(group.key, []);
+    for (const exp of baseList) buckets.get(groupOf(exp.targetRoute))!.push(exp);
+
+    const all: RailGroup = { ...ALL_TAB, items: baseList };
+    const rest = [...ROUTE_GROUPS, OTHER_GROUP].map((group) => ({
+      ...group,
+      items: buckets.get(group.key) ?? [],
+    }));
+    return [all, ...rest];
+  }, [baseList]);
+
+  /* النتائج المعروضة: البحث بيتجاوز التاب المختار ويدور في الكل */
   const grouped = useMemo(() => {
     const filtered = isSearching
       ? baseList.filter((exp) => matchesQuery(searchIndex.get(exp.id), needle))
-      : baseList;
+      : activeTab === "all"
+        ? baseList
+        : baseList.filter((exp) => groupOf(exp.targetRoute) === activeTab);
 
     const buckets = new Map<string, AppExplanation[]>();
     for (const group of ROUTE_GROUPS) buckets.set(group.key, []);
@@ -104,12 +130,19 @@ const AppExplanationsPage: React.FC = () => {
     return [...ROUTE_GROUPS, OTHER_GROUP]
       .map((group) => ({ ...group, items: buckets.get(group.key) ?? [] }))
       .filter((group) => group.items.length > 0);
-  }, [baseList, searchIndex, needle, isSearching]);
+  }, [baseList, searchIndex, needle, isSearching, activeTab]);
 
   const filteredTotal = useMemo(
     () => grouped.reduce((sum, group) => sum + group.items.length, 0),
     [grouped],
   );
+
+  /* قائمة مسطّحة للتنقّل بالكيبورد في وضع البحث */
+  const flatResults = useMemo(() => grouped.flatMap((group) => group.items), [grouped]);
+
+  useEffect(() => {
+    setResultCursor(0);
+  }, [needle, videoOnly]);
 
   const labelFor = useCallback(
     (group: RouteGroup) => ar(group.labelKey, group.labelFallback),
@@ -128,57 +161,23 @@ const AppExplanationsPage: React.FC = () => {
       .slice(0, 8);
   }, [explanations]);
 
+  /* مراقبة التمرير لزر الرجوع للأعلى فقط (التابات فلاتر — مفيش scroll-spy) */
   useEffect(() => {
-    if (grouped.length > 0 && (!activeGroup || !grouped.some((g) => g.key === activeGroup))) {
-      setActiveGroup(grouped[0].key);
-    }
-  }, [grouped, activeGroup]);
+    const onScroll = () => setShowScrollTop(window.scrollY > 320);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  /* Scroll spy ومراقبة التمرير لزر الرجوع للأعلى */
-  useEffect(() => {
-    let rafId = 0;
-
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 320);
-
-      if (!grouped.length) return;
-      if (rafId) return;
-
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        const headerHeight =
-          document.querySelector("[data-exp-header]")?.getBoundingClientRect().height ?? 56;
-        const line = headerHeight + 64;
-
-        const sections = grouped
-          .map((g) => document.getElementById(g.key))
-          .filter((el): el is HTMLElement => el !== null);
-        if (!sections.length) return;
-
-        let currentId = sections[0].id;
-        for (const section of sections) {
-          if (section.getBoundingClientRect().top <= line) currentId = section.id;
-        }
-        setActiveGroup((prev) => (prev !== currentId ? currentId : prev));
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [grouped]);
-
-  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, key: string) => {
-    event.preventDefault();
-    setActiveGroup(key);
-    document.getElementById(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  /* اختيار تاب: بيلغي أي بحث جاري + يرجّع القارئة لأول القائمة */
+  const handleTabSelect = useCallback(
+    (key: string) => {
+      setActiveTab(key);
+      if (isSearching) setQuery("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [isSearching],
+  );
 
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -200,10 +199,14 @@ const AppExplanationsPage: React.FC = () => {
     }
   }, []);
 
-  /* لينك مباشر: /app-explanations#slug يفتح الشرح نفسه */
+  /* لينك مباشر: /app-explanations#slug يفتح الشرح نفسه — ويبدّل للتاب الصح لو مش مختار */
   const openFromSlug = useCallback(
     (slug: string) => {
-      if (!slug || !explanations.some((exp) => exp.slug === slug)) return;
+      if (!slug) return;
+      const target = explanations.find((exp) => exp.slug === slug);
+      if (!target) return;
+      const owningGroup = groupOf(target.targetRoute);
+      setActiveTab((prev) => (prev === "all" || prev === owningGroup ? prev : "all"));
       setOpenSlugs((prev) => {
         if (prev.has(slug)) return prev;
         const next = new Set(prev);
@@ -255,7 +258,38 @@ const AppExplanationsPage: React.FC = () => {
     }
   }, [isSearching, filteredTotal, grouped, openSlugs]);
 
+  /* تنقّل النتائج بالكيبورد: ↑↓ للتحرك و Enter للفتح */
+  const moveCursor = useCallback(
+    (next: number) => {
+      const clamped = Math.max(0, Math.min(next, flatResults.length - 1));
+      setResultCursor(clamped);
+      const slug = flatResults[clamped]?.slug;
+      if (slug) {
+        document.getElementById(slug)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    },
+    [flatResults],
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!isSearching || flatResults.length === 0) return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveCursor(resultCursor + 1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveCursor(resultCursor - 1);
+      } else if (event.key === "Enter") {
+        const item = flatResults[Math.min(resultCursor, flatResults.length - 1)];
+        if (item) openFromSlug(item.slug);
+      }
+    },
+    [isSearching, flatResults, resultCursor, moveCursor, openFromSlug],
+  );
+
   const watchVideoLabel = ar("explanations.watchVideo", "شاهد الفيديو التوضيحي");
+  const cursorSlug = isSearching ? flatResults[resultCursor]?.slug : undefined;
 
   return (
     <div className="rtl min-h-screen bg-background text-foreground" dir="rtl">
@@ -271,6 +305,7 @@ const AppExplanationsPage: React.FC = () => {
         searchLabel={ar("explanations.searchPlaceholder", "ابحث في الشروحات…")}
         clearLabel={ar("explanations.clearSearch", "مسح البحث")}
         onOpenCategorySheet={() => setIsCategorySheetOpen(true)}
+        onSearchKeyDown={handleSearchKeyDown}
       />
 
       {loading ? (
@@ -293,18 +328,21 @@ const AppExplanationsPage: React.FC = () => {
         </div>
       ) : (
         <div className="mx-auto grid min-w-0 max-w-[1180px] grid-cols-1 gap-4 px-3 py-2 sm:px-4 md:grid-cols-[268px_minmax(0,1fr)] md:gap-6 md:py-5 pb-24 md:pb-12">
-          {/* شريط التبويبات:
+          {/* شريط التابات:
               على الموبايل: يلتصق أسفل شريط التطبيق العلوي مباشرة (Sticky Sub-Header) مع تمويه خلفية.
-              على الديسكتوب: شريط جانبي عمودي ثابت (Sidebar). */}
+              على الديسكتوب: قائمة تابات عمودية ثابتة في الشريط الجانبي — التاب بيفلتر، مش بسيسكرول. */}
           <aside className="sticky top-14 z-20 min-w-0 bg-background/95 pb-1 backdrop-blur-md sm:top-[60px] md:top-[76px] md:h-fit md:bg-transparent md:backdrop-blur-none md:pb-0">
             <p className="mb-2 hidden text-[11px] font-bold text-muted-foreground md:block">
               الأقسام
             </p>
             <SectionRail
-              groups={grouped}
-              activeGroup={activeGroup}
+              groups={tabGroups}
+              activeGroup={activeTab}
               labelFor={labelFor}
-              onSelect={handleNavClick}
+              onSelect={(event, key) => {
+                event.preventDefault();
+                handleTabSelect(key);
+              }}
             />
           </aside>
 
@@ -333,17 +371,21 @@ const AppExplanationsPage: React.FC = () => {
               </div>
             )}
 
-            {(isSearching || videoOnly) && grouped.length === 0 ? (
+            {grouped.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
                 <p className="text-sm font-semibold text-foreground">
-                  {videoOnly && !isSearching
-                    ? "لا توجد شروحات مصحوبة بفيديو في هذا القسم حالياً"
-                    : `مفيش نتائج لـ «${query.trim()}»`}
+                  {isSearching
+                    ? `مفيش نتائج لـ «${query.trim()}»`
+                    : videoOnly
+                      ? "لا توجد شروحات مصحوبة بفيديو في هذا القسم حالياً"
+                      : "مفيش شروحات في القسم ده لسه"}
                 </p>
                 <p className="mt-1 text-[12.5px] text-muted-foreground">
-                  {videoOnly
-                    ? "يمكنك إلغاء فلتر الفيديو لعرض كل الشروحات النصية."
-                    : "جرّب كلمة أقصر أو اسم الأداة نفسها، زي «الطلبات» أو «الكوبونات»."}
+                  {isSearching
+                    ? "جرّب كلمة أقصر أو اسم الأداة نفسها، زي «الطلبات» أو «الكوبونات»."
+                    : videoOnly
+                      ? "يمكنك إلغاء فلتر الفيديو لعرض كل الشروحات النصية."
+                      : "اختار قسم تاني من التابات أو اعرض الكل."}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                   {videoOnly && (
@@ -367,7 +409,41 @@ const AppExplanationsPage: React.FC = () => {
                       {ar("explanations.clearSearch", "مسح البحث")}
                     </button>
                   )}
+                  {!isSearching && !videoOnly && activeTab !== "all" && (
+                    <button
+                      type="button"
+                      onClick={() => handleTabSelect("all")}
+                      className="inline-flex items-center rounded-xl bg-primary px-3 py-1.5 text-[12px] font-bold text-primary-foreground shadow-xs transition-transform active:scale-95"
+                    >
+                      {ar("explanations.allGroups", "كل الأقسام")}
+                    </button>
+                  )}
                 </div>
+
+                {/* اقتراحات عند عدم وجود نتائج: آخر الشروحات المضافة */}
+                {isSearching && recent.length > 0 && (
+                  <div className="mt-6 border-t border-border/50 pt-4">
+                    <p className="mb-2 text-[11px] font-bold text-muted-foreground">
+                      <Sparkles
+                        className="ms-1 inline size-3 text-emerald-500"
+                        aria-hidden="true"
+                      />{" "}
+                      جرّب آخر اللي اتضاف:
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {recent.slice(0, 4).map((exp) => (
+                        <button
+                          key={exp.id}
+                          type="button"
+                          onClick={() => openFromSlug(exp.slug)}
+                          className="shrink-0 whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-1.5 text-[12px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-95"
+                        >
+                          {exp.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               grouped.map((group) => (
@@ -397,6 +473,8 @@ const AppExplanationsPage: React.FC = () => {
                         open={openSlugs.has(exp.slug)}
                         onOpenChange={(open) => toggleSlug(exp.slug, open)}
                         watchVideoLabel={watchVideoLabel}
+                        highlight={isSearching ? locateTitleMatch(exp.title, needle) : null}
+                        cursorActive={cursorSlug === exp.slug}
                       />
                     ))}
                   </div>
@@ -408,10 +486,10 @@ const AppExplanationsPage: React.FC = () => {
       )}
 
       {/* شريط التحكم السفلي العائم (Floating Mobile App Dock) */}
-      {!loading && !error && grouped.length > 0 && (
+      {!loading && !error && explanations.length > 0 && (
         <MobileBottomBar
-          groups={grouped}
-          activeGroup={activeGroup}
+          groups={tabGroups}
+          activeGroup={activeTab}
           labelFor={labelFor}
           onOpenSheet={() => setIsCategorySheetOpen(true)}
           showScrollTop={showScrollTop}
@@ -426,13 +504,10 @@ const AppExplanationsPage: React.FC = () => {
       <MobileCategorySheet
         isOpen={isCategorySheetOpen}
         onClose={() => setIsCategorySheetOpen(false)}
-        groups={grouped}
-        activeGroup={activeGroup}
+        groups={tabGroups}
+        activeGroup={activeTab}
         labelFor={labelFor}
-        onSelect={(key) => {
-          setActiveGroup(key);
-          document.getElementById(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }}
+        onSelect={handleTabSelect}
         totalExplanations={filteredTotal}
       />
     </div>

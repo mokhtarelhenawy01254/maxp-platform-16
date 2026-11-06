@@ -82,7 +82,7 @@ export const MobileCategorySheet: React.FC<MobileCategorySheetProps> = ({
               أقسام الشروحات
             </h2>
             <p className="text-[12px] font-semibold text-muted-foreground">
-              {totalExplanations} شرح مقسمين على {groups.length} أقسام
+              {totalExplanations} شرح في {Math.max(groups.length - 1, 0)} أقسام
             </p>
           </div>
           <button

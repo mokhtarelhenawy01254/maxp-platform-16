@@ -8,6 +8,7 @@ import {
   BarChart3,
   Users,
   MoreHorizontal,
+  LayoutGrid,
 } from "lucide-react";
 
 export interface AppExplanation {
@@ -82,7 +83,16 @@ export const OTHER_GROUP: RouteGroup = {
   prefixes: [],
 };
 
+/** تاب «الكل» — يعرض كل الأقسام في صفحة واحدة (الافتراضي) */
+export const ALL_TAB: RouteGroup = {
+  key: "all",
+  labelKey: "explanations.allGroups",
+  labelFallback: "كل الأقسام",
+  prefixes: [],
+};
+
 export const GROUP_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  all: LayoutGrid,
   start: Settings,
   products: Package,
   orders: Truck,

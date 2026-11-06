@@ -13,6 +13,8 @@ interface ExplanationsHeaderProps {
   searchLabel: string;
   clearLabel: string;
   onOpenCategorySheet?: () => void;
+  /** تنقّل النتائج بالكيبورد من حقل البحث (↑↓ Enter) */
+  onSearchKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -31,6 +33,7 @@ export const ExplanationsHeader: React.FC<ExplanationsHeaderProps> = ({
   searchLabel,
   clearLabel,
   onOpenCategorySheet,
+  onSearchKeyDown,
 }) => (
   <header
     data-exp-header
@@ -64,6 +67,7 @@ export const ExplanationsHeader: React.FC<ExplanationsHeaderProps> = ({
             onChange={(e) => onQueryChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") onQueryChange("");
+              onSearchKeyDown?.(e);
             }}
             placeholder={isSearching ? `${total} نتيجة…` : searchLabel}
             aria-label={searchLabel}
@@ -132,6 +136,7 @@ export const ExplanationsHeader: React.FC<ExplanationsHeaderProps> = ({
             onChange={(e) => onQueryChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") onQueryChange("");
+              onSearchKeyDown?.(e);
             }}
             placeholder={searchLabel}
             aria-label={searchLabel}

@@ -2,13 +2,17 @@ import React from "react";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import AppExplanationsPage, { CardVideoBlock } from "../AppExplanationsPage";
+import { locateTitleMatch } from "../app-explanations/search";
 import { apiClient } from "../../../services/apiClient";
 
 const mockT = (key: string, fallback?: string) => fallback || key;
+/* كائن i18n ثابت — كائن جديد كل render بيخلي useCallback(ar) متغير
+   فيعيد تشغيل fetch effect ويرجّع الصفحة لحالة loading (فليكس) */
+const mockI18n = { getResource: () => undefined };
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: mockT,
-    i18n: { getResource: () => undefined },
+    i18n: mockI18n,
   }),
 }));
 
@@ -67,6 +71,68 @@ describe("AppExplanationsPage Component", () => {
       },
       { timeout: 8000 },
     );
+  });
+
+  it("filters to a single section when its tab is selected", async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+        explanations: [
+          {
+            id: "exp-apps",
+            title: "شرح لوحة التطبيقات",
+            slug: "apps-guide",
+            targetRoute: "/apps",
+            order: 1,
+            content: "<p>تطبيقات</p>",
+          },
+          {
+            id: "exp-orders",
+            title: "حالات الطلب",
+            slug: "orders-guide",
+            targetRoute: "/orders",
+            order: 2,
+            content: "<p>طلبات</p>",
+          },
+        ],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AppExplanationsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("شرح لوحة التطبيقات")).toBeInTheDocument();
+      },
+      { timeout: 8000 },
+    );
+
+    // التاب بيفلتر: اختيار «الطلبات والشحن» يخفي شروحات الأقسام التانية
+    fireEvent.click(screen.getByRole("link", { name: /الطلبات والشحن/ }));
+
+    expect(screen.getByText("حالات الطلب")).toBeInTheDocument();
+    expect(screen.queryByText("شرح لوحة التطبيقات")).not.toBeInTheDocument();
+  });
+
+  it("locates Arabic-insensitive matches in the original title (diacritics + hamza)", () => {
+    // همزة + تشكيل: المطابقة على «اعدادات الشرك» المُوحَّد بترجع لنطاق النص الأصلي حتى الكاف
+    const range = locateTitleMatch("إعدادات الشَّركة — بيانات شركتك", "اعدادات الشرك");
+    expect(range).not.toBeNull();
+    expect(range!.start).toBe(0);
+    expect("إعدادات الشَّركة — بيانات شركتك".slice(range!.start, range!.end)).toBe(
+      "إعدادات الشَّرك",
+    );
+
+    // ألف مقصورة (ى→ي) + تاء مربوطة (ة→ه): «مستشفي الرحمه» بتطابق «مستشفى الرحمة»
+    const range2 = locateTitleMatch("دليل مستشفى الرحمة", "مستشفي الرحمه");
+    expect(range2).not.toBeNull();
+    expect("دليل مستشفى الرحمة".slice(range2!.start, range2!.end)).toBe("مستشفى الرحمة");
+
+    expect(locateTitleMatch("عنوان لا يطابق", "كلمة-غريبة")).toBeNull();
   });
 
   it("shows a facade thumbnail first and embeds the player with the jsapi flag after clicking play", () => {

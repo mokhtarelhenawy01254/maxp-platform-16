@@ -19,6 +19,7 @@ import {
 import { CardVideoBlock } from "./ExplanationVideo";
 import { getYouTubeVideoId } from "../../../utils/explanationVideo";
 import type { AppExplanation } from "./groups";
+import type { TitleMatchRange } from "./search";
 import "./explanations.css";
 
 /** «جديد» = أُضيف خلال آخر 14 يومًا */
@@ -132,7 +133,11 @@ export const ExplanationRow: React.FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   watchVideoLabel: string;
-}> = ({ exp, idx, open, onOpenChange, watchVideoLabel }) => {
+  /** نطاق تظليل المطابقة داخل العنوان (وضع البحث فقط) */
+  highlight?: TitleMatchRange | null;
+  /** الصف المُشار إليه بمؤشر تنقّل الكيبورد (↑↓) */
+  cursorActive?: boolean;
+}> = ({ exp, idx, open, onOpenChange, watchVideoLabel, highlight, cursorActive }) => {
   const hasVideo = Boolean(exp.videoUrl);
   const isNew = isNewExplanation(exp.createdAt);
   const [copied, setCopied] = useState(false);
@@ -205,7 +210,12 @@ export const ExplanationRow: React.FC<{
           idx > 0 ? "border-t border-border/50" : ""
         } ${open ? "bg-primary/[0.02] dark:bg-primary/[0.04]" : ""}`}
       >
-        <CollapsibleTrigger className="group flex min-h-[50px] w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-4">
+        <CollapsibleTrigger
+          aria-current={cursorActive ? "true" : undefined}
+          className={`group flex min-h-[50px] w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-4 ${
+            cursorActive ? "bg-muted/50 ring-2 ring-inset ring-primary/40" : ""
+          }`}
+        >
           {/* ثامبنيل الفيديو للصفوف المرئية — وأيقونة مقال لغيرها (iOS Settings style) */}
           {hasVideo ? (
             <RowThumb videoUrl={exp.videoUrl!} />
@@ -215,9 +225,19 @@ export const ExplanationRow: React.FC<{
             </div>
           )}
 
-          {/* عنوان الشرح */}
+          {/* عنوان الشرح — مع تظليل المطابقة في وضع البحث */}
           <span className="min-w-0 flex-1 text-[14px] font-bold leading-snug text-foreground sm:text-[14.5px]">
-            {exp.title}
+            {highlight && highlight.start < highlight.end && highlight.end <= exp.title.length ? (
+              <>
+                {exp.title.slice(0, highlight.start)}
+                <mark className="exp-title-mark">
+                  {exp.title.slice(highlight.start, highlight.end)}
+                </mark>
+                {exp.title.slice(highlight.end)}
+              </>
+            ) : (
+              exp.title
+            )}
           </span>
 
           {/* شارة «جديد» للإضافات الحديثة */}

@@ -226,6 +226,15 @@
   vertical-align: baseline;
 }
 
+/* تظليل مطابقة البحث داخل عناوين الصفوف */
+.exp-title-mark {
+  background: color-mix(in srgb, var(--color-primary, #2563eb) 18%, transparent);
+  color: inherit;
+  font-weight: 800;
+  border-radius: 0.25rem;
+  padding: 0 0.12em;
+}
+
 /* احترام تقليل الحركة */
 @media (prefers-reduced-motion: reduce) {
   .exp-rail {
