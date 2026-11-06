@@ -34,6 +34,13 @@ const { getClientIp, detectDeviceType } = require("../utils/clientIp");
 const attendanceExceptionService = require("../services/hr/attendanceExceptionService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const {
+  SELF_APPROVAL_EXEMPT_ROLES,
+  recordPayrollCreation,
+  didActorCreatePayroll,
+  buildSelfApprovalError,
+  normalizeRole,
+} = require("../utils/hrPayrollAccessPolicy");
+const {
   resolveEvaluationPeriod,
   computeEmployee360Metrics
 } = require("../services/hr/performance360Engine");
@@ -3275,6 +3282,26 @@ async function getLeaveStats(req, res) {
  * إنشاء كشف راتب
  * POST /api/hr/payroll
  */
+/**
+ * 🔐 F-02: منع الاعتماد/الصرف الذاتي — لا أحد يعتمد كشف راتب أنشأه بنفسه،
+ * إلا مالك الشركة أو SUPER_ADMIN (شركة بمالك واحد يجب ألا تتعطل).
+ */
+async function assertPayrollNotSelfApproved(req, payrollIds) {
+  const actorRole = normalizeRole(req.user?.role);
+  if (SELF_APPROVAL_EXEMPT_ROLES.includes(actorRole)) return;
+  const ids = (payrollIds || []).filter(Boolean);
+  if (ids.length === 0) return;
+  const prisma = getSharedPrismaClient();
+  for (const payrollId of ids) {
+    const createdByActor = await didActorCreatePayroll(prisma, {
+      companyId: req.user?.companyId,
+      actorId: req.user?.id,
+      payrollId,
+    });
+    if (createdByActor) throw buildSelfApprovalError();
+  }
+}
+
 async function createPayroll(req, res) {
   try {
     const { companyId } = req.user;
@@ -3284,6 +3311,13 @@ async function createPayroll(req, res) {
       employeeId,
       req.body,
     );
+    // 🔐 F-02: تسجيل المنشئ — أساس منع الاعتماد الذاتي لاحقًا
+    await recordPayrollCreation(getSharedPrismaClient(), {
+      companyId,
+      actorId: req.user.id,
+      payrollId: payroll && payroll.id,
+      details: { month: payroll && payroll.month, year: payroll && payroll.year },
+    });
     res.status(201).json({ success: true, payroll });
   } catch (error) {
     console.error("❌ Error creating payroll:", error);
@@ -3476,6 +3510,7 @@ async function updatePayroll(req, res) {
 async function approvePayroll(req, res) {
   try {
     const { companyId } = req.user;
+    await assertPayrollNotSelfApproved(req, [req.params.id]);
     const payroll = await payrollService.approvePayroll(
       companyId,
       req.params.id,
@@ -3483,7 +3518,9 @@ async function approvePayroll(req, res) {
     res.json({ success: true, payroll });
   } catch (error) {
     console.error("❌ Error approving payroll:", error);
-    res.status(500).json({ error: error.message || "حدث خطأ أثناء الاعتماد" });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || "حدث خطأ أثناء الاعتماد", code: error.code });
   }
 }
 
@@ -3494,6 +3531,7 @@ async function approvePayroll(req, res) {
 async function markPayrollAsPaid(req, res) {
   try {
     const { companyId } = req.user;
+    await assertPayrollNotSelfApproved(req, [req.params.id]);
     const payroll = await payrollService.markAsPaid(
       companyId,
       req.params.id,
@@ -3502,7 +3540,9 @@ async function markPayrollAsPaid(req, res) {
     res.json({ success: true, payroll });
   } catch (error) {
     console.error("❌ Error marking payroll as paid:", error);
-    res.status(500).json({ error: error.message || "حدث خطأ أثناء الصرف" });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || "حدث خطأ أثناء الصرف", code: error.code });
   }
 }
 
@@ -3514,6 +3554,7 @@ async function bulkMarkPayrollAsPaid(req, res) {
   try {
     const { companyId } = req.user;
     const { payrollIds, paymentData } = req.body;
+    await assertPayrollNotSelfApproved(req, Array.isArray(payrollIds) ? payrollIds : []);
     const result = await payrollService.bulkMarkAsPaid(
       companyId,
       payrollIds,
@@ -3522,7 +3563,9 @@ async function bulkMarkPayrollAsPaid(req, res) {
     res.json({ success: true, result });
   } catch (error) {
     console.error("❌ Error bulk marking payrolls as paid:", error);
-    res.status(500).json({ error: error.message || "حدث خطأ أثناء الصرف" });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || "حدث خطأ أثناء الصرف", code: error.code });
   }
 }
 
@@ -3534,11 +3577,14 @@ async function bulkApprovePayroll(req, res) {
   try {
     const { companyId } = req.user;
     const { payrollIds } = req.body;
+    await assertPayrollNotSelfApproved(req, Array.isArray(payrollIds) ? payrollIds : []);
     const result = await payrollService.bulkApprove(companyId, payrollIds);
     res.json({ success: true, result });
   } catch (error) {
     console.error("❌ Error bulk approving payrolls:", error);
-    res.status(500).json({ error: error.message || "حدث خطأ أثناء الاعتماد" });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || "حدث خطأ أثناء الاعتماد", code: error.code });
   }
 }
 

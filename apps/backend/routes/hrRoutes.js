@@ -440,12 +440,13 @@ router.post('/payroll', verifyToken.authenticateToken, verifyToken.requireRole([
 router.post('/payroll/generate', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.generateMonthlyPayroll);
 router.post('/payroll/auto-calculate', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.autoCalculateAndDeductPayrolls);
 router.get('/payroll/auto-status', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPayrollAutomationStatus);
-router.post('/payroll/bulk-pay', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.bulkMarkPayrollAsPaid);
-router.post('/payroll/bulk-approve', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.bulkApprovePayroll);
+// 🔐 TICKET-2026-11-06-RBAC-01 · F-02: الاعتماد/الصرف/الحذف لمالك أو أدمن الشركة فقط
+router.post('/payroll/bulk-pay', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.bulkMarkPayrollAsPaid);
+router.post('/payroll/bulk-approve', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.bulkApprovePayroll);
 router.put('/payroll/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.updatePayroll);
-router.post('/payroll/:id/approve', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.approvePayroll);
-router.post('/payroll/:id/pay', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.markPayrollAsPaid);
-router.delete('/payroll/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.deletePayroll);
+router.post('/payroll/:id/approve', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.approvePayroll);
+router.post('/payroll/:id/pay', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.markPayrollAsPaid);
+router.delete('/payroll/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.deletePayroll);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🕐 المناوبات - Shifts
