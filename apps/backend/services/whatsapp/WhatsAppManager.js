@@ -4797,6 +4797,15 @@ async function reconnectSession(sessionId, companyId, attempt = 0, options = {})
             return null;
         }
 
+        // 🛡️ PROVIDER GUARD (Swan outage 2026-11-04): META_CLOUD sessions have no Baileys
+        // socket — writing CONNECTING here bricks the session forever (webhook lookup and
+        // all send gates require CONNECTED and nothing ever transitions it back).
+        // The reconnect endpoint already handles META_CLOUD directly; skip Baileys flow.
+        if (sessionRecord.provider === 'META_CLOUD') {
+            WA_LOG.warn(sessionId, `Skipping Baileys reconnect for META_CLOUD session — managed by Meta Cloud API`);
+            return null;
+        }
+
         const isDefault = sessionRecord.isDefault || false;
         const weight = isDefault ? 3 : 1;
         const phoneNumber = normalizePhoneNumber(options.phoneNumber || sessionRecord.phoneNumber);
@@ -5435,6 +5444,24 @@ async function restoreAllSessions() {
         WA_LOG.restore(`Starting session restoration...`);
 
         await initSessionsDirectory();
+
+        // 🛡️ SELF-HEAL (Swan outage 2026-11-04): META_CLOUD sessions are API-driven — no
+        // Baileys socket manages their status. A stale CONNECTING bricks webhook ingestion
+        // and every send gate until manually fixed. Restore CONNECTED when a token exists.
+        try {
+            const healedMeta = await safeQuery(async () => {
+                const prisma = getSharedPrismaClient();
+                return await prisma.whatsAppSession.updateMany({
+                    where: { provider: 'META_CLOUD', status: 'CONNECTING', metaAccessToken: { not: null } },
+                    data: { status: 'CONNECTED', updatedAt: new Date() }
+                });
+            }, 3);
+            if (healedMeta && healedMeta.count > 0) {
+                WA_LOG.restore(`Healed ${healedMeta.count} META_CLOUD session(s) stuck in CONNECTING`);
+            }
+        } catch (healErr) {
+            WA_LOG.error(null, `META_CLOUD CONNECTING self-heal failed:`, healErr.message);
+        }
 
         // جلب الجلسات النشطة من قاعدة البيانات
         const sessions = await safeQuery(async () => {
