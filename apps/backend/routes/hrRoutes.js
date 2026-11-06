@@ -27,13 +27,9 @@ const checkAppAccess = require('../middleware/checkAppAccess');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-// 🛠️ Debug Route - للتحقق من بيانات الموظف في قاعدة البيانات
-router.get('/debug/user/:id', (req, res, next) => {
-  if (isDev) {
-    console.log(`📡 [ROUTE-HIT] /debug/user/${req.params.id}`);
-  }
-  next();
-}, hrController.debugGetUser);
+// 🛠️ Debug Route — REMOVED (TICKET-2026-11-06-RBAC-01 F-07).
+// كان مسجّلاً قبل router.use(authenticateToken) ويرجّع password hash + reset tokens
+// لأي مستخدم في أي شركة. لا تُسجّل أي route قبل حُرّاس المصادقة/التطبيق أدناه.
 
 // 🌐 Public Application Form Routes - للمتقدمين (بدون مصادقة)
 // Must be defined BEFORE verifyToken.authenticateToken

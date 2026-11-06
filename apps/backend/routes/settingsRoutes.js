@@ -4,6 +4,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { invalidateWebhookCache } = require('../services/orderWebhookService');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const { TURBO_STATUS_DEFINITIONS, SYSTEM_STATUS_MAPPING } = require('../utils/statusNormalizer');
 
 const COMPANY_SETTINGS_SELECT = Object.freeze({
@@ -11,6 +12,45 @@ const COMPANY_SETTINGS_SELECT = Object.freeze({
   name: true,
   settings: true,
 });
+
+// 🔐 TICKET-2026-11-06-RBAC-01 F-04:
+// مفاتيح تتحكم في تجاوز انتهاء الاشتراك/الوصول للتطبيقات المدفوعة.
+// لا يجوز أن يكتبها إلا OWNER/SUPER_ADMIN — وإلا صار أي مستخدم يمدد اشتراكه مجاناً.
+const PRIVILEGED_ONLY_SETTINGS_KEYS = Object.freeze([
+  'bypassExpiry',
+  'allowAccessWhenExpired',
+  'graceAccess',
+  'bypassAppExpiry',
+  'whatsappAccessBypass',
+]);
+const PRIVILEGED_SETTINGS_ROLES = Object.freeze(['OWNER', 'SUPER_ADMIN']);
+
+/**
+ * يحذف مفاتيح التجاوز/الاشتراك من الـ payload لغير OWNER/SUPER_ADMIN.
+ * @param {object} settings
+ * @param {string} role دور المستدعي (req.user.role)
+ * @returns {{ settings: object, strippedKeys: string[] }}
+ */
+const stripPrivilegedSettingsKeys = (settings, role) => {
+  const normalizedRole =
+    typeof role === 'string' ? role.trim().toUpperCase() : '';
+  if (PRIVILEGED_SETTINGS_ROLES.includes(normalizedRole)) {
+    return { settings, strippedKeys: [] };
+  }
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+    return { settings, strippedKeys: [] };
+  }
+
+  const sanitized = { ...settings };
+  const strippedKeys = [];
+  for (const key of PRIVILEGED_ONLY_SETTINGS_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(sanitized, key)) {
+      delete sanitized[key];
+      strippedKeys.push(key);
+    }
+  }
+  return { settings: sanitized, strippedKeys };
+};
 
 // Apply authentication middleware to all routes except public ones
 // Public routes (no auth required): /currencies
@@ -128,10 +168,24 @@ router.get('/company', async (req, res) => {
 });
 
 // Update company settings
-router.put('/company', async (req, res) => {
+// 🔐 F-04: الكتابة تحتاج صلاحية settings.manage (OWNER/COMPANY_ADMIN فقط حسب الـ seed)
+router.put('/company', requireDbPermission('settings.manage'), async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const newSettings = req.body.settings || {};
+    const { settings: safeSettings, strippedKeys } = stripPrivilegedSettingsKeys(
+      req.body?.settings || {},
+      req.user?.role,
+    );
+    const newSettings = safeSettings || {};
+
+    if (strippedKeys.length > 0) {
+      console.warn('🚫 [Settings] Stripped privileged keys from PUT /settings/company', {
+        companyId,
+        userId: req.user?.id,
+        role: req.user?.role,
+        strippedKeys,
+      });
+    }
 
     //console.log('Updating company settings:', companyId, newSettings);
 

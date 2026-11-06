@@ -26,6 +26,9 @@ const {
   recruitmentService,
 } = require("../services/hr");
 const { handleHRError } = require("../utils/hrErrors");
+const {
+  stripSensitiveEmployeeFields,
+} = require("../utils/hrEmployeeAccessPolicy");
 const { getClientIp, detectDeviceType } = require("../utils/clientIp");
 const attendanceExceptionService = require("../services/hr/attendanceExceptionService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
@@ -1624,6 +1627,10 @@ async function createEmployee(req, res) {
     } else if (error.code === "VALIDATION_ERROR") {
       statusCode = 400;
       errorMessage = error.message;
+    } else if (error.statusCode === 403 || error.code === "UNAUTHORIZED") {
+      // 🛡️ F-01: دور ممنوع (OWNER/SUPER_ADMIN/AFFILIATE) على مسار إدارة الموظفين
+      statusCode = 403;
+      errorMessage = error.message;
     }
 
     res.status(statusCode).json({
@@ -1675,35 +1682,6 @@ async function reactivateEmployee(req, res) {
  * جلب جميع الموظفين
  * GET /api/hr/employees
  */
-/**
- * 🛠️ Debug: Get Raw User Data
- * GET /api/v1/hr/debug/user/:id
- */
-async function debugGetUser(req, res) {
-  try {
-    const { id } = req.params;
-    const { companyId } = req.user;
-    const { getSharedPrismaClient } = require("../services/sharedDatabase");
-    const prisma = getSharedPrismaClient();
-
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        userCompanies: true,
-        employees: true,
-      },
-    });
-
-    res.json({
-      success: true,
-      companyIdInToken: companyId,
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
-
 async function getEmployees(req, res) {
   try {
     console.log(
@@ -1728,29 +1706,10 @@ async function getEmployees(req, res) {
     );
     const result = await employeeService.getEmployees(companyId, req.query);
 
-    // 🛡️ SECURITY: Strip sensitive fields if not privileged
-    const privilegedRoles = [
-      "SUPER_ADMIN",
-      "COMPANY_ADMIN",
-      "OWNER",
-      "MANAGER",
-      "AGENT",
-    ];
-    if (!privilegedRoles.includes(role)) {
-      if (result.employees && Array.isArray(result.employees)) {
-        result.employees = result.employees.map((emp) => {
-          const {
-            baseSalary,
-            phone,
-            mobile,
-            nationalId,
-            contractType,
-            hireDate,
-            ...safeData
-          } = emp;
-          return safeData;
-        });
-      }
+    // 🛡️ F-03: الحقول الحساسة (راتب/موبايل/رقم قومي/عقد/تعيين) للمصرح لهم فقط.
+    // AGENT/AFFILIATE وأي دور غير مُدرج لا يرى هذه الحقول إطلاقاً.
+    if (result.employees && Array.isArray(result.employees)) {
+      result.employees = stripSensitiveEmployeeFields(result.employees, role);
     }
 
     console.log(
@@ -1928,7 +1887,7 @@ async function updateEmployee(req, res) {
       stack: error.stack,
     });
     res
-      .status(500)
+      .status(error.statusCode || 500)
       .json({ error: error.message || "حدث خطأ أثناء تحديث الموظف" });
   }
 }
@@ -8553,5 +8512,4 @@ module.exports = {
   requestEmployeeLink,
 
   updateBulkSalaries,
-  debugGetUser,
 };

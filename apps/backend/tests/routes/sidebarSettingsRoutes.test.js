@@ -58,6 +58,13 @@ jest.mock("../../services/orderWebhookService", () => ({
   invalidateWebhookCache: jest.fn(),
 }));
 
+// F-04 (TICKET-2026-11-06-RBAC-01): requireDbPermission resolves permissions here.
+jest.mock("../../services/permissionService", () => ({
+  getUserPermissions: jest.fn(async () => []),
+}));
+
+const permissionService = require("../../services/permissionService");
+
 jest.mock("../../utils/verifyToken", () => ({
   authenticateToken: (req, res, next) => {
     if (!mockCurrentUser) {
@@ -260,3 +267,91 @@ describe("sidebar settings routes (PUT/GET /settings/sidebar)", () => {
     expect(res.body.code).toBe("INVALID_APP_CUSTOM_NAME");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TICKET-2026-11-06-RBAC-01 F-04 — PUT /settings/company must require
+// settings.manage and must not let non-OWNERs write subscription bypass keys.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("company settings authorization (PUT /settings/company — F-04)", () => {
+  let app;
+
+  const resetState = () => {
+    jest.clearAllMocks();
+    mockCurrentUser = {
+      id: "user-1",
+      companyId: "company-1",
+      role: "OWNER",
+    };
+    mockCompanyRecord = {
+      id: "company-1",
+      name: "Company One",
+      settings: JSON.stringify({
+        currency: "EGP",
+        vatRate: 14,
+      }),
+    };
+    permissionService.getUserPermissions.mockResolvedValue([]);
+
+    app = express();
+    app.use(express.json());
+    app.use("/api/v1/settings", settingsRoutes);
+  };
+
+  beforeEach(resetState);
+
+  test("AGENT without settings.manage gets 403 and nothing is written", async () => {
+    mockCurrentUser = { id: "user-agent", companyId: "company-1", role: "AGENT" };
+
+    const res = await request(app)
+      .put("/api/v1/settings/company")
+      .send({ settings: { bypassAppExpiry: ["hr-core", "whatsapp-business"] } });
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("INSUFFICIENT_PERMISSIONS");
+    expect(res.body.requiredPermission).toBe("settings.manage");
+    expect(mockPrisma.company.update).not.toHaveBeenCalled();
+  });
+
+  test("COMPANY_ADMIN keeps normal keys but bypass keys are stripped", async () => {
+    mockCurrentUser = { id: "user-admin", companyId: "company-1", role: "COMPANY_ADMIN" };
+    permissionService.getUserPermissions.mockResolvedValue(["settings.manage"]);
+
+    const res = await request(app)
+      .put("/api/v1/settings/company")
+      .send({
+        settings: {
+          currency: "USD",
+          bypassExpiry: true,
+          allowAccessWhenExpired: true,
+          graceAccess: 999,
+          bypassAppExpiry: ["hr-core"],
+          whatsappAccessBypass: true,
+        },
+      });
+
+    expect(res.status).toBe(200);
+
+    const stored = JSON.parse(mockCompanyRecord.settings);
+    expect(stored.currency).toBe("USD");
+    expect(stored.vatRate).toBe(14); // pre-existing key survived the merge
+    for (const key of [
+      "bypassExpiry",
+      "allowAccessWhenExpired",
+      "graceAccess",
+      "bypassAppExpiry",
+      "whatsappAccessBypass",
+    ]) {
+      expect(stored[key]).toBeUndefined();
+    }
+  });
+
+  test("OWNER can write bypass keys (intentional bypass preserved)", async () => {
+    const res = await request(app)
+      .put("/api/v1/settings/company")
+      .send({ settings: { bypassAppExpiry: ["hr-core"] } });
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(mockCompanyRecord.settings).bypassAppExpiry).toEqual(["hr-core"]);
+  });
+});
+

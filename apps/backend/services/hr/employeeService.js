@@ -5,6 +5,7 @@
 
 const { getSharedPrismaClient, executeWithRetry } = require('../sharedDatabase');
 const { validateEmployeeData } = require('../../utils/hrValidation');
+const { resolveAssignableEmployeeRole } = require('../../utils/hrEmployeeAccessPolicy');
 const {
   NotFoundError,
   ConflictError,
@@ -33,6 +34,10 @@ class EmployeeService {
 
     // التحقق من صحة البيانات
     validateEmployeeData(data);
+
+    // 🛡️ F-01: لا يُسمح بتمرير أي دور من الـ body خارج الـ allowlist
+    // (يمنع تصعيد MANAGER → SUPER_ADMIN/OWNER). يرجع 400/403 قبل أي كتابة في DB.
+    const employeeRole = resolveAssignableEmployeeRole(data.role) || 'AGENT';
 
     // ✅ Check if email exists in User table and link if found, or create User if email provided
     let linkedUserId = data.userId || null;
@@ -87,12 +92,12 @@ class EmployeeService {
           },
           update: {
             isActive: true,
-            role: data.role || 'AGENT'
+            role: employeeRole
           },
           create: {
             userId: existingUser.id,
             companyId: companyId,
-            role: data.role || 'AGENT',
+            role: employeeRole,
             isActive: true,
             isDefault: false
           }
@@ -128,7 +133,7 @@ class EmployeeService {
               firstName: data.firstName,
               lastName: data.lastName,
               phone: data.phone || null,
-              role: data.role || 'AGENT',
+              role: employeeRole,
               isActive: true,
               companyId: companyId,
               resetPasswordToken: setupPasswordToken,
@@ -143,7 +148,7 @@ class EmployeeService {
             data: {
               userId: newUser.id,
               companyId: companyId,
-              role: data.role || 'AGENT',
+              role: employeeRole,
               isActive: true,
               isDefault: true
             }
@@ -712,6 +717,10 @@ class EmployeeService {
    */
   async updateEmployee(companyId, employeeId, data) {
     try {
+      // 🛡️ F-01: نفس allowlist مسار الإنشاء — أي دور خارجها يُرفض بـ 400/403
+      // قبل أي قراءة/كتابة (حتى لو لم يكن الحقل مكتوباً حالياً في هذا المسار).
+      resolveAssignableEmployeeRole(data.role);
+
       // Find existing User or Employee
       let existingUser = await this.prisma.user.findFirst({
         where: {
@@ -1126,6 +1135,9 @@ class EmployeeService {
     try {
       console.log(`🔄 [HR] Reactivating employee ${employeeId} for company ${companyId}`);
 
+      // 🛡️ F-01: نفس الحارس — إعادة التفعيل كانت تمرّر data.role إلى UserCompany.role
+      const requestedRole = resolveAssignableEmployeeRole(data.role);
+
       // التحقق من وجود المستخدم
       const user = await this.prisma.user.findUnique({
         where: { id: employeeId },
@@ -1218,12 +1230,12 @@ class EmployeeService {
         },
         update: {
           isActive: true,
-          role: data.role || membership?.role || 'AGENT'
+          role: requestedRole || membership?.role || 'AGENT'
         },
         create: {
           userId: employeeId,
           companyId: companyId,
-          role: data.role || membership?.role || 'AGENT',
+          role: requestedRole || membership?.role || 'AGENT',
           isActive: true,
           isDefault: false
         }
