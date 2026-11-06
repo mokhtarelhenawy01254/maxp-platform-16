@@ -50,79 +50,6 @@ interface Session {
   subject: { name: string };
 }
 
-const getMockSessions = (year: number, month: number): Session[] => {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const m = pad(month + 1);
-  return [
-    {
-      id: "s-1",
-      scheduledAt: `${year}-${m}-04T10:00:00Z`,
-      plannedDuration: 60,
-      actualDuration: 60,
-      status: "CONFIRMED",
-      topic: "مراجعة التفاضل والتكامل",
-      student: { firstName: "أحمد", lastName: "محمود" },
-      teacher: { name: "أ. سمير عبد الله" },
-      subject: { name: "الرياضيات المتقدمة" },
-    },
-    {
-      id: "s-2",
-      scheduledAt: `${year}-${m}-08T14:30:00Z`,
-      plannedDuration: 45,
-      actualDuration: 45,
-      status: "CONFIRMED",
-      topic: "الكيمياء العضوية والألكانات",
-      student: { firstName: "سارة", lastName: "إبراهيم" },
-      teacher: { name: "د. هبة الشامي" },
-      subject: { name: "الكيمياء" },
-    },
-    {
-      id: "s-3",
-      scheduledAt: `${year}-${m}-12T16:00:00Z`,
-      plannedDuration: 60,
-      actualDuration: null,
-      status: "SCHEDULED",
-      topic: "قواعد اللغة الإنجليزية والأزمنة",
-      student: { firstName: "يوسف", lastName: "خالد" },
-      teacher: { name: "م. جون أندراوس" },
-      subject: { name: "اللغة الإنجليزية" },
-    },
-    {
-      id: "s-4",
-      scheduledAt: `${year}-${m}-15T11:00:00Z`,
-      plannedDuration: 60,
-      actualDuration: 60,
-      status: "CONFIRMED",
-      topic: "الفيزياء الحديثة والكهرومغناطيسية",
-      student: { firstName: "عمر", lastName: "طارق" },
-      teacher: { name: "أ. سمير عبد الله" },
-      subject: { name: "الفيزياء" },
-    },
-    {
-      id: "s-5",
-      scheduledAt: `${year}-${m}-18T13:00:00Z`,
-      plannedDuration: 45,
-      actualDuration: null,
-      status: "CANCELLED",
-      topic: "النحو والبلاغة",
-      student: { firstName: "مريم", lastName: "عادل" },
-      teacher: { name: "أ. شريف حامد" },
-      subject: { name: "اللغة العربية" },
-    },
-    {
-      id: "s-6",
-      scheduledAt: `${year}-${m}-22T17:00:00Z`,
-      plannedDuration: 60,
-      actualDuration: null,
-      status: "SCHEDULED",
-      topic: "حل أسئلة بنك المعرفة",
-      student: { firstName: "كريم", lastName: "أشرف" },
-      teacher: { name: "د. هبة الشامي" },
-      subject: { name: "الأحياء" },
-    },
-  ];
-};
-
 const EducationCalendarPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +62,7 @@ const EducationCalendarPage: React.FC = () => {
 
   useEffect(() => {
     const fetchSessions = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
         const from = new Date(currentYear, currentMonth, 1).toISOString();
@@ -143,13 +71,13 @@ const EducationCalendarPage: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setSessions(json.data);
         } else {
-          setSessions(getMockSessions(currentYear, currentMonth));
+          setSessions([]);
         }
       } catch {
-        setSessions(getMockSessions(currentYear, currentMonth));
+        setSessions([]);
       } finally {
         setLoading(false);
       }
@@ -385,6 +313,12 @@ const EducationCalendarPage: React.FC = () => {
             );
           })}
         </div>
+
+        {sessions.length === 0 && !loading && (
+          <div className="border-t border-border/80 py-6 text-center text-xs text-muted-foreground">
+            لا توجد بيانات بعد — لا توجد حصص مجدولة خلال هذا الشهر
+          </div>
+        )}
       </div>
 
       {/* Selected Session Modal */}

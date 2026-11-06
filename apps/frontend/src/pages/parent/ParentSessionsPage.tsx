@@ -27,48 +27,6 @@ interface Child {
   lastName: string;
 }
 
-const mockChildren: Child[] = [
-  { id: "ch-1", firstName: "يوسف", lastName: "محمد النجار" },
-  { id: "ch-2", firstName: "سارة", lastName: "محمد النجار" }
-];
-
-const mockSessionsMap: Record<string, Session[]> = {
-  "ch-1": [
-    {
-      id: "s-101",
-      scheduledAt: new Date(Date.now() + 1000 * 60 * 180).toISOString(),
-      plannedDuration: 60,
-      actualDuration: null,
-      status: "CONFIRMED",
-      subject: { name: "الرياضيات التطبيقية - تفاضل وتكامل" },
-      teacher: { name: "أ. حسام الدين عبد الله" },
-      student: { firstName: "يوسف", lastName: "محمد النجار" }
-    },
-    {
-      id: "s-102",
-      scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
-      plannedDuration: 90,
-      actualDuration: null,
-      status: "SCHEDULED",
-      subject: { name: "الفيزياء الكهربية والدوائر" },
-      teacher: { name: "أ. محمود شاكر" },
-      student: { firstName: "يوسف", lastName: "محمد النجار" }
-    }
-  ],
-  "ch-2": [
-    {
-      id: "s-201",
-      scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
-      plannedDuration: 60,
-      actualDuration: null,
-      status: "CONFIRMED",
-      subject: { name: "اللغة الإنجليزية - مهارات وقواعد" },
-      teacher: { name: "ميس رانيا حسن" },
-      student: { firstName: "سارة", lastName: "محمد النجار" }
-    }
-  ]
-};
-
 const ParentSessionsPage: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [sessionsMap, setSessionsMap] = useState<Record<string, Session[]>>({});
@@ -99,12 +57,12 @@ const ParentSessionsPage: React.FC = () => {
         }
         setSessionsMap(map);
       } else {
-        setChildren(mockChildren);
-        setSessionsMap(mockSessionsMap);
+        setChildren([]);
+        setSessionsMap({});
       }
     } catch {
-      setChildren(mockChildren);
-      setSessionsMap(mockSessionsMap);
+      setChildren([]);
+      setSessionsMap({});
     } finally {
       setLoading(false);
       setRefreshing(false);

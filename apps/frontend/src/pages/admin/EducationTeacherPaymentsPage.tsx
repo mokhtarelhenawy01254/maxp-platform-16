@@ -80,57 +80,6 @@ interface CalcResult {
   sessions: { id: string; date: string; subject: string; duration: number }[];
 }
 
-const FALLBACK_TEACHERS: Teacher[] = [
-  { id: "t-1", name: "أ. سمير عبد الله" },
-  { id: "t-2", name: "د. هبة الشامي" },
-  { id: "t-3", name: "م. جون أندراوس" },
-];
-
-const FALLBACK_PAYMENTS: Payment[] = [
-  {
-    id: "p-1",
-    teacherId: "t-1",
-    teacher: { name: "أ. سمير عبد الله" },
-    periodFrom: "2026-09-01",
-    periodTo: "2026-09-30",
-    totalSessions: 18,
-    totalHours: 18,
-    hourlyRate: 250,
-    grossAmount: 4500,
-    deductions: 200,
-    netAmount: 4300,
-    status: "PAID",
-  },
-  {
-    id: "p-2",
-    teacherId: "t-2",
-    teacher: { name: "د. هبة الشامي" },
-    periodFrom: "2026-10-01",
-    periodTo: "2026-10-15",
-    totalSessions: 12,
-    totalHours: 12,
-    hourlyRate: 300,
-    grossAmount: 3600,
-    deductions: 0,
-    netAmount: 3600,
-    status: "PENDING",
-  },
-  {
-    id: "p-3",
-    teacherId: "t-3",
-    teacher: { name: "م. جون أندراوس" },
-    periodFrom: "2026-09-15",
-    periodTo: "2026-09-30",
-    totalSessions: 10,
-    totalHours: 10,
-    hourlyRate: 200,
-    grossAmount: 2000,
-    deductions: 100,
-    netAmount: 1900,
-    status: "PAID",
-  },
-];
-
 export default function EducationTeacherPaymentsPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -146,6 +95,7 @@ export default function EducationTeacherPaymentsPage() {
   const [calcTo, setCalcTo] = useState(() => new Date().toISOString().split("T")[0]);
   const [calcRate, setCalcRate] = useState(0);
   const [calcResult, setCalcResult] = useState<CalcResult | null>(null);
+  const [calcError, setCalcError] = useState("");
   const [calcLoading, setCalcLoading] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
 
@@ -162,13 +112,13 @@ export default function EducationTeacherPaymentsPage() {
     try {
       const res = await fetch(api("teachers"), { headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data.success && Array.isArray(data.data)) {
         setTeachers(data.data);
       } else {
-        setTeachers(FALLBACK_TEACHERS);
+        setTeachers([]);
       }
     } catch {
-      setTeachers(FALLBACK_TEACHERS);
+      setTeachers([]);
     }
   };
 
@@ -180,13 +130,13 @@ export default function EducationTeacherPaymentsPage() {
       if (paymentFilter) params.append("status", paymentFilter);
       const res = await fetch(api(`payments?${params}`), { headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data.success && Array.isArray(data.data)) {
         setPayments(data.data);
       } else {
-        setPayments(FALLBACK_PAYMENTS);
+        setPayments([]);
       }
     } catch {
-      setPayments(FALLBACK_PAYMENTS);
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -196,6 +146,7 @@ export default function EducationTeacherPaymentsPage() {
     if (!calcTeacher || !calcFrom || !calcTo) return;
     setCalcLoading(true);
     setCalcResult(null);
+    setCalcError("");
     try {
       const res = await fetch(api("payments/calculate"), {
         method: "POST",
@@ -206,19 +157,10 @@ export default function EducationTeacherPaymentsPage() {
       if (data.success) {
         setCalcResult(data.data);
       } else {
-        alert(data.error || "فشل احتساب المستحقات");
+        setCalcError(data.error || "فشل احتساب المستحقات");
       }
     } catch {
-      setCalcResult({
-        teacherId: calcTeacher,
-        periodFrom: calcFrom,
-        periodTo: calcTo,
-        totalSessions: 8,
-        totalHours: 8,
-        hourlyRate: calcRate || 250,
-        grossAmount: 8 * (calcRate || 250),
-        sessions: [],
-      });
+      setCalcError("تعذر الاتصال بالخادم لاحتساب المستحقات. حاول مرة أخرى");
     } finally {
       setCalcLoading(false);
     }
@@ -251,9 +193,7 @@ export default function EducationTeacherPaymentsPage() {
         alert(data.error || "فشل تسجيل الدفعة");
       }
     } catch {
-      setShowCalc(false);
-      setCalcResult(null);
-      fetchPayments();
+      alert("تعذر الاتصال بالخادم لتسجيل الدفعة. حاول مرة أخرى");
     }
   };
 
@@ -263,9 +203,11 @@ export default function EducationTeacherPaymentsPage() {
       const data = await res.json();
       if (data.success) {
         fetchPayments();
+      } else {
+        alert(data.error || "فشل تأكيد الدفع");
       }
     } catch {
-      setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, status: "PAID" } : p)));
+      alert("تعذر الاتصال بالخادم لتأكيد الدفع. حاول مرة أخرى");
     }
   };
 
@@ -303,6 +245,7 @@ export default function EducationTeacherPaymentsPage() {
           onClick={() => {
             setShowCalc(true);
             setCalcResult(null);
+            setCalcError("");
             setDeductions(0);
             setPaymentNotes("");
           }}
@@ -410,6 +353,13 @@ export default function EducationTeacherPaymentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
+            {payments.length === 0 && (
+              <tr>
+                <td colSpan={9} className="py-10 px-4 text-center text-xs text-muted-foreground">
+                  لا توجد بيانات بعد
+                </td>
+              </tr>
+            )}
             {payments.map((p) => {
               const isPaid = p.status === "PAID";
               const isPending = p.status === "PENDING";
@@ -544,6 +494,13 @@ export default function EducationTeacherPaymentsPage() {
                 >
                   {calcLoading ? "جاري احتساب الساعات والحصص..." : "حساب المستحقات الإجمالية"}
                 </button>
+
+                {calcError && (
+                  <div className="flex items-start gap-1.5 text-[11px] text-red-600 dark:text-red-400">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{calcError}</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-3.5 text-xs">

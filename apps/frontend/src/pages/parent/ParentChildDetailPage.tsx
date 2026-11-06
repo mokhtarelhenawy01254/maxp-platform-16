@@ -33,55 +33,6 @@ interface Enrollment {
   subject: { name: string } | null;
 }
 
-const mockChildSessions: Session[] = [
-  {
-    id: "s-101",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 180).toISOString(),
-    plannedDuration: 60,
-    actualDuration: null,
-    status: "CONFIRMED",
-    subject: { name: "الرياضيات التطبيقية - تفاضل وتكامل" },
-    teacher: { name: "أ. حسام الدين عبد الله" }
-  },
-  {
-    id: "s-102",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
-    plannedDuration: 90,
-    actualDuration: null,
-    status: "SCHEDULED",
-    subject: { name: "الفيزياء الكهربية والدوائر" },
-    teacher: { name: "أ. محمود شاكر" }
-  },
-  {
-    id: "s-103",
-    scheduledAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    plannedDuration: 60,
-    actualDuration: 60,
-    status: "COMPLETED",
-    subject: { name: "الرياضيات العامة" },
-    teacher: { name: "أ. حسام الدين عبد الله" }
-  }
-];
-
-const mockChildEnrollments: Enrollment[] = [
-  {
-    id: "en-1",
-    remainingHours: 14,
-    totalHours: 20,
-    package: { id: "p-1", name: "باقة الرياضيات المتكاملة", hoursCount: 20, price: 3000 },
-    teacher: { name: "أ. حسام الدين عبد الله" },
-    subject: { name: "الرياضيات التطبيقية" }
-  },
-  {
-    id: "en-2",
-    remainingHours: 6,
-    totalHours: 12,
-    package: { id: "p-2", name: "باقة الفيزياء المتقدمة", hoursCount: 12, price: 2100 },
-    teacher: { name: "أ. محمود شاكر" },
-    subject: { name: "الفيزياء الحديثة" }
-  }
-];
-
 const ParentChildDetailPage: React.FC = () => {
   const { studentId } = useParams();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -106,17 +57,17 @@ const ParentChildDetailPage: React.FC = () => {
       if (sessRes.success && Array.isArray(sessRes.data) && sessRes.data.length > 0) {
         setSessions(sessRes.data);
       } else {
-        setSessions(mockChildSessions);
+        setSessions([]);
       }
 
       if (enrRes.success && Array.isArray(enrRes.data) && enrRes.data.length > 0) {
         setEnrollments(enrRes.data);
       } else {
-        setEnrollments(mockChildEnrollments);
+        setEnrollments([]);
       }
     } catch {
-      setSessions(mockChildSessions);
-      setEnrollments(mockChildEnrollments);
+      setSessions([]);
+      setEnrollments([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -288,8 +239,8 @@ const ParentChildDetailPage: React.FC = () => {
             </div>
           ) : (
             enrollments.map((e) => {
-              const total = e.package?.hoursCount || 20;
-              const pct = Math.min(100, Math.round((e.remainingHours / total) * 100));
+              const total = e.package?.hoursCount ?? 0;
+              const pct = total > 0 ? Math.min(100, Math.round((e.remainingHours / total) * 100)) : 0;
 
               return (
                 <div
@@ -304,22 +255,24 @@ const ParentChildDetailPage: React.FC = () => {
                       {e.subject?.name} • المعلم: {e.teacher?.name || "لم يحدد"}
                     </p>
                     <div className="w-full pt-1 space-y-1">
-                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      {total > 0 && (
+                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
                       <div className="flex justify-between text-[11px] font-mono text-muted-foreground">
                         <span>المتبقي: {e.remainingHours} ساعة</span>
-                        <span>الإجمالي: {total} ساعة</span>
+                        <span>الإجمالي: {total > 0 ? `${total} ساعة` : "—"}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="text-left font-mono">
                     <div className="text-sm font-bold text-foreground">
-                      {e.package?.price} ج.م
+                      {e.package?.price != null ? `${e.package.price.toLocaleString("ar-EG")} ج.م` : "—"}
                     </div>
                     <div className="text-[11px] text-muted-foreground">سعر الباقة</div>
                   </div>

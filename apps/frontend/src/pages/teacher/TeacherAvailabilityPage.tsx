@@ -113,7 +113,10 @@ export default function TeacherAvailabilityPage() {
         setMessage({ type: "error", text: json.message || "حدث خطأ أثناء الحفظ" });
       }
     } catch {
-      setMessage({ type: "success", text: "تم تحديث جدول العمل وحفظه محلياً بنجاح" });
+      setMessage({
+        type: "error",
+        text: "تعذر الاتصال بالخادم، لم يتم حفظ أوقات العمل. حاول مرة أخرى",
+      });
     } finally {
       setSaving(false);
     }
@@ -218,11 +221,21 @@ export default function TeacherAvailabilityPage() {
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
             <p className="text-[11px] text-amber-500">حالة الحجز المباشر</p>
-            <p className="text-sm font-bold tracking-tight text-emerald-500 mt-0.5 font-mono inline-flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              متاح لحجز الطلاب
+            <p
+              className={`text-sm font-bold tracking-tight mt-0.5 font-mono inline-flex items-center gap-1.5 ${
+                activeDaysCount > 0 ? "text-emerald-500" : "text-muted-foreground"
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${
+                  activeDaysCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"
+                }`}
+              />
+              {activeDaysCount > 0 ? "متاح لحجز الطلاب" : "غير متاح — لم تحدد أيام عمل"}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">مزامنة فورية للمواعيد</p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">
+              {activeDaysCount > 0 ? "حسب الأيام المفعّلة أعلاه" : "فعّل أيام العمل أولاً ليظهر جدولك للطلاب"}
+            </p>
           </div>
           <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
             <Sun className="size-3.5" />

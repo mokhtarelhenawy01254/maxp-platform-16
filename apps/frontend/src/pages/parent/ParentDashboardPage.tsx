@@ -36,43 +36,6 @@ interface Child {
   }>;
 }
 
-const mockParentChildren: Child[] = [
-  {
-    id: "ch-1",
-    firstName: "يوسف",
-    lastName: "محمد النجار",
-    grade: "الصف الثالث الثانوي",
-    enrollments: [
-      {
-        id: "en-1",
-        remainingHours: 14,
-        package: { name: "باقة الرياضيات المتكاملة", hoursCount: 20 },
-        teacher: { name: "أ. حسام الدين عبد الله" }
-      },
-      {
-        id: "en-2",
-        remainingHours: 6,
-        package: { name: "باقة الفيزياء المتقدمة", hoursCount: 12 },
-        teacher: { name: "أ. محمود شاكر" }
-      }
-    ]
-  },
-  {
-    id: "ch-2",
-    firstName: "سارة",
-    lastName: "محمد النجار",
-    grade: "الصف الأول الإعدادي",
-    enrollments: [
-      {
-        id: "en-3",
-        remainingHours: 18,
-        package: { name: "باقة اللغة الإنجليزية التأسيسية", hoursCount: 24 },
-        teacher: { name: "ميس رانيا حسن" }
-      }
-    ]
-  }
-];
-
 const ParentDashboardPage: React.FC = () => {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [children, setChildren] = useState<Child[]>([]);
@@ -95,29 +58,17 @@ const ParentDashboardPage: React.FC = () => {
       if (dashRes.success && dashRes.data) {
         setDashboard(dashRes.data);
       } else {
-        setDashboard({
-          children: 2,
-          totalEnrollments: 3,
-          activeEnrollments: 3,
-          upcomingSessions: 4,
-          totalSessions: 38
-        });
+        setDashboard(null);
       }
 
       if (childRes.success && Array.isArray(childRes.data) && childRes.data.length > 0) {
         setChildren(childRes.data);
       } else {
-        setChildren(mockParentChildren);
+        setChildren([]);
       }
     } catch {
-      setDashboard({
-        children: 2,
-        totalEnrollments: 3,
-        activeEnrollments: 3,
-        upcomingSessions: 4,
-        totalSessions: 38
-      });
-      setChildren(mockParentChildren);
+      setDashboard(null);
+      setChildren([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -140,28 +91,28 @@ const ParentDashboardPage: React.FC = () => {
   const kpis = [
     {
       label: "الأبناء المسجلين",
-      value: dashboard?.children ?? 2,
+      value: dashboard?.children ?? 0,
       subtext: "ملفات دراسية نشطة",
       icon: Users,
       color: "text-blue-600 bg-blue-500/10 border-blue-500/20"
     },
     {
       label: "الباقات النشطة",
-      value: dashboard?.activeEnrollments ?? 3,
+      value: dashboard?.activeEnrollments ?? 0,
       subtext: "اشتراكات جارية",
       icon: GraduationCap,
       color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
     },
     {
       label: "الحصص القادمة",
-      value: dashboard?.upcomingSessions ?? 4,
+      value: dashboard?.upcomingSessions ?? 0,
       subtext: "مجدولة هذا الأسبوع",
       icon: CalendarDays,
       color: "text-amber-600 bg-amber-500/10 border-amber-500/20"
     },
     {
       label: "إجمالي الحصص المنفذة",
-      value: dashboard?.totalSessions ?? 38,
+      value: dashboard?.totalSessions ?? 0,
       subtext: "سجل الحضور الأكاديمي",
       icon: Clock,
       color: "text-purple-600 bg-purple-500/10 border-purple-500/20"
@@ -280,8 +231,8 @@ const ParentDashboardPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground">لا توجد اشتراكات نشطة حالياً</p>
                     ) : (
                       child.enrollments.slice(0, 2).map((e) => {
-                        const total = e.package?.hoursCount || 20;
-                        const pct = Math.min(100, Math.round((e.remainingHours / total) * 100));
+                        const total = e.package?.hoursCount ?? 0;
+                        const pct = total > 0 ? Math.min(100, Math.round((e.remainingHours / total) * 100)) : 0;
                         return (
                           <div key={e.id} className="p-2.5 rounded-lg border border-border/60 bg-muted/20 space-y-2">
                             <div className="flex items-center justify-between text-xs">
@@ -289,15 +240,17 @@ const ParentDashboardPage: React.FC = () => {
                                 {e.package?.name || "باقة تدريس"}
                               </span>
                               <span className="font-mono tabular-nums text-primary font-bold">
-                                {e.remainingHours} / {total} س
+                                {total > 0 ? `${e.remainingHours} / ${total} س` : `${e.remainingHours} س`}
                               </span>
                             </div>
-                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
+                            {total > 0 && (
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            )}
                             {e.teacher?.name && (
                               <p className="text-[11px] text-muted-foreground">
                                 المعلم: {e.teacher.name}
@@ -316,6 +269,16 @@ const ParentDashboardPage: React.FC = () => {
                 </div>
               </Link>
             ))}
+
+            {children.length === 0 && (
+              <div className="md:col-span-2 rounded-xl border border-border/70 bg-card p-10 text-center space-y-2">
+                <Users className="w-9 h-9 text-muted-foreground mx-auto stroke-1" />
+                <p className="text-sm font-medium text-foreground">لا يوجد أطفال مسجلون</p>
+                <p className="text-xs text-muted-foreground">
+                  لم يتم العثور على ملفات أبناء مرتبطة بحسابك حتى الآن
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

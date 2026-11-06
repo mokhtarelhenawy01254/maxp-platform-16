@@ -32,69 +32,6 @@ const SESSION_STATUS: Record<string, { label: string; color: string }> = {
   },
 };
 
-const FALLBACK_STUDENT = {
-  id: "s-1",
-  firstName: "أحمد",
-  lastName: "محمود سالم",
-  phone: "01012345678",
-  grade: "الثانوية العامة - علمي رياضة",
-  gender: "male",
-  isActive: true,
-  notes: "متميز في الرياضيات، يحتاج لمتابعة في ميكانيكا الحركة",
-  customer: {
-    firstName: "محمود",
-    lastName: "سالم",
-    phone: "01098765432",
-    email: "mahmoud.salem@example.com",
-  },
-};
-
-const FALLBACK_ENROLLMENTS = [
-  {
-    id: "en-1",
-    package: { name: "باقة التفوق في الرياضيات", subject: { name: "الرياضيات المتقدمة" } },
-    teacher: { name: "أ. سمير عبد الله" },
-    remainingHours: 12,
-    totalHours: 24,
-    amountPaid: 3600,
-    paymentStatus: "COMPLETED",
-    isActive: true,
-  },
-  {
-    id: "en-2",
-    package: { name: "باقة مكثفة في الفيزياء", subject: { name: "الفيزياء" } },
-    teacher: { name: "أ. سمير عبد الله" },
-    remainingHours: 4,
-    totalHours: 16,
-    amountPaid: 2400,
-    paymentStatus: "COMPLETED",
-    isActive: true,
-  },
-];
-
-const FALLBACK_SESSIONS = [
-  {
-    id: "ses-1",
-    teacher: { name: "أ. سمير عبد الله" },
-    subject: { name: "الرياضيات المتقدمة" },
-    scheduledAt: "2026-10-12T10:00:00Z",
-    plannedDuration: 60,
-    actualDuration: 60,
-    topic: "تطبيقات على التفاضل والتكامل",
-    status: "CONFIRMED",
-  },
-  {
-    id: "ses-2",
-    teacher: { name: "أ. سمير عبد الله" },
-    subject: { name: "الفيزياء" },
-    scheduledAt: "2026-10-15T14:00:00Z",
-    plannedDuration: 60,
-    actualDuration: null,
-    topic: "الدوائر المهتزة والتيار المتردد",
-    status: "SCHEDULED",
-  },
-];
-
 const EducationStudentProfilePage: React.FC = () => {
   const { id } = useParams();
   const [student, setStudent] = useState<any>(null);
@@ -105,6 +42,7 @@ const EducationStudentProfilePage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
@@ -115,15 +53,15 @@ const EducationStudentProfilePage: React.FC = () => {
         ]);
         const [stJson, eJson, sJson] = await Promise.all([stRes.json(), eRes.json(), sRes.json()]);
         if (stJson.success && stJson.data) setStudent(stJson.data);
-        else setStudent(FALLBACK_STUDENT);
-        if (eJson.success && Array.isArray(eJson.data) && eJson.data.length > 0) setEnrollments(eJson.data);
-        else setEnrollments(FALLBACK_ENROLLMENTS);
-        if (sJson.success && Array.isArray(sJson.data) && sJson.data.length > 0) setSessions(sJson.data);
-        else setSessions(FALLBACK_SESSIONS);
+        else setStudent(null);
+        if (eJson.success && Array.isArray(eJson.data)) setEnrollments(eJson.data);
+        else setEnrollments([]);
+        if (sJson.success && Array.isArray(sJson.data)) setSessions(sJson.data);
+        else setSessions([]);
       } catch {
-        setStudent(FALLBACK_STUDENT);
-        setEnrollments(FALLBACK_ENROLLMENTS);
-        setSessions(FALLBACK_SESSIONS);
+        setStudent(null);
+        setEnrollments([]);
+        setSessions([]);
       } finally {
         setLoading(false);
       }
@@ -131,9 +69,9 @@ const EducationStudentProfilePage: React.FC = () => {
     fetchData();
   }, [id]);
 
-  const activeStudent = student || FALLBACK_STUDENT;
-  const activeEnrollments = enrollments.length > 0 ? enrollments : FALLBACK_ENROLLMENTS;
-  const activeSessions = sessions.length > 0 ? sessions : FALLBACK_SESSIONS;
+  const activeStudent = student;
+  const activeEnrollments = enrollments;
+  const activeSessions = sessions;
 
   const totalHours = activeEnrollments.reduce((a: number, e: any) => a + (e.totalHours || 0), 0);
   const usedHours = activeEnrollments.reduce((a: number, e: any) => a + ((e.totalHours || 0) - (e.remainingHours || 0)), 0);
@@ -160,11 +98,47 @@ const EducationStudentProfilePage: React.FC = () => {
     },
     {
       label: "نسبة استهلاك الساعات",
-      value: `${pct}%`,
+      value: totalHours > 0 ? `${pct}%` : "—",
       icon: Clock,
       color: pct >= 80 ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+        <div className="bg-card border border-border/80 rounded-2xl p-10 text-center text-xs text-muted-foreground shadow-xs">
+          جاري تحميل بيانات الطالب...
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeStudent) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+        <div>
+          <Link
+            to="/admin/education/students"
+            className="inline-flex items-center gap-1.5 text-primary text-xs font-semibold hover:underline"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+            العودة إلى قائمة الطلاب
+          </Link>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-2xl p-10 shadow-xs text-center space-y-2">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-muted/40 text-muted-foreground flex items-center justify-center">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h1 className="text-base font-bold text-foreground">الطالب غير موجود</h1>
+          <p className="text-xs text-muted-foreground">
+            تعذر العثور على بيانات هذا الطالب. قد يكون السجل محذوفًا أو غير متاح لهذا الحساب.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
@@ -335,6 +309,13 @@ const EducationStudentProfilePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
+                {activeEnrollments.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-10 px-4 text-center text-xs text-muted-foreground">
+                      لا توجد بيانات بعد
+                    </td>
+                  </tr>
+                )}
                 {activeEnrollments.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4 font-semibold text-foreground">{e.package?.name || "—"}</td>
@@ -379,6 +360,13 @@ const EducationStudentProfilePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
+                {activeSessions.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-10 px-4 text-center text-xs text-muted-foreground">
+                      لا توجد بيانات بعد
+                    </td>
+                  </tr>
+                )}
                 {activeSessions.map((s) => {
                   const st = SESSION_STATUS[s.status];
                   return (

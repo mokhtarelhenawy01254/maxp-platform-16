@@ -33,30 +33,6 @@ const TYPE_CONFIG: Record<string, { label: string; badgeCls: string; isPositive:
   REFUND: { label: "استرجاع", badgeCls: "bg-amber-500/10 text-amber-600 border-amber-500/20", isPositive: true }
 };
 
-const mockTransactions: Transaction[] = [
-  {
-    id: "tx-1",
-    type: "CREDIT",
-    amount: 3000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    notes: "شحن رصيد المحفظة عبر فودافون كاش / إنستاباي"
-  },
-  {
-    id: "tx-2",
-    type: "DEBIT",
-    amount: 2100,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-    notes: "شراء باقة الفيزياء المتقدمة - يوسف محمد"
-  },
-  {
-    id: "tx-3",
-    type: "CREDIT",
-    amount: 5000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
-    notes: "شحن رصيد أولي للحساب"
-  }
-];
-
 const ParentWalletPage: React.FC = () => {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -79,12 +55,12 @@ const ParentWalletPage: React.FC = () => {
         setWallet(json.data.wallet);
         setTransactions(json.data.transactions || []);
       } else {
-        setWallet({ balance: 5900, totalEarned: 8000, totalSpent: 2100 });
-        setTransactions(mockTransactions);
+        setWallet(null);
+        setTransactions([]);
       }
     } catch {
-      setWallet({ balance: 5900, totalEarned: 8000, totalSpent: 2100 });
-      setTransactions(mockTransactions);
+      setWallet(null);
+      setTransactions([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -120,12 +96,10 @@ const ParentWalletPage: React.FC = () => {
         setMessage({ type: "error", text: json.message || "حدث خطأ أثناء الشحن" });
       }
     } catch {
-      setMessage({ type: "success", text: `تم تسجيل طلب شحن ${amt} ج.م بنجاح` });
-      setAmount("");
-      setShowTopup(false);
-      if (wallet) {
-        setWallet({ ...wallet, balance: wallet.balance + amt });
-      }
+      setMessage({
+        type: "error",
+        text: "تعذر الاتصال بالخادم، لم يتم شحن الرصيد. يرجى المحاولة مرة أخرى"
+      });
     } finally {
       setSaving(false);
     }
@@ -140,9 +114,9 @@ const ParentWalletPage: React.FC = () => {
     );
   }
 
-  const currentBalance = wallet?.balance ?? 5900;
-  const totalEarned = wallet?.totalEarned ?? 8000;
-  const totalSpent = wallet?.totalSpent ?? 2100;
+  const currentBalance = wallet?.balance ?? 0;
+  const totalEarned = wallet?.totalEarned ?? 0;
+  const totalSpent = wallet?.totalSpent ?? 0;
 
   return (
     <div className="space-y-6 pb-10" dir="rtl">

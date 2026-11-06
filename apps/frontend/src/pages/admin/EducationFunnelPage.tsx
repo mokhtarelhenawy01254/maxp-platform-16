@@ -74,36 +74,11 @@ const EVENT_COLORS: Record<string, string> = {
   education_session_cancelled: "text-red-600 dark:text-red-400",
 };
 
-const FALLBACK_FUNNEL = {
-  funnel: {
-    totalCustomers: 48,
-    totalStudents: 32,
-    totalEnrollments: 28,
-    scheduledSessions: 14,
-    confirmedSessions: 12,
-  },
-  conversion: {
-    customersToStudents: 67,
-    studentsToEnrollments: 88,
-    completionRate: 86,
-  },
-  repeat: {
-    studentsWithMultipleEnrollments: 9,
-    totalEnrolledStudents: 32,
-  },
-  templates: [
-    { event: "education_enrollment_created", parent: "مرحباً بكم في الأكاديمية! تم تأكيد تسجيل الطالب بنجاح", hasTeacher: true },
-    { event: "education_session_scheduled", parent: "تذكير: تم تحديد موعد الحصة القادمة", hasTeacher: true },
-    { event: "education_session_confirmed", parent: "تم تأكيد حضور الحصة من قبل المدرس", hasTeacher: false },
-    { event: "education_enrollment_low_hours", parent: "تنبيه: أوشك رصيد باقة الساعات على الانتهاء", hasTeacher: false },
-  ],
-};
+const asNumber = (value: any): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : 0;
 
-const FALLBACK_LOGS = [
-  { id: "log-1", eventType: "education_session_confirmed", recipientPhone: "01012345678", success: true, createdAt: new Date().toISOString() },
-  { id: "log-2", eventType: "education_session_scheduled", recipientPhone: "01198765432", success: true, createdAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: "log-3", eventType: "education_enrollment_created", recipientPhone: "01234567890", success: true, createdAt: new Date(Date.now() - 7200000).toISOString() },
-];
+const asPercent = (value: any): string =>
+  typeof value === "number" && Number.isFinite(value) ? `${value}%` : "—";
 
 export default function EducationFunnelPage() {
   const [funnel, setFunnel] = useState<any>(null);
@@ -117,8 +92,8 @@ export default function EducationFunnelPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchJson(api("funnel")).then((d) => setFunnel(d || FALLBACK_FUNNEL)),
-      fetchJson(api("logs?limit=20")).then((d) => setLogs(d || FALLBACK_LOGS)),
+      fetchJson(api("funnel")).then((d) => setFunnel(d || null)),
+      fetchJson(api("logs?limit=20")).then((d) => setLogs(Array.isArray(d) ? d : [])),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -142,15 +117,15 @@ export default function EducationFunnelPage() {
         setTestMessage(d.error || "فشل إرسال الإشعار");
       }
     } catch {
-      setTestStatus("success");
-      setTestMessage("تم محاكاة الإرسال التجريبي بنجاح");
+      setTestStatus("error");
+      setTestMessage("تعذر إرسال الإشعار التجريبي. تحقق من الاتصال بالشبكة وحاول مرة أخرى");
     } finally {
       setSending(false);
     }
   };
 
-  const activeFunnel = funnel || FALLBACK_FUNNEL;
-  const activeLogs = logs.length > 0 ? logs : FALLBACK_LOGS;
+  const activeFunnel = funnel;
+  const activeLogs = logs;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
@@ -248,19 +223,19 @@ export default function EducationFunnelPage() {
           <div className="grid grid-cols-3 gap-2 pt-1">
             <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
               <div className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums">
-                {activeFunnel?.conversion?.customersToStudents || 0}%
+                {asPercent(activeFunnel?.conversion?.customersToStudents)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">العملاء إلى طلاب</div>
             </div>
             <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
               <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
-                {activeFunnel?.conversion?.studentsToEnrollments || 0}%
+                {asPercent(activeFunnel?.conversion?.studentsToEnrollments)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">الطلاب إلى تسجيلات</div>
             </div>
             <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
               <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                {activeFunnel?.conversion?.completionRate || 0}%
+                {asPercent(activeFunnel?.conversion?.completionRate)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">إنجاز الحصص</div>
             </div>
@@ -275,13 +250,13 @@ export default function EducationFunnelPage() {
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
               <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                {activeFunnel?.repeat?.studentsWithMultipleEnrollments || 0}
+                {asNumber(activeFunnel?.repeat?.studentsWithMultipleEnrollments)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">طلاب بتسجيلات متعددة</div>
             </div>
             <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
               <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-                {activeFunnel?.repeat?.totalEnrolledStudents || 0}
+                {asNumber(activeFunnel?.repeat?.totalEnrolledStudents)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">إجمالي الطلاب الفعليين</div>
             </div>
@@ -355,7 +330,10 @@ export default function EducationFunnelPage() {
         </div>
 
         <div className="divide-y divide-border/60">
-          {(activeFunnel?.templates || []).map((tpl: any) => (
+          {(activeFunnel?.templates || []).length === 0 ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">لا توجد قوالب إشعارات بعد</div>
+          ) : (
+            (activeFunnel?.templates || []).map((tpl: any) => (
             <div
               key={tpl.event}
               className="p-3.5 hover:bg-muted/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2"
@@ -389,7 +367,8 @@ export default function EducationFunnelPage() {
                 </span>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -401,7 +380,7 @@ export default function EducationFunnelPage() {
             <h2 className="text-sm font-bold text-foreground">سجل آخر الإشعارات المرسلة</h2>
           </div>
           <span className="text-xs text-muted-foreground font-mono tabular-nums">
-            آخر {activeLogs.length} عملية
+            {activeLogs.length > 0 ? `آخر ${activeLogs.length} عملية` : "لا توجد عمليات"}
           </span>
         </div>
 
@@ -416,6 +395,13 @@ export default function EducationFunnelPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
+              {activeLogs.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-10 px-4 text-center text-xs text-muted-foreground">
+                    لا توجد بيانات بعد
+                  </td>
+                </tr>
+              )}
               {activeLogs.map((log: any, i: number) => (
                 <tr key={log.id || i} className="hover:bg-muted/20 transition-colors">
                   <td className={`py-2.5 px-4 font-medium ${EVENT_COLORS[log.eventType] || "text-foreground"}`}>

@@ -32,39 +32,6 @@ interface Child {
   lastName: string;
 }
 
-const mockSubjects: Subject[] = [
-  {
-    id: "sub-1",
-    name: "الرياضيات التطبيقية والبحته",
-    packages: [
-      { id: "pkg-1", name: "باقة 10 ساعات مكثفة", hoursCount: 10, price: 1600, description: "مراجعة وتطبيقات عملية" },
-      { id: "pkg-2", name: "باقة 20 ساعة متكاملة", hoursCount: 20, price: 3000, description: "منهج كامل مع بنك الأسئلة" },
-      { id: "pkg-3", name: "باقة 30 ساعة تخصصية", hoursCount: 30, price: 4200, description: "شاملة الامتحانات الشاملة" }
-    ]
-  },
-  {
-    id: "sub-2",
-    name: "الفيزياء المتقدمة",
-    packages: [
-      { id: "pkg-4", name: "باقة 12 ساعة فيزياء", hoursCount: 12, price: 2100, description: "تجارب ومسائل مركبة" },
-      { id: "pkg-5", name: "باقة 24 ساعة متميزة", hoursCount: 24, price: 3800, description: "تغطية شاملة لكافة الأبواب" }
-    ]
-  },
-  {
-    id: "sub-3",
-    name: "اللغة الإنجليزية لغات",
-    packages: [
-      { id: "pkg-6", name: "باقة 15 ساعة محادثة وقواعد", hoursCount: 15, price: 2250, description: "تطوير طلاقة وتراكيب" },
-      { id: "pkg-7", name: "باقة 30 ساعة تأسيسية", hoursCount: 30, price: 4000, description: "إعداد شامل للاختبارات" }
-    ]
-  }
-];
-
-const mockChildren: Child[] = [
-  { id: "ch-1", firstName: "يوسف", lastName: "محمد النجار" },
-  { id: "ch-2", firstName: "سارة", lastName: "محمد النجار" }
-];
-
 const ParentBuyPackagePage: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [children, setChildren] = useState<Child[]>([]);
@@ -97,29 +64,29 @@ const ParentBuyPackagePage: React.FC = () => {
           setSubjects(subRes.data);
           setSelectedSubject(subRes.data[0].id);
         } else {
-          setSubjects(mockSubjects);
-          setSelectedSubject(mockSubjects[0].id);
+          setSubjects([]);
+          setSelectedSubject("");
         }
 
         if (childRes.success && Array.isArray(childRes.data) && childRes.data.length > 0) {
           setChildren(childRes.data);
           setSelectedStudent(childRes.data[0].id);
         } else {
-          setChildren(mockChildren);
-          setSelectedStudent(mockChildren[0].id);
+          setChildren([]);
+          setSelectedStudent("");
         }
 
         if (walRes.success && walRes.data?.wallet) {
           setWallet(walRes.data.wallet);
         } else {
-          setWallet({ balance: 5900 });
+          setWallet(null);
         }
       } catch {
-        setSubjects(mockSubjects);
-        setSelectedSubject(mockSubjects[0].id);
-        setChildren(mockChildren);
-        setSelectedStudent(mockChildren[0].id);
-        setWallet({ balance: 5900 });
+        setSubjects([]);
+        setSelectedSubject("");
+        setChildren([]);
+        setSelectedStudent("");
+        setWallet(null);
       } finally {
         setLoading(false);
       }
@@ -129,9 +96,15 @@ const ParentBuyPackagePage: React.FC = () => {
 
   const currentSubject = subjects.find((s) => s.id === selectedSubject) || subjects[0];
   const selectedPkg = currentSubject?.packages?.find((p) => p.id === selectedPackage);
-  const userBalance = wallet?.balance ?? 5900;
-  const canPurchase =
-    selectedStudent && selectedPackage && selectedPkg && userBalance >= selectedPkg.price;
+  const userBalance = wallet?.balance ?? 0;
+  const hasCatalog = subjects.length > 0;
+  const canPurchase = Boolean(
+    hasCatalog &&
+      selectedStudent &&
+      selectedPackage &&
+      selectedPkg &&
+      userBalance >= selectedPkg.price
+  );
 
   const handlePurchase = async () => {
     if (!canPurchase || !selectedPkg) return;
@@ -159,10 +132,9 @@ const ParentBuyPackagePage: React.FC = () => {
       }
     } catch {
       setMessage({
-        type: "success",
-        text: `تم تفعيل "${selectedPkg.name}" للطالب بنجاح وإضافتها للاشتراكات!`
+        type: "error",
+        text: "تعذر الاتصال بالخادم، لم يتم إتمام عملية الشراء. يرجى المحاولة مرة أخرى"
       });
-      setTimeout(() => navigate("/parent/enrollments"), 1500);
     } finally {
       setPurchasing(false);
     }
@@ -236,6 +208,15 @@ const ParentBuyPackagePage: React.FC = () => {
               <h3 className="text-sm font-semibold text-foreground">1. اختر الطالب المستفيد</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {children.length === 0 && (
+                <div className="sm:col-span-2 p-6 rounded-lg border border-border/60 bg-muted/20 text-center space-y-1.5">
+                  <User className="w-8 h-8 text-muted-foreground mx-auto stroke-1" />
+                  <p className="text-xs font-medium text-foreground">لا يوجد أطفال مسجلون</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    تعذر تحميل قائمة الأبناء المسجلين على حسابك
+                  </p>
+                </div>
+              )}
               {children.map((child) => {
                 const isSelected = selectedStudent === child.id;
                 return (
@@ -275,6 +256,15 @@ const ParentBuyPackagePage: React.FC = () => {
               <h3 className="text-sm font-semibold text-foreground">2. اختر المادة الدراسية</h3>
             </div>
             <div className="flex flex-wrap gap-2">
+              {subjects.length === 0 && (
+                <div className="w-full p-6 rounded-lg border border-border/60 bg-muted/20 text-center space-y-1.5">
+                  <BookOpen className="w-8 h-8 text-muted-foreground mx-auto stroke-1" />
+                  <p className="text-xs font-medium text-foreground">لا توجد مواد أو باقات متاحة حالياً</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    لم يتم تحميل أي باقات من الأكاديمية، يرجى المحاولة لاحقاً
+                  </p>
+                </div>
+              )}
               {subjects.map((sub) => {
                 const isSelected = selectedSubject === sub.id;
                 return (
@@ -305,9 +295,18 @@ const ParentBuyPackagePage: React.FC = () => {
               <h3 className="text-sm font-semibold text-foreground">3. اختر باقة الساعات</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(!currentSubject || !currentSubject.packages || currentSubject.packages.length === 0) && (
+                <div className="sm:col-span-3 p-8 rounded-xl border border-border/60 bg-muted/20 text-center space-y-1.5">
+                  <GraduationCap className="w-9 h-9 text-muted-foreground mx-auto stroke-1" />
+                  <p className="text-xs font-medium text-foreground">لا توجد باقات متاحة للشراء</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    سيتم عرض الباقات المتاحة فور إتاحتها من الأكاديمية
+                  </p>
+                </div>
+              )}
               {currentSubject?.packages?.map((pkg) => {
                 const isSelected = selectedPackage === pkg.id;
-                const perHour = Math.round(pkg.price / pkg.hoursCount);
+                const perHour = pkg.hoursCount > 0 ? Math.round(pkg.price / pkg.hoursCount) : 0;
 
                 return (
                   <button
@@ -332,7 +331,7 @@ const ParentBuyPackagePage: React.FC = () => {
                         {pkg.price.toLocaleString("ar-EG")} ج.م
                       </div>
                       <div className="text-[10px] font-mono text-muted-foreground">
-                        {pkg.hoursCount} ساعة • {perHour} ج.م / س
+                        {pkg.hoursCount} ساعة{pkg.hoursCount > 0 ? ` • ${perHour} ج.م / س` : ""}
                       </div>
                     </div>
                   </button>
@@ -400,7 +399,13 @@ const ParentBuyPackagePage: React.FC = () => {
             ) : (
               <ShoppingCart className="w-3.5 h-3.5" />
             )}
-            <span>{purchasing ? "جاري الخصم والتفعيل..." : "تأكيد شراء الباقة"}</span>
+            <span>
+              {purchasing
+                ? "جاري الخصم والتفعيل..."
+                : !hasCatalog
+                ? "لا توجد باقات متاحة للشراء"
+                : "تأكيد شراء الباقة"}
+            </span>
           </button>
         </div>
       </div>

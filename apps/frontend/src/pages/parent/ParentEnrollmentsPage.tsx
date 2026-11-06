@@ -27,42 +27,6 @@ interface Child {
   lastName: string;
 }
 
-const mockChildren: Child[] = [
-  { id: "ch-1", firstName: "يوسف", lastName: "محمد النجار" },
-  { id: "ch-2", firstName: "سارة", lastName: "محمد النجار" }
-];
-
-const mockEnrollmentsMap: Record<string, Enrollment[]> = {
-  "ch-1": [
-    {
-      id: "en-1",
-      remainingHours: 14,
-      totalHours: 20,
-      package: { id: "p-1", name: "باقة الرياضيات المتكاملة", hoursCount: 20, price: 3000 },
-      teacher: { name: "أ. حسام الدين عبد الله" },
-      subject: { name: "الرياضيات التطبيقية" }
-    },
-    {
-      id: "en-2",
-      remainingHours: 6,
-      totalHours: 12,
-      package: { id: "p-2", name: "باقة الفيزياء المتقدمة", hoursCount: 12, price: 2100 },
-      teacher: { name: "أ. محمود شاكر" },
-      subject: { name: "الفيزياء الكهربية" }
-    }
-  ],
-  "ch-2": [
-    {
-      id: "en-3",
-      remainingHours: 18,
-      totalHours: 24,
-      package: { id: "p-3", name: "باقة اللغة الإنجليزية التأسيسية", hoursCount: 24, price: 2800 },
-      teacher: { name: "ميس رانيا حسن" },
-      subject: { name: "اللغة الإنجليزية" }
-    }
-  ]
-};
-
 const ParentEnrollmentsPage: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, Enrollment[]>>({});
@@ -93,12 +57,12 @@ const ParentEnrollmentsPage: React.FC = () => {
         }
         setEnrollmentsMap(map);
       } else {
-        setChildren(mockChildren);
-        setEnrollmentsMap(mockEnrollmentsMap);
+        setChildren([]);
+        setEnrollmentsMap({});
       }
     } catch {
-      setChildren(mockChildren);
-      setEnrollmentsMap(mockEnrollmentsMap);
+      setChildren([]);
+      setEnrollmentsMap({});
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -248,8 +212,8 @@ const ParentEnrollmentsPage: React.FC = () => {
         ) : (
           <div className="divide-y divide-border/60">
             {allEnrollments.map((e) => {
-              const total = e.package?.hoursCount || 20;
-              const pct = Math.min(100, Math.round((e.remainingHours / total) * 100));
+              const total = e.package?.hoursCount ?? 0;
+              const pct = total > 0 ? Math.min(100, Math.round((e.remainingHours / total) * 100)) : 0;
 
               return (
                 <div
@@ -287,15 +251,17 @@ const ParentEnrollmentsPage: React.FC = () => {
 
                       {/* Progress bar */}
                       <div className="w-full max-w-xs pt-1 space-y-1">
-                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
+                        {total > 0 && (
+                          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        )}
                         <div className="flex justify-between text-[11px] font-mono text-muted-foreground">
                           <span>المتبقي: {e.remainingHours} ساعة</span>
-                          <span>الإجمالي: {total} ساعة</span>
+                          <span>الإجمالي: {total > 0 ? `${total} ساعة` : "—"}</span>
                         </div>
                       </div>
                     </div>
@@ -304,7 +270,7 @@ const ParentEnrollmentsPage: React.FC = () => {
                   <div className="flex items-center gap-4 self-end md:self-center">
                     <div className="text-left font-mono">
                       <div className="text-base font-bold text-foreground">
-                        {e.package?.price} ج.م
+                        {e.package?.price != null ? `${e.package.price.toLocaleString("ar-EG")} ج.م` : "—"}
                       </div>
                       <div className="text-[11px] text-muted-foreground">قيمة الباقة</div>
                     </div>

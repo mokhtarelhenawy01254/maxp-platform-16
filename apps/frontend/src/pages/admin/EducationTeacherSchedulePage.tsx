@@ -70,72 +70,6 @@ interface Session {
   status: string;
 }
 
-const FALLBACK_TEACHERS: Teacher[] = [
-  { id: "t-1", name: "أ. سمير عبد الله", phone: "01001234567" },
-  { id: "t-2", name: "د. هبة الشامي", phone: "01123456789" },
-  { id: "t-3", name: "م. جون أندراوس", phone: "01234567890" },
-];
-
-const getFallbackWeekSessions = (days: Date[]): Session[] => {
-  if (!days || days.length < 7) return [];
-  const fmt = (d: Date, hour: string) => `${d.toISOString().split("T")[0]}T${hour}:00Z`;
-  return [
-    {
-      id: "ws-1",
-      teacherId: "t-1",
-      teacher: { id: "t-1", name: "أ. سمير عبد الله" },
-      student: { firstName: "أحمد", lastName: "محمود" },
-      subject: { name: "الرياضيات المتقدمة" },
-      scheduledAt: fmt(days[0], "10:00"),
-      plannedDuration: 60,
-      actualDuration: 60,
-      status: "CONFIRMED",
-    },
-    {
-      id: "ws-2",
-      teacherId: "t-2",
-      teacher: { id: "t-2", name: "د. هبة الشامي" },
-      student: { firstName: "سارة", lastName: "إبراهيم" },
-      subject: { name: "الكيمياء" },
-      scheduledAt: fmt(days[1], "12:30"),
-      plannedDuration: 60,
-      status: "SCHEDULED",
-    },
-    {
-      id: "ws-3",
-      teacherId: "t-3",
-      teacher: { id: "t-3", name: "م. جون أندراوس" },
-      student: { firstName: "يوسف", lastName: "خالد" },
-      subject: { name: "اللغة الإنجليزية" },
-      scheduledAt: fmt(days[2], "15:00"),
-      plannedDuration: 45,
-      actualDuration: 45,
-      status: "CONFIRMED",
-    },
-    {
-      id: "ws-4",
-      teacherId: "t-1",
-      teacher: { id: "t-1", name: "أ. سمير عبد الله" },
-      student: { firstName: "عمر", lastName: "طارق" },
-      subject: { name: "الفيزياء" },
-      scheduledAt: fmt(days[4], "11:00"),
-      plannedDuration: 60,
-      status: "SCHEDULED",
-    },
-    {
-      id: "ws-5",
-      teacherId: "t-2",
-      teacher: { id: "t-2", name: "د. هبة الشامي" },
-      student: { firstName: "كريم", lastName: "أشرف" },
-      subject: { name: "الأحياء" },
-      scheduledAt: fmt(days[5], "14:00"),
-      plannedDuration: 60,
-      actualDuration: 60,
-      status: "CONFIRMED",
-    },
-  ];
-};
-
 export default function EducationTeacherSchedulePage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -169,13 +103,13 @@ export default function EducationTeacherSchedulePage() {
     try {
       const res = await fetch(api("teachers"), { headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data.success && Array.isArray(data.data)) {
         setTeachers(data.data);
       } else {
-        setTeachers(FALLBACK_TEACHERS);
+        setTeachers([]);
       }
     } catch {
-      setTeachers(FALLBACK_TEACHERS);
+      setTeachers([]);
     }
   };
 
@@ -186,13 +120,13 @@ export default function EducationTeacherSchedulePage() {
       if (selectedTeacher) params.append("teacherId", selectedTeacher);
       const res = await fetch(api(`sessions?${params}`), { headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data.success && Array.isArray(data.data)) {
         setSessions(data.data);
       } else {
-        setSessions(getFallbackWeekSessions(weekDays));
+        setSessions([]);
       }
     } catch {
-      setSessions(getFallbackWeekSessions(weekDays));
+      setSessions([]);
     } finally {
       setLoading(false);
     }
@@ -359,7 +293,7 @@ export default function EducationTeacherSchedulePage() {
                 <div className="p-2 space-y-2 flex-1">
                   {daySessions.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground text-[11px] py-12">
-                      لا توجد حصص
+                      {loading ? "…" : "لا توجد حصص"}
                     </div>
                   ) : (
                     daySessions.map((s) => {
