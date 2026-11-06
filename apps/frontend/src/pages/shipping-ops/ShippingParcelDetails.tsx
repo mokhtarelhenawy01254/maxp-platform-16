@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { shippingOpsService, ShipmentItem } from '../../services/shippingOpsService';
 import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel } from './shippingOpsShared';
+import { ShipmentTransitionsBar } from './ShipmentTransitionsBar';
 
 export const ShippingParcelDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -167,6 +168,19 @@ export const ShippingParcelDetails: React.FC = () => {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.badgeClass}`}>
               {badge.label}
             </span>
+            {shipment.remittedAt && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                {isEn ? `Remitted: ${formatDate(shipment.remittedAt)}` : `تم التوريد: ${formatDate(shipment.remittedAt)}`}
+              </span>
+            )}
+            {shipment.parentShipmentId && (
+              <Link
+                to={`/shipping-ops/parcels/${shipment.parentShipmentId}`}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:underline dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+              >
+                <span>{isEn ? 'Reshipped from previous' : 'معاد إرسالها من الشحنة السابقة'}</span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -195,7 +209,7 @@ export const ShippingParcelDetails: React.FC = () => {
             </div>
             <button
               onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'WAYBILL', printCopies)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
               title={isEn ? 'Print Waybill (A6)' : 'طباعة بوليصة شحن لصق'}
             >
               <Printer className="w-3.5 h-3.5" />
@@ -203,7 +217,7 @@ export const ShippingParcelDetails: React.FC = () => {
             </button>
             <button
               onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'INVOICE', printCopies)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
               title={isEn ? 'Print COD Invoice' : 'طباعة فاتورة تحصيل COD'}
             >
               <Printer className="w-3.5 h-3.5" />
@@ -211,7 +225,7 @@ export const ShippingParcelDetails: React.FC = () => {
             </button>
             <button
               onClick={() => printShipmentLabel(shipment.id, shipment.trackingNumber, 'BOTH', printCopies)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
               title={isEn ? 'Print Both (Waybill + Invoice)' : 'طباعة الاثنين (بوليصة + فاتورة)'}
             >
               <Printer className="w-3.5 h-3.5" />
@@ -219,25 +233,8 @@ export const ShippingParcelDetails: React.FC = () => {
             </button>
           </div>
 
-          {shipment.status !== 'DELIVERED' && shipment.status !== 'CANCELLED' && shipment.status !== 'RETURNED' && (
-            <button
-              onClick={() => setShowReattemptModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>{isEn ? 'Reschedule Reattempt' : 'إعادة جدولة'}</span>
-            </button>
-          )}
-
-          {isPending && (
-            <button
-              onClick={() => setShowCancelModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium text-rose-600 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition active:scale-95"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>{t('shippingOps.list.cancelShipment', 'إلغاء الشحنة')}</span>
-            </button>
-          )}
+          {/* Dynamic Allowed Transition Actions */}
+          <ShipmentTransitionsBar shipment={shipment} onUpdated={loadShipment} />
         </div>
       </div>
 

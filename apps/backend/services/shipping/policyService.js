@@ -31,6 +31,14 @@ const DEFAULT_POLICY_SETTINGS = {
   requireDeliveryOtp: false,
   rtoChargeReturnLeg: false,
   rtoReturnLegPrice: null,
+  allowIncompleteStatus: true,
+  allowPostponedStatus: true,
+  allowReshippedStatus: true,
+  printFeePerWaybill: 0,
+  openPackageMode: 'ALWAYS_ALLOW',
+  openPackageFeeAlways: null,
+  openPackageFeeAsk: null,
+  openPackageFeeDeny: null,
 };
 
 /**
@@ -486,6 +494,14 @@ const ALLOWED_POLICY_KEYS = [
   'requireDeliveryOtp',
   'rtoChargeReturnLeg',
   'rtoReturnLegPrice',
+  'allowIncompleteStatus',
+  'allowPostponedStatus',
+  'allowReshippedStatus',
+  'printFeePerWaybill',
+  'openPackageMode',
+  'openPackageFeeAlways',
+  'openPackageFeeAsk',
+  'openPackageFeeDeny',
 ];
 
 /**
@@ -567,6 +583,32 @@ async function updatePolicy(companyId, payload = {}, customPrisma = null) {
   }
   if (payload.invoiceVatPercent !== undefined) {
     sanitized.invoiceVatPercent = Math.max(0, parseFloat(payload.invoiceVatPercent) || 0);
+  }
+  if (payload.allowIncompleteStatus !== undefined) {
+    sanitized.allowIncompleteStatus = Boolean(payload.allowIncompleteStatus);
+  }
+  if (payload.allowPostponedStatus !== undefined) {
+    sanitized.allowPostponedStatus = Boolean(payload.allowPostponedStatus);
+  }
+  if (payload.allowReshippedStatus !== undefined) {
+    sanitized.allowReshippedStatus = Boolean(payload.allowReshippedStatus);
+  }
+  if (payload.printFeePerWaybill !== undefined) {
+    sanitized.printFeePerWaybill = payload.printFeePerWaybill !== null && payload.printFeePerWaybill !== '' ? Math.max(0, parseFloat(payload.printFeePerWaybill) || 0) : 0;
+  }
+  if (payload.openPackageMode !== undefined) {
+    const validModes = ['ALWAYS_ALLOW', 'ASK_EACH', 'ALWAYS_DENY'];
+    const mode = String(payload.openPackageMode || '').toUpperCase();
+    sanitized.openPackageMode = validModes.includes(mode) ? mode : 'ALWAYS_ALLOW';
+  }
+  if (payload.openPackageFeeAlways !== undefined) {
+    sanitized.openPackageFeeAlways = payload.openPackageFeeAlways !== null && payload.openPackageFeeAlways !== '' ? Math.max(0, parseFloat(payload.openPackageFeeAlways) || 0) : null;
+  }
+  if (payload.openPackageFeeAsk !== undefined) {
+    sanitized.openPackageFeeAsk = payload.openPackageFeeAsk !== null && payload.openPackageFeeAsk !== '' ? Math.max(0, parseFloat(payload.openPackageFeeAsk) || 0) : null;
+  }
+  if (payload.openPackageFeeDeny !== undefined) {
+    sanitized.openPackageFeeDeny = payload.openPackageFeeDeny !== null && payload.openPackageFeeDeny !== '' ? Math.max(0, parseFloat(payload.openPackageFeeDeny) || 0) : null;
   }
 
   const updated = await prisma.shippingPolicySettings.upsert({

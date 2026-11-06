@@ -49,6 +49,10 @@ export interface ShipmentItem {
   courierCost?: number | null;
   costSource?: string | null;
   marginAmount?: number | null;
+  remittedAt?: string | null;
+  parentShipmentId?: string | null;
+  allowedTransitions?: string[];
+  latestEvent?: ShipmentEventItem | null;
 }
 
 export interface ShipmentEventItem {
@@ -234,6 +238,7 @@ export interface ShipmentsQuery {
 
 export interface ShipmentsResponse {
   data: ShipmentItem[];
+  statusCounts?: Record<string, number>;
   pagination: {
     total: number;
     page: number;
@@ -256,14 +261,20 @@ export const shippingOpsService = {
   },
 
   async getShipments(params: ShipmentsQuery = {}): Promise<ShipmentsResponse> {
-    const res = await api.get<{ success: boolean; data: ShipmentItem[]; pagination: ShipmentsResponse['pagination'] }>(
+    const res = await api.get<{ success: boolean; data: ShipmentItem[]; statusCounts?: Record<string, number>; pagination: ShipmentsResponse['pagination'] }>(
       '/shipping-portal/shipments',
       { params }
     );
     return {
       data: res.data.data || [],
+      statusCounts: res.data.statusCounts,
       pagination: res.data.pagination || { total: 0, page: 1, limit: 20, totalPages: 1 },
     };
+  },
+
+  async getStatusCounts(): Promise<Record<string, number>> {
+    const res = await api.get<{ success: boolean; data: Record<string, number> }>('/shipping-portal/status-counts');
+    return res.data.data || {};
   },
 
   async getShipmentById(id: string): Promise<ShipmentItem> {
@@ -358,9 +369,17 @@ export const shippingOpsService = {
     return res.data.data;
   },
 
-  async updateShipmentStatus(id: string, payload: { status: string; failureReasonCode?: string; nextAttemptDate?: string; notes?: string }): Promise<ShipmentItem> {
+  async updateShipmentStatus(id: string, payload: { status: string; failureReasonCode?: string; nextAttemptDate?: string; notes?: string; collectedAmount?: number }): Promise<ShipmentItem> {
     const res = await api.patch<{ success: boolean; data: ShipmentItem }>(`/shipping-portal/shipments/${id}/status`, payload);
     return res.data.data;
+  },
+
+  async reshipShipment(id: string, notes?: string): Promise<{ shipment: ShipmentItem; newShipment?: ShipmentItem }> {
+    const res = await api.post<{ success: boolean; data: ShipmentItem; newShipment?: ShipmentItem }>(`/shipping-portal/shipments/${id}/reship`, { notes });
+    return {
+      shipment: res.data.data,
+      newShipment: res.data.newShipment,
+    };
   },
 
   async reattemptShipment(id: string, payload: { nextAttemptDate?: string; courierId?: string; notes?: string } = {}): Promise<ShipmentItem> {
@@ -377,7 +396,129 @@ export const shippingOpsService = {
     const res = await api.get<{ success: boolean; data: PublicTrackingResponse }>(`/public/shipments/track/${encodeURIComponent(waybill)}`);
     return res.data.data;
   },
+
+  async getWalletSummary(): Promise<CompanyWalletData> {
+    const res = await api.get<{ success: boolean; data: CompanyWalletData }>('/wallet');
+    return res.data.data;
+  },
+
+  async getWalletTransactions(params: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    reason?: string;
+    from?: string;
+    to?: string;
+  } = {}): Promise<WalletTransactionsResponse> {
+    const res = await api.get<{ success: boolean; data: CompanyWalletTransactionItem[]; pagination: any; wallet?: any }>(
+      '/wallet/transactions',
+      { params }
+    );
+    return {
+      transactions: res.data.data || [],
+      items: res.data.data || [],
+      pagination: res.data.pagination || { total: 0, page: 1, limit: 20, pages: 0 },
+      wallet: res.data.wallet,
+    };
+  },
+
+  async adjustWalletBalance(payload: {
+    amount: number;
+    type?: string;
+    reason?: string;
+    notes: string;
+    code?: string;
+  }): Promise<{ success: boolean; data: any }> {
+    const res = await api.post<{ success: boolean; data: any }>('/wallet/adjust', payload);
+    return res.data;
+  },
+
+  async getWalletFees(params: { from?: string; to?: string } = {}): Promise<WalletFeesReport> {
+    const res = await api.get<{ success: boolean; data: WalletFeesReport }>('/wallet/fees', { params });
+    return res.data.data;
+  },
+
+  async getShippingPolicy(): Promise<ShippingPolicyData> {
+    const res = await api.get<{ success: boolean; data: ShippingPolicyData }>('/shipping-portal/policy');
+    return res.data.data;
+  },
+
+  async updateShippingPolicy(payload: Partial<ShippingPolicyData>): Promise<ShippingPolicyData> {
+    const res = await api.put<{ success: boolean; data: ShippingPolicyData }>('/shipping-portal/policy', payload);
+    return res.data.data;
+  },
+
+  async confirmOpenPackage(id: string, notes?: string): Promise<{ success: boolean; data: ShipmentItem; feeDeducted?: boolean; fee?: number }> {
+    const res = await api.post<{ success: boolean; data: ShipmentItem; feeDeducted?: boolean; fee?: number }>(
+      `/shipping-portal/shipments/${id}/confirm-open`,
+      { notes }
+    );
+    return res.data;
+  },
+
+  async collectShipmentCod(id: string, payload: { amount?: number; notes?: string } = {}): Promise<{ success: boolean; data: ShipmentItem }> {
+    const res = await api.post<{ success: boolean; data: ShipmentItem }>(
+      `/shipping-portal/shipments/${id}/collect`,
+      payload
+    );
+    return res.data;
+  },
 };
+
+export interface CompanyWalletData {
+  id: string;
+  companyId: string;
+  balance: number;
+  availableForRemittance: number;
+  upcomingRemittance: number;
+  currency: string;
+  updatedAt?: string;
+}
+
+export interface CompanyWalletTransactionItem {
+  id: string;
+  type: 'DEPOSIT' | 'WITHDRAW' | string;
+  typeLabel?: string;
+  reason: 'COD_COLLECTED' | 'SETTLEMENT_PAYOUT' | 'PRINT_FEE' | 'OPEN_PACKAGE_FEE' | 'ADJUSTMENT' | 'COMMISSION_PAYOUT' | string;
+  reasonLabel?: string;
+  code?: string | null;
+  amount: number;
+  balanceAfter: number;
+  notes?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+export interface WalletTransactionsResponse {
+  transactions: CompanyWalletTransactionItem[];
+  items?: CompanyWalletTransactionItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+  wallet?: CompanyWalletData;
+}
+
+export interface WalletFeesReport {
+  from: string | null;
+  to: string | null;
+  totalFees: number;
+  printFees: { count: number; total: number };
+  openPackageFees: { count: number; total: number };
+}
+
+export interface ShippingPolicyData {
+  id?: string;
+  companyId: string;
+  printFeePerWaybill: number;
+  openPackageMode: 'ALWAYS_ALLOW' | 'ASK_EACH' | 'ALWAYS_DENY' | string;
+  openPackageFeeAlways: number;
+  openPackageFeeAsk: number;
+  openPackageFeeDeny: number;
+  [key: string]: any;
+}
 
 export interface DeliveryFailureReasonItem {
   id: string;
@@ -393,6 +534,10 @@ export interface PublicTrackingResponse {
   waybill: string;
   trackingNumber: string;
   status: string;
+  customerStatus?: string;
+  customerStatusEn?: string;
+  statusCategory?: string;
+  statusColor?: string;
   recipientName: string;
   recipientPhone: string;
   destinationGovernorate: string;
@@ -403,6 +548,8 @@ export interface PublicTrackingResponse {
     id: string;
     status: string;
     toStatus: string;
+    statusLabel?: string;
+    statusLabelEn?: string;
     fromStatus?: string | null;
     reasonCode?: string | null;
     notes?: string | null;

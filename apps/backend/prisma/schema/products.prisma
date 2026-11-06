@@ -814,6 +814,10 @@ model Shipment {
   clientReference        String?
   barcode                String?
   lastBranchAt           DateTime?
+  remittedAt             DateTime?
+  parentShipmentId       String?
+  parentShipment         Shipment?        @relation("ShipmentReshipment", fields: [parentShipmentId], references: [id], onDelete: SetNull)
+  reshipments            Shipment[]       @relation("ShipmentReshipment")
   branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   pickupRequest          PickupRequest?   @relation(fields: [pickupRequestId], references: [id], onDelete: SetNull)
   settlementLine         ShippingSettlementLine?
@@ -832,6 +836,8 @@ model Shipment {
   @@index([pickupRequestId])
   @@index([barcode])
   @@index([lastBranchAt])
+  @@index([parentShipmentId])
+  @@index([remittedAt])
   @@index([status])
   @@index([companyId, createdAt])
   @@index([companyId, status, createdAt])

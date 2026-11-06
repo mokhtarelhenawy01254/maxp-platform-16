@@ -27,6 +27,66 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; icon: R
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
     icon: Truck,
   },
+  PICKED_UP: {
+    label: 'استلمها مندوب التوصيل',
+    badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800',
+    icon: Truck,
+  },
+  ASSIGNED: {
+    label: 'قيد التوزيع للمندوب',
+    badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800',
+    icon: Package,
+  },
+  POSTPONED: {
+    label: 'تأجيل موعد التسليم',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
+    icon: Clock,
+  },
+  FAILED: {
+    label: 'محاولة تسليم غير مكتملة',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
+    icon: AlertCircle,
+  },
+  RETURNED_AT_COMPANY: {
+    label: 'قيد المراجعة في الشركة',
+    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800',
+    icon: RotateCcw,
+  },
+  RETURNED_RECEIVED: {
+    label: 'مرتجع للمتجر',
+    badgeClass: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-400 dark:border-teal-800',
+    icon: RotateCcw,
+  },
+  RETURNED_DAMAGED: {
+    label: 'تالف أثناء الشحن',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800',
+    icon: AlertCircle,
+  },
+  RETURNED_LOST: {
+    label: 'مفقود أثناء الشحن',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800',
+    icon: AlertCircle,
+  },
+  RESHIPPED: {
+    label: 'إعادة إرسال شحنة بديلة',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
+    icon: Truck,
+  },
+  REMITTED: {
+    label: 'تم التوصيل والتوريد',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
+    icon: CheckCircle2,
+  },
+  CLOSED: {
+    label: 'مكتملة ومغلقة',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    icon: CheckCircle2,
+  },
+  INCOMPLETE: {
+    label: 'مسودة قيد الاستكمال',
+    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+    icon: Clock,
+  },
   IN_TRANSIT: {
     label: 'في الطريق بين الفروع',
     badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800',
@@ -36,11 +96,6 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; icon: R
     label: 'تم الاستلام في المركز الرئيسي',
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800',
     icon: Package,
-  },
-  FAILED: {
-    label: 'محاولة تسليم غير مكتملة',
-    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
-    icon: AlertCircle,
   },
   RETURNED: {
     label: 'شحنة مرتجعة',
@@ -207,7 +262,7 @@ export const ShipmentTrackingPage: React.FC = () => {
                 {statusConfig && (
                   <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold border ${statusConfig.badgeClass} self-start sm:self-auto`}>
                     <statusConfig.icon className="w-4 h-4" />
-                    <span>{statusConfig.label}</span>
+                    <span>{trackingData.customerStatus || trackingData.statusLabel || statusConfig.label}</span>
                   </div>
                 )}
               </div>
@@ -261,8 +316,9 @@ export const ShipmentTrackingPage: React.FC = () => {
                 <div className="relative pr-4 space-y-6 before:absolute before:right-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
                   {trackingData.events.map((event, idx) => {
                     const isLatest = idx === 0;
-                    const eventConfig = STATUS_CONFIG[event.status] || {
-                      label: event.status,
+                    const eventStatus = event.toStatus || event.status;
+                    const eventConfig = STATUS_CONFIG[eventStatus] || {
+                      label: event.toStatusLabel || event.note || eventStatus,
                       badgeClass: 'text-slate-600',
                       icon: Package,
                     };
@@ -291,7 +347,7 @@ export const ShipmentTrackingPage: React.FC = () => {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-xs sm:text-sm font-bold ${isLatest ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                              {eventConfig.label}
+                              {event.toStatusLabel || eventConfig.label}
                             </span>
                             {isLatest && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium">

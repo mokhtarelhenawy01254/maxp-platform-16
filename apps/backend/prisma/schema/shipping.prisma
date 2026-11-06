@@ -138,6 +138,14 @@ model ShippingPolicySettings {
   maxShipmentsPerCourierPerDay Int @default(60)
   currency              String   @default("EGP")
   invoiceVatPercent     Decimal  @default(0) @db.Decimal(5, 2)
+  printFeePerWaybill    Decimal  @default(0) @db.Decimal(10, 2)
+  openPackageMode       String   @default("ALWAYS_ALLOW") // ALWAYS_ALLOW | ASK_EACH | ALWAYS_DENY
+  openPackageFeeAlways  Decimal? @db.Decimal(10, 2)
+  openPackageFeeAsk     Decimal? @db.Decimal(10, 2)
+  openPackageFeeDeny    Decimal? @db.Decimal(10, 2)
+  allowIncompleteStatus Boolean  @default(true)
+  allowPostponedStatus  Boolean  @default(true)
+  allowReshippedStatus  Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

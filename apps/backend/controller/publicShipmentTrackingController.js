@@ -99,6 +99,8 @@ async function trackShipmentByWaybill(req, res) {
     }
 
     const waybill = shipment.barcode || shipment.trackingNumber;
+    const { getCustomerFacingStatus } = require('../services/shipping/shippingStatusMachine');
+    const customerStatus = getCustomerFacingStatus(shipment.status);
 
     return res.json({
       success: true,
@@ -106,21 +108,32 @@ async function trackShipmentByWaybill(req, res) {
         waybill,
         trackingNumber: shipment.trackingNumber,
         status: shipment.status,
+        customerStatus: customerStatus.customerLabelAr,
+        statusLabel: customerStatus.labelAr,
+        customerStatusEn: customerStatus.customerLabelEn,
+        statusCategory: customerStatus.category,
+        statusColor: customerStatus.color,
         recipientName: maskRecipientName(shipment.recipientName),
         recipientPhone: maskPhone(shipment.recipientPhone),
         destinationGovernorate: shipment.destinationGovernorate,
         destinationCity: shipment.destinationCity,
         updatedAt: shipment.updatedAt,
         createdAt: shipment.createdAt,
-        events: shipment.events.map(ev => ({
-          id: ev.id,
-          toStatus: ev.toStatus,
-          status: ev.toStatus,
-          fromStatus: ev.fromStatus,
-          reasonCode: ev.reasonCode,
-          notes: ev.notes,
-          createdAt: ev.createdAt,
-        })),
+        events: shipment.events.map(ev => {
+          const evCustomer = getCustomerFacingStatus(ev.toStatus);
+          return {
+            id: ev.id,
+            toStatus: ev.toStatus,
+            status: ev.toStatus,
+            toStatusLabel: evCustomer.customerLabelAr,
+            statusLabel: evCustomer.labelAr,
+            statusLabelEn: evCustomer.customerLabelEn,
+            fromStatus: ev.fromStatus,
+            reasonCode: ev.reasonCode,
+            notes: ev.notes,
+            createdAt: ev.createdAt,
+          };
+        }),
       }
     });
   } catch (error) {

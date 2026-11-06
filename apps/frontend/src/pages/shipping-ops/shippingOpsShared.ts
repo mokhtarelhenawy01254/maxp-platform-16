@@ -5,6 +5,11 @@ export interface StatusConfig {
 }
 
 export const STATUS_CONFIGS: Record<string, StatusConfig> = {
+  INCOMPLETE: {
+    labelAr: 'غير مكتملة (مسودة)',
+    labelEn: 'Incomplete / Draft',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  },
   PENDING: {
     labelAr: 'قيد الانتظار',
     labelEn: 'Pending',
@@ -16,13 +21,13 @@ export const STATUS_CONFIGS: Record<string, StatusConfig> = {
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
   },
   ASSIGNED: {
-    labelAr: 'تم تعيين المندوب',
-    labelEn: 'Assigned',
+    labelAr: 'مسندة للمندوب / قيد التنفيذ',
+    labelEn: 'Assigned to Courier',
     badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800',
   },
   PICKED_UP: {
-    labelAr: 'تم الاستلام',
-    labelEn: 'Picked Up',
+    labelAr: 'مسلمة للمندوب',
+    labelEn: 'Handed to Courier',
     badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800',
   },
   RECEIVED_AT_HUB: {
@@ -36,24 +41,74 @@ export const STATUS_CONFIGS: Record<string, StatusConfig> = {
     badgeClass: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800',
   },
   OUT_FOR_DELIVERY: {
-    labelAr: 'قيد التسليم',
+    labelAr: 'خرجت للتوصيل',
     labelEn: 'Out for Delivery',
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800',
+  },
+  POSTPONED: {
+    labelAr: 'مؤجلة مع المندوب',
+    labelEn: 'Postponed with Courier',
+    badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800',
   },
   DELIVERED: {
     labelAr: 'تم التسليم بنجاح',
     labelEn: 'Delivered',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
   },
+  PARTIALLY_DELIVERED: {
+    labelAr: 'تسليم جزئي',
+    labelEn: 'Partially Delivered',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800',
+  },
+  REMITTED: {
+    labelAr: 'تم التوريد',
+    labelEn: 'Remitted / Settled',
+    badgeClass: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-950/60 dark:text-green-300 dark:border-green-800',
+  },
+  FAILED: {
+    labelAr: 'تعذر التسليم / معلقة',
+    labelEn: 'Delivery Failed',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800',
+  },
   FAILED_ATTEMPT: {
     labelAr: 'محاولة فاشلة',
     labelEn: 'Failed Attempt',
     badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800',
   },
+  RETURNED_AT_COMPANY: {
+    labelAr: 'مرتجعات في الشركة',
+    labelEn: 'Returned at Company Hub',
+    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800',
+  },
+  RETURNED_RECEIVED: {
+    labelAr: 'مرتجعات وصلتني',
+    labelEn: 'Returns Received by Merchant',
+    badgeClass: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-800',
+  },
+  RETURNED_DAMAGED: {
+    labelAr: 'مرتجعات معدومة',
+    labelEn: 'Damaged / Write-off',
+    badgeClass: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800',
+  },
+  RETURNED_LOST: {
+    labelAr: 'مرتجعات مفقودة',
+    labelEn: 'Lost in Transit',
+    badgeClass: 'bg-neutral-100 text-neutral-700 border-neutral-300 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700',
+  },
+  RESHIPPED: {
+    labelAr: 'معاد إرسالها',
+    labelEn: 'Reshipped',
+    badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800',
+  },
   RETURNED: {
     labelAr: 'مرتجع',
     labelEn: 'Returned',
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800',
+  },
+  CLOSED: {
+    labelAr: 'مغلقة',
+    labelEn: 'Closed',
+    badgeClass: 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
   },
   CANCELLED: {
     labelAr: 'ملغية',

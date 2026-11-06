@@ -30,6 +30,23 @@ import { getStatusBadge, formatDate, formatCurrency, printShipmentLabel, printBa
 import { BulkOrdersImportModal } from './BulkOrdersImportModal';
 import { DateInput } from '../../components/ui/DateInput';
 
+const TURBO_STATUS_TABS = [
+  { key: '', labelAr: 'الكل', labelEn: 'All' },
+  { key: 'INCOMPLETE', labelAr: 'غير مكتملة', labelEn: 'Incomplete' },
+  { key: 'PENDING', labelAr: 'قيد الانتظار', labelEn: 'Pending' },
+  { key: 'ASSIGNED', labelAr: 'قيد التنفيذ', labelEn: 'Assigned' },
+  { key: 'PICKED_UP', labelAr: 'مسلمة للمندوب', labelEn: 'Handed to Courier' },
+  { key: 'OUT_FOR_DELIVERY', labelAr: 'خرجت للتوصيل', labelEn: 'Out for Delivery' },
+  { key: 'POSTPONED', labelAr: 'مؤجلة مع المندوب', labelEn: 'Postponed' },
+  { key: 'DELIVERED', labelAr: 'تم التسليم', labelEn: 'Delivered' },
+  { key: 'RETURNED_AT_COMPANY', labelAr: 'مرتجعات في الشركة', labelEn: 'Returned at Hub' },
+  { key: 'RETURNED_DAMAGED', labelAr: 'مرتجعات معدومة', labelEn: 'Damaged' },
+  { key: 'RETURNED_LOST', labelAr: 'مرتجعات مفقودة', labelEn: 'Lost' },
+  { key: 'RETURNED_RECEIVED', labelAr: 'مرتجعات وصلتني', labelEn: 'Returns Received' },
+  { key: 'RESHIPPED', labelAr: 'معاد إرسالها', labelEn: 'Reshipped' },
+  { key: 'REMITTED', labelAr: 'تم التوريد', labelEn: 'Remitted' },
+];
+
 export const ShippingParcelsList: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === 'en';
@@ -42,6 +59,7 @@ export const ShippingParcelsList: React.FC = () => {
   // Filters state
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [needsRtoReview, setNeedsRtoReview] = useState(false);
   const [governorate, setGovernorate] = useState('');
   const [merchantId, setMerchantId] = useState('');
@@ -118,6 +136,11 @@ export const ShippingParcelsList: React.FC = () => {
       setShipments(list);
       setTotalPages(res?.pagination?.totalPages || (res as any)?.totalPages || 1);
       setTotalCount(res?.pagination?.total || (res as any)?.total || list.length);
+      if (res?.statusCounts) {
+        setStatusCounts(res.statusCounts);
+      } else {
+        shippingOpsService.getStatusCounts().then(setStatusCounts).catch(() => {});
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('shippingOps.loadError', 'حدث خطأ أثناء جلب قائمة الشحنات');
       setError(msg);
@@ -209,6 +232,42 @@ export const ShippingParcelsList: React.FC = () => {
         </div>
       )}
 
+      {/* Turbo-style Status Tabs Ribbon with Counts */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-sm">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+          {TURBO_STATUS_TABS.map((tab) => {
+            const isSelected = status === tab.key;
+            const count = tab.key === '' ? (statusCounts.ALL !== undefined ? statusCounts.ALL : totalCount) : (statusCounts[tab.key] || 0);
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setStatus(tab.key);
+                  setPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer border ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>{isEn ? tab.labelEn : tab.labelAr}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums font-bold ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Filters Bar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -237,15 +296,22 @@ export const ShippingParcelsList: React.FC = () => {
               }}
               className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">{t('shippingOps.list.filterAllStatus', 'جميع الحالات')}</option>
-              <option value="PENDING">{t('shippingOps.statusLabels.PENDING', 'قيد الانتظار (PENDING)')}</option>
-              <option value="CONFIRMED">{t('shippingOps.statusLabels.CONFIRMED', 'تم التأكيد')}</option>
-              <option value="OUT_FOR_DELIVERY">{t('shippingOps.statusLabels.OUT_FOR_DELIVERY', 'قيد التسليم')}</option>
-              <option value="DELIVERED">{t('shippingOps.statusLabels.DELIVERED', 'تم التسليم')}</option>
-              <option value="FAILED">{t('shippingOps.statusLabels.FAILED', 'فشل تسليم (FAILED)')}</option>
-              <option value="FAILED_ATTEMPT">{t('shippingOps.statusLabels.FAILED_ATTEMPT', 'محاولة فاشلة')}</option>
-              <option value="RETURNED">{t('shippingOps.statusLabels.RETURNED', 'مرتجع')}</option>
-              <option value="CANCELLED">{t('shippingOps.statusLabels.CANCELLED', 'ملغية')}</option>
+              <option value="">{isEn ? 'All Statuses' : 'جميع الحالات'}</option>
+              <option value="INCOMPLETE">{isEn ? 'Incomplete (Draft)' : 'غير مكتملة (مسودة)'}</option>
+              <option value="PENDING">{isEn ? 'Pending' : 'قيد الانتظار'}</option>
+              <option value="ASSIGNED">{isEn ? 'Assigned' : 'قيد التنفيذ / مسندة للمندوب'}</option>
+              <option value="PICKED_UP">{isEn ? 'Handed to Courier' : 'مسلمة للمندوب'}</option>
+              <option value="OUT_FOR_DELIVERY">{isEn ? 'Out for Delivery' : 'خرجت للتوصيل'}</option>
+              <option value="POSTPONED">{isEn ? 'Postponed with Courier' : 'مؤجلة مع المندوب'}</option>
+              <option value="DELIVERED">{isEn ? 'Delivered' : 'تم التسليم'}</option>
+              <option value="RETURNED_AT_COMPANY">{isEn ? 'Returned at Hub' : 'مرتجعات في الشركة'}</option>
+              <option value="RETURNED_DAMAGED">{isEn ? 'Damaged / Write-off' : 'مرتجعات معدومة'}</option>
+              <option value="RETURNED_LOST">{isEn ? 'Lost in Transit' : 'مرتجعات مفقودة'}</option>
+              <option value="RETURNED_RECEIVED">{isEn ? 'Returns Received' : 'مرتجعات وصلتني'}</option>
+              <option value="RESHIPPED">{isEn ? 'Reshipped' : 'معاد إرسالها'}</option>
+              <option value="REMITTED">{isEn ? 'Remitted' : 'تم التوريد'}</option>
+              <option value="FAILED">{isEn ? 'Delivery Failed' : 'تعذر التسليم / معلقة'}</option>
+              <option value="CANCELLED">{isEn ? 'Cancelled' : 'ملغية'}</option>
             </select>
           </div>
 
@@ -425,6 +491,7 @@ export const ShippingParcelsList: React.FC = () => {
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.cod', 'مبلغ التحصيل')}</th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.cost', 'التكلفة')}</th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.status', 'الحالة')}</th>
+                <th className="px-4 py-3 font-medium">{isEn ? 'Latest Event' : 'آخر حالة'}</th>
                 <th className="px-4 py-3 font-medium">{t('shippingOps.list.createdAt', 'التاريخ')}</th>
                 <th className="px-4 py-3 font-medium text-center">{t('shippingOps.list.actions', 'إجراء')}</th>
               </tr>
@@ -432,14 +499,14 @@ export const ShippingParcelsList: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading && shipments.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
                     <span>{isEn ? 'Loading parcels...' : 'جاري تحميل الشحنات...'}</span>
                   </td>
                 </tr>
               ) : (!shipments || shipments.length === 0) ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
                     <Boxes className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <span>{t('shippingOps.list.noParcelsFound', 'لم يتم العثور على أي شحنات')}</span>
                   </td>
@@ -447,7 +514,7 @@ export const ShippingParcelsList: React.FC = () => {
               ) : (
                 shipments.map((s) => {
                   const badge = getStatusBadge(s.status, isEn);
-                  const isCancelable = s.status === 'PENDING';
+                  const isCancelable = ['PENDING', 'ASSIGNED', 'INCOMPLETE'].includes(s.status);
 
                   return (
                     <tr key={s.id} className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition ${selectedIds.includes(s.id) ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''}`}>
@@ -503,6 +570,25 @@ export const ShippingParcelsList: React.FC = () => {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.badgeClass}`}>
                           {badge.label}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {s.latestEvent ? (
+                          <div className="text-xs">
+                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                              {getStatusBadge(s.latestEvent.toStatus, isEn).label}
+                            </span>
+                            {s.latestEvent.note && (
+                              <p className="text-[11px] text-slate-500 truncate max-w-[140px]" title={s.latestEvent.note}>
+                                {s.latestEvent.note}
+                              </p>
+                            )}
+                            <span className="text-[10px] text-slate-400 block font-mono">
+                              {new Date(s.latestEvent.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
                         {formatDate(s.createdAt)}

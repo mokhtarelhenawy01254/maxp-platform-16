@@ -11,6 +11,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const shippingPortalController = require('../controller/shippingPortalController');
 const shippingPackageController = require('../controller/shippingPackageController');
+const shippingExtraServicesController = require('../controller/shippingExtraServicesController');
 
 /**
  * Access guard allowing either internal-courier-fleet OR order-shipping-turbo
@@ -140,9 +141,12 @@ router.get('/failure-reasons', ...portalAuth, shippingPortalController.getFailur
 router.post('/failure-reasons', ...portalAuth, shippingPortalController.createFailureReason);
 router.patch('/failure-reasons/:id', ...portalAuth, shippingPortalController.updateFailureReason);
 
-// Status Update & Reattempt (SHIP-W3)
+// Status Update, Reattempt, Reship & Status Counts (SHIP-T1 / Turbo Reference)
+router.get('/status-counts', ...portalAuth, shippingPortalController.getStatusCounts);
 router.patch('/shipments/:id/status', ...portalAuth, shippingPortalController.updateShipmentStatus);
+router.post('/shipments/:id/status', ...portalAuth, shippingPortalController.updateShipmentStatus);
 router.post('/shipments/:id/reattempt', ...portalAuth, shippingPortalController.reattemptShipment);
+router.post('/shipments/:id/reship', ...portalAuth, shippingPortalController.reshipShipment);
 
 // Automated RTO Maintenance (SHIP-W3)
 router.post('/maintenance/run-rto', ...portalAuth, shippingPortalController.runRtoMaintenance);
@@ -170,6 +174,51 @@ router.put('/policy', ...portalAuth, async (req, res) => {
     return res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 });
+
+
+// ============================================================================
+// Extra Services, Open Package Requests & Order Change Requests (SHIP-T3)
+// ============================================================================
+
+// Extra Services CRUD
+router.get('/services', ...portalAuth, shippingExtraServicesController.listServices);
+router.post('/services', ...portalAuth, shippingExtraServicesController.createService);
+router.get('/services/:id', ...portalAuth, shippingExtraServicesController.getServiceById);
+router.put('/services/:id', ...portalAuth, shippingExtraServicesController.updateService);
+router.delete('/services/:id', ...portalAuth, shippingExtraServicesController.deleteService);
+
+// Shipment Service Lines
+router.post('/shipments/:id/services', ...portalAuth, shippingExtraServicesController.addShipmentService);
+router.get('/shipments/:id/services', ...portalAuth, shippingExtraServicesController.listShipmentServices);
+router.delete('/shipments/:id/services/:lineId', ...portalAuth, shippingExtraServicesController.removeShipmentService);
+router.get('/get-additional-fees', ...portalAuth, shippingExtraServicesController.getAdditionalFees);
+
+// Package Open Requests Workflow
+router.post('/shipments/:id/open-request', ...portalAuth, shippingExtraServicesController.createPackageOpenRequest);
+router.post('/open-package-requests', ...portalAuth, shippingExtraServicesController.createPackageOpenRequest);
+router.get('/open-package-requests', ...portalAuth, shippingExtraServicesController.listPackageOpenRequests);
+router.get('/order/get-open-shipment-requests', ...portalAuth, shippingExtraServicesController.listPackageOpenRequests);
+router.post('/open-package-requests/:id/review', ...portalAuth, shippingExtraServicesController.reviewPackageOpenRequest);
+router.post('/open-package-requests/:id/approve', ...portalAuth, shippingExtraServicesController.approvePackageOpenRequest);
+router.post('/open-package-requests/:id/reject', ...portalAuth, shippingExtraServicesController.rejectPackageOpenRequest);
+
+// Order Change Requests Workflow
+router.post('/shipments/:id/change-request', ...portalAuth, shippingExtraServicesController.createOrderChangeRequest);
+router.post('/order-change-requests', ...portalAuth, shippingExtraServicesController.createOrderChangeRequest);
+router.get('/order-change-requests', ...portalAuth, shippingExtraServicesController.listOrderChangeRequests);
+router.get('/order/get_order_change_requests', ...portalAuth, shippingExtraServicesController.listOrderChangeRequests);
+router.post('/order-change-requests/:id/review', ...portalAuth, shippingExtraServicesController.reviewOrderChangeRequest);
+router.post('/order-change-requests/:id/approve', ...portalAuth, shippingExtraServicesController.approveOrderChangeRequest);
+router.post('/order-change-requests/:id/reject', ...portalAuth, shippingExtraServicesController.rejectOrderChangeRequest);
+
+// Company Wallet & Transactions Ledger (SHIP-T2)
+const walletController = require('../controller/walletController');
+router.get('/wallet', ...portalAuth, walletController.getWalletSummary);
+router.get('/wallet/transactions', ...portalAuth, walletController.getTransactions);
+router.get('/wallet/fees', ...portalAuth, shippingPortalController.getWalletFeesReport);
+router.post('/wallet/adjust', ...portalAuth, walletController.adjustBalance);
+router.post('/shipments/:id/confirm-open', ...portalAuth, shippingPortalController.confirmOpenPackage);
+router.post('/shipments/:id/collect', ...portalAuth, shippingPortalController.collectShipmentCod);
 
 module.exports = router;
 
