@@ -416,7 +416,7 @@ describe('SHIP-T4 Acceptance Suite', () => {
           id: 'ship-order-1',
           order: {
             id: 'ord-1',
-            items: [
+            orderItems: [
               {
                 id: 'item-1',
                 productName: 'حذاء كلاسيك جلد',

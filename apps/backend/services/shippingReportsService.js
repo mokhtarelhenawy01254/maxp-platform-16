@@ -970,14 +970,12 @@ async function getBestSellersReport(companyId, { from, to, limit = 20 } = {}) {
       order: {
         select: {
           id: true,
-          items: {
+          orderItems: {
             select: {
-              id: true,
               productName: true,
               quantity: true,
               price: true,
               total: true,
-              product: { select: { name: true } },
             },
           },
         },
@@ -988,10 +986,10 @@ async function getBestSellersReport(companyId, { from, to, limit = 20 } = {}) {
   const productMap = new Map();
 
   for (const s of shipments) {
-    const items = s.order?.items;
+    const items = s.order?.orderItems;
     if (items && Array.isArray(items) && items.length > 0) {
       for (const item of items) {
-        const name = (item.productName || item.product?.name || 'غير متاح').trim() || 'غير متاح';
+        const name = (item.productName || 'غير متاح').trim() || 'غير متاح';
         const qty = Number(item.quantity) || 1;
         const price = Number(item.price) || 0;
         const total = item.total !== undefined && item.total !== null ? Number(item.total) : (qty * price);
