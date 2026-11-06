@@ -34,7 +34,9 @@ const createEmployeeInvitation = async (req, res) => {
       phone,
       expiryDays = 7,
       baseSalary,
-      notes
+      notes,
+      isMultiUse = false,
+      maxUses = null
     } = req.body;
 
     // التحقق من وجود القسم والمنصب إن وُجدا والتأكد من انتمائهما لنفس الشركة
@@ -109,6 +111,12 @@ const createEmployeeInvitation = async (req, res) => {
     const metadataObj = {};
     if (baseSalary) metadataObj.baseSalary = baseSalary;
     if (notes) metadataObj.notes = notes;
+    if (isMultiUse) {
+      metadataObj.isMultiUse = true;
+      if (maxUses) metadataObj.maxUses = parseInt(maxUses, 10);
+      metadataObj.acceptedCount = 0;
+      metadataObj.acceptedUsers = [];
+    }
 
     const invitation = await prisma.employeeInvitation.create({
       data: {
@@ -204,8 +212,22 @@ const listEmployeeInvitations = async (req, res) => {
     const formattedInvitations = invitations.map(inv => {
       const isExpired = inv.status === 'PENDING' && new Date(inv.expiresAt) < now;
       const currentStatus = isExpired ? 'EXPIRED' : inv.status;
+      let isMultiUse = false;
+      let acceptedCount = 0;
+      let maxUses = null;
+      if (inv.metadata) {
+        try {
+          const meta = JSON.parse(inv.metadata);
+          isMultiUse = Boolean(meta.isMultiUse);
+          acceptedCount = meta.acceptedCount || 0;
+          maxUses = meta.maxUses || null;
+        } catch (e) {}
+      }
       return {
         ...inv,
+        isMultiUse,
+        acceptedCount,
+        maxUses,
         status: currentStatus,
         invitationLink: `${frontendBaseUrl}/auth/join-employee?token=${inv.token}`
       };
@@ -335,10 +357,29 @@ const verifyEmployeeInvitation = async (req, res) => {
       });
     }
 
+    let isMultiUse = false;
+    let acceptedCount = 0;
+    let maxUses = null;
+    if (invitation.metadata) {
+      try {
+        const meta = JSON.parse(invitation.metadata);
+        isMultiUse = Boolean(meta.isMultiUse);
+        acceptedCount = meta.acceptedCount || 0;
+        maxUses = meta.maxUses || null;
+      } catch (e) {}
+    }
+
     if (invitation.status === 'ACCEPTED') {
       return res.status(400).json({
         success: false,
         message: 'هذا الرابط تم استخدامه بالفعل لإتمام تسجيل موظف'
+      });
+    }
+
+    if (isMultiUse && maxUses && acceptedCount >= maxUses) {
+      return res.status(400).json({
+        success: false,
+        message: `اكتمل الحد الأقصى للمسجلين عبر هذا الرابط (${maxUses} موظفين)`
       });
     }
 
@@ -374,6 +415,9 @@ const verifyEmployeeInvitation = async (req, res) => {
           positionTitle: invitation.position?.title || null,
           role: invitation.role,
           contractType: invitation.contractType,
+          isMultiUse,
+          acceptedCount,
+          maxUses,
           prefilledEmail: invitation.email,
           prefilledPhone: invitation.phone,
           inviterName: invitation.inviter
@@ -446,12 +490,36 @@ const acceptEmployeeInvitation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'رابط الدعوة غير صحيح أو منتهي' });
     }
 
+    let isMultiUse = false;
+    let acceptedCount = 0;
+    let maxUses = null;
+    let acceptedUsers = [];
+    let parsedMetadata = {};
+    if (invitation.metadata) {
+      try {
+        parsedMetadata = JSON.parse(invitation.metadata);
+        isMultiUse = Boolean(parsedMetadata.isMultiUse);
+        acceptedCount = parsedMetadata.acceptedCount || 0;
+        maxUses = parsedMetadata.maxUses || null;
+        acceptedUsers = Array.isArray(parsedMetadata.acceptedUsers) ? parsedMetadata.acceptedUsers : [];
+      } catch (e) {
+        parsedMetadata = {};
+      }
+    }
+
     if (invitation.status !== 'PENDING') {
       return res.status(400).json({
         success: false,
         message: invitation.status === 'ACCEPTED'
           ? 'تم استخدام هذا الرابط للتسجيل مسبقاً'
           : 'هذا الرابط غير صالح أو تم إلغاؤه'
+      });
+    }
+
+    if (isMultiUse && maxUses && acceptedCount >= maxUses) {
+      return res.status(400).json({
+        success: false,
+        message: `اكتمل الحد الأقصى للمسجلين عبر هذا الرابط (${maxUses} موظفين)`
       });
     }
 
@@ -555,16 +623,6 @@ const acceptEmployeeInvitation = async (req, res) => {
     });
     const employeeNumber = `EMP${String(empCount + 1).padStart(5, '0')}`;
 
-    // تحليل الميتاداتا إن وُجدت لاستخراج الراتب أو الملاحظات
-    let parsedMetadata = {};
-    if (invitation.metadata) {
-      try {
-        parsedMetadata = JSON.parse(invitation.metadata);
-      } catch (e) {
-        parsedMetadata = {};
-      }
-    }
-
     // البحث عما إذا كان لديه سجل موظف سابق في الشركة لتفادي أخطاء التكرار
     let employee = await prisma.employee.findFirst({
       where: {
@@ -614,15 +672,56 @@ const acceptEmployeeInvitation = async (req, res) => {
       });
     }
 
-    // تحديث حالة الدعوة إلى مقبولة
-    await prisma.employeeInvitation.update({
-      where: { id: invitation.id },
-      data: {
-        status: 'ACCEPTED',
-        acceptedAt: new Date(),
-        acceptedByUserId: user.id
-      }
-    });
+    // مزامنة رقم الموظف وبيانات الـ HR الأساسية إلى جدول User لضمان ظهوره في قائمة الموظفين
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          employeeNumber: employee.employeeNumber || employeeNumber,
+          departmentId: invitation.departmentId || null,
+          positionId: invitation.positionId || null,
+          hireDate: employee.hireDate || new Date(),
+          contractType: invitation.contractType || 'FULL_TIME',
+          baseSalary: parsedMetadata.baseSalary ? parseFloat(parsedMetadata.baseSalary) : undefined,
+        }
+      });
+    } catch (syncErr) {
+      console.warn('⚠️ [EMPLOYEE-INVITE] Could not sync employee fields to user table:', syncErr.message);
+    }
+
+    // تحديث حالة الدعوة
+    if (isMultiUse) {
+      const newAcceptedCount = acceptedCount + 1;
+      acceptedUsers.push({
+        userId: user.id,
+        email: normalizedEmail,
+        name: `${cleanFirstName} ${cleanLastName}`,
+        acceptedAt: new Date().toISOString()
+      });
+      parsedMetadata.acceptedCount = newAcceptedCount;
+      parsedMetadata.acceptedUsers = acceptedUsers;
+
+      const isMaxReached = maxUses && newAcceptedCount >= maxUses;
+      await prisma.employeeInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: isMaxReached ? 'ACCEPTED' : 'PENDING',
+          acceptedAt: new Date(),
+          acceptedByUserId: user.id,
+          metadata: JSON.stringify(parsedMetadata)
+        }
+      });
+    } else {
+      // تحديث حالة الدعوة إلى مقبولة (استخدام فردي لمرة واحدة)
+      await prisma.employeeInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: 'ACCEPTED',
+          acceptedAt: new Date(),
+          acceptedByUserId: user.id
+        }
+      });
+    }
 
     // إصدار JWT Token لتسجيل الدخول التلقائي
     const jwtSecret = process.env.JWT_SECRET || 'maxp_super_jwt_secret_2026';

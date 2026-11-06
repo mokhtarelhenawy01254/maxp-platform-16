@@ -31,7 +31,8 @@ import {
   Briefcase,
   ShieldCheck,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react";
 import api from "../../services/api";
 import { toast } from "sonner";
@@ -57,6 +58,9 @@ interface InvitationItem {
   email?: string | null;
   phone?: string | null;
   invitationLink?: string;
+  isMultiUse?: boolean;
+  acceptedCount?: number;
+  maxUses?: number | null;
   department?: { id: string; name: string } | null;
   position?: { id: string; title: string } | null;
 }
@@ -87,8 +91,10 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
   const [role, setRole] = useState<string>("AGENT");
   const [contractType, setContractType] = useState<string>("FULL_TIME");
   const [expiryDays, setExpiryDays] = useState<string>("7");
-  const [email, setEmail] = useState<string>("" );
-  const [phone, setPhone] = useState<string>("" );
+  const [usageType, setUsageType] = useState<"MULTI" | "SINGLE">("MULTI");
+  const [maxUses, setMaxUses] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
 
   const [generating, setGenerating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -189,6 +195,10 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
         positionId: positionId !== "none" ? positionId : undefined,
         contractType,
         expiryDays: parseInt(expiryDays, 10) || 7,
+        isMultiUse: usageType === "MULTI",
+        maxUses: (usageType === "MULTI" && maxUses.trim() && parseInt(maxUses, 10) > 0)
+          ? parseInt(maxUses, 10)
+          : undefined,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
       };
@@ -325,9 +335,14 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
                     <Check className="h-4 w-4" />
                     تم إنشاء الرابط وجاهز للإرسال:
                   </span>
-                  <Badge variant="outline" className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 border-emerald-400 text-emerald-800 dark:text-emerald-200">
-                    صالح لمدة {expiryDays} أيام
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className={`text-[10px] ${usageType === "MULTI" ? "bg-emerald-100 dark:bg-emerald-900/60 border-emerald-400 text-emerald-800 dark:text-emerald-200" : "bg-zinc-100 dark:bg-zinc-800 border-zinc-300 text-zinc-700"}`}>
+                      {usageType === "MULTI" ? "متعدد الاستخدام" : "استخدام فردي"}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 border-emerald-400 text-emerald-800 dark:text-emerald-200">
+                      صالح لمدة {expiryDays} أيام
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1.5">
@@ -441,6 +456,74 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
               </div>
             </div>
 
+            {/* Usage Type: Multi-use vs Single-use */}
+            <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5 text-zinc-800 dark:text-zinc-200">
+                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  نوع استخدام الرابط (كم موظف يمكنه الانضمام؟)
+                </Label>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] ${
+                    usageType === "MULTI"
+                      ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40"
+                      : "border-zinc-400 text-zinc-600"
+                  }`}
+                >
+                  {usageType === "MULTI" ? "متعدد الاستخدام" : "استخدام فردي"}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUsageType("MULTI")}
+                  className={`p-2.5 rounded-lg border text-right transition-all flex flex-col gap-0.5 cursor-pointer ${
+                    usageType === "MULTI"
+                      ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 shadow-xs"
+                      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                  }`}
+                >
+                  <span className="text-xs font-bold">متعدد الاستخدام (موصى به)</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
+                    رابط واحد يُرسل لأكثر من موظف ليسجلوا جميعاً بنفس الرابط
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUsageType("SINGLE")}
+                  className={`p-2.5 rounded-lg border text-right transition-all flex flex-col gap-0.5 cursor-pointer ${
+                    usageType === "SINGLE"
+                      ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 shadow-xs"
+                      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                  }`}
+                >
+                  <span className="text-xs font-bold">استخدام لمرة واحدة فقط</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
+                    ينتهي الرابط تلقائياً بمجرد تسجيل أول موظف عبره
+                  </span>
+                </button>
+              </div>
+
+              {usageType === "MULTI" && (
+                <div className="pt-1 flex items-center gap-2">
+                  <Label className="text-[11px] text-zinc-600 dark:text-zinc-400 shrink-0">
+                    الحد الأقصى للمنضمين (اختياري):
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="غير محدود (طوال الصلاحية)"
+                    value={maxUses}
+                    onChange={(e) => setMaxUses(e.target.value)}
+                    className="h-7 text-xs bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-[190px]"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Expiry and Optional Email Binding */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -544,6 +627,15 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600">
                           {inv.role}
                         </Badge>
+                        {inv.isMultiUse ? (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500 text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/40">
+                            متعدد ({inv.acceptedCount || 0} انضموا)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-zinc-300 dark:border-zinc-700 text-zinc-500">
+                            فردي
+                          </Badge>
+                        )}
                       </div>
                       <div className="text-[11px] text-zinc-500 flex items-center gap-2">
                         <span>ينتهي: {new Date(inv.expiresAt).toLocaleDateString("ar-EG")}</span>
