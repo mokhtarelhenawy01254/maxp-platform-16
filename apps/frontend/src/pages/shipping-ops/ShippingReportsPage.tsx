@@ -9,6 +9,10 @@ import {
   Users,
   Truck,
   TrendingUp,
+  Star,
+  Globe2,
+  ShoppingBag,
+  Navigation,
 } from 'lucide-react';
 import {
   shippingReportsService,
@@ -16,6 +20,10 @@ import {
   GovernorateReportResponse,
   ClientReportResponse,
   CourierReportResponse,
+  FeedbackReportResponse,
+  GeoReportResponse,
+  BestSellersReportResponse,
+  MissionsReportResponse,
 } from '../../services/shippingReportsService';
 import {
   DatePreset,
@@ -27,8 +35,21 @@ import { ShippingReportsGovTab } from './reports/ShippingReportsGovTab';
 import { ShippingReportsClientTab } from './reports/ShippingReportsClientTab';
 import { ShippingReportsCourierTab } from './reports/ShippingReportsCourierTab';
 import { ShippingReportsProfitTab } from './profit/ShippingReportsProfitTab';
+import { ShippingReportsFeedbackTab } from './reports/ShippingReportsFeedbackTab';
+import { ShippingReportsGeoTab } from './reports/ShippingReportsGeoTab';
+import { ShippingReportsBestSellersTab } from './reports/ShippingReportsBestSellersTab';
+import { ShippingReportsMissionsTab } from './reports/ShippingReportsMissionsTab';
 
-type ReportTab = 'summary' | 'governorate' | 'client' | 'courier' | 'profit';
+type ReportTab =
+  | 'summary'
+  | 'governorate'
+  | 'geo'
+  | 'client'
+  | 'courier'
+  | 'missions'
+  | 'best-sellers'
+  | 'feedback'
+  | 'profit';
 
 export const ShippingReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('summary');
@@ -41,6 +62,10 @@ export const ShippingReportsPage: React.FC = () => {
   const [govData, setGovData] = useState<GovernorateReportResponse | null>(null);
   const [clientData, setClientData] = useState<ClientReportResponse | null>(null);
   const [courierData, setCourierData] = useState<CourierReportResponse | null>(null);
+  const [feedbackData, setFeedbackData] = useState<FeedbackReportResponse | null>(null);
+  const [geoData, setGeoData] = useState<GeoReportResponse | null>(null);
+  const [bestSellersData, setBestSellersData] = useState<BestSellersReportResponse | null>(null);
+  const [missionsData, setMissionsData] = useState<MissionsReportResponse | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +92,24 @@ export const ShippingReportsPage: React.FC = () => {
       } else if (activeTab === 'governorate') {
         const res = await shippingReportsService.getByGovernorate(params);
         setGovData(res);
+      } else if (activeTab === 'geo') {
+        const res = await shippingReportsService.getGeoReport(params);
+        setGeoData(res);
       } else if (activeTab === 'client') {
         const res = await shippingReportsService.getByClient(params);
         setClientData(res);
       } else if (activeTab === 'courier') {
         const res = await shippingReportsService.getByCourier(params);
         setCourierData(res);
+      } else if (activeTab === 'missions') {
+        const res = await shippingReportsService.getMissionsReport(params);
+        setMissionsData(res);
+      } else if (activeTab === 'best-sellers') {
+        const res = await shippingReportsService.getBestSellersReport(params);
+        setBestSellersData(res);
+      } else if (activeTab === 'feedback') {
+        const res = await shippingReportsService.getFeedbackReport(params);
+        setFeedbackData(res);
       }
     } catch (err: unknown) {
       console.error('Error fetching shipping reports:', err);
@@ -104,6 +141,17 @@ export const ShippingReportsPage: React.FC = () => {
         r.avgDeliveryHours,
       ]);
       exportToCsv('shipping-report-by-governorate', headers, rows);
+    } else if (activeTab === 'geo' && geoData) {
+      const headers = ['المحافظة', 'المدينة', 'إجمالي الشحنات', 'مسلّمة', 'مرتجعة (RTO)', 'متوسط الأيام'];
+      const rows = geoData.rows.map(r => [
+        r.governorate,
+        r.city,
+        r.shipments,
+        r.delivered,
+        r.rto,
+        r.avgDays,
+      ]);
+      exportToCsv('shipping-report-geo', headers, rows);
     } else if (activeTab === 'client' && clientData) {
       const headers = ['العميل / التاجر', 'الهاتف', 'الشحنات', 'مسلّمة', 'مرتجعة', 'COD محصّل', 'رسوم الشحن', 'رسوم المرتجع', 'صافي المستحق'];
       const rows = clientData.rows.map(r => [
@@ -130,12 +178,52 @@ export const ShippingReportsPage: React.FC = () => {
         r.totalCommissions,
       ]);
       exportToCsv('shipping-report-by-courier', headers, rows);
+    } else if (activeTab === 'missions' && missionsData) {
+      const headers = ['رقم الرحلة', 'المندوب', 'الهاتف', 'الشحنات', 'مسلّمة', 'فاشلة', 'المحصّل', 'المدة (دقيقة)', 'الحالة', 'التاريخ'];
+      const rows = missionsData.rows.map(r => [
+        r.runNumber,
+        r.courierName,
+        r.courierPhone || '',
+        r.shipments,
+        r.delivered,
+        r.failed,
+        r.collectedAmount,
+        Math.round(r.durationMinutes),
+        r.status,
+        r.createdAt,
+      ]);
+      exportToCsv('shipping-report-missions', headers, rows);
+    } else if (activeTab === 'best-sellers' && bestSellersData) {
+      const headers = ['اسم المنتج / الصنف', 'الكمية المباعة', 'إجمالي القيمة', 'عدد الطلبات'];
+      const rows = bestSellersData.rows.map(r => [
+        r.productName,
+        r.quantity,
+        r.totalValue,
+        r.ordersCount,
+      ]);
+      exportToCsv('shipping-report-best-sellers', headers, rows);
+    } else if (activeTab === 'feedback' && feedbackData) {
+      const headers = ['التقييم (1-5)', 'رقم التتبع', 'المستلم', 'المندوب', 'ملاحظة العميل', 'الوسوم', 'تاريخ التقييم'];
+      const rows = feedbackData.worstShipments.map(w => [
+        w.rating,
+        w.trackingNumber,
+        w.recipientName,
+        w.courierName || '',
+        w.comment || '',
+        Array.isArray(w.tags) ? w.tags.join('; ') : '',
+        w.submittedAt || '',
+      ]);
+      exportToCsv('shipping-report-customer-feedback', headers, rows);
     }
   };
 
   const tabs = [
     { id: 'summary', label: 'ملخص الأداء', icon: Layers },
     { id: 'governorate', label: 'المحافظات', icon: MapPin },
+    { id: 'geo', label: 'التحليل الجغرافي', icon: Globe2 },
+    { id: 'missions', label: 'رحلات التوصيل', icon: Navigation },
+    { id: 'best-sellers', label: 'الأكثر طلباً', icon: ShoppingBag },
+    { id: 'feedback', label: 'تقييمات العملاء', icon: Star },
     { id: 'client', label: 'العملاء', icon: Users },
     { id: 'courier', label: 'المناديب', icon: Truck },
     { id: 'profit', label: 'الربحية', icon: TrendingUp },
@@ -150,7 +238,7 @@ export const ShippingReportsPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1800px] mx-auto text-slate-900 dark:text-slate-100">
-      {/* Cockpit Header (No in-page navigation element) */}
+      {/* Cockpit Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -158,17 +246,16 @@ export const ShippingReportsPage: React.FC = () => {
               <BarChart3 className="w-5 h-5" />
             </span>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-              تقارير الشحن والتوصيل
+              تقارير الشحن والتوصيل المتقدمة
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            تحليلات الأداء الشاملة لكل محافظة، عميل، ومندوب، ومتابعة معدلات RTO ونسب النجاح
+            تحليلات الأداء الشاملة، التوزيع الجغرافي، رحلات المناديب، الأصناف الأكثر طلباً، ورضا العملاء
           </p>
         </div>
 
         {/* Action Controls & Date Presets */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Preset Filter Buttons */}
           <div className="inline-flex items-center p-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs">
             {presets.map((p) => (
               <button
@@ -185,7 +272,6 @@ export const ShippingReportsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Export CSV Button */}
           <button
             onClick={handleExportCsv}
             disabled={loading}
@@ -196,7 +282,6 @@ export const ShippingReportsPage: React.FC = () => {
             <span>تصدير CSV</span>
           </button>
 
-          {/* Refresh Button */}
           <button
             onClick={loadReportData}
             disabled={loading}
@@ -281,6 +366,18 @@ export const ShippingReportsPage: React.FC = () => {
         )}
         {activeTab === 'governorate' && (
           <ShippingReportsGovTab data={govData} loading={loading} />
+        )}
+        {activeTab === 'geo' && (
+          <ShippingReportsGeoTab data={geoData} loading={loading} />
+        )}
+        {activeTab === 'missions' && (
+          <ShippingReportsMissionsTab data={missionsData} loading={loading} />
+        )}
+        {activeTab === 'best-sellers' && (
+          <ShippingReportsBestSellersTab data={bestSellersData} loading={loading} />
+        )}
+        {activeTab === 'feedback' && (
+          <ShippingReportsFeedbackTab data={feedbackData} loading={loading} />
         )}
         {activeTab === 'client' && (
           <ShippingReportsClientTab data={clientData} loading={loading} />

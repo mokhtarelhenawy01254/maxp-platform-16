@@ -838,10 +838,354 @@ async function getCoverageReport(companyId, { from, to, governorate } = {}) {
   };
 }
 
+/**
+ * 6. Geographic Distribution Report (SHIP-T4)
+ * Rows: (محافظة · مدينة · شحنات · مسلّمة · RTO · متوسط أيام)
+ */
+async function getGeoReport(companyId, { from, to } = {}) {
+  const prisma = getSharedPrismaClient();
+  const dateFilter = buildDateFilter(from, to);
+  const where = { companyId, ...dateFilter };
+
+  const shipments = await prisma.shipment.findMany({
+    where,
+    select: {
+      id: true,
+      destinationGovernorate: true,
+      destinationCity: true,
+      destinationAddress: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
+  const RTO_STATUSES = ['RETURNED', 'RTO', 'FAILED'];
+
+  const groups = new Map();
+
+  for (const s of shipments) {
+    const rawGov = s.destinationGovernorate;
+    const rawCity = s.destinationCity || 'غير محدد';
+    const gov = normalizeGovernorateName(rawGov, rawCity, s.destinationAddress) || rawGov || 'أخرى';
+    const city = (s.destinationCity || 'غير محدد').trim();
+    const key = `${gov}___${city}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        governorate: gov,
+        city,
+        totalShipments: 0,
+        deliveredCount: 0,
+        rtoCount: 0,
+        totalDeliveryDays: 0,
+        deliveredWithDaysCount: 0,
+      });
+    }
+
+    const g = groups.get(key);
+    g.totalShipments += 1;
+
+    const st = String(s.status || '').toUpperCase();
+    if (DELIVERED_STATUSES.includes(st)) {
+      g.deliveredCount += 1;
+      const createdTime = new Date(s.createdAt).getTime();
+      const endTime = new Date(s.updatedAt).getTime();
+      const days = Math.max(0, (endTime - createdTime) / (1000 * 60 * 60 * 24));
+      g.totalDeliveryDays += days;
+      g.deliveredWithDaysCount += 1;
+    } else if (RTO_STATUSES.includes(st)) {
+      g.rtoCount += 1;
+    }
+  }
+
+  const rows = Array.from(groups.values()).map((g) => {
+    const avgDays = g.deliveredWithDaysCount > 0 ? round1(g.totalDeliveryDays / g.deliveredWithDaysCount) : 0;
+    const deliveryRate = g.totalShipments > 0 ? round1((g.deliveredCount / g.totalShipments) * 100) : 0;
+    return {
+      governorate: g.governorate,
+      city: g.city,
+      totalShipments: g.totalShipments,
+      deliveredCount: g.deliveredCount,
+      rtoCount: g.rtoCount,
+      avgDays,
+      deliveryRate,
+    };
+  });
+
+  rows.sort((a, b) => b.totalShipments - a.totalShipments);
+
+  const summary = {
+    totalShipments: shipments.length,
+    totalDelivered: rows.reduce((s, r) => s + r.deliveredCount, 0),
+    totalRto: rows.reduce((s, r) => s + r.rtoCount, 0),
+    citiesCount: rows.length,
+  };
+
+  return {
+    summary,
+    rows,
+    data: rows,
+    range: { from: from || null, to: to || null },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function geoReportToCsv(report) {
+  const lines = [];
+  lines.push('﻿"المحافظة","المدينة","إجمالي الشحنات","المسلمة","المرتجعة (RTO)","متوسط أيام التسليم","نسبة التسليم %"');
+  for (const r of report.rows || []) {
+    lines.push([
+      `"${(r.governorate || '').replace(/"/g, '""')}"`,
+      `"${(r.city || '').replace(/"/g, '""')}"`,
+      r.totalShipments,
+      r.deliveredCount,
+      r.rtoCount,
+      r.avgDays,
+      `${r.deliveryRate}%`,
+    ].join(','));
+  }
+  return lines.join('\r\n');
+}
+
+/**
+ * 7. Best Sellers Report (SHIP-T4)
+ * Analyzes items from orders associated with shipments.
+ * Fallback to «غير متاح» if no order items exist.
+ */
+async function getBestSellersReport(companyId, { from, to, limit = 20 } = {}) {
+  const prisma = getSharedPrismaClient();
+  const dateFilter = buildDateFilter(from, to);
+  const where = { companyId, ...dateFilter };
+  const takeLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
+
+  const shipments = await prisma.shipment.findMany({
+    where,
+    select: {
+      id: true,
+      codAmount: true,
+      declaredValue: true,
+      pieces: true,
+      order: {
+        select: {
+          id: true,
+          items: {
+            select: {
+              id: true,
+              productName: true,
+              quantity: true,
+              price: true,
+              total: true,
+              product: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const productMap = new Map();
+
+  for (const s of shipments) {
+    const items = s.order?.items;
+    if (items && Array.isArray(items) && items.length > 0) {
+      for (const item of items) {
+        const name = (item.productName || item.product?.name || 'غير متاح').trim() || 'غير متاح';
+        const qty = Number(item.quantity) || 1;
+        const price = Number(item.price) || 0;
+        const total = item.total !== undefined && item.total !== null ? Number(item.total) : (qty * price);
+
+        if (!productMap.has(name)) {
+          productMap.set(name, {
+            productName: name,
+            quantity: 0,
+            totalValue: 0,
+            shipmentCount: 0,
+          });
+        }
+        const record = productMap.get(name);
+        record.quantity += qty;
+        record.totalValue += total;
+        record.shipmentCount += 1;
+      }
+    } else {
+      const name = 'غير متاح';
+      const qty = s.pieces || 1;
+      const total = Number(s.codAmount || s.declaredValue || 0);
+
+      if (!productMap.has(name)) {
+        productMap.set(name, {
+          productName: name,
+          quantity: 0,
+          totalValue: 0,
+          shipmentCount: 0,
+        });
+      }
+      const record = productMap.get(name);
+      record.quantity += qty;
+      record.totalValue += total;
+      record.shipmentCount += 1;
+    }
+  }
+
+  const rows = Array.from(productMap.values()).map((p) => ({
+    productName: p.productName,
+    quantity: p.quantity,
+    totalValue: round2(p.totalValue),
+    shipmentCount: p.shipmentCount,
+  }));
+
+  rows.sort((a, b) => b.quantity - a.quantity || b.totalValue - a.totalValue);
+  const slicedRows = rows.slice(0, takeLimit);
+
+  return {
+    rows: slicedRows,
+    data: slicedRows,
+    totalProducts: productMap.size,
+    range: { from: from || null, to: to || null },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function bestSellersReportToCsv(report) {
+  const lines = [];
+  lines.push('﻿"اسم المنتج","الكمية المباعة","إجمالي القيمة (ج.م)","عدد الشحنات"');
+  for (const r of report.rows || []) {
+    lines.push([
+      `"${(r.productName || '').replace(/"/g, '""')}"`,
+      r.quantity,
+      r.totalValue,
+      r.shipmentCount,
+    ].join(','));
+  }
+  return lines.join('\r\n');
+}
+
+/**
+ * 8. Missions / Delivery Runs Report (SHIP-T4)
+ * Analyzes courier delivery runs: (مندوب · شحنات · مسلّم · فاشل · تحصيل · مدة).
+ */
+async function getMissionsReport(companyId, { from, to } = {}) {
+  const prisma = getSharedPrismaClient();
+  const dateFilter = buildDateFilter(from, to, 'dispatchDate');
+  const where = { companyId, ...dateFilter };
+
+  const runs = await prisma.deliveryRun.findMany({
+    where,
+    include: {
+      courier: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      shipments: {
+        select: {
+          id: true,
+          status: true,
+          collectedAmount: true,
+          codAmount: true,
+        },
+      },
+    },
+    orderBy: { dispatchDate: 'desc' },
+  });
+
+  const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
+  const FAILED_STATUSES = ['FAILED', 'FAILED_ATTEMPT', 'RETURNED', 'CANCELLED'];
+
+  const rows = runs.map((run) => {
+    const totalShipments = run.totalShipments || run.shipments.length;
+    let deliveredCount = 0;
+    let failedCount = 0;
+    let sumCollected = 0;
+
+    for (const s of run.shipments) {
+      const st = String(s.status || '').toUpperCase();
+      if (DELIVERED_STATUSES.includes(st)) {
+        deliveredCount += 1;
+        sumCollected += Number(s.collectedAmount || s.codAmount || 0);
+      } else if (FAILED_STATUSES.includes(st)) {
+        failedCount += 1;
+      }
+    }
+
+    const collectedTotal = run.totalCODCollected ? Number(run.totalCODCollected) : sumCollected;
+
+    let durationHours = 0;
+    let durationText = 'جارية';
+    if (run.settledAt || run.status === 'COMPLETED' || run.status === 'SETTLED') {
+      const endDate = run.settledAt || run.updatedAt;
+      const hours = Math.max(0, (new Date(endDate).getTime() - new Date(run.dispatchDate).getTime()) / (1000 * 60 * 60));
+      durationHours = round1(hours);
+      durationText = `${durationHours} ساعة`;
+    }
+
+    return {
+      runId: run.id,
+      runNumber: run.runNumber,
+      courierName: run.courier?.name || 'غير محدد',
+      courierPhone: run.courier?.phone || null,
+      status: run.status,
+      dispatchDate: run.dispatchDate,
+      totalShipments,
+      deliveredCount,
+      failedCount,
+      collectedAmount: round2(collectedTotal),
+      durationHours,
+      duration: durationText,
+    };
+  });
+
+  const summary = {
+    totalRuns: runs.length,
+    totalShipments: rows.reduce((s, r) => s + r.totalShipments, 0),
+    totalDelivered: rows.reduce((s, r) => s + r.deliveredCount, 0),
+    totalFailed: rows.reduce((s, r) => s + r.failedCount, 0),
+    totalCollected: round2(rows.reduce((s, r) => s + r.collectedAmount, 0)),
+  };
+
+  return {
+    summary,
+    rows,
+    data: rows,
+    range: { from: from || null, to: to || null },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function missionsReportToCsv(report) {
+  const lines = [];
+  lines.push('﻿"رقم الرحلة","المندوب","الهاتف","الحالة","تاريخ الانطلاق","إجمالي الشحنات","مسلمة","فاشلة","التحصيل (ج.م)","المدة"');
+  for (const r of report.rows || []) {
+    lines.push([
+      `"${(r.runNumber || '').replace(/"/g, '""')}"`,
+      `"${(r.courierName || '').replace(/"/g, '""')}"`,
+      `"${(r.courierPhone || '').replace(/"/g, '""')}"`,
+      `"${r.status || ''}"`,
+      r.dispatchDate ? new Date(r.dispatchDate).toISOString().substring(0, 10) : '',
+      r.totalShipments,
+      r.deliveredCount,
+      r.failedCount,
+      r.collectedAmount,
+      `"${r.duration || ''}"`,
+    ].join(','));
+  }
+  return lines.join('\r\n');
+}
+
 module.exports = {
   getSummaryReport,
   getCoverageReport,
   getByGovernorateReport,
   getByClientReport,
   getByCourierReport,
+  getGeoReport,
+  geoReportToCsv,
+  getBestSellersReport,
+  bestSellersReportToCsv,
+  getMissionsReport,
+  missionsReportToCsv,
 };

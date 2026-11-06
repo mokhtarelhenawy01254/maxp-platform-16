@@ -1,3 +1,4 @@
+const feedbackService = require('../services/shipping/feedbackService');
 /**
  * Shipping Reports Controller (SHIP-W7 / SHIP-W9)
  * Scoped to companyId. Roles: OWNER / COMPANY_ADMIN / OPERATIONS.
@@ -199,6 +200,127 @@ async function getCoverageReport(req, res) {
   }
 }
 
+
+/**
+ * Feedback Analytics Report (SHIP-T4)
+ */
+async function getFeedbackReport(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to, format } = req.query;
+    const report = await feedbackService.getFeedbackReport(companyId, { from, to });
+
+    if (String(format || '').toLowerCase() === 'csv') {
+      const csv = feedbackService.feedbackReportToCsv(report);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="feedback-report.csv"');
+      return res.status(200).send(csv);
+    }
+
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('❌ [SHIPPING-REPORTS] Error in getFeedbackReport:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'تعذر جلب تقرير تقييمات العملاء',
+    });
+  }
+}
+
+/**
+ * Geographic Distribution Report (SHIP-T4)
+ */
+async function getGeoReport(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to, format } = req.query;
+    const report = await shippingReportsService.getGeoReport(companyId, { from, to });
+
+    if (String(format || '').toLowerCase() === 'csv') {
+      const csv = shippingReportsService.geoReportToCsv(report);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="geo-report.csv"');
+      return res.status(200).send(csv);
+    }
+
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('❌ [SHIPPING-REPORTS] Error in getGeoReport:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'تعذر جلب تقرير التحليل الجغرافي',
+    });
+  }
+}
+
+/**
+ * Best Sellers Report (SHIP-T4)
+ */
+async function getBestSellersReport(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to, limit, format } = req.query;
+    const report = await shippingReportsService.getBestSellersReport(companyId, { from, to, limit });
+
+    if (String(format || '').toLowerCase() === 'csv') {
+      const csv = shippingReportsService.bestSellersReportToCsv(report);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="best-sellers-report.csv"');
+      return res.status(200).send(csv);
+    }
+
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('❌ [SHIPPING-REPORTS] Error in getBestSellersReport:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'تعذر جلب تقرير الأصناف الأكثر مبيعاً',
+    });
+  }
+}
+
+/**
+ * Courier Missions / Delivery Runs Report (SHIP-T4)
+ */
+async function getMissionsReport(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to, format } = req.query;
+    const report = await shippingReportsService.getMissionsReport(companyId, { from, to });
+
+    if (String(format || '').toLowerCase() === 'csv') {
+      const csv = shippingReportsService.missionsReportToCsv(report);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="missions-report.csv"');
+      return res.status(200).send(csv);
+    }
+
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('❌ [SHIPPING-REPORTS] Error in getMissionsReport:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'تعذر جلب تقرير رحلات المناديب',
+    });
+  }
+}
+
 module.exports = {
   getSummary,
   getCoverageReport,
@@ -208,4 +330,8 @@ module.exports = {
   getProfitReport,
   getUncoveredProfit,
   recalcProfit,
+  getFeedbackReport,
+  getGeoReport,
+  getBestSellersReport,
+  getMissionsReport,
 };

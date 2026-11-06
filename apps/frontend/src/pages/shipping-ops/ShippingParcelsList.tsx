@@ -5,15 +5,12 @@ import {
   PackagePlus,
   RefreshCw,
   FileSpreadsheet,
-  CheckSquare,
   Search,
-  Filter,
   Eye,
   XCircle,
   ChevronLeft,
   ChevronRight,
   Boxes,
-  CheckCircle2,
   Copy,
   Printer,
   AlertCircle,
@@ -214,6 +211,15 @@ export const ShippingParcelsList: React.FC = () => {
             <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             <span>{isEn ? 'Refresh' : 'تحديث'}</span>
           </button>
+                    <button
+            type="button"
+            onClick={() => setShowIntlModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded-lg shadow-xs transition active:scale-95 cursor-pointer"
+            title="مراجعة الإقرارات الجمركية للشحنات الدولية"
+          >
+            <Globe2 className="w-4 h-4" />
+            <span>الإقرارات الدولية</span>
+          </button>
           <button
             type="button"
             onClick={() => setShowImportModal(true)}
@@ -283,7 +289,7 @@ export const ShippingParcelsList: React.FC = () => {
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder={t('shippingOps.list.searchPlaceholder', 'بحث برقم التتبع، المستلم، أو الهاتف...')}
+              placeholder={String(t('shippingOps.list.searchPlaceholder', 'بحث برقم التتبع، المستلم، أو الهاتف...'))}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -402,6 +408,22 @@ export const ShippingParcelsList: React.FC = () => {
               <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
               <span>{isEn ? 'Needs RTO Review' : 'شحنات بحاجة لمراجعة RTO'}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsInternational((prev) => !prev);
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer ${
+                isInternational
+                  ? 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+              }`}
+            >
+              <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>{isEn ? 'International Only' : 'شحنات دولية فقط'}</span>
+            </button>
+
           </div>
 
           {(search || status || governorate || merchantId || fromDate || toDate || needsRtoReview) && (
@@ -538,6 +560,22 @@ export const ShippingParcelsList: React.FC = () => {
                           <Link to={`/shipping-ops/parcels/${s.id}`} className="hover:underline">
                             {s.trackingNumber}
                           </Link>
+                          {s.isInternational && (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                s.intlAckStatus === 'APPROVED'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  : s.intlAckStatus === 'REJECTED'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 animate-pulse'
+                              }`}
+                              title={`شحنة دولية: ${s.destinationCountry || ''} (${s.intlAckStatus || 'معلق'})`}
+                            >
+                              <Globe2 className="w-3 h-3" />
+                              <span>{s.intlAckStatus === 'APPROVED' ? 'دولية: معتمد' : s.intlAckStatus === 'REJECTED' ? 'دولية: مرفوض' : 'دولية: معلق'}</span>
+                            </span>
+                          )}
+
                           <button
                             onClick={() => printShipmentLabel(s.id, s.trackingNumber)}
                             className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
@@ -612,7 +650,7 @@ export const ShippingParcelsList: React.FC = () => {
                           <Link
                             to={`/shipping-ops/parcels/${s.id}`}
                             className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
-                            title={t('shippingOps.list.viewDetails', 'عرض التفاصيل')}
+                            title={String(t('shippingOps.list.viewDetails', 'عرض التفاصيل'))}
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
@@ -630,7 +668,7 @@ export const ShippingParcelsList: React.FC = () => {
                                 setCancelReason('');
                               }}
                               className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                              title={t('shippingOps.list.cancelShipment', 'إلغاء الشحنة')}
+                              title={String(t('shippingOps.list.cancelShipment', 'إلغاء الشحنة'))}
                             >
                               <XCircle className="w-4 h-4" />
                             </button>

@@ -238,6 +238,7 @@ export interface ShipmentsQuery {
   to?: string;
   search?: string;
   needsRtoReview?: boolean;
+  isInternational?: boolean;
   page?: number;
   limit?: number;
 }

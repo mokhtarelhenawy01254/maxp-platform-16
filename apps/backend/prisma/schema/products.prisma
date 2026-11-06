@@ -821,6 +821,13 @@ model Shipment {
   branch                 ShippingBranch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   pickupRequest          PickupRequest?   @relation(fields: [pickupRequestId], references: [id], onDelete: SetNull)
   settlementLine         ShippingSettlementLine?
+  isInternational        Boolean          @default(false)
+  destinationCountry     String?
+  destinationCityIntl    String?
+  customsValue           Decimal?         @db.Decimal(10, 2)
+  intlAckStatus          String?
+  internationalAck       InternationalAcknowledgment?
+  feedbacks              ShipmentFeedback[]
 
   @@unique([companyId, barcode])
   @@unique([companyId, merchantId, clientReference])

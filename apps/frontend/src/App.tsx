@@ -477,6 +477,9 @@ const CourierDuesPage = React.lazy(
 const CourierPerformancePage = React.lazy(
   () => import("./pages/shipping/couriers/CourierPerformancePage"),
 );
+const CustomerFeedbackPage = React.lazy(
+  () => import("./pages/public/CustomerFeedbackPage"),
+);
 const ShipmentTrackingPage = React.lazy(
   () => import("./pages/public/ShipmentTrackingPage"),
 );
@@ -2235,6 +2238,7 @@ const AppContent = () => {
     currentPath.startsWith("/proposal") ||
     currentPath.startsWith("/agency/proposal") ||
     currentPath.startsWith("/agency/client-portal") ||
+    currentPath.startsWith("/feedback/") ||
     currentPath.startsWith("/portal") ||
     currentPath.startsWith("/factory-portal") ||
     currentPath.startsWith("/customer-portal") ||
@@ -3440,6 +3444,15 @@ const AppContent = () => {
               element={
                 <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
                   <SubscriptionSuccess />
+                </Suspense>
+              }
+            />
+            {/* Customer Feedback Public Route (SHIP-T4) */}
+            <Route
+              path="/feedback/:token"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CustomerFeedbackPage />
                 </Suspense>
               }
             />

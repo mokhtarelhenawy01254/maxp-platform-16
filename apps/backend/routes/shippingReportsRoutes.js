@@ -1,5 +1,5 @@
 /**
- * Shipping Reports Routes (SHIP-W7)
+ * Shipping Reports Routes (SHIP-W7 / SHIP-T4)
  * Endpoint: /api/v1/shipping-reports
  * Roles: OWNER / COMPANY_ADMIN / OPERATIONS
  */
@@ -34,5 +34,11 @@ router.get('/by-courier', ...authMiddleware, shippingReportsController.getByCour
 router.get('/profit', ...authMiddleware, shippingReportsController.getProfitReport);
 router.get('/profit/uncovered', ...authMiddleware, shippingReportsController.getUncoveredProfit);
 router.post('/profit/recalc', ...authMiddleware, shippingReportsController.recalcProfit);
+
+// SHIP-T4 Advanced Reports & Feedback
+router.get('/feedback', ...authMiddleware, shippingReportsController.getFeedbackReport);
+router.get('/geo', ...authMiddleware, shippingReportsController.getGeoReport);
+router.get('/best-sellers', ...authMiddleware, shippingReportsController.getBestSellersReport);
+router.get('/missions', ...authMiddleware, shippingReportsController.getMissionsReport);
 
 module.exports = router;

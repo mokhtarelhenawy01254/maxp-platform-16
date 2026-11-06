@@ -1,0 +1,19 @@
+model ShipmentFeedback {
+  id          String    @id @default(cuid())
+  companyId   String
+  shipmentId  String
+  token       String    @unique
+  rating      Int?      /// 1..5
+  comment     String?
+  tags        String?
+  submittedAt DateTime?
+  channel     String?   /// WHATSAPP | SMS | PORTAL | DIRECT
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, submittedAt])
+  @@index([shipmentId])
+  @@map("shipment_feedbacks")
+}

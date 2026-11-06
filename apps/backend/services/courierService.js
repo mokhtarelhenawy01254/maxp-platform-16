@@ -502,6 +502,23 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
     throw serviceError(`لا يمكن إسناد شحنات مسوّاة ماليًا أو منتهية لرحلة جديدة: ${samples}`, 400);
   }
 
+  // ✈️ International customs acknowledgment guard (SHIP-T4)
+  // شحنة دولية لا تخرج للرحلة قبل intlAckStatus=APPROVED (رفض 409 بسبب INTL_ACK_PENDING)
+  const unapprovedIntl = shipments.filter(
+    (s) => s.isInternational && s.intlAckStatus !== 'APPROVED'
+  );
+  if (unapprovedIntl.length > 0) {
+    const samples = unapprovedIntl
+      .slice(0, 5)
+      .map((s) => s.trackingNumber || s.id)
+      .join('، ');
+    throw serviceError(
+      `لا يمكن إسناد شحنة دولية لرحلة توزيع قبل الموافقة على الإقرار الجمركي: ${samples}`,
+      409,
+      'INTL_ACK_PENDING'
+    );
+  }
+
   const totalCODExpected = shipments.reduce(
     (sum, s) => sum + normalizeAmount(s.order?.total),
     0
@@ -1022,6 +1039,12 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
       try {
         const { applyProfitToShipment } = require('./shipping/profitService');
         await applyProfitToShipment(tx, shipmentId);
+      try {
+        const { ensureShipmentFeedbackToken } = require('./shipping/feedbackService');
+        await ensureShipmentFeedbackToken(tx, companyId, shipmentId, { channel: 'WHATSAPP' });
+      } catch (feedbackErr) {
+        console.warn('⚠️ [COURIER_SERVICE] Feedback token creation warning:', feedbackErr.message);
+      }
       } catch (profitErr) {
         console.warn('⚠️ [COURIER_SERVICE] Profit calculation warning:', profitErr.message);
       }

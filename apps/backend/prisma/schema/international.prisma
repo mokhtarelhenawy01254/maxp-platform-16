@@ -1,0 +1,20 @@
+model InternationalAcknowledgment {
+  id                 String    @id @default(cuid())
+  companyId          String
+  shipmentId         String    @unique
+  customerName       String
+  contentDescription String?
+  customsValue       Decimal?  @db.Decimal(10, 2)
+  status             String    @default("PENDING") /// PENDING | APPROVED | REJECTED
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  shipment           Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+  @@index([shipmentId])
+  @@map("international_acknowledgments")
+}

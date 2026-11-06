@@ -225,7 +225,7 @@ async function createRun(req, res) {
     res.status(201).json({ success: true, data: run });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in createRun:', error);
-    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إنشاء مأمورية التوصيل' });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إنشاء مأمورية التوصيل', code: error.code });
   }
 }
 
