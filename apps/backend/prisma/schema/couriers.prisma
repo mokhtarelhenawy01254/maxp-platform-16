@@ -16,6 +16,13 @@ model Courier {
   /// bcrypt hash of the courier's field PIN (4-6 digits) — required on field
   /// status updates when fleet setting fieldWorkflow.requireCourierPin is on
   pinHash          String?
+  documentsStatus  String        @default("INCOMPLETE") /// INCOMPLETE, PENDING_REVIEW, VERIFIED
+  hireDate         DateTime?
+  salaryBase       Decimal?      @db.Decimal(10, 2)
+  compensationModel String       @default("COMMISSION_ONLY") /// COMMISSION_ONLY, SALARY_ONLY, SALARY_PLUS_BONUS, SALARY_PLUS_COMMISSION
+  bonusPerOrder    Decimal?      @db.Decimal(10, 2)
+  bonusStartsAfterOrders Int?
+  bonusTiers       String?       /// JSON array: [{from: 1, to: 50, amount: 6}, ...]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
