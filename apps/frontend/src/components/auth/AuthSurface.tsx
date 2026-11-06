@@ -31,11 +31,13 @@ interface AuthSurfaceProps {
   visualDescription?: string;
   visualBadge?: string;
   visualStats?: Array<{ label: string; value: string }>;
+  visualContent?: React.ReactNode;
   dir?: "rtl" | "ltr";
   // هوية الشركة — لو متوفرة تُعرض بدل هوية المنصة (لوجو/اسم/لون)
   companyLogo?: string | null;
   companyName?: string | null;
   companyAccent?: string;
+  brandHref?: string | null;
 }
 
 interface AuthNoticeProps {
@@ -58,10 +60,12 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
   visualDescription,
   visualBadge,
   visualStats,
+  visualContent,
   dir = "rtl",
   companyLogo,
   companyName,
   companyAccent,
+  brandHref = "/",
 }) => {
   const { t } = useTranslation();
   const themeStyle = {
@@ -85,45 +89,49 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
     >
       {/* Visual Side */}
       <div className="elite-auth-visual">
-        <div className="visual-content animate-fade-up">
-          <span className="visual-badge">
-            {visualBadge || t("auth.businessOs")}
-          </span>
-          <h1 className="visual-title">
-            {visualTitle || (
-              <>
-                كل أعمالك <br />
-                <span style={{ color: "var(--auth-accent)" }}>في نظام واحد</span>
-              </>
-            )}
-          </h1>
-          <p className="visual-description">
-            {visualDescription ||
-              "منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — في مساحة عمل واحدة."}
-          </p>
+        {visualContent ? (
+          visualContent
+        ) : (
+          <div className="visual-content animate-fade-up">
+            <span className="visual-badge">
+              {visualBadge || t("auth.businessOs")}
+            </span>
+            <h1 className="visual-title">
+              {visualTitle || (
+                <>
+                  كل أعمالك <br />
+                  <span style={{ color: "var(--auth-accent)" }}>في نظام واحد</span>
+                </>
+              )}
+            </h1>
+            <p className="visual-description">
+              {visualDescription ||
+                "منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — في مساحة عمل واحدة."}
+            </p>
 
-          {visualStats && visualStats.length > 0 ? (
-            <div className="visual-stats-inline">
-              {visualStats.map((stat, idx) => (
-                <div key={idx} className="stat-inline">
-                  <span className="stat-inline-value font-mono tabular-nums">{stat.value}</span>
-                  <span className="stat-inline-label">{stat.label}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="visual-stats-inline">
-              <span className="stat-inline">
-                <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualStart")}</span>
-                <span className="stat-inline-label">{t("auth.visualImmediately")}</span>
-              </span>
-              <span className="stat-inline">
-                <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualWithout")}</span>
-                <span className="stat-inline-label">{t("auth.visualTrialPeriod")}</span>
-              </span>
-            </div>
-          )}
-        </div>
+            {visualStats && visualStats.length > 0 ? (
+              <div className="visual-stats-inline">
+                {visualStats.map((stat, idx) => (
+                  <div key={idx} className="stat-inline">
+                    <span className="stat-inline-value font-mono tabular-nums">{stat.value}</span>
+                    <span className="stat-inline-label">{stat.label}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="visual-stats-inline">
+                <span className="stat-inline">
+                  <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualStart")}</span>
+                  <span className="stat-inline-label">{t("auth.visualImmediately")}</span>
+                </span>
+                <span className="stat-inline">
+                  <span className="stat-inline-value font-mono tabular-nums">{t("auth.visualWithout")}</span>
+                  <span className="stat-inline-label">{t("auth.visualTrialPeriod")}</span>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Form Side */}
@@ -134,42 +142,56 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
             wide && "elite-form-container--wide",
           )}
         >
-          <Link to="/" className="elite-brand-logo">
-            {companyLogo ? (
-              <img
-                src={
-                  companyLogo.startsWith("http://") ||
-                  companyLogo.startsWith("https://") ||
-                  companyLogo.startsWith("data:")
-                    ? companyLogo
-                    : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
-                }
-                alt={companyName || t("auth.brandName")}
-                className="logo-img"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.style.display = "none";
-                  const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
-                  if (fallback) fallback.style.display = "flex";
-                }}
-              />
-            ) : companyName ? null : (
-              <img
-                src="/logo.png"
-                alt={t("auth.brandName")}
-                className="logo-img"
-              />
-            )}
-            <div
-              className="logo-icon"
-              style={{ display: companyLogo || !companyName ? "none" : "flex" }}
-            >
-              {(companyName || t("auth.brandName")).charAt(0)}
-            </div>
-            <span className="logo-text">
-              {companyName || t("auth.brandName")}
-            </span>
-          </Link>
+          {(() => {
+            const logoInner = (
+              <>
+                {companyLogo ? (
+                  <img
+                    src={
+                      companyLogo.startsWith("http://") ||
+                      companyLogo.startsWith("https://") ||
+                      companyLogo.startsWith("data:")
+                        ? companyLogo
+                        : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
+                    }
+                    alt={companyName || t("auth.brandName")}
+                    className="logo-img"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.style.display = "none";
+                      const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
+                  />
+                ) : companyName ? null : (
+                  <img
+                    src="/logo.png"
+                    alt={t("auth.brandName")}
+                    className="logo-img"
+                  />
+                )}
+                <div
+                  className="logo-icon"
+                  style={{ display: companyLogo || !companyName ? "none" : "flex" }}
+                >
+                  {(companyName || t("auth.brandName")).charAt(0)}
+                </div>
+                <span className="logo-text">
+                  {companyName || t("auth.brandName")}
+                </span>
+              </>
+            );
+
+            return brandHref ? (
+              <Link to={brandHref} className="elite-brand-logo">
+                {logoInner}
+              </Link>
+            ) : (
+              <div className="elite-brand-logo">
+                {logoInner}
+              </div>
+            );
+          })()}
 
           <div className="form-header">
             {eyebrow && <span className="elite-form-eyebrow font-mono tabular-nums">{eyebrow}</span>}

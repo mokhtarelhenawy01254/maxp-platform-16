@@ -1,22 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  BuildingOffice2Icon,
+  BriefcaseIcon,
   CheckCircleIcon,
-  EnvelopeIcon,
   ExclamationTriangleIcon,
+  EyeIcon,
+  EyeSlashIcon,
   LockClosedIcon,
   UserIcon,
-  PhoneIcon,
-  IdentificationIcon,
-  MapPinIcon,
-  BriefcaseIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { tokenManager } from "../../utils/tokenManager";
 import { toast } from "sonner";
-import { DateInput } from '../../components/ui/DateInput';
+import { DateInput } from "../../components/ui/DateInput";
+import { formatDate } from "../../utils/dateFormat";
+import { envConfig } from "../../config/environment";
 
 interface InvitationInfo {
   id: string;
@@ -60,6 +59,9 @@ export const JoinEmployee: React.FC = () => {
 
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -258,12 +260,100 @@ export const JoinEmployee: React.FC = () => {
     }
   };
 
+  const renderVisualContent = () => {
+    if (!invitation) return null;
+
+    const logoUrl = invitation.companyLogo
+      ? invitation.companyLogo.startsWith("http://") ||
+        invitation.companyLogo.startsWith("https://") ||
+        invitation.companyLogo.startsWith("data:")
+        ? invitation.companyLogo
+        : `${envConfig.backendUrl}${invitation.companyLogo.startsWith("/") ? "" : "/"}${invitation.companyLogo}`
+      : null;
+
+    return (
+      <div className="visual-content animate-fade-up">
+        {logoUrl ? (
+          <div className="business-auth-visual-logo">
+            <img
+              src={logoUrl}
+              alt={invitation.companyName}
+              className="business-auth-visual-logo-img"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
+        ) : (
+          <div className="business-auth-visual-logo-fallback">
+            {invitation.companyName?.charAt(0) || "M"}
+          </div>
+        )}
+
+        <span className="visual-badge">دعوة انضمام</span>
+
+        <h1 className="visual-title">
+          {invitation.companyName}
+        </h1>
+
+        <p className="visual-description">
+          {invitation.positionTitle
+            ? `دعوة للانضمام إلى فريق العمل بمنصب ${invitation.positionTitle}.`
+            : "دعوة للانضمام إلى فريق العمل والمساهمة في تحقيق أهداف الشركة."}
+        </p>
+
+        <div className="visual-features">
+          {invitation.departmentName && (
+            <span className="business-auth-chip">
+              {invitation.departmentName}
+            </span>
+          )}
+          <span className="business-auth-chip business-auth-chip--accent">
+            {roleDisplayMap[invitation.role] || invitation.role}
+          </span>
+          <span className="business-auth-chip">
+            {contractDisplayMap[invitation.contractType] || invitation.contractType}
+          </span>
+        </div>
+
+        {(invitation.inviterName || invitation.expiresAt) && (
+          <div className="visual-stats-inline">
+            {invitation.inviterName && (
+              <div className="stat-inline">
+                <span className="stat-inline-label">دعوة من:</span>
+                <span className="stat-inline-value">{invitation.inviterName}</span>
+              </div>
+            )}
+            {invitation.expiresAt && (
+              <div className="stat-inline">
+                <span className="stat-inline-label">تنتهي في:</span>
+                <span className="stat-inline-value font-mono tabular-nums">
+                  {formatDate(invitation.expiresAt, "DD/MM/YYYY")}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <AuthSurface
         title="جاري فحص رابط الدعوة"
         description="نراجع تفاصيل المنصب والشركة لتهيئة استمارة الانضمام الخاصة بك."
-        eyebrow="Employee Verification"
+        eyebrow="التحقق من الدعوة"
+        brandHref={null}
+        visualContent={
+          <div className="visual-content animate-fade-up">
+            <span className="visual-badge">التحقق من الدعوة</span>
+            <h1 className="visual-title">انضم إلى فريق العمل</h1>
+            <p className="visual-description">
+              جاري فحص صلاحيات الرابط وتفاصيل المنصب المخصص لك لتهيئة بيئة العمل...
+            </p>
+          </div>
+        }
       >
         <div className="business-auth-loader-block">
           <div className="business-auth-loader" />
@@ -278,12 +368,26 @@ export const JoinEmployee: React.FC = () => {
       <AuthSurface
         title="تعذر فتح رابط الدعوة"
         description="الرابط غير صالح أو انتهت صلاحيته أو تم إلغاؤه من قِبل إدارة الشركة."
-        eyebrow="Invitation Notice"
+        eyebrow="رابط غير صالح"
+        brandHref={null}
         icon={<ExclamationTriangleIcon className="h-7 w-7 text-amber-500" />}
+        visualContent={
+          <div className="visual-content animate-fade-up">
+            <span className="visual-badge">رابط الدعوة</span>
+            <h1 className="visual-title">تعذر التحقق من الدعوة</h1>
+            <p className="visual-description">
+              الرابط غير صالح أو قد انتهت صلاحيته. يرجى التواصل مع إدارة الشركة لإرسال رابط دعوة صالح.
+            </p>
+          </div>
+        }
       >
         <AuthNotice variant="error" title="تنبيه الدعوة">
           {error}
         </AuthNotice>
+
+        <p className="business-auth-hint text-center mt-3">
+          اطلب من إدارة الشركة إرسال دعوة جديدة إلى بريدك الإلكتروني.
+        </p>
 
         <div className="business-auth-actions pt-4">
           <button
@@ -303,10 +407,12 @@ export const JoinEmployee: React.FC = () => {
       <AuthSurface
         title="أهلاً بك في الفريق!"
         description="تم إنشاء حسابك وربط ملفك الوظيفي بنجاح، جاري نقلك إلى مساحة العمل..."
-        eyebrow="Onboarding Complete"
-        icon={<CheckCircleIcon className="h-7 w-7 text-emerald-500" />}
+        eyebrow="تم الانضمام"
+        icon={<CheckCircleIcon className="h-7 w-7 business-auth-icon-success" />}
         companyName={invitation?.companyName}
         companyLogo={invitation?.companyLogo}
+        brandHref={null}
+        visualContent={renderVisualContent()}
       >
         <div className="business-auth-loader-block">
           <div className="business-auth-loader" />
@@ -320,16 +426,18 @@ export const JoinEmployee: React.FC = () => {
     <AuthSurface
       title="انضم إلى فريق العمل"
       description={`يسعدنا انضمامك إلى ${invitation?.companyName || "فريقنا"}. يرجى إكمال بيانات حسابك وبياناتك الشخصية للانطلاق فوراً.`}
-      eyebrow="Employee Self-Onboarding"
+      eyebrow="انضمام موظف جديد"
       wide={true}
       companyName={invitation?.companyName}
       companyLogo={invitation?.companyLogo}
+      brandHref={null}
+      visualContent={renderVisualContent()}
       footer={
-        <div className="business-auth-link-row text-xs text-zinc-500">
+        <div className="business-auth-link-row text-xs">
           هل لديك حساب مسجل بالفعل؟{" "}
           <button
             type="button"
-            className="business-auth-inline-link font-medium underline"
+            className="business-auth-inline-link"
             onClick={() => navigate("/auth/login")}
           >
             تسجيل الدخول
@@ -339,29 +447,29 @@ export const JoinEmployee: React.FC = () => {
     >
       {/* Position Badge Card */}
       {invitation && (
-        <div className="mb-4 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div className="business-auth-card">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+            <div className="business-auth-card-icon">
               <BriefcaseIcon className="h-4 w-4" />
             </div>
             <div>
-              <span className="text-[11px] text-zinc-500 block">الوظيفة المعروضة:</span>
-              <strong className="font-semibold text-zinc-800 dark:text-zinc-200">
+              <span className="business-auth-hint block">الوظيفة المعروضة:</span>
+              <strong className="font-semibold text-[var(--auth-text-main)]">
                 {invitation.positionTitle || "عضو فريق العمل"}
               </strong>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {invitation.departmentName && (
-              <span className="px-2 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium">
+              <span className="business-auth-chip">
                 {invitation.departmentName}
               </span>
             )}
-            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium">
+            <span className="business-auth-chip business-auth-chip--accent">
               {roleDisplayMap[invitation.role] || invitation.role}
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-medium">
+            <span className="business-auth-chip">
               {contractDisplayMap[invitation.contractType] || invitation.contractType}
             </span>
           </div>
@@ -370,13 +478,13 @@ export const JoinEmployee: React.FC = () => {
 
       {/* Express 1-Click Join Banner for Already Logged-in Users */}
       {currentUser && (
-        <div className="mb-5 p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/30">
-          <div className="flex items-start justify-between gap-3">
+        <div className="business-auth-banner">
+          <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
             <div>
-              <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+              <p className="business-auth-banner-title">
                 أنت مسجل دخول حالياً بحساب: {currentUser.firstName || currentUser.name || currentUser.email} ({currentUser.email})
               </p>
-              <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+              <p className="business-auth-banner-desc">
                 يمكنك قبول الدعوة والانضمام فوراً بهذا الحساب دون إعادة إدخال بياناتك أو كلمات المرور.
               </p>
             </div>
@@ -384,7 +492,7 @@ export const JoinEmployee: React.FC = () => {
               type="button"
               disabled={submitting}
               onClick={handleExpressJoin}
-              className="business-primary-button whitespace-nowrap text-xs px-3.5 py-2 shrink-0 shadow-sm"
+              className="business-primary-button whitespace-nowrap text-xs px-3.5 py-2 shrink-0 shadow-sm mt-2 sm:mt-0"
             >
               {submitting ? "جاري الانضمام..." : "الانضمام بهذا الحساب مباشرة"}
             </button>
@@ -394,26 +502,18 @@ export const JoinEmployee: React.FC = () => {
 
       {/* Toggle between New User and Existing Account */}
       {!currentUser && (
-        <div className="flex items-center gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-xs mb-4">
+        <div className="business-auth-segmented">
           <button
             type="button"
             onClick={() => setHasExistingAccount(false)}
-            className={`flex-1 py-1.5 px-3 rounded-md font-medium transition-all ${
-              !hasExistingAccount
-                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
+            className={`business-auth-segmented-item ${!hasExistingAccount ? "is-active" : ""}`}
           >
             إنشاء حساب جديد
           </button>
           <button
             type="button"
             onClick={() => setHasExistingAccount(true)}
-            className={`flex-1 py-1.5 px-3 rounded-md font-medium transition-all ${
-              hasExistingAccount
-                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
+            className={`business-auth-segmented-item ${hasExistingAccount ? "is-active" : ""}`}
           >
             لدي حساب مسجل مسبقاً في MaxP
           </button>
@@ -428,9 +528,9 @@ export const JoinEmployee: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
         {/* Section 1: Account & Security */}
-        <div className="space-y-3 pb-3 border-b border-zinc-100 dark:border-zinc-900">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            <LockClosedIcon className="h-4 w-4 text-blue-500" />
+        <div className="business-auth-section-divider space-y-3">
+          <div className="business-auth-section-title">
+            <LockClosedIcon className="business-auth-section-icon" />
             {hasExistingAccount ? "تأكيد ملكية حسابك في MaxP" : "بيانات الحساب والدخول"}
           </div>
 
@@ -444,14 +544,15 @@ export const JoinEmployee: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="example@domain.com"
-              className={`business-auth-input ${
-                invitation?.prefilledEmail
-                  ? "bg-zinc-100 dark:bg-zinc-800/60 cursor-not-allowed text-zinc-600 dark:text-zinc-400"
-                  : ""
+              dir="ltr"
+              inputMode="email"
+              autoComplete="email"
+              className={`business-auth-input business-auth-input--ltr ${
+                invitation?.prefilledEmail ? "business-auth-input--readonly" : ""
               }`}
             />
             {invitation?.prefilledEmail && (
-              <p className="text-[11px] text-zinc-500 mt-1">
+              <p className="business-auth-hint">
                 تم تقييد هذا الرابط بهذا البريد الإلكتروني من قِبل إدارة الشركة.
               </p>
             )}
@@ -460,16 +561,32 @@ export const JoinEmployee: React.FC = () => {
           {hasExistingAccount ? (
             <div className="business-auth-field">
               <label className="business-auth-label">كلمة المرور الحالية لحسابك *</label>
-              <input
-                type="password"
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="أدخل كلمة مرور حسابك لتأكيد الهوية"
-                className="business-auth-input"
-              />
-              <p className="text-[11px] text-zinc-500 mt-1">
+              <div className="business-auth-password-wrap">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="أدخل كلمة مرور حسابك لتأكيد الهوية"
+                  dir="ltr"
+                  autoComplete="current-password"
+                  className="business-auth-input business-auth-input--ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="business-auth-password-toggle"
+                  aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <p className="business-auth-hint">
                 سيتم الاحتفاظ بكلمة مرورك الحالية وحسابك الأصلي وربطه بشركة {invitation?.companyName || "العمل"}.
               </p>
             </div>
@@ -477,27 +594,59 @@ export const JoinEmployee: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="business-auth-field">
                 <label className="business-auth-label">كلمة المرور *</label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="6 أحرف على الأقل"
-                  className="business-auth-input"
-                />
+                <div className="business-auth-password-wrap">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="6 أحرف على الأقل"
+                    dir="ltr"
+                    autoComplete="new-password"
+                    className="business-auth-input business-auth-input--ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="business-auth-password-toggle"
+                    aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="business-auth-field">
                 <label className="business-auth-label">تأكيد كلمة المرور *</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="أعد إدخال كلمة المرور"
-                  className="business-auth-input"
-                />
+                <div className="business-auth-password-wrap">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="أعد إدخال كلمة المرور"
+                    dir="ltr"
+                    autoComplete="new-password"
+                    className="business-auth-input business-auth-input--ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="business-auth-password-toggle"
+                    aria-label={showConfirmPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -505,8 +654,8 @@ export const JoinEmployee: React.FC = () => {
 
         {/* Section 2: Personal & HR Details */}
         <div className="space-y-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            <UserIcon className="h-4 w-4 text-blue-500" />
+          <div className="business-auth-section-title">
+            <UserIcon className="business-auth-section-icon" />
             {hasExistingAccount ? "بيانات العمل التكميلية (اختياري)" : "البيانات الشخصية"}
           </div>
 
@@ -520,6 +669,7 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.firstName}
                 onChange={handleChange}
                 placeholder="مثال: محمد"
+                autoComplete="given-name"
                 className="business-auth-input"
               />
             </div>
@@ -532,6 +682,7 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.lastName}
                 onChange={handleChange}
                 placeholder="مثال: أحمد"
+                autoComplete="family-name"
                 className="business-auth-input"
               />
             </div>
@@ -546,7 +697,10 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="010XXXXXXXX"
-                className="business-auth-input"
+                dir="ltr"
+                inputMode="tel"
+                autoComplete="tel"
+                className="business-auth-input business-auth-input--ltr"
               />
             </div>
             <div className="business-auth-field">
@@ -557,7 +711,10 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.nationalId}
                 onChange={handleChange}
                 placeholder="14 رقماً"
-                className="business-auth-input"
+                dir="ltr"
+                inputMode="numeric"
+                autoComplete="off"
+                className="business-auth-input business-auth-input--ltr"
               />
             </div>
           </div>
@@ -569,7 +726,7 @@ export const JoinEmployee: React.FC = () => {
                 name="dateOfBirth"
                 value={formData.dateOfBirth}
                 onChange={handleChange}
-                className="business-auth-input"
+                className="business-auth-date-wrap"
               />
             </div>
             <div className="business-auth-field">
@@ -578,7 +735,7 @@ export const JoinEmployee: React.FC = () => {
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                className="business-auth-input h-[42px]"
+                className="business-auth-input"
               >
                 <option value="MALE">ذكر</option>
                 <option value="FEMALE">أنثى</option>
@@ -595,6 +752,7 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.city}
                 onChange={handleChange}
                 placeholder="القاهرة، الجيزة، الإسكندرية..."
+                autoComplete="address-level2"
                 className="business-auth-input"
               />
             </div>
@@ -606,6 +764,7 @@ export const JoinEmployee: React.FC = () => {
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="الشارع، الحي، المنطقة..."
+                autoComplete="street-address"
                 className="business-auth-input"
               />
             </div>
