@@ -204,6 +204,8 @@ router.get('/dashboard', verifyToken.authenticateToken, verifyToken.requireRole(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.post('/sync-users', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.syncUsersToEmployees);
+router.post('/staff/reconcile', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrController.reconcileStaff);
+router.get('/staff/assignable', verifyToken.authenticateToken, hrController.getAssignableStaff);
 
 
 // ═══════════════════════════════════════════════════════════════════════════════

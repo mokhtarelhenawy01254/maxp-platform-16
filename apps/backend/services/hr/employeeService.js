@@ -1503,64 +1503,26 @@ class EmployeeService {
   }
   /**
    * مزامنة بيانات الموظف مع جدول Employee (المرآة) للحفاظ على توافق النظام
+   * تفوض المزامنة إلى خدمة StaffSyncService المركزية لضمان تطابق الأضلاع الثلاثة
    */
   async syncWithEmployeeTable(userId, companyId) {
     try {
-      // جلب بيانات المستخدم المحدثة
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId }
-      });
+      const staffSyncService = require('./staffSyncService');
+      let targetCompanyId = companyId;
 
-      if (!user) return;
-
-      const targetCompanyId = companyId || user.companyId;
-      const cleanEmpNum = user.employeeNumber || `EMP${userId.slice(-5).toUpperCase()}`;
-
-      // إذا لم يكن لدى المستخدم رقم موظف، حفظ الرقم في المستخدم أيضاً
-      if (!user.employeeNumber) {
-        await this.prisma.user.update({
+      if (!targetCompanyId) {
+        const user = await this.prisma.user.findUnique({
           where: { id: userId },
-          data: { employeeNumber: cleanEmpNum }
+          select: { companyId: true }
         });
+        targetCompanyId = user?.companyId;
       }
 
-      // تحديث أو إنشاء في جدول Employee
-      await this.prisma.employee.upsert({
-        where: { userId },
-        update: {
-          companyId: targetCompanyId,
-          employeeNumber: cleanEmpNum,
-          departmentId: user.departmentId,
-          positionId: user.positionId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          avatar: user.avatar,
-          hireDate: user.hireDate,
-          baseSalary: user.baseSalary,
-          status: user.isActive ? 'ACTIVE' : 'INACTIVE',
-          updatedAt: new Date()
-        },
-        create: {
-          userId,
-          companyId: targetCompanyId,
-          employeeNumber: cleanEmpNum,
-          departmentId: user.departmentId,
-          positionId: user.positionId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          avatar: user.avatar,
-          hireDate: user.hireDate || new Date(),
-          baseSalary: user.baseSalary,
-          status: user.isActive ? 'ACTIVE' : 'INACTIVE'
-        }
-      });
-      console.log(`🔄 [HR] Synced Employee record for user: ${user.email} (${cleanEmpNum})`);
+      if (!targetCompanyId) return null;
+
+      return await staffSyncService.syncStaffRecord(targetCompanyId, userId);
     } catch (error) {
-      console.error('❌ [HR] Error syncing Employee table:', error.message);
+      console.error('❌ [HR] Error syncing Employee table via StaffSyncService:', error.message);
     }
   }
 }

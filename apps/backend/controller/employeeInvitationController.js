@@ -4,6 +4,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const staffSyncService = require('../services/hr/staffSyncService');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -607,87 +608,23 @@ const acceptEmployeeInvitation = async (req, res) => {
       });
     }
 
-    // ربط المستخدم بالشركة عبر UserCompany
-    await prisma.userCompany.create({
-      data: {
-        userId: user.id,
-        companyId: invitation.companyId,
-        role: invitation.role || 'AGENT',
-        isActive: true
-      }
-    });
-
-    // توليد كود الموظف التسلسلي
-    const empCount = await prisma.employee.count({
-      where: { companyId: invitation.companyId }
-    });
-    const employeeNumber = `EMP${String(empCount + 1).padStart(5, '0')}`;
-
-    // البحث عما إذا كان لديه سجل موظف سابق في الشركة لتفادي أخطاء التكرار
-    let employee = await prisma.employee.findFirst({
-      where: {
-        companyId: invitation.companyId,
-        OR: [
-          { userId: user.id },
-          { email: normalizedEmail }
-        ]
-      }
-    });
-
-    const employeeData = {
-      userId: user.id,
-      firstName: cleanFirstName,
-      lastName: cleanLastName,
-      email: normalizedEmail,
-      phone: phone ? phone.trim() : (invitation.phone || user.phone || null),
-      mobile: mobile ? mobile.trim() : null,
-      nationalId: nationalId ? nationalId.trim() : undefined,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      gender: gender && ['MALE', 'FEMALE'].includes(gender) ? gender : undefined,
-      address: address ? address.trim() : undefined,
-      city: city ? city.trim() : undefined,
-      country: country || 'Egypt',
-      departmentId: invitation.departmentId || null,
-      positionId: invitation.positionId || null,
+    // المزامنة المركزية الموحدة لأضلاع الموظف الثلاثة (UserCompany + Employee + User)
+    const syncResult = await staffSyncService.syncStaffRecord(invitation.companyId, user.id, {
+      role: invitation.role || 'AGENT',
+      departmentId: invitation.departmentId,
+      positionId: invitation.positionId,
       contractType: invitation.contractType || 'FULL_TIME',
-      hireDate: new Date(),
-      status: 'ACTIVE',
-      emergencyContact: emergencyContact ? emergencyContact.trim() : undefined,
+      phone: phone ? phone.trim() : (invitation.phone || user.phone || null),
+      nationalId: nationalId ? nationalId.trim() : undefined,
+      dateOfBirth,
+      gender,
+      address,
+      city,
       baseSalary: parsedMetadata.baseSalary ? parseFloat(parsedMetadata.baseSalary) : undefined,
-      notes: parsedMetadata.notes || undefined
-    };
-
-    if (employee) {
-      employee = await prisma.employee.update({
-        where: { id: employee.id },
-        data: employeeData
-      });
-    } else {
-      employee = await prisma.employee.create({
-        data: {
-          ...employeeData,
-          companyId: invitation.companyId,
-          employeeNumber
-        }
-      });
-    }
-
-    // مزامنة رقم الموظف وبيانات الـ HR الأساسية إلى جدول User لضمان ظهوره في قائمة الموظفين
-    try {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          employeeNumber: employee.employeeNumber || employeeNumber,
-          departmentId: invitation.departmentId || null,
-          positionId: invitation.positionId || null,
-          hireDate: employee.hireDate || new Date(),
-          contractType: invitation.contractType || 'FULL_TIME',
-          baseSalary: parsedMetadata.baseSalary ? parseFloat(parsedMetadata.baseSalary) : undefined,
-        }
-      });
-    } catch (syncErr) {
-      console.warn('⚠️ [EMPLOYEE-INVITE] Could not sync employee fields to user table:', syncErr.message);
-    }
+      notes: parsedMetadata.notes || undefined,
+      isActive: true
+    });
+    const employee = syncResult.employee;
 
     // تحديث حالة الدعوة
     if (isMultiUse) {

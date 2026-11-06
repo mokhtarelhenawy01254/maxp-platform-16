@@ -29,6 +29,7 @@ const policyService = require('./policyService');
 
 const permissionService = require('./permissionService');
 const advanceService = require('./advanceService');
+const staffSyncService = require('./staffSyncService');
 
 module.exports = {
   employeeService,
@@ -55,5 +56,6 @@ module.exports = {
   recruitmentService,
   policyService,
   permissionService,
-  advanceService
+  advanceService,
+  staffSyncService
 };

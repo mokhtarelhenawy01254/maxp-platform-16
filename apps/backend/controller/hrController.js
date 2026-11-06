@@ -24,6 +24,7 @@ const {
   permissionService,
   advanceService,
   recruitmentService,
+  staffSyncService,
 } = require("../services/hr");
 const { handleHRError } = require("../utils/hrErrors");
 const {
@@ -3867,42 +3868,101 @@ async function getPayrollReport(req, res) {
  */
 async function syncUsersToEmployees(req, res) {
   try {
-    console.log("🔄 [HR] Starting user sync for company:", req.user?.companyId);
-    const { companyId } = req.user;
-
-    // جلب جميع المستخدمين في الشركة
-    const prisma = getSharedPrismaClient();
-
-    const users = await prisma.user.findMany({
-      where: { companyId },
-      select: { id: true, email: true },
-    });
-
-    console.log("👥 [HR] Found users:", users.length);
-
-    let syncedCount = 0;
-
-    for (const user of users) {
-      // استخدام الخدمة المركزية للمزامنة لضمان تطبيق نفس المنطق في كل مكان
-      await employeeService.syncWithEmployeeTable(user.id, companyId);
-      syncedCount++;
-      if (syncedCount % 10 === 0) {
-        console.log(`✅ [HR] Synced ${syncedCount}/${users.length} users...`);
-      }
+    const companyId = req.headers["x-company-id"] || req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "معرف الشركة مطلوب",
+      });
     }
 
-    console.log("🎉 [HR] Sync completed. Total synced:", syncedCount);
+    console.log("🔄 [HR] Starting user sync for company:", companyId);
+    const report = await staffSyncService.reconcileCompanyStaff(companyId);
 
     res.json({
       success: true,
-      message: `تمت مزامنة ${syncedCount} مستخدم بنجاح`,
-      synced: syncedCount,
-      total: users.length,
+      message: `تمت مزامنة ${report.synced} مستخدم بنجاح`,
+      synced: report.synced,
+      total: report.totalUsers,
+      created: report.created,
+      updated: report.updated,
+      details: report.details,
     });
   } catch (error) {
     console.error("❌ [HR] Error syncing users:", error);
     res.status(500).json({
       error: "حدث خطأ أثناء مزامنة المستخدمين",
+      details: error.message,
+    });
+  }
+}
+
+/**
+ * جلب قائمة الموظفين المؤهلين والمتاحين للتعيين
+ * GET /api/v1/hr/staff/assignable
+ */
+async function getAssignableStaff(req, res) {
+  try {
+    const companyId = req.headers["x-company-id"] || req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "معرف الشركة مطلوب",
+      });
+    }
+
+    const { roles, departmentId, activeOnly, limit } = req.query;
+    const staff = await staffSyncService.getAssignableStaff(companyId, {
+      roles: roles ? roles.split(",") : undefined,
+      departmentId: departmentId || undefined,
+      activeOnly: activeOnly !== "false",
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+
+    res.json({
+      success: true,
+      count: staff.length,
+      data: staff,
+    });
+  } catch (error) {
+    console.error("❌ [HR] Error fetching assignable staff:", error);
+    res.status(500).json({
+      success: false,
+      error: "حدث خطأ أثناء جلب قائمة الموظفين المتاحين",
+      details: error.message,
+    });
+  }
+}
+
+/**
+ * فحص وإصلاح تناسق بيانات الموظفين للشركة (Audit & Self-Heal)
+ * POST /api/v1/hr/staff/reconcile
+ */
+async function reconcileStaff(req, res) {
+  try {
+    const companyId = req.headers["x-company-id"] || req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "معرف الشركة مطلوب",
+      });
+    }
+
+    const dryRun = req.query.dryRun === "true" || req.body?.dryRun === true;
+    const report = await staffSyncService.reconcileCompanyStaff(companyId, { dryRun });
+
+    res.json({
+      success: true,
+      message: dryRun
+        ? "تم فحص التناسق بنجاح (معاينة فقط)"
+        : `تم إصلاح ومزامنة بيانات ${report.synced} موظف بنجاح`,
+      report,
+    });
+  } catch (error) {
+    console.error("❌ [HR] Error reconciling staff:", error);
+    res.status(500).json({
+      success: false,
+      error: "حدث خطأ أثناء فحص ومزامنة بيانات الموظفين",
       details: error.message,
     });
   }
@@ -8512,4 +8572,8 @@ module.exports = {
   requestEmployeeLink,
 
   updateBulkSalaries,
+
+  // Staff Sync & Assignment
+  getAssignableStaff,
+  reconcileStaff,
 };
