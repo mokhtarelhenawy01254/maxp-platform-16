@@ -1,0 +1,91 @@
+// ============================================================================
+// Extra Services, Open Package Requests, and Order Change Requests (SHIP-T3)
+// ============================================================================
+
+model ShippingService {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  description String?
+  pricingMode String   @default("FIXED") // FIXED | PERCENT
+  amount      Decimal  @default(0) @db.Decimal(10, 2)
+  appliesTo   String   @default("SHIPMENT") // SHIPMENT | ORDER
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@map("shipping_services")
+}
+
+model ShipmentServiceLine {
+  id          String   @id @default(cuid())
+  companyId   String
+  shipmentId  String
+  serviceId   String?
+  name        String
+  pricingMode String   @default("FIXED")
+  unitAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  amount      Decimal  @default(0) @db.Decimal(10, 2)
+  qty         Int      @default(1)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([shipmentId])
+  @@index([companyId, shipmentId])
+  @@map("shipment_service_lines")
+}
+
+model PackageOpenRequest {
+  id              String    @id @default(cuid())
+  companyId       String
+  shipmentId      String
+  requestedBy     String
+  requestedByType String    @default("CLIENT") // CLIENT | COURIER | OPERATOR
+  reason          String?
+  status          String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  fee             Decimal   @default(0) @db.Decimal(10, 2)
+  notes           String?
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([shipmentId])
+  @@index([companyId, status])
+  @@index([shipmentId, status])
+  @@map("package_open_requests")
+}
+
+model OrderChangeRequest {
+  id              String    @id @default(cuid())
+  companyId       String
+  shipmentId      String?
+  orderId         String?
+  type            String    // ADDRESS | AMOUNT | RECIPIENT
+  oldValue        String?
+  newValue        String
+  requestedBy     String
+  requestedByType String    @default("CLIENT") // CLIENT | ADMIN | CUSTOMER
+  reason          String?
+  status          String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([shipmentId])
+  @@index([orderId])
+  @@index([companyId, status])
+  @@map("order_change_requests")
+}

@@ -95,6 +95,37 @@ async function getProfitReport(req, res) {
 
     const { from, to, groupBy } = req.query;
     const report = await profitService.getProfitReport({ companyId, from, to, groupBy });
+
+    // Extra Revenue from additional services (SHIP-T3)
+    try {
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+      const prisma = getSharedPrismaClient();
+      if (prisma.shipmentServiceLine) {
+        const lineWhere = { companyId };
+        if (from || to) {
+          lineWhere.createdAt = {};
+          if (from) lineWhere.createdAt.gte = new Date(from);
+          if (to) {
+            const end = new Date(to);
+            if (typeof to === 'string' && !to.includes('T')) end.setHours(23, 59, 59, 999);
+            lineWhere.createdAt.lte = end;
+          }
+        }
+        const extraLines = await prisma.shipmentServiceLine.findMany({
+          where: lineWhere,
+          select: { amount: true },
+        });
+        const extraRevenue = Math.round(extraLines.reduce((sum, l) => sum + Number(l.amount || 0), 0) * 100) / 100;
+        report.extraRevenue = extraRevenue;
+        report.totalRevenue = Math.round(((report.revenue || 0) + extraRevenue) * 100) / 100;
+        report.netProfit = Math.round(((report.netProfit || 0) + extraRevenue) * 100) / 100;
+      } else {
+        report.extraRevenue = 0;
+      }
+    } catch (e) {
+      report.extraRevenue = 0;
+    }
+
     return res.json(report);
   } catch (error) {
     console.error('❌ [SHIPPING-REPORTS] Error in getProfitReport:', error);

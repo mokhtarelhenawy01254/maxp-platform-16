@@ -107,6 +107,11 @@ export const SettlementDetailModal: React.FC<SettlementDetailModalProps> = ({
     ? SETTLEMENT_STATUS_MAP[settlement.status] || SETTLEMENT_STATUS_MAP.DRAFT
     : SETTLEMENT_STATUS_MAP.DRAFT;
 
+  const hasExtraFees = Boolean(
+    settlement?.lines?.some((l) => (l.extraFees || 0) > 0 || (l.shipment?.extraFees || 0) > 0) ||
+    (settlement?.extraFeesTotal != null && settlement.extraFeesTotal > 0)
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-[1200px] max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800">
@@ -152,7 +157,7 @@ export const SettlementDetailModal: React.FC<SettlementDetailModalProps> = ({
           ) : settlement ? (
             <>
               {/* Metrics */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 gap-2 text-center">
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
                   <span className="text-[11px] text-slate-500 block">إجمالي المحصّل</span>
                   <span className="font-bold text-slate-900 dark:text-white text-sm tabular-nums">
@@ -177,6 +182,14 @@ export const SettlementDetailModal: React.FC<SettlementDetailModalProps> = ({
                     -{formatEgp(settlement.returnFeesTotal)}
                   </span>
                 </div>
+                {(settlement.extraFeesTotal != null && settlement.extraFeesTotal > 0) && (
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <span className="text-[11px] text-slate-500 block">رسوم إضافية</span>
+                    <span className="font-bold text-rose-600 text-sm tabular-nums">
+                      -{formatEgp(settlement.extraFeesTotal)}
+                    </span>
+                  </div>
+                )}
                 <div className="col-span-2 sm:col-span-1 bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium block">
                     صافي التوريد
@@ -224,48 +237,57 @@ export const SettlementDetailModal: React.FC<SettlementDetailModalProps> = ({
                         <th className="p-2 text-left">رسوم الشحن</th>
                         <th className="p-2 text-left">رسوم COD</th>
                         <th className="p-2 text-left">رسوم المرتجع</th>
+                        {hasExtraFees && <th className="p-2 text-left">رسوم إضافية</th>}
                         <th className="p-2 text-left font-bold">الصافي</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {(settlement.lines || []).map((l) => (
-                        <tr key={l.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                          <td className="p-2 font-mono text-[11px]">
-                            {l.shipment?.barcode || l.shipment?.trackingNumber || l.shipmentId}
-                          </td>
-                          <td className="p-2">
-                            <div>{l.shipment?.recipientName || '—'}</div>
-                            <div className="text-[10px] text-slate-400">
-                              {l.shipment?.destinationGovernorate || '—'}
-                            </div>
-                          </td>
-                          <td className="p-2">
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                l.shipment?.status === 'DELIVERED'
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : 'bg-rose-50 text-rose-700'
-                              }`}
-                            >
-                              {l.shipment?.status === 'DELIVERED' ? 'مسلمة' : 'مرتجع'}
-                            </span>
-                          </td>
-                          <td className="p-2 text-left tabular-nums">{formatEgp(l.codAmount)}</td>
-                          <td className="p-2 text-left tabular-nums">{formatEgp(l.collectedAmount)}</td>
-                          <td className="p-2 text-left tabular-nums text-rose-600">
-                            {l.shippingFee > 0 ? `-${formatEgp(l.shippingFee)}` : '0.00'}
-                          </td>
-                          <td className="p-2 text-left tabular-nums text-rose-600">
-                            {l.codFee > 0 ? `-${formatEgp(l.codFee)}` : '0.00'}
-                          </td>
-                          <td className="p-2 text-left tabular-nums text-rose-600">
-                            {l.returnFee > 0 ? `-${formatEgp(l.returnFee)}` : '0.00'}
-                          </td>
-                          <td className="p-2 text-left tabular-nums font-bold text-slate-900 dark:text-white">
-                            {formatEgp(l.net)}
-                          </td>
-                        </tr>
-                      ))}
+                      {(settlement.lines || []).map((l) => {
+                        const lineExtra = l.extraFees ?? l.shipment?.extraFees ?? 0;
+                        return (
+                          <tr key={l.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                            <td className="p-2 font-mono text-[11px]">
+                              {l.shipment?.barcode || l.shipment?.trackingNumber || l.shipmentId}
+                            </td>
+                            <td className="p-2">
+                              <div>{l.shipment?.recipientName || '—'}</div>
+                              <div className="text-[10px] text-slate-400">
+                                {l.shipment?.destinationGovernorate || '—'}
+                              </div>
+                            </td>
+                            <td className="p-2">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                  l.shipment?.status === 'DELIVERED'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-rose-50 text-rose-700'
+                                }`}
+                              >
+                                {l.shipment?.status === 'DELIVERED' ? 'مسلمة' : 'مرتجع'}
+                              </span>
+                            </td>
+                            <td className="p-2 text-left tabular-nums">{formatEgp(l.codAmount)}</td>
+                            <td className="p-2 text-left tabular-nums">{formatEgp(l.collectedAmount)}</td>
+                            <td className="p-2 text-left tabular-nums text-rose-600">
+                              {l.shippingFee > 0 ? `-${formatEgp(l.shippingFee)}` : '0.00'}
+                            </td>
+                            <td className="p-2 text-left tabular-nums text-rose-600">
+                              {l.codFee > 0 ? `-${formatEgp(l.codFee)}` : '0.00'}
+                            </td>
+                            <td className="p-2 text-left tabular-nums text-rose-600">
+                              {l.returnFee > 0 ? `-${formatEgp(l.returnFee)}` : '0.00'}
+                            </td>
+                            {hasExtraFees && (
+                              <td className="p-2 text-left tabular-nums text-rose-600">
+                                {lineExtra > 0 ? `-${formatEgp(lineExtra)}` : '0.00'}
+                              </td>
+                            )}
+                            <td className="p-2 text-left tabular-nums font-bold text-slate-900 dark:text-white">
+                              {formatEgp(l.net)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

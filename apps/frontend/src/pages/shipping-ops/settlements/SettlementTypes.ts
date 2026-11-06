@@ -21,6 +21,7 @@ export interface SettlementLine {
   shippingFee: number;
   codFee: number;
   returnFee: number;
+  extraFees?: number;
   net: number;
   createdAt: string;
   deliveredAt?: string;
@@ -35,6 +36,7 @@ export interface SettlementLine {
     status?: string;
     codAmount?: number;
     collectedAmount?: number;
+    extraFees?: number;
     createdAt?: string;
   };
 }
@@ -53,6 +55,7 @@ export interface SettlementItem {
   shippingFeesTotal: number;
   codFeesTotal: number;
   returnFeesTotal: number;
+  extraFeesTotal?: number;
   netPayout: number;
   paymentMethod?: string;
   paymentReference?: string;
@@ -73,6 +76,7 @@ export interface PreviewSummary {
   shippingFeesTotal: number;
   codFeesTotal: number;
   returnFeesTotal: number;
+  extraFeesTotal?: number;
   netPayout: number;
   periodStart: string;
   periodEnd: string;

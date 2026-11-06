@@ -9,6 +9,7 @@ const verifyToken = require('../utils/verifyToken');
 const checkAppAccess = require('../middleware/checkAppAccess');
 const shippingClientScope = require('../middleware/shippingClientScope');
 const shippingClientController = require('../controller/shippingClientController');
+const shippingExtraServicesController = require('../controller/shippingExtraServicesController');
 
 /**
  * Access guard allowing either internal-courier-fleet OR order-shipping-turbo
@@ -65,5 +66,13 @@ router.get('/rate-card', ...clientAuth, shippingClientController.getRateCard);
 
 // Settlements (SHIP-W5)
 router.use('/settlements', ...clientAuth, require('./shippingClientSettlementRoutes'));
+
+
+// Extra Services & Requests (SHIP-T3)
+router.get('/services', ...clientAuth, shippingExtraServicesController.listServices);
+router.post('/shipments/:id/open-request', ...clientAuth, shippingExtraServicesController.createPackageOpenRequest);
+router.get('/open-package-requests', ...clientAuth, shippingExtraServicesController.listPackageOpenRequests);
+router.post('/shipments/:id/change-request', ...clientAuth, shippingExtraServicesController.createOrderChangeRequest);
+router.get('/order-change-requests', ...clientAuth, shippingExtraServicesController.listOrderChangeRequests);
 
 module.exports = router;
