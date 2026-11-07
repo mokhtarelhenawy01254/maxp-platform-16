@@ -1,0 +1,431 @@
+{
+  "id": "tpl-011-local-market-kids-fashion",
+  "name": "HappyCart — أزياء أطفال",
+  "description": "قالب أزياء أطفال باتجاه Dark Luxury بنسخة سوق محلي/دفع عند الاستلام: خلفية بنفسجي ليلي وعنبري، شريط صريح، هيرو موزاييك، فئات دوائر، شبكة كثيفة، وشريط توصيل يقول الحقيقة مع UGC متحرك.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "45 70% 55%",
+      "primaryForeground": "270 30% 8%",
+      "secondary": "270 20% 16%",
+      "secondaryForeground": "45 45% 90%",
+      "accent": "24 90% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "270 25% 9%",
+      "foreground": "45 20% 94%",
+      "muted": "270 16% 15%",
+      "mutedForeground": "45 10% 68%",
+      "border": "270 14% 21%",
+      "card": "270 22% 12%",
+      "cardForeground": "45 20% 94%",
+      "ring": "45 70% 55%"
+    },
+    "typography": {
+      "headingFont": "Cairo, sans-serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.9rem",
+      "buttonRadius": "0.6rem"
+    },
+    "productCard": {
+      "borderRadius": "0.9rem",
+      "boxShadow": "0 8px 24px hsl(0 0% 0% / .40)",
+      "hoverShadow": "0 16px 34px -20px hsl(45 70% 55% / .30)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | HAPPYCART",
+    "description": "قالب أزياء أطفال باتجاه Dark Luxury بنسخة سوق محلي/دفع عند الاستلام: خلفية بنفسجي ليلي وعنبري، شريط صريح، هيرو موزاييك، فئات دوائر، شبكة كثيفة، وشريط توصيل يقول الحقيقة مع UGC متحرك."
+  },
+  "preview": {
+    "colors": [
+      "45 70% 55%",
+      "24 90% 55%",
+      "270 25% 9%"
+    ],
+    "imageUrl": "/assets/themes/tpl-011-local-market-kids-fashion/preview.png"
+  },
+  "header": {
+    "variant": "retail-direct",
+    "brandName": "HAPPYCART",
+    "transparentOnHome": false,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "الدفع عند الاستلام · استلام من الفرع · شحن 24-72 ساعة",
+    "announcementLinkText": "مناطق الشحن",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      {
+        "label": "الأكثر طلبًا",
+        "to": "/shop?sort=best"
+      },
+      {
+        "label": "ولادي",
+        "to": "/shop?category=boys"
+      },
+      {
+        "label": "بناتي",
+        "to": "/shop?category=girls"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "retail-direct",
+    "description": "HAPPYCART — هدوم أطفال بأسعار مريحة، دفع عند الاستلام وشحن لكل مصر.",
+    "copyrightText": "© 2026 HAPPYCART",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الأكثر طلبًا",
+            "to": "/shop?sort=best"
+          },
+          {
+            "label": "ولادي",
+            "to": "/shop?category=boys"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصل",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "easyorders-black-bar",
+          "settings": {
+            "badge": "عرض محدود",
+            "message": "اشترِ 2 بخصم 25% — ينتهي آخر الأسبوع",
+            "saleLabel": "لفترة محدودة",
+            "shippingLabel": "دفع عند الاستلام"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "easyorders-masonry",
+          "settings": {
+            "eyebrow": "كولكشن الشتاء",
+            "title": "هدوم مريحة تليق بكل يوم",
+            "subtitle": "تيشرتات وأطقم قطن مصري — من 2 لـ 12 سنة، متوفر دلوقتي.",
+            "ctaText": "اطلب دلوقتي",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوف العروض",
+            "secondaryCtaLink": "/sale"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "easyorders-circles",
+          "settings": {
+            "title": "اختار القسم"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الأكثر طلبًا"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "title": "من عملاء HAPPYCART"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات العملاء"
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "title": "بتدور على إيه؟"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "utility-rail"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "size-guide",
+          "variant": "quick"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "market-basket",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "command-checkout",
+          "settings": {
+            "title": "بيانات الشحن",
+            "submitLabel": "تأكيد الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "command-payment"
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary"
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "full-bleed",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "عروض الأسبوع",
+            "subtitle": "خصومات على مقاسات مختارة لحد آخر الكمية.",
+            "ctaText": "اتسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "command-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل",
+            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
+          }
+        }
+      ]
+    },
+    "returns": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
+          }
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
+          }
+        }
+      ]
+    },
+    "terms": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "قواعد الشراء والدفع والاستبدال."
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    }
+  }
+}

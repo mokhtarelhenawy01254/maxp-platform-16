@@ -1,68 +1,69 @@
 {
   "id": "tpl-003-local-market-women-fashion",
-  "name": "حنان — أزياء حريمي سوق محلي",
-  "description": "قالب سوق محلي بسيط: شرايط ضمان الدفع عند الاستلام، أقسام بكبسولات، عروض كومبو، وتقييمات — موجه لمتاجر COD في مصر.",
+  "name": "Quick Order — أزياء حريمي",
+  "description": "قالب أزياء حريمي بمنطق الشراء السريع والدفع عند الاستلام: شريط أسود، هيرو أمر مباشر، فئات أقراص، شبكة كثيفة، شريط توصيل واضح، ومعرض لوكات عملاء. مبني للطلب من الموبايل في خطوتين.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "340 55% 62%",
-      "primaryForeground": "0 0% 100%",
-      "secondary": "340 40% 96%",
-      "secondaryForeground": "340 30% 20%",
-      "accent": "152 38% 40%",
+      "primary": "160 30% 20%",
+      "primaryForeground": "40 50% 97%",
+      "secondary": "28 40% 90%",
+      "secondaryForeground": "160 30% 20%",
+      "accent": "20 70% 55%",
       "accentForeground": "0 0% 100%",
-      "background": "36 40% 98%",
-      "foreground": "340 25% 16%",
-      "muted": "340 20% 95%",
-      "mutedForeground": "340 10% 45%",
-      "border": "340 20% 89%",
+      "background": "0 0% 100%",
+      "foreground": "160 22% 12%",
+      "muted": "160 12% 95%",
+      "mutedForeground": "160 8% 40%",
+      "border": "160 10% 87%",
       "card": "0 0% 100%",
-      "cardForeground": "340 25% 16%",
-      "ring": "340 55% 62%"
+      "cardForeground": "160 22% 12%",
+      "ring": "20 70% 55%"
     },
     "typography": {
-      "headingFont": "\"Tajawal\", sans-serif",
-      "bodyFont": "\"Cairo\", sans-serif",
+      "headingFont": "Cairo, sans-serif",
+      "bodyFont": "Tajawal, sans-serif",
       "baseSize": "15px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "1rem",
-      "buttonRadius": "999px"
+      "borderRadius": "0.7rem",
+      "buttonRadius": "0.5rem"
     },
     "productCard": {
-      "borderRadius": "1rem",
-      "boxShadow": "0 2px 10px hsl(340 25% 16% / .05)",
-      "hoverShadow": "0 20px 40px -26px hsl(340 55% 62% / .55)"
+      "borderRadius": "0.7rem",
+      "boxShadow": "0 2px 8px hsl(160 30% 20% / .07)",
+      "hoverShadow": "0 16px 34px -20px hsl(160 30% 20% / .35)"
     },
     "layout": {
       "contentAlign": "center"
     }
   },
   "seo": {
-    "titleTemplate": "%s | HANAN",
-    "description": "أزياء حريمي بأسعار السوق المحلي — دفع عند الاستلام وتوصيل لكل المحافظات."
+    "titleTemplate": "%s | QUICK ORDER",
+    "description": "قالب أزياء حريمي بمنطق الشراء السريع والدفع عند الاستلام: شريط أسود، هيرو أمر مباشر، فئات أقراص، شبكة كثيفة، شريط توصيل واضح، ومعرض لوكات عملاء. مبني للطلب من الموبايل في خطوتين."
   },
   "preview": {
     "colors": [
-      "340 55% 62%",
-      "152 38% 40%",
-      "36 40% 98%"
-    ]
+      "160 30% 20%",
+      "20 70% 55%",
+      "0 0% 100%"
+    ],
+    "imageUrl": "/assets/themes/tpl-003-local-market-women-fashion/preview.png"
   },
   "header": {
-    "variant": "default",
-    "announcementText": "دفع عند الاستلام · توصيل ٢-٤ أيام",
-    "announcementLinkText": "اعرفي الشروط",
-    "announcementLinkTo": "/contact",
-    "brandName": "HANAN",
-    "transparentOnHome": true,
+    "variant": "retail-direct",
+    "brandName": "QUICK ORDER",
+    "transparentOnHome": false,
     "showSearch": true,
     "showCart": true,
+    "announcementText": "الدفع عند الاستلام · شحن 24-72 ساعة لكل المحافظات",
+    "announcementLinkText": "مناطق الشحن",
+    "announcementLinkTo": "/shipping",
     "navigation": [
       {
-        "label": "الجديد",
-        "to": "/shop?sort=new"
+        "label": "الأكثر طلبًا",
+        "to": "/shop?sort=best"
       },
       {
         "label": "فساتين",
@@ -73,19 +74,15 @@
         "to": "/shop?category=sets"
       },
       {
-        "label": "لوك بوك",
-        "to": "/collections"
-      },
-      {
         "label": "العروض",
-        "to": "/shop?sort=discount"
+        "to": "/sale"
       }
     ]
   },
   "footer": {
-    "variant": "default",
-    "description": "HANAN — أزياء حريمي.",
-    "copyrightText": "© 2026 HANAN",
+    "variant": "retail-direct",
+    "description": "QUICK ORDER — لوك كامل يوصلك على الباب، ودفع عند الاستلام.",
+    "copyrightText": "© 2026 QUICK ORDER",
     "socialLinks": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
@@ -96,16 +93,16 @@
         "title": "المتجر",
         "links": [
           {
-            "label": "الجديد",
-            "to": "/shop"
+            "label": "الأكثر طلبًا",
+            "to": "/shop?sort=best"
           },
           {
             "label": "فساتين",
             "to": "/shop?category=dresses"
           },
           {
-            "label": "اللوك بوك",
-            "to": "/collections"
+            "label": "العروض",
+            "to": "/sale"
           }
         ]
       },
@@ -114,14 +111,14 @@
         "links": [
           {
             "label": "الشحن",
-            "to": "/contact"
+            "to": "/shipping"
           },
           {
             "label": "الاستبدال",
-            "to": "/contact"
+            "to": "/returns"
           },
           {
-            "label": "تواصلي",
+            "label": "تواصل",
             "to": "/contact"
           }
         ]
@@ -130,63 +127,52 @@
     "legalLinks": [
       {
         "label": "الخصوصية",
-        "to": "/contact"
+        "to": "/privacy"
       },
       {
         "label": "الشروط",
-        "to": "/contact"
+        "to": "/terms"
       }
     ]
   },
   "pages": {
     "home": {
-      "layoutHint": "stack",
       "pageGoal": "discovery",
       "sections": [
         {
           "type": "promo-strip",
-          "variant": "benefit-ribbon",
+          "variant": "easyorders-black-bar",
           "settings": {
-            "badge": "ضمان",
-            "message": "استبدال خلال ١٤ يوم",
-            "saleLabel": "خصم حتى ٣٠٪",
+            "badge": "عرض محدود",
+            "message": "قطعتين بخصم 25% — لفترة محدودة",
+            "saleLabel": "ينتهي قريب",
             "shippingLabel": "دفع عند الاستلام"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "soft-showcase",
+          "variant": "retail-command",
           "settings": {
-            "eyebrow": "تشكيلة الأسبوع",
-            "title": "لبس حلو… وسعر أرحم",
-            "subtitle": "قطع يومية بأسعار السوق، ومقاسات من S لـ XXL.",
-            "ctaText": "شوفي التشكيلة",
+            "eyebrow": "كولكشن الشتاء",
+            "title": "لوك كامل… طلب واحد",
+            "subtitle": "فساتين وأطقم بمقاسات S لـ XXL، تصوير حقيقي ومقاسات مكتوبة.",
+            "ctaText": "اطلب دلوقتي",
             "ctaLink": "/shop",
-            "secondaryCtaText": "الأكثر مبيعًا",
-            "secondaryCtaLink": "/shop?sort=best"
+            "secondaryCtaText": "شوف العروض",
+            "secondaryCtaLink": "/sale"
           }
         },
         {
           "type": "featured-collections",
           "variant": "catalog-pills",
           "settings": {
-            "title": "اختاري القسم",
-            "subtitle": "فساتين · بلوزات · أطقم · عبايات"
+            "title": "اختار القسم"
           }
         },
         {
-          "type": "featured-products",
+          "type": "product-grid",
           "settings": {
-            "title": "الأكثر مبيعًا",
-            "subtitle": "بيتكرر طلبه كل أسبوع"
-          }
-        },
-        {
-          "type": "offer-bento",
-          "variant": "combo-deals",
-          "settings": {
-            "title": "كومبو التوفير",
-            "subtitle": "٢ قطع · ٣ قطع · طقم كامل"
+            "title": "الأكثر طلبًا"
           }
         },
         {
@@ -195,51 +181,47 @@
         },
         {
           "type": "social-gallery",
-          "variant": "marquee",
+          "variant": "grid",
           "settings": {
-            "title": "صور من عميلاتنا"
+            "title": "لوكات العملاء"
           }
         },
         {
           "type": "reviews",
-          "variant": "standard",
+          "variant": "compact",
           "settings": {
-            "title": "تقييمات حقيقية"
+            "title": "تقييمات"
           }
         },
         {
-          "type": "newsletter",
-          "variant": "minimal",
+          "type": "look-mosaic",
+          "variant": "masonry",
           "settings": {
-            "title": "عروض واتساب"
+            "title": "لوكات جاهزة"
           }
         }
       ]
     },
     "shop": {
-      "layoutHint": "sidebar-left",
       "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
       "sections": [
         {
-          "type": "shop-hero",
-          "settings": {
-            "title": "كل القطع",
-            "subtitle": "فلترة سهلة بالمقاس والسعر"
-          }
+          "type": "shop-hero"
         },
         {
           "type": "shop-command-bar",
-          "variant": "soft-sort-bar"
+          "variant": "menu-quick-order"
         },
         {
           "type": "filters-sidebar"
         },
         {
-          "type": "product-grid"
+          "type": "shop-product-grid"
         },
         {
           "type": "shop-promo-rail",
-          "variant": "campaign-rail"
+          "variant": "trust-rail"
         }
       ]
     },
@@ -253,13 +235,17 @@
         },
         {
           "type": "product-info",
-          "variant": "standard"
+          "variant": "utility-rail"
         },
         {
           "type": "pdp-checkout"
         },
         {
           "type": "quantity-offers"
+        },
+        {
+          "type": "size-guide",
+          "variant": "quick"
         },
         {
           "type": "delivery-proof"
@@ -269,85 +255,177 @@
         },
         {
           "type": "reviews",
-          "variant": "standard"
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
         },
         {
           "type": "related-products",
-          "variant": "standard"
+          "variant": "compact"
         }
       ]
     },
     "cart": {
       "layoutHint": "sidebar-right",
-      "pageGoal": "conversion",
       "sections": [
         {
           "type": "cart-items",
-          "variant": "standard",
+          "variant": "market-basket",
           "settings": {
-            "title": "سلة الطلب"
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
           }
         },
         {
           "type": "order-summary",
-          "variant": "highlighted",
-          "settings": {
-            "title": "ملخص الطلب",
-            "checkoutButtonText": "أكملي الطلب"
-          }
-        },
-        {
-          "type": "promo-strip",
-          "variant": "benefit-ribbon",
-          "settings": {
-            "message": "الدفع عند الاستلام متاح",
-            "saleLabel": "ضمان ١٤ يوم",
-            "shippingLabel": "٢-٤ أيام"
-          }
+          "variant": "minimal"
         }
       ]
     },
-    "collections": {
-      "layoutHint": "stack",
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "command-checkout",
+          "settings": {
+            "title": "بيانات الشحن",
+            "submitLabel": "تأكيد الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "command-payment"
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary"
+        }
+      ]
+    },
+    "sale": {
       "pageGoal": "discovery",
       "sections": [
         {
-          "type": "collection-tab",
-          "variant": "pills"
+          "type": "hero-banner",
+          "variant": "retail-command",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "عروض الأسبوع",
+            "subtitle": "خصومات على مقاسات مختارة.",
+            "ctaText": "اتسوق",
+            "ctaLink": "/shop"
+          }
         },
         {
           "type": "product-grid"
         },
         {
-          "type": "featured-product",
-          "variant": "split"
-        },
-        {
-          "type": "journal-strip",
-          "variant": "editorial-cards"
+          "type": "countdown-banner",
+          "variant": "inline"
         }
       ]
     },
-    "contact": {
-      "layoutHint": "stack",
+    "collections": {
       "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "command-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "pageGoal": "support",
       "sections": [
         {
           "type": "info-content",
           "settings": {
-            "title": "كلّمينا على واتساب"
+            "title": "الشحن والتوصيل",
+            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
           }
-        },
+        }
+      ]
+    },
+    "returns": {
+      "pageGoal": "support",
+      "sections": [
         {
-          "type": "features-bar",
-          "variant": "delivery-clarity"
-        },
-        {
-          "type": "newsletter",
-          "variant": "standard",
+          "type": "info-content",
           "settings": {
-            "title": "اشتركي في عروض الواتساب"
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
           }
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
+          }
+        }
+      ]
+    },
+    "terms": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "قواعد الشراء والدفع والاستبدال."
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
         }
       ]
     }

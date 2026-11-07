@@ -1,0 +1,444 @@
+{
+  "id": "tpl-012-original-kids-fashion",
+  "name": "Storybook — أزياء أطفال",
+  "description": "قالب أزياء أطفال أصلي باتجاه Dark Luxury: خلفية كحلي داكن ونحاسي دافئ، هيرو بارالاكس ناعم، مخطّط إطلالة بخطوات، قصة خامات تحريرية، ريل فئات عائم، بنتو عروض يومي، وآراء بصوت الأهل. هوية بصرية خاصة مش مبنية على قالب منافس.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "40 50% 60%",
+      "primaryForeground": "225 35% 8%",
+      "secondary": "225 20% 16%",
+      "secondaryForeground": "40 35% 90%",
+      "accent": "32 55% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "225 30% 8%",
+      "foreground": "40 22% 94%",
+      "muted": "225 18% 14%",
+      "mutedForeground": "40 10% 68%",
+      "border": "225 15% 20%",
+      "card": "225 26% 11%",
+      "cardForeground": "40 22% 94%",
+      "ring": "40 50% 60%"
+    },
+    "typography": {
+      "headingFont": "Playfair Display, Cairo, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 10px 30px hsl(0 0% 0% / .42)",
+      "hoverShadow": "0 22px 42px -24px hsl(40 50% 60% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | STORYBOOK",
+    "description": "قالب أزياء أطفال أصلي باتجاه Dark Luxury: خلفية كحلي داكن ونحاسي دافئ، هيرو بارالاكس ناعم، مخطّط إطلالة بخطوات، قصة خامات تحريرية، ريل فئات عائم، بنتو عروض يومي، وآراء بصوت الأهل. هوية بصرية خاصة مش مبنية على قالب منافس."
+  },
+  "preview": {
+    "colors": [
+      "40 50% 60%",
+      "32 55% 50%",
+      "225 30% 8%"
+    ],
+    "imageUrl": "/assets/themes/tpl-012-original-kids-fashion/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "STORYBOOK",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "تشكيلة محدودة — 40 قطعة لكل موديل",
+    "announcementLinkText": "اعرف الحكاية",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الحكاية",
+        "to": "/collections"
+      },
+      {
+        "label": "ولادي",
+        "to": "/shop?category=boys"
+      },
+      {
+        "label": "بناتي",
+        "to": "/shop?category=girls"
+      },
+      {
+        "label": "المناسبات",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "STORYBOOK — قطع محدودة بخامات ناعمة، ومقاس حقيقي مش تخمين.",
+    "copyrightText": "© 2026 STORYBOOK",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "ولادي",
+            "to": "/shop?category=boys"
+          },
+          {
+            "label": "بناتي",
+            "to": "/shop?category=girls"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "layered-parallax-sky",
+          "settings": {
+            "eyebrow": "إصدار محدود",
+            "title": "كل تفصيلة مقصودة",
+            "subtitle": "خامات ناعمة على جلدهم، وقصّات تسيبهم يتحركوا براحتهم.",
+            "ctaText": "شوف الإصدار",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "خطّط إطلالتهم",
+            "subtitle": "3 خطوات: المناسبة ← القطعة ← المقاس"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "title": "من الورشة",
+            "subtitle": "بنقطّع ونخيط في ورشة واحدة بالقاهرة"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "floating-bubbles",
+          "settings": {
+            "title": "حسب المناسبة",
+            "subtitle": "مدرسة · بيت · مناسبات"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "قطع الإصدار"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "daily-picks",
+          "settings": {
+            "title": "عروض النهاردة"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "آراء بصوت الأهل"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "kids-guarantee"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "حكاية كل أسبوع",
+            "subtitle": "ابعت بريدك ونبعتلك لوك واحد بس، مفيد."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes"
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "editorial"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "fitting-room-checkout",
+          "settings": {
+            "title": "بيانات الشحن",
+            "submitLabel": "تأكيد الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "boutique-payment"
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "cinematic-plinth",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "قطع مختارة بخصم لحد آخر الكمية.",
+            "ctaText": "اتسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks"
+        }
+      ]
+    },
+    "shipping": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشحن والتوصيل",
+            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
+          }
+        }
+      ]
+    },
+    "returns": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
+          }
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
+          }
+        }
+      ]
+    },
+    "terms": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "قواعد الشراء والدفع والاستبدال."
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
+        }
+      ]
+    }
+  }
+}

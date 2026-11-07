@@ -1,68 +1,69 @@
 {
   "id": "tpl-004-original-women-fashion",
-  "name": "ميزون نسوة — أزياء حريمي (Bento أصلي)",
-  "description": "قالب أصلي بنمط Bento Grid: شبكة كروت غير متساوية، بلانر دولاب، وستوري تحريري — ١٠٠٪ من مكوّنات النهاردة بدون أي مكوّن جديد.",
+  "name": "Bento Studio — أزياء حريمي",
+  "description": "قالب أزياء حريمي أصلي بهوية بنتو: هيرو بوتيك مود، مخطّط لوك بخطوات، ستوري بورد، ريل مناسبات، شبكة منتجات، بنتو عروض تحريري، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "158 18% 16%",
-      "primaryForeground": "40 30% 96%",
-      "secondary": "44 50% 92%",
-      "secondaryForeground": "158 18% 16%",
-      "accent": "8 65% 55%",
+      "primary": "24 20% 20%",
+      "primaryForeground": "36 40% 96%",
+      "secondary": "20 18% 88%",
+      "secondaryForeground": "24 20% 20%",
+      "accent": "12 50% 52%",
       "accentForeground": "0 0% 100%",
-      "background": "40 24% 97%",
-      "foreground": "158 18% 12%",
-      "muted": "44 24% 92%",
-      "mutedForeground": "158 8% 42%",
-      "border": "44 18% 86%",
+      "background": "34 24% 96%",
+      "foreground": "24 22% 14%",
+      "muted": "34 16% 90%",
+      "mutedForeground": "24 10% 40%",
+      "border": "34 14% 82%",
       "card": "0 0% 100%",
-      "cardForeground": "158 18% 12%",
-      "ring": "8 65% 55%"
+      "cardForeground": "24 22% 14%",
+      "ring": "12 50% 52%"
     },
     "typography": {
-      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
-      "bodyFont": "\"Tajawal\", sans-serif",
+      "headingFont": "Playfair Display, Cairo, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "0.75rem",
+      "borderRadius": "0.5rem",
       "buttonRadius": "999px"
     },
     "productCard": {
-      "borderRadius": "0.75rem",
-      "boxShadow": "none",
-      "hoverShadow": "0 22px 44px -28px hsl(158 18% 16% / .5)"
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 2px 10px hsl(24 20% 20% / .06)",
+      "hoverShadow": "0 20px 40px -24px hsl(24 20% 20% / .38)"
     },
     "layout": {
       "contentAlign": "center"
     }
   },
   "seo": {
-    "titleTemplate": "%s | MAISON NISWAH",
-    "description": "أزياء حريمي بنمط Bento — تنسيقات جاهزة وقطع محدودة."
+    "titleTemplate": "%s | BENTO STUDIO",
+    "description": "قالب أزياء حريمي أصلي بهوية بنتو: هيرو بوتيك مود، مخطّط لوك بخطوات، ستوري بورد، ريل مناسبات، شبكة منتجات، بنتو عروض تحريري، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس."
   },
   "preview": {
     "colors": [
-      "158 18% 16%",
-      "8 65% 55%",
-      "40 24% 97%"
-    ]
+      "24 20% 20%",
+      "12 50% 52%",
+      "34 24% 96%"
+    ],
+    "imageUrl": "/assets/themes/tpl-004-original-women-fashion/preview.png"
   },
   "header": {
     "variant": "editorial-soft",
-    "announcementText": "قطع محدودة · تغليف هدايا",
-    "announcementLinkText": "اللوك بوك",
-    "announcementLinkTo": "/collections",
-    "brandName": "MAISON NISWAH",
+    "brandName": "BENTO STUDIO",
     "transparentOnHome": true,
     "showSearch": true,
     "showCart": true,
+    "announcementText": "تشكيلة محدودة — 40 قطعة لكل موديل",
+    "announcementLinkText": "اعرف الحكاية",
+    "announcementLinkTo": "/collections",
     "navigation": [
       {
-        "label": "الجديد",
-        "to": "/shop?sort=new"
+        "label": "الحكاية",
+        "to": "/collections"
       },
       {
         "label": "فساتين",
@@ -73,22 +74,21 @@
         "to": "/shop?category=sets"
       },
       {
-        "label": "لوك بوك",
+        "label": "المناسبات",
         "to": "/collections"
       },
       {
         "label": "العروض",
-        "to": "/shop?sort=discount"
+        "to": "/sale"
       }
     ]
   },
   "footer": {
-    "variant": "signature-panel",
-    "description": "MAISON NISWAH — أزياء حريمي.",
-    "copyrightText": "© 2026 MAISON NISWAH",
+    "variant": "editorial-soft",
+    "description": "BENTO STUDIO — قطع محدودة بقصّات مدروسة، من ورشة القاهرة لباب بيتك.",
+    "copyrightText": "© 2026 BENTO STUDIO",
     "socialLinks": {
       "instagram": "https://instagram.com",
-      "facebook": "https://facebook.com",
       "tiktok": "https://tiktok.com"
     },
     "navigation": [
@@ -96,16 +96,16 @@
         "title": "المتجر",
         "links": [
           {
-            "label": "الجديد",
-            "to": "/shop"
-          },
-          {
             "label": "فساتين",
             "to": "/shop?category=dresses"
           },
           {
-            "label": "اللوك بوك",
-            "to": "/collections"
+            "label": "أطقم",
+            "to": "/shop?category=sets"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
           }
         ]
       },
@@ -113,16 +113,16 @@
         "title": "المساعدة",
         "links": [
           {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
             "label": "الشحن",
-            "to": "/contact"
+            "to": "/shipping"
           },
           {
             "label": "الاستبدال",
-            "to": "/contact"
-          },
-          {
-            "label": "تواصلي",
-            "to": "/contact"
+            "to": "/returns"
           }
         ]
       }
@@ -130,107 +130,105 @@
     "legalLinks": [
       {
         "label": "الخصوصية",
-        "to": "/contact"
+        "to": "/privacy"
       },
       {
         "label": "الشروط",
-        "to": "/contact"
+        "to": "/terms"
       }
     ]
   },
   "pages": {
     "home": {
-      "layoutHint": "stack",
       "pageGoal": "discovery",
       "sections": [
         {
           "type": "hero-banner",
-          "variant": "cinematic-plinth",
+          "variant": "boutique-muse",
           "settings": {
-            "eyebrow": "موسم ٢٠٢٦",
-            "title": "دولابك… لوحة",
-            "subtitle": "قطع قليلة، تنسيقات كتير: كل كارت في الصفحة قطعة تقدر تلبسها ٣ طرق.",
-            "ctaText": "ابدئي من البلانر",
+            "eyebrow": "إصدار محدود",
+            "title": "لوك محسوب بالمللي",
+            "subtitle": "قصّات مدروسة، أقمشة تتحرك معاك، وتفاصيل بتفرق في الصورة.",
+            "ctaText": "شوف الإصدار",
             "ctaLink": "/shop",
-            "secondaryCtaText": "اللوك بوك",
-            "secondaryCtaLink": "/collections"
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide"
           }
         },
         {
           "type": "look-planner",
           "variant": "chips",
           "settings": {
-            "title": "خططي دولابك",
-            "subtitle": "مناسبة · يومي · سفر · عمل"
+            "title": "خطّط لوكك",
+            "subtitle": "المناسبة ← القطعة ← المقاس"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
+          "settings": {
+            "title": "ستوري بورد الخريف",
+            "subtitle": "تنسيقات كاملة بالقطع والمقاسات"
           }
         },
         {
           "type": "featured-collections",
           "variant": "editorial-categories",
           "settings": {
-            "title": "٣ عوالم",
-            "subtitle": "صباح · مساء · أساسيات"
+            "title": "حسب المناسبة",
+            "subtitle": "شغل · خروج · مناسبات"
           }
         },
         {
-          "type": "look-mosaic",
-          "variant": "bento",
+          "type": "product-grid",
           "settings": {
-            "title": "شبكة اللوك",
-            "subtitle": "كروت غير متساوية — صورة كبيرة + تفاصيل"
+            "title": "قطع الإصدار"
           }
-        },
-        {
-          "type": "product-grid"
         },
         {
           "type": "offer-bento",
           "variant": "editorial-columns",
           "settings": {
-            "title": "عروض مختارة",
-            "subtitle": "٣ أعمدة تحريرية"
+            "title": "عروض مختارة"
           }
         },
         {
           "type": "reviews",
           "variant": "editorial",
           "settings": {
-            "title": "آراء العميلات"
+            "title": "آراء بصوت العميلات"
           }
         },
         {
           "type": "features-bar",
-          "variant": "trust-strip"
+          "variant": "system-assurance"
         },
         {
           "type": "newsletter",
           "variant": "editorial-strip",
           "settings": {
-            "title": "رسالة الموسم"
+            "title": "قصص التنسيق كل أسبوع",
+            "subtitle": "ابعت بريدك ونبعتلك لوك واحد بس، مفيد."
           }
         }
       ]
     },
     "shop": {
-      "layoutHint": "sidebar-left",
       "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
       "sections": [
         {
-          "type": "shop-hero",
-          "settings": {
-            "title": "المتجر",
-            "subtitle": "كل القطع في شبكة واحدة"
-          }
+          "type": "shop-hero"
         },
         {
           "type": "shop-command-bar",
-          "variant": "boutique-discovery"
+          "variant": "occasion-planner"
         },
         {
           "type": "filters-sidebar"
         },
         {
-          "type": "product-grid"
+          "type": "shop-product-grid"
         },
         {
           "type": "shop-promo-rail",
@@ -244,98 +242,201 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "atelier-editorial-stage"
+          "variant": "grid"
         },
         {
           "type": "product-info",
-          "variant": "bento-specs"
+          "variant": "atelier-buybox"
         },
         {
           "type": "pdp-checkout"
         },
         {
+          "type": "quantity-offers"
+        },
+        {
           "type": "size-guide",
-          "variant": "compact"
+          "variant": "detailed"
+        },
+        {
+          "type": "delivery-proof"
         },
         {
           "type": "trusted-badges"
-        },
-        {
-          "type": "bought-together",
-          "variant": "editorial"
         },
         {
           "type": "reviews",
           "variant": "editorial"
         },
         {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
           "type": "related-products",
-          "variant": "editorial"
+          "variant": "closet-pairings"
         }
       ]
     },
     "cart": {
       "layoutHint": "sidebar-right",
-      "pageGoal": "conversion",
       "sections": [
         {
           "type": "cart-items",
-          "variant": "wardrobe-cart",
+          "variant": "editorial",
           "settings": {
-            "title": "دولابك"
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
           }
         },
         {
           "type": "order-summary",
-          "variant": "boutique-summary",
-          "settings": {
-            "title": "ملخص الطلب",
-            "checkoutButtonText": "تأكيد الطلب"
-          }
+          "variant": "boutique-summary"
         }
       ]
     },
-    "collections": {
-      "layoutHint": "stack",
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة القطع",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "soft-flow",
+          "settings": {
+            "title": "بيانات الشحن",
+            "submitLabel": "تأكيد الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "boutique-payment"
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary"
+        }
+      ]
+    },
+    "sale": {
       "pageGoal": "discovery",
       "sections": [
         {
-          "type": "collection-tab",
-          "variant": "standard"
-        },
-        {
-          "type": "featured-product",
-          "variant": "spotlight"
+          "type": "hero-banner",
+          "variant": "cinematic-plinth",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "قطع مختارة بخصم لحد آخر الكمية.",
+            "ctaText": "اتسوق",
+            "ctaLink": "/shop"
+          }
         },
         {
           "type": "product-grid"
         },
         {
-          "type": "journal-strip",
-          "variant": "editorial-cards"
+          "type": "countdown-banner",
+          "variant": "inline"
         }
       ]
     },
-    "contact": {
-      "layoutHint": "stack",
+    "collections": {
       "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "boutique-aftercare"
+        }
+      ]
+    },
+    "shipping": {
+      "pageGoal": "support",
       "sections": [
         {
           "type": "info-content",
           "settings": {
-            "title": "استشارة ستايل"
+            "title": "الشحن والتوصيل",
+            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
           }
-        },
+        }
+      ]
+    },
+    "returns": {
+      "pageGoal": "support",
+      "sections": [
         {
-          "type": "features-bar",
-          "variant": "trust-strip"
-        },
-        {
-          "type": "newsletter",
-          "variant": "editorial-strip",
+          "type": "info-content",
           "settings": {
-            "title": "رسالة الموسم"
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
           }
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
+          }
+        }
+      ]
+    },
+    "terms": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "قواعد الشراء والدفع والاستبدال."
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
         }
       ]
     }

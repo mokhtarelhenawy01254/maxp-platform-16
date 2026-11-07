@@ -186,6 +186,130 @@
     }
   },
   {
+    "id": "bags-bazaar",
+    "name": "Bag Souq — شنط وحقائب",
+    "description": "قالب شنط وحقائب — Bag Souq.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 12%",
+      "0 0% 95%",
+      "42 55% 50%"
+    ],
+    "previewImage": "/assets/themes/bags-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "bags-lumiere",
+    "name": "Sac Atelier — شنط وحقائب",
+    "description": "قالب شنط وحقائب — Sac Atelier.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "30 20% 20%",
+      "30 15% 93%",
+      "30 35% 50%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "bags-maison",
+    "name": "Maison Sac — شنط وحقائب",
+    "description": "قالب شنط وحقائب — Maison Sac.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "95 15% 22%",
+      "45 18% 92%",
+      "95 25% 40%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "bags-noor",
+    "name": "Shanta — شنط وحقائب",
+    "description": "قالب شنط وحقائب — Shanta.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "20 40% 30%",
+      "20 20% 95%",
+      "0 70% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
     "id": "baladi-market-eg",
     "name": "بلدي ماركت",
     "description": "متجر مصري مباشر بدون صفحة رئيسية — الزائر يدخل على المنتجات من أول ثانية مع ألوان مصرية دافئة ورسائل بيع محلية تشجع الحسم السريع.",
@@ -431,6 +555,37 @@
       "pdpSections": 6,
       "cartSections": 2,
       "totalSections": 25
+    }
+  },
+  {
+    "id": "couture-atelier-eg",
+    "name": "Couture Atelier EG",
+    "description": "كوتور أتيليه مصر — دار أزياء وأتيليه تحريري راقٍ يجمع بين الحرفية اليدوية وتنسيقات الأطقم الكاملة (Shop The Look) والسرد القصصي البانورامي والتسوق البصري التفاعلي.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "luxury-atelier",
+        "label": "دار أزياء وأتيليه فاخر"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 16% 12%",
+      "36 24% 93%",
+      "26 42% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 6,
+      "cartSections": 2,
+      "totalSections": 24
     }
   },
   {
@@ -1333,6 +1488,130 @@
     }
   },
   {
+    "id": "kids-fashion-bazaar",
+    "name": "Kids Bazaar — أزياء أطفال",
+    "description": "قالب أزياء أطفال كثيف للبيع السريع: عروض، فئات، شبكة منتجات، وألوان مرحة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "268 55% 45%",
+      "268 60% 96%",
+      "45 95% 55%"
+    ],
+    "previewImage": "/assets/themes/kids-fashion-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "kids-fashion-lumiere",
+    "name": "Petit Atelier — أزياء أطفال",
+    "description": "قالب أزياء أطفال تحريري: هيرو هادي، مساحات واسعة، وألوان باستيل مريحة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "205 30% 22%",
+      "200 45% 94%",
+      "14 75% 62%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "kids-fashion-maison",
+    "name": "Maison Kids — أزياء أطفال",
+    "description": "قالب أزياء أطفال أصلي: مخطّط دولاب الطفل، لوكات، وتنسيق كامل.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 18% 24%",
+      "45 45% 90%",
+      "150 30% 45%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "kids-fashion-noor",
+    "name": "Kids Go — أزياء أطفال",
+    "description": "قالب أزياء أطفال دفع عند الاستلام: عروض، فئات، وطلب سريع.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "190 70% 32%",
+      "190 45% 95%",
+      "350 85% 60%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
     "id": "kids-play",
     "name": "Kids Play",
     "description": "قالب ألعاب أطفال يسهّل على الأهل الشراء: حسب السن، حسب نوع اللعب، وعروض واضحة على الهدايا والنشاطات.",
@@ -1550,6 +1829,130 @@
     }
   },
   {
+    "id": "menswear-bazaar",
+    "name": "Souq Homme — أزياء رجالي",
+    "description": "قالب أزياء رجالي كثيف للبيع السريع: عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "215 55% 30%",
+      "215 45% 95%",
+      "22 85% 52%"
+    ],
+    "previewImage": "/assets/themes/menswear-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "menswear-lumiere",
+    "name": "Atelier Homme — أزياء رجالي",
+    "description": "قالب أزياء رجالي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "210 12% 16%",
+      "35 18% 92%",
+      "28 45% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "menswear-maison",
+    "name": "Maison Homme — أزياء رجالي",
+    "description": "قالب أزياء رجالي أصلي: مخطّط الدولاب، لوكات، وتجربة تنسيق كاملة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "95 12% 18%",
+      "80 12% 88%",
+      "95 22% 36%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "menswear-noor",
+    "name": "Ragel — أزياء رجالي",
+    "description": "قالب أزياء رجالي دفع عند الاستلام: شريط خصم، فئات، صف منتجات، ومنتج مميز.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 12%",
+      "0 0% 96%",
+      "0 72% 46%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
     "id": "menswear-prime",
     "name": "Menswear Prime",
     "description": "قالب مخصص للملابس الرجالية الكلاسيكية يركز على الثقة والقصات الرسمية وتجربة شراء أكثر فخامة.",
@@ -1576,6 +1979,130 @@
       "shopSections": 3,
       "checkoutSections": 3,
       "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "modest-wear-bazaar",
+    "name": "Abaya Souq — عبايات ومحجبات",
+    "description": "قالب عبايات ومحجبات — Abaya Souq.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "330 45% 30%",
+      "330 40% 96%",
+      "330 60% 50%"
+    ],
+    "previewImage": "/assets/themes/modest-wear-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "modest-wear-lumiere",
+    "name": "Maison Modeste — عبايات ومحجبات",
+    "description": "قالب عبايات ومحجبات — Maison Modeste.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "268 25% 22%",
+      "268 20% 92%",
+      "42 60% 55%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "modest-wear-maison",
+    "name": "Atelier Modeste — عبايات ومحجبات",
+    "description": "قالب عبايات ومحجبات — Atelier Modeste.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "30 25% 20%",
+      "30 20% 92%",
+      "30 35% 45%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "modest-wear-noor",
+    "name": "Hijab House — عبايات ومحجبات",
+    "description": "قالب عبايات ومحجبات — Hijab House.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "160 45% 25%",
+      "160 30% 95%",
+      "160 55% 45%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
       "cartSections": 2,
       "totalSections": 21
     }
@@ -2015,6 +2542,130 @@
     }
   },
   {
+    "id": "shoes-bazaar",
+    "name": "Shoe Souq — أحذية",
+    "description": "قالب أحذية — Shoe Souq.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "215 50% 28%",
+      "215 15% 95%",
+      "22 85% 52%"
+    ],
+    "previewImage": "/assets/themes/shoes-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "shoes-lumiere",
+    "name": "Sole Atelier — أحذية",
+    "description": "قالب أحذية — Sole Atelier.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "25 15% 18%",
+      "25 12% 93%",
+      "28 40% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "shoes-maison",
+    "name": "Maison Sole — أحذية",
+    "description": "قالب أحذية — Maison Sole.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "20 30% 24%",
+      "20 20% 92%",
+      "20 40% 42%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "shoes-noor",
+    "name": "Kadam — أحذية",
+    "description": "قالب أحذية — Kadam.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 12%",
+      "0 0% 95%",
+      "0 70% 48%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
     "id": "shop-orbit",
     "name": "Shop Orbit",
     "description": "قالب متجر عربي عام يسهّل الوصول للمنتج بسرعة: بحث أوضح، تصفية مرتبة، وعروض جانبية تدعم القرار الشرائي.",
@@ -2202,126 +2853,250 @@
   },
   {
     "id": "tpl-001-bulk-commerce-women-fashion",
-    "name": "نسوة — أزياء حريمي جملة (B2B)",
-    "description": "قالب جملة وتجار: أسعار كمية متدرجة، كتالوج مقاسات، وشراء سريع بالـSKU — مبني على نمط قوالب B2B لا على تصميمها.",
-    "category": "general",
+    "name": "Wholesale House — أزياء حريمي",
+    "description": "Wholesale House — قالب أزياء حريمي بمنطق الجملة: باقات كمية محسوبة، حد أدنى واضح، وشريط ثقة يجاوب سؤال الفاتورة والاستبدال قبل الشراء.",
+    "category": "fashion",
     "categoryMeta": {
       "primary": {
-        "id": "general",
-        "label": "عام"
+        "id": "fashion",
+        "label": "أزياء"
       },
       "secondary": {
-        "id": "general-store",
-        "label": "متجر عام"
+        "id": "women-bulk",
+        "label": "جملة وكميات"
       }
     },
     "direction": "rtl",
     "previewColors": [
-      "222 32% 18%",
-      "30 18% 93%",
-      "32 62% 48%"
+      "0 0% 12%",
+      "40 18% 90%",
+      "356 65% 48%"
     ],
-    "previewImage": "",
+    "previewImage": "/assets/themes/tpl-001-bulk-commerce-women-fashion/preview.png",
     "pageStats": {
-      "homeSections": 9,
+      "homeSections": 8,
       "shopSections": 5,
-      "checkoutSections": 0,
-      "pdpSections": 8,
-      "cartSections": 3,
-      "totalSections": 25
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 29
     }
   },
   {
     "id": "tpl-002-marketplace-multi-women-fashion",
-    "name": "قمر ماركت — أزياء حريمي متعدد البائعين",
-    "description": "قالب ماركت متعدد البائعات: ميجا منيو أقسام، عدّاد عرض، فلاتر سريعة، وكروت منتج كثيفة — نمط WooCommerce الحديث.",
-    "category": "general",
+    "name": "Multi Department — أزياء حريمي",
+    "description": "Multi Department — قالب أزياء حريمي بكثافة متجر أقسام: أعمدة فئات، شبكة منتجات، عداد عرض، وقصة تحريرية تربط الأقسام بلغة بصرية واحدة.",
+    "category": "fashion",
     "categoryMeta": {
       "primary": {
-        "id": "general",
-        "label": "عام"
+        "id": "fashion",
+        "label": "أزياء"
       },
       "secondary": {
-        "id": "general-store",
-        "label": "متجر عام"
+        "id": "women-department",
+        "label": "أقسام متعددة"
       }
     },
     "direction": "rtl",
     "previewColors": [
-      "18 60% 42%",
-      "34 40% 94%",
-      "198 55% 40%"
+      "222 42% 20%",
+      "45 30% 88%",
+      "40 60% 48%"
     ],
-    "previewImage": "",
+    "previewImage": "/assets/themes/tpl-002-marketplace-multi-women-fashion/preview.png",
     "pageStats": {
       "homeSections": 9,
-      "shopSections": 6,
-      "checkoutSections": 0,
-      "pdpSections": 9,
-      "cartSections": 3,
-      "totalSections": 27
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 30
     }
   },
   {
     "id": "tpl-003-local-market-women-fashion",
-    "name": "حنان — أزياء حريمي سوق محلي",
-    "description": "قالب سوق محلي بسيط: شرايط ضمان الدفع عند الاستلام، أقسام بكبسولات، عروض كومبو، وتقييمات — موجه لمتاجر COD في مصر.",
-    "category": "general",
+    "name": "Quick Order — أزياء حريمي",
+    "description": "Quick Order — قالب أزياء حريمي موبايل-أولًا: فئات أقراص، شبكة كثيفة، دفع عند الاستلام، ولوكات عملاء تقصّر طريق القرار.",
+    "category": "fashion",
     "categoryMeta": {
       "primary": {
-        "id": "general",
-        "label": "عام"
+        "id": "fashion",
+        "label": "أزياء"
       },
       "secondary": {
-        "id": "general-store",
-        "label": "متجر عام"
+        "id": "women-quick-order",
+        "label": "شراء سريع"
       }
     },
     "direction": "rtl",
     "previewColors": [
-      "340 55% 62%",
-      "340 40% 96%",
-      "152 38% 40%"
+      "160 30% 20%",
+      "28 40% 90%",
+      "20 70% 55%"
     ],
-    "previewImage": "",
+    "previewImage": "/assets/themes/tpl-003-local-market-women-fashion/preview.png",
     "pageStats": {
-      "homeSections": 9,
+      "homeSections": 8,
       "shopSections": 5,
-      "checkoutSections": 0,
-      "pdpSections": 8,
-      "cartSections": 3,
-      "totalSections": 25
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 29
     }
   },
   {
     "id": "tpl-004-original-women-fashion",
-    "name": "ميزون نسوة — أزياء حريمي (Bento أصلي)",
-    "description": "قالب أصلي بنمط Bento Grid: شبكة كروت غير متساوية، بلانر دولاب، وستوري تحريري — ١٠٠٪ من مكوّنات النهاردة بدون أي مكوّن جديد.",
-    "category": "general",
+    "name": "Bento Studio — أزياء حريمي",
+    "description": "Bento Studio — قالب أزياء حريمي أصلي بهوية بنتو: مخطّط لوك بخطوات، ستوري بورد، ريل مناسبات، وبنتو عروض تحريري.",
+    "category": "fashion",
     "categoryMeta": {
       "primary": {
-        "id": "general",
-        "label": "عام"
+        "id": "fashion",
+        "label": "أزياء"
       },
       "secondary": {
-        "id": "general-store",
-        "label": "متجر عام"
+        "id": "women-bento",
+        "label": "بنتو تحريري"
       }
     },
     "direction": "rtl",
     "previewColors": [
-      "158 18% 16%",
-      "44 50% 92%",
-      "8 65% 55%"
+      "24 20% 20%",
+      "20 18% 88%",
+      "12 50% 52%"
     ],
-    "previewImage": "",
+    "previewImage": "/assets/themes/tpl-004-original-women-fashion/preview.png",
     "pageStats": {
       "homeSections": 9,
       "shopSections": 5,
-      "checkoutSections": 0,
-      "pdpSections": 8,
+      "checkoutSections": 4,
+      "pdpSections": 10,
       "cartSections": 2,
-      "totalSections": 24
+      "totalSections": 30
+    }
+  },
+  {
+    "id": "tpl-009-modular-catalog-kids-fashion",
+    "name": "Playground — أزياء أطفال",
+    "description": "Playground — قالب أزياء أطفال باتجاه Dark Luxury: خلفية فحمية وذهبي/نحاسي، هيرو مقسوم، فئات فقاعات، بنتو لوكات مدرسية، وآراء أمهات.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "kids-playground",
+        "label": "أطفال — لعب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "42 55% 58%",
+      "220 18% 16%",
+      "28 62% 52%"
+    ],
+    "previewImage": "/assets/themes/tpl-009-modular-catalog-kids-fashion/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 29
+    }
+  },
+  {
+    "id": "tpl-010-multi-department-kids-fashion",
+    "name": "Crayon — أزياء أطفال",
+    "description": "Crayon — قالب أزياء أطفال Dark Luxury بأقسام متعددة: خلفية إسبريسو ونحاسي، ريل فئات، عداد عرض أسبوعي، شبكة أطقم، ودفتر مقالات.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "kids-school",
+        "label": "أطفال — مدرسة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "30 45% 55%",
+      "24 18% 15%",
+      "18 65% 50%"
+    ],
+    "previewImage": "/assets/themes/tpl-010-multi-department-kids-fashion/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 29
+    }
+  },
+  {
+    "id": "tpl-011-local-market-kids-fashion",
+    "name": "HappyCart — أزياء أطفال",
+    "description": "HappyCart — قالب أزياء أطفال Dark Luxury للدفع عند الاستلام: بنفسجي ليلي وعنبري، فئات دوائر، شبكة كثيفة، وشريط توصيل صريح.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "kids-cod",
+        "label": "أطفال — دفع عند الاستلام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "45 70% 55%",
+      "270 20% 16%",
+      "24 90% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-011-local-market-kids-fashion/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 29
+    }
+  },
+  {
+    "id": "tpl-012-original-kids-fashion",
+    "name": "Storybook — أزياء أطفال",
+    "description": "Storybook — قالب أزياء أطفال أصلي Dark Luxury: كحلي ونحاسي، هيرو بارالاكس ناعم، مخطّط إطلالة، قصة خامات، وبنتو عروض يومي.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "kids-storybook",
+        "label": "أطفال — حكاية"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "40 50% 60%",
+      "225 20% 16%",
+      "32 55% 50%"
+    ],
+    "previewImage": "/assets/themes/tpl-012-original-kids-fashion/preview.png",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 4,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 30
     }
   },
   {
@@ -2449,6 +3224,37 @@
     }
   },
   {
+    "id": "women-fashion-bazaar",
+    "name": "Bazaar — أزياء حريمي",
+    "description": "قالب أزياء حريمي كثيف للبيع السريع: شريط عروض، تايلز فئات، شبكة منتجات كثيفة، وفلاتر.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "350 70% 42%",
+      "350 60% 96%",
+      "350 70% 42%"
+    ],
+    "previewImage": "/assets/themes/women-fashion-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
     "id": "women-fashion-eg",
     "name": "إطلالة",
     "description": "قالب حريمي بيّاع من أول شاشة: لوكات جاهزة، عروض كمية، وطلب سريع يخلي العميلة تحسم من غير تردد.",
@@ -2477,6 +3283,99 @@
       "pdpSections": 8,
       "cartSections": 2,
       "totalSections": 22
+    }
+  },
+  {
+    "id": "women-fashion-lumiere",
+    "name": "Lumière — أزياء حريمي",
+    "description": "قالب أزياء حريمي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك بستايل ستوري بورد.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "330 25% 15%",
+      "30 25% 92%",
+      "12 45% 55%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1600&q=80",
+    "pageStats": {
+      "homeSections": 2,
+      "shopSections": 5,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 20
+    }
+  },
+  {
+    "id": "women-fashion-maison",
+    "name": "Maison Wardrobe — أزياء حريمي",
+    "description": "قالب أزياء حريمي أصلي: مخطّط دولاب، لوكات، وتجربة تنسيق كاملة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "25 20% 16%",
+      "150 15% 88%",
+      "150 25% 38%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=85&w=1800",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 26
+    }
+  },
+  {
+    "id": "women-fashion-noor",
+    "name": "Noor — أزياء حريمي",
+    "description": "قالب أزياء حريمي دفع عند الاستلام: شريط خصم، عدّاد، عروض كمية، وشارات ثقة.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "general-store",
+        "label": "متجر عام"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "168 55% 30%",
+      "168 40% 95%",
+      "32 95% 52%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1000&q=80",
+    "pageStats": {
+      "homeSections": 6,
+      "shopSections": 2,
+      "checkoutSections": 3,
+      "pdpSections": 8,
+      "cartSections": 2,
+      "totalSections": 21
     }
   },
   {

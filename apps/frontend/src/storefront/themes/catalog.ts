@@ -269,6 +269,54 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "mens-clothing",
     "ملابس رجالي",
   ),
+  "tpl-001-bulk-commerce-women-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "women-bulk",
+    "جملة وكميات",
+  ),
+  "tpl-002-marketplace-multi-women-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "women-department",
+    "أقسام متعددة",
+  ),
+  "tpl-003-local-market-women-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "women-quick-order",
+    "شراء سريع",
+  ),
+  "tpl-004-original-women-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "women-bento",
+    "بنتو تحريري",
+  ),
+  "tpl-009-modular-catalog-kids-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "kids-playground",
+    "أطفال — لعب",
+  ),
+  "tpl-010-multi-department-kids-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "kids-school",
+    "أطفال — مدرسة",
+  ),
+  "tpl-011-local-market-kids-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "kids-cod",
+    "أطفال — دفع عند الاستلام",
+  ),
+  "tpl-012-original-kids-fashion": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "kids-storybook",
+    "أطفال — حكاية",
+  ),
   "cairo-stride": createThemeCategoryMeta(
     "fashion",
     "أزياء",
@@ -555,6 +603,22 @@ export const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "tpl-001-bulk-commerce-women-fashion":
+    "Wholesale House — قالب أزياء حريمي بمنطق الجملة: باقات كمية محسوبة، حد أدنى واضح، وشريط ثقة يجاوب سؤال الفاتورة والاستبدال قبل الشراء.",
+  "tpl-002-marketplace-multi-women-fashion":
+    "Multi Department — قالب أزياء حريمي بكثافة متجر أقسام: أعمدة فئات، شبكة منتجات، عداد عرض، وقصة تحريرية تربط الأقسام بلغة بصرية واحدة.",
+  "tpl-003-local-market-women-fashion":
+    "Quick Order — قالب أزياء حريمي موبايل-أولًا: فئات أقراص، شبكة كثيفة، دفع عند الاستلام، ولوكات عملاء تقصّر طريق القرار.",
+  "tpl-004-original-women-fashion":
+    "Bento Studio — قالب أزياء حريمي أصلي بهوية بنتو: مخطّط لوك بخطوات، ستوري بورد، ريل مناسبات، وبنتو عروض تحريري.",
+  "tpl-009-modular-catalog-kids-fashion":
+    "Playground — قالب أزياء أطفال باتجاه Dark Luxury: خلفية فحمية وذهبي/نحاسي، هيرو مقسوم، فئات فقاعات، بنتو لوكات مدرسية، وآراء أمهات.",
+  "tpl-010-multi-department-kids-fashion":
+    "Crayon — قالب أزياء أطفال Dark Luxury بأقسام متعددة: خلفية إسبريسو ونحاسي، ريل فئات، عداد عرض أسبوعي، شبكة أطقم، ودفتر مقالات.",
+  "tpl-011-local-market-kids-fashion":
+    "HappyCart — قالب أزياء أطفال Dark Luxury للدفع عند الاستلام: بنفسجي ليلي وعنبري، فئات دوائر، شبكة كثيفة، وشريط توصيل صريح.",
+  "tpl-012-original-kids-fashion":
+    "Storybook — قالب أزياء أطفال أصلي Dark Luxury: كحلي ونحاسي، هيرو بارالاكس ناعم، مخطّط إطلالة، قصة خامات، وبنتو عروض يومي.",
   "redline-auto":
     "Red Line Auto — قالب مخصص وفائق التحويل لستائر وإكسسوارات السيارات: تفصيل بالمللي، عزل حراري 98%، معاينة وتجربة قبل الدفع وشراء مباشر سريع.",
   "dental-lab-elite":
@@ -690,6 +754,22 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
+  "tpl-001-bulk-commerce-women-fashion":
+    "/assets/themes/tpl-001-bulk-commerce-women-fashion/preview.png",
+  "tpl-002-marketplace-multi-women-fashion":
+    "/assets/themes/tpl-002-marketplace-multi-women-fashion/preview.png",
+  "tpl-003-local-market-women-fashion":
+    "/assets/themes/tpl-003-local-market-women-fashion/preview.png",
+  "tpl-004-original-women-fashion":
+    "/assets/themes/tpl-004-original-women-fashion/preview.png",
+  "tpl-009-modular-catalog-kids-fashion":
+    "/assets/themes/tpl-009-modular-catalog-kids-fashion/preview.png",
+  "tpl-010-multi-department-kids-fashion":
+    "/assets/themes/tpl-010-multi-department-kids-fashion/preview.png",
+  "tpl-011-local-market-kids-fashion":
+    "/assets/themes/tpl-011-local-market-kids-fashion/preview.png",
+  "tpl-012-original-kids-fashion":
+    "/assets/themes/tpl-012-original-kids-fashion/preview.png",
   "creative-portfolio":
     "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=1600",
   "atelier-nova":

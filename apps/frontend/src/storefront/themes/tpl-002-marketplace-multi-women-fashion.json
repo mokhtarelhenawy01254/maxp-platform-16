@@ -1,111 +1,111 @@
 {
   "id": "tpl-002-marketplace-multi-women-fashion",
-  "name": "قمر ماركت — أزياء حريمي متعدد البائعين",
-  "description": "قالب ماركت متعدد البائعات: ميجا منيو أقسام، عدّاد عرض، فلاتر سريعة، وكروت منتج كثيفة — نمط WooCommerce الحديث.",
+  "name": "Multi Department — أزياء حريمي",
+  "description": "قالب أزياء حريمي بكثافة متجر أقسام متعددة: شريط خدمة، هيرو ناعم، ريل أعمدة معرض، شبكة منتجات، عداد عرض، قصة تحريرية، دفتر مقالات، وشريط مزايا. مبني على منطق WoodMart كثيف الأقسام.",
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "18 60% 42%",
-      "primaryForeground": "0 0% 100%",
-      "secondary": "34 40% 94%",
-      "secondaryForeground": "20 30% 18%",
-      "accent": "198 55% 40%",
+      "primary": "222 42% 20%",
+      "primaryForeground": "45 40% 96%",
+      "secondary": "45 30% 88%",
+      "secondaryForeground": "222 42% 20%",
+      "accent": "40 60% 48%",
       "accentForeground": "0 0% 100%",
-      "background": "0 0% 100%",
-      "foreground": "20 18% 14%",
-      "muted": "30 25% 96%",
-      "mutedForeground": "20 8% 45%",
-      "border": "25 18% 89%",
+      "background": "45 30% 97%",
+      "foreground": "222 38% 14%",
+      "muted": "45 20% 91%",
+      "mutedForeground": "222 12% 42%",
+      "border": "45 14% 83%",
       "card": "0 0% 100%",
-      "cardForeground": "20 18% 14%",
-      "ring": "18 60% 42%"
+      "cardForeground": "222 38% 14%",
+      "ring": "40 60% 48%"
     },
     "typography": {
-      "headingFont": "\"Cairo\", sans-serif",
-      "bodyFont": "\"Tajawal\", sans-serif",
-      "baseSize": "14px",
+      "headingFont": "Noto Serif, Cairo, serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "0.5rem",
+      "borderRadius": "0.4rem",
       "buttonRadius": "0.4rem"
     },
     "productCard": {
-      "borderRadius": "0.5rem",
-      "boxShadow": "0 1px 2px hsl(20 18% 14% / .06)",
-      "hoverShadow": "0 18px 36px -24px hsl(18 60% 42% / .5)"
+      "borderRadius": "0.4rem",
+      "boxShadow": "0 1px 2px hsl(222 42% 20% / .07)",
+      "hoverShadow": "0 16px 32px -20px hsl(222 42% 20% / .35)"
     },
     "layout": {
-      "contentAlign": "start"
+      "contentAlign": "center"
     }
   },
   "seo": {
-    "titleTemplate": "%s | QAMAR MARKET",
-    "description": "ماركت أزياء حريمي متعدد البائعات — عروض يومية وتوصيل سريع."
+    "titleTemplate": "%s | MULTI DEPARTMENT",
+    "description": "قالب أزياء حريمي بكثافة متجر أقسام متعددة: شريط خدمة، هيرو ناعم، ريل أعمدة معرض، شبكة منتجات، عداد عرض، قصة تحريرية، دفتر مقالات، وشريط مزايا. مبني على منطق WoodMart كثيف الأقسام."
   },
   "preview": {
     "colors": [
-      "18 60% 42%",
-      "198 55% 40%",
-      "0 0% 100%"
-    ]
+      "222 42% 20%",
+      "40 60% 48%",
+      "45 30% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-002-marketplace-multi-women-fashion/preview.png"
   },
   "header": {
-    "variant": "retail-direct",
-    "announcementText": "٣ بائعات موثّقات · توصيل ٤٨ ساعة",
-    "announcementLinkText": "كل العروض",
-    "announcementLinkTo": "/shop?sort=discount",
-    "brandName": "QAMAR MARKET",
-    "transparentOnHome": true,
+    "variant": "fashion-retail",
+    "brandName": "MULTI DEPARTMENT",
+    "transparentOnHome": false,
     "showSearch": true,
     "showCart": true,
+    "announcementText": "شحن مجاني فوق 2000 جنيه · استبدال خلال 14 يوم",
+    "announcementLinkText": "الاستبدال",
+    "announcementLinkTo": "/returns",
     "navigation": [
       {
-        "label": "الجديد",
-        "to": "/shop?sort=new"
+        "label": "الرئيسية",
+        "to": "/"
       },
       {
         "label": "فساتين",
         "to": "/shop?category=dresses"
       },
       {
-        "label": "أطقم",
-        "to": "/shop?category=sets"
+        "label": "بلوزات",
+        "to": "/shop?category=tops"
       },
       {
-        "label": "لوك بوك",
-        "to": "/collections"
+        "label": "بناطلين",
+        "to": "/shop?category=pants"
       },
       {
         "label": "العروض",
-        "to": "/shop?sort=discount"
+        "to": "/sale"
       }
     ]
   },
   "footer": {
-    "variant": "retail-direct",
-    "description": "QAMAR MARKET — أزياء حريمي.",
-    "copyrightText": "© 2026 QAMAR MARKET",
+    "variant": "fashion-retail",
+    "description": "MULTI DEPARTMENT — قسم حريمي كامل تحت سقف واحد: كل حاجة تحتاجها في لوك واحد.",
+    "copyrightText": "© 2026 MULTI DEPARTMENT",
     "socialLinks": {
       "instagram": "https://instagram.com",
-      "facebook": "https://facebook.com",
-      "tiktok": "https://tiktok.com"
+      "facebook": "https://facebook.com"
     },
     "navigation": [
       {
-        "title": "المتجر",
+        "title": "الأقسام",
         "links": [
-          {
-            "label": "الجديد",
-            "to": "/shop"
-          },
           {
             "label": "فساتين",
             "to": "/shop?category=dresses"
           },
           {
-            "label": "اللوك بوك",
-            "to": "/collections"
+            "label": "بلوزات",
+            "to": "/shop?category=tops"
+          },
+          {
+            "label": "بناطلين",
+            "to": "/shop?category=pants"
           }
         ]
       },
@@ -114,14 +114,14 @@
         "links": [
           {
             "label": "الشحن",
-            "to": "/contact"
+            "to": "/shipping"
           },
           {
             "label": "الاستبدال",
-            "to": "/contact"
+            "to": "/returns"
           },
           {
-            "label": "تواصلي",
+            "label": "كلمنا",
             "to": "/contact"
           }
         ]
@@ -130,114 +130,110 @@
     "legalLinks": [
       {
         "label": "الخصوصية",
-        "to": "/contact"
+        "to": "/privacy"
       },
       {
         "label": "الشروط",
-        "to": "/contact"
+        "to": "/terms"
       }
     ]
   },
   "pages": {
     "home": {
-      "layoutHint": "stack",
       "pageGoal": "discovery",
       "sections": [
         {
           "type": "promo-strip",
-          "variant": "standard",
+          "variant": "benefit-ribbon",
           "settings": {
-            "message": "عروض اليوم لحد آخر الكمية",
-            "saleLabel": "حتى ٤٠٪",
-            "shippingLabel": "شحن مجاني فوق ٩٩٩ ج"
+            "badge": "خدمة",
+            "message": "شحن 48 ساعة · استبدال مقاس مجاني خلال 14 يوم",
+            "saleLabel": "خصم 15% على أول أوردر",
+            "shippingLabel": "شحن لكل المحافظات"
           }
         },
         {
           "type": "hero-banner",
-          "variant": "retail-direct-banner",
+          "variant": "soft-showcase",
           "settings": {
-            "eyebrow": "ماركت",
-            "title": "كل البائعات في مكان واحد",
-            "subtitle": "قارني السعر والمقاس والبائع قبل ما تشتري.",
-            "ctaText": "ابدئي التسوق",
+            "eyebrow": "تشكيلة الخريف",
+            "title": "قسم حريمي كامل",
+            "subtitle": "فساتين وبلوزات وبناطلين بنفس اللغة البصرية — تنسيق واحد يخلص اللوك.",
+            "ctaText": "اتفرج على الأقسام",
             "ctaLink": "/shop"
           }
         },
         {
           "type": "featured-collections",
-          "variant": "fast-nav-grid",
+          "variant": "gallery-columns",
           "settings": {
-            "title": "تسوّقي بالقسم",
-            "subtitle": "فساتين · أطقم · ملابس بيت · عبايات"
+            "title": "الأقسام",
+            "subtitle": "فساتين · بلوزات · بناطلين"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "وصل حديثًا"
           }
         },
         {
           "type": "countdown-banner",
           "variant": "layered",
           "settings": {
-            "title": "عرض اليوم بينتهي خلال"
+            "title": "عرض نهاية الأسبوع",
+            "subtitle": "خصم 20% على قطعتين"
           }
         },
         {
-          "type": "product-grid"
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "title": "عن الخامات",
+            "subtitle": "أقمشة تتنفس، وقصّات مريحة لليوم الطويل"
+          }
         },
         {
-          "type": "offer-bento",
-          "variant": "daily-picks",
+          "type": "journal-strip",
+          "variant": "editorial-cards",
           "settings": {
-            "title": "مختارات اليوم"
+            "title": "من الدفتر"
           }
         },
         {
           "type": "features-bar",
-          "variant": "delivery-clarity"
-        },
-        {
-          "type": "social-gallery",
-          "variant": "grid",
-          "settings": {
-            "title": "من عميلاتنا"
-          }
+          "variant": "store-advantages-pastel"
         },
         {
           "type": "newsletter",
-          "variant": "split-panel",
+          "variant": "minimal",
           "settings": {
-            "title": "عروض الماركت على الواتساب"
+            "title": "كوبون 10%",
+            "subtitle": "سيب بريدك ووصلك الكوبون."
           }
         }
       ]
     },
     "shop": {
-      "layoutHint": "sidebar-left",
       "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
       "sections": [
         {
-          "type": "shop-hero",
-          "settings": {
-            "title": "كل المنتجات",
-            "subtitle": "فلترة بالسعر والمقاس والبائع"
-          }
+          "type": "shop-hero"
         },
         {
           "type": "shop-command-bar",
-          "variant": "marketplace-dense"
+          "variant": "minimal-toolbar"
         },
         {
           "type": "filters-sidebar"
-        },
-        {
-          "type": "shop-featured-collection",
-          "settings": {
-            "title": "عروض مختارة"
-          }
         },
         {
           "type": "shop-product-grid"
         },
         {
           "type": "shop-promo-rail",
-          "variant": "trust-rail"
+          "variant": "campaign-rail"
         }
       ]
     },
@@ -247,65 +243,114 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "masonry"
+          "variant": "boutique-portrait-stage"
         },
         {
           "type": "product-info",
-          "variant": "accordion"
+          "variant": "boutique-ledger"
         },
         {
           "type": "pdp-checkout"
         },
         {
-          "type": "countdown"
-        },
-        {
-          "type": "low-stock"
+          "type": "quantity-offers"
         },
         {
           "type": "size-guide",
-          "variant": "quick"
+          "variant": "compact"
         },
         {
-          "type": "bought-together",
-          "variant": "complete-look"
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
         },
         {
           "type": "reviews",
-          "variant": "standard"
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "pairing-rail"
         },
         {
           "type": "related-products",
-          "variant": "standard"
+          "variant": "graceful-related"
         }
       ]
     },
     "cart": {
       "layoutHint": "sidebar-right",
-      "pageGoal": "conversion",
       "sections": [
         {
           "type": "cart-items",
-          "variant": "market-basket",
+          "variant": "compact",
           "settings": {
-            "title": "سلة السوق"
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
           }
         },
         {
           "type": "order-summary",
-          "variant": "market-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
           "settings": {
-            "title": "ملخص الطلب",
-            "checkoutButtonText": "كمّلي الطلب"
+            "title": "مراجعة القطع",
+            "showUpsell": false
           }
         },
         {
-          "type": "trusted-badges"
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "title": "بيانات الشحن",
+            "submitLabel": "تأكيد الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards"
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "sale": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "eyebrow": "عروض",
+            "title": "تخفيضات الموسم",
+            "subtitle": "خصومات على أقسام مختارة.",
+            "ctaText": "اتسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline"
         }
       ]
     },
     "collections": {
-      "layoutHint": "stack",
       "pageGoal": "discovery",
       "sections": [
         {
@@ -316,37 +361,83 @@
           "type": "product-grid"
         },
         {
-          "type": "featured-collections",
-          "variant": "gallery-columns",
-          "settings": {
-            "title": "كوليكشنات الموسم"
-          }
-        },
-        {
-          "type": "services-grid",
-          "variant": "mixed-highlight"
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
         }
       ]
     },
-    "contact": {
-      "layoutHint": "stack",
-      "pageGoal": "discovery",
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "standard"
+        }
+      ]
+    },
+    "shipping": {
+      "pageGoal": "support",
       "sections": [
         {
           "type": "info-content",
           "settings": {
-            "title": "خدمة العملاء"
+            "title": "الشحن والتوصيل",
+            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
           }
-        },
+        }
+      ]
+    },
+    "returns": {
+      "pageGoal": "support",
+      "sections": [
         {
-          "type": "features-bar",
-          "variant": "system-assurance"
-        },
-        {
-          "type": "article-grid",
+          "type": "info-content",
           "settings": {
-            "title": "أسئلة شائعة"
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
           }
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
+          }
+        }
+      ]
+    },
+    "terms": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "قواعد الشراء والدفع والاستبدال."
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration"
         }
       ]
     }
