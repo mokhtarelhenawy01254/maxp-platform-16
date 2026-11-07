@@ -17,8 +17,9 @@ function normalizeAppIds(raw) {
     return { slugs: [], valid: false, issue: 'appIds missing' };
   }
   if (Array.isArray(raw)) {
-    const slugs = raw.map((v) => String(v)).filter(Boolean);
-    return { slugs, valid: true, issue: null };
+    const invalid = raw.some((v) => typeof v !== 'string' || v.trim() === '');
+    if (invalid) return { slugs: [], valid: false, issue: 'appIds contains non-string entry' };
+    return { slugs: raw.map((v) => v.trim()), valid: true, issue: null };
   }
   if (typeof raw === 'string') {
     const text = raw.trim();
@@ -28,7 +29,9 @@ function normalizeAppIds(raw) {
       if (!Array.isArray(parsed)) {
         return { slugs: [], valid: false, issue: 'appIds is not an array' };
       }
-      return { slugs: parsed.map((v) => String(v)).filter(Boolean), valid: true, issue: null };
+      const invalid = parsed.some((v) => typeof v !== 'string' || v.trim() === '');
+      if (invalid) return { slugs: [], valid: false, issue: 'appIds contains non-string entry' };
+      return { slugs: parsed.map((v) => v.trim()), valid: true, issue: null };
     } catch (err) {
       return { slugs: [], valid: false, issue: 'appIds malformed JSON' };
     }

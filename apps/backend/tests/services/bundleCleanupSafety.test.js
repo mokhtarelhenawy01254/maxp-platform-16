@@ -10,6 +10,8 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
     expect(normalizeAppIds('{not-json')).toEqual({ slugs: [], valid: false, issue: 'appIds malformed JSON' });
     expect(normalizeAppIds({ nope: true }).valid).toBe(false);
     expect(normalizeAppIds(null).valid).toBe(false);
+    expect(normalizeAppIds([{ unexpected: 'object' }]).valid).toBe(false);
+    expect(normalizeAppIds(['ok-slug', 123]).valid).toBe(false);
 
     const [row] = computeBundleSafety({
       bundles: [{ slug: 'orphan-bundle', appIds: '{not-json' }],
@@ -20,6 +22,18 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
     });
     expect(row.orphaned).toBe(true);
     expect(row.metadataIssue).toBe('appIds malformed JSON');
+    expect(row.safeToClean).toBe(false);
+  });
+
+  it('never marks an orphan with an object inside appIds safe to clean', () => {
+    const [row] = computeBundleSafety({
+      bundles: [{ slug: 'orphan-bundle', appIds: [{ unexpected: 'object' }] }],
+      referencedSlugs: [],
+      activeCompanyIds: [],
+      appsByCompany: new Map(),
+      slugById: new Map(),
+    });
+    expect(row.metadataIssue).toBe('appIds contains non-string entry');
     expect(row.safeToClean).toBe(false);
   });
 
