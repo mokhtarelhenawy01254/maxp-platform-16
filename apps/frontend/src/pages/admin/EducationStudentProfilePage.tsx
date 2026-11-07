@@ -211,6 +211,9 @@ const EducationStudentProfilePage: React.FC = () => {
     );
   }
 
+  const g = String(activeStudent.gender || "").toUpperCase();
+  const genderLabel = g === "MALE" || g === "ذكر" ? "ذكر" : g === "FEMALE" || g === "أنثى" ? "أنثى" : null;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
       {/* Back Link */}
@@ -259,8 +262,8 @@ const EducationStudentProfilePage: React.FC = () => {
                   الصف: {activeStudent.grade}
                 </span>
               )}
-              {activeStudent.gender && (
-                <span>النوع: {activeStudent.gender === "male" ? "ذكر" : "أنثى"}</span>
+              {genderLabel && (
+                <span>النوع: {genderLabel}</span>
               )}
             </div>
           </div>

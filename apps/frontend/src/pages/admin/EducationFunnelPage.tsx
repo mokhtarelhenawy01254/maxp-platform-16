@@ -77,8 +77,10 @@ const EVENT_COLORS: Record<string, string> = {
 const asNumber = (value: any): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
-const asPercent = (value: any): string =>
-  typeof value === "number" && Number.isFinite(value) ? `${value}%` : "—";
+const asPercent = (value: any): string => {
+  const n = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  return Number.isFinite(n) ? `${n}%` : "—";
+};
 
 export default function EducationFunnelPage() {
   const [funnel, setFunnel] = useState<any>(null);
