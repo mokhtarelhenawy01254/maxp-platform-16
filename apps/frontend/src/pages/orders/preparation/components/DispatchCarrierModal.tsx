@@ -55,17 +55,10 @@ export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
 
   return (
     <OrderModal
-      open={isOpen}
       isOpen={isOpen}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
       onClose={onClose}
       title="شحن وتجهيز الطلبات"
-      description={`إرسال ${ordersCount} طلب إلى شركة الشحن`}
       subtitle={`إرسال ${ordersCount} طلب إلى شركة الشحن`}
-      showCancel={false}
-      busy={loading}
       size="md"
     >
       <div className="space-y-4 py-2">

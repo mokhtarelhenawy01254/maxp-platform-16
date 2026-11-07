@@ -6,33 +6,6 @@ const activeIncompleteCartConversions = new Set();
 let isAutoConvertRunning = false;
 
 /**
- * 🛡️ فحص صحة رقم الهاتف واستبعاد الأرقام الوهمية أو المتكررة
- */
-function isValidCustomerPhone(phone) {
-  if (!phone) return false;
-  const clean = String(phone)
-    .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
-    .replace(/\D/g, '');
-
-  if (clean.length < 10 || clean.length > 15) return false;
-
-  // استبعاد الأرقام المتطابقة بالكامل (مثال: 0000000000 أو 1111111111)
-  if (/^(\d)\1+$/.test(clean)) return false;
-
-  // تجريد مفتاح الدولة المصري (002 / 20) للفحص الدقيق
-  const nationalEgyptian = clean.replace(/^(?:0020|002|20)/, '');
-  const normalizedEgyptian = nationalEgyptian.startsWith('0') ? nationalEgyptian : ('0' + nationalEgyptian);
-
-  // استبعاد الأرقام المصرية التي تحتوي على أصفار أو أرقام مكررة بعد الكود (مثال: 01000000000، 01111111111)
-  if (/^01[0125](\d)\1{7}$/.test(normalizedEgyptian)) return false;
-
-  // استبعاد الأرقام التسلسلية الوهمية
-  if (['0123456789', '01234567890', '1234567890', '0987654321', '01234567891', '12345678901'].includes(clean)) return false;
-
-  return true;
-}
-
-/**
  * ⚡ تحويل سلة متروكة واحدة إلى طلب رسمي بحالة PENDING داخل جدول الطلبات الرئيسي
  */
 async function convertSingleIncompleteCart({
@@ -75,12 +48,6 @@ async function convertSingleIncompleteCart({
       cart = await prisma.guestCart.findFirst({
         where: { companyId, cartId }
       });
-    } else if (cart.companyId && cart.companyId !== companyId) {
-      return {
-        success: false,
-        code: 'UNAUTHORIZED_CART',
-        message: 'السلة غير تابعة لهذه الشركة'
-      };
     }
 
     if (!cart) {
@@ -121,14 +88,6 @@ async function convertSingleIncompleteCart({
         success: false,
         code: 'MISSING_PHONE',
         message: 'رقم الهاتف مطلوب لتحويل الطلب'
-      };
-    }
-
-    if (!isValidCustomerPhone(guestPhone)) {
-      return {
-        success: false,
-        code: 'INVALID_PHONE',
-        message: 'رقم الهاتف غير صالح أو وهمي، تم تخطي تحويل السلة لحماية دقة وجودة الطلبات'
       };
     }
 
@@ -228,65 +187,6 @@ async function convertSingleIncompleteCart({
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
-      // 🏷️ تمييز الطلب المحول بتاج وملاحظات واضحة لفريق خدمة العملاء
-      if (result.data?.orderNumber) {
-        try {
-          const orderRecord = await prisma.order.findFirst({
-            where: { companyId, orderNumber: result.data.orderNumber }
-          });
-          if (orderRecord) {
-            let orderMeta = {};
-            try {
-              orderMeta = typeof orderRecord.metadata === 'string'
-                ? JSON.parse(orderRecord.metadata)
-                : (orderRecord.metadata || {});
-            } catch (e) {
-              orderMeta = {};
-            }
-            orderMeta.isRecoveredFromCart = true;
-            orderMeta.recoveredCartId = cartId;
-            orderMeta.recoveredChannel = channel;
-            orderMeta.tag = 'سلة مستعادة 🛒';
-
-            const existingNotes = orderRecord.notes || notes || '';
-            const updatedNotes = existingNotes
-              ? `[سلة مستعادة 🛒]\n${existingNotes}`
-              : '[سلة مستعادة 🛒 - تم التحويل تلقائياً من سلة متروكة]';
-
-            await prisma.order.update({
-              where: { id: orderRecord.id },
-              data: {
-                sourceType: 'incomplete_cart_auto',
-                notes: updatedNotes,
-                metadata: JSON.stringify(orderMeta)
-              }
-            });
-          }
-
-          const guestOrderRecord = await prisma.guestOrder.findFirst({
-            where: { companyId, orderNumber: result.data.orderNumber }
-          });
-          if (guestOrderRecord) {
-            let gMeta = {};
-            try {
-              gMeta = typeof guestOrderRecord.metadata === 'string'
-                ? JSON.parse(guestOrderRecord.metadata)
-                : (guestOrderRecord.metadata || {});
-            } catch (e) {
-              gMeta = {};
-            }
-            gMeta.isRecoveredFromCart = true;
-            gMeta.tag = 'سلة مستعادة 🛒';
-            await prisma.guestOrder.update({
-              where: { id: guestOrderRecord.id },
-              data: { metadata: JSON.stringify(gMeta) }
-            });
-          }
-        } catch (metaErr) {
-          console.warn('⚠️ [INCOMPLETE-CONVERT] Could not update order recovery metadata:', metaErr.message);
-        }
-      }
-
       let conversionLogError = null;
       try {
         const employee = user || {};
@@ -380,20 +280,17 @@ async function autoConvertCompanyIncompleteCarts(companyId, { limit = 50, user =
     }
   }
 
-  // 🕒 حصر التحويل التلقائي على السلال الحديثة خلال آخر 48 ساعة فقط لحماية المخزون ومنع إزعاج العملاء القدامى
-  const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
-
-  // جلب السلال المستبعدة (التي تم تجاهلها أو تم تحويلها مسبقاً خلال مهلة الـ 48 ساعة)
+  // جلب السلال المستبعدة (التي تم تجاهلها أو تم تحويلها مسبقاً)
   let excludedCartIds = [];
   try {
     const [dismissLogs, convertedLogs] = await Promise.all([
       prisma.cartContactLog.findMany({
-        where: { companyId, method: 'dismissed', createdAt: { gte: since48h } },
+        where: { companyId, method: 'dismissed' },
         select: { cartId: true },
         distinct: ['cartId']
       }),
       prisma.cartConversionLog.findMany({
-        where: { companyId, convertedAt: { gte: since48h } },
+        where: { companyId },
         select: { cartId: true },
         distinct: ['cartId']
       })
@@ -408,12 +305,6 @@ async function autoConvertCompanyIncompleteCarts(companyId, { limit = 50, user =
   const whereConditions = [
     { companyId },
     ...(excludedCartIds.length > 0 ? [{ cartId: { notIn: excludedCartIds } }] : []),
-    {
-      OR: [
-        { createdAt: { gte: since48h } },
-        { checkoutUpdatedAt: { gte: since48h } }
-      ]
-    },
     {
       OR: [
         { checkoutData: { contains: '"guestPhone"' } },
@@ -467,7 +358,7 @@ async function autoConvertCompanyIncompleteCarts(companyId, { limit = 50, user =
           orderNumber: res.orderNumber,
           customerPhone: res.customerPhone
         });
-      } else if (res.code === 'EXISTING_CUSTOMER_ORDER' || res.code === 'INVALID_PHONE') {
+      } else if (res.code === 'EXISTING_CUSTOMER_ORDER') {
         skippedCount++;
       } else if (res.code !== 'CART_ALREADY_CONVERTED') {
         failedCount++;
@@ -527,7 +418,6 @@ async function runAutoConvertIncompleteCartsJob() {
 }
 
 module.exports = {
-  isValidCustomerPhone,
   convertSingleIncompleteCart,
   autoConvertCompanyIncompleteCarts,
   runAutoConvertIncompleteCartsJob,

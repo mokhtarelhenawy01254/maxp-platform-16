@@ -1,0 +1,105 @@
+name: Storefront Theme Lighthouse
+
+# قياس أداء حقيقي لقوالب المتجر المنشورة (تقارير فقط — مش بوابة على الديبلوي).
+#
+# ليه workflow منفصل:
+#   Lighthouse في CI بطيء ومتغيّر النتيجة (ضوضاء الشبكة/الجهاز)، فلو كان بوابة
+#   على Deploy هيوقف نشر شغل سليم بسبب رقم قاس على runner مشغول.
+#   هنا: ننتج تقرير + JSON خام كـartifact، والقرار البشري هو اللي يعتمد.
+#
+# الاستخدام (يدوي):
+#   Actions → Storefront Theme Lighthouse → Run workflow
+#   urls: رابط tenant كامل مع بارامترات المعاينة، مثال:
+#     https://demo.maxp.online/?previewTheme=atelier-nova&previewSource=marketplace&previewAdminOrigin=https%3A%2F%2Fmaxp.online
+#   مفصولة بفاصلة لعدة قوالب.
+#
+# مهم: القالب لازم يكون منشور قبل القياس. قياس قالب مش منشور = صفحة خطأ بأرقام سريعة.
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'روابط القوالب المنشورة (مفصولة بفاصلة)'
+        required: true
+      runs:
+        description: 'عدد مرات القياس لكل رابط (افتراضي 3 — خد الوسيط)'
+        required: false
+        default: '3'
+
+concurrency:
+  group: theme-lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate that URLs carry the full preview parameter set
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra LIST <<< "${{ inputs.urls }}"
+          for u in "${LIST[@]}"; do
+            u="$(echo "$u" | xargs)"
+            case "$u" in
+              https://*previewTheme=*previewSource=*previewAdminOrigin=*) echo "OK $u" ;;
+              *) echo "الرابط ناقص previewSource/previewAdminOrigin وده هيقيس ثيم التاجر نفسه: $u"; exit 1 ;;
+            esac
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Lighthouse CI
+        run: npm i -g @lhci/cli@0.14.x
+
+      - name: Run Lighthouse CI (desktop preset, default throttling)
+        run: |
+          set -euo pipefail
+          lhci collect \
+            --url="${{ inputs.urls }}" \
+            --numberOfRuns=${{ inputs.runs }} \
+            --settings.preset=desktop 2>&1 | tee lhci-collect.log
+
+      - name: Upload raw Lighthouse JSON results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-raw-json
+          path: |
+            .lighthouseci/*.json
+            lhci-collect.log
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summarize the raw numbers (no scores invented)
+        if: always()
+        run: |
+          node - <<'NODE' | tee -a "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const dir = '.lighthouseci';
+          if (!fs.existsSync(dir)) { console.log('لا يوجد تقرير — الفحص لم ينتج ملفات.'); process.exit(0); }
+          const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.startsWith('lhr-'));
+          if (!files.length) { console.log('لا يوجد تقرير.'); process.exit(0); }
+          console.log('| الرابط | FCP (ms) | LCP (ms) | CLS | TBT (ms) | JS (KB) |');
+          console.log('|---|---|---|---|---|---|');
+          for (const f of files) {
+            const r = JSON.parse(fs.readFileSync(dir + '/' + f, 'utf8'));
+            const a = r.audits || {};
+            const num = (k) => (a[k] && typeof a[k].numericValue === 'number' ? Math.round(a[k].numericValue) : '-');
+            const cls = a['cumulative-layout-shift'] ? a['cumulative-layout-shift'].displayValue : '-';
+            const bytes = a['total-byte-weight'] && a['total-byte-weight'].numericValue ? Math.round(a['total-byte-weight'].numericValue / 1024) : '-';
+            console.log('| ' + (r.finalDisplayedUrl || r.finalUrl || f) + ' | ' + num('first-contentful-paint') + ' | ' + num('largest-contentful-paint') + ' | ' + cls + ' | ' + num('total-blocking-time') + ' | ' + bytes + ' |');
+          }
+          console.log('');
+          console.log('الأرقام من تقرير Lighthouse الخام مباشرة — مفيش تلخيص بشري. الملفات في artifact: lighthouse-raw-json');
+          NODE

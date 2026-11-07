@@ -2103,11 +2103,6 @@ router.post('/', async (req, res) => {
           totalDiscount: discountAmount
         });
 
-        const compSettings = typeof company?.settings === 'string'
-          ? JSON.parse(company.settings)
-          : (company?.settings || {});
-        const requireDiscountApproval = Boolean(compSettings.requireDiscountApproval);
-
         if (requireDiscountApproval && !req.headers['x-admin-convert']) {
           orderMetadata.needsDiscountApproval = true;
           orderMetadata.discountApprovalStatus = 'PENDING_APPROVAL';
