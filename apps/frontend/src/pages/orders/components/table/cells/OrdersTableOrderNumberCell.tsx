@@ -68,6 +68,16 @@ export const OrdersTableOrderNumberCell: React.FC<OrdersTableOrderNumberCellProp
               {t("orders.guest")}
             </span>
           )}
+          {(order.sourceType === "incomplete_cart_auto" ||
+            order.metadata?.source === "incomplete_cart_auto" ||
+            Boolean(order.metadata?.isRecoveredFromCart)) && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+              title="طلب مستعاد تلقائياً من سلة متروكة"
+            >
+              <span>سلة مستعادة 🛒</span>
+            </span>
+          )}
           {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
             <span
               className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-500/20"
