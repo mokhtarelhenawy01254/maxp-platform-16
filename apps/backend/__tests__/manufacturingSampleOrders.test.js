@@ -1732,6 +1732,38 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
       expect(listed.sampleTotalCost).toBe(40);
     });
 
+    test('7. تعديل ناجح للكمية → 200 + componentsTotal/sampleTotalCost الجديدين', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة تعديل ناجح',
+        fee: 10,
+      });
+
+      const added = await ManufacturingSampleService.addSampleComponent(companyId, testUser, sample.id, {
+        name: 'مكوّن تعديل',
+        quantity: 1,
+        unitPrice: 40,
+      });
+      expect(added.componentsTotal).toBe(40);
+      expect(added.sampleTotalCost).toBe(50);
+
+      const updated = await ManufacturingSampleService.updateSampleComponent(
+        companyId,
+        testUser,
+        sample.id,
+        added.component.id,
+        { quantity: 3 }
+      );
+      expect(updated.component.quantity).toBe(3);
+      expect(updated.component.totalCost).toBe(120);
+      expect(updated.componentsTotal).toBe(120);
+      expect(updated.sampleTotalCost).toBe(130);
+
+      const listed = await ManufacturingSampleService.listSampleComponents(companyId, sample.id);
+      expect(listed.count).toBe(1);
+      expect(listed.componentsTotal).toBe(120);
+      expect(listed.sampleTotalCost).toBe(130);
+    });
+
     test('6. إنشاء عينة بقائمة فيها نفس المنتج مرتين → 409 قبل أي كتابة', async () => {
       let caught = null;
       try {

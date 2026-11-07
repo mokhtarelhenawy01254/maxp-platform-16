@@ -2608,6 +2608,23 @@ class ManufacturingSampleService {
     return Math.round(total * 100) / 100;
   }
 
+  /**
+   * قفل استشاري على مستوى العينة داخل الـtransaction — يمنع سباق إضافة/تعديل
+   * نفس المكوّن مرتين في نفس اللحظة (BUG من مراجعة OpenCode 2026-11-08).
+   */
+  static async lockSampleComponents(tx, companyId, sampleId) {
+    try {
+      const key = `${companyId}:${sampleId}`;
+      if (typeof tx.$queryRawUnsafe === 'function') {
+        await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
+      } else if (typeof tx.$executeRawUnsafe === 'function') {
+        await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
+      }
+    } catch (_) {
+      // مش Postgres أو mock — الاختبارات بتكمل بالتسلسل العادي
+    }
+  }
+
   static async addSampleComponent(companyId, user, sampleId, data = {}) {
     await this.ensureSchema();
     const prisma = getSharedPrismaClient();
@@ -2644,27 +2661,30 @@ class ManufacturingSampleService {
       throw err;
     }
 
-    await this.assertNoDuplicateComponent(prisma, companyId, sampleId, { productId, name });
-
     const unit = String(data.unit || '').trim() || 'قطعة';
     const totalCost = this.computeComponentTotal(quantity, unitPrice);
 
-    const created = await prisma.sampleComponent.create({
-      data: {
-        companyId,
-        sampleOrderId: sampleId,
-        productId,
-        name,
-        quantity,
-        unit,
-        unitPrice,
-        totalCost,
-        sortOrder: Number.isFinite(Number(data.sortOrder)) ? Number(data.sortOrder) : 0,
-      },
-    });
+    return await prisma.$transaction(async (tx) => {
+      await this.lockSampleComponents(tx, companyId, sampleId);
+      await this.assertNoDuplicateComponent(tx, companyId, sampleId, { productId, name });
 
-    const totals = await this.collectComponentTotals(prisma, companyId, sampleId);
-    return { component: created, ...totals };
+      const created = await tx.sampleComponent.create({
+        data: {
+          companyId,
+          sampleOrderId: sampleId,
+          productId,
+          name,
+          quantity,
+          unit,
+          unitPrice,
+          totalCost,
+          sortOrder: Number.isFinite(Number(data.sortOrder)) ? Number(data.sortOrder) : 0,
+        },
+      });
+
+      const totals = await this.collectComponentTotals(tx, companyId, sampleId);
+      return { component: created, ...totals };
+    });
   }
 
   static async updateSampleComponent(companyId, user, sampleId, componentId, data = {}) {
@@ -2750,23 +2770,27 @@ class ManufacturingSampleService {
       patch.sortOrder = Number(data.sortOrder);
     }
 
-    if (data.name !== undefined || data.productId !== undefined) {
-      const effectiveProductId = patch.productId !== undefined ? patch.productId : component.productId;
-      const effectiveName = patch.name !== undefined ? patch.name : component.name;
-      await this.assertNoDuplicateComponent(prisma, companyId, sampleId, {
-        productId: effectiveProductId,
-        name: effectiveName,
-        excludeId: componentId,
+    return await prisma.$transaction(async (tx) => {
+      await this.lockSampleComponents(tx, companyId, sampleId);
+
+      if (data.name !== undefined || data.productId !== undefined) {
+        const effectiveProductId = patch.productId !== undefined ? patch.productId : component.productId;
+        const effectiveName = patch.name !== undefined ? patch.name : component.name;
+        await this.assertNoDuplicateComponent(tx, companyId, sampleId, {
+          productId: effectiveProductId,
+          name: effectiveName,
+          excludeId: componentId,
+        });
+      }
+
+      const updated = await tx.sampleComponent.update({
+        where: { id: componentId },
+        data: patch,
       });
-    }
 
-    const updated = await prisma.sampleComponent.update({
-      where: { id: componentId },
-      data: patch,
+      const totals = await this.collectComponentTotals(tx, companyId, sampleId);
+      return { component: updated, ...totals };
     });
-
-    const totals = await this.collectComponentTotals(prisma, companyId, sampleId);
-    return { component: updated, ...totals };
   }
 
   static async deleteSampleComponent(companyId, user, sampleId, componentId) {

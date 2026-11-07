@@ -30,10 +30,16 @@ CREATE INDEX IF NOT EXISTS "sample_order_components_companyId_productId_idx"
 
 DO $$
 BEGIN
-    ALTER TABLE "sample_order_components"
-        ADD CONSTRAINT "sample_order_components_sampleOrderId_fkey"
-        FOREIGN KEY ("sampleOrderId") REFERENCES "sample_orders"("id")
-        ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
+    -- sample_orders بيتعمل بواسطة ensureSchema/db push في المشروع ده، مش بـmigration سابقة.
+    -- على قاعدة نضيفة الجدول الأب ممكن يكون لسه مش موجود — نتخطى الـFK بدل ما الـmigration تفشل.
+    IF to_regclass('public.sample_orders') IS NOT NULL THEN
+        BEGIN
+            ALTER TABLE "sample_order_components"
+                ADD CONSTRAINT "sample_order_components_sampleOrderId_fkey"
+                FOREIGN KEY ("sampleOrderId") REFERENCES "sample_orders"("id")
+                ON DELETE CASCADE ON UPDATE CASCADE;
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END;
+    END IF;
 END $$;
