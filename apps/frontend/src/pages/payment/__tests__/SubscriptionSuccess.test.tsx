@@ -31,22 +31,14 @@ describe("SubscriptionSuccess", () => {
     trackPurchaseSpy.mockRestore();
   });
 
-  it("shows the success state and fires trackPlatformSitePurchase with default 999 EGP", async () => {
+  it("shows the success state but does not invent a 999 purchase value when amount is missing", async () => {
     renderWithQuery("?status=success&bundle=store-complete-bundle&billingId=bill-1");
 
     expect(await screen.findByText("باقة المتجر الكاملة مفعّلة!")).toBeInTheDocument();
     expect(screen.getByText(/تم إتمام الاشتراك وتفعيل الـ 17 أداة بنجاح/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ابدأ الآن/ })).toBeInTheDocument();
 
-    expect(trackPurchaseSpy).toHaveBeenCalledTimes(1);
-    expect(trackPurchaseSpy).toHaveBeenCalledWith("subscription_success", {
-      value: 999,
-      currency: "EGP",
-      content_name: "store-complete-bundle",
-      eventID: "purchase_bill-1",
-      billingId: "bill-1",
-      bundle: "store-complete-bundle",
-    });
+    expect(trackPurchaseSpy).not.toHaveBeenCalled();
   });
 
   it("uses the actual amount from query params when available", async () => {
@@ -61,14 +53,14 @@ describe("SubscriptionSuccess", () => {
   });
 
   it("does not track twice if already tracked in sessionStorage (refresh prevention)", async () => {
-    const { unmount } = renderWithQuery("?status=success&bundle=store-complete-bundle&billingId=bill-repeat");
+    const { unmount } = renderWithQuery("?status=success&bundle=store-complete-bundle&billingId=bill-repeat&amount=999");
     await screen.findByText("باقة المتجر الكاملة مفعّلة!");
     expect(trackPurchaseSpy).toHaveBeenCalledTimes(1);
 
     unmount();
 
     // Re-render simulates page refresh with same billingId
-    renderWithQuery("?status=success&bundle=store-complete-bundle&billingId=bill-repeat");
+    renderWithQuery("?status=success&bundle=store-complete-bundle&billingId=bill-repeat&amount=999");
     expect(trackPurchaseSpy).toHaveBeenCalledTimes(1);
   });
 

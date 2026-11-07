@@ -74,7 +74,11 @@ const SubscriptionSuccess: React.FC = () => {
       searchParams.get("value") ||
       searchParams.get("total");
     const parsedAmount = rawAmount ? parseFloat(rawAmount) : NaN;
-    const value = !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : 999;
+    // ممنوع اختراع سعر: لو الـamount مش موجود/غير صالح منفعش نبعت حدث شراء بقيمة 999
+    const value = !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : null;
+    if (value === null) {
+      return;
+    }
 
     const contentName =
       bundle || (isStoreBundle ? "store-complete-bundle" : "bundle");

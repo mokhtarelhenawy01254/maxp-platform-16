@@ -295,7 +295,7 @@ const MessagingLanding: React.FC = () => {
                 )}
                 {activationType !== "free" && (
                   <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-secondary">
-                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                    {subscribing && actionType === "paid" ? "جاري..." : bundle ? `اشترك ب ${bundle.monthlyPrice.toLocaleString("ar-EG")} ج.م` : "اشترك الآن"}
                   </button>
                 )}
                 <a href="#features" className="msg-btn msg-btn-ghost">شوف المميزات</a>
@@ -551,12 +551,12 @@ const MessagingLanding: React.FC = () => {
                 <span className="msg-badge" style={{ background: "rgba(197,95,106,0.12)", color: "#c55f6a" }}>الأفضل في السوق</span>
               </div>
               {bundle && bundle.discount > 0 && <div className="msg-price-original mb-1">{Math.round(bundle.monthlyPrice / (1 - bundle.discount / 100)).toLocaleString("ar-EG")} ج.م/شهر</div>}
-              <div className="msg-price mb-2">{bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م<span className="text-base font-normal" style={{ color: "var(--msg-text-muted)" }}>/شهر</span></div>
+              <div className="msg-price mb-2">{bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "—"} ج.م<span className="text-base font-normal" style={{ color: "var(--msg-text-muted)" }}>/شهر</span></div>
               <p className="text-xs mb-6" style={{ color: "var(--msg-text-muted)" }}>ضمان استرداد كامل خلال ٧ أيام — من غير ما تسأل</p>
               {activationType === "both" ? (
                 <div className="flex flex-col gap-2 mb-6">
                   <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-primary w-full justify-center">
-                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                    {subscribing && actionType === "paid" ? "جاري..." : bundle ? `اشترك ب ${bundle.monthlyPrice.toLocaleString("ar-EG")} ج.م/شهر` : "اشترك الآن"} <ArrowLeft className="w-4 h-4" />
                   </button>
                   <button onClick={handleFreeActivate} disabled={subscribing} className="msg-btn msg-btn-secondary w-full justify-center">
                     {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا ٧ أيام"}
@@ -564,7 +564,7 @@ const MessagingLanding: React.FC = () => {
                 </div>
               ) : (
                 <button onClick={handleSubscribe} disabled={subscribing} className="msg-btn msg-btn-primary w-full justify-center mb-6">
-                  {subscribing ? "جاري..." : activationType === "free" ? "جرب مجانا" : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                  {subscribing ? "جاري..." : activationType === "free" ? "جرب مجانا" : bundle ? `اشترك ب ${bundle.monthlyPrice.toLocaleString("ar-EG")} ج.م/شهر` : "اشترك الآن"} <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
               <div className="space-y-3 text-right">
@@ -628,7 +628,7 @@ const MessagingLanding: React.FC = () => {
               )}
               {activationType !== "free" && (
                 <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-secondary">
-                  {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                  {subscribing && actionType === "paid" ? "جاري..." : bundle ? `اشترك ب ${bundle.monthlyPrice.toLocaleString("ar-EG")} ج.م` : "اشترك الآن"}
                 </button>
               )}
               <button onClick={() => setLeadFormOpen(true)} className="msg-btn msg-btn-ghost">

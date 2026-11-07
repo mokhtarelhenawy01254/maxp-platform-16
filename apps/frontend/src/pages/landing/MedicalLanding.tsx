@@ -232,7 +232,7 @@ const MedicalLanding: React.FC = () => {
     : bundle && activationType === "free" ? handleFreeActivate
     : handlePaidSubscribe;
 
-  const priceDisplay = bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩";
+  const priceDisplay = bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "—";
 
   const originalTotal = bundle && bundle.discount > 0
     ? Math.round(Number(bundle.monthlyPrice) / (1 - Number(bundle.discount) / 100)).toLocaleString("ar-EG")
