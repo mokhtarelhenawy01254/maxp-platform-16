@@ -2613,16 +2613,20 @@ class ManufacturingSampleService {
    * نفس المكوّن مرتين في نفس اللحظة (BUG من مراجعة OpenCode 2026-11-08).
    */
   static async lockSampleComponents(tx, companyId, sampleId) {
-    try {
-      const key = `${companyId}:${sampleId}`;
-      if (typeof tx.$queryRawUnsafe === 'function') {
-        await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
-      } else if (typeof tx.$executeRawUnsafe === 'function') {
-        await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
-      }
-    } catch (_) {
-      // مش Postgres أو mock — الاختبارات بتكمل بالتسلسل العادي
+    const key = `${companyId}:${sampleId}`;
+    if (typeof tx.$executeRawUnsafe === 'function') {
+      // pg_advisory_xact_lock بترجع void — $executeRaw مش بيحاول يفك تشفير أعمدة
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
+      return;
     }
+    if (typeof tx.$queryRawUnsafe === 'function') {
+      await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1)) IS NULL AS locked', key);
+      return;
+    }
+    // fail-closed: من غير قفل مفيش ضمان ضد السباق
+    const err = new Error('تعذّر قفل مكونات العينة: عميل قاعدة البيانات لا يدعم الاستعلامات الخام');
+    err.statusCode = 500;
+    throw err;
   }
 
   static async addSampleComponent(companyId, user, sampleId, data = {}) {
@@ -2692,86 +2696,87 @@ class ManufacturingSampleService {
     const prisma = getSharedPrismaClient();
     await this.assertSampleEditable(prisma, companyId, sampleId, 'تعديل');
 
-    const component = await prisma.sampleComponent.findFirst({
-      where: { id: componentId, sampleOrderId: sampleId, companyId },
-    });
-    if (!component) {
-      const err = new Error('المكوّن غير موجود');
-      err.statusCode = 404;
-      throw err;
-    }
-
-    const patch = {};
-
-    if (data.productId !== undefined) {
-      if (data.productId) {
-        const pId = String(data.productId);
-        const product = await prisma.product.findFirst({
-          where: { id: pId, companyId },
-          select: { id: true, name: true },
-        });
-        if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
-        patch.productId = pId;
-        if (data.name === undefined && !component.name) {
-          patch.name = product.name;
-        }
-      } else {
-        patch.productId = null;
-      }
-    }
-
-    if (data.name !== undefined) {
-      const name = String(data.name || '').trim();
-      if (!name && !patch.productId && !component.productId) {
-        const err = new Error('اسم المكوّن إلزامي');
-        err.statusCode = 400;
-        throw err;
-      }
-      patch.name = name;
-    }
-
-    if (data.quantity !== undefined) {
-      const quantity = this.normalizeComponentQuantity(data.quantity);
-      if (quantity === null) {
-        const err = new Error('الكمية لازم تكون رقم أكبر من صفر');
-        err.statusCode = 400;
-        throw err;
-      }
-      patch.quantity = quantity;
-    }
-
-    if (data.unit !== undefined) {
-      patch.unit = String(data.unit || '').trim() || 'قطعة';
-    }
-
-    const priceChanged = data.unitPrice !== undefined;
-    if (priceChanged) {
-      const unitPrice = this.normalizeComponentPrice(data.unitPrice);
-      if (unitPrice === null) {
-        const err = new Error('سعر الوحدة لازم يكون رقم ≥ 0');
-        err.statusCode = 400;
-        throw err;
-      }
-      patch.unitPrice = unitPrice;
-    }
-
-    if (patch.quantity !== undefined || patch.unitPrice !== undefined) {
-      const nextQuantity = patch.quantity !== undefined ? patch.quantity : component.quantity;
-      const nextPrice = patch.unitPrice !== undefined ? patch.unitPrice : component.unitPrice;
-      patch.totalCost = this.computeComponentTotal(nextQuantity, nextPrice);
-    }
-
-    // تحديث لحظة تثبيت السعر فقط لو السعر اتغيّر فعلًا
-    if (priceChanged) {
-      patch.priceSnapshotAt = new Date();
-    }
-
-    if (data.sortOrder !== undefined && Number.isFinite(Number(data.sortOrder))) {
-      patch.sortOrder = Number(data.sortOrder);
-    }
-
     return await prisma.$transaction(async (tx) => {
       await this.lockSampleComponents(tx, companyId, sampleId);
+
+      // القراءة جوه الـtransaction وبعد القفل — تعديلين متزامنين ما يحسبوش totalCost من snapshot قديم
+      const component = await tx.sampleComponent.findFirst({
+        where: { id: componentId, sampleOrderId: sampleId, companyId },
+      });
+      if (!component) {
+        const err = new Error('المكوّن غير موجود');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      const patch = {};
+
+      if (data.productId !== undefined) {
+        if (data.productId) {
+          const pId = String(data.productId);
+          const product = await tx.product.findFirst({
+            where: { id: pId, companyId },
+            select: { id: true, name: true },
+          });
+          if (!product) throw httpErr(400, 'الخامة المختارة غير موجودة في هذه الشركة');
+          patch.productId = pId;
+          if (data.name === undefined && !component.name) {
+            patch.name = product.name;
+          }
+        } else {
+          patch.productId = null;
+        }
+      }
+
+      if (data.name !== undefined) {
+        const name = String(data.name || '').trim();
+        if (!name && !patch.productId && !component.productId) {
+          const err = new Error('اسم المكوّن إلزامي');
+          err.statusCode = 400;
+          throw err;
+        }
+        patch.name = name;
+      }
+
+      if (data.quantity !== undefined) {
+        const quantity = this.normalizeComponentQuantity(data.quantity);
+        if (quantity === null) {
+          const err = new Error('الكمية لازم تكون رقم أكبر من صفر');
+          err.statusCode = 400;
+          throw err;
+        }
+        patch.quantity = quantity;
+      }
+
+      if (data.unit !== undefined) {
+        patch.unit = String(data.unit || '').trim() || 'قطعة';
+      }
+
+      const priceChanged = data.unitPrice !== undefined;
+      if (priceChanged) {
+        const unitPrice = this.normalizeComponentPrice(data.unitPrice);
+        if (unitPrice === null) {
+          const err = new Error('سعر الوحدة لازم يكون رقم ≥ 0');
+          err.statusCode = 400;
+          throw err;
+        }
+        patch.unitPrice = unitPrice;
+      }
+
+      if (patch.quantity !== undefined || patch.unitPrice !== undefined) {
+        const nextQuantity = patch.quantity !== undefined ? patch.quantity : component.quantity;
+        const nextPrice = patch.unitPrice !== undefined ? patch.unitPrice : component.unitPrice;
+        patch.totalCost = this.computeComponentTotal(nextQuantity, nextPrice);
+      }
+
+      // تحديث لحظة تثبيت السعر فقط لو السعر اتغيّر فعلًا
+      if (priceChanged) {
+        patch.priceSnapshotAt = new Date();
+      }
+
+      if (data.sortOrder !== undefined && Number.isFinite(Number(data.sortOrder))) {
+        patch.sortOrder = Number(data.sortOrder);
+      }
 
       if (data.name !== undefined || data.productId !== undefined) {
         const effectiveProductId = patch.productId !== undefined ? patch.productId : component.productId;
