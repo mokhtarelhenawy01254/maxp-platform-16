@@ -220,6 +220,7 @@ export default function EducationManagementPage() {
               setEnrollmentModal={setEnrollmentModal}
               handleSaveEnrollment={handleSaveEnrollment}
               handleDeleteEnrollment={handleDeleteEnrollment}
+              handleSaveStudent={handleSaveStudent}
             />
           )}
           {activeTab === "sessions" && (

@@ -22,6 +22,7 @@ export interface EducationEnrollmentsTabProps {
   ) => void;
   handleSaveEnrollment: (d: Partial<EducationEnrollment>) => Promise<void>;
   handleDeleteEnrollment: (id: string) => Promise<void>;
+  handleSaveStudent?: (d: Partial<EducationStudent>) => Promise<EducationStudent | null>;
 }
 
 export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = ({
@@ -34,6 +35,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
   setEnrollmentModal,
   handleSaveEnrollment,
   handleDeleteEnrollment,
+  handleSaveStudent,
 }) => {
   return (
     <div className="space-y-4">
@@ -219,6 +221,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
           subjects={subjects}
           onClose={() => setEnrollmentModal(undefined)}
           onSave={handleSaveEnrollment}
+          onAddNewStudent={handleSaveStudent}
         />
       )}
     </div>
