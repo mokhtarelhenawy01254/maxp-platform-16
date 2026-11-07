@@ -2593,6 +2593,7 @@ declare module 'react-i18next' {
         emptyState: string;
         loadError: string;
         recentSection: string;
+        allGroups: string;
         groupStart: string;
         groupProducts: string;
         groupOrders: string;
