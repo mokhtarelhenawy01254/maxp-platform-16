@@ -1,0 +1,54 @@
+{
+ "generatedAt": "2026-11-07T20:11:06.713Z",
+ "mode": "dry-run (read-only)",
+ "bundles": {
+  "total": 8,
+  "active": 8,
+  "inactive": 0,
+  "slugs": [
+   "ai-inbox-bundle",
+   "cafe-complete-bundle",
+   "facebook-complete-bundle",
+   "financial-pricing-suite",
+   "hr-complete-bundle",
+   "medical-bundle",
+   "messaging-bundle",
+   "store-complete-bundle"
+  ]
+ },
+ "landingReferences": {
+  "slugs": [
+   "ai-inbox-bundle",
+   "medical-bundle",
+   "messaging-bundle",
+   "store-complete-bundle"
+  ],
+  "missing": [],
+  "orphaned": [
+   "cafe-complete-bundle",
+   "facebook-complete-bundle",
+   "financial-pricing-suite",
+   "hr-complete-bundle"
+  ]
+ },
+ "subscriptions": {
+  "total": 121,
+  "byStatus": {
+   "SUSPENDED": 1,
+   "ACTIVE": 115,
+   "TRIAL": 5
+  }
+ },
+ "landingPages": {
+  "total": 0,
+  "withBundleSlug": 0,
+  "note": "عمود bundle_slug غير موجود على lp_pages في هذه البيئة — تم تخطي العدّ"
+ },
+ "destructiveActions": "none — this script never deletes or updates rows",
+ "verdict": {
+  "bundlesReferencedButMissing": 0,
+  "orphanBundles": 4,
+  "safeToCleanCount": 4,
+  "blockedByActiveSubscriptions": 115
+ }
+}
