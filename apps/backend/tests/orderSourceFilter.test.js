@@ -81,7 +81,7 @@ describe('Order Source Filter Condition Map (buildRegularSourceCondition)', () =
 
     test('handles unknown orders', () => {
       const condition = buildRegularSourceCondition('unknown');
-      expect(condition).toHaveProperty('AND');
+      expect(condition).toHaveProperty('OR');
     });
   });
 });
