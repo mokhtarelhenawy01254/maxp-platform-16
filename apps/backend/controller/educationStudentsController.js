@@ -77,24 +77,36 @@ const create = async (req, res) => {
     const safeNotes = (notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null;
 
     if (!customerId) {
-      let gFirstName = 'ولي أمر';
-      let gLastName = safeLastName || 'الطالب';
+      const typedGuardianName = (guardianName && typeof guardianName === 'string') ? guardianName.trim() : '';
+      const gPhone = (guardianPhone && typeof guardianPhone === 'string' && guardianPhone.trim())
+        ? guardianPhone.trim()
+        : (safePhone || null);
 
-      if (guardianName && guardianName.trim()) {
-        const parts = guardianName.trim().split(/\s+/);
-        gFirstName = parts[0] || 'ولي أمر';
-        gLastName = parts.slice(1).join(' ') || safeLastName || 'العائلة';
-      } else if (isSelfGuardian) {
-        gFirstName = firstName.trim();
-        gLastName = safeLastName || '—';
-      } else {
-        gFirstName = 'ولي أمر';
-        gLastName = safeLastName || '—';
+      // ممنوع نعمل عميل باسم «ولي أمر —» من غير رقم: كان بيسيب ولي أمر وهمي
+      // في الـ CRM وبيرمي الاسم والرقم اللي المستخدم كتبهم.
+      if (!typedGuardianName && !isSelfGuardian) {
+        return res.status(400).json({
+          success: false,
+          error: 'لازم تختار ولي أمر موجود، أو تكتب اسم ولي الأمر ورقم هاتفه'
+        });
+      }
+      if (!gPhone) {
+        return res.status(400).json({
+          success: false,
+          error: 'رقم هاتف ولي الأمر مطلوب — من غيره مش هنقدر نتواصل معاه'
+        });
       }
 
-      const gPhone = (guardianPhone && typeof guardianPhone === 'string' && guardianPhone.trim()) 
-        ? guardianPhone.trim() 
-        : (safePhone || null);
+      let gFirstName;
+      let gLastName;
+      if (typedGuardianName) {
+        const parts = typedGuardianName.split(/\s+/);
+        gFirstName = parts[0];
+        gLastName = parts.slice(1).join(' ');
+      } else {
+        gFirstName = firstName.trim();
+        gLastName = safeLastName;
+      }
 
       let customer = null;
       if (gPhone) {

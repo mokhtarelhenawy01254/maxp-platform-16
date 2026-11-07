@@ -97,8 +97,17 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     setShowResults(false);
   };
 
+  const hasGuardian =
+    !!form.customerId ||
+    isSelfGuardian ||
+    (isManualGuardian && !!manualGuardian.name.trim() && !!manualGuardian.phone.trim());
+
   const handleSubmit = async () => {
     if (!form.firstName.trim() || saving) return;
+    if (!hasGuardian) {
+      alert("اختر ولي أمر موجود، أو اضغط «إدخال ولي أمر جديد» واكتب اسمه ورقمه — أو فعّل «أنا ولي الأمر».");
+      return;
+    }
     setSaving(true);
     try {
       const payload: any = {
@@ -403,7 +412,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!form.firstName.trim() || saving}
+            disabled={!form.firstName.trim() || saving || !hasGuardian}
             className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
