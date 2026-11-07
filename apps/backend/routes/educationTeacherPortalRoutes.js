@@ -48,8 +48,9 @@ router.get('/payments', authenticateTeacherToken, async (req, res) => {
 router.get('/availability', authenticateTeacherToken, async (req, res) => {
   try {
     const teacherId = req.teacher.id;
+    const companyId = req.teacher.companyId;
     const data = await getSharedPrismaClient().educationTeacherAvailability.findMany({
-      where: { teacherId },
+      where: { teacherId, companyId },
       orderBy: { dayOfWeek: 'asc' }
     });
     res.json({ success: true, data });
@@ -62,28 +63,34 @@ router.get('/availability', authenticateTeacherToken, async (req, res) => {
 router.put('/availability', authenticateTeacherToken, async (req, res) => {
   try {
     const teacherId = req.teacher.id;
+    const companyId = req.teacher.companyId;
     const { slots } = req.body;
     if (!Array.isArray(slots)) {
       return res.status(400).json({ success: false, message: 'بيانات الأوقات غير صحيحة' });
     }
 
     const prisma = getSharedPrismaClient();
-    await prisma.$transaction([
-      prisma.educationTeacherAvailability.deleteMany({ where: { teacherId } }),
-      prisma.educationTeacherAvailability.createMany({
-        data: slots.map(s => ({
-          companyId: req.teacher.companyId,
-          teacherId,
-          dayOfWeek: s.dayOfWeek,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          isAvailable: s.isAvailable ?? true
-        }))
-      })
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.educationTeacherAvailability.deleteMany({
+        where: { teacherId, companyId }
+      });
+
+      if (slots.length > 0) {
+        await tx.educationTeacherAvailability.createMany({
+          data: slots.map(s => ({
+            companyId,
+            teacherId,
+            dayOfWeek: Number(s.dayOfWeek),
+            startTime: s.startTime,
+            endTime: s.endTime,
+            isAvailable: s.isAvailable !== false
+          }))
+        });
+      }
+    });
 
     const data = await prisma.educationTeacherAvailability.findMany({
-      where: { teacherId },
+      where: { teacherId, companyId },
       orderBy: { dayOfWeek: 'asc' }
     });
     res.json({ success: true, data });

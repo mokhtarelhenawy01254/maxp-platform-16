@@ -169,6 +169,7 @@ model EducationEnrollment {
   paymentStatus   PaymentStatus @default(PENDING)
   enrollmentDate  DateTime      @default(now())
   expiresAt       DateTime?
+  isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)

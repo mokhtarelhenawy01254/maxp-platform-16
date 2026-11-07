@@ -63,6 +63,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                 "الساعات المتبقية",
                 "المدفوع",
                 "الحالة",
+                "التفعيل",
                 "",
               ].map((h) => (
                 <th key={h} className="text-right py-3 px-4 font-semibold">
@@ -78,7 +79,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
               const pct =
                 total > 0 ? Math.round((remaining / total) * 100) : 0;
               return (
-                <tr key={e.id} className="hover:bg-muted/30 transition-colors">
+                <tr key={e.id} className={`hover:bg-muted/30 transition-colors ${e.isActive === false ? "opacity-60 bg-muted/20" : ""}`}>
                   <td className={CELL_CLS + " font-medium text-foreground"}>
                     {e.student
                       ? `${e.student.firstName} ${e.student.lastName || ""}`
@@ -147,6 +148,17 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                     </span>
                   </td>
                   <td className={CELL_CLS}>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                        e.isActive !== false
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                      }`}
+                    >
+                      {e.isActive !== false ? "نشط" : "معطل"}
+                    </span>
+                  </td>
+                  <td className={CELL_CLS}>
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
@@ -161,6 +173,22 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                           <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSaveEnrollment({
+                            id: e.id,
+                            isActive: e.isActive === false,
+                          })
+                        }
+                        className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                          e.isActive !== false
+                            ? "bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                            : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                        }`}
+                      >
+                        {e.isActive !== false ? "تعطيل" : "تفعيل"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteEnrollment(e.id)}

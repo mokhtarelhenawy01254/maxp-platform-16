@@ -1,0 +1,1 @@
+ALTER TABLE "education_enrollments" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;

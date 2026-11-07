@@ -76,7 +76,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
               >
                 <option value="">اختر التسجيل</option>
                 {enrollments
-                  .filter((e) => e.isActive && e.remainingHours > 0)
+                  .filter((e) => e.isActive !== false && e.remainingHours > 0)
                   .map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.student?.firstName} {e.student?.lastName || ""} -{" "}
