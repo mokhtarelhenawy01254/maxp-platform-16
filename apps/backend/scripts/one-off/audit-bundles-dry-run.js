@@ -41,18 +41,7 @@ function extractLandingBundleSlugs() {
   return Array.from(slugs).sort();
 }
 
-function normalizeAppIds(appIds) {
-  if (Array.isArray(appIds)) return appIds.map((v) => String(v)).filter(Boolean);
-  if (typeof appIds === 'string') {
-    try {
-      const parsed = JSON.parse(appIds);
-      return Array.isArray(parsed) ? parsed.map((v) => String(v)).filter(Boolean) : [];
-    } catch (err) {
-      return [];
-    }
-  }
-  return [];
-}
+const { computeBundleSafety } = require(path.join(BACKEND_ROOT, 'services/bundleCleanupSafety'));
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -167,28 +156,12 @@ async function main() {
   }
 
   // 5) لكل باقة: كام شركة نشطة بتستخدم أي تطبيق من تطبيقاتها
-  report.bundleSafety = bundles.map((bundle) => {
-    const resolvedSlugs = new Set(
-      normalizeAppIds(bundle.appIds).map((raw) => slugById.get(raw) || raw)
-    );
-    let subscriberCompanies = 0;
-    for (const cid of activeCompanyIds) {
-      const owned = appsByCompany.get(cid);
-      if (!owned) continue;
-      for (const slug of owned) {
-        if (resolvedSlugs.has(slug)) {
-          subscriberCompanies += 1;
-          break;
-        }
-      }
-    }
-    const orphaned = !referenced.includes(bundle.slug);
-    return {
-      slug: bundle.slug,
-      orphaned,
-      activeSubscriberCompanies: subscriberCompanies,
-      safeToClean: orphaned && subscriberCompanies === 0,
-    };
+  report.bundleSafety = computeBundleSafety({
+    bundles,
+    referencedSlugs: referenced,
+    activeCompanyIds,
+    appsByCompany,
+    slugById,
   });
 
   // 6) صفحات الهبوط المرجعية — العمود اسمه "bundleSlug" في المخطط الحالي وbundle_slug في القديم

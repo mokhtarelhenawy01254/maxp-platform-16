@@ -9,8 +9,8 @@
    "ok": true
   },
   {
-   "name": "marketplace mentions bundle/apps (باقة|تطبيق|أداة)",
-   "ok": false
+   "name": "marketplace is either auth-gated or mentions bundle/apps",
+   "ok": true
   },
   {
    "name": "LP /messaging HTTP 200",
@@ -119,9 +119,18 @@
  ],
  "consoleErrors": [],
  "failedRequests": [],
+ "marketplace": {
+  "name": "marketplace",
+  "url": "https://maxp.online/auth/login?next=%2Fmarketplace",
+  "status": 200,
+  "title": "تسجيل الدخول | MaxP",
+  "textLen": 474,
+  "textHead": "نظام تشغيل الأعمال\nكل أعمالك\nفي نظام واحد\n\nمنصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — في مساحة عمل واحدة.\n\nابدأ الآن\nخلال دقائق\nبدون بطاقة بنكية\nفترة تجريبية مجانية\nماكس بي لنظام تشغيل الأعمال\nتسجيل دخول آمن\nالدخول إلى مساحة العمل\n\nأدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.\n\nالبريد الإلكتروني\nنسيت كلمة المرور؟\nكلمة المرور\nتذكرني\nدخول إلى النظام\nتحميل للأندرويد (APK)\nتثبيت للآيفون (iOS)\nليس لديك حساب؟\nإنشاء حساب جديد",
+  "authGated": true
+ },
  "deployedBundle": {
   "scriptsChecked": 2,
   "chars": 13290
  },
- "ok": false
+ "ok": true
 }

@@ -1,0 +1,40 @@
+{
+ "source": "production DB read-only snapshot 2026-11-07 (SELECT only)",
+ "before_2026_10_01": {
+  "rows": 87,
+  "byStatus": {
+   "ACTIVE": 80,
+   "TRIAL": 6,
+   "SUSPENDED": 1
+  },
+  "paid": 8,
+  "paidEgp": 4492.0,
+  "feeBuckets": {
+   "299": 5,
+   "999": 3
+  }
+ },
+ "after_2026_11_07": {
+  "rows": 121,
+  "byStatus": {
+   "ACTIVE": 115,
+   "TRIAL": 5,
+   "SUSPENDED": 1
+  },
+  "paid": 7,
+  "paidEgp": 4193.0,
+  "feeBuckets": {
+   "299": 4,
+   "999": 3
+  }
+ },
+ "id_retention": {
+  "before_ids": 87,
+  "retained": 85,
+  "missing": 2,
+  "added": 36,
+  "missing_rows_belong_to_deleted_companies": 2
+ },
+ "paid_active_retained": true,
+ "note": "الملف ده مجمّع — مفيش IDs أو companyIds خام. اللقطة الكاملة خارج الريبو في task-runner/evidence/621f_snapshot/."
+}

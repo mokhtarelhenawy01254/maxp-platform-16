@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-07T20:23:15.576Z",
+ "generatedAt": "2026-11-07T20:47:27.064Z",
  "mode": "dry-run (read-only)",
  "bundles": {
   "total": 8,
@@ -52,49 +52,57 @@
    "slug": "ai-inbox-bundle",
    "orphaned": false,
    "activeSubscriberCompanies": 85,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "cafe-complete-bundle",
    "orphaned": true,
    "activeSubscriberCompanies": 37,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "facebook-complete-bundle",
    "orphaned": true,
    "activeSubscriberCompanies": 51,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "financial-pricing-suite",
    "orphaned": true,
    "activeSubscriberCompanies": 5,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "hr-complete-bundle",
    "orphaned": true,
    "activeSubscriberCompanies": 20,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "medical-bundle",
    "orphaned": false,
    "activeSubscriberCompanies": 85,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "messaging-bundle",
    "orphaned": false,
    "activeSubscriberCompanies": 44,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   },
   {
    "slug": "store-complete-bundle",
    "orphaned": false,
    "activeSubscriberCompanies": 82,
-   "safeToClean": false
+   "safeToClean": false,
+   "metadataIssue": null
   }
  ],
  "destructiveActions": "none — this script never deletes or updates rows",
