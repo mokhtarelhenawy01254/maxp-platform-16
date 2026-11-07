@@ -1,3 +1,5 @@
+import type { Variants } from "framer-motion";
+
 export interface SalaryComponent {
   name: string;
   amount: number;
@@ -56,3 +58,8 @@ export type PayrollStatusConfig = Record<
   string,
   { label: string; color: string }
 >;
+
+export const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
