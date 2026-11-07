@@ -2593,7 +2593,6 @@ declare module 'react-i18next' {
         emptyState: string;
         loadError: string;
         recentSection: string;
-        allGroups: string;
         groupStart: string;
         groupProducts: string;
         groupOrders: string;
@@ -14537,9 +14536,6 @@ declare module 'react-i18next' {
         trash: string;
         turboSettings: string;
         exportExcel: string;
-        exportExcelRunning: string;
-        exportExcelDone: string;
-        exportExcelEmpty: string;
         statistics: string;
         deleteAll: string;
         deleting: string;

@@ -160,14 +160,7 @@ export function useEducationManagementController() {
       fetchTeachers().finally(() => setLoading(false));
     } else if (activeTab === "enrollments") {
       setLoading(true);
-      Promise.all([
-        fetchEnrollments(),
-        fetchStudents(),
-        fetchPackages(),
-        fetchTeachers(),
-      ])
-        .catch((e: any) => setError(e.message || "فشل تحميل البيانات"))
-        .finally(() => setLoading(false));
+      fetchEnrollments().finally(() => setLoading(false));
     } else if (activeTab === "sessions") {
       setLoading(true);
       fetchSessions().finally(() => setLoading(false));
@@ -263,27 +256,10 @@ export function useEducationManagementController() {
   };
 
   // Student handlers
-  const handleSaveStudent = async (d: Partial<EducationStudent>): Promise<EducationStudent | null> => {
-    const isEdit = !!d.id;
-    const url = isEdit ? api(`students/${d.id}`) : api("students");
-    try {
-      const res = await fetch(url, {
-        method: isEdit ? "PUT" : "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(d),
-      });
-      const result = await res.json();
-      if (!result.success) {
-        alert(result.error || "فشل الحفظ");
-        return null;
-      }
-      setStudentModal(undefined);
-      await fetchStudents();
-      return result.data;
-    } catch (e: any) {
-      alert(e.message || "فشل حفظ الطالب");
-      return null;
-    }
+  const handleSaveStudent = async (d: Partial<EducationStudent>) => {
+    if (!(await saveItem("students", d))) return;
+    setStudentModal(undefined);
+    fetchStudents();
   };
   const handleToggleStudent = async (id: string, current: boolean) => {
     if (await toggleActive("students", id, current)) fetchStudents();
