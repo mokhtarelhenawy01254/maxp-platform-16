@@ -1,0 +1,415 @@
+{
+ "steps": [
+  {
+   "name": "create sample fee=30",
+   "http": 201,
+   "expected_http": 201,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "id": "cmw71qtc60003vja4bwyfwy4m",
+     "companyId": "qr5vitkkllbbksib3tu9walg",
+     "sampleNumber": "SMP-2026-00013",
+     "customerId": null,
+     "customerName": null,
+     "brandName": null,
+     "productName": "عينة اختبار 83791d03 — إجمالي فوري",
+     "productId": null,
+     "bomId": null,
+     "techPackId": null,
+     "plannedQuantity": 1,
+     "size": null,
+     "color": null,
+     "materialSource": "COMPANY",
+     "fee": 30,
+     "status": "DRAFT",
+     "dueDate": null,
+     "partnerFactoryId": null,
+     "expectedDeliveryAt": null,
+     "sampleReceived": false,
+     "receivedAt": null,
+     "totalAmount": 30,
+     "depositAmount": 0,
+     "paidAmount": 0,
+     "designNotes": null,
+     "resultNotes": null,
+     "convertedOrderId": null,
+     "createdById": "ch1ylrdf0owpxlgtzy9szo6t",
+     "createdAt": "2026-11-07T23:40:38.790Z",
+     "updatedAt": "2026-11-07T23:40:38.790Z",
+     "stages": [],
+     "attachments": [],
+     "partnerFactory": null,
+     "payments": [],
+     "customer": null,
+     "bom": null,
+     "expenses": [],
+     "items": [],
+     "components": [],
+     "remaining": 30,
+     "isOverdue": false,
+     "overdueDays": 0,
+     "expensesTotal": 0,
+     "componentsTotal": 0,
+     "totalCost": 30,
+     "customerPortalUrl": "/share/sample/8c0fffd7bea7d743f0745ad541b52a39e7ce1b406a0b9cd4"
+    },
+    "message": "تم إنشاء أمر العينة بنجاح"
+   },
+   "extra": null
+  },
+  {
+   "name": "add comp 2x50 -> componentsTotal=100 sampleTotalCost=130",
+   "http": 201,
+   "expected_http": 201,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "component": {
+      "id": "cmw71qteo000avja4u5to9h4n",
+      "companyId": "qr5vitkkllbbksib3tu9walg",
+      "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+      "productId": null,
+      "name": "قماش ميلتون — تجربة",
+      "quantity": 2,
+      "unit": "متر",
+      "unitPrice": 50,
+      "totalCost": 100,
+      "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+      "sortOrder": 0,
+      "createdAt": "2026-11-07T23:40:38.880Z",
+      "updatedAt": "2026-11-07T23:40:38.880Z"
+     },
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 2,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 100,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:38.880Z"
+      }
+     ],
+     "totalCost": 100,
+     "componentsTotal": 100,
+     "sampleTotalCost": 130,
+     "count": 1
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "duplicate name -> 409",
+   "http": 409,
+   "expected_http": 409,
+   "ok": true,
+   "body": {
+    "success": false,
+    "message": "المكوّن \"قماش   ميلتون — تجربة\" مضاف بالفعل في هذه العينة — عدّل الكمية بدل إضافته من جديد"
+   },
+   "extra": null
+  },
+  {
+   "name": "add comp 1x20 -> componentsTotal=120 sampleTotalCost=150",
+   "http": 201,
+   "expected_http": 201,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "component": {
+      "id": "cmw71qtgg000cvja4je8cx9um",
+      "companyId": "qr5vitkkllbbksib3tu9walg",
+      "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+      "productId": null,
+      "name": "خيط حياكة — تجربة",
+      "quantity": 1,
+      "unit": "قطعة",
+      "unitPrice": 20,
+      "totalCost": 20,
+      "priceSnapshotAt": "2026-11-07T23:40:38.945Z",
+      "sortOrder": 0,
+      "createdAt": "2026-11-07T23:40:38.945Z",
+      "updatedAt": "2026-11-07T23:40:38.945Z"
+     },
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 2,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 100,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:38.880Z"
+      },
+      {
+       "id": "cmw71qtgg000cvja4je8cx9um",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "خيط حياكة — تجربة",
+       "quantity": 1,
+       "unit": "قطعة",
+       "unitPrice": 20,
+       "totalCost": 20,
+       "priceSnapshotAt": "2026-11-07T23:40:38.945Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.945Z",
+       "updatedAt": "2026-11-07T23:40:38.945Z"
+      }
+     ],
+     "totalCost": 120,
+     "componentsTotal": 120,
+     "sampleTotalCost": 150,
+     "count": 2
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "update to duplicate name -> 409",
+   "http": 409,
+   "expected_http": 409,
+   "ok": true,
+   "body": {
+    "success": false,
+    "message": "المكوّن \"قماش ميلتون — تجربة\" مضاف بالفعل في هذه العينة — عدّل الكمية بدل إضافته من جديد"
+   },
+   "extra": null
+  },
+  {
+   "name": "update qty 3 -> componentsTotal=170 sampleTotalCost=200",
+   "http": 200,
+   "expected_http": 200,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "component": {
+      "id": "cmw71qteo000avja4u5to9h4n",
+      "companyId": "qr5vitkkllbbksib3tu9walg",
+      "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+      "productId": null,
+      "name": "قماش ميلتون — تجربة",
+      "quantity": 3,
+      "unit": "متر",
+      "unitPrice": 50,
+      "totalCost": 150,
+      "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+      "sortOrder": 0,
+      "createdAt": "2026-11-07T23:40:38.880Z",
+      "updatedAt": "2026-11-07T23:40:39.029Z"
+     },
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 3,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 150,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:39.029Z"
+      },
+      {
+       "id": "cmw71qtgg000cvja4je8cx9um",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "خيط حياكة — تجربة",
+       "quantity": 1,
+       "unit": "قطعة",
+       "unitPrice": 20,
+       "totalCost": 20,
+       "priceSnapshotAt": "2026-11-07T23:40:38.945Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.945Z",
+       "updatedAt": "2026-11-07T23:40:38.945Z"
+      }
+     ],
+     "totalCost": 170,
+     "componentsTotal": 170,
+     "sampleTotalCost": 200,
+     "count": 2
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "delete comp -> componentsTotal=150 sampleTotalCost=180",
+   "http": 200,
+   "expected_http": 200,
+   "ok": true,
+   "body": {
+    "success": true,
+    "message": "تم حذف المكوّن بنجاح",
+    "data": {
+     "success": true,
+     "message": "تم حذف المكوّن بنجاح",
+     "deletedId": "cmw71qtgg000cvja4je8cx9um",
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 3,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 150,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:39.029Z"
+      }
+     ],
+     "totalCost": 150,
+     "componentsTotal": 150,
+     "sampleTotalCost": 180,
+     "count": 1
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "list parity componentsTotal=150 sampleTotalCost=180",
+   "http": 200,
+   "expected_http": 200,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 3,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 150,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:39.029Z"
+      }
+     ],
+     "totalCost": 150,
+     "componentsTotal": 150,
+     "sampleTotalCost": 180,
+     "count": 1
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "add product-linked comp",
+   "http": 201,
+   "expected_http": 201,
+   "ok": true,
+   "body": {
+    "success": true,
+    "data": {
+     "component": {
+      "id": "cmw71qtor000evja4668kpyaf",
+      "companyId": "qr5vitkkllbbksib3tu9walg",
+      "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+      "productId": "o87nzn3t7ayv2ys2zn9i78tx",
+      "name": "تيشيرت أوفر سايز",
+      "quantity": 1,
+      "unit": "قطعة",
+      "unitPrice": 10,
+      "totalCost": 10,
+      "priceSnapshotAt": "2026-11-07T23:40:39.244Z",
+      "sortOrder": 0,
+      "createdAt": "2026-11-07T23:40:39.244Z",
+      "updatedAt": "2026-11-07T23:40:39.244Z"
+     },
+     "components": [
+      {
+       "id": "cmw71qteo000avja4u5to9h4n",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": null,
+       "name": "قماش ميلتون — تجربة",
+       "quantity": 3,
+       "unit": "متر",
+       "unitPrice": 50,
+       "totalCost": 150,
+       "priceSnapshotAt": "2026-11-07T23:40:38.880Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:38.880Z",
+       "updatedAt": "2026-11-07T23:40:39.029Z"
+      },
+      {
+       "id": "cmw71qtor000evja4668kpyaf",
+       "companyId": "qr5vitkkllbbksib3tu9walg",
+       "sampleOrderId": "cmw71qtc60003vja4bwyfwy4m",
+       "productId": "o87nzn3t7ayv2ys2zn9i78tx",
+       "name": "تيشيرت أوفر سايز",
+       "quantity": 1,
+       "unit": "قطعة",
+       "unitPrice": 10,
+       "totalCost": 10,
+       "priceSnapshotAt": "2026-11-07T23:40:39.244Z",
+       "sortOrder": 0,
+       "createdAt": "2026-11-07T23:40:39.244Z",
+       "updatedAt": "2026-11-07T23:40:39.244Z"
+      }
+     ],
+     "totalCost": 160,
+     "componentsTotal": 160,
+     "sampleTotalCost": 190,
+     "count": 2
+    }
+   },
+   "extra": null
+  },
+  {
+   "name": "duplicate productId -> 409",
+   "http": 409,
+   "expected_http": 409,
+   "ok": true,
+   "body": {
+    "success": false,
+    "message": "المكوّن \"تيشيرت أوفر سايز\" مضاف بالفعل في هذه العينة — عدّل الكمية بدل إضافته من جديد"
+   },
+   "extra": null
+  }
+ ],
+ "ok": true,
+ "login": {
+  "http": 200,
+  "company": "qr5vitkkllbbksib3tu9walg",
+  "token_len": 304
+ },
+ "manufacturing_settings_http": 200,
+ "sample_id": "cmw71qtc60003vja4bwyfwy4m",
+ "sample_number": "SMP-2026-00013",
+ "db_row_count": "2",
+ "db_error": "",
+ "sample_total_db": "SMP-2026-00013"
+}

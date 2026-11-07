@@ -19,6 +19,16 @@
 
 اختبارات ما بعد الجولة ٣: Jest 34/34 · API 10/10 · add race (5 متزامنة → 1×201 + 4×409) · edit race (200) · بوابة الموقع 160/190 → 170/200.
 
+## جولة ٣ → ٤ (مراجعة OpenCode على 681e6edf2: FIX_FIRST — 0 BLOCKER / 1 BUG / 1 RISK · معايير 3/3)
+
+| # | النوع | الملاحظة | الإصلاح | الدليل |
+|---|---|---|---|---|
+| ٧ | BUG | تعريف `sample_orders` جوه الـmigration كان ناقص ٤ أعمدة من الـmodel (`partnerFactoryId`, `totalAmount`, `depositAmount`, `paidAmount`)، والكرون `manufacturingNotificationCron` بيقرأ `partnerFactoryId` من غير `ensureSchema` → يفشل على تثبيت نضيف | الأعمدة الأربعة اتضافت في `CREATE TABLE` + `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` + indexes التلاتة (`partnerFactoryId`/`expectedDeliveryAt`/`sampleReceived`) | قاعدة نضيفة `maxp_8379_clean3`: عدد الأعمدة الأربعة = 4 + FK=1 (`_reports/83791d03-evidence/83791d03_migration_clean_db.json`) |
+| ٨ | RISK | مفيش أدلة/سكربتات قابلة لإعادة التشغيل متكومتة في الريبو (المراجع مش شايف `task-runner/evidence`) | أضفت حزمة أدلة كاملة داخل الريبو: `_reports/83791d03-evidence/` — JSON خام لكل بوابة + سكربتات API/سباق/سعر قابلة للتشغيل بـ`MAXP_QA_BASE` + README بأوامر إعادة التشغيل والنواتج المتوقعة | `_reports/83791d03-evidence/README.md` + 5 ملفات JSON + 4 سكربتات |
+
+ملاحظة على الـRISK المتبقي: القفل والـmigration اتأكدوا بتشغيل فعلي على Postgres (مش mock) — الأدلة الخام متكومتة الآن في الريبو. اختبار الـmock نفسه مش بيقدر يحاكي التزامن، وده مقصود: السباق بيتحقق منه بسكربت `verify_83791d03_concurrency2.py` على قاعدة حقيقية.
+
+
 ## ملاحظات
 - بوابة الواجهة (Vitest) لسه مش قابلة للتشغيل عند المراجع — `node_modules/.bin/vitest` مش موجود في بيئة المراجعة (بيئي). البوابة ٢ اتعملت بالـbrowser من عندي على QA محلي.
 - الـRISK البيئي (مفيش DB عند المراجع) اتغطى بتشغيل API فعلي على QA (10/10) + سباق 5 طلبات.

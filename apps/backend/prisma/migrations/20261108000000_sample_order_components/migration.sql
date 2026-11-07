@@ -35,9 +35,13 @@ CREATE TABLE IF NOT EXISTS "sample_orders" (
     "fee" DECIMAL(10,2),
     "status" "SampleOrderStatus" NOT NULL DEFAULT 'DRAFT',
     "dueDate" TIMESTAMP(3),
+    "partnerFactoryId" TEXT,
     "expectedDeliveryAt" TIMESTAMP(3),
     "sampleReceived" BOOLEAN NOT NULL DEFAULT false,
     "receivedAt" TIMESTAMP(3),
+    "totalAmount" DECIMAL(12,2),
+    "depositAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "paidAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "designNotes" TEXT,
     "resultNotes" TEXT,
     "convertedOrderId" TEXT,
@@ -57,6 +61,18 @@ CREATE INDEX IF NOT EXISTS "sample_orders_companyId_productId_idx"
     ON "sample_orders"("companyId", "productId");
 CREATE INDEX IF NOT EXISTS "sample_orders_companyId_convertedOrderId_idx"
     ON "sample_orders"("companyId", "convertedOrderId");
+CREATE INDEX IF NOT EXISTS "sample_orders_companyId_partnerFactoryId_idx"
+    ON "sample_orders"("companyId", "partnerFactoryId");
+CREATE INDEX IF NOT EXISTS "sample_orders_companyId_expectedDeliveryAt_idx"
+    ON "sample_orders"("companyId", "expectedDeliveryAt");
+CREATE INDEX IF NOT EXISTS "sample_orders_companyId_sampleReceived_idx"
+    ON "sample_orders"("companyId", "sampleReceived");
+
+-- الإنتاج اتعمل قبل الـmigration دي — نضمن أعمدة الـmodel اللي اتضافت بعد إنشاء الجدول
+ALTER TABLE "sample_orders" ADD COLUMN IF NOT EXISTS "partnerFactoryId" TEXT;
+ALTER TABLE "sample_orders" ADD COLUMN IF NOT EXISTS "totalAmount" DECIMAL(12,2);
+ALTER TABLE "sample_orders" ADD COLUMN IF NOT EXISTS "depositAmount" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "sample_orders" ADD COLUMN IF NOT EXISTS "paidAmount" DECIMAL(12,2) NOT NULL DEFAULT 0;
 
 -- 3) جدول مكونات العينة
 CREATE TABLE IF NOT EXISTS "sample_order_components" (
