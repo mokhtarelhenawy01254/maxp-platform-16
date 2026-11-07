@@ -1589,7 +1589,8 @@ const searchCustomers = async (req, res) => {
       });
     }
 
-    const { q } = req.query;
+    const rawQ = req.query.q || req.query.query || '';
+    const q = typeof rawQ === 'string' ? rawQ.trim() : '';
     if (!q) {
       return res.json({
         success: true,
@@ -1603,9 +1604,9 @@ const searchCustomers = async (req, res) => {
         companyId,
         OR: [
           { phone: { contains: q } },
-          { firstName: { contains: q } },
-          { lastName: { contains: q } },
-          { email: { contains: q } }
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } }
         ]
       },
       take: 10,

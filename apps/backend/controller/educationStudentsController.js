@@ -112,4 +112,43 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+const searchGuardians = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const rawQ = req.query.q || req.query.query || '';
+    const q = typeof rawQ === 'string' ? rawQ.trim() : '';
+    if (!q) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const customers = await getSharedPrismaClient().customer.findMany({
+      where: {
+        companyId,
+        OR: [
+          { phone: { contains: q } },
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } }
+        ]
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true
+      },
+      take: 15,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ success: true, data: customers });
+  } catch (error) {
+    console.error('Error searching guardians:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء البحث' });
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, searchGuardians };

@@ -32,16 +32,7 @@ export const api = (path: string): string => {
 };
 
 export const searchCustomersApi = (q: string): string => {
-  const base = buildApiUrl(`customers/search?query=${encodeURIComponent(q)}`);
-  let url: URL;
-  try {
-    url = new URL(base);
-  } catch {
-    url = new URL(base, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-  }
-  const cid = getCompanyId();
-  if (cid) url.searchParams.set("companyId", cid);
-  return url.toString();
+  return api(`students/guardians/search?q=${encodeURIComponent(q)}&query=${encodeURIComponent(q)}`);
 };
 
 export const fetchJson = async (
