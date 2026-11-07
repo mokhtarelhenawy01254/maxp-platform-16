@@ -286,9 +286,11 @@ export const useMyAttendanceController = () => {
 
   const finalizeCheckOut = async () => {
     const punchTime = new Date();
+    let queuedLocation: string | null = null;
     try {
       setCheckingOut(true);
       const location = await getLocationPayload();
+      queuedLocation = location ? JSON.stringify(location) : null;
 
       const res = await api.post("/hr/attendance/check-out", {
         method: "self_service",
@@ -335,6 +337,7 @@ export const useMyAttendanceController = () => {
           action: "CHECK_OUT",
           originalTimestamp: punchTime.toISOString(),
           workMode,
+          location: queuedLocation,
           method: "self_service",
           location,
           lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,
@@ -399,9 +402,11 @@ export const useMyAttendanceController = () => {
 
   const handleCheckIn = async () => {
     const punchTime = new Date();
+    let queuedLocation: string | null = null;
     try {
       setCheckingIn(true);
       const location = await getLocationPayload();
+      queuedLocation = location ? JSON.stringify(location) : null;
 
       const res = await api.post("/hr/attendance/check-in", {
         method: "self_service",
@@ -453,6 +458,7 @@ export const useMyAttendanceController = () => {
           action: "CHECK_IN",
           originalTimestamp: punchTime.toISOString(),
           workMode,
+          location: queuedLocation,
           method: "self_service",
           location,
           lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,

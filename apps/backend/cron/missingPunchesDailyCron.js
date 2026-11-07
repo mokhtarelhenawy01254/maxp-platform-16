@@ -42,7 +42,7 @@ class MissingPunchesDailyCron {
 
     this.isRunning = true;
     const prisma = getSharedPrismaClient();
-    const results = { companies: 0, failed: 0, totalMissing: 0 };
+    const results = { companies: 0, failed: 0, totalMissing: 0, failedCompanies: [] };
 
     try {
       const companies = await prisma.company.findMany({
@@ -61,11 +61,21 @@ class MissingPunchesDailyCron {
           }
         } catch (error) {
           results.failed += 1;
+          results.failedCompanies.push(company.name || company.id);
           console.error(`❌ [MISSING-PUNCHES-CRON] ${company.name || company.id}: ${error.message}`);
         }
       }
 
-      this.lastRunDate = today;
+      // لا تسجّل اليوم كـ«تم» إلا لو كل الشركات نجحت. لو شركة واحدة فشلت،
+      // lastRunDate يفضل فاضي عشان أي استدعاء تاني نفس اليوم (يدوي أو إعادة
+      // تشغيل) يعيد المحاولة بدل ما يرجّع already_ran_today ويضيّع اليوم كله.
+      if (results.failed === 0) {
+        this.lastRunDate = today;
+      } else {
+        console.warn(
+          `⚠️ [MISSING-PUNCHES-CRON] ${results.failed} company failure(s): ${results.failedCompanies.join(', ')} — lastRunDate not set, a later run today will retry`,
+        );
+      }
       console.log(
         `✅ [MISSING-PUNCHES-CRON] done — companies=${results.companies} failed=${results.failed} missing=${results.totalMissing}`,
       );
