@@ -196,13 +196,16 @@ router.post('/checkout-draft', async (req, res) => {
       });
     }
 
+    // توحيد الهاتف (أرقام عربية/رموز/مقدمة الدولة) لاستخدامه في الحارس والدمج
+    const cleanPhone = checkoutData.phone
+      ? String(checkoutData.phone)
+          .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+          .replace(/\D/g, '')
+          .slice(-10)
+      : '';
+
     // 🛡️ تجنب توليد سلة متروكة وهمية إذا كان العميل قد أتم طلباً بالفعل خلال آخر 20 دقيقة
     if (checkoutData.phone) {
-      const cleanPhone = String(checkoutData.phone)
-        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
-        .replace(/\D/g, '')
-        .slice(-10);
-
       if (cleanPhone && cleanPhone.length >= 8) {
         const recentOrder = await prisma.order.findFirst({
           where: {
@@ -224,6 +227,25 @@ router.post('/checkout-draft', async (req, res) => {
             }
           });
         }
+      }
+    }
+
+    // 🛡️ دمج السلات المكررة: زوار متصفحات الماسنجر/فيسبوك (FB_IAB) قد يرسلون دفعة طلبات مسودة
+    // متوازية بدون cartId (تجميد واستئناف تايمرات الـ WebView) فيتولد سجل غير مكتمل جديد لكل طلب.
+    // لو فيه سلة مفتوحة لنفس الشركة + نفس الهاتف خلال آخر 60 دقيقة → نحدّثها بدل إنشاء جديدة.
+    if (!existingCart && cleanPhone && cleanPhone.length >= 10) {
+      const duplicateCart = await prisma.guestCart.findFirst({
+        where: {
+          companyId,
+          checkoutData: { contains: cleanPhone },
+          checkoutUpdatedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+        },
+        orderBy: { checkoutUpdatedAt: 'desc' },
+      });
+
+      if (duplicateCart) {
+        resolvedCartId = duplicateCart.cartId;
+        existingCart = duplicateCart;
       }
     }
 

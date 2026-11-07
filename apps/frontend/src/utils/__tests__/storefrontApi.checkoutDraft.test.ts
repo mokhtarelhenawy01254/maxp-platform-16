@@ -81,4 +81,55 @@ describe('storefrontApi.saveCheckoutDraft', () => {
       customerName: 'Offline Draft User',
     });
   });
+
+  it('attaches one stable cart id across sequential and parallel draft saves', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ success: true, data: { cartId: 'server-cart-1' } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    await storefrontApi.saveCheckoutDraft({ customerName: 'First Draft' });
+    await Promise.all([
+      storefrontApi.saveCheckoutDraft({ customerName: 'Parallel A' }),
+      storefrontApi.saveCheckoutDraft({ customerName: 'Parallel B' }),
+    ]);
+
+    const bodies = fetchMock.mock.calls.map(([, init]) =>
+      JSON.parse(String((init as RequestInit).body)),
+    );
+    // أول استدعاء يولّد معرف عميل، والرد يتبناه، والطلبات اللاحقة تعيد استخدام نفس المعرف
+    expect(bodies[0].cartId).toMatch(/^cart_/);
+    expect(bodies[1].cartId).toBe('server-cart-1');
+    expect(bodies[2].cartId).toBe('server-cart-1');
+  });
+
+  it('keeps the cart id stable in memory when localStorage writes fail (FB in-app browsers)', async () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('quota exceeded');
+      });
+
+    try {
+      fetchMock.mockResolvedValue(
+        new Response(
+          JSON.stringify({ success: true, data: { cartId: 'server-cart-9' } }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+
+      await storefrontApi.saveCheckoutDraft({ customerName: 'Broken Storage 1' });
+      await storefrontApi.saveCheckoutDraft({ customerName: 'Broken Storage 2' });
+
+      const bodies = fetchMock.mock.calls.map(([, init]) =>
+        JSON.parse(String((init as RequestInit).body)),
+      );
+      expect(bodies[0].cartId).toMatch(/^cart_/);
+      expect(bodies[1].cartId).toBe('server-cart-9');
+    } finally {
+      setItemSpy.mockRestore();
+    }
+  });
 });

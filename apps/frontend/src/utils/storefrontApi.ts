@@ -99,15 +99,33 @@ const createStorefrontError = (
   return error;
 };
 
+// نسخة في الذاكرة من معرف السلة: متصفحات الماسنجر/فيسبوك (FB_IAB) قد تفشل في كتابة
+// localStorage بصمت، فيضيع معرف السلة بين الطلبات ويتولد سجل غير مكتمل جديد لكل طلب.
+let inMemoryCartId: string | null = null;
+
 export const getCartId = (): string | null =>
+  inMemoryCartId ||
   getStoredValue("cart_session_id") ||
   getStoredValue("cart_id");
+
+// يطابق صيغة المعرف التي يولده السيرفر (cart_<uuid>) حتى يعمل upsert مباشرة
+const generateClientCartId = (): string => {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `cart_${crypto.randomUUID()}`;
+    }
+  } catch {
+    // Fall through to the non-crypto fallback below.
+  }
+  return `cart_${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+};
 
 const getStoredAccessToken = (): string | null =>
   getStoredValue("accessToken") || getStoredValue("token");
 
 const rememberCartId = (cartId: string) => {
   if (!cartId) return;
+  inMemoryCartId = cartId;
   setStoredValue("cart_session_id", cartId);
   setStoredValue("cart_id", cartId);
 };
@@ -657,19 +675,28 @@ export const storefrontApi = {
   },
 
   saveCheckoutDraft: async (payload: object) => {
-    let enrichedPayload = payload;
+    let enrichedPayload: Record<string, unknown> = { ...payload };
     try {
       const { getStorefrontSessionDetails } = await import("../storefront/utils/storefrontSessionTracker");
       const sessionDetails = (payload as any)?.sessionDetails || getStorefrontSessionDetails();
       if (sessionDetails) {
         enrichedPayload = {
-          ...payload,
+          ...enrichedPayload,
           sessionDetails,
         };
       }
     } catch {
       // Ignore tracker import failures
     }
+
+    // معرف السلة يُثبَّت قبل الإرسال (المُعرف الممرَّر ← المحفوظ ← الذاكرة ← توليد جديد)
+    // حتى تتشارك الطلبات المتوازية نفس المعرف ويحدث السيرفر سلة واحدة بدل توليد سجلات مكررة.
+    const resolvedCartId =
+      (enrichedPayload.cartId as string | undefined) ||
+      getCartId() ||
+      generateClientCartId();
+    enrichedPayload.cartId = resolvedCartId;
+    rememberCartId(resolvedCartId);
 
     setStoredValue("storefront_checkout_draft", JSON.stringify(enrichedPayload));
 
