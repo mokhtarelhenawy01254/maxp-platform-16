@@ -49,9 +49,16 @@ jobs:
           for u in "${LIST[@]}"; do
             u="$(echo "$u" | xargs)"
             case "$u" in
-              https://*previewTheme=*previewSource=*previewAdminOrigin=*) echo "OK $u" ;;
-              *) echo "الرابط ناقص previewSource/previewAdminOrigin وده هيقيس ثيم التاجر نفسه: $u"; exit 1 ;;
+              https://*) ;;
+              *) echo "الرابط لازم يبدأ بـ https:// : $u"; exit 1 ;;
             esac
+            for p in previewTheme previewSource previewAdminOrigin; do
+              case "$u" in
+                *"$p="*) ;;
+                *) echo "الرابط ناقص $p وده هيقيس ثيم التاجر نفسه: $u"; exit 1 ;;
+              esac
+            done
+            echo "OK $u"
           done
 
       - name: Setup Node.js
