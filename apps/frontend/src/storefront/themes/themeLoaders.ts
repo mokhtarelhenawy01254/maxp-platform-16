@@ -4,6 +4,10 @@ import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefron
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
 export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
+  "tpl-009-modular-catalog-kids-fashion": () => import("./tpl-009-modular-catalog-kids-fashion.json"),
+  "tpl-010-multi-department-kids-fashion": () => import("./tpl-010-multi-department-kids-fashion.json"),
+  "tpl-011-local-market-kids-fashion": () => import("./tpl-011-local-market-kids-fashion.json"),
+  "tpl-012-original-kids-fashion": () => import("./tpl-012-original-kids-fashion.json"),
   "modest-wear-lumiere": () => import("./modest-wear-lumiere.json"),
   "modest-wear-bazaar": () => import("./modest-wear-bazaar.json"),
   "modest-wear-noor": () => import("./modest-wear-noor.json"),

@@ -291,58 +291,6 @@
         }
       ]
     },
-    "checkout": {
-      "layoutHint": "sidebar-right",
-      "sections": [
-        {
-          "type": "cart-items",
-          "variant": "compact",
-          "settings": {
-            "title": "مراجعة القطع",
-            "showUpsell": false
-          }
-        },
-        {
-          "type": "checkout-form",
-          "variant": "market-checkout",
-          "settings": {
-            "title": "بيانات الشحن",
-            "submitLabel": "تأكيد الطلب"
-          }
-        },
-        {
-          "type": "payment",
-          "variant": "market-payment"
-        },
-        {
-          "type": "order-summary",
-          "variant": "market-summary"
-        }
-      ]
-    },
-    "sale": {
-      "pageGoal": "discovery",
-      "sections": [
-        {
-          "type": "hero-banner",
-          "variant": "retail-direct-banner",
-          "settings": {
-            "eyebrow": "عروض",
-            "title": "تخفيضات الأسبوع",
-            "subtitle": "خصومات على أطقم ومقاسات مختارة.",
-            "ctaText": "اتسوق",
-            "ctaLink": "/shop"
-          }
-        },
-        {
-          "type": "product-grid"
-        },
-        {
-          "type": "countdown-banner",
-          "variant": "inline"
-        }
-      ]
-    },
     "collections": {
       "pageGoal": "discovery",
       "sections": [
@@ -359,38 +307,6 @@
         }
       ]
     },
-    "thank-you": {
-      "sections": [
-        {
-          "type": "order-confirmation",
-          "variant": "market-aftercare"
-        }
-      ]
-    },
-    "shipping": {
-      "pageGoal": "support",
-      "sections": [
-        {
-          "type": "info-content",
-          "settings": {
-            "title": "الشحن والتوصيل",
-            "subtitle": "مواعيد الشحن، المحافظات، وتكلفة التوصيل."
-          }
-        }
-      ]
-    },
-    "returns": {
-      "pageGoal": "support",
-      "sections": [
-        {
-          "type": "info-content",
-          "settings": {
-            "title": "الاستبدال والاسترجاع",
-            "subtitle": "استبدال المقاس خلال 14 يوم بشرط عدم الاستخدام."
-          }
-        }
-      ]
-    },
     "contact": {
       "pageGoal": "support",
       "sections": [
@@ -400,37 +316,6 @@
             "title": "كلمنا",
             "subtitle": "واتساب، تليفون، وعنوان الفرع."
           }
-        }
-      ]
-    },
-    "privacy": {
-      "pageGoal": "support",
-      "sections": [
-        {
-          "type": "info-content",
-          "settings": {
-            "title": "سياسة الخصوصية",
-            "subtitle": "إزاي بنستخدم بياناتك ونحافظ عليها."
-          }
-        }
-      ]
-    },
-    "terms": {
-      "pageGoal": "support",
-      "sections": [
-        {
-          "type": "info-content",
-          "settings": {
-            "title": "الشروط والأحكام",
-            "subtitle": "قواعد الشراء والدفع والاستبدال."
-          }
-        }
-      ]
-    },
-    "registration": {
-      "sections": [
-        {
-          "type": "member-registration"
         }
       ]
     }
